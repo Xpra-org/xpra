@@ -130,6 +130,7 @@ def premultiply_argb_in_place(buf):
 ######
 
 include "constants.pxi"
+ctypedef unsigned long CARD32
 
 cdef extern from *:
     ctypedef struct Display:
@@ -138,7 +139,6 @@ cdef extern from *:
     # appropriate pyrex declarations, without having to untangle the typedefs
     # over and over again, here are some convenience typedefs.  (Yes, CARD32
     # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
-    ctypedef unsigned long CARD32
     ctypedef CARD32 XID
 
     ctypedef int Bool
