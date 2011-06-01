@@ -889,7 +889,7 @@ cdef extern from "X11/extensions/Xrandr.h":
 
 def has_randr():
     try:
-        _ensure_extension_support(gtk.gdk.display_get_default(), 1, 2, "Randr",
+        _ensure_extension_support(gtk.gdk.get_default_root_window(), 1, 2, "Randr",
                                  XRRQueryExtension,
                                  XRRQueryVersion)
         return True
@@ -924,6 +924,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
     cdef Time time
     cdef int sizeID
     cdef XRRScreenSize *xrrs
+    cdef XRRScreenSize xrr
 
     #print "_set_screen_size(%s,%s,%s,%s)" % (display_source, pywindow, width, height)
     display = get_xdisplay_for(display_source)
