@@ -41,7 +41,7 @@ class ClipboardProtocolHelper(object):
             self.send(["clipboard-contents-none", request_id, selection])
 
 class ClientExtras(object):
-    def __init__(self, send_packet_cb, pulseaudio):
+    def __init__(self, send_packet_cb, pulseaudio, opts):
         self.send = send_packet_cb
 
     def handshake_complete(self, capabilities):
