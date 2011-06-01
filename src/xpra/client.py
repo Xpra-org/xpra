@@ -153,13 +153,18 @@ class ClientWindow(gtk.Window):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def draw(self, x, y, width, height, rgb_data):
-        assert len(rgb_data) == width * height * 3
+    def draw(self, x, y, width, height, coding, img_data):
         gc = self._backing.new_gc()
-        self._backing.draw_rgb_image(gc, x, y, width, height,
-                                     gtk.gdk.RGB_DITHER_NONE, rgb_data)
-        self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height),
-                                    False)
+        if coding != "rgb24":
+            loader = gtk.gdk.PixbufLoader(coding)
+            loader.write(img_data, len(img_data))
+            pixbuf = loader.get_pixbuf()
+            loader.close()
+            self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+        else:
+            assert len(img_data) == width * height * 3
+            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
+        self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height), False)
 
     def do_expose_event(self, event):
         if not self.flags() & gtk.MAPPED:
@@ -272,11 +277,13 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, password_file):
+    def __init__(self, conn, compression_level, jpegquality, password_file):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
         self.password_file = password_file
+        self.compression_level = compression_level
+        self.jpegquality = jpegquality
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -328,6 +335,8 @@ class XpraClient(gobject.GObject):
             capabilities_request["challenge_response"] = hash
         if self.compression_level:
             capabilities_request["deflate"] = self.compression_level
+        if self.jpegquality:
+            capabilities_request["jpeg"] = self.jpegquality
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])
@@ -393,8 +402,7 @@ class XpraClient(gobject.GObject):
     def _process_draw(self, packet):
         (_, id, x, y, width, height, coding, data) = packet
         window = self._id_to_window[id]
-        assert coding == "rgb24"
-        window.draw(x, y, width, height, data)
+        window.draw(x, y, width, height, coding, data)
 
     def _process_window_metadata(self, packet):
         (_, id, metadata) = packet

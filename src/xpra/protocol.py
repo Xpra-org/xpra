@@ -79,6 +79,7 @@ class Protocol(object):
         self._read_queue = Queue()
         # Invariant: if .source is None, then _source_has_more == False
         self.source = None
+        self.jpegquality = 0
         self._source_has_more = False
         self._closed = False
         self._read_decoder = IncrBDecode()

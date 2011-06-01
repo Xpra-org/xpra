@@ -16,6 +16,8 @@ import sys
 import subprocess
 import hmac
 import uuid
+import Image
+import StringIO
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -167,17 +169,18 @@ class ServerSource(object):
                 log.error("wtf, pixmap is None?")
                 packet = None
             else:
-                (x2, y2, w2, h2, data) = self._get_rgb_data(pixmap, x, y, w, h)
+                (x2, y2, w2, h2, coding, data) = self._get_rgb_data(pixmap, x, y, w, h)
                 if not w2 or not h2:
                     packet = None
                 else:
-                    packet = ["draw", id, x2, y2, w2, h2, "rgb24", data]
+                    packet = ["draw", id, x2, y2, w2, h2, coding, data]
         else:
             packet = None
         return packet, self._have_more()
 
     def _get_rgb_data(self, pixmap, x, y, width, height):
         pixmap_w, pixmap_h = pixmap.get_size()
+        coding = "rgb24"
         # Just in case we somehow end up with damage larger than the pixmap,
         # we don't want to start requesting random chunks of memory (this
         # could happen if a window is resized but we don't throw away our
@@ -189,7 +192,7 @@ class ServerSource(object):
         if y + height > pixmap_h:
             height = pixmap_h - y
         if width <= 0 or height <= 0:
-            return (0, 0, 0, 0, "")
+            return (0, 0, 0, 0, coding, "")
         pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
         pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),
                                  x, y, 0, 0, width, height)
@@ -203,7 +206,19 @@ class ServerSource(object):
             for i in xrange(height):
                 rows.append(raw_data[i*rowstride : i*rowstride+rowwidth])
             data = "".join(rows)
-        return (x, y, width, height, data)
+        # should probably have some other conditions for
+        # enabling jpeg compression (for example len(data) > N and/or
+        # width*height > M)
+        if self._protocol.jpegquality > 0:
+            im = Image.fromstring("RGB", (width,height), data)
+            buf=StringIO.StringIO()
+            im.save(buf,"JPEG", quality=self._protocol.jpegquality)
+            data=buf.getvalue()
+            buf.close()
+            coding = "jpeg"
+
+        return (x, y, width, height, coding, data)
+
 
 class XpraServer(gobject.GObject):
     __gsignals__ = {
@@ -582,6 +597,8 @@ class XpraServer(gobject.GObject):
         self._send(["hello", capabilities])
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
+        if "jpeg" in capabilities:
+            self._protocol.jpegquality = capabilities["jpeg"]
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
