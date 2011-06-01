@@ -253,7 +253,7 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file)
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()

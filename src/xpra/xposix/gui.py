@@ -15,8 +15,15 @@ assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is
 from xpra.xposix.xsettings import XSettingsWatcher
 from xpra.xposix.xroot_props import XRootPropWatcher
 class ClientExtras(object):
-    def __init__(self, send_packet_cb):
+    def __init__(self, send_packet_cb, pulseaudio):
         self.send = send_packet_cb
+        self.ROOT_PROPS = {
+            "RESOURCE_MANAGER": "resource-manager"
+            }
+        if pulseaudio:
+            self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
+            self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
+            self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
 
     def handshake_complete(self, capabilities):
         self._xsettings_watcher = XSettingsWatcher()
@@ -33,13 +40,6 @@ class ClientExtras(object):
         if blob is not None:
             self.send(["server-settings", {"xsettings-blob": blob}])
 
-    ROOT_PROPS = {
-        "RESOURCE_MANAGER": "resource-manager",
-        "PULSE_COOKIE": "pulse-cookie",
-        "PULSE_ID": "pulse-id",
-        "PULSE_SERVER": "pulse-server",
-        }
-    
     def _handle_root_prop_changed(self, obj, prop, value):
         assert prop in self.ROOT_PROPS
         if value is not None:

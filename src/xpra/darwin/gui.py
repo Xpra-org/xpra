@@ -39,7 +39,7 @@ class ClipboardProtocolHelper(object):
             self.send(["clipboard-contents-none", request_id, selection])
 
 class ClientExtras(object):
-    def __init__(self, send_packet_cb):
+    def __init__(self, send_packet_cb, pulseaudio):
         self.send = send_packet_cb
         self.setup_macdock()
 

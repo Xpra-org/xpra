@@ -279,7 +279,7 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
@@ -301,7 +301,7 @@ class XpraClient(gobject.GObject):
 
         # FIXME: these should perhaps be merged.
         self._clipboard_helper = ClipboardProtocolHelper(self.send)
-        self._client_extras = ClientExtras(self.send)
+        self._client_extras = ClientExtras(self.send, pulseaudio)
 
         self._focused = None
 
