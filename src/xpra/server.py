@@ -29,7 +29,8 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,
                                xtest_fake_button,
                                is_override_redirect, is_mapped,
                                add_event_receiver,
-                               get_children)
+                               get_children,
+                               has_randr, get_screen_sizes, set_screen_size)
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
