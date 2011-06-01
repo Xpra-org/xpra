@@ -210,7 +210,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, password_file):
+    def __init__(self, clobber, sockets, password_file, pulseaudio):
         gobject.GObject.__init__(self)
         
         # Do this before creating the Wm object, to avoid clobbering its
@@ -299,6 +299,8 @@ class XpraServer(gobject.GObject):
 
         self.password_file = password_file
         self.salt = None
+
+        self.pulseaudio = pulseaudio
 
         ### All right, we're ready to accept customers:
         for sock in sockets:
@@ -606,12 +608,13 @@ class XpraServer(gobject.GObject):
                     self._xsettings_manager = XSettingsManager(v)
                 elif k == "resource-manager":
                     root_set("RESOURCE_MANAGER")
-                elif k == "pulse-cookie":
-                    root_set("PULSE_COOKIE")
-                elif k == "pulse-id":
-                    root_set("PULSE_ID")
-                elif k == "pulse-server":
-                    root_set("PULSE_SERVER")
+                elif self.pulseaudio:
+                    if k == "pulse-cookie":
+                        root_set("PULSE_COOKIE")
+                    elif k == "pulse-id":
+                        root_set("PULSE_ID")
+                    elif k == "pulse-server":
+                        root_set("PULSE_SERVER")
 
     def _process_map_window(self, proto, packet):
         (_, id, x, y, width, height) = packet

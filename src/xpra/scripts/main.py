@@ -71,6 +71,9 @@ def main(script_file, cmdline):
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
+    parser.add_option("--no-pulseaudio", action="store_false",
+                      dest="pulseaudio", default=True,
+                      help="Disable pulseaudio support via X11 root window properties")
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
