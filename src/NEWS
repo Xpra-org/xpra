@@ -1,7 +1,10 @@
-v0.0.7.x
+v0.0.7.16 (2010-08-25)
 ==================
 Lots of new features and options.
+	-- Password file support
+	-- Ability to disable pulseaudio and clipboard code
 	-- Better OSX/win32 support
+	-- JPEG compression
 	-- Lots of small fixes
 
 
