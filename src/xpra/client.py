@@ -303,7 +303,7 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard, opts):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
