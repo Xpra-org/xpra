@@ -96,7 +96,7 @@ setup(
     packages=["wimpiggy", "wimpiggy.lowlevel",
               "parti", "parti.trays", "parti.addons", "parti.scripts",
               "xpra", "xpra.scripts", "xpra.platform",
-              "xpra.xposix", "xpra.win32",
+              "xpra.xposix", "xpra.win32", "xpra.darwin",
               ],
     scripts=["scripts/parti", "scripts/parti-repl",
              "scripts/xpra",
