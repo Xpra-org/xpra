@@ -87,9 +87,11 @@ class ClipboardProtocolHelper(object):
             assert sizeof_short == 16
             format = "@" + "H" * (len(data) // sizeof_short)
             return ("integers", struct.unpack(format, data))
-        else:
-            assert format == 8
+        elif format == 8:
             return ("bytes", data)
+        else:
+            log("unhandled format %s for clipboard data type %s" % (format, type))
+            return (None, None)
 
     def _munge_wire_selection_to_raw(self, encoding, type, format, data):
         if encoding == "bytes":
