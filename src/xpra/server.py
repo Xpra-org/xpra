@@ -458,6 +458,14 @@ class XpraServer(gobject.GObject):
         else:
             assert False
 
+    def _keycodes(self, keyname):
+        keyval = gtk.gdk.keyval_from_name(keyname)
+        entries = self._keymap.get_entries_for_keyval(keyval)
+        keycodes = []
+        for _keycode,_group,_level in entries:
+            keycodes.append(_keycode)
+        return  keycodes
+
     def _keycode(self, keyname, group=0):
         keyval = gtk.gdk.keyval_from_name(keyname)
         entries = self._keymap.get_entries_for_keyval(keyval)
@@ -473,19 +481,33 @@ class XpraServer(gobject.GObject):
         return entries[0][0]
 
     def _make_keymask_match(self, modifier_list):
-        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        current = set(mask_to_names(current_mask, self._modifier_map))
+        #FIXME: we should probably cache the keycode
+        # and clear the cache in _keys_changed
+        def get_current_mask():
+            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+            return  mask_to_names(current_mask, self._modifier_map)
+        current = set(get_current_mask())
         wanted = set(modifier_list)
-        log.debug("current mask: %s, wanted: %s", current, wanted)
-        def fake_key(modifier, press):
-            keyname = self._keyname_for_mod[modifier]
-            keycode = self._keycode(keyname, -1)
-            log.debug("(un)pressing %s modifier=%s, keyname=%s, keycode=%s", press, modifier, keyname, keycode)
-            xtest_fake_key(gtk.gdk.display_get_default(), keycode, press)
+        #print("_make_keymask_match(%s) current mask: %s, wanted: %s\n" % (modifier_list, current, wanted))
+        display = gtk.gdk.display_get_default()
         for modifier in current.difference(wanted):
-            fake_key(modifier, False)
+            keyname = self._keyname_for_mod[modifier]
+            keycodes = self._keycodes(keyname)
+            for keycode in keycodes:
+                xtest_fake_key(display, keycode, False)
+                new_mask = get_current_mask()
+                #print("_make_keymask_match(%s) removed modifier %s using %s: %s" % (modifier_list, modifier, keycode, (modifier not in new_mask)))
+                if modifier not in new_mask:
+                    break
         for modifier in wanted.difference(current):
-            fake_key(modifier, True)
+            keyname = self._keyname_for_mod[modifier]
+            keycodes = self._keycodes(keyname)
+            for keycode in keycodes:
+                xtest_fake_key(display, keycode, True)
+                new_mask = get_current_mask()
+                #print("_make_keymask_match(%s) added modifier %s using %s: %s" % (modifier_list, modifier, keycode, (modifier in new_mask)))
+                if modifier in new_mask:
+                    break
 
     def _focus(self, id):
         if self._has_focus != id:
@@ -737,7 +759,7 @@ class XpraServer(gobject.GObject):
         (_, id, keyname, depressed, modifiers) = packet
         self._make_keymask_match(modifiers)
         self._focus(id)
-        keycode = self._keycode(keyname, 0)
+        keycode = self._keycodes(keyname)[0]
         log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
         xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
 
