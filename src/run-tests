@@ -1,0 +1,13 @@
+#!/bin/sh
+
+./do-build
+
+#RUNNER="valgrind python"
+#RUNNER="gdb --args python"
+#RUNNER="pydb --trace"
+RUNNER=python
+$RUNNER "-Wignore:could not open display" \
+  ./yatest.py -p install/lib/python/wimpiggy \
+              -p install/lib/python/parti \
+              -p install/lib/python/xpra \
+              "$@"

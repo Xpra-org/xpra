@@ -1,0 +1,193 @@
+# This file is part of Parti.
+# Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
+# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+## This file is processed by make-constants-pxi.py to create a .pxi
+## file for inclusion in parti.wrapped.pyx, like so:
+##   python make-constants-pxi.py parti/parti.wrapped.const.txt parti/parti.wrapped.const.pxi
+## ATM, this must be done by hand, because distutils is so annoying to
+## hack on.
+##
+## The resulting .pxi file will make all the constants available to
+## Pyrex code under their own names, and also create a python-exposed
+## dictionary through which the constants can be accessed like
+## const["CurrentTime"].
+##
+## FIXME: Really this functionality should be in Pyrex; it seems like
+## half the work I ever do in Pyrex is to get constants defined in a C
+## header into something Python-accessible.
+
+# General-purpose X constants
+XNone "None"
+PointerWindow
+InputFocus
+PointerRoot
+CurrentTime
+
+# Map states
+IsUnmapped
+IsUnviewable
+IsViewable
+
+# Event mask flags
+NoEventMask
+KeyPressMask
+KeyReleaseMask
+ButtonPressMask
+ButtonReleaseMask
+EnterWindowMask
+LeaveWindowMask
+PointerMotionMask
+PointerMotionHintMask
+Button1MotionMask
+Button2MotionMask
+Button3MotionMask
+Button4MotionMask
+Button5MotionMask
+ButtonMotionMask
+KeymapStateMask
+ExposureMask
+VisibilityChangeMask
+StructureNotifyMask
+ResizeRedirectMask
+SubstructureNotifyMask
+SubstructureRedirectMask
+FocusChangeMask
+PropertyChangeMask
+ColormapChangeMask
+OwnerGrabButtonMask
+
+# Event types
+KeyPress
+KeyRelease
+ButtonPress
+ButtonRelease
+MotionNotify
+EnterNotify
+LeaveNotify
+FocusIn
+FocusOut
+KeymapNotify
+Expose
+GraphicsExpose
+NoExpose
+VisibilityNotify
+CreateNotify
+DestroyNotify
+UnmapNotify
+MapNotify
+MapRequest
+ReparentNotify
+ConfigureNotify
+ConfigureRequest
+GravityNotify
+ResizeRequest
+CirculateNotify
+CirculateRequest
+PropertyNotify
+SelectionClear
+SelectionRequest
+SelectionNotify
+ColormapNotify
+ClientMessage
+MappingNotify
+LASTEvent
+
+# Property modification types
+PropModeReplace
+PropModePrepend
+PropModeAppend
+
+# XWindowChanges/XConfigureWindow field flags
+CWX
+CWY
+CWWidth
+CWHeight
+CWBorderWidth
+CWSibling
+CWStackMode
+
+# Stacking codes
+Above
+Below
+BottomIf
+TopIf
+Opposite
+
+# Protocol error codes
+Success
+BadRequest
+BadValue
+BadWindow
+BadPixmap
+BadAtom
+BadCursor
+BadFont
+BadMatch
+BadDrawable
+BadAccess
+BadAlloc
+BadColor
+BadGC
+BadIDChoice
+BadName
+BadLength
+BadImplementation
+
+FirstExtensionError
+LastExtensionError
+
+# WM_NORMAL_HINTS (WM_SIZE_HINTS) flags
+USPosition
+USSize
+PPosition
+PSize
+PMinSize
+PMaxSize
+PResizeInc
+PAspect
+PBaseSize
+PWinGravity
+
+# WM_HINTS flags
+InputHint
+StateHint
+IconPixmapHint
+IconWindowHint
+IconPositionHint
+IconMaskHint
+WindowGroupHint
+XUrgencyHint
+
+# Window state
+WithdrawnState
+NormalState
+IconicState
+
+# XSetInputFocus
+RevertToParent
+RevertToPointerRoot
+RevertToNone
+
+# Focus events: modes
+NotifyNormal
+NotifyGrab
+NotifyUngrab
+# Focus events: details
+NotifyAncestor
+NotifyVirtual
+NotifyInferior
+NotifyNonlinear
+NotifyNonlinearVirtual
+NotifyPointer
+NotifyPointerRoot
+NotifyDetailNone
+
+# Grab modes
+GrabModeSync
+GrabModeAsync
+
+# Special grab codes
+AnyKey
+AnyModifier

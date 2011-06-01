@@ -1,0 +1,47 @@
+Notes on implementing the composite stuff ourselves if necessary:
+
+need xdamage, composite, xfixes.  we can be lazy about checking for
+these because any recent gdk will do it automatically on every
+connection anyway...
+
+need to call XDamageQueryExtension to get the error base, if nothing
+else.
+
+so anyway, for each window, we:
+  enable compositing (or alternatively enable subcompositing on root,
+    which will also catch override-redirect windows, and un-enable it
+    on the world window, or just reparent the world window to the
+    composite overlay window, except I don't think the composite
+    overlay window has any affect anymore)
+  for each composited window, create a DAMAGE object with mode
+    DamageReportDeltaRectangles
+  listen for DamageNotify events on that window (check the ->damage
+    field to make sure they're *our* damage object)
+  use XFixes/DamageSubtract to accept the damage from the server (see
+    gdkevents-x11.c for incantation)
+
+  when the window goes away, call DamageDestroy
+
+Questions for Keith:
+  -- do DAMAGE objects get automatically cleaned up when a window is
+     destroyed, or do we have to do that ourselves?
+     -- yes, they get cleaned up
+  -- can I unredirect a single child window while subwindow
+     redirection is in effect?
+     -- yes
+  -- ...exact rules for NameWindowPixmap?
+     -- see #xorg-devel log
+  -- does reparenting affect composite status?
+     -- unmapping does not.  reparenting, keith isn't sure what
+        happens.
+  -- what's up with the coordinate transformation stuff?  (which is
+     currently still all over the protocol spec?)
+
+In GTK:
+  there should be a way to turn on automatic compositing, not just
+    manual, for live thumbnails etc.
+  GTK uses damage mode DamageReportBoundingBox which is silly, it
+    should be using DamageReportDeltaRectangles.
+  NameWindowPixmap should, perhaps, be exposed.  (Esp. if it works
+    around X server bugs.)
+  damage should be reported as damage, not as exposures

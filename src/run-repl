@@ -1,0 +1,11 @@
+#!/bin/sh
+
+. ./do-build
+
+#gdb --args /usr/bin/python
+#/usr/bin/nosetests -w install/lib/python/parti "$@"
+#py.test install/lib/python "$@"
+export PYTHONPATH=$PWD/install/lib/python:$PYTHONPATH
+export PATH=$PWD/install/bin:$PATH
+cd install  # to get away from ./parti
+python /usr/bin/ipython

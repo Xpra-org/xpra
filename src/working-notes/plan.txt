@@ -1,0 +1,60 @@
+basic window managing:
+  substructureredirect
+  save set handling
+  detect clients on startup
+  manage clients as they arrive
+  
+"manage client": keep track of windows, get them on the screen and
+decorated, track their hints and modify their properties
+manage world properties (like desktop geometries)
+
+for basic usability, need:
+  gnome-panel, epiphany, gnome-terminal, emacs, ideally amarok,
+  xephyr
+    -> arbitrarily resizeable windows, "arithmetic progression"
+    windows (emacs and terminals), STRUT support, fixed-size windows
+    (Xephyr)
+
+
+
+eventual architecture: viewport/tray split
+  each tray has a layout manager, which is stateful
+
+layout manager:
+  responsible for drawing screen
+  can take in a new window
+
+
+
+"make window visible" -- if it is somewhere in the current tray, make
+it visible.  else if it is visible on some other tray, make that tray
+visible.  else of all the trays it is on, find the one where it would
+be the largest if it became visible, 
+
+maybe we should distinguish windows and "window instances" or
+something, 1-many relationship, to get a nice way to talk about this.
+Could even have a systematic naming scheme
+
+
+overall strategy:
+  virtual roots, one per tray -- we want everything mapped, trading
+  off memory for compositing visibility ("expose for desktops")
+
+
+
+widgets:
+  show all desktops (direct manipulation to rearrange)
+  show all windows on current desktop?  (same UI?)
+  "go to window": find-as-type, show live previews underneath of the
+    options -- ido-mode with pictures?  (why only windows, for that
+    matter -- make it desktop switcher too, or even app launcher...)
+    perhaps set operations too -- "make workspace from visible"
+  fast switching to highlighted apps
+  ipython-inna-window
+
+
+inspirations:
+  ion, wmii
+  tabbed browser modes
+  emacs (esp. iswitchb, ido, minibuffer?)
+  expose'

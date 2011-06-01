@@ -1,0 +1,35 @@
+0) ./run-tests
+
+1) Write user-readable notes at the top of the NEWS file, summarizing
+   important/user-visible changes.
+
+2) Update version numbers in:
+     NEWS
+     xpra/__init__.py,
+     wimpiggy/__init__.py
+     parti/__init__.py
+
+3) Double-check setup.py
+
+3.5) Make sure that 'xpra upgrade' works.
+
+4) python setup.py sdist
+
+5) Unpack dist/parti-all-<whatever>
+
+6) ./run-tests in the unpacked tarball
+
+7) scp <tarball> roberts.vorpus.org:~parti/web/static/downloads
+
+8) Update http://partiwm.org frontpage
+
+9) Update #parti topic.
+
+10) Tag and push the tag.
+
+11) Send release announcement to:
+      parti-discuss@partiwm.org
+      lwn@lwn.net
+    Post release announcement to:
+      freshmeat.net
+      pypi.python.org

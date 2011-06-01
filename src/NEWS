@@ -1,0 +1,184 @@
+v0.0.6 (2009-03-22)
+===================
+
+Xpra:
+  New features:
+    -- Clipboard sharing (with full X semantics).
+    -- Icon support.
+    -- Support for raw TCP sockets. (This is horrendously insecure in
+       most contexts, but provided for certain use cases -- like some
+       virtualization environments -- where the network is wholly
+       trusted and ssh tunneling creates too much overhead. The
+       built-in ssh tunneling support is still the recommended
+       approach.) (Thanks to Antoine Martin.)
+
+  Bug fixes:
+    -- Xvfb doesn't support mouse wheels, so they still don't work in
+       xpra. But now xpra doesn't crash if you try.
+    -- Running FSF Emacs under xpra no longer creates an infinite loop.
+    -- The directory that xpra was launched from is now correctly
+       saved in ~/.xpra/run-xpra.
+    -- Work around PyGtk weirdness that caused the server and client
+       to sometimes ignore control-C.
+    -- The client correctly notices keyboard layout changes.
+    -- The client no longer crashes on keymaps in which unnamed keys
+       are bound to modifiers.
+    -- Workarounds are included for several buggy versions of Pyrex.
+
+Wimpiggy:
+  -- Assume that EWMH-style icons have non-premultiplied alpha.
+
+Other:
+  -- Add copyright comments to all source files.
+
+v0.0.5 (2008-11-02)
+===================
+
+This release primarily contains cleanups and bugfixes for xpra.
+
+General:
+  -- Logging cleanup -- all logging now goes through the Python
+     logging framework instead of using raw 'prints'.  By default
+     debug logging is suppressed, but can be enabled in a fine- or
+     coarse-grained way.
+
+Xpra:
+  -- Protocol changes; v0.0.5 clients can only be used with v0.0.5
+     servers, and vice-versa.  Use 'xpra upgrade' to upgrade old
+     servers without losing your session state.
+  -- Man page now included.
+  Important bug fixes:
+  -- Qt apps formerly could not receive keyboard input due to a focus
+     handling bug; now fixed.
+  -- Fedora's pygtk2 has mysterious local hacks that broke xpra;
+     a workaround is now included.
+  UI improvements:
+  -- 'xpra attach ssh:machine' now works out-of-the-box even if xpra
+     is not present in the remote machine's PATH, or requires
+     PYTHONPATH tweaks, or whatever.  (The server does still need to
+     be running on the remote machine, though, of course.)
+  -- Commands that connect to a running xpra server ('attach', 'stop',
+     etc.) now can generally be used without specifying the name of
+     the server, assuming only one server is running.  (E.g., instead
+     of 'xpra attach :10', you can use 'xpra attach'; ditto for remote
+     hosts, you can now use plain 'xpra attach ssh:remote'.)
+  -- Mouse scroll wheels now supported.
+  -- 'xpra start' can now spawn child programs directly (--with-child)
+     and exit automatically when these children have exited
+     (--exit-with-children).
+  Other:
+  -- More robust strategy for handling window stacking order.
+     (Side-effect: the xpra client no longer requires you to be using
+     an EWMH-compliant window manager.)
+  -- The xpra client no longer crashes when receiving an unknown key
+     event (e.g. a multimedia key).
+  -- Very brief transient windows (e.g., tooltips) no longer create
+     persistent "litter" on the screen.
+  -- Windows with non-empty X borders (e.g., xterm popup menus) are
+     now handled properly.
+  -- Withdrawn windows no longer reappear after 'xpra upgrade'.
+
+Wimpiggy:
+  -- Do not segfault when querying the tree structure of destroyed
+     windows.
+  -- Other bugfixes.
+
+Parti:
+  -- No changes.
+
+v0.0.4 (2008-04-04)
+===================
+
+Xpra:
+  -- Protocol changes break compatibility with 0.0.3, but:
+  -- New command 'xpra upgrade', to restart/upgrade an xpra server
+     without losing any client state.  (Won't work when upgrading from
+     0.0.3, unfortunately, but you're covered going forward.)
+  -- Fix bug that left stray busy-looping processes behind on server
+     when using ssh connections.
+  -- Export window class/instance hints (patch from Ethan Blanton).
+  -- Hack to make backspace key work (full support for keyboard maps
+     still TBD).
+  -- Added discussion of xmove to README.xpra.
+
+Wimpiggy:
+  -- Make compatible with current Pyrex releases (thanks to many
+     people for reporting this).
+  -- Work around X server bug #14648 (thanks to Ethan Blanton for help
+     tracking this down).  This improves speed dramatically.
+  -- Reverse-engineer X server lifetime rules for NameWindowPixmap,
+     and handle it properly.  Also handle it lazily.  This fixes the
+     bug where window contents stop updating.
+  -- Avoid crashing when acknowledging damage against an
+     already-closed window.
+  -- Improve server extension checking (thanks to 'moreilcon' for the
+     report).
+  -- Remove spurious (and harmless) assertion messages when a window
+     closes.
+  -- Make manager selection handling fully ICCCM-compliant (in
+     particular, we now pause properly while waiting for a previous
+     window manager to exit).
+  -- Make algorithm for classifying unmapped client windows fully
+     correct.
+  -- Reduce required version of Composite extension to 0.2.
+
+Parti:
+  -- Remove a stale import that caused a crash at runtime (thanks to
+     'astronouth7303' for the report).
+
+General:
+  -- Error out build with useful error message if required packages
+     are missing.
+
+Parti 0.0.3 (2008-02-20)
+========================
+
+Massive refactoring occurred for this release.
+
+wimpiggy: The WM backend parts of Parti have been split off into a
+separate package known as wimpiggy.  As compared to the corresponding
+code in 0.0.2, wimpiggy 0.0.3 adds:
+  -- Compositing support
+  -- Model/view separation for client windows (based on compositing
+     support)
+  -- Improved client hint support, including icon handling, strut
+     handling, and more correct geometry handling.
+  -- Keybinding support
+  -- Event dispatching that doesn't leak memory
+  -- Better interaction with already running window managers (i.e., a
+     --replace switch as seen in metacity etc.)
+
+parti: This package will eventually become the real window manager,
+but for now is essentially a testbed for wimpiggy.
+
+xpra: This is a new, independent program dependent on wimpiggy (which
+is why wimpiggy had to be split out).  It implements 'screen for X' --
+letting one run applications remotely that can be detached and then
+re-attached without losing state.  This is the first release, but
+while not perfect, it is substantially usable.
+
+general: The test runner was hacked to share a single X/D-Bus session
+across multiple tests.  This speeds up the test suite by a factor of
+~3, but seems to be buggy and fragile and may be reverted in the
+future.
+
+Parti 0.0.2 (2007-10-26)
+========================
+
+This release adds a mostly comprehensive test suite, plus fixes a lot
+of bugs.  Still only useful for experimentation and hacking.
+
+'python setup.py sdist' sort of works now.
+
+Parti 0.0.1 (2007-08-10)
+========================
+
+Initial release.
+
+Contains basic window manager functionality, including a fair amount
+of compliance to ICCCM/EWMH, focus handling, etc., and doesn't seem to
+crash in basic testing.
+
+Doesn't do much useful with this; only a simple placeholder layout
+manager is included, and only skeleton of virtual desktop support is
+yet written.

@@ -1,0 +1,9 @@
+include COPYING NEWS README* *.1
+include do-* run-* try-parti
+include wimpiggy/lowlevel/constants.pxi
+recursive-include working-notes *
+global-include *.py *.txt
+global-exclude *~ #*
+prune build
+prune dist
+prune install

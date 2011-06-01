@@ -1,0 +1,83 @@
+FAQ for wimpiggy
+================
+
+What is wimpiggy?
+-----------------
+
+It's a library to make writing fancypants, EWMH-compliant, compositing
+window managers just as easy as writing an app in PyGTK+.
+
+
+It's called... wimpiggy?
+------------------------
+
+Yeah.
+
+
+Wimpiggy?  seriously?
+---------------------
+
+You come up with a better word containing all of the magic letters
+"wm", "py" and "g".
+
+
+Well, okay... how do I use it?
+------------------------------
+
+# Simple WM that simply puts all windows into tabs.
+# Last updated/tested for 0.0.3 release
+import gtk
+from optparse import OptionParser
+from wimpiggy.wm import Wm
+from wimpiggy.window import WindowView
+
+class DemoWm(object):
+    def __init__(self, replace_other_wm):
+        self._wm = Wm("DemoWm", replace_other_wm)
+        self._wm.connect("new-window", self._new_window)
+        self._wm.connect("quit", self._quit)
+
+        self._notebook = gtk.Notebook()
+        self._wm.get_property("toplevel").add(self._notebook)
+        self._notebook.show()
+
+        self._model_to_view = {}
+
+        # Load in any applications that were already running:
+        for window in self._wm.get_property("windows"):
+            self._add_new_window(window)
+
+    def _new_window(self, wm, window):
+        self._add_new_window(window)
+
+    def _quit(self, *args):
+        gtk.main_quit()
+
+    def _add_new_window(self, window):
+        window.connect("unmanaged", self._lost_window)
+        view = WindowView(window)
+        self._model_to_view[window] = view
+        self._notebook.append_page(view)
+        self._notebook.set_tab_reorderable(view, True)
+        window.connect("notify::title", self._title_change)
+        self._title_change(window)
+        view.show()
+        view.grab_focus()
+
+    def _lost_window(self, window, wm_is_quitting):
+        view = self._model_to_view[window]
+        del self._model_to_view[window]
+        self._notebook.remove_page(self._notebook.page_num(view))
+
+    def _title_change(self, window, *args):
+        view = self._model_to_view[window]
+        self._notebook.set_tab_label_text(view, window.get_property("title"))
+
+if __name__ == "__main__":
+    parser = OptionParser()
+    parser.add_option("--replace", action="store_true",
+                      dest="replace", default=False,
+                      help="Replace already running WM")
+    (options, args) = parser.parse_args()
+    wm = DemoWm(options.replace)
+    gtk.main()

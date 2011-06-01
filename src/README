@@ -1,0 +1,18 @@
+Parti project README
+====================
+
+Hi, welcome to Parti.  The overall goal of this project is to create a
+modern, tabbing/tiling window manager.  It got a little distracted, so
+now there are actually three conceptually-independent projects in this
+tree:
+
+wimpiggy: A library for writing window managers, used by both of the
+  next two items.
+
+parti: The above-mentioned window manager, currently in
+  proof-of-concept form.
+
+xpra: "X Persistent Remote Applications" -- think 'screen for X'.
+  Currently beta status.
+
+See the README.<project> for more details about each.

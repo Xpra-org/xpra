@@ -1,0 +1,317 @@
+.\" Man page for xpra
+.\"
+.\" Copyright (C) 2008-2009 Nathaniel Smith <njs@pobox.com>
+.\"
+.\" You may distribute under the terms of the GNU General Public
+.\" license, either version 2 or (at your option) any later version.
+.\" See the file COPYING for details.
+.\"
+.TH XPRA 1
+.SH NAME
+xpra \- viewer for remote, persistent X applications
+.\" --------------------------------------------------------------------
+.SH SYNOPSIS
+.PD 0
+.HP \w'xpra\ 'u
+\fBxpra\fP \fBstart\fP \fI:DISPLAY\fP
+[\fB\-\-start\-child=CHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
+[\fB\-\-xvfb=CMD\fP]
+[\fB\-\-bind\-tcp=[HOST]:PORT\fP] 
+.HP
+\fBxpra\fP \fBattach\fP
+[\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
+[\fB\-zLEVEL | \-\-compress=LEVEL\fP]
+[\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+.HP
+\fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+.HP
+\fBxpra\fP \fBlist\fP
+.HP
+\fBxpra\fP \fBupgrade\fP \fI:DISPLAY\fP [...any options accepted by
+\fBxpra start\fP...]
+.PD
+.\" --------------------------------------------------------------------
+.SH DESCRIPTION
+Xpra is a tool which allows you to run X programs \(em usually on a
+remote host \(em and then direct their display to your local machine,
+disconnect from these programs, and reconnect from the same or another
+machine, all without losing any state.  It differs from standard X
+forwarding in that it allows disconnection and reconnection without
+disrupting the forwarded application; it differs from VNC and similar
+remote display technologies in that xpra is \fIrootless\fP: i.e.,
+applications forwarded by xpra appear on your desktop as normal
+windows managed by your window manager, rather than being all "trapped
+in a box together".  Xpra also uses a custom protocol that is
+self-tuning and relatively latency-insensitive, and thus is usable
+over network connections that are too slow or unreliable for standard
+X forwarding.
+.\" --------------------------------------------------------------------
+.SH EXAMPLES
+.TP \w'xpra\ 'u
+\fBxpra start\fP \fI:7\fP
+Start an xpra server using display number \fI:7\fP.
+.TP
+\fBDISPLAY=\fP\fI:7 firefox\fP
+Start \fIfirefox\fP running inside the xpra server.  No window will
+appear.
+.TP
+\fBxpra list\fP
+Show a list of xpra servers you have running on the current host.
+.TP
+\fBxpra attach\fP \fI:7\fP
+Attach to the xpra server that is using local display number \fI:7\fP.
+Any apps running on that server will appear on your screen.
+.TP
+\fBxpra attach\fP \fIssh:frodo:7\fP
+Use ssh to attach to the xpra server that is running on machine
+\fIfrodo\fP and using display \fI:7\fP.  Any apps running on that
+server will appear on your local screen.
+.TP
+\fBxpra start\fP \fI:7\fP \fB&& DISPLAY=\fP\fI:7\fP \fBscreen\fP
+Start an xpra server and a \fBscreen\fP(1) session.  If any of the
+applications inside screen attempt to use X, they will be directed to
+the xpra server.
+.\" --------------------------------------------------------------------
+.SH DISPLAYS
+Understanding the basic idea of displays is critical to using xpra
+successfully.
+
+The idea comes from standard X.  If you have multiple X servers
+running on the same host, then there has to be some way to distinguish
+them.  X does this by assigning each server a small, unique integer
+called (perhaps confusingly) its "display".  In the common case of a
+desktop machine that has only one X server running, that server uses
+display ":0" (or sometimes you'll see ":0.0", which is effectively the
+same).  When an application starts under X, it needs to know how to
+find the right X server to use; it does this by checking the
+environment variable \fB$DISPLAY\fP.
+
+Xpra faces a similar problem \(em there may be multiple xpra servers
+running on the same host, as well as well as multiple X servers.  It
+solves this problem by re-using X's solution \(em each xpra server has
+a display associated with it.  This display functions as both an X
+display (for when xpra is talking to X applications) and as an
+identifier by which xpra clients (like \fBxpra attach\fP) can locate
+the xpra server.
+
+When starting an xpra server, you must specify the name of the display
+to use.  To do this, simply pick any number you like and stick a colon
+in front of it. For instance :7, :12, and :3117 are all valid display
+names.  Just keep in mind that:
+.IP \(bu
+Every X or xpra server that is running on a single machine must use a
+different display name.  If you pick a number that is already in use
+then xpra will not work.
+.IP \(bu
+The first few numbers (0, 1, 2) are commonly used by real X servers.
+.IP \(bu
+Everyone who connects to a given machine using \fBssh\fP(1) with X
+forwarding enabled will also use a display number; ssh generally picks
+numbers near ten (10, 11, 12, ...).
+.PP
+When specifying an xpra server to a client program like \fBxpra
+attach\fP or \fBxpra stop\fP, then you can use a display of the form
+\fB:\fP\fINUMBER\fP to refer to a server on the local host, or one of
+the form \fBssh:\fP\fIHOST\fP\fB:\fP\fINUMBER\fP to refer to a server
+on a remote host; xpra will automatically connect to the remote host
+using \fBssh\fP(1).  Generally, if you have only one xpra server
+running on a machine, then you can omit the number entirely; \fBxpra
+attach\fP alone will attach to the lone xpra server on the current
+machine regardless of its number, \fBxpra attach ssh:frodo\fP will
+similarly attach to the lone xpra server on a remote machine.
+
+If the xpra server was given the \fB\-\-bind\-tcp\fP option when
+started (which is a major security risk, and not recommended!), then
+you can also connect to it using a display of the form
+\fBtcp:HOST:PORT\fP. (Notice that \fBssh:\fP takes an optional
+\fIdisplay\fP number, while \fBtcp:\fP takes a required \fIport\fP
+number.)
+.\" --------------------------------------------------------------------
+.SH SUBCOMMANDS
+.SS xpra start
+This command starts a new xpra server, including any necessary setup.
+.SS xpra attach
+This command attachs to a running xpra server, and forwards any
+applications using that server to appear on your current screen.
+.SS xpra stop
+This command attachs to a running xpra server, and requests that it
+terminate immediately.  This generally causes any applications using
+that server to terminate as well.
+.SS xpra list
+This command finds all xpra servers that have been started by the
+current user on the current machine, and lists them.
+.SS xpra upgrade
+This command starts a new xpra server, but instead of creating it from
+scratch, it attaches to another existing server, tells it to exit, and
+takes over managing the applications that it was managing before.  As
+the name suggests, the main use case is to replace a server running
+against an older version of xpra with a newer version, without having
+to restart your session.  Any currently-running \fBxpra attach\fP
+command will exit and need to be restarted.
+.\" --------------------------------------------------------------------
+.SH OPTIONS
+.SS General options
+.TP
+\fB\-\-version\fP
+Displays xpra's version number.
+.TP
+\fB\-h, \-\-help\fP
+Displays a summary of command line usage.
+.TP
+\fB\-d\fP \fIFILTER1,FILTER2,...\fP, \fB\-\-debug=\fP\fIFILTER1,FILTER2,...\fP
+Enable debug logging.  The special value \fBall\fP enables all
+debugging; alternatively, debugging logs for particular subsystems can be
+enabled by specifying one or more filters (separated by commas).  In
+general, check the source to determine filter names \(em but they will
+look something like \fBxpra.protocol.raw\fP or \fBwimpiggy\fP
+(wimpiggy is the name of one of xpra's underlying libraries).  A
+filter like \fBxpra.protocol.raw\fP is more specific than one like
+\fBxpra.protocol\fP. Additionally, logging can be disabled for a
+specific subsystem by prefixing a minus sign to its name, like so:
+\fB\-\-debug=all,-wimpiggy\fP.
+.SS Options for start, upgrade
+.TP
+\fB\-\-start\-child=\fP\fICMD\fP
+After starting the server, runs the command \fICMD\fP using the
+default shell.  The command is run with its $DISPLAY set to point to
+the newly-started server.  This option may be given multiple times to
+start multiple children.
+.TP
+\fB\-\-exit\-with\-children\fP
+This option may only be used if \fB\-\-start\-child\fP is also
+given.  If it is given, then the xpra server will monitor the status
+of the children started by \fB\-\-start\-child\fP, and will
+automatically terminate itself when the last of them has exited.
+.TP
+\fB\-\-no\-daemon\fP
+By default, the xpra server puts itself into the background,
+i.e. 'daemonizes', and redirects its output to a log file.  This
+prevents that behavior (useful mostly for debugging).
+.TP
+\fB\-\-xvfb\fP\fICMD\fP
+When starting the server, xpra starts a virtual X server to run the
+clients on. By default, this is 'Xvfb'. If your Xvfb is installed in a
+funny location, or you want to use some other virtual X server, then
+this switch allows you to specify how to run your preferred X server
+executable.
+.TP
+\fB\-\-bind\-tcp=\fP\fI[HOST]:PORT\fP
+The xpra server always listens for connections on a local Unix domain
+socket, and supports local connections with the \fB:7\fP-style display
+address, and remote connections with the \fBssh:frodo:7\fP-style
+display address. If you want, it can also listen for connections on a
+raw TCP socket. This behavior is enabled with \fB\-\-bind-\-tcp\fP. If
+the host portion is omitted, then 127.0.0.1 (localhost) will be
+used. If you wish to accept connections on all interfaces, pass
+0.0.0.0 for the host portion.
+
+Using this switch is NOT RECOMMENDED, and is a major security risk
+(especially when passing 0.0.0.0)!  Xpra does not do any checking on
+incoming connections; anyone at all may connect to this port and
+access your xpra desktop. Use it only if you have special needs (e.g.,
+certain virtualization environments), and understand the consequences
+of your actions.
+.SS Options for attach, stop
+.TP
+\fB-z\fP\fILEVEL\fP, \fB\-\-compress=\fP\fILEVEL\fP
+Select the level of compression xpra will use when transmitting data
+over the network. Higher levels of compression transmit less data over
+the network, but use more CPU power. Valid options are between 0
+(meaning no compression) and 9, inclusive. Higher levels take
+progressively more CPU while giving diminishing returns in terms of
+actual compression achieved; the default is 3, which gives a
+reasonable trade-off in general. Over local 100Mbs+ networks the CPU
+can easily become the bottleneck on xpra's speed, and \fB\-z0\fP is
+therefore recommended.
+.TP
+\fB\-\-ssh=\fP\fICMD\fP
+When you use an \fBssh:\fP address to connect to a remote display,
+xpra runs \fBssh\fP(1) to make the underlying connection. By default,
+it does this by running the command "ssh". If your ssh program is in
+an unusual location, has an unusual name, or you want to pass special
+options to change ssh's behavior, then you can use the \fB\-\-ssh\fP
+switch to tell xpra how to run ssh. For example, if you want to use
+arcfour encryption, then you should run
+
+.\" I'm sure this is completely the wrong thing to do here, but it
+.\" produces fine output in the terminal, at least:
+.RS
+.RS
+\fBxpra attach \-\-ssh="ssh -c arcfour" ssh:frodo:7\fP
+
+.RE
+(\fINote:\fP don't bother to enable ssh compression; this
+is redundant with xpra's own compression, and will just waste your
+CPU. See also xpra's \fB\-\-compress\fP switch.)
+.RE
+.TP
+\fB\-\-remote\-xpra=\fP\fICMD\fP
+When connecting to a remote server over ssh, xpra needs to be able to
+find and run the xpra executable on the remote host.  If this
+executable is in a non-standard location, or requires special
+environment variables to be set before it can run, then accomplishing
+this may be non-trivial.  If running \fBxpra attach ssh:something\fP
+fails because it cannot find the remote xpra, then you can use this
+option to specify how to run xpra on the remote host.
+
+That said, this option should not be needed in normal usage, as xpra
+tries quite hard to work around the above problems.  If you find
+yourself needing it often, then that may indicate a bug that we would
+appreciate hearing about.
+.\" --------------------------------------------------------------------
+.SH ENVIRONMENT
+.TP
+\fBDISPLAY\fP
+\fBxpra start \-\-start-child=...\fP sets this variable in the
+environment of the child to point to the xpra display.
+
+\fBxpra attach\fP, on the other hand, uses this variable to determine
+which display the remote applications should be shown on.
+.\" --------------------------------------------------------------------
+.SH FILES
+Xpra uses the directory \fI~/.xpra\fP to store a number of files.
+.TP
+\fI~/.xpra/:7\fP
+The unix domain socket that clients use to contact the xpra server.
+.TP
+\fI~/.xpra/:7.log\fP
+When run in daemon mode (the default), the xpra server directs all
+output to this file.  This includes all debugging output, if debugging
+is enabled.
+.TP
+\fI~/.xpra/run-xpra\fP
+A shell script that, when run, starts up xpra with the correct python
+interpreter, PYTHONPATH, PATH, location of the main xpra script, etc.
+Automatically generated by \fBxpra start\fP and used by \fBxpra
+attach\fP (see also the discussion of \fB\-\-remote\-xpra\fP).
+.\" --------------------------------------------------------------------
+.SH BUGS
+Xpra has no test suite.
+
+Xpra does not fully handle all aspects of the X protocol; for
+instance, as of March 2009 it does not yet forward custom cursors,
+beeps, fancy input features like pressure-sensitivity on tablets, some
+window manager hints, and probably other more obscure parts of the X
+protocol.  It does, however, degrade gracefully, and patches for each
+feature would be gratefully accepted.
+
+The mapping between local and remote keyboard events is not very
+robust; in particular, it is possible in some situations for modifier
+keys to get "stuck" in xpra, and it is usually impossible to type
+characters outside of the standard US keyboard range.
+
+The xpra server allocates an over-large framebuffer; this wastes
+memory, and can cause applications to misbehave (e.g., by letting
+menus go off-screen).  Conversely, if the framebuffer is ever
+insufficiently large, clients will misbehave in other ways (e.g.,
+input events will be misdirected).
+
+The need to choose display numbers by hand is annoying.
+.\" --------------------------------------------------------------------
+.SH REPORTING BUGS
+Send any questions or bugs reports to <parti-discuss@partiwm.org>.
+.\" --------------------------------------------------------------------
+.SH SEE ALSO
+\fBscreen\fP(1)
