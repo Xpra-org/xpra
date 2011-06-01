@@ -512,13 +512,23 @@ class XpraServer(gobject.GObject):
                                             min(client_h, root_h)]
         return capabilities
 
+    def version_no_minor(self, version):
+        if not version:
+            return    version
+        p = version.rfind(".")
+        if p>0:
+            return version[:p]
+        else:
+            return version
+
     def _process_hello(self, proto, packet):
         (_, client_capabilities) = packet
         log.info("Handshake complete; enabling connection")
         capabilities = self._calculate_capabilities(client_capabilities)
-        if capabilities.get("__prerelease_version") != xpra.__version__:
+        remote_version = capabilities.get("__prerelease_version")
+        if self.version_no_minor(remote_version) != self.version_no_minor(xpra.__version__):
             log.error("Sorry, this pre-release server only works with clients "
-                      + "of exactly the same version (v%s)", xpra.__version__)
+                      + "of the same major version (v%s), but this client is using v%s", xpra.__version__, remote_version)
             proto.close()
             return
         # Okay, things are okay, so let's boot out any existing connection and

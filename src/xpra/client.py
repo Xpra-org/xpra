@@ -326,13 +326,22 @@ class XpraClient(gobject.GObject):
     def send_mouse_position(self, packet):
         self._protocol.source.queue_mouse_position_packet(packet)
 
+    def version_no_minor(self, version):
+        if not version:
+            return    version
+        p = version.rfind(".")
+        if p>0:
+            return version[:p]
+        else:
+            return version
+
     def _process_hello(self, packet):
         (_, capabilities) = packet
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
-        if capabilities.get("__prerelease_version") != xpra.__version__:
-            log.error("sorry, I only know how to talk to v%s servers",
-                      xpra.__version__)
+        remote_version = capabilities.get("__prerelease_version")
+        if self.version_no_minor(remote_version) != self.version_no_minor(xpra.__version__):
+            log.error("sorry, I only know how to talk to v%s.x servers", self.version_no_minor(xpra.__version__))
             gtk.main_quit()
             return
         if "desktop_size" in capabilities:
