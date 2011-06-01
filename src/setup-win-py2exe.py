@@ -2,36 +2,39 @@ from distutils.core import setup
 import py2exe
 
 setup(
-    name = 'xpra',
+    name = 'Xpra',
     description = 'screen for X',
-    version = '0.0.7.9',
+    version = '0.0.7.18',
 
     windows = [
                   {
                       'script': 'xpra/scripts/client_launcher.py',
                       'icon_resources': [(1, "xpra.ico")],
+					  "dest_base": "Xpra-Launcher",
                   },
-                  {
-                      'script': 'xpra/scripts/main.py',
-                      'icon_resources': [(1, "xpra.ico")],
-                  }
-              ],
-
-#    console = [
 #                  {
 #                      'script': 'xpra/scripts/main.py',
 #                      'icon_resources': [(1, "xpra.ico")],
 #                  }
-#              ],
+              ],
+
+    console = [
+                  {
+                      'script': 'xpra/scripts/main.py',
+                      'icon_resources': [(1, "xpra.ico")],
+					  "dest_base": "Xpra",
+                  }
+              ],
 
     options = {
                   'py2exe': {
                       'packages':'encodings',
-                      'includes': 'cairo, pango, pangocairo, atk, gobject',
+                      'includes': 'cairo, pango, pangocairo, atk, glib, gobject, gio',
+                      'dll_excludes': 'w9xpopen.exe'
                   }
               },
 
     data_files=[
-                   'COPYING'
+                   'COPYING', 'website.url'
                ]
 )

@@ -1,3 +1,7 @@
+xpra 0.0.7.18 DISTRIBUTION; urgency: normal
+	* Add ability to disable clipboard code
+	* Updated man page
+
 xpra 0.0.7.17 DISTRIBUTION; urgency: normal
 	* Honour the pulseaudio flag on client
 
