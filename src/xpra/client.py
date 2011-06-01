@@ -477,7 +477,6 @@ class XpraClient(gobject.GObject):
 
     def _process_new_window(self, packet):
         self._process_new_common(packet, False)
-        self.jpegquality = self.jpegquality + 1
 
     def _process_new_override_redirect(self, packet):
         self._process_new_common(packet, True)
