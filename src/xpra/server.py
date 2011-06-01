@@ -234,7 +234,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard):
+    def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard, randr):
         gobject.GObject.__init__(self)
         
         # Do this before creating the Wm object, to avoid clobbering its
@@ -327,7 +327,7 @@ class XpraServer(gobject.GObject):
         self.password_file = password_file
         self.salt = None
 
-        self.randr = has_randr()
+        self.randr = randr and has_randr()
         log.info("randr=%s" % self.randr)
 
         self.pulseaudio = pulseaudio
