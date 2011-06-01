@@ -24,6 +24,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-password\-file=filename\fP]
 [\fB\-\-jpeg\-quality=VALUE\fP]\fB
 [\fB\-\-title\-suffix=VALUE\fP]\fB
+[\fB\-\-dock\-icon=filename\fP]\fB
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
@@ -272,6 +273,10 @@ applications.
 Sets the portion of text which is appended to the windows' title.
 If unset, the default value is to use the 'on XXX', where XXX is the
 server's hostname.
+.TP
+\fB\-\-dock\-icon\fP\fIFILENAME\fP
+This options applies on Mac OS X only and allows the icon shown in
+the dock to be specified. By default it uses a simple 'xpra' icon.
 .TP
 \fB\-\-ssh=\fP\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
