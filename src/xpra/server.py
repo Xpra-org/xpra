@@ -323,6 +323,9 @@ class XpraServer(gobject.GObject):
         self.password_file = password_file
         self.salt = None
 
+        self.randr = has_randr()
+        log.info("randr=%s" % self.randr)
+
         self.pulseaudio = pulseaudio
 
         ### All right, we're ready to accept customers:
@@ -336,6 +339,7 @@ class XpraServer(gobject.GObject):
     def quit(self, upgrading):
         self._upgrading = upgrading
         log.info("\nxpra is terminating.")
+        sys.stdout.flush()
         gtk_main_quit_really()
 
     def run(self):
@@ -548,12 +552,44 @@ class XpraServer(gobject.GObject):
         for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
-        if "desktop_size" in client_capabilities:
-            client_w, client_h = client_capabilities["desktop_size"]
-            (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
-            capabilities["desktop_size"] = [min(client_w, root_w),
-                                            min(client_h, root_h)]
         return capabilities
+
+    def _get_desktop_size_capability(self, client_capabilities):
+        (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+        if "desktop_size" not in client_capabilities:
+            """ client did not specify size, just return what we have """
+            return	root_w, root_h
+        client_w, client_h = client_capabilities["desktop_size"]
+        if not self.randr:
+            """ server does not support randr - return minimum of the client/server dimensions """
+            w = min(client_w, root_w)
+            h = min(client_h, root_h)
+            return	w,h
+
+        if client_w==root_w or client_h==root_h:
+            return	root_w,root_h	#unlikely: perfect match!
+
+        log.debug("client resolution is %sx%s, current server resolution is %sx%s" % (client_w,client_h,root_w,root_h))
+
+        #try to find the best screen size to resize to:
+        new_size = None
+        for w,h in get_screen_sizes():
+            if w<client_w or h<client_h:
+                continue			#size is too small for client
+            if new_size:
+                ew,eh = new_size
+                if ew*eh<w*h:
+                    continue		#we found a better (smaller) candidate already
+            new_size = w,h
+        log.info("best resolution for client(%sx%s) is: %s" % (client_w,client_h,new_size))
+        if new_size:
+            w, h = new_size
+            set_screen_size(w, h)
+            (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+            log.info("our new resolution is: %sx%s" % (root_w,root_h))
+        w = min(client_w, root_w)
+        h = min(client_h, root_h)
+        return w,h
 
     def version_no_minor(self, version):
         if not version:
@@ -583,7 +619,7 @@ class XpraServer(gobject.GObject):
                 log.info("Password required, sending challenge: %s" % str(capabilities))
                 packet = ("challenge", self.salt)
                 socket = proto._conn._s
-                log.info("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
+                log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
                 from xpra.bencode import bencode
                 import select
                 data = bencode(packet)
@@ -603,6 +639,7 @@ class XpraServer(gobject.GObject):
                 return
             else:
                 log.info("Password matches!")
+                sys.stdout.flush()
                 del capabilities["challenge_response"]
                 self.salt = None            #prevent replay attacks
 
@@ -618,6 +655,8 @@ class XpraServer(gobject.GObject):
             gobject.timeout_add(5000, force_disconnect, self._protocol)
         self._protocol = proto
         ServerSource(self._protocol)
+        # do screen size calculations/modifications:
+        capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         self._send(["hello", capabilities])
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
@@ -738,6 +777,7 @@ class XpraServer(gobject.GObject):
         if proto is self._protocol:
             log.info("xpra client disconnected.")
             self._protocol = None
+        sys.stdout.flush()
 
     def _process_gibberish(self, proto, packet):
         (_, data) = packet

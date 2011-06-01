@@ -238,6 +238,7 @@ def connect_or_fail(display_desc):
 
 def handshake_complete_msg(*args):
     sys.stdout.write("Attached (press Control-C to detach)\n")
+    sys.stdout.flush()
 
 def got_gibberish_msg(obj, data):
     if "assword" in data:

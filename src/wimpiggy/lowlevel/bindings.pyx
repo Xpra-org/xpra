@@ -806,7 +806,7 @@ cdef extern from "X11/extensions/Xcomposite.h":
 
     int XFreePixmap(Display *, Pixmap)
 
-       
+
 
 def _ensure_XComposite_support(display_source):
     # We need NameWindowPixmap, but we don't need the overlay window
@@ -861,6 +861,97 @@ def xcomposite_name_window_pixmap(window):
     else:
         gpixmap.set_colormap(window.get_colormap())
         return _PixmapCleanupHandler(gpixmap)
+
+###################################
+# Randr
+###################################
+
+cdef extern from "X11/extensions/Xrandr.h":
+    Bool XRRQueryExtension(Display *, int *, int *)
+    Status XRRQueryVersion(Display *, int * major, int * minor)
+    ctypedef struct XRRScreenSize:
+        int width, height
+        int mwidth, mheight
+    XRRScreenSize *XRRSizes(Display *dpy, int screen, int *nsizes)
+    void XRRSetScreenSize(Display *dpy, Window w, int width, int height, int mmWidth, int mmHeight)
+    
+    ctypedef struct XRRScreenConfiguration:
+        pass
+    ctypedef unsigned short Rotation
+    Status XRRSetScreenConfigAndRate(Display *dpy, XRRScreenConfiguration *config,
+                                  Drawable draw, int size_index, Rotation rotation,
+                                  short rate, Time timestamp)
+    XRRScreenConfiguration *XRRGetScreenInfo(Display *, Window w)
+    XRRScreenSize *XRRConfigSizes(XRRScreenConfiguration *config, int *nsizes)
+    short *XRRConfigRates(XRRScreenConfiguration *config, int sizeID, int *nrates)
+
+    void XRRFreeScreenConfigInfo(XRRScreenConfiguration *)
+
+def has_randr():
+    try:
+        _ensure_extension_support(gtk.gdk.display_get_default(), 1, 2, "Randr",
+                                 XRRQueryExtension,
+                                 XRRQueryVersion)
+        return True
+    except Exception, e:
+        print "Randr not supported: %s" % e
+        return False
+
+cdef _get_screen_sizes(display_source):
+    cdef Display * display
+    display = get_xdisplay_for(display_source)
+    cdef int num_sizes
+    cdef XRRScreenSize * xrrs
+    cdef XRRScreenSize xrr
+    xrrs = XRRSizes(display, 0, &num_sizes)
+    sizes = []
+    for i in range(num_sizes):
+        xrr = xrrs[i]
+        sizes.append((xrr.width, xrr.height))
+    return	sizes
+
+def get_screen_sizes():
+    return _get_screen_sizes(gtk.gdk.display_get_default())
+
+cdef _set_screen_size(display_source, pywindow, width, height):
+    cdef Display * display
+    cdef XRRScreenConfiguration *config
+    cdef int num_sizes
+    cdef int num_rates
+    cdef short* rates
+    cdef short rate
+    cdef Rotation rotation
+    cdef Time time
+    cdef int sizeID
+    cdef XRRScreenSize *xrrs
+
+    #print "_set_screen_size(%s,%s,%s,%s)" % (display_source, pywindow, width, height)
+    display = get_xdisplay_for(display_source)
+    window = get_xwindow(pywindow)
+    config = XRRGetScreenInfo(display, window)
+    xrrs = XRRConfigSizes(config, &num_sizes)
+    sizes = []
+    sizeID = -1
+    for i in range(num_sizes):
+        xrr = xrrs[i]
+        if xrr.width==width and xrr.height==height:
+            sizeID = i
+    if sizeID<0:
+        print "size not found!"
+    else:
+        rates = XRRConfigRates(config, sizeID, &num_rates)
+        rate = rates[0]
+        rotation = 1		#RR_Rotate_0
+        time = CurrentTime	#gtk.gdk.x11_get_server_time(pywindow)
+        status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time) 
+        if status != Success:
+            print "failed to set new screen size"
+    XRRFreeScreenConfigInfo(config)
+
+def set_screen_size(width, height):
+    display = gtk.gdk.display_get_default()
+    root_window = gtk.gdk.get_default_root_window()
+    _set_screen_size(display, root_window, width, height)
 
 ###################################
 # Xdamage

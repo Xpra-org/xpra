@@ -54,7 +54,7 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
       Extension("wimpiggy.lowlevel.bindings",
                 ["wimpiggy/lowlevel/bindings.pyx"],
                 **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",
-                            "xtst", "xfixes", "xcomposite", "xdamage")
+                            "xtst", "xfixes", "xcomposite", "xdamage", "xrandr")
                 ),
       Extension("xpra.wait_for_x_server",
                 ["xpra/wait_for_x_server.pyx"],
