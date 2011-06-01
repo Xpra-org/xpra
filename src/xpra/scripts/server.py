@@ -252,8 +252,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                                        "-auth", xauthority,
                                        "+extension", "Composite",
                                        # Biggest easily available monitors are
-                                       # 1920x1200. This is 1920*2 x 1920:
-                                       "-screen", "0", "3840x1920x24+32",
+                                       # 1920x1200.
+                                       "-screen", "0", "3840x2560x24+32",
                                        "-once"],
                                     executable=xvfb_executable)
         except OSError, e:
