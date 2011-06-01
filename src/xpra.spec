@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.18
+%define version 0.0.7.19
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 
@@ -9,7 +9,7 @@ Summary: Xpra gives you "persistent remote applications" for X.
 Vendor: http://code.google.com/p/partiwm/wiki/xpra
 Name: xpra
 Version: %{version}
-Release: 1
+Release: %{build_no}
 License: GPL
 Requires: pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb
 Group: Networking
@@ -21,6 +21,10 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python, setuptool, Pyrex
 %endif
 
+### Patches ###
+# if building a generic rpm (without .so) which works as client only
+Patch0: disable-posix-server.patch
+
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
@@ -28,6 +32,13 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Mon Apr 25 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.19-1
+- xrandr support when running against Xdummy, screen resizes on demand
+- fixes for keyboard mapping issues: multiple keycodes for the same key
+
+* Mon Apr 4 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-2
+- Fix for older distros (like CentOS) with old versions of pycairo
+
 * Sat Mar 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-1
 - Fix jpeg compression on MS Windows
 - Add ability to disable clipboard code
@@ -55,6 +66,9 @@ So basically it's screen for remote X apps.
 %prep
 rm -rf $RPM_BUILD_DIR/parti-all-%{version}
 zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
+%if %{defined generic_rpm}
+%patch0 -p0
+%endif
 
 %build
 cd parti-all-%{version}
@@ -67,7 +81,7 @@ cd parti-all-%{version}
 %ifarch x86_64
 mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 %endif
-%if %{undefined fedora}
+%if %{defined generic_rpm}
 # remove .so (not suitable for a generic RPM)
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/wimpiggy/bindings.so"
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so"
@@ -84,7 +98,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/xpra
 %{python_sitelib}/parti
 %{python_sitelib}/wimpiggy
-%if %{!defined no_egg}
+%if %{defined include_egg}
 %{python_sitelib}/parti_all-*.egg-info
 %endif
 /usr/share/man/man1/xpra.1*
