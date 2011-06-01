@@ -328,7 +328,7 @@ class XpraClient(gobject.GObject):
             self._clipboard_helper = ClipboardProtocolHelper(self.send)
         else:
             self._clipboard_helper = None
-        self._client_extras = ClientExtras(self.send, pulseaudio)
+        self._client_extras = ClientExtras(self.send, pulseaudio, opts)
 
         self._focused = None
 

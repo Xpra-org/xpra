@@ -39,24 +39,25 @@ class ClipboardProtocolHelper(object):
             self.send(["clipboard-contents-none", request_id, selection])
 
 class ClientExtras(object):
-    def __init__(self, send_packet_cb, pulseaudio):
+    def __init__(self, send_packet_cb, pulseaudio, opts):
         self.send = send_packet_cb
-        self.setup_macdock()
+        self.setup_macdock(opts)
 
-    def setup_macdock(self):
-        print "setup_macdock()"
+    def setup_macdock(self, opts):
+        print "setup_macdock(%s)" % opts
         self.mac_dock = None
         try:
             import os.path
             import gtk.gdk
             import gtk_osxapplication		#@UnresolvedImport
             self.macapp = gtk_osxapplication.OSXApplication()
-            if "XDG_DATA_DIRS" in os.environ:
+            filename = opts.dock_icon
+            if not filename and "XDG_DATA_DIRS" in os.environ:
                 filename = os.path.join(os.environ["XDG_DATA_DIRS"], "icons", "xpra.png")
-                if os.path.exists(filename):
-                    print "setup_macdock() loading icon from %s" % filename
-                    pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
-                    self.macapp.set_dock_icon_pixbuf(pixbuf)
+            if filename and os.path.exists(filename):
+                print "setup_macdock() loading icon from %s" % filename
+                pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+                self.macapp.set_dock_icon_pixbuf(pixbuf)
             self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
             self.macapp.ready()
         except Exception, e:

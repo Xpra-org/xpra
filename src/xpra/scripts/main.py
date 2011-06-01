@@ -16,7 +16,8 @@ from xpra.bencode import bencode
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            DEFAULT_SSH_CMD,
-                           GOT_PASSWORD_PROMPT_SUGGESTION)
+                           GOT_PASSWORD_PROMPT_SUGGESTION,
+                           add_client_options)
 from xpra.protocol import TwoFileConnection, SocketConnection
 
 def nox():
@@ -103,6 +104,8 @@ def main(script_file, cmdline):
     parser.add_option("-d", "--debug", action="store",
                       dest="debug", default=None, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\")")
+    # let the platform specific code add its own options:
+    add_client_options(parser)
     (options, args) = parser.parse_args(cmdline[1:])
 
     if not args:
@@ -257,7 +260,7 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio, opts.clipboard)
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio, opts.clipboard, opts)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()

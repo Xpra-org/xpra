@@ -15,7 +15,7 @@ assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is
 from xpra.xposix.xsettings import XSettingsWatcher
 from xpra.xposix.xroot_props import XRootPropWatcher
 class ClientExtras(object):
-    def __init__(self, send_packet_cb, pulseaudio):
+    def __init__(self, send_packet_cb, pulseaudio, opts):
         self.send = send_packet_cb
         self.ROOT_PROPS = {
             "RESOURCE_MANAGER": "resource-manager"
