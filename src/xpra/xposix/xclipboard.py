@@ -129,7 +129,7 @@ class ClipboardProtocolHelper(object):
                         self.send(["clipboard-contents", request_id, selection,
                                    type, format, wire_encoding, wire_data])
                         return
-                self.send(["clipboard-contents-none", request-id, selection])
+                self.send(["clipboard-contents-none", request_id, selection])
             proxy.get_contents(target, got_contents)
         else:
             self.send(["clipboard-contents-none", request_id, selection])
