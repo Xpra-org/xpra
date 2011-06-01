@@ -132,7 +132,7 @@ def main(script_file, cmdline):
             run_client(parser, options, args)
         except KeyboardInterrupt:
             sys.stdout.write("Exiting on keyboard interrupt\n")
-    elif mode == "stop":
+    elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         run_stop(parser, options, args)
     elif mode == "list" and XPRA_LOCAL_SERVERS_SUPPORTED:
