@@ -121,6 +121,10 @@ def _read_image(disp, stream):
     except Exception, e:
         log.warn("Weird corruption in _NET_WM_ICON: %s", e)
         return None
+    # old versions of cairo do not have this method, just ignore it
+    if not hasattr(surf, "get_data"):
+        return None
+
     # Cairo wants a native-endian array here, and since the icon is
     # transmitted as CARDINALs, that's what we get. It might seem more
     # sensible to use ImageSurface.create_for_data (at least it did to me!)
