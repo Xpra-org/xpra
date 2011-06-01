@@ -1,3 +1,6 @@
+xpra 0.0.7.20 DISTRIBUTION; urgency: normal
+	* more reliable fix for keyboard mapping issues
+
 xpra 0.0.7.19 DISTRIBUTION; urgency: normal
 	* xrandr support when running against Xdummy, screen resizes on demand
 	* fixes for keyboard mapping issues: multiple keycodes for the same key

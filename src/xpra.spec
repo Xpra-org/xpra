@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.19
+%define version 0.0.7.20
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 
@@ -32,6 +32,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed May 04 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.20-1
+- more reliable fix for keyboard mapping issues
+
 * Mon Apr 25 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.19-1
 - xrandr support when running against Xdummy, screen resizes on demand
 - fixes for keyboard mapping issues: multiple keycodes for the same key
