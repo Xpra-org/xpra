@@ -342,6 +342,7 @@ class XpraServer(gobject.GObject):
         gtk_main_quit_on_fatal_exceptions_enable()
         def print_ready():
             log.info("\nxpra is ready.")
+            sys.stdout.flush()
         gobject.idle_add(print_ready)
         gtk.main()
         log.info("\nxpra end of gtk.main().")
@@ -452,27 +453,34 @@ class XpraServer(gobject.GObject):
         else:
             assert False
 
-    def _keycode(self, keyname):
+    def _keycode(self, keyname, group=0):
         keyval = gtk.gdk.keyval_from_name(keyname)
-        return self._keymap.get_entries_for_keyval(keyval)[0][0]
+        entries = self._keymap.get_entries_for_keyval(keyval)
+        ll = None
+        keycode = -1
+        if group>=0:
+            for _keycode,_group,_level in entries:
+                if _group==group and ll is None or _level<ll:
+                    ll = _level
+                    keycode = _keycode
+        if keycode>0:
+            return  keycode
+        return entries[0][0]
 
     def _make_keymask_match(self, modifier_list):
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         current = set(mask_to_names(current_mask, self._modifier_map))
         wanted = set(modifier_list)
         log.debug("current mask: %s, wanted: %s", current, wanted)
+        def fake_key(modifier, press):
+            keyname = self._keyname_for_mod[modifier]
+            keycode = self._keycode(keyname, -1)
+            log.debug("(un)pressing %s modifier=%s, keyname=%s, keycode=%s", press, modifier, keyname, keycode)
+            xtest_fake_key(gtk.gdk.display_get_default(), keycode, press)
         for modifier in current.difference(wanted):
-            keyname = self._keyname_for_mod[modifier]
-            log.debug("unpressing %s", keyname)
-            xtest_fake_key(gtk.gdk.display_get_default(),
-                           self._keycode(keyname),
-                           False)
+            fake_key(modifier, False)
         for modifier in wanted.difference(current):
-            keyname = self._keyname_for_mod[modifier]
-            log.debug("pressing %s", keyname)
-            xtest_fake_key(gtk.gdk.display_get_default(),
-                           self._keycode(keyname),
-                           True)
+            fake_key(modifier, True)
 
     def _focus(self, id):
         if self._has_focus != id:
