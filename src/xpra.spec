@@ -1,8 +1,14 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.20
+%define version 0.0.7.21
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
+
+%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb
+%if %is_suse
+%define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0
+%endif
 
 
 Summary: Xpra gives you "persistent remote applications" for X.
@@ -11,10 +17,10 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}
 License: GPL
-Requires: pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb
+Requires: %{requires}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
-URL: http://xpra.devloop.org.uk/
+URL: http://winswitch.org/
 Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
@@ -32,6 +38,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Fri May 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.21-1
+- ability to bind to an existing display with --use-display
+- --xvfb now specifies the full command used. The default is unchanged
+- --auto-refresh-delay does automatic refresh of idle displays in a lossless fashion
+
 * Wed May 04 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.20-1
 - more reliable fix for keyboard mapping issues
 

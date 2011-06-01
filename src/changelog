@@ -1,3 +1,8 @@
+xpra 0.0.7.21 DISTRIBUTION; urgency: normal
+	* ability to bind to an existing display with --use-display
+	* --xvfb now specifies the full command used. The default is unchanged
+	* --auto-refresh-delay does automatic refresh of idle displays in a lossless fashion
+
 xpra 0.0.7.20 DISTRIBUTION; urgency: normal
 	* more reliable fix for keyboard mapping issues
 
