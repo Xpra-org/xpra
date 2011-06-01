@@ -1,6 +1,7 @@
 .\" Man page for xpra
 .\"
 .\" Copyright (C) 2008-2009 Nathaniel Smith <njs@pobox.com>
+.\" Copyright (C) 2010-2011 Antoine Martin <antoine@devloop.org.uk>
 .\"
 .\" You may distribute under the terms of the GNU General Public
 .\" license, either version 2 or (at your option) any later version.
@@ -17,11 +18,18 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-start\-child=CHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-xvfb=CMD\fP]
-[\fB\-\-bind\-tcp=[HOST]:PORT\fP] 
+[\fB\-\-no\-clipboard\fP]
+[\fB\-\-no\-pulseaudio\fP] 
+[\fB\-\-bind\-tcp=\[HOST\]:PORT\fP]
+[\fB\-\-password\-file=filename\fP]
+[\fB\-\-jpeg\-quality=VALUE\fP]\fB
+[\fB\-\-title\-suffix=VALUE\fP]\fB
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
+[\fB\-\-no\-clipboard\fP]
+[\fB\-\-no\-pulseaudio\fP] 
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 .HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
@@ -150,6 +158,12 @@ the name suggests, the main use case is to replace a server running
 against an older version of xpra with a newer version, without having
 to restart your session.  Any currently-running \fBxpra attach\fP
 command will exit and need to be restarted.
+
+.SS Important Note
+Some platforms and package managers may choose to only build the client
+and not the server. In this case, only the \fBattach\fP subcommand will
+be available.
+
 .\" --------------------------------------------------------------------
 .SH OPTIONS
 .SS General options
@@ -197,6 +211,22 @@ funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
 executable.
 .TP
+\fB\-\-no\-clipboard\fP
+Disables clipboard synchronization.
+If used on the server, no clients will be able to use clipboard
+synchronization at all. If used on the client, only this particular
+connection will ignore clipboard data from the server.
+.TP
+\fB\-\-no\-pulseaudio\fP
+Disables pulseaudio information echange.
+If used on the server, no clients will be able to set the pulseaudio
+cookies seen by the application running within xpra.
+If used on the client, only this particular connection will avoid
+sending pulseaudio cookies and information to the server.
+
+Note: what the application does with this information is beyond the
+scope of this document.
+.TP
 \fB\-\-bind\-tcp=\fP\fI[HOST]:PORT\fP
 The xpra server always listens for connections on a local Unix domain
 socket, and supports local connections with the \fB:7\fP-style display
@@ -207,12 +237,17 @@ the host portion is omitted, then 127.0.0.1 (localhost) will be
 used. If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
 
-Using this switch is NOT RECOMMENDED, and is a major security risk
-(especially when passing 0.0.0.0)!  Xpra does not do any checking on
-incoming connections; anyone at all may connect to this port and
-access your xpra desktop. Use it only if you have special needs (e.g.,
-certain virtualization environments), and understand the consequences
-of your actions.
+Using this switch without using the password option is not recommended,
+and is a major security risk (especially when passing 0.0.0.0)!
+Anyone at all may connect to this port and access your session.
+Use it only if you have special needs (e.g., certain virtualization
+environments), and understand the consequences of your actions.
+\fB\-\-password\-file\fP\fIFILENAME\fP
+This allows sessions to be secured with a password stored in a text
+file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
+If this is used on the server, it will reject any client connections
+that do not provide the same password value.
+.TP
 .SS Options for attach, stop
 .TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress=\fP\fILEVEL\fP
@@ -225,6 +260,18 @@ actual compression achieved; the default is 3, which gives a
 reasonable trade-off in general. Over local 100Mbs+ networks the CPU
 can easily become the bottleneck on xpra's speed, and \fB\-z0\fP is
 therefore recommended.
+.TP
+\fB\-\-jpeg\-quality=\fP\fIVALUE\fP
+This option enables JPEG compression of pixel data sent by the server.
+The valid values range from 0 (lowest quality, high compression -
+generally unusable) to 100 (highest quality, low compression - not
+particularly useful). This option is only really useful for graphical
+applications.
+.TP
+\fB\-\-title\-suffix=\fP\fIVALUE\fP
+Sets the portion of text which is appended to the windows' title.
+If unset, the default value is to use the 'on XXX', where XXX is the
+server's hostname.
 .TP
 \fB\-\-ssh=\fP\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
@@ -315,3 +362,4 @@ Send any questions or bugs reports to <parti-discuss@partiwm.org>.
 .\" --------------------------------------------------------------------
 .SH SEE ALSO
 \fBscreen\fP(1)
+\fBwinswitch_applet\fP(1)
