@@ -328,7 +328,7 @@ class XpraServer(gobject.GObject):
         self.salt = None
 
         self.randr = randr and has_randr()
-        log.info("randr=%s" % self.randr)
+        log.info("randr enabled: %s" % self.randr)
 
         self.pulseaudio = pulseaudio
 
