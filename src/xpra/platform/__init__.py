@@ -6,8 +6,11 @@
 ### NOTE: this must be kept in sync with the version in
 ###    xpra/platform/gui.py 
 import os as _os
+import sys as _sys
 if _os.name == "nt":
     from xpra.win32 import *
+elif _sys.platform.startswith("darwin"):
+    from xpra.darwin import *
 elif _os.name == "posix":
     from xpra.xposix import *
 else:
