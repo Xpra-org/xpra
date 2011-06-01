@@ -121,10 +121,6 @@ def _read_image(disp, stream):
     except Exception, e:
         log.warn("Weird corruption in _NET_WM_ICON: %s", e)
         return None
-    # old versions of cairo do not have this method, just ignore it
-    if not hasattr(surf, "get_data"):
-        return None
-
     # Cairo wants a native-endian array here, and since the icon is
     # transmitted as CARDINALs, that's what we get. It might seem more
     # sensible to use ImageSurface.create_for_data (at least it did to me!)
@@ -132,6 +128,9 @@ def _read_image(disp, stream):
     # directly, and also .get_data() doesn't work on it, and it breaks the
     # test suite and blah. This at least works, as odd as it is:
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    # old versions of cairo do not have this method, just ignore it
+    if not hasattr(surf, "get_data"):
+        return None
     surf.get_data()[:] = bytes
     # Cairo uses premultiplied alpha. EWMH actually doesn't specify what it
     # uses, but apparently the de-facto standard is non-premultiplied. (At
