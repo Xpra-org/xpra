@@ -1,3 +1,10 @@
+v0.0.7.x
+==================
+Lots of new features and options.
+	-- Better OSX/win32 support
+	-- Lots of small fixes
+
+
 v0.0.6 (2009-03-22)
 ===================
 
@@ -5,12 +12,8 @@ Xpra:
   New features:
     -- Clipboard sharing (with full X semantics).
     -- Icon support.
-    -- Support for raw TCP sockets. (This is horrendously insecure in
-       most contexts, but provided for certain use cases -- like some
-       virtualization environments -- where the network is wholly
-       trusted and ssh tunneling creates too much overhead. The
-       built-in ssh tunneling support is still the recommended
-       approach.) (Thanks to Antoine Martin.)
+    -- Support for raw TCP sockets. Insecure if you don't know what
+       you are doing.
 
   Bug fixes:
     -- Xvfb doesn't support mouse wheels, so they still don't work in
