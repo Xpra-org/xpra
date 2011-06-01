@@ -5,7 +5,7 @@ from wimpiggy.util import no_arg_signal, one_arg_signal
 from wimpiggy.selection import ManagerSelection
 from wimpiggy.prop import prop_set, prop_get
 from wimpiggy.lowlevel import (myGetSelectionOwner, const, get_pywindow,
-                               add_event_receiver, remove_event_receiver,
+                               add_event_receiver,
                                get_xatom)
 from wimpiggy.log import Logger
 log = Logger()
@@ -84,7 +84,7 @@ class XSettingsWatcher(gobject.GObject):
         log("Fetching current XSettings data")
         try:
             return trap.call(self._get_settings_blob)
-        except XError, e:
+        except XError:
             log("X error while fetching XSettings data; ignored")
             return None
         

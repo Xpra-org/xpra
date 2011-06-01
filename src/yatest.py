@@ -41,7 +41,6 @@
 #      they are defined, not where they have been imported?
 
 import sys
-import os
 import os.path
 import traceback
 import signal

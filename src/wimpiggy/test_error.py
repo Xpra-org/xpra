@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from wimpiggy.test import *
-from wimpiggy.error import *
+from wimpiggy.error import trap, XError
 # Need a way to generate X errors...
 import wimpiggy.lowlevel
 

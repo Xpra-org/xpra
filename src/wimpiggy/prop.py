@@ -15,8 +15,8 @@ import cairo
 from wimpiggy.lowlevel import \
      XGetWindowProperty, XChangeProperty, PropertyError, \
      get_xatom, get_pyatom, get_xwindow, get_pywindow, const, \
-     get_display_for, premultiply_argb_in_place
-from wimpiggy.error import *
+     premultiply_argb_in_place
+from wimpiggy.error import trap, XError
 from wimpiggy.log import Logger
 log = Logger()
 

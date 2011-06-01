@@ -12,7 +12,7 @@ import parti.bus
 
 def main(cmdline):
     parser = PartiOptionParser()
-    (options, args) = parser.parse_args(cmdline[1:])
+    parser.parse_args(cmdline[1:])
 
     # This means, if an exception propagates to the gtk mainloop, then pass it
     # on outwards.  Or at least it did at one time; dunno if it actually does

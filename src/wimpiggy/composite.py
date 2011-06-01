@@ -5,7 +5,7 @@
 
 import gobject
 from wimpiggy.util import one_arg_signal, AutoPropGObjectMixin
-from wimpiggy.error import *
+from wimpiggy.error import trap
 from wimpiggy.lowlevel import (xcomposite_redirect_window,
                                xcomposite_unredirect_window,
                                xcomposite_name_window_pixmap,

@@ -8,7 +8,7 @@ import gobject
 import wimpiggy.lowlevel
 import wimpiggy.window
 import wimpiggy.prop
-from wimpiggy.error import *
+from wimpiggy.error import trap
 from wimpiggy.log import Logger
 log = Logger()
 

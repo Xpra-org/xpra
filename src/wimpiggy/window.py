@@ -26,7 +26,7 @@ import wimpiggy.lowlevel
 from wimpiggy.util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
-from wimpiggy.error import *
+from wimpiggy.error import trap, XError
 from wimpiggy.prop import prop_get, prop_set
 from wimpiggy.composite import CompositeHelper
 

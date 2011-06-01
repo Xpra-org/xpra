@@ -7,11 +7,9 @@ import subprocess
 import sys
 import os
 import traceback
-import os
 import atexit
 import errno
 import gobject
-import gtk
 import gtk.gdk
 from wimpiggy.util import one_arg_signal
 

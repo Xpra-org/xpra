@@ -16,7 +16,7 @@ from wimpiggy.util import no_arg_signal, one_arg_signal
 from wimpiggy.lowlevel import (get_xatom, get_pywindow, sendClientMessage,
                                myGetSelectionOwner, const,
                                add_event_receiver, remove_event_receiver)
-from wimpiggy.error import *
+from wimpiggy.error import trap
 
 from wimpiggy.log import Logger
 log = Logger()

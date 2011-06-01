@@ -9,7 +9,7 @@ import gtk
 
 from wimpiggy.util import n_arg_signal
 from wimpiggy.prop import prop_get
-from wimpiggy.error import *
+from wimpiggy.error import trap
 from wimpiggy.lowlevel import (get_xatom, get_pywindow,
                                gdk_atom_objects_from_gdk_atom_array)
 

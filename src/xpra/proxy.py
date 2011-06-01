@@ -8,8 +8,6 @@ import threading
 from wimpiggy.log import Logger
 log = Logger()
 
-import threading
-
 class XpraProxy(object):
     def __init__(self, client_conn, server_conn):
         self._client_conn = client_conn

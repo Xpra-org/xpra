@@ -6,7 +6,7 @@
 from wimpiggy.test import *
 import wimpiggy.lowlevel as l
 import gtk
-from wimpiggy.error import *
+from wimpiggy.error import trap, XError
 
 class TestLowlevel(TestWithSession):
     def root(self, disp=None):
@@ -131,7 +131,6 @@ class TestLowlevelMisc(TestLowlevel):
         w3 = self.window(self.display)
         gtk.gdk.flush()
         
-        import os
         def do_child(disp_name, xwindow1, xwindow2, xwindow3):
             print "child: in do_child"
             d2 = gtk.gdk.Display(disp_name)
@@ -152,6 +151,7 @@ class TestLowlevelMisc(TestLowlevel):
             l.XRemoveFromSaveSet(w3on2)
             gtk.gdk.flush()
             print "child: finished"
+        import os
         print "prefork: ", os.getpid()
         pid = os.fork()
         if not pid:

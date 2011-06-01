@@ -29,7 +29,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
-from wimpiggy.error import *
+from wimpiggy.error import XError, trap
 
 from wimpiggy.log import Logger
 log = Logger()

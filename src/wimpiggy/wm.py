@@ -14,7 +14,7 @@ if sys.version_info < (2, 6):
 else:
     ImmutableSet = frozenset
 
-from wimpiggy.error import *
+from wimpiggy.error import trap
 import wimpiggy.selection
 from wimpiggy.world_window import WorldWindow
 import wimpiggy.lowlevel

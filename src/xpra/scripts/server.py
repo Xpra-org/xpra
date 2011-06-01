@@ -10,7 +10,6 @@
 import gobject
 import subprocess
 import sys
-import os
 import os.path
 import atexit
 import signal
