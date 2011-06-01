@@ -243,19 +243,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY",
                                     os.path.expanduser("~/.Xauthority"))
-        xvfb_cmd = opts.xvfb.split()
+        xvfb_cmd = opts.xvfb.replace("$XAUTHORITY", xauthority).split()
         xvfb_executable = xvfb_cmd[0]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         try:
-            xvfb = subprocess.Popen(xvfb_cmd
-                                    + [display_name,
-                                       "-auth", xauthority,
-                                       "+extension", "Composite",
-                                       # Biggest easily available monitors are
-                                       # 1920x1200.
-                                       "-screen", "0", "3840x2560x24+32",
-                                       "-once"],
-                                    executable=xvfb_executable)
+            xvfb = subprocess.Popen(xvfb_cmd+[display_name],
+                                     executable=xvfb_executable)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
         raw_cookie = os.urandom(16)
