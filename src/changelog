@@ -1,0 +1,19 @@
+xpra 0.0.7.17 DISTRIBUTION; urgency: normal
+	* Honour the pulseaudio flag on client
+
+xpra 0.0.7.16 DISTRIBUTION; urgency: normal
+	* Merged large set of changes from upstream
+
+xpra 0.0.7.15 DISTRIBUTION; urgency: normal
+	* Add option to disable Pulseaudio forwarding as this can be a real network hog.
+	* Use logging rather than print statements.
+	* Dont reject client/server versions with the same micro number: 0.0.7.15 onwards will happily connect/accept connection to/from any 0.0.7.x version.
+
+xpra 0.0.7.13 DISTRIBUTION; urgency: normal
+	* Ignore minor version differences in the future: must bump to 0.0.8 to cause incompatibility error
+
+xpra 0.0.7.12 DISTRIBUTION; urgency: normal
+	* bump screen resolution
+
+xpra 0.0.7.9 DISTRIBUTION; urgency: normal
+	* Initial packaging
