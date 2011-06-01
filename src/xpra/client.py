@@ -344,6 +344,11 @@ class XpraClient(gobject.GObject):
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])
 
+    def _process_disconnect(self, packet):
+        log.error("server requested disconnect: %s" % str(packet))
+        gtk.main_quit()
+        return
+
     def _process_challenge(self, packet):
         if not self.password_file:
             log.error("password is required by the server")
@@ -434,6 +439,7 @@ class XpraClient(gobject.GObject):
 
     _packet_handlers = {
         "challenge": _process_challenge,
+        "disconnect": _process_disconnect,
         "hello": _process_hello,
         "new-window": _process_new_window,
         "new-override-redirect": _process_new_override_redirect,

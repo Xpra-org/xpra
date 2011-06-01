@@ -1,5 +1,5 @@
 Package: xpra
-Version: 0.0.7.16
+Version: 0.0.7.17
 Section: x11
 Priority: optional
 Essential: no

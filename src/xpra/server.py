@@ -135,6 +135,11 @@ class ServerSource(object):
     def _have_more(self):
         return bool(self._ordinary_packets) or bool(self._damage)
 
+    def send_packet_now(self, packet):
+        assert self._protocol
+        self._ordinary_packets.insert(0, packet)
+        self._protocol.source_has_more()
+
     def queue_ordinary_packet(self, packet):
         assert self._protocol
         self._ordinary_packets.append(packet)
@@ -581,7 +586,9 @@ class XpraServer(gobject.GObject):
             hash = hmac.HMAC(password, self.salt)
             if client_hash != hash.hexdigest():
                 log.error("Password supplied does not match! dropping the connection.")
-                gobject.timeout_add(1000, self._login_failed, proto)
+                def login_failed(*args):
+                    proto.close()
+                gobject.timeout_add(1000, login_failed)
                 return
             else:
                 log.info("Password matches!")
@@ -591,7 +598,13 @@ class XpraServer(gobject.GObject):
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
         if self._protocol is not None:
-            self._protocol.close()
+            log.info("Disconnecting existing client")
+            # send message asking for disconnection politely:
+            self._protocol.source.send_packet_now(["disconnect", "new valid connection received"])
+            def force_disconnect(protocol):
+                protocol.close()
+            #give 5 seconds for the write buffer to flush then we force disconnect it:
+            gobject.timeout_add(5000, force_disconnect, self._protocol)
         self._protocol = proto
         ServerSource(self._protocol)
         self._send(["hello", capabilities])

@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.16
+%define version 0.0.7.17
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 
@@ -28,6 +28,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed Jan 19 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.17-1
+- Honour the pulseaudio flag on client
+
 * Thu Aug 25 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.16-1
 - Merged upstream changes.
 
