@@ -42,16 +42,18 @@ def main(script_file, cmdline):
         list_str = "\t%prog list\n"
         upgrade_str = "\t%prog upgrade DISPLAY"
         note_str = ""
+        stop_str = "\t%prog stop [DISPLAY]\n"
     else:
         start_str = ""
         list_str = ""
         upgrade_str = ""
         note_str = "(This xpra install does not support starting local servers.)"
+        stop_str = ""
     parser = OptionParser(version="xpra v%s" % xpra.__version__,
                           usage="".join(["\n",
                                          start_str,
                                          "\t%prog attach [DISPLAY]\n",
-                                         "\t%prog stop [DISPLAY]\n",
+                                         stop_str,
                                          list_str,
                                          upgrade_str,
                                          note_str]))
