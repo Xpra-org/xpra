@@ -303,3 +303,6 @@ def run_list(parser, opts, extra_args):
                 else:
                     sys.stdout.write(" (cleaned up)")
             sys.stdout.write("\n")
+
+if __name__ == "__main__":
+    main("xpra.exe", sys.argv)
