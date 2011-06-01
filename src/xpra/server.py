@@ -14,6 +14,8 @@ import gobject
 import cairo
 import sys
 import subprocess
+import hmac
+import uuid
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -208,7 +210,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets):
+    def __init__(self, clobber, sockets, password_file):
         gobject.GObject.__init__(self)
         
         # Do this before creating the Wm object, to avoid clobbering its
@@ -295,6 +297,9 @@ class XpraServer(gobject.GObject):
         self._has_focus = 0
         self._upgrading = False
 
+        self.password_file = password_file
+        self.salt = None
+
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
@@ -305,11 +310,16 @@ class XpraServer(gobject.GObject):
 
     def quit(self, upgrading):
         self._upgrading = upgrading
+        log.info("\nxpra is terminating.")
         gtk_main_quit_really()
 
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
+        def print_ready():
+            log.info("\nxpra is ready.")
+        gobject.idle_add(print_ready)
         gtk.main()
+        log.info("\nxpra end of gtk.main().")
         return self._upgrading
 
     def _new_connection(self, listener, *args):
@@ -502,7 +512,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         if "desktop_size" in client_capabilities:
@@ -531,6 +541,36 @@ class XpraServer(gobject.GObject):
                       + "of the same major version (v%s), but this client is using v%s", xpra.__version__, remote_version)
             proto.close()
             return
+        if self.password_file:
+            log.debug("password auth required")
+            client_hash = capabilities.get("challenge_response")
+            if not client_hash or not self.salt:
+                self.salt = "%s" % uuid.uuid4()
+                capabilities["challenge"] = self.salt
+                log.info("Password required, sending challenge: %s" % str(capabilities))
+                packet = ("challenge", self.salt)
+                socket = proto._conn._s
+                log.info("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
+                from xpra.bencode import bencode
+                import select
+                data = bencode(packet)
+                written = 0
+                while written < len(data):
+                    select.select([], [socket], [])
+                    written += socket.send(data[written:])
+                return
+            passwordFile = open(self.password_file, "rU")
+            password  = passwordFile.read()
+            hash = hmac.HMAC(password, self.salt)
+            if client_hash != hash.hexdigest():
+                log.error("Password supplied does not match! dropping the connection.")
+                gobject.timeout_add(1000, self._login_failed, proto)
+                return
+            else:
+                log.info("Password matches!")
+                del capabilities["challenge_response"]
+                self.salt = None            #prevent replay attacks
+
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
         if self._protocol is not None:
@@ -652,6 +692,7 @@ class XpraServer(gobject.GObject):
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         if proto is self._protocol:
+            log.info("xpra client disconnected.")
             self._protocol = None
 
     def _process_gibberish(self, proto, packet):

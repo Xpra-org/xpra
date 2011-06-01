@@ -71,6 +71,9 @@ def main(script_file, cmdline):
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
+    parser.add_option("--password-file", action="store",
+                      dest="password_file", default=None,
+                      help="The file containing the password required to connect (useful to secure TCP mode)")
     parser.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",
@@ -238,7 +241,7 @@ def run_client(parser, opts, extra_args):
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
-    app = XpraClient(conn, opts.compression_level)
+    app = XpraClient(conn, opts.compression_level, opts.password_file)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()

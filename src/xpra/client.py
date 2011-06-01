@@ -272,19 +272,15 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level):
+    def __init__(self, conn, compression_level, password_file):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
+        self.password_file = password_file
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
-        capabilities_request = dict(default_capabilities)
-        if compression_level:
-            capabilities_request["deflate"] = compression_level
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        capabilities_request["desktop_size"] = [root_w, root_h]
-        self.send(["hello", capabilities_request])
+        self.send_hello()
 
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
@@ -325,6 +321,28 @@ class XpraClient(gobject.GObject):
 
     def send_mouse_position(self, packet):
         self._protocol.source.queue_mouse_position_packet(packet)
+
+    def send_hello(self, hash=None):
+        capabilities_request = dict(default_capabilities)
+        if hash:
+            capabilities_request["challenge_response"] = hash
+        if self.compression_level:
+            capabilities_request["deflate"] = self.compression_level
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        capabilities_request["desktop_size"] = [root_w, root_h]
+        self.send(["hello", capabilities_request])
+
+    def _process_challenge(self, packet):
+        if not self.password_file:
+            log.error("password is required by the server")
+            gtk.main_quit()
+            return
+        import hmac
+        passwordFile = open(self.password_file, "rU")
+        password = passwordFile.read()
+        (_, salt) = packet
+        hash = hmac.HMAC(password, salt)
+        self.send_hello(hash.hexdigest())
 
     def version_no_minor(self, version):
         if not version:
@@ -404,6 +422,7 @@ class XpraClient(gobject.GObject):
         self.emit("received-gibberish", data)
 
     _packet_handlers = {
+        "challenge": _process_challenge,
         "hello": _process_hello,
         "new-window": _process_new_window,
         "new-override-redirect": _process_new_override_redirect,
