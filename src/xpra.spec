@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.17
+%define version 0.0.7.18
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 
@@ -28,6 +28,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Sat Mar 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-1
+- Fix jpeg compression on MS Windows
+- Add ability to disable clipboard code
+- Updated man page
+
 * Wed Jan 19 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.17-1
 - Honour the pulseaudio flag on client
 
@@ -76,22 +81,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/parti
 %{_bindir}/parti-repl
 %{_bindir}/xpra
-%if %{defined CentOS}
-/usr/lib/python2.4/site-packages/xpra
-/usr/lib/python2.4/site-packages/parti
-/usr/lib/python2.4/site-packages/wimpiggy
-%else
-%if %{defined fedora}
 %{python_sitelib}/xpra
 %{python_sitelib}/parti
 %{python_sitelib}/wimpiggy
+%if %{!defined no_egg}
 %{python_sitelib}/parti_all-*.egg-info
-%else
-/usr/lib/python2.6/site-packages/xpra
-/usr/lib/python2.6/site-packages/parti
-/usr/lib/python2.6/site-packages/wimpiggy
-/usr/lib/python2.6/site-packages/parti_all-*.egg-info
-%endif
 %endif
 /usr/share/man/man1/xpra.1*
 

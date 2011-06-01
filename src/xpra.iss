@@ -1,6 +1,6 @@
 [Setup]
 AppName=Xpra
-AppVerName=Xpra 0.0.7.17
+AppVerName=Xpra 0.0.7.18
 AppPublisher=devloop
 AppPublisherURL=http://xpra.devloop.org.uk/
 DefaultDirName={pf}\Xpra
@@ -10,7 +10,7 @@ OutputBaseFilename=setup
 Compression=lzma
 SolidCompression=true
 AllowUNCPath=false
-VersionInfoVersion=0.0.7.17
+VersionInfoVersion=0.0.7.18
 VersionInfoCompany=devloop
 VersionInfoDescription=screen for X
 
@@ -21,7 +21,8 @@ Name: {app}; Flags: uninsalwaysuninstall;
 Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: {group}\Xpra; Filename: {app}\client_launcher.exe; WorkingDir: {app}
+Name: {group}\Xpra; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
+Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 
 [Run]
-Filename: {app}\client_launcher.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent
+Filename: {app}\Xpra-Launcher.exe; Description: {cm:LaunchProgram,xpra}; Flags: nowait postinstall skipifsilent
