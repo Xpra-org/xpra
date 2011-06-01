@@ -1,3 +1,6 @@
+xpra 0.0.7.22 DISTRIBUTION; urgency: normal
+	* better keybord support?
+
 xpra 0.0.7.21 DISTRIBUTION; urgency: normal
 	* ability to bind to an existing display with --use-display
 	* --xvfb now specifies the full command used. The default is unchanged

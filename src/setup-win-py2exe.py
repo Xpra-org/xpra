@@ -4,7 +4,7 @@ import py2exe
 setup(
     name = 'Xpra',
     description = 'screen for X',
-    version = '0.0.7.19',
+    version = '0.0.7.22',
 
     windows = [
                   {
