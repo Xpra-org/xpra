@@ -1,3 +1,9 @@
+v0.0.7.21 (2011-05-24)
+==================
+  New features:
+	-- Adaptive JPEG mode (bandwidth constrained)
+
+
 v0.0.7.16 (2010-08-25)
 ==================
 Lots of new features and options.
