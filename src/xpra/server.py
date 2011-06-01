@@ -277,9 +277,7 @@ class XpraServer(gobject.GObject):
 
         try:
             xmodmap = subprocess.Popen(["xmodmap", "-"], stdin=subprocess.PIPE)
-        except OSError, e:
-            sys.stderr.write("Error running xmodmap: %s\n" % (e,))
-        xmodmap.communicate("""clear Lock
+            xmodmap.communicate("""clear Lock
                                clear Shift
                                clear Control
                                clear Mod1
@@ -303,6 +301,8 @@ class XpraServer(gobject.GObject):
                             # Really stupid hack to force backspace to work.
                             # Remove this once we have real keymap support.
                             + "keycode any = BackSpace")
+        except OSError, e:
+            sys.stderr.write("Error running xmodmap: %s\n" % (e,))
         self._keyname_for_mod = {
             "shift": "Shift_L",
             "control": "Control_L",
