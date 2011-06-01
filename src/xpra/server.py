@@ -737,9 +737,9 @@ class XpraServer(gobject.GObject):
         (_, id, keyname, depressed, modifiers) = packet
         self._make_keymask_match(modifiers)
         self._focus(id)
-        log.debug("now %spressing key %s", depressed, keyname)
-        xtest_fake_key(gtk.gdk.display_get_default(),
-                       self._keycode(keyname), depressed)
+        keycode = self._keycode(keyname, 0)
+        log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
+        xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
 
     def _process_button_action(self, proto, packet):
         (_, id, button, depressed, pointer, modifiers) = packet
