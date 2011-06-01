@@ -81,6 +81,7 @@ class Protocol(object):
         self.source = None
         self.jpegquality = 0
         self._source_has_more = False
+        self._recv_counter = 0
         self._closed = False
         self._read_decoder = IncrBDecode()
         self._compressor = None
@@ -151,6 +152,7 @@ class Protocol(object):
                 assert self._closed
                 return
             log("read thread: got data %s", repr_ellipsized(buf))
+            self._recv_counter += len(buf)
             self._read_queue.put(buf)
             main_thread_call(self._handle_read)
 

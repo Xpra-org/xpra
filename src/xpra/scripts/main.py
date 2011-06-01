@@ -1,4 +1,6 @@
 # This file is part of Parti.
+# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
+# Copyright (C) 2010-2011 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -90,6 +92,15 @@ def main(script_file, cmdline):
                       metavar="LEVEL",
                       dest="jpegquality", type="int", default="0",
                       help="Use jpeg compression with given quality (1-100), 0 disables jpeg compression. Default: disabled.")
+    parser.add_option("-b", "--max-bandwidth", action="store",
+                      dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
+                      help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
+    parser.add_option("--auto-refresh-delay", action="store",
+                      dest="auto_refresh_delay", type="float", default=0.0,
+                      metavar="DELAY",
+                      help="Idle delay in seconds before doing automatic lossless refresh."
+                      + " 0.0 to disable."
+                      + " Default: %default.")
     parser.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",
@@ -262,7 +273,9 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio, opts.clipboard, opts)
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file,
+                     opts.pulseaudio, opts.clipboard,
+                     opts.auto_refresh_delay, opts.max_bandwidth, opts)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()

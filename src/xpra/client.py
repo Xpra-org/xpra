@@ -1,4 +1,6 @@
 # This file is part of Parti.
+# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
+# Copyright (C) 2010-2011 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -68,6 +70,8 @@ class ClientWindow(gtk.Window):
         self._override_redirect = override_redirect
         self._new_backing(w, h)
         self._failed_pixbuf_index = 0
+        self._refresh_timer = None
+        self._refresh_requested = 0
 
         self.update_metadata(metadata)
         
@@ -157,6 +161,11 @@ class ClientWindow(gtk.Window):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
+    def _automatic_refresh_cb(self):
+        log.debug("Automatic refresh for id ", self._id)
+        self._client.send(["buffer-refresh", self._id, True, 95])
+        self._refresh_requested = 1
+
     def draw(self, x, y, width, height, coding, img_data):
         gc = self._backing.new_gc()
         if coding != "rgb24":
@@ -191,6 +200,14 @@ class ClientWindow(gtk.Window):
             assert len(img_data) == width * height * 3
             self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
         self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height), False)
+
+        if self._refresh_requested:
+            self._refresh_requested = 0
+        else:
+            if self._refresh_timer:
+                gobject.source_remove(self._refresh_timer)
+            if self._client.refresh_delay:
+                self._refresh_timer = gobject.timeout_add(int(1000 * self._client.refresh_delay), self._automatic_refresh_cb)
 
     def do_expose_event(self, event):
         if not self.flags() & gtk.MAPPED:
@@ -303,7 +320,7 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard, opts):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard, refresh_delay, max_bandwidth, opts):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
@@ -311,6 +328,11 @@ class XpraClient(gobject.GObject):
         self.password_file = password_file
         self.compression_level = compression_level
         self.jpegquality = jpegquality
+        self.refresh_delay = refresh_delay
+        self.max_bandwidth = max_bandwidth
+        if self.max_bandwidth>0.0 and self.jpegquality==0:
+            """ jpegquality was not set, use a better start value """
+            self.jpegquality = 50
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -331,6 +353,27 @@ class XpraClient(gobject.GObject):
         self._client_extras = ClientExtras(self.send, pulseaudio, opts)
 
         self._focused = None
+        def compute_receive_bandwidth(delay):
+            bw = (self._protocol._recv_counter / 1024) * 1000/ delay;
+            self._protocol._recv_counter = 0;
+            log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
+
+            if bw > self.max_bandwidth:
+                self.jpegquality -= 10;
+            elif bw < self.max_bandwidth:
+                self.jpegquality += 5;
+
+            if self.jpegquality > 95:
+                self.jpegquality = 95;
+            elif self.jpegquality < 10:
+                self.jpegquality = 10;
+
+            self.send_jpeg_quality()
+            return True
+
+        if (self.max_bandwidth):
+            gobject.timeout_add(2000, compute_receive_bandwidth, 2000);
+
 
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
@@ -370,6 +413,9 @@ class XpraClient(gobject.GObject):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])
+
+    def send_jpeg_quality(self):
+        self.send(["jpeg-quality", self.jpegquality])
 
     def _process_disconnect(self, packet):
         log.error("server requested disconnect: %s" % str(packet))
@@ -431,6 +477,7 @@ class XpraClient(gobject.GObject):
 
     def _process_new_window(self, packet):
         self._process_new_common(packet, False)
+        self.jpegquality = self.jpegquality + 1
 
     def _process_new_override_redirect(self, packet):
         self._process_new_common(packet, True)
@@ -455,6 +502,8 @@ class XpraClient(gobject.GObject):
         window = self._id_to_window[id]
         del self._id_to_window[id]
         del self._window_to_id[window]
+        if window._refresh_timer:
+            gobject.source_remove(window._refresh_timer)
         window.destroy()
 
     def _process_connection_lost(self, packet):

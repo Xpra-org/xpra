@@ -1,4 +1,6 @@
 # This file is part of Parti.
+# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
+# Copyright (C) 2010-2011 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -216,6 +218,7 @@ class ServerSource(object):
         # enabling jpeg compression (for example len(data) > N and/or
         # width*height > M)
         if self._protocol.jpegquality > 0:
+            log.debug("sending with quality ", self._protocol.jpegquality)
             im = Image.fromstring("RGB", (width,height), data)
             buf=StringIO.StringIO()
             im.save(buf,"JPEG", quality=self._protocol.jpegquality)
@@ -792,6 +795,21 @@ class XpraServer(gobject.GObject):
         log.info("Shutting down in response to request")
         self.quit(False)
 
+    def _process_buffer_refresh(self, proto, packet):
+        (_, id, _, jpeg_qual) = packet
+        window = self._id_to_window[id]
+        log.debug("Requested refresh for window ", id)
+        qual_save = self._protocol.jpegquality
+        self._protocol.jpegquality = jpeg_qual
+        (_, _, w, h) = window.get_property("geometry")
+        self._damage(window, 0, 0, w, h)
+        self._protocol.jpegquality = qual_save
+
+    def _process_jpeg_quality(self, proto, packet):
+        (_, quality) = packet
+        log.debug("Setting JPEG quality to ", quality)
+        self._protocol.jpegquality = quality
+
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
         proto.close()
@@ -819,6 +837,8 @@ class XpraServer(gobject.GObject):
         "pointer-position": _process_pointer_position,
         "close-window": _process_close_window,
         "shutdown-server": _process_shutdown_server,
+        "jpeg-quality": _process_jpeg_quality,
+        "buffer-refresh": _process_buffer_refresh,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,
