@@ -85,12 +85,14 @@ class ClientWindow(gtk.Window):
         self._metadata.update(metadata)
         
         title_main = self._metadata.get("title", "<untitled window>").decode("utf-8")
-        if "client-machine" in self._metadata:
+        if self._client.title_suffix:
+            title_addendum = self._client.title_suffix
+        elif "client-machine" in self._metadata:
             title_addendum = ("on %s, "
                               % (self._metadata["client-machine"].decode("utf-8"),))
         else:
-            title_addendum = ""
-        self.set_title(u"%s (%svia xpra)" % (title_main, title_addendum))
+            title_addendum = "(via xpra)"
+        self.set_title(u"%s %s" % (title_main, title_addendum))
 
         if "size-constraints" in self._metadata:
             size_metadata = self._metadata["size-constraints"]
@@ -277,10 +279,11 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, password_file):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
+        self.title_suffix = title_suffix
         self.password_file = password_file
         self.compression_level = compression_level
         self.jpegquality = jpegquality

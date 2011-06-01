@@ -77,6 +77,9 @@ def main(script_file, cmdline):
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
+    parser.add_option("--title-suffix", action="store",
+                      dest="title_suffix", default=" (via xpra)",
+                      help="Text which is appended to the window's title")
     parser.add_option("--jpeg-quality", action="store",
                       metavar="LEVEL",
                       dest="jpegquality", type="int", default="0",
@@ -250,7 +253,7 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.password_file)
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()
@@ -274,7 +277,7 @@ def run_stop(parser, opts, extra_args):
         pass
     if display_desc["local"]:
         sockdir = DotXpra()
-        for i in xrange(6):
+        for _ in xrange(6):
             final_state = sockdir.server_state(display_desc["display"])
             if final_state is DotXpra.LIVE:
                 time.sleep(0.5)
