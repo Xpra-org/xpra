@@ -610,9 +610,12 @@ class XpraServer(gobject.GObject):
         log.info("best resolution for client(%sx%s) is: %s" % (client_w,client_h,new_size))
         if new_size:
             w, h = new_size
-            set_screen_size(w, h)
-            (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
-            log.info("our new resolution is: %sx%s" % (root_w,root_h))
+            try:
+                set_screen_size(w, h)
+                (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+                log.info("our new resolution is: %sx%s" % (root_w,root_h))
+            except Exception, e:
+                log.error("failed to set new resolution: %s" % e)
         w = min(client_w, root_w)
         h = min(client_h, root_h)
         return w,h
