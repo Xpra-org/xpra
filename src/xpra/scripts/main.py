@@ -69,6 +69,9 @@ def main(script_file, cmdline):
         parser.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")
+        parser.add_option("--use-display", action="store_true",
+                          dest="use_display", default=False,
+                          help="Use an existing display rather than starting one with xvfb")
         parser.add_option("--xvfb", action="store",
                           dest="xvfb", default="Xvfb", metavar="CMD",
                           help="How to run the headless X server (default: '%default')")

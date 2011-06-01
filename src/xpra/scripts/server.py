@@ -239,7 +239,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
 
-    if not upgrading:
+    if not upgrading and not opts.use_display:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY",
                                     os.path.expanduser("~/.Xauthority"))
@@ -279,21 +279,22 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         default_display.close()
     manager.set_default_display(display)
 
-    if upgrading:
-        xvfb_pid = get_pid()
-    else:
-        xvfb_pid = xvfb.pid
+    if not opts.use_display:
+        if upgrading:
+            xvfb_pid = get_pid()
+        else:
+            xvfb_pid = xvfb.pid
 
-    def kill_xvfb():
-        # Close our display(s) first, so the server dying won't kill us.
-        for display in gtk.gdk.display_manager_get().list_displays():
-            display.close()
+        def kill_xvfb():
+            # Close our display(s) first, so the server dying won't kill us.
+            for display in gtk.gdk.display_manager_get().list_displays():
+                display.close()
+            if xvfb_pid is not None:
+                os.kill(xvfb_pid, signal.SIGTERM)
+        _cleanups.append(kill_xvfb)
+
         if xvfb_pid is not None:
-            os.kill(xvfb_pid, signal.SIGTERM)
-    _cleanups.append(kill_xvfb)
-
-    if xvfb_pid is not None:
-        save_pid(xvfb_pid)
+            save_pid(xvfb_pid)
 
     sockets = []
     sockets.append(create_unix_domain_socket(display_name, upgrading))
