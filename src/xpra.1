@@ -17,21 +17,26 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBstart\fP \fI:DISPLAY\fP
 [\fB\-\-start\-child=CHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
+[\fB\-\-use\-display\fP]
 [\fB\-\-xvfb=CMD\fP]
+[\fB\-\-no\-randr\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP] 
 [\fB\-\-bind\-tcp=\[HOST\]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
-[\fB\-\-jpeg\-quality=VALUE\fP]\fB
-[\fB\-\-title\-suffix=VALUE\fP]\fB
-[\fB\-\-dock\-icon=filename\fP]\fB
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP] 
+[\fB\-\-jpeg\-quality=VALUE\fP]
+[\fB\-\-auto\-refresh\-delay=DELAY\fP]
+[\fB\-\-max\-bandwidth=BW\fP]
+[\fB\-\-title\-suffix=VALUE\fP]
+[\fB\-\-dock\-icon=filename\fP]
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-password\-file=filename\fP]
 .HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
@@ -186,6 +191,23 @@ filter like \fBxpra.protocol.raw\fP is more specific than one like
 \fBxpra.protocol\fP. Additionally, logging can be disabled for a
 specific subsystem by prefixing a minus sign to its name, like so:
 \fB\-\-debug=all,-wimpiggy\fP.
+.TP
+\fB\-\-no\-clipboard\fP
+Disables clipboard synchronization.
+If used on the server, no clients will be able to use clipboard
+synchronization at all. If used on the client, only this particular
+connection will ignore clipboard data from the server.
+.TP
+\fB\-\-no\-pulseaudio\fP
+Disables pulseaudio information echange.
+If used on the server, no clients will be able to set the pulseaudio
+cookies seen by the application running within xpra.
+If used on the client, only this particular connection will avoid
+sending pulseaudio cookies and information to the server.
+
+Note: what the application does with this information is beyond the
+scope of this document.
+
 .SS Options for start, upgrade
 .TP
 \fB\-\-start\-child=\fP\fICMD\fP
@@ -205,28 +227,24 @@ By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
 .TP
+\fB\-\-use\-display\fP
+Use an existing display rather than starting one with xvfb.
+You are responsible for starting the display yourself.
+.TP
 \fB\-\-xvfb\fP\fICMD\fP
 When starting the server, xpra starts a virtual X server to run the
 clients on. By default, this is 'Xvfb'. If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
-executable.
+executable. The default value used is:
+\fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-auth $XAUTHORITY\fP
 .TP
-\fB\-\-no\-clipboard\fP
-Disables clipboard synchronization.
-If used on the server, no clients will be able to use clipboard
-synchronization at all. If used on the client, only this particular
-connection will ignore clipboard data from the server.
-.TP
-\fB\-\-no\-pulseaudio\fP
-Disables pulseaudio information echange.
-If used on the server, no clients will be able to set the pulseaudio
-cookies seen by the application running within xpra.
-If used on the client, only this particular connection will avoid
-sending pulseaudio cookies and information to the server.
-
-Note: what the application does with this information is beyond the
-scope of this document.
+\fB\-\-no\-randr\fP
+Disables X11 randr support. The X11 randr extensions allows the virtual
+display to be resized to match the client's screen dimensions.
+The default xvfb command (Xvfb) does not support randr, so using
+this switch will have no effect unless a different xvfb is used
+(like Xdummy).
 .TP
 \fB\-\-bind\-tcp=\fP\fI[HOST]:PORT\fP
 The xpra server always listens for connections on a local Unix domain
@@ -241,14 +259,15 @@ used. If you wish to accept connections on all interfaces, pass
 Using this switch without using the password option is not recommended,
 and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
-Use it only if you have special needs (e.g., certain virtualization
-environments), and understand the consequences of your actions.
+Use it only if you have special needs, and understand the consequences
+of your actions.
 \fB\-\-password\-file\fP\fIFILENAME\fP
 This allows sessions to be secured with a password stored in a text
 file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
 .TP
+
 .SS Options for attach, stop
 .TP
 \fB-z\fP\fILEVEL\fP, \fB\-\-compress=\fP\fILEVEL\fP
@@ -268,6 +287,15 @@ The valid values range from 0 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
 particularly useful). This option is only really useful for graphical
 applications.
+.TP
+\fB\-\-auto\-refresh\-delay=\fP\fIDELAY\fP
+This option sets a delay after which an idle image is automatically 
+refreshed in a lossless fashion. The delay is a floating-point
+number and is in seconds. This option is disabled by default.
+.TP
+\fB\-\-max\-bandwidth=\fP\fIBW\fP
+Specify the link's maximal receive bandwidth. Xpra will adjust the
+JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
 .TP
 \fB\-\-title\-suffix=\fP\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.
