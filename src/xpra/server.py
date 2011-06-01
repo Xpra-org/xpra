@@ -230,7 +230,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, password_file, pulseaudio):
+    def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard):
         gobject.GObject.__init__(self)
         
         # Do this before creating the Wm object, to avoid clobbering its
@@ -309,7 +309,10 @@ class XpraServer(gobject.GObject):
             }
 
         ### Clipboard handling:
-        self._clipboard_helper = ClipboardProtocolHelper(self._send)
+        if clipboard:
+            self._clipboard_helper = ClipboardProtocolHelper(self._send)
+        else:
+            self._clipboard_helper = None
 
         ### Misc. state:
         self._settings = {}
@@ -754,7 +757,8 @@ class XpraServer(gobject.GObject):
         packet_type = packet[0]
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
-            self._clipboard_helper.process_clipboard_packet(packet)
+            if self._clipboard_helper:
+                self._clipboard_helper.process_clipboard_packet(packet)
         else:
             self._packet_handlers[packet_type](self, proto, packet)
 

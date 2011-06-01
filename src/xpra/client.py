@@ -67,6 +67,8 @@ class ClientWindow(gtk.Window):
         self._metadata = {}
         self._override_redirect = override_redirect
         self._new_backing(w, h)
+        self._failed_pixbuf_index = 0
+
         self.update_metadata(metadata)
         
         self.set_app_paintable(True)
@@ -160,9 +162,31 @@ class ClientWindow(gtk.Window):
         if coding != "rgb24":
             loader = gtk.gdk.PixbufLoader(coding)
             loader.write(img_data, len(img_data))
-            pixbuf = loader.get_pixbuf()
             loader.close()
-            self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+            pixbuf = loader.get_pixbuf()
+            if not pixbuf:
+                if self._failed_pixbuf_index<10:
+                    import os.path, sys
+                    if sys.platform.startswith("win"):
+                        appdata = os.environ.get("APPDATA")
+                        if not os.path.exists(appdata):
+                            os.mkdir(appdata)
+                        xpra_path = os.path.join(appdata, "Xpra")
+                        if not os.path.exists(xpra_path):
+                            os.mkdir(xpra_path)
+                    else:
+                        xpra_path = os.path.expanduser("~/.xpra")
+                    failed_pixbuf_file = os.path.join(xpra_path, "failed-%s.%s" % (self._failed_pixbuf_index, coding))
+                    f = open(failed_pixbuf_file, 'wb')
+                    f.write(img_data)
+                    f.close()
+                    self._failed_pixbuf_index += 1
+                    log.error("failed %s pixbuf=%s data saved to %s, len=%s" % (coding, pixbuf, failed_pixbuf_file, len(img_data)))
+                elif self._failed_pixbuf_index==10:
+                    log.error("too many pixbuf failures! (will no longer be logged)")
+                    self._failed_pixbuf_index += 1
+            else:
+                self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
         else:
             assert len(img_data) == width * height * 3
             self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
@@ -279,7 +303,7 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
@@ -300,7 +324,10 @@ class XpraClient(gobject.GObject):
         self._root_props_watcher = None
 
         # FIXME: these should perhaps be merged.
-        self._clipboard_helper = ClipboardProtocolHelper(self.send)
+        if clipboard:
+            self._clipboard_helper = ClipboardProtocolHelper(self.send)
+        else:
+            self._clipboard_helper = None
         self._client_extras = ClientExtras(self.send, pulseaudio)
 
         self._focused = None
@@ -389,7 +416,8 @@ class XpraClient(gobject.GObject):
                          "Please complain to "
                          "parti-discuss@partiwm.org"
                          % (avail_w, avail_h, root_w, root_h))
-        self._clipboard_helper.send_all_tokens()
+        if self._clipboard_helper:
+            self._clipboard_helper.send_all_tokens()
         self._client_extras.handshake_complete(capabilities)
         self.emit("handshake-complete")
 
@@ -456,7 +484,8 @@ class XpraClient(gobject.GObject):
         packet_type = packet[0]
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
-            self._clipboard_helper.process_clipboard_packet(packet)
+            if self._clipboard_helper:
+                self._clipboard_helper.process_clipboard_packet(packet)
         else:
             self._packet_handlers[packet_type](self, packet)
 

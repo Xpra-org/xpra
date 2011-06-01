@@ -71,6 +71,9 @@ def main(script_file, cmdline):
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
+    parser.add_option("--no-clipboard", action="store_false",
+                      dest="clipboard", default=True,
+                      help="Disable clipboard support")
     parser.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=True,
                       help="Disable pulseaudio support via X11 root window properties")
@@ -253,7 +256,7 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio)
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file, opts.pulseaudio, opts.clipboard)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()
