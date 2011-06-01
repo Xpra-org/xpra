@@ -15,8 +15,8 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol
-from xpra.keys import mask_to_names, grok_modifier_map
-from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras
+from xpra.keys import mask_to_names
+from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
 
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}

@@ -7,8 +7,10 @@
 # may import gtk.
 
 from wimpiggy.keys import grok_modifier_map
+assert grok_modifier_map		#make pydev happy: this import is needed as it is part of the gui "interface"
 
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
+assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is part of the gui "interface"
 
 from xpra.xposix.xsettings import XSettingsWatcher
 from xpra.xposix.xroot_props import XRootPropWatcher
