@@ -11,9 +11,6 @@
 #   shape?
 #   any other interesting metadata? _NET_WM_TYPE, WM_TRANSIENT_FOR, etc.?
 
-# This is just a hack to allow us to test (set to 0):
-KEYCODE_GROUP = -1
-
 import gtk
 import gobject
 import cairo
@@ -472,7 +469,7 @@ class XpraServer(gobject.GObject):
             keycodes.append(_keycode)
         return  keycodes
 
-    def _keycode(self, keyname, group=KEYCODE_GROUP):
+    def _keycode(self, keyname, group=0):
         keyval = gtk.gdk.keyval_from_name(keyname)
         entries = self._keymap.get_entries_for_keyval(keyval)
         ll = None
