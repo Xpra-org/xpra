@@ -320,7 +320,8 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file, pulseaudio, clipboard, refresh_delay, max_bandwidth, opts):
+    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file,
+                 pulseaudio, clipboard, refresh_delay, max_bandwidth, opts, keymap):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
@@ -330,6 +331,7 @@ class XpraClient(gobject.GObject):
         self.jpegquality = jpegquality
         self.refresh_delay = refresh_delay
         self.max_bandwidth = max_bandwidth
+        self.keymap = keymap
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
@@ -410,6 +412,8 @@ class XpraClient(gobject.GObject):
             capabilities_request["deflate"] = self.compression_level
         if self.jpegquality:
             capabilities_request["jpeg"] = self.jpegquality
+        if self.keymap:
+            capabilities_request["keymap"] = self.keymap
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])

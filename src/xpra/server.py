@@ -276,8 +276,8 @@ class XpraServer(gobject.GObject):
         self._keys_changed()
 
         try:
-            xmodmap = subprocess.Popen(["xmodmap", "-"], stdin=subprocess.PIPE)
-            xmodmap.communicate("""clear Lock
+            self.signal_safe_exec(["xmodmap", "-"],
+                            """clear Lock
                                clear Shift
                                clear Control
                                clear Mod1
@@ -335,6 +335,29 @@ class XpraServer(gobject.GObject):
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
+
+    def set_keymap(self, keymap):
+        try:
+            returncode = self.signal_safe_exec(["xkbcomp", "-"], keymap)
+            if returncode==0:
+                log.info("xkbcomp successfully applied new keymap")
+            else:
+                log.info("xkbcomp failed with exit code %s\n" % returncode)
+        except Exception, e:
+            log.info("error setting keymap: %s" % e)
+    
+    def signal_safe_exec(self, cmd, stdin):
+        """ this is a bit of a hack,
+        the problem is that we won't catch SIGCHLD at all while this command is running! """
+        import signal
+        try:
+            oldsignal = signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            process.communicate(stdin)
+            return  process.poll()
+        finally:
+            signal.signal(signal.SIGCHLD, oldsignal)
+
 
     def add_listen_socket(self, sock):
         sock.listen(5)
@@ -575,7 +598,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -645,7 +668,7 @@ class XpraServer(gobject.GObject):
             if not client_hash or not self.salt:
                 self.salt = "%s" % uuid.uuid4()
                 capabilities["challenge"] = self.salt
-                log.info("Password required, sending challenge: %s" % str(capabilities))
+                log.info("Password required, sending challenge")
                 packet = ("challenge", self.salt)
                 socket = proto._conn._s
                 log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
@@ -691,6 +714,8 @@ class XpraServer(gobject.GObject):
             self._protocol.enable_deflate(capabilities["deflate"])
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
+        if "keymap" in capabilities:
+            self.set_keymap(capabilities["keymap"])
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
