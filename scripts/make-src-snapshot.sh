@@ -5,7 +5,7 @@ if [ -z "${VERSION}" ]; then
 	VERSION=`PYTHONPATH="./dev" python -c "from xpra import __version__; print __version__"`
 fi
 DIR=xpra-${VERSION}
-cp -apr dev ${DIR}
+cp -apr src ${DIR}
 rm -fr "${DIR}/build"
 rm -fr "${DIR}/install"
 rm -fr "${DIR}/wimpiggy/lowlevel/bindings.c"

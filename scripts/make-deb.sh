@@ -1,6 +1,6 @@
 #!/bin/bash
 
-XPRA_VERSION=`PYTHONPATH="./dev/:${PYTHONPATH}" python -c "from xpra import __version__; print __version__;"`
+XPRA_VERSION=`PYTHONPATH="./src/:${PYTHONPATH}" python -c "from xpra import __version__; print __version__;"`
 BUILD_NO=${BUILD_NO:=1}
 
 unset DISTRIB_CODENAME
