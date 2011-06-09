@@ -97,13 +97,14 @@ cd parti-all-%{version}
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
 %{__python} setup.py install -O1  --prefix /usr --skip-build --root %{buildroot}
-%ifarch x86_64
-mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
-%endif
 %if %{defined generic_rpm}
 # remove .so (not suitable for a generic RPM)
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/wimpiggy/bindings.so"
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so"
+%else
+%ifarch x86_64
+mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
+%endif
 %endif
 
 %clean
