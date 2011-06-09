@@ -85,6 +85,7 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/parti-all-%{version}
 zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
 %if %{defined generic_rpm}
+cd parti-all-%{version}
 %patch0 -p0
 %endif
 
