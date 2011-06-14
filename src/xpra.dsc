@@ -7,4 +7,4 @@ Depends: x11-common, python, python-gtk2, xvfb, libxtst6, x11-xserver-utils, lib
 Maintainer: Antoine Martin <antoine@nagafix.co.uk>
 Provides: xpra
 Description: screen for X sessions
-Homepage: http://partiwm.org/wiki/xpra
+Homepage: xpra.devloop.org.uk

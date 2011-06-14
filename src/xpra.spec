@@ -20,7 +20,7 @@ License: GPL
 Requires: %{requires}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
-URL: http://winswitch.org/
+URL: http://xpra.devloop.org.uk/
 Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
