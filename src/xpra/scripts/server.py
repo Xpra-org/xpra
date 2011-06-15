@@ -254,8 +254,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         raw_cookie = os.urandom(16)
         baked_cookie = raw_cookie.encode("hex")
         try:
-            assert not subprocess.call(["xauth", "add", display_name,
-                                        "MIT-MAGIC-COOKIE-1", baked_cookie])
+            code = subprocess.call(["xauth", "add", display_name,
+                                "MIT-MAGIC-COOKIE-1", baked_cookie])
+            if code != 0:
+                raise OSError("non-zero exit code: %s" % code)
         except OSError, e:
             sys.stderr.write("Error running xauth: %s\n" % e)
 
