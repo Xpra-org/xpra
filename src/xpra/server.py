@@ -337,6 +337,22 @@ class XpraServer(gobject.GObject):
             self.add_listen_socket(sock)
 
     def set_keymap(self, keymap):
+        #quite a bit of a hack, find out the layout and call setxkbmap prior to xkbcomp..
+        # we look for a line like:
+        #     xkb_symbols   { include "pc+gb+inet(pc105)"     };
+        # and extract 'gb'
+        try:
+            import re
+            sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"pc\+(\w*)")
+            for line in keymap.splitlines():
+                m = sym_re.match(line)
+                if m:
+                    layout = m.group(1)
+                    log.info("setting keyboard layout to '%s'" % layout)
+                    self.signal_safe_exec(["setxkbmap", layout], None)
+                    break
+        except Exception, e:
+            log.info("error setting keyboard layout: %s" % e)
         try:
             returncode = self.signal_safe_exec(["xkbcomp", "-"], keymap)
             if returncode==0:
@@ -495,6 +511,9 @@ class XpraServer(gobject.GObject):
     def _keycode(self, keyname, group=0, level=0):
         keyval = gtk.gdk.keyval_from_name(keyname)
         entries = self._keymap.get_entries_for_keyval(keyval)
+        if not entries:
+            log.info("no keycode found for keyname=%s, keyval=%s" % (keyname, keyval))
+            return None
         keycode = -1
         if group>=0:
             for _keycode,_group,_level in entries:
@@ -795,7 +814,8 @@ class XpraServer(gobject.GObject):
             level = 1
         keycode = self._keycode(keyname, level=level)
         log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
-        xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
+        if keycode:
+            xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
 
     def _process_button_action(self, proto, packet):
         (_, id, button, depressed, pointer, modifiers) = packet
