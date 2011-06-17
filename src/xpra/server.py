@@ -492,15 +492,15 @@ class XpraServer(gobject.GObject):
             keycodes.append(_keycode)
         return  keycodes
 
-    def _keycode(self, keyname, group=0):
+    def _keycode(self, keyname, group=0, level=0):
         keyval = gtk.gdk.keyval_from_name(keyname)
         entries = self._keymap.get_entries_for_keyval(keyval)
-        ll = None
         keycode = -1
         if group>=0:
             for _keycode,_group,_level in entries:
-                if _group==group and ll is None or _level<ll:
-                    ll = _level
+                if _group!=group:
+                    continue
+                if keycode==-1 or _level==level:
                     keycode = _keycode
         if keycode>0:
             return  keycode
@@ -790,7 +790,10 @@ class XpraServer(gobject.GObject):
         (_, id, keyname, depressed, modifiers) = packet
         self._make_keymask_match(modifiers)
         self._focus(id)
-        keycode = self._keycode(keyname)
+        level = 0
+        if "shift" in modifiers:
+            level = 1
+        keycode = self._keycode(keyname, level=level)
         log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
         xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
 
