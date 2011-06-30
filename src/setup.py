@@ -24,7 +24,7 @@ def pkgconfig(*packages, **kw):
                 '-l': 'libraries'}
     cmd = "pkg-config --libs --cflags %s" % (" ".join(packages),)
     (status, output) = commands.getstatusoutput(cmd)
-    if not (os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0):
+    if not (os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0) and not ('clean' in sys.argv):
         raise Exception, ("call to pkg-config ('%s') failed" % (cmd,))
     for token in output.split():
         if flag_map.has_key(token[:2]):
