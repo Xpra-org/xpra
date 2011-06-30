@@ -1,0 +1,60 @@
+#!/bin/bash --
+
+set -e
+
+VERSION=$2
+TARBALL="`readlink -f "$3"`"
+
+TMPDIR=`mktemp -d`
+
+cd "$TMPDIR"
+
+if [ -n "$VERBOSE" ]; then
+	echo "Repacking tarball $TARBALL"
+fi
+
+if grep tar.gz$ <<< $TARBALL &>/dev/null; then
+	TYPE=gzip
+	tar zxf "$TARBALL"
+elif grep tar.bz2$ <<< $TARBALL &>/dev/null; then
+	TYPE=bzip2
+	tar jxf "$TARBALL"
+elif grep zip$ <<< $TARBALL &>/dev/null; then
+	TYPE=zip
+	unzip -qq "$TARBALL"
+else
+	echo "Do not know how to unpack $TARBALL (expecting tar.gz, tar.bz2 or zip)"
+fi
+
+SUBDIR=
+if [ "`ls -1 | wc -l`" = "1" ]; then
+	cd *
+	SUBDIR=true
+fi
+
+rm -rf working-notes/specs/
+
+if [ -n "$SUBDIR" ]; then
+	cd ..
+fi
+
+rm -f "$TARBALL"
+
+case "$TYPE" in 
+gzip)
+	tar zcf "$TARBALL" *
+	;;
+bzip2)
+	tar jcf "$TARBALL" *
+	;;
+zip)
+	tar zcf "${TARBALL%.zip}.tar.gz" *
+	;;
+esac
+
+cd /
+rm -rf "$TMPDIR"
+
+if [ -n "$VERBOSE" ]; then
+	echo "done"
+fi

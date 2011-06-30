@@ -1,0 +1,141 @@
+xpra (0.0.7.23-1) UNRELEASED; urgency=low
+  * New upstream release.
+  * Moved debian/parti.1 to main source tree
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 30 Jun 2011 23:09:42 +0700
+
+xpra (0.0.7.22.1+dfsg-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+  * Refreshed manpage.diff & setup.diff patches
+  * debian/control: B-D on cython instead of python-pyrex
+  * debian/clean: Added wimpiggy/lowlevel/constants.pxi
+  * debian/rules: Added an override for dh_auto_build to run
+    make_constants_pxi.py before the normal build.
+  * debian/copyrights:
+    + Updated copyrights.
+    + Added copyrights for Debian packaging.
+  * debian/watch: Switched to new upstream URL
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>  Sun, 19 Jun 2011 04:09:42 +0200
+
+parti-all (0.0.6+dfsg-1) experimental; urgency=low
+
+  [ أحمد المحمودي (Ahmed El-Mahmoudy) ]
+  * Initial release to Debian (Closes: #607973)
+  * Added debian/repack script to repack upstream tarball.
+  * debian/watch:
+    + Updated URL.
+    + Added demangling for dfsg.
+    + Added call for repack script
+  * Removed stray xpra.dirs
+  * Renamed wimpiggy to python-wimpiggy
+    + debian/control:
+      - Added "Section: python" for python-wimpiggy
+      - Added Provides/Conflicts: wimpiggy
+  * Switch to 3.0 (quilt) source format.
+  * Use dh_python2 instead of python-central.
+    + Removed debian/pycompat
+    + debian/control:
+      - build-dep on python-all-dev >= 2.6.6-2
+      - Use X-Python-Version in source stanza and remove X[BS]-Python-Version
+        fields.
+  * Use debhelper without CDBS.
+    + debian/rules: build-dep on debhelper >= 7.0.50~ to support dh overrides.
+  * debian/control:
+    + Bumped Standards-Version to 3.9.1, no changes needed.
+    + Added Vcs-* fields
+    + Set PAPT as Maintainer, and myself as uploader.
+    + Better package descriptions.
+    + Added ipython to parti's Depends.
+  * Added debian/parti.1, debian/parti.manpages, debian/parti.links
+  * debian/docs: Remove NEWS
+  * debian/{xpra,parti}.install: Install xpra & parti packages as private
+    packages.
+  * Added private-pkg.diff patch to add /usr/lib/xpra to sys.path for xpra
+    script and /usr/lib/parti to sys.path for parti script.
+  * debian/copyright:
+    + Removed clauses for working-notes/specs/* files, as the specs/ folder is
+      removed in this DFSG.
+    + Added clause for parti/addons/ipython_view.py
+
+  [ Miguel Landaeta ]
+  * Add myself to Uploaders.
+  * Move clean target to debian/clean file.
+
+  [ Michael Schutte <michi@uiae.at> ]
+  * Add Suggests on openssh-{client,server} for xpra.
+  * Add a couple of patches:
+    - manpage.patch: Fix a typo in xpra manpage.
+    - run_xauth.patch: Run xauth regardless of __debug__.
+  * Install upstream changelog file.
+
+  [ Jakub Wilk ]
+  * Export LDFLAGS in debian/rules.
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>  Fri, 25 Mar 2011 19:23:24 +0200
+
+parti-all (0.0.6-0ubuntu10) natty; urgency=low
+
+  * debian/rules: Pass the same args to the custom install, as cdbs does.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 04 Dec 2010 14:03:38 +0100
+
+parti-all (0.0.6-0ubuntu9) natty; urgency=low
+
+  * Rebuild to add support for python 2.7.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 03 Dec 2010 00:06:35 +0000
+
+parti-all (0.0.6-0ubuntu8) karmic; urgency=low
+
+  * debian/control:
+    - xpra depends on x11-xserver-utils not x11-server-utils. (LP: #397456)
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@users.sourceforge.net>  Thu, 09 Jul 2009 17:36:27 +0300
+
+parti-all (0.0.6-0ubuntu7) karmic; urgency=low
+
+  * Add dependency on x11-server-utils for xpra.  Thanks Antoine Martin.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Fri, 12 Jun 2009 15:12:59 +0100
+
+parti-all (0.0.6-0ubuntu6) karmic; urgency=low
+
+  * Clear generated C code on clean.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Thu, 04 Jun 2009 12:29:41 +0100
+
+parti-all (0.0.6-0ubuntu5) karmic; urgency=low
+
+  * Work around Debian bug #525436.  parti.install is being processed before
+    debian/tmp/* exists.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Wed, 03 Jun 2009 17:10:01 +0100
+
+parti-all (0.0.6-0ubuntu4) karmic; urgency=low
+
+  * Created better descriptions for Xpra and wimpiggy.
+  * Noted the licenses for the files in working-notes/specs in
+    debian/copyright.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 02 Jun 2009 12:44:00 +0100
+
+parti-all (0.0.6-0ubuntu3) karmic; urgency=low
+
+  * Add a watch file.
+  * Upload to the Ubuntu archive (LP: #306068).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Fri, 01 May 2009 12:31:11 +0100
+
+parti-all (0.0.6-0ubuntu2) jaunty; urgency=low
+
+  * Change the maintainer to Ubuntu MOTU Developers.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 28 Apr 2009 13:24:19 +0100
+
+parti-all (0.0.6-0ubuntu1) jaunty; urgency=low
+
+  * Initial release.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Mon, 27 Apr 2009 01:43:36 +0100

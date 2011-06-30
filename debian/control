@@ -1,0 +1,48 @@
+Source: xpra
+Section: x11
+Priority: optional
+Maintainer: Python Applications Packaging Team <python-apps-team@lists.alioth.debian.org>
+Uploaders: أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>,
+ Miguel Landaeta <miguel@miguel.cc>
+Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxtst-dev, libxcomposite-dev, libxdamage-dev, python-all-dev (>= 2.6.6-2), cython, python-gobject-dev, python-gtk2-dev
+X-Python-Version: all
+Standards-Version: 3.9.1
+Homepage: http://xpra.devloop.org.uk/
+Vcs-Svn: http://xpra.devloop.org.uk/svn/Xpra/
+Vcs-Browser: http://xpra.devloop.org.uk/trac/browser/
+
+Package: parti
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}, python-wimpiggy (>=${source:Version}), python-gtk2, xvfb, ipython
+Description: tabbing/tiling window manager using GTK+
+ Parti is a tabbing/tiling (one might say "partitioning") window manager.  Its
+ goal is to bring this superior window management interface to modern,
+ mainstream desktop environments.
+
+Package: xpra
+Architecture: any
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-wimpiggy (=${binary:Version}), python-gtk2, xvfb, x11-xserver-utils
+Suggests: openssh-client, openssh-server
+Description: tool to detach/reattach running X programs
+ Xpra gives you the functionality of GNU Screen for X applications.
+ .
+ It allows the user to view remote X applications on their local machine, and
+ disconnect and reconnect from the remote machine without losing the state of
+ the running applications.
+ .
+ Unlike VNC, these applications are "rootless".  They appear as individual
+ windows inside your window manager rather than being contained within a single
+ window.
+
+Package: python-wimpiggy
+Section: python
+Architecture: any
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-gtk2
+Provides: wimpiggy
+Conflicts: wimpiggy
+Description: library for writing window managers, using GTK+
+ A helper library for writing window managers.
+ .
+ As the author says, wimpiggy is "a library to make writing fancypants,
+ EWMH-compliant, compositing window managers just as easy as writing an app in
+ PyGTK+."
