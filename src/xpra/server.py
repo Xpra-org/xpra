@@ -834,8 +834,11 @@ class XpraServer(gobject.GObject):
     def _process_pointer_position(self, proto, packet):
         (_, id, pointer, modifiers) = packet
         self._make_keymask_match(modifiers)
-        self._desktop_manager.raise_window(self._id_to_window[id])
-        self._move_pointer(pointer)
+        if id in self._id_to_window:
+            self._desktop_manager.raise_window(self._id_to_window[id])
+            self._move_pointer(pointer)
+        else:
+            log.error("_process_pointer_position() invalid window id: %s" % id)
 
     def _process_close_window(self, proto, packet):
         (_, id) = packet
