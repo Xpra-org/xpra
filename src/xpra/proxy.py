@@ -23,9 +23,11 @@ class XpraProxy(object):
 
     def _to_client_loop(self):
         self._copy_loop("<-server", self._server_conn, self._client_conn)
+        self._to_server._Thread__stop()
 
     def _to_server_loop(self):
         self._copy_loop("->server", self._client_conn, self._server_conn)
+        self._to_client._Thread__stop()
 
     def _copy_loop(self, log_name, from_conn, to_conn):
         while True:
