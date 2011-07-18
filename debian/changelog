@@ -1,6 +1,9 @@
 xpra (0.0.7.23-1) UNRELEASED; urgency=low
+
   * New upstream release.
   * Moved debian/parti.1 to main source tree
+  * Better support for keyboard mappings: take keyval level into account
+  * More generic support for customization of the windows' title
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 30 Jun 2011 23:09:42 +0700
 
