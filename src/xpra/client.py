@@ -8,6 +8,7 @@
 import gtk
 import gobject
 import cairo
+import re
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -74,7 +75,7 @@ class ClientWindow(gtk.Window):
         self._refresh_requested = 0
 
         self.update_metadata(metadata)
-        
+
         self.set_app_paintable(True)
         self.add_events(gtk.gdk.STRUCTURE_MASK
                         | gtk.gdk.KEY_PRESS_MASK | gtk.gdk.KEY_RELEASE_MASK
@@ -89,16 +90,19 @@ class ClientWindow(gtk.Window):
 
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
-        
-        title_main = self._metadata.get("title", "<untitled window>").decode("utf-8")
-        if self._client.title_suffix:
-            title_addendum = self._client.title_suffix
-        elif "client-machine" in self._metadata:
-            title_addendum = ("on %s, "
-                              % (self._metadata["client-machine"].decode("utf-8"),))
-        else:
-            title_addendum = "(via xpra)"
-        self.set_title(u"%s %s" % (title_main, title_addendum))
+
+        title = self._client.title
+        if title.find("@")>=0:
+            #perform metadata variable substitutions:
+            default_values = {"title" : u"<untitled window>",
+                              "client-machine" : u"<unknown machine>"}
+            def metadata_replace(match):
+                atvar = match.group(0)          #ie: '@title@'
+                var = atvar[1:len(atvar)-1]     #ie: 'title'
+                default_value = default_values.get(var, u"<unknown %s>" % var)
+                return self._metadata.get(var, default_value).decode("utf-8")
+            title = re.sub("@[\w\-]*@", metadata_replace, title)
+        self.set_title(u"%s" % title)
 
         if "size-constraints" in self._metadata:
             size_metadata = self._metadata["size-constraints"]
@@ -136,7 +140,7 @@ class ClientWindow(gtk.Window):
             cairo_surf.write_to_png(loader)
             loader.close()
             pixbuf = loader.get_pixbuf()
-            self.set_icon(pixbuf)            
+            self.set_icon(pixbuf)
 
     def _new_backing(self, w, h):
         old_backing = self._backing
@@ -284,7 +288,7 @@ class ClientWindow(gtk.Window):
         (pointer, modifiers) = self._pointer_modifiers(event)
         self._client.send_mouse_position(["pointer-position", self._id,
                                           pointer, modifiers])
-        
+
     def _button_action(self, button, event, depressed):
         (pointer, modifiers) = self._pointer_modifiers(event)
         self._client.send_positional(["button-action", self._id,
@@ -320,12 +324,12 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title_suffix, password_file,
+    def __init__(self, conn, compression_level, jpegquality, title, password_file,
                  pulseaudio, clipboard, refresh_delay, max_bandwidth, opts, keymap):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
-        self.title_suffix = title_suffix
+        self.title = title
         self.password_file = password_file
         self.compression_level = compression_level
         self.jpegquality = jpegquality
@@ -531,7 +535,7 @@ class XpraClient(gobject.GObject):
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,
         }
-    
+
     def process_packet(self, proto, packet):
         packet_type = packet[0]
         if (isinstance(packet_type, str)

@@ -92,8 +92,11 @@ def main(script_file, cmdline):
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
     parser.add_option("--title-suffix", action="store",
-                      dest="title_suffix", default=" (via xpra)",
-                      help="Text which is appended to the window's title")
+                      dest="title_suffix", default=None,
+                      help="Text which is appended to the window's title (deprecated - use --title instead)")
+    parser.add_option("--title", action="store",
+                      dest="title", default="@title@ on @client-machine@",
+                      help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
     parser.add_option("--jpeg-quality", action="store",
                       metavar="LEVEL",
                       dest="jpegquality", type="int", default="0",
@@ -144,7 +147,7 @@ def main(script_file, cmdline):
     logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
     mode = args.pop(0)
-    
+
     if mode in ("start", "upgrade") and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         from xpra.scripts.server import run_server
@@ -279,6 +282,12 @@ def run_client(parser, opts, extra_args):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
+    if opts.title_suffix is not None and opts.title!="@title@ on @client-machine@":
+        parser.error("use --title or --title-suffix but not both!")
+    title = opts.title
+    if opts.title_suffix is not None:
+        title = "@title@ %s" % opts.title_suffix
+
     # Find the client's current keymap so we can send it to the server:
     keymap = None
     try:
@@ -292,7 +301,7 @@ def run_client(parser, opts, extra_args):
             sys.stdout.write("'setxkbmap -print' failed with exit code %s\n" % process.returncode)
     except Exception, e:
         sys.stdout.write("error running 'setxkbmap -print': %s\n" % e)
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, opts.title_suffix, opts.password_file,
+    app = XpraClient(conn, opts.compression_level, opts.jpegquality, title, opts.password_file,
                      opts.pulseaudio, opts.clipboard,
                      opts.auto_refresh_delay, opts.max_bandwidth, opts, keymap)
     app.connect("handshake-complete", handshake_complete_msg)
