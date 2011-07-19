@@ -21,7 +21,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-xvfb=CMD\fP]
 [\fB\-\-no\-randr\fP]
 [\fB\-\-no\-clipboard\fP]
-[\fB\-\-no\-pulseaudio\fP] 
+[\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
 .HP
@@ -29,11 +29,12 @@ xpra \- viewer for remote, persistent X applications
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
 [\fB\-\-no\-clipboard\fP]
-[\fB\-\-no\-pulseaudio\fP] 
+[\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-jpeg\-quality=VALUE\fP]
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
 [\fB\-\-max\-bandwidth=BW\fP]
 [\fB\-\-title\-suffix=VALUE\fP]
+[\fB\-\-title=VALUE\fP]
 [\fB\-\-dock\-icon=filename\fP]
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 [\fB\-\-password\-file=filename\fP]
@@ -289,7 +290,7 @@ particularly useful). This option is only really useful for graphical
 applications.
 .TP
 \fB\-\-auto\-refresh\-delay=\fP\fIDELAY\fP
-This option sets a delay after which an idle image is automatically 
+This option sets a delay after which an idle image is automatically
 refreshed in a lossless fashion. The delay is a floating-point
 number and is in seconds. This option is disabled by default.
 .TP
@@ -299,8 +300,18 @@ JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
 .TP
 \fB\-\-title\-suffix=\fP\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.
-If unset, the default value is to use the 'on XXX', where XXX is the
-server's hostname.
+This option is deprecated and \fB\-\-title\fP should be used instead.
+.TP
+\fB\-\-title=\fP\fIVALUE\fP
+Sets the text shown as window title.
+The string supplied can make use of remote metadata placeholders
+which will be populated at runtime with the values from the
+remote server. ie:
+ \f\@title\@\fP will be replaced by the remote window's title,
+ \f\@client-machine\@\fP will be replaced by the remote server's
+hostname.
+
+The default value used is "@title@ on @client-machine@".
 .TP
 \fB\-\-dock\-icon\fP\fIFILENAME\fP
 This options applies on Mac OS X only and allows the icon shown in
