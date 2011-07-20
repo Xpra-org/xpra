@@ -3,7 +3,8 @@ xpra (0.0.7.23-1) UNRELEASED; urgency=low
   * New upstream release.
   * Moved debian/parti.1 to main source tree
   * Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
-  * Handle keyval level (shifted keys) explicitly, should fix missing key mappings
+  * Handle keyval level (shifted keys) explicitly,
+    should fix missing key mappings
   * More generic option for setting window titles
   * Exit if the server dies
 
