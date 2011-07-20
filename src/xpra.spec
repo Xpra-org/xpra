@@ -24,7 +24,7 @@ URL: http://xpra.devloop.org.uk/
 Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
-BuildRequires: python, setuptool, Pyrex
+BuildRequires: python, setuptool
 %endif
 
 ### Patches ###
