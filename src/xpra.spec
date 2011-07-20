@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.22
+%define version 0.0.7.23
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 
@@ -38,10 +38,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Jun 02 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.21-1
+* Wed Jul 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-1
+- Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
+- Handle keyval level (shifted keys) explicitly, should fix missing key mappings
+- More generic option for setting window titles
+- Exit if the server dies
+
+* Thu Jun 02 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.22-1
 - minor fixes: jpeg, man page, etc
 
-%changelog
 * Fri May 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.21-1
 - ability to bind to an existing display with --use-display
 - --xvfb now specifies the full command used. The default is unchanged
@@ -92,7 +97,7 @@ cd parti-all-%{version}
 %build
 cd parti-all-%{version}
 ./do-rpm-build
- 
+
 %install
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
