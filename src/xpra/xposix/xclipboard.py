@@ -10,8 +10,8 @@ import gtk
 from wimpiggy.util import n_arg_signal
 from wimpiggy.prop import prop_get
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import (get_xatom, get_pywindow,
-                               gdk_atom_objects_from_gdk_atom_array)
+from wimpiggy.lowlevel import (get_xatom, get_pywindow, #@UnresolvedImport
+                               gdk_atom_objects_from_gdk_atom_array) #@UnresolvedImport
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -153,7 +153,7 @@ class ClipboardProtocolHelper(object):
         "clipboard-contents": _process_clipboard_contents,
         "clipboard-contents-none": _process_clipboard_contents_none,
         }
-    
+
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]
         self._packet_handlers[packet_type](self, packet)
@@ -168,7 +168,7 @@ class ClipboardProxy(gtk.Invisible):
         # arguments: (selection,)
         "send-clipboard-token": n_arg_signal(1),
         }
-    
+
     def __init__(self, selection):
         gtk.Invisible.__init__(self)
         self.add_events(gtk.gdk.PROPERTY_CHANGE_MASK)
@@ -199,7 +199,7 @@ class ClipboardProxy(gtk.Invisible):
         #     ourselves and fetch the magic property off the requesting window
         #     (with proper error trapping and all), and interpret its
         #     contents. Probably doable (FIXME), just a pain.
-        #     
+        #
         # Another special case is that if an app requests the contents of a
         # clipboard that it currently owns, then GTK+ will short-circuit the
         # normal logic and request the contents directly (i.e. it calls
@@ -278,5 +278,5 @@ class ClipboardProxy(gtk.Invisible):
                    selection_data.format,
                    selection_data.data)
         self._clipboard.request_contents(target, unpack)
-            
+
 gobject.type_register(ClipboardProxy)

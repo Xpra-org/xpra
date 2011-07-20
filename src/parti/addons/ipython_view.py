@@ -8,12 +8,16 @@ Backend to the console plugin.
 @copyright: Copyright (c) 2007 IBM Corporation
 @license: BSD
 
-All rights reserved. This program and the accompanying materials are made 
-available under the terms of the BSD which accompanies this distribution, and 
+All rights reserved. This program and the accompanying materials are made
+available under the terms of the BSD which accompanies this distribution, and
 is available at U{http://www.opensource.org/licenses/bsd-license.php}
 """
 # this file is a modified version of source code from the Accerciser project
 # http://live.gnome.org/accerciser
+
+#Far too many identation problems in this file, so we have to tell PyDev
+#not to bother trying to validate it:
+#@PydevCodeAnalysisIgnore
 
 import gtk
 import re
@@ -59,7 +63,7 @@ class IterableIPShell:
     if argv is None:
       argv=[]
 
-    # This is to get rid of the blockage that occurs during 
+    # This is to get rid of the blockage that occurs during
     # IPython.Shell.InteractiveShell.user_setup()
     IPython.iplib.raw_input = lambda x: None
 

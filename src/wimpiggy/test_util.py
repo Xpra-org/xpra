@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 import gobject
 import wimpiggy.util
@@ -121,4 +123,4 @@ class Test_gtk_main_quit_really(object):
         # If we get here, then the second main loop exited -- but did it do so
         # immediately, or did it run for a while?
         assert self._iters > 5
-        
+

@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 import struct
 import gtk
@@ -150,7 +152,7 @@ class TestProp(TestWithSession):
         self._assert_icon_matches("_NET_WM_ICON", large)
 
         # Corrupted icons:
-        
+
         # Width, but not height:
         p.prop_set(self.win,
                    "corrupted1", "debug-CARDINAL",
@@ -187,5 +189,5 @@ class TestProp(TestWithSession):
                          ["multiple-conversion"])
         assert len(out) == 4
         assert out == ["X1", "X2", "X3", "X4"]
-        
+
     # FIXME: WMSizeHints and WMHints tests.  Stupid baroque formats...

@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 from wimpiggy.error import trap, XError
 # Need a way to generate X errors...

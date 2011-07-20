@@ -12,10 +12,9 @@ import struct
 from cStringIO import StringIO
 import gtk.gdk
 import cairo
-from wimpiggy.lowlevel import \
-     XGetWindowProperty, XChangeProperty, PropertyError, \
-     get_xatom, get_pyatom, get_xwindow, get_pywindow, const, \
-     premultiply_argb_in_place
+from wimpiggy.lowlevel import (XGetWindowProperty, XChangeProperty, PropertyError, #@UnresolvedImport
+                               get_xatom, get_pyatom, get_xwindow, get_pywindow, const, #@UnresolvedImport
+                               premultiply_argb_in_place) #@UnresolvedImport
 from wimpiggy.error import trap, XError
 from wimpiggy.log import Logger
 log = Logger()

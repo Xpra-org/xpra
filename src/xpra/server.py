@@ -26,13 +26,13 @@ from wimpiggy.util import (AdHocStruct,
                            one_arg_signal,
                            gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from wimpiggy.lowlevel import (get_rectangle_from_region,
-                               xtest_fake_key,
-                               xtest_fake_button,
-                               is_override_redirect, is_mapped,
-                               add_event_receiver,
-                               get_children,
-                               has_randr, get_screen_sizes, set_screen_size)
+from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
+                               xtest_fake_key, #@UnresolvedImport
+                               xtest_fake_button, #@UnresolvedImport
+                               is_override_redirect, is_mapped, #@UnresolvedImport
+                               add_event_receiver, #@UnresolvedImport
+                               get_children, #@UnresolvedImport
+                               has_randr, get_screen_sizes, set_screen_size) #@UnresolvedImport
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
@@ -151,7 +151,7 @@ class ServerSource(object):
     def cancel_damage(self, id):
         if id in self._damage:
             del self._damage[id]
-        
+
     def damage(self, id, window, x, y, w, h):
         log("damage %s (%s, %s, %s, %s)", id, x, y, w, h)
         window, region = self._damage.setdefault(id,
@@ -236,7 +236,7 @@ class XpraServer(gobject.GObject):
 
     def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard, randr):
         gobject.GObject.__init__(self)
-        
+
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
         root = gtk.gdk.get_default_root_window()
@@ -361,7 +361,7 @@ class XpraServer(gobject.GObject):
                 log.info("xkbcomp failed with exit code %s\n" % returncode)
         except Exception, e:
             log.info("error setting keymap: %s" % e)
-    
+
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
         the problem is that we won't catch SIGCHLD at all while this command is running! """
@@ -496,7 +496,7 @@ class XpraServer(gobject.GObject):
                 return {"client-machine": client_machine.encode("utf-8")}
             else:
                 return {}
-                
+
         else:
             assert False
 
@@ -578,12 +578,12 @@ class XpraServer(gobject.GObject):
         if self._protocol is not None and self._protocol.source is not None:
             id = self._window_to_id[window]
             self._protocol.source.damage(id, window, x, y, width, height)
-        
+
     def _cancel_damage(self, window):
         if self._protocol is not None and self._protocol.source is not None:
             id = self._window_to_id[window]
             self._protocol.source.cancel_damage(id)
-            
+
     def _send_new_window_packet(self, window):
         id = self._window_to_id[window]
         (x, y, w, h) = self._desktop_manager.window_geometry(window)

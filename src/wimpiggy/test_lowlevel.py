@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 import wimpiggy.lowlevel as l
 import gtk
@@ -64,7 +66,7 @@ class TestLowlevelMisc(TestLowlevel):
         assert ghjk1 == ghjk2
         assert l.get_pyatom(self.display, asdf2) == "ASDF"
         assert l.get_pyatom(d2, ghjk1) == "GHJK"
-        
+
     def test_property(self):
         r = self.root()
         data = "\x01\x02\x03\x04\x05\x06\x07\x08"
@@ -78,7 +80,7 @@ class TestLowlevelMisc(TestLowlevel):
             print n
             l.XChangeProperty(r, "ASDF", ("GHJK", n, data))
             assert l.XGetWindowProperty(r, "ASDF", "GHJK") == data
-        
+
         l.XDeleteProperty(r, "ASDF")
         assert_raises(l.NoSuchProperty,
                       l.XGetWindowProperty, r, "ASDF", "GHJK")
@@ -130,7 +132,7 @@ class TestLowlevelMisc(TestLowlevel):
         w2 = self.window(self.display)
         w3 = self.window(self.display)
         gtk.gdk.flush()
-        
+
         def do_child(disp_name, xwindow1, xwindow2, xwindow3):
             print "child: in do_child"
             d2 = gtk.gdk.Display(disp_name)
@@ -348,7 +350,7 @@ class TestFocusStuff(TestLowlevel, MockEventReceiver):
         assert self.w2_lost.mode == l.const["NotifyNormal"]
         assert self.w2_lost.detail == l.const["NotifyAncestor"]
         self.w2_lost = None
-        
+
 class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
     def do_wimpiggy_client_message_event(self, event):
         print "got clientmessage"
@@ -448,7 +450,7 @@ class TestSendConfigureNotify(TestLowlevel):
         gtk.gdk.flush()
         l.sendConfigureNotify(w1)
         gtk.main()
-        
+
         assert self.ev is not None
         assert self.ev.type == gtk.gdk.CONFIGURE
         assert self.ev.window == w1
@@ -457,7 +459,7 @@ class TestSendConfigureNotify(TestLowlevel):
         assert self.ev.y == 0
         assert self.ev.width == 10
         assert self.ev.height == 10
-        
+
         # We have to create w2 on a separate connection, because if we just
         # did w1.reparent(w2, ...), then GDK would magically convert w1 from a
         # TOPLEVEL window into a CHILD window.
@@ -557,7 +559,7 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.x == 5
         assert self.conf_ev.y == 6
         assert self.conf_ev.value_mask == (l.const["CWX"] | l.const["CWY"])
-        
+
         self.map_ev = None
         self.conf_ev = None
         w2.raise_()
@@ -565,7 +567,7 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.map_ev is None
         assert self.conf_ev.detail == l.const["Above"]
         assert self.conf_ev.value_mask == l.const["CWStackMode"]
-        
+
     def test_configureAndNotify(self):
         self.conf_ev = None
         l.substructureRedirect(self.root())
@@ -593,11 +595,11 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
                                            | l.const["CWWidth"]
                                            | l.const["CWHeight"]
                                            | l.const["CWBorderWidth"])
-        
+
         partial_mask = l.const["CWWidth"] | l.const["CWStackMode"]
         l.configureAndNotify(w1_client, 11, 12, 13, 14, partial_mask)
         gtk.main()
-        
+
         assert self.conf_ev is not None
         assert self.conf_ev.delivered_to is self.root()
         assert self.conf_ev.window is w1_wm
@@ -605,7 +607,7 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.border_width == 0
         assert self.conf_ev.value_mask == (l.const["CWWidth"]
                                            | l.const["CWBorderWidth"])
-        
+
 
 
 class TestGeometryConstraints(object):
@@ -653,12 +655,12 @@ class TestGeometryConstraints(object):
         t(150, 100, hints(base_size=(3, 4), resize_inc=(10, 10),
                           max_size=(100, 150), min_size=(0, 140)),
           93, 134, 9, 13)
-        
+
         # Behavior in this case is basically undefined, so *shrug*:
         t(150, 100, hints(base_size=(3, 4), resize_inc=(10, 10),
                           max_size=(100, 100), min_size=(100, 100)),
           93, 94, 9, 9)
-        
+
         t(150, 100, hints(min_aspect=1, max_aspect=1), 100, 100, 100, 100)
         t(100, 150, hints(min_aspect=1, max_aspect=1), 100, 100, 100, 100)
 

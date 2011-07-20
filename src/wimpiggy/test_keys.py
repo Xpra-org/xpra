@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 import subprocess
 import wimpiggy.keys
@@ -52,7 +54,7 @@ class TestKeys(TestWithSession):
                       "mod5": 128,
                       "scroll": 0, "num": 0, "meta": 0, "super": 0,
                       "hyper": 0, "alt": 0, "nuisance": 2}
-        
+
         self.xmodmap("""add Mod1 = Num_Lock Hyper_L
                         add Mod2 = Hyper_R Meta_L Alt_L
                         add Mod3 = Super_R
@@ -72,9 +74,9 @@ class TestKeys(TestWithSession):
     def test_parse_unparse_keys(self):
         self.clear_xmodmap()
         self.xmodmap("""add Mod1 = Meta_L Meta_R Alt_L
-                        !add Mod2 = 
+                        !add Mod2 =
                         add Mod3 = Super_L Super_R
-                        !add Mod4 = 
+                        !add Mod4 =
                         add Mod5 = Scroll_Lock
                         keycode 240 = p P
                         """)
@@ -112,7 +114,7 @@ class TestKeys(TestWithSession):
                 == "<super><alt>o")
         assert (wimpiggy.keys.unparse_key(1 | 2 | 4, o_keycode, keymap, mm)
                 == "<shift><control>o")
-        
+
     def test_HotkeyManager_end_to_end(self):
         self.clear_xmodmap()
         self.xmodmap("""add shift = Shift_L Shift_R
@@ -122,7 +124,7 @@ class TestKeys(TestWithSession):
                         add Mod2 = Num_Lock
                         add Mod4 = Super_L
                         """)
-        
+
         print 1
         root = self.display.get_default_screen().get_root_window()
         keymap = gtk.gdk.keymap_get_for_display(self.display)
@@ -154,14 +156,14 @@ class TestKeys(TestWithSession):
         def mod4_r(obj, ev):
             assert ev == "mod4-r"
         assert_mainloop_emits(m, "hotkey::mod4-r", mod4_r)
-        
+
         # Now ones with nuisances in
         press_unpress(["Shift_L", "Caps_Lock", "Alt_L", "r"])
         assert_mainloop_emits(m, "hotkey::shift-alt-r", shift_alt_r)
 
         press_unpress(["Super_L", "Num_Lock", "r"])
         assert_mainloop_emits(m, "hotkey::mod4-r", mod4_r)
-        
+
         # And make sure we handle changing modifier maps correctly
         print "Redoing modmap"
         self.clear_xmodmap()

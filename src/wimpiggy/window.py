@@ -16,7 +16,6 @@ if sys.version_info < (2, 6):
 else:
     ImmutableSet = frozenset
 import gobject
-import gtk
 import gtk.gdk
 import cairo
 import math
@@ -48,11 +47,11 @@ log = Logger()
 #                  /    \
 #  <- top         /     -\-        bottom ->
 #                /        \
-#          +-------+       |     
+#          +-------+       |
 #          | image |  +---------+
 #          +-------+  | corral  |
 #                     +---------+
-#                          |     
+#                          |
 #                     +---------+
 #                     | client  |
 #                     +---------+
@@ -212,7 +211,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         "wimpiggy-configure-event": one_arg_signal,
         }
-    
+
     def __init__(self, client_window):
         super(BaseWindowModel, self).__init__()
 
@@ -403,7 +402,7 @@ class WindowModel(BaseWindowModel):
         "wimpiggy-unmap-event": one_arg_signal,
         "wimpiggy-destroy-event": one_arg_signal,
         }
-        
+
     def __init__(self, parking_window, client_window):
         """Register a new client window with the WM.
 
@@ -447,7 +446,7 @@ class WindowModel(BaseWindowModel):
                 log("hiding inherited window")
                 self.startup_unmap_serial \
                     = wimpiggy.lowlevel.unmap_with_serial(self.client_window)
-            
+
             # Process properties
             self._read_initial_properties()
             self._write_initial_properties_and_setup()
@@ -601,7 +600,7 @@ class WindowModel(BaseWindowModel):
     ################################
     # Property reading
     ################################
-    
+
     def do_wimpiggy_property_notify_event(self, event):
         if event.delivered_to is self.corral_window:
             return
@@ -658,7 +657,7 @@ class WindowModel(BaseWindowModel):
 
     _property_handlers["WM_NAME"] = _handle_title_change
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
-    
+
     def _handle_icon_title_change(self):
         wm_icon_name = prop_get(self.client_window, "WM_ICON_NAME", "latin1")
         net_wm_icon_name = prop_get(self.client_window, "_NET_WM_ICON_NAME", "utf8")
@@ -762,7 +761,7 @@ class WindowModel(BaseWindowModel):
                                   "WM_CLIENT_MACHINE", "latin1")
         # May be None
         self._internal_set_property("client-machine", client_machine)
-        
+
         # WARNING: have to handle _NET_WM_STATE before we look at WM_HINTS;
         # WM_HINTS assumes that our "state" property is already set.  This is
         # because there are four ways a window can get its urgency
@@ -795,7 +794,7 @@ class WindowModel(BaseWindowModel):
     ################################
     # Property setting
     ################################
-    
+
     # A few words about _NET_WM_STATE are in order.  Basically, it is a set of
     # flags.  Clients are allowed to set the initial value of this X property
     # to anything they like, when their window is first mapped; after that,
@@ -905,7 +904,7 @@ class WindowModel(BaseWindowModel):
     ################################
     # Focus handling:
     ################################
-    
+
     def give_client_focus(self):
         """The focus manager has decided that our client should recieve X
         focus.  See world_window.py for details."""
@@ -941,7 +940,7 @@ class WindowModel(BaseWindowModel):
     ################################
     # Killing clients:
     ################################
-    
+
     def request_close(self):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
             trap.swallow(wimpiggy.lowlevel.send_wm_delete_window,
@@ -970,7 +969,7 @@ class WindowView(gtk.Widget):
 
         # Workaround for pygobject bug, see comment in do_destroy():
         self._got_inited = True
-        
+
         self._image_window = None
         self.model = model
         self._redraw_handle = self.model.connect("client-contents-changed",
@@ -1061,7 +1060,7 @@ class WindowView(gtk.Widget):
 #               (event.area.x, event.area.y, event.area.width, event.area.height,
 #                transformed.x, transformed.y, transformed.width, transformed.height))
         self._image_window.invalidate_rect(transformed, False)
-        
+
     def do_expose_event(self, event):
         if not self.flags() & gtk.MAPPED:
             return
@@ -1099,7 +1098,7 @@ class WindowView(gtk.Widget):
         cr.set_source_rgb(0.5, 0.5, 0.5)
         cr.paint()
         cr.restore()
-        
+
         cr.save()
         cr.set_matrix(self._get_transform_matrix())
 
@@ -1171,7 +1170,7 @@ class WindowView(gtk.Widget):
                                                           0, 0)
         self.model.ownership_election()
         self.model.maybe_recalculate_geometry_for(self)
-    
+
     def window_size(self, model):
         assert self.flags() & gtk.REALIZED
         return (self.allocation.width, self.allocation.height)
@@ -1229,18 +1228,18 @@ class WindowView(gtk.Widget):
         self.window.hide()
         self.model.ownership_election()
         log("Unmapped")
-            
+
     def do_unrealize(self):
         log("Unrealizing")
         # Takes care of checking mapped status, issuing signals, calling
         # do_unmap, etc.
         self.unmap()
-        
+
         self.unset_flags(gtk.REALIZED)
         # Break circular reference
         if self.window:
             self.window.set_user_data(None)
         self._image_window = None
         log("Unrealized")
-            
+
 gobject.type_register(WindowView)

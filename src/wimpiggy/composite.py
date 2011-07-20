@@ -6,14 +6,14 @@
 import gobject
 from wimpiggy.util import one_arg_signal, AutoPropGObjectMixin
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import (xcomposite_redirect_window,
-                               xcomposite_unredirect_window,
-                               xcomposite_name_window_pixmap,
-                               xdamage_start, xdamage_stop,
-                               xdamage_acknowledge,
-                               add_event_receiver, remove_event_receiver,
-                               get_parent, addXSelectInput, const,
-                               geometry_with_border)
+from wimpiggy.lowlevel import (xcomposite_redirect_window, #@UnresolvedImport
+                               xcomposite_unredirect_window, #@UnresolvedImport
+                               xcomposite_name_window_pixmap, #@UnresolvedImport
+                               xdamage_start, xdamage_stop, #@UnresolvedImport
+                               xdamage_acknowledge, #@UnresolvedImport
+                               add_event_receiver, remove_event_receiver, #@UnresolvedImport
+                               get_parent, addXSelectInput, const, #@UnresolvedImport
+                               geometry_with_border) #@UnresolvedImport
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -33,7 +33,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                      "", "", gobject.PARAM_READABLE),
         "contents-handle": (gobject.TYPE_PYOBJECT,
                             "", "", gobject.PARAM_READABLE),
-        }        
+        }
 
     # This may raise XError.
     def __init__(self, window, already_composited):

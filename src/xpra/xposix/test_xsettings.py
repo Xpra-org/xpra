@@ -1,3 +1,5 @@
+#@PydevCodeAnalysisIgnore
+
 from wimpiggy.test import *
 import gtk
 
@@ -35,4 +37,4 @@ class TestXSettings(TestWithSession):
         manager3 = XSettingsManager(blob3)
         assert_mainloop_emits(watcher, "xsettings-changed")
         assert watcher.get_settings_blob() == blob3
-        
+

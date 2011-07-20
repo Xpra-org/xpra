@@ -3,6 +3,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#@PydevCodeAnalysisIgnore
+
 import os
 import gobject
 import gtk
@@ -89,7 +91,7 @@ class TestTest(object):
         def slot_wants_hjkl(obj, arg):
             assert isinstance(obj, C)
             assert arg == "hjkl"
-            
+
         assert_emits(do_emit, c, "foo", slot_wants_asdf)
         assert_raises(AssertionError,
                       assert_emits, do_emit, c, "foo", slot_wants_hjkl)

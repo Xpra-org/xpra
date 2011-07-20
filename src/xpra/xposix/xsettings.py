@@ -44,7 +44,7 @@ class XSettingsWatcher(gobject.GObject):
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
         add_event_receiver(self._root, self)
         self._add_watch()
-        
+
     def _owner(self):
         owner_x = myGetSelectionOwner(self._clipboard, "_XSETTINGS_S0")
         if owner_x == const["XNone"]:
@@ -87,5 +87,5 @@ class XSettingsWatcher(gobject.GObject):
         except XError:
             log("X error while fetching XSettings data; ignored")
             return None
-        
+
 gobject.type_register(XSettingsWatcher)
