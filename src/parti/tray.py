@@ -63,7 +63,7 @@ class TraySet(gobject.GObject):
     def has_tag(self, tag):
         for tray in self.trays:
             if tray.tag == tag:
-                return true
+                return True
         return False
     __contains__ = has_tag
 
