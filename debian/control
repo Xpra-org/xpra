@@ -21,7 +21,7 @@ Description: tabbing/tiling window manager using GTK+
 
 Package: xpra
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-wimpiggy (=${binary:Version}), python-gtk2, xvfb, x11-xserver-utils
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-wimpiggy (=${binary:Version}), python-gtk2, xvfb, x11-xserver-utils, libX11-6
 Suggests: openssh-client, openssh-server
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
