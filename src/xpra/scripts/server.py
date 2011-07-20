@@ -75,7 +75,7 @@ def save_pid(pid):
     import wimpiggy.prop
     wimpiggy.prop.prop_set(gtk.gdk.get_default_root_window(),
                            "_XPRA_SERVER_PID", "u32", pid)
-             
+
 def get_pid():
     import gtk
     import wimpiggy.prop
@@ -126,9 +126,7 @@ fi
 """)
     return "".join(script)
 
-def create_unix_domain_socket(display_name, upgrading):
-    dotxpra = DotXpra()
-    sockpath = dotxpra.server_socket_path(display_name, upgrading)
+def create_unix_domain_socket(sockpath):
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listener.bind(sockpath)
@@ -292,7 +290,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             save_pid(xvfb_pid)
 
     sockets = []
-    sockets.append(create_unix_domain_socket(display_name, upgrading))
+    sockpath = dotxpra.server_socket_path(display_name, upgrading)
+    sockets.append(create_unix_domain_socket(sockpath))
     if opts.bind_tcp:
         sockets.append(create_tcp_socket(parser, opts.bind_tcp))
 
