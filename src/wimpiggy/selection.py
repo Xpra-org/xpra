@@ -13,6 +13,7 @@ import gtk
 from struct import pack, unpack
 
 from wimpiggy.util import no_arg_signal, one_arg_signal
+from wimpiggy.error import XError
 from wimpiggy.lowlevel import (get_xatom, get_pywindow, sendClientMessage,
                                myGetSelectionOwner, const,
                                add_event_receiver, remove_event_receiver)
@@ -84,7 +85,7 @@ class ManagerSelection(gobject.GObject):
         selection_xatom = get_xatom(self.clipboard, self.atom)
         # Ask X what window we used:
         self._xwindow = myGetSelectionOwner(self.clipboard, self.atom)
-        
+
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         sendClientMessage(root, False, const["StructureNotifyMask"],
                           "MANAGER",
