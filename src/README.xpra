@@ -102,7 +102,7 @@ On Debian-based OSes, I think it's:
 And a mailing list report suggests the following for Fedora:
   # yum install xorg-x11-server-Xvfb Cython libX11-devel \
     libXtst-devel libXcomposite-devel libXdamage-devel pygobject2-devel \
-    pygtk2-devel gtk2-devel
+    pygtk2-devel gtk2-devel python-imaging python-imaging-devel
 And for MacPorts, apparently you should
   - Install: python26 py26-cython py26-gtk py26-gobject py26-nose
     xorg-libXdamage xorg-libXcomposite xorg-libXtst xorg-libXfixes
