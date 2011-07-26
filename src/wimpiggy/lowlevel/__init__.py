@@ -9,11 +9,22 @@ from wimpiggy.lowlevel.bindings import *
 from wimpiggy.log import Logger
 log = Logger()
 
+def int32(x):
+    if x>0xFFFFFFFF:
+        raise OverflowError
+    if x>0x7FFFFFFF:
+        x=int(0x100000000-x)
+        if x<2147483648:
+            return -x
+        else:
+            return -2147483648
+    return x
+
 def send_wm_take_focus(target, time):
     log("sending WM_TAKE_FOCUS: %r, %r", target, time)
     sendClientMessage(target, False, 0,
                       "WM_PROTOCOLS",
-                      "WM_TAKE_FOCUS", time, 0, 0, 0)
+                      "WM_TAKE_FOCUS", int32(time), 0, 0, 0)
 
 def send_wm_delete_window(target):
     log("sending WM_DELETE_WINDOW")
