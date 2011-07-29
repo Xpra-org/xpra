@@ -340,10 +340,10 @@ class XpraServer(gobject.GObject):
         #quite a bit of a hack, find out the layout and call setxkbmap prior to xkbcomp..
         # we look for a line like:
         #     xkb_symbols   { include "pc+gb+inet(pc105)"     };
-        # and extract 'gb'
+        # and extract 'pc+gb+inet'
         try:
             import re
-            sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"pc\+(\w*)")
+            sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
             for line in keymap.splitlines():
                 m = sym_re.match(line)
                 if m:
