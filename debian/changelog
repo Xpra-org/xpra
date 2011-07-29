@@ -1,3 +1,9 @@
+xpra (0.0.7.23-2) UNRELEASED; urgency=low
+
+  * Rebuilt with debian patches applied: "--with quilt" flag was missing
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 30 Jun 2011 23:09:42 +0700
+
 xpra (0.0.7.23-1) UNRELEASED; urgency=low
 
   * New upstream release.
