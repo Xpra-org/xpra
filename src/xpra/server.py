@@ -20,6 +20,8 @@ import hmac
 import uuid
 import Image
 import StringIO
+import re
+import os
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -336,31 +338,57 @@ class XpraServer(gobject.GObject):
         for sock in sockets:
             self.add_listen_socket(sock)
 
-    def set_keymap(self, keymap):
-        #quite a bit of a hack, find out the layout and call setxkbmap prior to xkbcomp..
-        # we look for a line like:
-        #     xkb_symbols   { include "pc+gb+inet(pc105)"     };
-        # and extract 'pc+gb+inet'
-        try:
-            import re
-            sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
-            for line in keymap.splitlines():
-                m = sym_re.match(line)
+    def set_keymap(self, xkbmap_print, xkbmap_query):
+        """ xkbmap_print is the output of setxkbmap -print on the client
+            xkbmap_query is the output of setxkbmap -query on the client
+            Use those to try to setup the correct keyboard map for the client
+            so that all the keycodes sent will be mapped
+        """
+        #First we try to use setxkbmap
+        if xkbmap_query:
+            """ The xkbmap_query data will look something like this:
+            rules:      evdev
+            model:      evdev
+            layout:     gb
+            options:    grp:shift_caps_toggle
+            And we want to call something like:
+            setxkbmap -rules evdev -model evdev -layout gb
+            setxkbmap -option "" -option grp:shift_caps_toggle
+            (we execute the options separately in case that fails..)
+            """
+            def exec_setxkbmap(args):
+                try:
+                    self.signal_safe_exec(["setxkbmap"]+args, None)
+                    log.info("successfully called setxkbmap %s" % str(args))
+                except Exception, e:
+                    log.info("error calling 'setxkbmap %s': %s" % (str(args), e))
+            #parse the data into a dict:
+            settings = {}
+            opt_re = re.compile("(\w*):\s*(.*)")
+            for line in xkbmap_query.splitlines():
+                m = opt_re.match(line)
                 if m:
-                    layout = m.group(1)
-                    log.info("setting keyboard layout to '%s'" % layout)
-                    self.signal_safe_exec(["setxkbmap", layout], None)
-                    break
-        except Exception, e:
-            log.info("error setting keyboard layout: %s" % e)
-        try:
-            returncode = self.signal_safe_exec(["xkbcomp", "-"], keymap)
-            if returncode==0:
-                log.info("xkbcomp successfully applied new keymap")
-            else:
-                log.info("xkbcomp failed with exit code %s\n" % returncode)
-        except Exception, e:
-            log.info("error setting keymap: %s" % e)
+                    settings[m.group(1)] = m.group(2).strip()
+            #construct the command line arguments for setxkbmap:
+            args = []
+            for setting in ["rules", "model", "layout"]:
+                if setting in settings:
+                    args += ["-%s" % setting, settings.get(setting)]
+            if len(args)>0:
+                exec_setxkbmap(args)
+            #try to set the options:
+            if "options" in settings:
+                exec_setxkbmap(["-option", "", "-option", settings.get("options")])
+
+        if xkbmap_print:
+            try:
+                returncode = self.signal_safe_exec(["xkbcomp", "-", os.environ.get("DISPLAY")], xkbmap_print)
+                if returncode==0:
+                    log.info("xkbcomp successfully applied new keymap")
+                else:
+                    log.info("xkbcomp failed with exit code %s\n" % returncode)
+            except Exception, e:
+                log.info("error setting keymap: %s" % e)
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
@@ -617,7 +645,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -734,7 +762,7 @@ class XpraServer(gobject.GObject):
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
         if "keymap" in capabilities:
-            self.set_keymap(capabilities["keymap"])
+            self.set_keymap(capabilities["keymap"], capabilities.get("xkbmap_query", None))
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,

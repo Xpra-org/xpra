@@ -288,22 +288,25 @@ def run_client(parser, opts, extra_args):
     if opts.title_suffix is not None:
         title = "@title@ %s" % opts.title_suffix
 
+    def get_xkbmap_data(arg):
     # Find the client's current keymap so we can send it to the server:
-    keymap = None
-    try:
-        import subprocess
-        cmd = ["setxkbmap", "-print"]
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-        (out,_) = process.communicate(None)
-        if process.returncode==0:
-            keymap = out
-        else:
-            sys.stdout.write("'setxkbmap -print' failed with exit code %s\n" % process.returncode)
-    except Exception, e:
-        sys.stdout.write("error running 'setxkbmap -print': %s\n" % e)
+        try:
+            import subprocess
+            cmd = ["setxkbmap", arg]
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+            (out,_) = process.communicate(None)
+            if process.returncode==0:
+                return out
+            else:
+                sys.stdout.write("'setxkbmap %s' failed with exit code %s\n" % (arg, process.returncode))
+        except Exception, e:
+            sys.stdout.write("error running 'setxkbmap %s': %s\n" % (arg, e))
+            return None
+    xkbmap_print = get_xkbmap_data("-print")
+    xkbmap_query = get_xkbmap_data("-query")
     app = XpraClient(conn, opts.compression_level, opts.jpegquality, title, opts.password_file,
                      opts.pulseaudio, opts.clipboard,
-                     opts.auto_refresh_delay, opts.max_bandwidth, opts, keymap)
+                     opts.auto_refresh_delay, opts.max_bandwidth, opts, xkbmap_print, xkbmap_query)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()
