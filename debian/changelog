@@ -1,8 +1,14 @@
+xpra (0.0.7.24-1) UNRELEASED; urgency=low
+
+  * More keymap fixes..
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 29 Jul 2011 20:54:43 +0700
+
 xpra (0.0.7.23-2) UNRELEASED; urgency=low
 
   * Rebuilt with debian patches applied: "--with quilt" flag was missing
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 30 Jun 2011 23:09:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 27 Jul 2011 18:15:03 +0000
 
 xpra (0.0.7.23-1) UNRELEASED; urgency=low
 
@@ -14,7 +20,7 @@ xpra (0.0.7.23-1) UNRELEASED; urgency=low
   * More generic option for setting window titles
   * Exit if the server dies
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 30 Jun 2011 23:09:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 24 Jul 2011 23:09:42 +0700
 
 xpra (0.0.7.22.1+dfsg-1) UNRELEASED; urgency=low
 
