@@ -344,7 +344,13 @@ class XpraServer(gobject.GObject):
             Use those to try to setup the correct keyboard map for the client
             so that all the keycodes sent will be mapped
         """
-        #First we try to use setxkbmap
+        def exec_setxkbmap(args):
+            try:
+                self.signal_safe_exec(["setxkbmap"]+args, None)
+                log.info("successfully called setxkbmap %s" % str(args))
+            except Exception, e:
+                log.info("error calling 'setxkbmap %s': %s" % (str(args), e))
+        #First we try to use data from setxkbmap -query
         if xkbmap_query:
             """ The xkbmap_query data will look something like this:
             rules:      evdev
@@ -356,12 +362,6 @@ class XpraServer(gobject.GObject):
             setxkbmap -option "" -option grp:shift_caps_toggle
             (we execute the options separately in case that fails..)
             """
-            def exec_setxkbmap(args):
-                try:
-                    self.signal_safe_exec(["setxkbmap"]+args, None)
-                    log.info("successfully called setxkbmap %s" % str(args))
-                except Exception, e:
-                    log.info("error calling 'setxkbmap %s': %s" % (str(args), e))
             #parse the data into a dict:
             settings = {}
             opt_re = re.compile("(\w*):\s*(.*)")
@@ -379,6 +379,19 @@ class XpraServer(gobject.GObject):
             #try to set the options:
             if "options" in settings:
                 exec_setxkbmap(["-option", "", "-option", settings.get("options")])
+        elif xkbmap_print:
+            #try to guess the layout by parsing "setxkbmap -print"
+            try: 
+                sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)") 
+                for line in xkbmap_print.splitlines(): 
+                    m = sym_re.match(line) 
+                    if m:
+                        layout = m.group(1) 
+                        log.info("guessing keyboard layout='%s'" % layout) 
+                        exec_setxkbmap([layout])
+                        break 
+            except Exception, e: 
+                log.info("error setting keymap: %s" % e) 
 
         if xkbmap_print:
             try:
