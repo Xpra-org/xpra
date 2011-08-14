@@ -325,7 +325,7 @@ class XpraClient(gobject.GObject):
         }
 
     def __init__(self, conn, compression_level, jpegquality, title, password_file,
-                 pulseaudio, clipboard, refresh_delay, max_bandwidth, opts, xkbmap_print, xkbmap_query):
+                 pulseaudio, clipboard, refresh_delay, max_bandwidth, opts):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
@@ -335,8 +335,6 @@ class XpraClient(gobject.GObject):
         self.jpegquality = jpegquality
         self.refresh_delay = refresh_delay
         self.max_bandwidth = max_bandwidth
-        self.xkbmap_print = xkbmap_print
-        self.xkbmap_query = xkbmap_query
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
@@ -347,7 +345,7 @@ class XpraClient(gobject.GObject):
 
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
-        self._keys_changed()
+        self._do_keys_changed()
 
         self._xsettings_watcher = None
         self._root_props_watcher = None
@@ -386,8 +384,34 @@ class XpraClient(gobject.GObject):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
 
+    def query_xkbmap(self):
+        def get_xkbmap_data(arg):
+            # Find the client's current keymap so we can send it to the server:
+            try:
+                import subprocess
+                cmd = ["setxkbmap", arg]
+                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+                (out,_) = process.communicate(None)
+                if process.returncode==0:
+                    return out
+                else:
+                    log.error("'setxkbmap %s' failed with exit code %s\n" % (arg, process.returncode))
+            except Exception, e:
+                log.error("error running 'setxkbmap %s': %s\n" % (arg, e))
+                return None
+        self.xkbmap_print = get_xkbmap_data("-print")
+        self.xkbmap_query = get_xkbmap_data("-query")
+
     def _keys_changed(self, *args):
+        self._do_keys_changed(True)
+
+    def _do_keys_changed(self, sendkeymap=False):
         self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
+        if sendkeymap:
+            #old clients won't know what to do with it, but that's ok
+            self.query_xkbmap()
+            log.info("keys_changed")
+            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query])
 
     def update_focus(self, id, gotit):
         if gotit and self._focused is not id:
@@ -417,6 +441,7 @@ class XpraClient(gobject.GObject):
             capabilities_request["deflate"] = self.compression_level
         if self.jpegquality:
             capabilities_request["jpeg"] = self.jpegquality
+        self.query_xkbmap()
         if self.xkbmap_print:
             capabilities_request["keymap"] = self.xkbmap_print
         if self.xkbmap_query:

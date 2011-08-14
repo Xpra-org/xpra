@@ -845,6 +845,10 @@ class XpraServer(gobject.GObject):
     def _process_focus(self, proto, packet):
         (_, id) = packet
         self._focus(id)
+    
+    def _process_keymap(self, proto, packet):
+        (_, keymap, xkbmap_query) = packet
+        self.set_keymap(keymap, xkbmap_query)
 
     def _process_key_action(self, proto, packet):
         (_, id, keyname, depressed, modifiers) = packet
@@ -928,6 +932,7 @@ class XpraServer(gobject.GObject):
         "resize-window": _process_resize_window,
         "focus": _process_focus,
         "key-action": _process_key_action,
+        "keymap-changed": _process_keymap,
         "button-action": _process_button_action,
         "pointer-position": _process_pointer_position,
         "close-window": _process_close_window,
