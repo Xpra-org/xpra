@@ -270,8 +270,16 @@ class ClientWindow(gtk.Window):
         # Apparently some weird keys (e.g. "media keys") can have no keyval or
         # no keyval name (I believe that both give us a None here).  Another
         # reason to overhaul keyboard support:
-        if name is not None:
-            self._client.send(["key-action", self._id, name, depressed, modifiers])
+        v = self._client.minor_version_int(self._client._remote_version)
+        if v>=24:
+            """ for versions newer than 0.0.7.24, we send ALL the raw information we have """
+            keycode = event.hardware_keycode
+            log.debug("key_action(%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
+            self._client.send(["key-action", self._id, name, depressed, modifiers, event.keyval, event.string, keycode])
+        else:
+            """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...) """
+            if name is not None:
+                self._client.send(["key-action", self._id, name, depressed, modifiers])
 
     def do_key_press_event(self, event):
         self._key_action(event, True)
@@ -343,6 +351,7 @@ class XpraClient(gobject.GObject):
         ClientSource(self._protocol)
         self.send_hello()
 
+        self._remote_version = None
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
         self._do_keys_changed()
@@ -403,6 +412,7 @@ class XpraClient(gobject.GObject):
         self.xkbmap_query = get_xkbmap_data("-query")
 
     def _keys_changed(self, *args):
+        self._keymap = gtk.gdk.keymap_get_default()
         self._do_keys_changed(True)
 
     def _do_keys_changed(self, sendkeymap=False):
@@ -472,19 +482,26 @@ class XpraClient(gobject.GObject):
 
     def version_no_minor(self, version):
         if not version:
-            return    version
+            return version
         p = version.rfind(".")
         if p>0:
             return version[:p]
-        else:
-            return version
+        return version
+
+    def minor_version_int(self, version):
+        if not version:
+            return 0
+        p = version.rfind(".")
+        if p>0:
+            return int(version[p+1:])
+        return 0
 
     def _process_hello(self, packet):
         (_, capabilities) = packet
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
-        remote_version = capabilities.get("__prerelease_version")
-        if self.version_no_minor(remote_version) != self.version_no_minor(xpra.__version__):
+        self._remote_version = capabilities.get("__prerelease_version")
+        if self.version_no_minor(self._remote_version) != self.version_no_minor(xpra.__version__):
             log.error("sorry, I only know how to talk to v%s.x servers", self.version_no_minor(xpra.__version__))
             gtk.main_quit()
             return

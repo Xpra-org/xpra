@@ -549,22 +549,29 @@ class XpraServer(gobject.GObject):
             keycodes.append(_keycode)
         return  keycodes
 
-    def _keycode(self, keyname, group=0, level=0):
-        keyval = gtk.gdk.keyval_from_name(keyname)
+    def _keycode(self, keycode, string, keyval, keyname, group=0, level=0):
+        log.debug("keycode(%s,%s,%s,%s,%s,%s)" % (keycode, string, keyval, keyname, group, level))
+        if keycode:
+            """ versions 0.0.7.24 and above give us the raw keycode """
+            return  keycode
+        # fallback code for older versions:
+        if not keyval:
+            keyval = gtk.gdk.keyval_from_name(keyname)
         entries = self._keymap.get_entries_for_keyval(keyval)
         if not entries:
-            log.info("no keycode found for keyname=%s, keyval=%s" % (keyname, keyval))
+            log.error("no keycode found for keyname=%s, keyval=%s" % (keyname, keyval))
             return None
-        keycode = -1
+        kc = -1
         if group>=0:
             for _keycode,_group,_level in entries:
                 if _group!=group:
                     continue
-                if keycode==-1 or _level==level:
-                    keycode = _keycode
-        if keycode>0:
-            return  keycode
-        return entries[0][0]
+                if kc==-1 or _level==level:
+                    kc = _keycode
+        log.debug("keycode(%s,%s,%s,%s,%s,%s)=%s" % (keycode, string, keyval, keyname, group, level, kc))
+        if kc>0:
+            return  kc
+        return entries[0][0]    #nasty fallback!
 
     def _make_keymask_match(self, modifier_list):
         #FIXME: we should probably cache the keycode
@@ -851,13 +858,26 @@ class XpraServer(gobject.GObject):
         self.set_keymap(keymap, xkbmap_query)
 
     def _process_key_action(self, proto, packet):
-        (_, id, keyname, depressed, modifiers) = packet
+        if len(packet)==5:
+            (_, id, keyname, depressed, modifiers) = packet
+            keyval = None
+            keycode = None
+            string = None
+        elif len(packet)==8:
+            (_, id, keyname, depressed, modifiers, keyval, string, keycode) = packet
+        else:
+            raise Exception("invalid number of arguments for key-action: %s" % len(packet))
         self._make_keymask_match(modifiers)
         self._focus(id)
         level = 0
         if "shift" in modifiers:
             level = 1
-        keycode = self._keycode(keyname, level=level)
+        group = 0
+        #not sure this is right...
+        if "meta" in modifiers:
+            group = 1
+        if not keycode:
+            keycode = self._keycode(string, keyval, keyname, group=group, level=level)
         log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
         if keycode:
             xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
