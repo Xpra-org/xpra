@@ -275,7 +275,11 @@ class ClientWindow(gtk.Window):
             """ for versions newer than 0.0.7.24, we send ALL the raw information we have """
             keycode = event.hardware_keycode
             log.debug("key_action(%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
-            self._client.send(["key-action", self._id, name, depressed, modifiers, event.keyval, event.string, keycode])
+            def nn(arg):
+                if arg is not None:
+                    return  arg
+                return  ""
+            self._client.send(["key-action", self._id, name, depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
         else:
             """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...) """
             if name is not None:
