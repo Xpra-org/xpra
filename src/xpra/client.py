@@ -270,20 +270,20 @@ class ClientWindow(gtk.Window):
         # Apparently some weird keys (e.g. "media keys") can have no keyval or
         # no keyval name (I believe that both give us a None here).  Another
         # reason to overhaul keyboard support:
+        def nn(arg):
+            if arg is not None:
+                return  arg
+            return  ""
         v = self._client.minor_version_int(self._client._remote_version)
         if v>=24:
             """ for versions newer than 0.0.7.24, we send ALL the raw information we have """
             keycode = event.hardware_keycode
             log.debug("key_action(%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
-            def nn(arg):
-                if arg is not None:
-                    return  arg
-                return  ""
-            self._client.send(["key-action", self._id, name, depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
+            self._client.send(["key-action", self._id, nn(name), depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
         else:
             """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...) """
             if name is not None:
-                self._client.send(["key-action", self._id, name, depressed, modifiers])
+                self._client.send(["key-action", self._id, nn(name), depressed, modifiers])
 
     def do_key_press_event(self, event):
         self._key_action(event, True)
