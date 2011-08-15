@@ -1,8 +1,9 @@
 xpra (0.0.7.24-1) UNRELEASED; urgency=low
 
-  * More keymap fixes..
+  * Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
+  * Keyboard fixes for AltGr and special keys for non Unix-like clients
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 29 Jul 2011 20:54:43 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 15 Aug 2011 15:10:22 +0200
 
 xpra (0.0.7.23-2) UNRELEASED; urgency=low
 
