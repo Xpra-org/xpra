@@ -271,6 +271,10 @@ class XpraServer(gobject.GObject):
         for window in get_children(root):
             if (is_override_redirect(window) and is_mapped(window)):
                 self._add_new_or_window(window)
+        
+        ## These may get set by the client:
+        self.xkbmap_print = None
+        self.xkbmap_query = None
 
         ### Set up keymap:
         self._keymap = gtk.gdk.keymap_get_default()
@@ -338,7 +342,7 @@ class XpraServer(gobject.GObject):
         for sock in sockets:
             self.add_listen_socket(sock)
 
-    def set_keymap(self, xkbmap_print, xkbmap_query):
+    def set_keymap(self):
         """ xkbmap_print is the output of setxkbmap -print on the client
             xkbmap_query is the output of setxkbmap -query on the client
             Use those to try to setup the correct keyboard map for the client
@@ -351,7 +355,7 @@ class XpraServer(gobject.GObject):
             except Exception, e:
                 log.info("error calling 'setxkbmap %s': %s" % (str(args), e))
         #First we try to use data from setxkbmap -query
-        if xkbmap_query:
+        if self.xkbmap_query:
             """ The xkbmap_query data will look something like this:
             rules:      evdev
             model:      evdev
@@ -365,7 +369,7 @@ class XpraServer(gobject.GObject):
             #parse the data into a dict:
             settings = {}
             opt_re = re.compile("(\w*):\s*(.*)")
-            for line in xkbmap_query.splitlines():
+            for line in self.xkbmap_query.splitlines():
                 m = opt_re.match(line)
                 if m:
                     settings[m.group(1)] = m.group(2).strip()
@@ -379,11 +383,11 @@ class XpraServer(gobject.GObject):
             #try to set the options:
             if "options" in settings:
                 exec_setxkbmap(["-option", "", "-option", settings.get("options")])
-        elif xkbmap_print:
+        elif self.xkbmap_print:
             #try to guess the layout by parsing "setxkbmap -print"
             try: 
                 sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)") 
-                for line in xkbmap_print.splitlines(): 
+                for line in self.xkbmap_print.splitlines(): 
                     m = sym_re.match(line) 
                     if m:
                         layout = m.group(1) 
@@ -393,9 +397,9 @@ class XpraServer(gobject.GObject):
             except Exception, e: 
                 log.info("error setting keymap: %s" % e) 
 
-        if xkbmap_print:
+        if self.xkbmap_print:
             try:
-                returncode = self.signal_safe_exec(["xkbcomp", "-", os.environ.get("DISPLAY")], xkbmap_print)
+                returncode = self.signal_safe_exec(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
                 if returncode==0:
                     log.info("xkbcomp successfully applied new keymap")
                 else:
@@ -551,8 +555,10 @@ class XpraServer(gobject.GObject):
 
     def _keycode(self, keycode, string, keyval, keyname, group=0, level=0):
         log.debug("keycode(%s,%s,%s,%s,%s,%s)" % (keycode, string, keyval, keyname, group, level))
-        if keycode:
-            """ versions 0.0.7.24 and above give us the raw keycode """
+        if keycode and self.xkbmap_print is not None:
+            """ versions 0.0.7.24 and above give us the raw keycode,
+                we can only use this if we have applied the same keymap - if the client sent one
+            """
             return  keycode
         # fallback code for older versions:
         if not keyval:
@@ -782,7 +788,9 @@ class XpraServer(gobject.GObject):
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
         if "keymap" in capabilities:
-            self.set_keymap(capabilities["keymap"], capabilities.get("xkbmap_query", None))
+            self.xkbmap_print = capabilities["keymap"]
+            self.xkbmap_query = capabilities.get("xkbmap_query", None)
+            self.set_keymap()
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
@@ -855,7 +863,9 @@ class XpraServer(gobject.GObject):
     
     def _process_keymap(self, proto, packet):
         (_, keymap, xkbmap_query) = packet
-        self.set_keymap(keymap, xkbmap_query)
+        self.xkbmap_print = keymap
+        self.xkbmap_query = xkbmap_query
+        self.set_keymap()
 
     def _process_key_action(self, proto, packet):
         if len(packet)==5:
