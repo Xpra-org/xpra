@@ -562,7 +562,10 @@ class XpraServer(gobject.GObject):
             return  keycode
         # fallback code for older versions:
         if not keyval:
-            keyval = gtk.gdk.keyval_from_name(keyname)
+            kn = keyname
+            if len(kn)>0 and kn[-1]=="\0":
+                kn = kn[:-1]
+            keyval = gtk.gdk.keyval_from_name(kn)
         entries = self._keymap.get_entries_for_keyval(keyval)
         if not entries:
             log.error("no keycode found for keyname=%s, keyval=%s" % (keyname, keyval))
@@ -887,7 +890,7 @@ class XpraServer(gobject.GObject):
         if "meta" in modifiers:
             group = 1
         if not keycode:
-            keycode = self._keycode(string, keyval, keyname, group=group, level=level)
+            keycode = self._keycode(keycode, string, keyval, keyname, group=group, level=level)
         log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
         if keycode:
             xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
