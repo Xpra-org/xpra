@@ -220,7 +220,7 @@ class ServerSource(object):
         # enabling jpeg compression (for example len(data) > N and/or
         # width*height > M)
         if self._protocol.jpegquality > 0:
-            log.debug("sending with quality ", self._protocol.jpegquality)
+            log.debug("sending with jpeg quality %s" % self._protocol.jpegquality)
             im = Image.fromstring("RGB", (width,height), data)
             buf=StringIO.StringIO()
             im.save(buf,"JPEG", quality=self._protocol.jpegquality)
