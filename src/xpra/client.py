@@ -407,13 +407,17 @@ class XpraClient(gobject.GObject):
                 (out,_) = process.communicate(None)
                 if process.returncode==0:
                     return out
-                else:
-                    log.error("'setxkbmap %s' failed with exit code %s\n" % (arg, process.returncode))
+                log.error("'setxkbmap %s' failed with exit code %s\n" % (arg, process.returncode))
             except Exception, e:
                 log.error("error running 'setxkbmap %s': %s\n" % (arg, e))
-                return None
+            return None
         self.xkbmap_print = get_xkbmap_data("-print")
+        if self.xkbmap_print is None:
+            log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
         self.xkbmap_query = get_xkbmap_data("-query")
+        if self.xkbmap_query is None and self.xkbmap_print is not None:
+            log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
+            log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
