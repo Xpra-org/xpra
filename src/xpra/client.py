@@ -398,26 +398,27 @@ class XpraClient(gobject.GObject):
         gtk.main()
 
     def query_xkbmap(self):
-        def get_xkbmap_data(arg):
+        def get_keyboard_data(command, arg):
             # Find the client's current keymap so we can send it to the server:
             try:
                 import subprocess
-                cmd = ["setxkbmap", arg]
+                cmd = [command, arg]
                 process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
                 (out,_) = process.communicate(None)
                 if process.returncode==0:
                     return out
-                log.error("'setxkbmap %s' failed with exit code %s\n" % (arg, process.returncode))
+                log.error("'%s %s' failed with exit code %s\n" % (command, arg, process.returncode))
             except Exception, e:
-                log.error("error running 'setxkbmap %s': %s\n" % (arg, e))
+                log.error("error running '%s %s': %s\n" % (command, arg, e))
             return None
-        self.xkbmap_print = get_xkbmap_data("-print")
+        self.xkbmap_print = get_keyboard_data("setxkbmap", "-print")
         if self.xkbmap_print is None:
             log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
-        self.xkbmap_query = get_xkbmap_data("-query")
+        self.xkbmap_query = get_keyboard_data("setxkbmap", "-query")
         if self.xkbmap_query is None and self.xkbmap_print is not None:
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
+        self.xmodmap_data = get_keyboard_data("xmodmap", "-pke");
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -429,7 +430,7 @@ class XpraClient(gobject.GObject):
             #old clients won't know what to do with it, but that's ok
             self.query_xkbmap()
             log.info("keys_changed")
-            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query])
+            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query, self.xmodmap_data])
 
     def update_focus(self, id, gotit):
         if gotit and self._focused is not id:
@@ -464,6 +465,8 @@ class XpraClient(gobject.GObject):
             capabilities_request["keymap"] = self.xkbmap_print
         if self.xkbmap_query:
             capabilities_request["xkbmap_query"] = self.xkbmap_query
+        if self.xmodmap_data:
+            capabilities_request["xmodmap_data"] = self.xmodmap_data
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])

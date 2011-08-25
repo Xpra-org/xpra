@@ -275,6 +275,7 @@ class XpraServer(gobject.GObject):
         ## These may get set by the client:
         self.xkbmap_print = None
         self.xkbmap_query = None
+        self.xmodmap_data = None
 
         ### Set up keymap:
         self._keymap = gtk.gdk.keymap_get_default()
@@ -348,12 +349,17 @@ class XpraServer(gobject.GObject):
             Use those to try to setup the correct keyboard map for the client
             so that all the keycodes sent will be mapped
         """
-        def exec_setxkbmap(args):
+        def exec_keymap_command(args, stdin=None):
             try:
-                self.signal_safe_exec(["setxkbmap"]+args, None)
-                log.info("successfully called setxkbmap %s" % str(args))
+                returncode = self.signal_safe_exec(args, stdin)
+                if returncode==0:
+                    log.info("%s successfully applied" % str(args))
+                else:
+                    log.info("%s failed with exit code %s\n" % (str(args), returncode))
+                return returncode
             except Exception, e:
-                log.info("error calling 'setxkbmap %s': %s" % (str(args), e))
+                log.info("error calling '%s': %s" % (str(args), e))
+                return -1
         #First we try to use data from setxkbmap -query
         if self.xkbmap_query:
             """ The xkbmap_query data will look something like this:
@@ -374,15 +380,15 @@ class XpraServer(gobject.GObject):
                 if m:
                     settings[m.group(1)] = m.group(2).strip()
             #construct the command line arguments for setxkbmap:
-            args = []
+            args = ["setxkbmap"]
             for setting in ["rules", "model", "layout"]:
                 if setting in settings:
                     args += ["-%s" % setting, settings.get(setting)]
             if len(args)>0:
-                exec_setxkbmap(args)
+                exec_keymap_command(args)
             #try to set the options:
             if "options" in settings:
-                exec_setxkbmap(["-option", "", "-option", settings.get("options")])
+                exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
         elif self.xkbmap_print:
             #try to guess the layout by parsing "setxkbmap -print"
             try: 
@@ -392,20 +398,16 @@ class XpraServer(gobject.GObject):
                     if m:
                         layout = m.group(1) 
                         log.info("guessing keyboard layout='%s'" % layout) 
-                        exec_setxkbmap([layout])
+                        exec_keymap_command(["setxkbmap", layout])
                         break 
             except Exception, e: 
                 log.info("error setting keymap: %s" % e) 
 
         if self.xkbmap_print:
-            try:
-                returncode = self.signal_safe_exec(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
-                if returncode==0:
-                    log.info("xkbcomp successfully applied new keymap")
-                else:
-                    log.info("xkbcomp failed with exit code %s\n" % returncode)
-            except Exception, e:
-                log.info("error setting keymap: %s" % e)
+            exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
+        if self.xmodmap_data:
+            exec_keymap_command(["xmodmap", "-", os.environ.get("DISPLAY")], self.xmodmap_data)
+
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
@@ -674,7 +676,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -793,6 +795,7 @@ class XpraServer(gobject.GObject):
         if "keymap" in capabilities:
             self.xkbmap_print = capabilities["keymap"]
             self.xkbmap_query = capabilities.get("xkbmap_query", None)
+            self.xmodmap_data = capabilities.get("xmodmap_data", None)
             self.set_keymap()
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
@@ -865,9 +868,10 @@ class XpraServer(gobject.GObject):
         self._focus(id)
     
     def _process_keymap(self, proto, packet):
-        (_, keymap, xkbmap_query) = packet
-        self.xkbmap_print = keymap
-        self.xkbmap_query = xkbmap_query
+        if len(packet)==3:
+            (_, self.xkbmap_print, self.xkbmap_query) = packet
+        elif len(packet)==4:
+            (_, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data) = packet
         self.set_keymap()
 
     def _process_key_action(self, proto, packet):
