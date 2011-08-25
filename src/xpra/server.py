@@ -277,6 +277,9 @@ class XpraServer(gobject.GObject):
         self.xkbmap_query = None
         self.xmodmap_data = None
 
+        #store list of currently pressed keys
+        #(using a map only so we can display their names in debug messages)
+        self.keys_pressed = {}
         ### Set up keymap:
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
@@ -613,14 +616,23 @@ class XpraServer(gobject.GObject):
                 if modifier in new_mask:
                     break
 
-    def _focus(self, id):
+    def _focus(self, id, modifiers):
+        log.debug("_focus(%s,%s)" % (id, modifiers))
         if self._has_focus != id:
             if id == 0:
+                #clear any keys that were pressed:
+                if len(self.keys_pressed)>0:
+                    log.debug("focus event: clearing keys pressed: %s" % str(self.keys_pressed))
+                    for keycode in self.keys_pressed.keys():
+                        xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+                    self.keys_pressed = {}
                 # FIXME: kind of a hack:
                 self._wm.get_property("toplevel").reset_x_focus()
             else:
                 window = self._id_to_window[id]
                 window.give_client_focus()
+                if modifiers is not None:
+                    self._make_keymask_match(modifiers)
             self._has_focus = id
 
     def _move_pointer(self, pos):
@@ -787,6 +799,8 @@ class XpraServer(gobject.GObject):
         ServerSource(self._protocol)
         # do screen size calculations/modifications:
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
+        capabilities["raw_keycodes_feature"] = True
+        capabilities["focus_modifiers_feature"] = True
         self._send(["hello", capabilities])
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
@@ -870,8 +884,12 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_focus(self, proto, packet):
-        (_, id) = packet
-        self._focus(id)
+        modifiers = None
+        if len(packet)==3:
+            (_, id, modifiers) = packet
+        else:
+            (_, id) = packet
+        self._focus(id, modifiers)
     
     def _process_keymap(self, proto, packet):
         if len(packet)==3:
@@ -893,7 +911,7 @@ class XpraServer(gobject.GObject):
         else:
             raise Exception("invalid number of arguments for key-action: %s" % len(packet))
         self._make_keymask_match(modifiers)
-        self._focus(id)
+        self._focus(id, None)
         level = 0
         if "shift" in modifiers:
             level = 1
@@ -903,9 +921,13 @@ class XpraServer(gobject.GObject):
             group = 1
         if not keycode:
             keycode = self._keycode(keycode, string, keyval, keyname, group=group, level=level)
-        log.debug("now %spressing keycode=%s, keyname=%s", depressed, keycode, keyname)
+        log.debug("now %spressing keycode=%s, keyname=%s" % (depressed, keycode, keyname))
         if keycode:
             xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
+        if depressed and keycode not in self.keys_pressed:
+            self.keys_pressed[keycode] = keyname
+        elif not depressed and keycode in self.keys_pressed:
+            del self.keys_pressed[keycode]
 
     def _process_button_action(self, proto, packet):
         (_, id, button, depressed, pointer, modifiers) = packet

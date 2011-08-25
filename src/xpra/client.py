@@ -274,8 +274,7 @@ class ClientWindow(gtk.Window):
             if arg is not None:
                 return  arg
             return  ""
-        v = self._client.minor_version_int(self._client._remote_version)
-        if v>=24:
+        if self._client._raw_keycodes_feature:
             """ for versions newer than 0.0.7.24, we send ALL the raw information we have """
             keycode = event.hardware_keycode
             log.debug("key_action(%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
@@ -325,6 +324,7 @@ class ClientWindow(gtk.Window):
         self._button_action(scroll_map[event.direction], event, False)
 
     def _focus_change(self, *args):
+        log.info("_focus_change(%s)" % str(args))
         self._client.update_focus(self._id,
                                   self.get_property("has-toplevel-focus"))
 
@@ -354,6 +354,8 @@ class XpraClient(gobject.GObject):
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
 
+        self._raw_keycodes_feature = False
+        self._focus_modifiers_feature = False
         self._remote_version = None
         self._keymap_changing = False
         self._keymap = gtk.gdk.keymap_get_default()
@@ -438,11 +440,19 @@ class XpraClient(gobject.GObject):
             self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask)])
 
     def update_focus(self, id, gotit):
+        def send_focus(_id):
+            """ with v0.0.7.24 onwards, we want to set the modifier map when we get focus """
+            if self._focus_modifiers_feature:
+                (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+                self.send(["focus", _id, self.mask_to_names(current_mask)])
+            else:
+                self.send(["focus", _id])
+
         if gotit and self._focused is not id:
-            self.send(["focus", id])
+            send_focus(id)
             self._focused = id
         if not gotit and self._focused is id:
-            self.send(["focus", 0])
+            send_focus(0)
             self._focused = None
 
     def mask_to_names(self, mask):
@@ -518,6 +528,8 @@ class XpraClient(gobject.GObject):
 
     def _process_hello(self, packet):
         (_, capabilities) = packet
+        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
+        self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
         self._remote_version = capabilities.get("__prerelease_version")
