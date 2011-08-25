@@ -406,7 +406,7 @@ class XpraServer(gobject.GObject):
         if self.xkbmap_print:
             exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
         if self.xmodmap_data:
-            exec_keymap_command(["xmodmap", "-", os.environ.get("DISPLAY")], self.xmodmap_data)
+            exec_keymap_command(["xmodmap", "-"], self.xmodmap_data)
 
 
     def signal_safe_exec(self, cmd, stdin):
@@ -792,6 +792,8 @@ class XpraServer(gobject.GObject):
             self._protocol.enable_deflate(capabilities["deflate"])
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
+        # clear the modifiers since this is a new client, if any are set they will be set on the next keypress
+        self._make_keymask_match([])
         if "keymap" in capabilities:
             self.xkbmap_print = capabilities["keymap"]
             self.xkbmap_query = capabilities.get("xkbmap_query", None)
