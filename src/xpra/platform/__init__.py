@@ -5,6 +5,7 @@
 
 ### NOTE: this must be kept in sync with the version in
 ###    xpra/platform/gui.py 
+#@PydevCodeAnalysisIgnore
 import os as _os
 import sys as _sys
 if _os.name == "nt":
