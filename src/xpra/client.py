@@ -353,13 +353,14 @@ class XpraClient(gobject.GObject):
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
-        self.send_hello()
 
         self._remote_version = None
+        self._keymap_changing = False
         self._keymap = gtk.gdk.keymap_get_default()
-        self._keymap.connect("keys-changed", self._keys_changed)
         self._do_keys_changed()
+        self.send_hello()
 
+        self._keymap.connect("keys-changed", self._keys_changed)
         self._xsettings_watcher = None
         self._root_props_watcher = None
 
@@ -422,15 +423,19 @@ class XpraClient(gobject.GObject):
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
-        self._do_keys_changed(True)
+        if not self._keymap_changing:
+            self._keymap_changing = True
+            gobject.timeout_add(500, self._do_keys_changed, True)
 
     def _do_keys_changed(self, sendkeymap=False):
+        self._keymap_changing = False
         self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
         if sendkeymap:
             #old clients won't know what to do with it, but that's ok
             self.query_xkbmap()
             log.info("keys_changed")
-            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query, self.xmodmap_data])
+            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask)])
 
     def update_focus(self, id, gotit):
         if gotit and self._focused is not id:
@@ -467,6 +472,10 @@ class XpraClient(gobject.GObject):
             capabilities_request["xkbmap_query"] = self.xkbmap_query
         if self.xmodmap_data:
             capabilities_request["xmodmap_data"] = self.xmodmap_data
+        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+        modifiers = self.mask_to_names(current_mask)
+        log.debug("sending modifiers=%s" % str(modifiers))
+        capabilities_request["modifiers"] = modifiers
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         self.send(["hello", capabilities_request])

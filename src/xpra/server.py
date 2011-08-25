@@ -676,7 +676,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data", "modifiers"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -792,13 +792,17 @@ class XpraServer(gobject.GObject):
             self._protocol.enable_deflate(capabilities["deflate"])
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
-        # clear the modifiers since this is a new client, if any are set they will be set on the next keypress
-        self._make_keymask_match([])
         if "keymap" in capabilities:
             self.xkbmap_print = capabilities["keymap"]
             self.xkbmap_query = capabilities.get("xkbmap_query", None)
             self.xmodmap_data = capabilities.get("xmodmap_data", None)
+            #always clear modifiers before setting a new keymap
+            self._make_keymask_match([])
             self.set_keymap()
+        # now we can set the modifiers to match the client
+        modifiers = capabilities.get("modifiers", [])
+        log.debug("setting modifiers to %s" % str(modifiers))
+        self._make_keymask_match(modifiers)
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
@@ -872,9 +876,11 @@ class XpraServer(gobject.GObject):
     def _process_keymap(self, proto, packet):
         if len(packet)==3:
             (_, self.xkbmap_print, self.xkbmap_query) = packet
-        elif len(packet)==4:
-            (_, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data) = packet
+        elif len(packet)==5:
+            (_, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, modifiers) = packet
+        self._make_keymask_match([])
         self.set_keymap()
+        self._make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet):
         if len(packet)==5:
