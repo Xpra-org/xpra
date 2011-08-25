@@ -72,12 +72,15 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     def invalidate_pixmap(self):
         log("invalidating named pixmap", type="pixmap")
         if self._listening_to is not None:
-            # Don't want to stop listening to self._window!:
-            assert self._window not in self._listening_to
-            for w in self._listening_to:
-                remove_event_receiver(w, self)
+            self._cleanup_listening(self._listening_to)
             self._listening_to = None
         self._contents_handle = None
+
+    def _cleanup_listening(self, listening):
+        # Don't want to stop listening to self._window!:
+        assert self._window not in self._listening_to
+        for w in self._listening_to:
+            remove_event_receiver(w, self)
 
     def do_get_property_contents_handle(self, name):
         if self._contents_handle is None:
@@ -99,24 +102,37 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                 #   4) call NameWindowPixmap
                 # we are safe.  (I think.)
                 listening = []
-                win = get_parent(self._window)
-                while win is not None and win.get_parent() is not None:
-                    # We have to use a lowlevel function to manipulate the
-                    # event selection here, because SubstructureRedirectMask
-                    # does not roundtrip through the GDK event mask
-                    # functions.  So if we used them, here, we would clobber
-                    # corral window selection masks, and those don't deserve
-                    # clobbering.  They are our friends!  X is driving me
-                    # slowly mad.
-                    addXSelectInput(win, const["StructureNotifyMask"])
-                    add_event_receiver(win, self)
-                    listening.append(win)
-                    win = get_parent(win)
-                handle = xcomposite_name_window_pixmap(self._window)
-                self._contents_handle = handle
-                # Don't save the listening set until after NameWindowPixmap
-                # has succeeded, to maintain our invariant:
-                self._listening_to = listening
+                try:
+                    win = get_parent(self._window)
+                    while win is not None and win.get_parent() is not None:
+                        # We have to use a lowlevel function to manipulate the
+                        # event selection here, because SubstructureRedirectMask
+                        # does not roundtrip through the GDK event mask
+                        # functions.  So if we used them, here, we would clobber
+                        # corral window selection masks, and those don't deserve
+                        # clobbering.  They are our friends!  X is driving me
+                        # slowly mad.
+                        addXSelectInput(win, const["StructureNotifyMask"])
+                        add_event_receiver(win, self)
+                        listening.append(win)
+                        win = get_parent(win)
+                    handle = xcomposite_name_window_pixmap(self._window)
+                except:
+                    try:
+                        self._cleanup_listening(listening)
+                    except:
+                        pass
+                    raise
+                if handle is None:
+                    log("failed to name a window pixmap (expect an X error soon)",
+                        type="pixmap")
+                    self._cleanup_listening(listening)
+                else:
+                    self._contents_handle = handle
+                    # Don't save the listening set until after
+                    # NameWindowPixmap has succeeded, to maintain our
+                    # invariant:
+                    self._listening_to = listening
             trap.swallow(set_pixmap)
         return self._contents_handle
 
