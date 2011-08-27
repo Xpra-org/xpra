@@ -401,6 +401,11 @@ class XpraClient(gobject.GObject):
         gtk.main()
 
     def query_xkbmap(self):
+        from xpra.platform import X11_KEYMAPS
+        if not X11_KEYMAPS:
+            log.info("this platform does not support X11 keymaps, not querying the system with setxkbmap or xmodmap");
+            self.xkbmap_print, self.xkbmap_query, self.xkbmap_query = None, None, None
+            return
         def get_keyboard_data(command, arg):
             # Find the client's current keymap so we can send it to the server:
             try:
