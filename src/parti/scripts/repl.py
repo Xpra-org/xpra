@@ -27,5 +27,5 @@ def main(cmdline):
     except:
         if "_PARTI_PDB" in os.environ:
             import sys, pdb
-            pdb.post_morten(sys.exc_traceback)
+            pdb.post_mortem(sys.exc_traceback)
         raise

@@ -28,7 +28,7 @@ from xpra.client import XpraClient
 SUBPROCESS_CREATION_FLAGS = 0
 if sys.platform.startswith("win"):
 	try:
-		import win32process
+		import win32process			#@UnresolvedImport
 		SUBPROCESS_CREATION_FLAGS = win32process.CREATE_NO_WINDOW
 	except:
 		pass		#tried our best...
