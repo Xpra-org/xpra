@@ -324,7 +324,7 @@ class ClientWindow(gtk.Window):
         self._button_action(scroll_map[event.direction], event, False)
 
     def _focus_change(self, *args):
-        log.info("_focus_change(%s)" % str(args))
+        log.debug("_focus_change(%s)" % str(args))
         self._client.update_focus(self._id,
                                   self.get_property("has-toplevel-focus"))
 
