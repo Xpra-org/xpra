@@ -1,9 +1,16 @@
+xpra (0.0.7.25-1) UNRELEASED; urgency=low
+
+  * Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
+  * Reset modifiers whenever we gain or lose focus, or when the keymap changes
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 31 Aug 2011 19:26:34 +0700
+
 xpra (0.0.7.24-1) UNRELEASED; urgency=low
 
   * Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
   * Keyboard fixes for AltGr and special keys for non Unix-like clients
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 31 Aug 2011 19:26:34 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 15 Aug 2011 15:10:22 +0200
 
 xpra (0.0.7.23-2) UNRELEASED; urgency=low
 

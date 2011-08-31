@@ -38,7 +38,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed Aug 31 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.24-1
+* Wed Aug 31 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.25-1
+- Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
+- Reset modifiers whenever we gain or lose focus, or when the keymap changes
+
+* Mon Aug 15 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.24-1
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 

@@ -1,5 +1,10 @@
+v0.0.7.25 (2011-08-31)
+======================
+	-- Proper keymap and modifiers support
+
+
 v0.0.7.21 (2011-05-24)
-==================
+======================
   New features:
 	-- Adaptive JPEG mode (bandwidth constrained)
 	-- Use an existing display
@@ -7,7 +12,7 @@ v0.0.7.21 (2011-05-24)
 
 
 v0.0.7.16 (2010-08-25)
-==================
+======================
 Lots of new features and options.
 	-- Password file support
 	-- Ability to disable pulseaudio and clipboard code
