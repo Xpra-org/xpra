@@ -38,7 +38,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Aug 15 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.24-1
+* Wed Aug 31 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.24-1
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 
