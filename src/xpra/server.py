@@ -924,10 +924,10 @@ class XpraServer(gobject.GObject):
         log.debug("now %spressing keycode=%s, keyname=%s" % (depressed, keycode, keyname))
         if keycode:
             xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
-        if depressed and keycode not in self.keys_pressed:
-            self.keys_pressed[keycode] = keyname
-        elif not depressed and keycode in self.keys_pressed:
-            del self.keys_pressed[keycode]
+            if depressed and keycode not in self.keys_pressed:
+                self.keys_pressed[keycode] = keyname
+            elif not depressed and keycode in self.keys_pressed:
+                del self.keys_pressed[keycode]
 
     def _process_button_action(self, proto, packet):
         (_, id, button, depressed, pointer, modifiers) = packet
