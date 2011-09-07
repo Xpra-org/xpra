@@ -399,6 +399,8 @@ class XpraClient(gobject.GObject):
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
+        if self._protocol:
+            self._protocol.close()
 
     def query_xkbmap(self):
         from xpra.platform import X11_KEYMAPS
