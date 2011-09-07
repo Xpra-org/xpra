@@ -616,16 +616,18 @@ class XpraServer(gobject.GObject):
                 if modifier in new_mask:
                     break
 
+    def _clear_keys_pressed(self):
+        if len(self.keys_pressed)>0:
+            log.debug("clearing keys pressed: %s" % str(self.keys_pressed))
+            for keycode in self.keys_pressed.keys():
+                xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+            self.keys_pressed = {}
+
     def _focus(self, id, modifiers):
         log.debug("_focus(%s,%s)" % (id, modifiers))
         if self._has_focus != id:
             if id == 0:
-                #clear any keys that were pressed:
-                if len(self.keys_pressed)>0:
-                    log.debug("focus event: clearing keys pressed: %s" % str(self.keys_pressed))
-                    for keycode in self.keys_pressed.keys():
-                        xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
-                    self.keys_pressed = {}
+                self._clear_keys_pressed()
                 # FIXME: kind of a hack:
                 self._wm.get_property("toplevel").reset_x_focus()
             else:
@@ -789,6 +791,10 @@ class XpraServer(gobject.GObject):
         # set this as our new one:
         if self._protocol is not None:
             log.info("Disconnecting existing client")
+            #ensure that from now on we ignore any incoming packets coming
+            #from this connection as these could potentially set some keys pressed, etc
+            self._protocol.closing = True
+            self._clear_keys_pressed()
             # send message asking for disconnection politely:
             self._protocol.source.send_packet_now(["disconnect", "new valid connection received"])
             def force_disconnect(protocol):
@@ -983,6 +989,7 @@ class XpraServer(gobject.GObject):
             self._potential_protocols.remove(proto)
         if proto is self._protocol:
             log.info("xpra client disconnected.")
+            self._clear_keys_pressed()
             self._protocol = None
         sys.stdout.flush()
 
@@ -1013,6 +1020,9 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
+        if self._protocol and self._protocol.closing:
+            log.debug("ignoring %s packet on socket which is closing" % packet_type)
+            return
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
             if self._clipboard_helper:

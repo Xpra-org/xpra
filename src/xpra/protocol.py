@@ -82,6 +82,7 @@ class Protocol(object):
         self.jpegquality = 0
         self._source_has_more = False
         self._recv_counter = 0
+        self.closing = False
         self._closed = False
         self._read_decoder = IncrBDecode()
         self._compressor = None
