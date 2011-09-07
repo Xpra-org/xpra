@@ -164,7 +164,7 @@ class Protocol(object):
 
     def _handle_read(self):
         log("main thread: woken to handle read data")
-        while True:
+        while not self._closed:
             try:
                 buf = self._read_queue.get(block=False)
                 log("main thread: found read data %s", repr_ellipsized(buf))
