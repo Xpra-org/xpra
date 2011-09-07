@@ -285,6 +285,8 @@ class XpraServer(gobject.GObject):
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
 
+        #clear all modifiers before we try to call xmodmap
+        self._make_keymask_match([])
         try:
             self.signal_safe_exec(["xmodmap", "-"],
                             """clear Lock
