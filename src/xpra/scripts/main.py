@@ -110,6 +110,10 @@ def main(script_file, cmdline):
                       help="Idle delay in seconds before doing automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
+    parser.add_option("--key-shortcut", action="append",
+                      dest="key_shortcuts", type="str", default=[],
+                      help="Define key shortcuts that will trigger specific actions."
+                      + " Defaults to Meta+Shift+F4:quit if no shortcuts are defined.")
     parser.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",
@@ -284,13 +288,8 @@ def run_client(parser, opts, extra_args):
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
     if opts.title_suffix is not None and opts.title!="@title@ on @client-machine@":
         parser.error("use --title or --title-suffix but not both!")
-    title = opts.title
-    if opts.title_suffix is not None:
-        title = "@title@ %s" % opts.title_suffix
 
-    app = XpraClient(conn, opts.compression_level, opts.jpegquality, title, opts.password_file,
-                     opts.pulseaudio, opts.clipboard,
-                     opts.auto_refresh_delay, opts.max_bandwidth, opts)
+    app = XpraClient(conn, opts)
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()

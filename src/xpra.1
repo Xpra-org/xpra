@@ -33,6 +33,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-jpeg\-quality=VALUE\fP]
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
 [\fB\-\-max\-bandwidth=BW\fP]
+[\fB\-\-key\-shortcut=key:action\fP]
 [\fB\-\-title\-suffix=VALUE\fP]
 [\fB\-\-title=VALUE\fP]
 [\fB\-\-dock\-icon=filename\fP]
@@ -298,6 +299,29 @@ number and is in seconds. This option is disabled by default.
 Specify the link's maximal receive bandwidth. Xpra will adjust the
 JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
 .TP
+\fB\-\-key\-shortcut=key:action\fP
+Can be specified multiple times to add multiple key shortcuts.
+These keys will be caught by the client and trigger the action specified
+and the key presses will not be passed to the server.
+.br
+The \fBkey\fP specification may include keyboard modifiers in the form
+ \fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP
+.br
+The following \fBaction\fPs are currently defined:
+.RS
+.IP \fBquit\fP
+disconnects the xpra client
+.IP \fBvoid\fP
+does not do anything, and can therefore be used to prevent
+certain key combinations from ever being sent to the server.
+.IP \fBrefresh_window\fP
+forces the window to be refreshed.
+.RE
+If no shortcuts are defined on the command line,
+the following default one will be added:
+.br
+\fIMeta+Shift+F4:quit\fP
+.TP
 \fB\-\-title\-suffix=\fP\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.
 This option is deprecated and \fB\-\-title\fP should be used instead.
@@ -390,8 +414,7 @@ feature would be gratefully accepted.
 
 The mapping between local and remote keyboard events is not very
 robust; in particular, it is possible in some situations for modifier
-keys to get "stuck" in xpra, and it is usually impossible to type
-characters outside of the standard US keyboard range.
+keys to get "stuck" in xpra.
 
 The xpra server allocates an over-large framebuffer; this wastes
 memory, and can cause applications to misbehave (e.g., by letting

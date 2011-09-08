@@ -18,7 +18,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol
-from xpra.keys import mask_to_names
+from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
 
 import xpra
@@ -72,7 +72,7 @@ class ClientWindow(gtk.Window):
         self._new_backing(w, h)
         self._failed_pixbuf_index = 0
         self._refresh_timer = None
-        self._refresh_requested = 0
+        self._refresh_requested = False
 
         self.update_metadata(metadata)
 
@@ -165,10 +165,10 @@ class ClientWindow(gtk.Window):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def _automatic_refresh_cb(self):
+    def refresh_window(self):
         log.debug("Automatic refresh for id ", self._id)
         self._client.send(["buffer-refresh", self._id, True, 95])
-        self._refresh_requested = 1
+        self._refresh_requested = True
 
     def draw(self, x, y, width, height, coding, img_data):
         gc = self._backing.new_gc()
@@ -206,12 +206,12 @@ class ClientWindow(gtk.Window):
         self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height), False)
 
         if self._refresh_requested:
-            self._refresh_requested = 0
+            self._refresh_requested = False
         else:
             if self._refresh_timer:
                 gobject.source_remove(self._refresh_timer)
-            if self._client.refresh_delay:
-                self._refresh_timer = gobject.timeout_add(int(1000 * self._client.refresh_delay), self._automatic_refresh_cb)
+            if self._client.auto_refresh_delay:
+                self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
 
     def do_expose_event(self, event):
         if not self.flags() & gtk.MAPPED:
@@ -264,12 +264,40 @@ class ClientWindow(gtk.Window):
         self._client.send(["close-window", self._id])
         return True
 
+    def quit(self):
+        self._client.quit()
+
+    def void(self):
+        pass
+
     def _key_action(self, event, depressed):
+        log.debug("key_action(%s,%s)" % (event, depressed))
         modifiers = self._client.mask_to_names(event.state)
         name = gtk.gdk.keyval_name(event.keyval)
-        # Apparently some weird keys (e.g. "media keys") can have no keyval or
-        # no keyval name (I believe that both give us a None here).  Another
-        # reason to overhaul keyboard support:
+        shortcut = self._client.key_shortcuts.get(name)
+        if shortcut:
+            (req_mods, action) = shortcut
+            mods_found = True
+            for rm in req_mods:
+                if rm not in modifiers:
+                    mods_found = False
+                    break
+            if mods_found:
+                if not depressed:
+                    """ when the key is released, just ignore it - do NOT send it to the server! """
+                    return
+                try:
+                    method = getattr(self, action)
+                    log.info("key_action(%s,%s) has been handled by shortcut=%s" % (event, depressed, shortcut))
+                except AttributeError, e:
+                    log.error("key dropped, invalid method name in shortcut %s: %s" % (action, e))
+                    return
+                try:
+                    method()
+                    return
+                except Exception, e:
+                    log.error("key_action(%s,%s) failed to execute shortcut=%s: %s" % (event, depressed, shortcut, e))
+        
         def nn(arg):
             if arg is not None:
                 return  arg
@@ -281,6 +309,9 @@ class ClientWindow(gtk.Window):
             self._client.send(["key-action", self._id, nn(name), depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
         else:
             """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...) """
+            # Apparently some weird keys (e.g. "media keys") can have no keyval or
+            # no keyval name (I believe that both give us a None here).  Another
+            # reason to upgrade to the version above
             if name is not None:
                 self._client.send(["key-action", self._id, nn(name), depressed, modifiers])
 
@@ -336,17 +367,20 @@ class XpraClient(gobject.GObject):
         "received-gibberish": n_arg_signal(1),
         }
 
-    def __init__(self, conn, compression_level, jpegquality, title, password_file,
-                 pulseaudio, clipboard, refresh_delay, max_bandwidth, opts):
+    def __init__(self, conn, opts):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
+        title = opts.title
+        if opts.title_suffix is not None:
+            title = "@title@ %s" % opts.title_suffix
         self.title = title
-        self.password_file = password_file
-        self.compression_level = compression_level
-        self.jpegquality = jpegquality
-        self.refresh_delay = refresh_delay
-        self.max_bandwidth = max_bandwidth
+        self.password_file = opts.password_file
+        self.compression_level = opts.compression_level
+        self.jpegquality = opts.jpegquality
+        self.auto_refresh_delay = opts.auto_refresh_delay
+        self.max_bandwidth = opts.max_bandwidth
+        self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
@@ -367,11 +401,11 @@ class XpraClient(gobject.GObject):
         self._root_props_watcher = None
 
         # FIXME: these should perhaps be merged.
-        if clipboard:
+        if opts.clipboard:
             self._clipboard_helper = ClipboardProtocolHelper(self.send)
         else:
             self._clipboard_helper = None
-        self._client_extras = ClientExtras(self.send, pulseaudio, opts)
+        self._client_extras = ClientExtras(self.send, opts.pulseaudio, opts)
 
         self._focused = None
         def compute_receive_bandwidth(delay):
@@ -401,6 +435,47 @@ class XpraClient(gobject.GObject):
         gtk.main()
         if self._protocol:
             self._protocol.close()
+
+    def quit(self):
+        gtk_main_quit_really()
+
+    def parse_shortcuts(self, strs):
+        #TODO: maybe parse with re instead?
+        if len(strs)==0:
+            """ if none are defined, add this as default
+            it would be nicer to specify it via OptionParser in main
+            but then it would always have to be there with no way of removing it
+            whereas now it is enough to define one (any shortcut)
+            """
+            strs = ["meta+shift+F4:quit"]
+        log.debug("parse_shortcuts(%s)" % str(strs))
+        shortcuts = {}
+        for s in strs:
+            #example for s: Control+F8:some_action()
+            parts = s.split(":", 1)
+            if len(parts)!=2:
+                log.error("invalid shortcut: %s" % s)
+                continue
+            #example for action: "quit"
+            action = parts[1]
+            #example for keyspec: ["Control", "F8"]
+            keyspec = parts[0].split("+")
+            modifiers = []
+            if len(keyspec)>1:
+                valid = True
+                for mod in keyspec[:len(keyspec)-1]:
+                    lmod = mod.lower()
+                    if lmod not in MODIFIER_NAMES:
+                        log.error("invalid modifier: %s" % mod)
+                        valid = False
+                        break
+                    modifiers.append(lmod)
+                if not valid:
+                    continue
+            keyname = keyspec[len(keyspec)-1]
+            shortcuts[keyname] = (modifiers, action)                
+        log.debug("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        return  shortcuts
 
     def query_xkbmap(self):
         from xpra.platform import X11_KEYMAPS
@@ -502,13 +577,13 @@ class XpraClient(gobject.GObject):
 
     def _process_disconnect(self, packet):
         log.error("server requested disconnect: %s" % str(packet))
-        gtk.main_quit()
+        self.quit()
         return
 
     def _process_challenge(self, packet):
         if not self.password_file:
             log.error("password is required by the server")
-            gtk.main_quit()
+            self.quit()
             return
         import hmac
         passwordFile = open(self.password_file, "rU")
@@ -542,7 +617,7 @@ class XpraClient(gobject.GObject):
         self._remote_version = capabilities.get("__prerelease_version")
         if self.version_no_minor(self._remote_version) != self.version_no_minor(xpra.__version__):
             log.error("sorry, I only know how to talk to v%s.x servers", self.version_no_minor(xpra.__version__))
-            gtk.main_quit()
+            self.quit()
             return
         if "desktop_size" in capabilities:
             avail_w, avail_h = capabilities["desktop_size"]
@@ -599,7 +674,7 @@ class XpraClient(gobject.GObject):
 
     def _process_connection_lost(self, packet):
         log.error("Connection lost")
-        gtk_main_quit_really()
+        self.quit()
 
     def _process_gibberish(self, packet):
         [_, data] = packet
