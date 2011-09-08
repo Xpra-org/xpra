@@ -177,8 +177,13 @@ class Protocol(object):
                 return
             if self._decompressor is not None:
                 buf = self._decompressor.decompress(buf)
-            self._read_decoder.add(buf)
-            while True:
+            try:
+                self._read_decoder.add(buf)
+            except:
+                log.error("bencoder read buffer is in an inconsistent state, cannot continue")
+                self._connection_lost()
+                return
+            while not self._closed:
                 had_deflate = (self._decompressor is not None)
                 try:
                     result = self._read_decoder.process()
