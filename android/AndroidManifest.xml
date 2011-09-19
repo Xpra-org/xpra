@@ -16,8 +16,9 @@
 		</activity>
 		<activity android:label="@string/app_name" android:name=".XpraActivity">
 			<intent-filter>
-				<action android:name="android.intent.action.VIEW"></action>
-				<category android:name="android.intent.category.BROWSABLE"></category>
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="xpra"></data>
 			</intent-filter>
 		</activity>

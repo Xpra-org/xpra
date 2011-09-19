@@ -2,6 +2,7 @@ package org.xpra;
 
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -52,11 +53,16 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		Intent intent = this.getIntent();
 		Uri uri = intent.getData();
 		if (uri!=null) {
-			//parse the uri:
+			Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") parsing uri: "+uri);
 			this.host = uri.getHost();
 			this.port = uri.getPort();
 			String pwd = uri.getQueryParameter("password");
-			this.password = pwd==null?null:pwd.getBytes();
+			try {
+				this.password = pwd==null?null:pwd.getBytes("UTF-8");
+			}
+			catch (UnsupportedEncodingException e) {
+				Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") failed to parse password as UTF-8");
+			}
 		}
 		else {
 			Bundle extras = getIntent().getExtras();
