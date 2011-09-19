@@ -40,6 +40,8 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	protected	String	host = null;
 	protected	int	port = 0;
 	protected	byte[] password = null;
+	
+	protected	String	TAG = this.getClass().getSimpleName();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -48,12 +50,12 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		this.setContentView(R.layout.draggable);
 	    this.mDragController = new DragController(this);
 		this.setupViews();
-		Log.i(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+")");
+		Log.i(this.TAG, "onCreate("+savedInstanceState+")");
 		
 		Intent intent = this.getIntent();
 		Uri uri = intent.getData();
 		if (uri!=null) {
-			Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") parsing uri: "+uri);
+			Log.e(this.TAG, "onCreate("+savedInstanceState+") parsing uri: "+uri);
 			this.host = uri.getHost();
 			this.port = uri.getPort();
 			String pwd = uri.getQueryParameter("password");
@@ -61,13 +63,13 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 				this.password = pwd==null?null:pwd.getBytes("UTF-8");
 			}
 			catch (UnsupportedEncodingException e) {
-				Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") failed to parse password as UTF-8");
+				Log.e(this.TAG, "onCreate("+savedInstanceState+") failed to parse password as UTF-8");
 			}
 		}
 		else {
 			Bundle extras = getIntent().getExtras();
 			if (extras==null) {
-				Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") missing extras");
+				Log.e(this.TAG, "onCreate("+savedInstanceState+") missing extras");
 				this.finish();
 				return;
 			}
@@ -75,9 +77,9 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 			this.port = extras.getInt(PARAM_PORT);
 			this.password = extras.getByteArray(PARAM_PASSWORD);
 		}
-		Log.i(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") target: "+this.host+":"+this.port);
+		Log.i(this.TAG, "onCreate("+savedInstanceState+") target: "+this.host+":"+this.port);
 		if (this.host==null || this.host.length()==0 || this.port<=0) {
-			Log.e(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") invalid target: "+this.host+":"+this.port);
+			Log.e(this.TAG, "onCreate("+savedInstanceState+") invalid target: "+this.host+":"+this.port);
 			this.toast("Invalid target specified: "+this.host+":"+this.port+", cannot launch Xpra");
 			this.finish();
 			return;
@@ -86,7 +88,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		ActivityManager activityManager = (ActivityManager) this.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
 		if (activityManager!=null) {
 			activityManager.getMemoryInfo(info);
-			Log.i(this.getClass().getSimpleName(), "onCreate("+savedInstanceState+") memory info="+info);
+			Log.i(this.TAG, "onCreate("+savedInstanceState+") memory info="+info);
 		}
 	}
 
@@ -107,7 +109,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 
 	@Override
 	public void onClick(View v) {
-		toast("You clicked. Try a long click");
+		Log.i(this.TAG, "onClick("+v+")");
 		v.bringToFront();
 	}
 	@Override
@@ -140,14 +142,14 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	@Override
 	protected	void onResume() {
 		super.onResume();
-		Log.e(this.getClass().getSimpleName(), "onResume()");
+		Log.e(this.TAG, "onResume()");
 		if (this.host!=null && this.port>0)
 			this.connect();
 	}
 
 	protected	void connect() {
 		try {
-			Log.e(this.getClass().getSimpleName(), "connect() to "+this.host+":"+this.port);
+			Log.e(this.TAG, "connect() to "+this.host+":"+this.port);
 			SocketAddress sockaddr = new InetSocketAddress(this.host, this.port);
 			Socket sock = new Socket();
 		    int timeout = 5*1000;
@@ -170,7 +172,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		    new Thread(this.client).start();
 		}
 		catch (IOException e) {
-			Log.e(this.getClass().getSimpleName(), "connect()", e);
+			Log.e(this.TAG, "connect()", e);
 			this.finish();
 		}
 	}
@@ -178,7 +180,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.e(this.getClass().getSimpleName(), "onPause() hasEnded="+(this.client==null?null:this.client.hasEnded()));
+		Log.e(this.TAG, "onPause() hasEnded="+(this.client==null?null:this.client.hasEnded()));
 		if (!this.client.hasEnded()) {
 			this.client.stop();
 			this.client = null;
