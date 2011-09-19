@@ -51,7 +51,7 @@ public class XpraConnectDialogActivity extends Activity {
 		Intent intent = new Intent(this, XpraActivity.class);
 		intent.putExtra(XpraActivity.PARAM_HOST, host);
 		intent.putExtra(XpraActivity.PARAM_PORT, portNo);
-		intent.putExtra(XpraActivity.PARAM_PASSWORD, pass);
+		intent.putExtra(XpraActivity.PARAM_PASSWORD, pass==null?null:pass.getBytes());
 		this.startActivity(intent);
 	}
 }
