@@ -600,14 +600,6 @@ class XpraClient(gobject.GObject):
             return version[:p]
         return version
 
-    def minor_version_int(self, version):
-        if not version:
-            return 0
-        p = version.rfind(".")
-        if p>0:
-            return int(version[p+1:])
-        return 0
-
     def _process_hello(self, packet):
         (_, capabilities) = packet
         self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
