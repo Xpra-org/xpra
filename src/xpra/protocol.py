@@ -14,7 +14,7 @@ import socket # for socket.error
 import zlib
 
 from Queue import Queue, Empty
-from threading import Thread
+from threading import Thread, Lock
 
 from xpra.bencode import bencode, IncrBDecode
 
@@ -68,6 +68,21 @@ def main_thread_call(fn, *args, **kwargs):
         return False
     gobject.timeout_add(0, cb)
 
+
+class CachedCounter(object):
+    """ A simple atomic counter with read access to the value (unlike itertools) """
+    def __init__(self, initial=0):
+        self._lock = Lock()
+        self._value = initial
+
+    def inc(self):
+        with self._lock:
+            self._value += 1
+
+    def value(self):
+        with self._lock:
+            return self._value
+
 class Protocol(object):
     CONNECTION_LOST = object()
     GIBBERISH = object()
@@ -86,6 +101,7 @@ class Protocol(object):
         self._read_decoder = IncrBDecode()
         self._compressor = None
         self._decompressor = None
+        self._read_loop_count = CachedCounter()
         self._write_thread = Thread(target=self._write_thread_loop)
         self._write_thread.daemon = True
         self._write_thread.start()
@@ -144,6 +160,7 @@ class Protocol(object):
             self._conn.close()
 
     def _read_thread_loop(self):
+        last_scheduled_read = -1
         while not self._closed:
             log("read thread: waiting for data to arrive")
             try:
@@ -158,7 +175,13 @@ class Protocol(object):
             log("read thread: got data %s", repr_ellipsized(buf))
             self._recv_counter += len(buf)
             self._read_queue.put(buf)
-            main_thread_call(self._handle_read)
+            #schedule the read thread to run if it has not fired since we started
+            #reading in this loop (-1!=0), or if it has already fired since
+            #the last time we scheduled it to run:
+            c = self._read_loop_count.value()
+            if last_scheduled_read!=c:
+                last_scheduled_read = c
+                main_thread_call(self._handle_read)
             if not buf:
                 log("read thread: eof")
                 break
@@ -173,6 +196,7 @@ class Protocol(object):
     def _handle_read(self):
         log("main thread: woken to handle read data")
         while not self._closed:
+            self._read_loop_count.inc()
             try:
                 buf = self._read_queue.get(block=False)
                 log("main thread: found read data %s", repr_ellipsized(buf))
