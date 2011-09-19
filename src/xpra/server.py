@@ -792,17 +792,7 @@ class XpraServer(gobject.GObject):
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
         if self._protocol is not None:
-            log.info("Disconnecting existing client")
-            #ensure that from now on we ignore any incoming packets coming
-            #from this connection as these could potentially set some keys pressed, etc
-            self._protocol.closing = True
-            self._clear_keys_pressed()
-            # send message asking for disconnection politely:
-            self._protocol.source.send_packet_now(["disconnect", "new valid connection received"])
-            def force_disconnect(protocol):
-                protocol.close()
-            #give 5 seconds for the write buffer to flush then we force disconnect it:
-            gobject.timeout_add(5000, force_disconnect, self._protocol)
+            self.disconnect("new valid connection received")
         self._protocol = proto
         ServerSource(self._protocol)
         # do screen size calculations/modifications:
@@ -837,6 +827,20 @@ class XpraServer(gobject.GObject):
             else:
                 self._desktop_manager.hide_window(window)
                 self._send_new_window_packet(window)
+
+    def disconnect(self, reason):
+        log.info("Disconnecting existing client, reason is: %s" % reason)
+        # send message asking for disconnection politely:
+        self._protocol.source.send_packet_now(["disconnect", reason])
+        self._protocol.close()
+        #this ensures that from now on we ignore any incoming packets coming
+        #from this connection as these could potentially set some keys pressed, etc
+        #so it is now safe to clear them:
+        self._clear_keys_pressed()
+        log.info("Connection lost")
+
+    def _process_disconnect(self, proto, packet):
+        self.disconnect("on client request")
 
     def _process_server_settings(self, proto, packet):
         (_, settings) = packet
@@ -1015,6 +1019,7 @@ class XpraServer(gobject.GObject):
         "shutdown-server": _process_shutdown_server,
         "jpeg-quality": _process_jpeg_quality,
         "buffer-refresh": _process_buffer_refresh,
+        "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,
@@ -1022,9 +1027,6 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        if self._protocol and self._protocol.closing:
-            log.debug("ignoring %s packet on socket which is closing" % packet_type)
-            return
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
             if self._clipboard_helper:

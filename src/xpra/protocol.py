@@ -82,7 +82,6 @@ class Protocol(object):
         self.jpegquality = 0
         self._source_has_more = False
         self._recv_counter = 0
-        self.closing = False
         self._closed = False
         self._read_decoder = IncrBDecode()
         self._compressor = None
@@ -119,26 +118,30 @@ class Protocol(object):
                 self._write_queue.put(data)
 
     def _write_thread_loop(self):
-        while not self._closed:
-            log("write thread: waiting for data to write")
-            buf = self._write_queue.get()
-            # Used to signal that we should exit:
-            if buf is None:
-                return
-            try:
-                while buf:
-                    log("write thread: writing %s", repr_ellipsized(buf))
-                    buf = buf[self._conn.write(buf):]
-            except (OSError, IOError, socket.error), e:
-                log.info("Error writing to connection: %s", e)
-                main_thread_call(self._connection_lost)
-                return
-            except TypeError:
-                assert self._closed
-                return
-            if self._write_queue.empty():
-                main_thread_call(self._maybe_queue_more_writes)
-        return False
+        try:
+            while True:
+                log("write thread: waiting for data to write")
+                buf = self._write_queue.get()
+                # Used to signal that we should exit:
+                if buf is None:
+                    log("write thread: empty marker, exiting")
+                    break
+                try:
+                    while buf:
+                        log("write thread: writing %s", repr_ellipsized(buf))
+                        buf = buf[self._conn.write(buf):]
+                except (OSError, IOError, socket.error), e:
+                    log.info("Error writing to connection: %s", e)
+                    main_thread_call(self._connection_lost)
+                    break
+                except TypeError:
+                    assert self._closed
+                    break
+                if self._write_queue.empty():
+                    main_thread_call(self._maybe_queue_more_writes)
+        finally:
+            log("write thread: ended, closing socket")
+            self._conn.close()
 
     def _read_thread_loop(self):
         while not self._closed:
@@ -156,6 +159,10 @@ class Protocol(object):
             self._recv_counter += len(buf)
             self._read_queue.put(buf)
             main_thread_call(self._handle_read)
+            if not buf:
+                log("read thread: eof")
+                break
+        log("read thread: ended")
 
     def _connection_lost(self):
         log("_connection_lost")
@@ -203,7 +210,7 @@ class Protocol(object):
                     # data
                     unprocessed = self._decompressor.decompress(unprocessed)
                 self._read_decoder = IncrBDecode(unprocessed)
-        return False
+        log("main thread: read handled")
 
     def _process_packet(self, decoded):
         if self._closed:
@@ -233,4 +240,3 @@ class Protocol(object):
         if not self._closed:
             self._write_queue.put(None)
             self._closed = True
-            self._conn.close()
