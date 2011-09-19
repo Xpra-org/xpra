@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Xpra Client</string>
+    <string name="hostname">Hostname</string>
+    <string name="port">Port</string>
+    <string name="password">Password</string>
+</resources>
