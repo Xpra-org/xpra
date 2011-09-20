@@ -1,3 +1,14 @@
+xpra (0.0.7.26-1) UNRELEASED; urgency=low
+
+  * minor changes to support the Android client (work in progress)
+  * allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
+  * clear modifiers when applying new keymaps to prevent timeouts
+  * reduce context switching in the network read loop code
+  * try harder to close connections cleanly
+  * removed some unused code, fixed some old test code
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 20 Sep 2011 23:15:09 +0700
+
 xpra (0.0.7.25-1) UNRELEASED; urgency=low
 
   * Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly

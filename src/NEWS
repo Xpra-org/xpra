@@ -1,3 +1,13 @@
+v0.0.7.26 (2011-09-20)
+======================
+	-- minor changes to support the Android client (work in progress)
+	-- allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
+	-- clear modifiers when applying new keymaps to prevent timeouts
+	-- reduce context switching in the network read loop code
+	-- try harder to close connections cleanly
+	-- removed some unused code, fixed some old test code
+
+
 v0.0.7.25 (2011-08-31)
 ======================
 	-- Proper keymap and modifiers support

@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.25
+%define version 0.0.7.26
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 
@@ -38,6 +38,14 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed Sep 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.26-1
+- minor changes to support the Android client (work in progress)
+- allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
+- clear modifiers when applying new keymaps to prevent timeouts
+- reduce context switching in the network read loop code
+- try harder to close connections cleanly
+- removed some unused code, fixed some old test code
+
 * Wed Aug 31 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.25-1
 - Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
 - Reset modifiers whenever we gain or lose focus, or when the keymap changes

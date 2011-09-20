@@ -6,5 +6,5 @@
 import pygtk
 pygtk.require('2.0')
 
-__version__ = "0.0.7.25"
+__version__ = "0.0.7.26"
 svn_revision="unknown"
