@@ -129,17 +129,22 @@ class ClientWindow(gtk.Window):
 
         if "icon" in self._metadata:
             (width, height, coding, data) = self._metadata["icon"]
-            assert coding == "premult_argb32"
-            cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-            cairo_surf.get_data()[:] = data
-            # FIXME: We round-trip through PNG. This is ridiculous, but faster
-            # than doing a bunch of alpha un-premultiplying and byte-swapping
-            # by hand in Python (better still would be to write some Pyrex,
-            # but I don't have time right now):
-            loader = gtk.gdk.PixbufLoader()
-            cairo_surf.write_to_png(loader)
-            loader.close()
-            pixbuf = loader.get_pixbuf()
+            if coding == "premult_argb32":
+                cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+                cairo_surf.get_data()[:] = data
+                # FIXME: We round-trip through PNG. This is ridiculous, but faster
+                # than doing a bunch of alpha un-premultiplying and byte-swapping
+                # by hand in Python (better still would be to write some Pyrex,
+                # but I don't have time right now):
+                loader = gtk.gdk.PixbufLoader()
+                cairo_surf.write_to_png(loader)
+                loader.close()
+                pixbuf = loader.get_pixbuf()
+            else:
+                loader = gtk.gdk.PixbufLoader(coding)
+                loader.write(data, len(data))
+                loader.close()
+                pixbuf = loader.get_pixbuf()
             self.set_icon(pixbuf)
 
     def _new_backing(self, w, h):

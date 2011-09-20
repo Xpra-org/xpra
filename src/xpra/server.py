@@ -272,6 +272,8 @@ class XpraServer(gobject.GObject):
             if (is_override_redirect(window) and is_mapped(window)):
                 self._add_new_or_window(window)
         
+        self.png_window_icons = False
+        
         ## These may get set by the client:
         self.xkbmap_print = None
         self.xkbmap_query = None
@@ -535,11 +537,20 @@ class XpraServer(gobject.GObject):
         elif propname == "icon":
             surf = window.get_property("icon")
             if surf is not None:
-                assert surf.get_format() == cairo.FORMAT_ARGB32
-                assert surf.get_stride() == 4 * surf.get_width()
-                return {"icon": (surf.get_width(), surf.get_height(),
-                                 "premult_argb32", str(surf.get_data()))
-                        }
+                w = surf.get_width()
+                h = surf.get_height()
+                log("found new window icon: %sx%s, sending as png=%s" % (w,h,self.png_window_icons))
+                if self.png_window_icons:
+                    img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "RGBA", 0, 1)
+                    output = StringIO.StringIO()
+                    img.save(output, 'PNG')
+                    raw_data = output.getvalue()
+                    return {"icon": (w, h, "png", str(raw_data)) }
+                else:
+
+                    assert surf.get_format() == cairo.FORMAT_ARGB32
+                    assert surf.get_stride() == 4 * surf.get_width()
+                    return {"icon": (w, h, "premult_argb32", str(surf.get_data())) }
             else:
                 return {}
         elif propname == "client-machine":
@@ -692,7 +703,7 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data", "modifiers"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data", "modifiers", "png_window_icons"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -811,6 +822,7 @@ class XpraServer(gobject.GObject):
             #always clear modifiers before setting a new keymap
             self._make_keymask_match([])
             self.set_keymap()
+        self.png_window_icons = capabilities.get("png_window_icons", False)
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
         log.debug("setting modifiers to %s" % str(modifiers))

@@ -1,5 +1,6 @@
 package org.xpra;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,10 +43,11 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	protected AndroidXpraClient client = null;
 
 	protected RelativeLayout topBar = null;
-	protected ImageView imageView = null;
-	protected Bitmap backing = null;
+	protected ImageView windowIcon = null;
 	protected ImageButton maximise = null;
 	protected ImageButton close = null;
+	protected ImageView imageView = null;
+	protected Bitmap backing = null;
 
 	protected boolean maximized = false;
 	protected AbsoluteLayoutParams unMaximizedLayoutParams = null;
@@ -83,10 +85,11 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.id = _id;
 		this.metadata = new HashMap<String, Object>();
 		this.override_redirect = _override_redirect;
-		this.imageView = (ImageView) this.findViewById(R.id.xpra_window_contents);
+		this.topBar = (RelativeLayout) this.findViewById(R.id.xpra_window_top_bar);
+		this.windowIcon = (ImageView) this.findViewById(R.id.xpra_window_icon);
 		this.maximise = (ImageButton) this.findViewById(R.id.xpra_window_maximize);
 		this.close = (ImageButton) this.findViewById(R.id.xpra_window_close);
-		this.topBar = (RelativeLayout) this.findViewById(R.id.xpra_window_top_bar);
+		this.imageView = (ImageView) this.findViewById(R.id.xpra_window_contents);
 
 		//adjust location so it is always shown:
 		int min_margin = 32;
@@ -359,7 +362,26 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		((TextView) this.findViewById(R.id.xpra_window_title)).setText(this.title);
 		Object icon = newMetadata.get("icon");
 		this.log("update_metadata(" + newMetadata + ") icon="+icon+", type="+(icon==null?null:icon.getClass()));
-		// this.setTitle(title);
+		if (icon!=null) {
+			List<?> iconData = (List<?>) icon;
+			int w = ((BigInteger) iconData.get(0)).intValue();
+			int h = ((BigInteger) iconData.get(1)).intValue();
+			byte[] raw_format = (byte[]) iconData.get(2);
+			String format = new String(raw_format);
+			this.log("update_metadata(" + newMetadata + ") found "+w+"x"+h+" icon in "+format+" format");
+			if (format.equals("png")) {
+				byte[] blob = (byte[]) iconData.get(3);
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inSampleSize = 1;
+				while (w>64 || h>this.offsetY) {
+					options.inSampleSize *= 2;
+					w = w/2;
+					h = h/2;
+				}
+				Bitmap bmp = BitmapFactory.decodeByteArray(blob, 0, blob.length, options);
+				this.windowIcon.setImageBitmap(bmp);
+			}
+		}
 		// Map<?,?> size_constraints = (Map<?,?>)
 		// metadata.get("size-constraints");
 	}

@@ -329,6 +329,7 @@ public abstract class AbstractClient implements Runnable, Client {
         caps.put("desktop_size", dims);
         if (this.jpeg>0)
         	caps.put("jpeg", this.jpeg);
+        caps.put("png_window_icons", true);
         this.send("hello", caps);
 	}
 
