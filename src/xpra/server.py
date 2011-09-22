@@ -22,6 +22,8 @@ import Image
 import StringIO
 import re
 import os
+import Queue
+import time
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -133,12 +135,15 @@ class ServerSource(object):
         self._ordinary_packets = []
         self._protocol = protocol
         self._damage = {}
+        self._damage_last_events = {}
+        self._damage_delayed = {}
+        self._damage_delayed_expired = {}
         protocol.source = self
         if self._have_more():
             protocol.source_has_more()
 
     def _have_more(self):
-        return bool(self._ordinary_packets) or bool(self._damage)
+        return bool(self._ordinary_packets) or bool(self._damage) or bool(self._damage_delayed_expired)
 
     def send_packet_now(self, packet):
         assert self._protocol
@@ -151,42 +156,87 @@ class ServerSource(object):
         self._protocol.source_has_more()
 
     def cancel_damage(self, id):
-        if id in self._damage:
-            del self._damage[id]
-
+        for d in [self._damage, self._damage_delayed, self._damage_delayed_expired]:
+            if id in d:
+                del d[id]
+ 
     def damage(self, id, window, x, y, w, h):
-        log("damage %s (%s, %s, %s, %s)", id, x, y, w, h)
-        window, region = self._damage.setdefault(id,
-                                                 (window, gtk.gdk.Region()))
+        MAX_EVENTS = 20     #maximum number of damage events
+        TIME_UNIT = 1       #per second
+        BATCH_DELAY = 50    #how long to batch updates for (in millis)
+        def damage_now():
+            log("damage %s (%s, %s, %s, %s)", id, x, y, w, h)
+            _, region = self._damage.setdefault(id, (window, gtk.gdk.Region()))
+            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+            self._protocol.source_has_more()
+        #find the oldest event time in the queue
+        now = time.time()
+        last_events = self._damage_last_events.setdefault(id, Queue.Queue())
+        last_events.put(now)
+        if last_events.qsize()<MAX_EVENTS:
+            return damage_now()
+        while last_events.qsize()>=MAX_EVENTS:
+            when = last_events.get(False)
+        if now-when>TIME_UNIT:
+            return damage_now()
+        #entering the delayed path: queue the damage request for later
+        #giving enough time for other requests to merge with it
+        delayed = self._damage_delayed.get(id)
+        log("damage %s (%s, %s, %s, %s) using delayed=%s", id, x, y, w, h, delayed)
+        if delayed:
+            (window, region) = delayed
+        else:
+            region = gtk.gdk.Region()
+            self._damage_delayed[id] = (window, region)
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-        self._protocol.source_has_more()
+        def send_delayed():
+            """ move the delayed rectangles to expired list """
+            log("send_delayed for %s ", id)
+            delayed = self._damage_delayed.get(id)
+            if delayed:
+                del self._damage_delayed[id]
+                self._damage_delayed_expired[id] = delayed
+                self._protocol.source_has_more()
+            return False
+        if delayed is None:
+            """ delayed list did not exist, must schedule it to run """
+            gobject.timeout_add(BATCH_DELAY, send_delayed)
 
     def next_packet(self):
         if self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
-        elif self._damage:
-            id, (window, damage) = self._damage.items()[0]
-            (x, y, w, h) = get_rectangle_from_region(damage)
-            rect = gtk.gdk.Rectangle(x, y, w, h)
-            damage.subtract(gtk.gdk.region_rectangle(rect))
-            if damage.empty():
-                del self._damage[id]
-            # It's important to acknowledge changes *before* we extract them,
-            # to avoid a race condition.
-            window.acknowledge_changes(x, y, w, h)
-            pixmap = window.get_property("client-contents")
-            if pixmap is None:
-                log.error("wtf, pixmap is None?")
-                packet = None
-            else:
-                (x2, y2, w2, h2, coding, data) = self._get_rgb_data(pixmap, x, y, w, h)
-                if not w2 or not h2:
-                    packet = None
-                else:
-                    packet = ["draw", id, x2, y2, w2, h2, coding, data]
+        elif self._damage or self._damage_delayed_expired:
+            packet = self.next_damage_packet()
         else:
             packet = None
         return packet, self._have_more()
+
+    def find_damage_packet(self):
+        #if len(self._damage)==1:
+        src = self._damage
+        if self._damage_delayed_expired:
+            src = self._damage_delayed_expired
+        return  src, src.items()[0]
+
+    def next_damage_packet(self):
+        damage_dict, item = self.find_damage_packet()
+        id, (window, damage) = item
+        (x, y, w, h) = get_rectangle_from_region(damage)
+        rect = gtk.gdk.Rectangle(x, y, w, h)
+        damage.subtract(gtk.gdk.region_rectangle(rect))
+        if damage.empty():
+            del damage_dict[id]
+        # It's important to acknowledge changes *before* we extract them,
+        # to avoid a race condition.
+        window.acknowledge_changes(x, y, w, h)
+        pixmap = window.get_property("client-contents")
+        if pixmap is None:
+            log.error("wtf, pixmap is None?")
+            return  None
+        (x2, y2, w2, h2, coding, data) = self._get_rgb_data(pixmap, x, y, w, h)
+        if not w2 or not h2:
+            return None
+        return ["draw", id, x2, y2, w2, h2, coding, data]
 
     def _get_rgb_data(self, pixmap, x, y, width, height):
         pixmap_w, pixmap_h = pixmap.get_size()
