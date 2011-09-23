@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.26
+%define version 0.0.7.27
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 
@@ -38,6 +38,10 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Fri Sep 22 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.27-1
+- compatibility fix for python 2.4 (remove "with" statement)
+- slow down updates from windows that refresh continuously
+
 * Wed Sep 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.26-1
 - minor changes to support the Android client (work in progress)
 - allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
