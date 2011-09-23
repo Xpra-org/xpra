@@ -502,7 +502,11 @@ class XpraClient(gobject.GObject):
             self.query_xkbmap()
             log.info("keys_changed")
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            self.send(["keymap-changed", self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask)])
+            def nn(x):
+                if x is None:
+                    return  ""
+                return x
+            self.send(["keymap-changed", nn(self.xkbmap_print), nn(self.xkbmap_query), nn(self.xmodmap_data), self.mask_to_names(current_mask)])
 
     def update_focus(self, id, gotit):
         def send_focus(_id):
