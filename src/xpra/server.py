@@ -595,7 +595,7 @@ class XpraServer(gobject.GObject):
                 h = surf.get_height()
                 log("found new window icon: %sx%s, sending as png=%s" % (w,h,self.png_window_icons))
                 if self.png_window_icons:
-                    img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "RGBA", 0, 1)
+                    img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "BGRA", 0, 1)
                     MAX_SIZE = 64
                     if w>MAX_SIZE or h>MAX_SIZE:
                         #scale icon down
