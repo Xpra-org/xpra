@@ -485,32 +485,8 @@ class XpraClient(gobject.GObject):
         return  shortcuts
 
     def query_xkbmap(self):
-        from xpra.platform import X11_KEYMAPS
-        if not X11_KEYMAPS:
-            log.info("this platform does not support X11 keymaps, not querying the system with setxkbmap or xmodmap");
-            self.xkbmap_print, self.xkbmap_query, self.xkbmap_query, self.xmodmap_data = None, None, None, None
-            return
-        def get_keyboard_data(command, arg):
-            # Find the client's current keymap so we can send it to the server:
-            try:
-                import subprocess
-                cmd = [command, arg]
-                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-                (out,_) = process.communicate(None)
-                if process.returncode==0:
-                    return out
-                log.error("'%s %s' failed with exit code %s\n" % (command, arg, process.returncode))
-            except Exception, e:
-                log.error("error running '%s %s': %s\n" % (command, arg, e))
-            return None
-        self.xkbmap_print = get_keyboard_data("setxkbmap", "-print")
-        if self.xkbmap_print is None:
-            log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
-        self.xkbmap_query = get_keyboard_data("setxkbmap", "-query")
-        if self.xkbmap_query is None and self.xkbmap_print is not None:
-            log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
-            log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-        self.xmodmap_data = get_keyboard_data("xmodmap", "-pke");
+        from xpra.platform.gui import get_keymap_spec
+        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = get_keymap_spec()
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()

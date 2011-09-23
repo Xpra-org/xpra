@@ -341,36 +341,6 @@ class XpraServer(gobject.GObject):
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
 
-        #clear all modifiers before we try to call xmodmap
-        self._make_keymask_match([])
-        try:
-            self.signal_safe_exec(["xmodmap", "-"],
-                            """clear Lock
-                               clear Shift
-                               clear Control
-                               clear Mod1
-                               clear Mod2
-                               clear Mod3
-                               clear Mod4
-                               clear Mod5
-                               keycode any = Shift_L
-                               keycode any = Control_L
-                               keycode any = Meta_L
-                               keycode any = Alt_L
-                               keycode any = Hyper_L
-                               keycode any = Super_L
-                               add Shift = Shift_L Shift_R
-                               add Control = Control_L Control_R
-                               add Mod1 = Meta_L Meta_R
-                               add Mod2 = Alt_L Alt_R
-                               add Mod3 = Hyper_L Hyper_R
-                               add Mod4 = Super_L Super_R
-                            """
-                            # Really stupid hack to force backspace to work.
-                            # Remove this once we have real keymap support.
-                            + "keycode any = BackSpace")
-        except OSError, e:
-            sys.stderr.write("Error running xmodmap: %s\n" % (e,))
         self._keyname_for_mod = {
             "shift": "Shift_L",
             "control": "Control_L",
@@ -379,6 +349,8 @@ class XpraServer(gobject.GObject):
             "hyper": "Hyper_L",
             "alt": "Alt_L",
             }
+        #clear all modifiers
+        self._make_keymask_match([])
 
         ### Clipboard handling:
         if clipboard:
@@ -405,8 +377,9 @@ class XpraServer(gobject.GObject):
             self.add_listen_socket(sock)
 
     def set_keymap(self):
-        """ xkbmap_print is the output of setxkbmap -print on the client
-            xkbmap_query is the output of setxkbmap -query on the client
+        """ xkbmap_print is the output of "setxkbmap -print" on the client
+            xkbmap_query is the output of "setxkbmap -query" on the client
+            xmodmap_data is the output of "xmodmap -pke" on the client
             Use those to try to setup the correct keyboard map for the client
             so that all the keycodes sent will be mapped
         """
@@ -466,9 +439,36 @@ class XpraServer(gobject.GObject):
 
         if self.xkbmap_print:
             exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
-        if self.xmodmap_data:
-            exec_keymap_command(["xmodmap", "-"], self.xmodmap_data)
 
+        xmodmap_data = self.xmodmap_data
+        if not self.xkbmap_query and not self.xkbmap_print and not self.xmodmap_data:
+            """ use a default xmodmap for clients that supply nothing at all: """
+            xmodmap_data = """clear Lock
+                               clear Shift
+                               clear Control
+                               clear Mod1
+                               clear Mod2
+                               clear Mod3
+                               clear Mod4
+                               clear Mod5
+                               keycode any = Shift_L
+                               keycode any = Control_L
+                               keycode any = Meta_L
+                               keycode any = Alt_L
+                               keycode any = Hyper_L
+                               keycode any = Super_L
+                               add Shift = Shift_L Shift_R
+                               add Control = Control_L Control_R
+                               add Mod1 = Meta_L Meta_R
+                               add Mod2 = Alt_L Alt_R
+                               add Mod3 = Hyper_L Hyper_R
+                               add Mod4 = Super_L Super_R
+                            """
+            # Really stupid hack to force backspace to work.
+            xmodmap_data += "keycode any = BackSpace"
+ 
+        if xmodmap_data:
+            exec_keymap_command(["xmodmap", "-"], xmodmap_data)
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,

@@ -27,6 +27,10 @@ def grok_modifier_map(display_source):
                                 | modifier_map["num"])
     return modifier_map
 
+def get_keymap_spec():
+    return None,None,None
+
+
 class ClipboardProtocolHelper(object):
     def __init__(self, send_packet_cb):
         self.send = send_packet_cb
