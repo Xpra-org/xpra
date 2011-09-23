@@ -1,3 +1,10 @@
+xpra (0.0.7.27-1) UNRELEASED; urgency=low
+
+  * compatibility fix for python 2.4 (remove "with" statement)
+  * slow down updates from windows that refresh continuously
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Sep 2011 11:05:45 +0700
+
 xpra (0.0.7.26-1) UNRELEASED; urgency=low
 
   * minor changes to support the Android client (work in progress)
