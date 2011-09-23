@@ -301,8 +301,8 @@ class XpraServer(gobject.GObject):
         self._protocol = None
         self._potential_protocols = []
 
-        assert encoding in ENCODINGS
         self.encoding = encoding or "rgb24"
+        assert self.encoding in ENCODINGS
         self.png_window_icons = False
 
         ### Create the WM object
