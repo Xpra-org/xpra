@@ -38,6 +38,7 @@ public abstract class AbstractClient implements Runnable, Client {
 	protected	byte[] buffer = null;
     protected	Map<String,Method> handlers = new HashMap<String,Method>(HANDLERS.length);
 
+    protected	String encoding = "png";
     protected	int jpeg = 40;
     protected	byte[]	password = null;
     protected	int hellosSent = 0;
@@ -327,8 +328,11 @@ public abstract class AbstractClient implements Runnable, Client {
         dims.add(this.getScreenWidth());
         dims.add(this.getScreenHeight());
         caps.put("desktop_size", dims);
-        if (this.jpeg>0)
-        	caps.put("jpeg", this.jpeg);
+        if (this.encoding!=null) {
+	        caps.put("encoding", this.encoding);
+	        if (this.encoding.equals("jpeg") && this.jpeg>0)
+	        	caps.put("jpeg", this.jpeg);
+        }
         caps.put("png_window_icons", true);
         this.send("hello", caps);
 	}

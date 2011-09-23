@@ -203,6 +203,8 @@ class Protocol(object):
             self.close()
 
     def _handle_read(self):
+        if self._closed:
+            return
         log("main thread: woken to handle read data")
         while not self._closed:
             self._read_loop_count.inc()

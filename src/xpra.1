@@ -30,6 +30,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
+[\fB\-\-encoding=ENCODING\fP]
 [\fB\-\-jpeg\-quality=VALUE\fP]
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
 [\fB\-\-max\-bandwidth=BW\fP]
@@ -182,7 +183,7 @@ Displays xpra's version number.
 \fB\-h, \-\-help\fP
 Displays a summary of command line usage.
 .TP
-\fB\-d\fP \fIFILTER1,FILTER2,...\fP, \fB\-\-debug=\fP\fIFILTER1,FILTER2,...\fP
+\fB\-d\fP \fIFILTER1,FILTER2,...\fP, \fB\-\-debug\fP=\fIFILTER1,FILTER2,...\fP
 Enable debug logging.  The special value \fBall\fP enables all
 debugging; alternatively, debugging logs for particular subsystems can be
 enabled by specifying one or more filters (separated by commas).  In
@@ -212,7 +213,7 @@ scope of this document.
 
 .SS Options for start, upgrade
 .TP
-\fB\-\-start\-child=\fP\fICMD\fP
+\fB\-\-start\-child\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
 default shell.  The command is run with its $DISPLAY set to point to
 the newly-started server.  This option may be given multiple times to
@@ -232,8 +233,10 @@ prevents that behavior (useful mostly for debugging).
 \fB\-\-use\-display\fP
 Use an existing display rather than starting one with xvfb.
 You are responsible for starting the display yourself.
+This can also be used to rescue an existing display whose
+xpra server instance crashed.
 .TP
-\fB\-\-xvfb\fP\fICMD\fP
+\fB\-\-xvfb\fP=\fICMD\fP
 When starting the server, xpra starts a virtual X server to run the
 clients on. By default, this is 'Xvfb'. If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
@@ -248,7 +251,7 @@ The default xvfb command (Xvfb) does not support randr, so using
 this switch will have no effect unless a different xvfb is used
 (like Xdummy).
 .TP
-\fB\-\-bind\-tcp=\fP\fI[HOST]:PORT\fP
+\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
 The xpra server always listens for connections on a local Unix domain
 socket, and supports local connections with the \fB:7\fP-style display
 address, and remote connections with the \fBssh:frodo:7\fP-style
@@ -263,16 +266,16 @@ and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 Use it only if you have special needs, and understand the consequences
 of your actions.
-\fB\-\-password\-file\fP\fIFILENAME\fP
+.TP
+\fB\-\-password\-file\fP=\fIFILENAME\fP
 This allows sessions to be secured with a password stored in a text
 file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
-.TP
 
-.SS Options for attach, stop
+.SS Options for attach
 .TP
-\fB-z\fP\fILEVEL\fP, \fB\-\-compress=\fP\fILEVEL\fP
+\fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
 Select the level of compression xpra will use when transmitting data
 over the network. Higher levels of compression transmit less data over
 the network, but use more CPU power. Valid options are between 0
@@ -283,23 +286,37 @@ reasonable trade-off in general. Over local 100Mbs+ networks the CPU
 can easily become the bottleneck on xpra's speed, and \fB\-z0\fP is
 therefore recommended.
 .TP
-\fB\-\-jpeg\-quality=\fP\fIVALUE\fP
-This option enables JPEG compression of pixel data sent by the server.
+\fB\-\-encoding\fP=\fIENCODING\fP
+This specifies the image encoding to use, there are 3 options:
+\fBjpeg\fP, \fBpng\fP and \fBrgb24\fP.
+The default is \fBrgb24\fP. \fBjpeg\fP can be useful for graphical
+applications (see \fB\-\-jpeg\-quality\fP below). \fBpng\fP is
+compressed but also lossless so it can be used instead of
+\fBrgb24\fP (which is inefficent without the \fB\-\-compress\fP option).
+When specifying this option on the server, it will act as default
+for clients that do not specify which encoding they want to be using.
+.TP
+\fB\-\-jpeg\-quality\fP=\fIVALUE\fP
+This option sets the JPEG compression quality of pixel data sent by
+the server, jpeg must first be enabled with \fB\-\-encoding=jpeg\fP.
 The valid values range from 0 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
-particularly useful). This option is only really useful for graphical
-applications.
+particularly useful).
 .TP
-\fB\-\-auto\-refresh\-delay=\fP\fIDELAY\fP
-This option sets a delay after which an idle image is automatically
-refreshed in a lossless fashion. The delay is a floating-point
-number and is in seconds. This option is disabled by default.
+\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
+This option sets a delay after which the windows are automatically
+refreshed.
+The delay is a floating-point number and is in seconds.
+This option is disabled by default.
+If using the \fBjpeg\fP encoding, for which this switch was designed,
+the refresh will override the current jpeg quality encoding and it
+will use an almost lossless quality setting of 95%.
 .TP
-\fB\-\-max\-bandwidth=\fP\fIBW\fP
+\fB\-\-max\-bandwidth\fP=\fIBW\fP
 Specify the link's maximal receive bandwidth. Xpra will adjust the
 JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
 .TP
-\fB\-\-key\-shortcut=key:action\fP
+\fB\-\-key\-shortcut\fP=\fIkey:action\fP
 Can be specified multiple times to add multiple key shortcuts.
 These keys will be caught by the client and trigger the action specified
 and the key presses will not be passed to the server.
@@ -317,16 +334,18 @@ certain key combinations from ever being sent to the server.
 .IP \fBrefresh_window\fP
 forces the window to be refreshed.
 .RE
+.TP
+.PP
 If no shortcuts are defined on the command line,
-the following default one will be added:
+the following default one will be used:
 .br
 \fIMeta+Shift+F4:quit\fP
 .TP
-\fB\-\-title\-suffix=\fP\fIVALUE\fP
+\fB\-\-title\-suffix\fP=\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.
 This option is deprecated and \fB\-\-title\fP should be used instead.
 .TP
-\fB\-\-title=\fP\fIVALUE\fP
+\fB\-\-title\fP\=\fIVALUE\fP
 Sets the text shown as window title.
 The string supplied can make use of remote metadata placeholders
 which will be populated at runtime with the values from the
@@ -337,11 +356,14 @@ hostname.
 
 The default value used is "@title@ on @client-machine@".
 .TP
-\fB\-\-dock\-icon\fP\fIFILENAME\fP
+\fB\-\-dock\-icon\fP=\fIFILENAME\fP
 This options applies on Mac OS X only and allows the icon shown in
-the dock to be specified. By default it uses a simple 'xpra' icon.
+the dock to be specified. By default it uses a simple 'xpra' icon
+if it finds one.
+
+.SS Options for attach, stop
 .TP
-\fB\-\-ssh=\fP\fICMD\fP
+\fB\-\-ssh\fP\=fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,
 xpra runs \fBssh\fP(1) to make the underlying connection. By default,
 it does this by running the command "ssh". If your ssh program is in
@@ -362,7 +384,7 @@ is redundant with xpra's own compression, and will just waste your
 CPU. See also xpra's \fB\-\-compress\fP switch.)
 .RE
 .TP
-\fB\-\-remote\-xpra=\fP\fICMD\fP
+\fB\-\-remote\-xpra\fP=\fICMD\fP
 When connecting to a remote server over ssh, xpra needs to be able to
 find and run the xpra executable on the remote host.  If this
 executable is in a non-standard location, or requires special
@@ -412,20 +434,17 @@ window manager hints, and probably other more obscure parts of the X
 protocol.  It does, however, degrade gracefully, and patches for each
 feature would be gratefully accepted.
 
-The mapping between local and remote keyboard events is not very
-robust; in particular, it is possible in some situations for modifier
-keys to get "stuck" in xpra.
-
-The xpra server allocates an over-large framebuffer; this wastes
-memory, and can cause applications to misbehave (e.g., by letting
-menus go off-screen).  Conversely, if the framebuffer is ever
+The xpra server allocates an over-large framebuffer when using Xvfb;
+this wastes memory, and can cause applications to misbehave (e.g.,
+by letting menus go off-screen).  Conversely, if the framebuffer is ever
 insufficiently large, clients will misbehave in other ways (e.g.,
-input events will be misdirected).
+input events will be misdirected). This is not a problem when using
+Xdummy.
 
 The need to choose display numbers by hand is annoying.
 .\" --------------------------------------------------------------------
 .SH REPORTING BUGS
-Send any questions or bugs reports to <parti-discuss@partiwm.org>.
+Send any questions or bugs reports to <antoine@nagafix.co.uk>.
 .\" --------------------------------------------------------------------
 .SH SEE ALSO
 \fBscreen\fP(1)

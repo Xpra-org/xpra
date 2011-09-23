@@ -22,6 +22,8 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            add_client_options)
 from xpra.protocol import TwoFileConnection, SocketConnection
 
+ENCODINGS = ["rgb24", "jpeg", "png"]
+
 def nox():
     if "DISPLAY" in os.environ:
         del os.environ["DISPLAY"]
@@ -97,10 +99,14 @@ def main(script_file, cmdline):
     parser.add_option("--title", action="store",
                       dest="title", default="@title@ on @client-machine@",
                       help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
+    parser.add_option("--encoding", action="store",
+                      metavar="ENCODING",
+                      dest="encoding", type="str",
+                      help="What image compression algorithm to use: rgb24, jpeg or png. Default: rgb24")
     parser.add_option("--jpeg-quality", action="store",
                       metavar="LEVEL",
-                      dest="jpegquality", type="int", default="0",
-                      help="Use jpeg compression with given quality (1-100), 0 disables jpeg compression. Default: disabled.")
+                      dest="jpegquality", type="int", default="80",
+                      help="Use jpeg compression with given quality (1-100). Default: 80")
     parser.add_option("-b", "--max-bandwidth", action="store",
                       dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                       help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
@@ -136,6 +142,8 @@ def main(script_file, cmdline):
 
     if not args:
         parser.error("need a mode")
+    if options.encoding and options.encoding not in ENCODINGS:
+        parser.error("illegal encoding")
 
     logging.root.setLevel(logging.INFO)
     if options.debug is not None:

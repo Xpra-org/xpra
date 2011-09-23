@@ -50,6 +50,7 @@ from xpra.protocol import Protocol, SocketConnection
 from xpra.keys import mask_to_names
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
+from xpra.scripts.main import ENCODINGS
 
 class DesktopManager(gtk.Widget):
     def __init__(self):
@@ -131,9 +132,10 @@ gobject.type_register(DesktopManager)
 class ServerSource(object):
     # Strategy: if we have ordinary packets to send, send those.  When we
     # don't, then send window updates.
-    def __init__(self, protocol):
+    def __init__(self, protocol, encoding):
         self._ordinary_packets = []
         self._protocol = protocol
+        self._encoding = encoding
         self._damage = {}
         self._damage_last_events = {}
         self._damage_delayed = {}
@@ -240,7 +242,6 @@ class ServerSource(object):
 
     def _get_rgb_data(self, pixmap, x, y, width, height):
         pixmap_w, pixmap_h = pixmap.get_size()
-        coding = "rgb24"
         # Just in case we somehow end up with damage larger than the pixmap,
         # we don't want to start requesting random chunks of memory (this
         # could happen if a window is resized but we don't throw away our
@@ -252,7 +253,7 @@ class ServerSource(object):
         if y + height > pixmap_h:
             height = pixmap_h - y
         if width <= 0 or height <= 0:
-            return (0, 0, 0, 0, coding, "")
+            return (0, 0, 0, 0, self._encoding, "")
         pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
         pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),
                                  x, y, 0, 0, width, height)
@@ -266,19 +267,20 @@ class ServerSource(object):
             for i in xrange(height):
                 rows.append(raw_data[i*rowstride : i*rowstride+rowwidth])
             data = "".join(rows)
-        # should probably have some other conditions for
-        # enabling jpeg compression (for example len(data) > N and/or
-        # width*height > M)
-        if self._protocol.jpegquality > 0:
-            log.debug("sending with jpeg quality %s" % self._protocol.jpegquality)
+        if self._encoding in ["jpeg", "png"]:
             im = Image.fromstring("RGB", (width,height), data)
-            buf=StringIO.StringIO()
-            im.save(buf,"JPEG", quality=self._protocol.jpegquality)
+            buf = StringIO.StringIO()
+            if self._encoding=="jpeg":
+                q = min(99, max(1, self._protocol.jpegquality))
+                log.debug("sending with jpeg quality %s" % q)
+                im.save(buf, "JPEG", quality=q)
+            else:
+                log.debug("sending as %s" % self._encoding)
+                im.save(buf, self._encoding.upper())
             data=buf.getvalue()
             buf.close()
-            coding = "jpeg"
 
-        return (x, y, width, height, coding, data)
+        return (x, y, width, height, self._encoding, data)
 
 
 class XpraServer(gobject.GObject):
@@ -286,7 +288,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard, randr):
+    def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard, randr, encoding):
         gobject.GObject.__init__(self)
 
         # Do this before creating the Wm object, to avoid clobbering its
@@ -298,6 +300,10 @@ class XpraServer(gobject.GObject):
         # This must happen early, before loading in windows at least:
         self._protocol = None
         self._potential_protocols = []
+
+        assert encoding in ENCODINGS
+        self.encoding = encoding or "rgb24"
+        self.png_window_icons = False
 
         ### Create the WM object
         self._wm = Wm("Xpra", clobber)
@@ -321,8 +327,6 @@ class XpraServer(gobject.GObject):
         for window in get_children(root):
             if (is_override_redirect(window) and is_mapped(window)):
                 self._add_new_or_window(window)
-        
-        self.png_window_icons = False
         
         ## These may get set by the client:
         self.xkbmap_print = None
@@ -753,7 +757,9 @@ class XpraServer(gobject.GObject):
 
     def _calculate_capabilities(self, client_capabilities):
         capabilities = {}
-        for cap in ("deflate", "__prerelease_version", "challenge_response", "jpeg", "keymap", "xkbmap_query", "xmodmap_data", "modifiers", "png_window_icons"):
+        for cap in ("deflate", "__prerelease_version", "challenge_response",
+                        "keymap", "xkbmap_query", "xmodmap_data", "modifiers",
+                        "png_window_icons", "encodings", "encoding", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
         return capabilities
@@ -854,8 +860,22 @@ class XpraServer(gobject.GObject):
         # set this as our new one:
         if self._protocol is not None:
             self.disconnect("new valid connection received")
+        #if "encodings" not specified, use pre v0.0.7.26 default:
+        encodings = capabilities.get("encodings", ["rgb24", "jpeg"])
+        self.encoding = capabilities.get("encoding", None)
+        if self.encoding:
+            assert self.encoding in encodings
+        if not self.encoding or self.encoding not in ENCODINGS:
+            #not specified or not supported, find first match
+            for e in encodings:
+                if e in ENCODINGS:
+                    self.encoding = e
+                    break
+            if not self.encoding:
+                raise Exception("cannot find compatible encoding between client (%s) and server (%s)" % (encodings, ENCODINGS))
+            
         self._protocol = proto
-        ServerSource(self._protocol)
+        ServerSource(self._protocol, self.encoding)
         # do screen size calculations/modifications:
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         capabilities["raw_keycodes_feature"] = True
@@ -1039,11 +1059,13 @@ class XpraServer(gobject.GObject):
         (_, id, _, jpeg_qual) = packet
         window = self._id_to_window[id]
         log.debug("Requested refresh for window ", id)
-        qual_save = self._protocol.jpegquality
-        self._protocol.jpegquality = jpeg_qual
+        if self.encoding=="jpeg":
+            qual_save = self._protocol.jpegquality
+            self._protocol.jpegquality = jpeg_qual
         (_, _, w, h) = window.get_property("geometry")
         self._damage(window, 0, 0, w, h)
-        self._protocol.jpegquality = qual_save
+        if self.encoding=="jpeg":
+            self._protocol.jpegquality = qual_save
 
     def _process_jpeg_quality(self, proto, packet):
         (_, quality) = packet

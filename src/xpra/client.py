@@ -20,6 +20,7 @@ log = Logger()
 from xpra.protocol import Protocol
 from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
+from xpra.scripts.main import ENCODINGS
 
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
@@ -382,6 +383,7 @@ class XpraClient(gobject.GObject):
         self.title = title
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
+        self.encoding = opts.encoding
         self.jpegquality = opts.jpegquality
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
@@ -560,6 +562,9 @@ class XpraClient(gobject.GObject):
             capabilities_request["challenge_response"] = hash
         if self.compression_level:
             capabilities_request["deflate"] = self.compression_level
+        if self.encoding:
+            capabilities_request["encoding"] = self.encoding
+        capabilities_request["encodings"] = ENCODINGS
         if self.jpegquality:
             capabilities_request["jpeg"] = self.jpegquality
         self.query_xkbmap()
