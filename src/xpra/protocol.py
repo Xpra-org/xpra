@@ -75,13 +75,22 @@ class CachedCounter(object):
         self._lock = Lock()
         self._value = initial
 
-    def inc(self):
-        with self._lock:
-            self._value += 1
+    def inc(self, v=1):
+        try:
+            self._lock.acquire()
+            self._value += v
+        finally:
+            self._lock.release()
 
     def value(self):
-        with self._lock:
+        try:
+            self._lock.acquire()
             return self._value
+        finally:
+            self._lock.release()
+
+    def __str__(self):
+        return  str(self._value)
 
 class Protocol(object):
     CONNECTION_LOST = object()
