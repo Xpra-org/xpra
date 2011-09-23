@@ -580,6 +580,7 @@ class XpraClient(gobject.GObject):
         capabilities_request["modifiers"] = modifiers
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
+        capabilities_request["png_window_icons"] = True
         self.send(["hello", capabilities_request])
 
     def send_jpeg_quality(self):

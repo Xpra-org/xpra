@@ -596,6 +596,17 @@ class XpraServer(gobject.GObject):
                 log("found new window icon: %sx%s, sending as png=%s" % (w,h,self.png_window_icons))
                 if self.png_window_icons:
                     img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "RGBA", 0, 1)
+                    MAX_SIZE = 64
+                    if w>MAX_SIZE or h>MAX_SIZE:
+                        #scale icon down
+                        if w>=h:
+                            h = int(h*MAX_SIZE/w)
+                            w = MAX_SIZE
+                        else:
+                            w = int(w*MAX_SIZE/h)
+                            h = MAX_SIZE
+                        log("scaling window icon down to %sx%s" % (w,h))
+                        img = img.resize((w,h), Image.ANTIALIAS)
                     output = StringIO.StringIO()
                     img.save(output, 'PNG')
                     raw_data = output.getvalue()
