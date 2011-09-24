@@ -10,7 +10,7 @@ import gtk
 from wimpiggy.util import n_arg_signal
 from wimpiggy.prop import prop_get
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import (get_xatom, get_pywindow, #@UnresolvedImport
+from wimpiggy.lowlevel import (get_xatom, #@UnresolvedImport
                                gdk_atom_objects_from_gdk_atom_array) #@UnresolvedImport
 
 from wimpiggy.log import Logger
@@ -214,12 +214,11 @@ class ClipboardProxy(gtk.Invisible):
         elif target == "MULTIPLE":
             targets = []
             def get_targets():
-                win = get_pywindow(event.requestor)
-                atoms = prop_get(win, event.property, ["multiple-conversion"])
+                atoms = prop_get(event.window, event.property, ["multiple-conversion"])
                 log("MULTIPLE clipboard atoms: %r", atoms)
                 targets += atoms[::2]
             trap.swallow(get_targets)
-            log("MULTIPLE clipboard targets: %r", atoms)
+            log("MULTIPLE clipboard targets: %r", targets)
             for target in targets:
                 self.selection_add_target(self._selection, target, 0)
         else:
