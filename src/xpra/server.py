@@ -35,6 +35,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
                                xtest_fake_button, #@UnresolvedImport
                                is_override_redirect, is_mapped, #@UnresolvedImport
                                add_event_receiver, #@UnresolvedImport
+                               selectCursorChange, get_cursor_image, #@UnresolvedImport
                                get_children, #@UnresolvedImport
                                has_randr, get_screen_sizes, set_screen_size) #@UnresolvedImport
 from wimpiggy.prop import prop_set
@@ -286,6 +287,7 @@ class ServerSource(object):
 class XpraServer(gobject.GObject):
     __gsignals__ = {
         "wimpiggy-child-map-event": one_arg_signal,
+        "wimpiggy-cursor-event": one_arg_signal,
         }
 
     def __init__(self, clobber, sockets, password_file, pulseaudio, clipboard, randr, encoding):
@@ -333,6 +335,8 @@ class XpraServer(gobject.GObject):
         self.xkbmap_query = None
         self.xmodmap_data = None
 
+        self.last_cursor_serial = None
+        self.cursor_image = None
         #store list of currently pressed keys
         #(using a map only so we can display their names in debug messages)
         self.keys_pressed = {}
@@ -515,6 +519,18 @@ class XpraServer(gobject.GObject):
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
+
+    def do_wimpiggy_cursor_event(self, event):
+        if self.last_cursor_serial==event.cursor_serial:
+            log("ignoring cursor event with the same serial number")
+            return
+        self.last_cursor_serial = event.cursor_serial
+        self.cursor_image = get_cursor_image()
+        log("do_wimpiggy_cursor_event(%s) new_cursor=%s" % (event, self.cursor_image))
+        self.send_cursor()
+    
+    def send_cursor(self):
+        self._send(["cursor", self.cursor_image])
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window
@@ -770,6 +786,7 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         for cap in ("deflate", "__prerelease_version", "challenge_response",
                         "keymap", "xkbmap_query", "xmodmap_data", "modifiers",
+                        "cursors",
                         "png_window_icons", "encodings", "encoding", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
@@ -903,6 +920,8 @@ class XpraServer(gobject.GObject):
             #always clear modifiers before setting a new keymap
             self._make_keymask_match([])
             self.set_keymap()
+        self.send_cursors = capabilities.get("cursors", False)
+        self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = capabilities.get("png_window_icons", False)
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
@@ -920,6 +939,8 @@ class XpraServer(gobject.GObject):
             else:
                 self._desktop_manager.hide_window(window)
                 self._send_new_window_packet(window)
+        if self.send_cursors:
+            self.send_cursor()
 
     def disconnect(self, reason):
         log.info("Disconnecting existing client, reason is: %s" % reason)

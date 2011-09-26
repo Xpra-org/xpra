@@ -908,7 +908,7 @@ cdef _get_screen_sizes(display_source):
     for i in range(num_sizes):
         xrr = xrrs[i]
         sizes.append((xrr.width, xrr.height))
-    return	sizes
+    return    sizes
 
 def get_screen_sizes():
     return _get_screen_sizes(gtk.gdk.display_get_default())
@@ -942,8 +942,8 @@ cdef _set_screen_size(display_source, pywindow, width, height):
     else:
         rates = XRRConfigRates(config, sizeID, &num_rates)
         rate = rates[0]
-        rotation = 1		#RR_Rotate_0
-        time = CurrentTime	#gtk.gdk.x11_get_server_time(pywindow)
+        rotation = 1          #RR_Rotate_0
+        time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
         status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time) 
         if status != Success:
             print "failed to set new screen size"
@@ -953,6 +953,105 @@ def set_screen_size(width, height):
     display = gtk.gdk.display_get_default()
     root_window = gtk.gdk.get_default_root_window()
     _set_screen_size(display, root_window, width, height)
+
+
+###################################
+# Xfixes: cursor events
+###################################
+cdef extern from "X11/extensions/xfixeswire.h":
+    unsigned int XFixesCursorNotify
+    unsigned long XFixesDisplayCursorNotifyMask
+    void XFixesSelectCursorInput(Display *, Window w, long mask)
+
+cdef extern from "X11/extensions/Xfixes.h":
+    ctypedef struct XFixesCursorNotify:
+        char* subtype
+        Window XID
+        int cursor_serial
+        int time
+        char* cursor_name
+    ctypedef struct XFixesCursorImage:
+        short x
+        short y
+        unsigned short width
+        unsigned short height
+        unsigned short xhot
+        unsigned short yhot
+        unsigned long cursor_serial
+        unsigned long* pixels
+        #XFixes v2:
+        #char* name
+    ctypedef struct XFixesCursorNotifyEvent:
+        int type
+        unsigned long serial
+        Bool send_event
+        Display *display
+        Window window
+        int subtype
+        unsigned long cursor_serial
+        Time timestamp
+        Atom cursor_name
+
+    Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
+    XFixesCursorImage* XFixesGetCursorImage(Display *)
+    void XcursorImageDestroy(XFixesCursorImage *image)
+
+cdef argbdata_to_pixdata(unsigned long* data, len):
+    if len <= 0:
+        return None
+    import array
+    # Create byte array
+    b = array.array('b', '\0'* len*4)
+    offset = 0
+    i = 0
+    offset = 0
+    while i < len:
+        argb = data[i] & 0xffffffff
+        rgba = (argb << 8) | (argb >> 24)
+        b1 = (rgba >> 24)  & 0xff
+        b2 = (rgba >> 16) & 0xff
+        b3 = (rgba >> 8) & 0xff
+        b4 = rgba & 0xff
+        # Ref: http://docs.python.org/dev/3.0/library/struct.html
+        struct.pack_into("=BBBB", b, offset, b1, b2, b3, b4)
+        offset = offset + 4
+        i = i + 1
+    return b 
+
+def get_cursor_image():
+    cdef Display * display
+    cdef XFixesCursorImage* image
+    #cdef char* pixels
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    try:
+        image = XFixesGetCursorImage(display)
+        l = image.width*image.height*4
+        pixels = argbdata_to_pixdata(image.pixels, l)
+        pixels_string = pixels.tostring()
+        return (image.x, image.y, image.width, image.height, image.xhot, image.yhot,
+            image.cursor_serial, pixels_string)
+    finally:
+        XcursorImageDestroy(image)
+
+def get_XFixes_event_base():
+    cdef int event_base
+    cdef int error_base
+    cdef Display * display
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    XFixesQueryExtension(display, &event_base, &error_base)
+    return int(event_base)
+
+def selectCursorChange(pywindow, on):
+    cdef Display * display
+    display = get_xdisplay_for(pywindow)
+    cdef Window window
+    window = get_xwindow(pywindow)
+    if on:
+        v = XFixesDisplayCursorNotifyMask
+    else:
+        v = 0
+    XFixesSelectCursorInput(display, window, v)
+
 
 ###################################
 # Xdamage
@@ -1281,6 +1380,7 @@ def _route_event(event, signal, parent_signal):
         else:
             log("  received event on a parent window but have no parent signal")
 
+CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
 _x_event_signals = {
     MapRequest: (None, "child-map-request-event"),
     ConfigureRequest: (None, "child-configure-request-event"),
@@ -1294,6 +1394,7 @@ _x_event_signals = {
     ReparentNotify: ("wimpiggy-reparent-event", None),
     PropertyNotify: ("wimpiggy-property-notify-event", None),
     KeyPress: ("wimpiggy-key-press-event", None),
+    CursorNotify: ("wimpiggy-cursor-event", None),
     "XDamageNotify": ("wimpiggy-damage-event", None),
     }
 
@@ -1305,6 +1406,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     void * userdata) with gil:
     cdef XEvent * e
     cdef XDamageNotifyEvent * damage_e
+    cdef XFixesCursorNotifyEvent * cursor_e
     e = <XEvent*>e_gdk
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         return GDK_FILTER_CONTINUE
@@ -1407,6 +1509,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.window = _gw(d, e.xany.window)
                     pyev.hardware_keycode = e.xkey.keycode
                     pyev.state = e.xkey.state
+                elif e.type == CursorNotify:
+                    pyev.window = _gw(d, e.xany.window)
+                    cursor_e = <XFixesCursorNotifyEvent*>e
+                    pyev.cursor_serial = cursor_e.cursor_serial
                 elif e.type == damage_type:
                     log("DamageNotify received")
                     damage_e = <XDamageNotifyEvent*>e

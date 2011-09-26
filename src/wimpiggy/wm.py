@@ -204,6 +204,10 @@ class Wm(gobject.GObject):
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
 
+    def enableCursors(self, on):
+        log("enableCursors(%s)" % on)
+        wimpiggy.lowlevel.selectCursorChange(self._root, on)
+
     def do_get_property(self, pspec):
         if pspec.name == "windows":
             return ImmutableSet(self._windows.itervalues())

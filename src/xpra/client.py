@@ -185,22 +185,7 @@ class ClientWindow(gtk.Window):
             pixbuf = loader.get_pixbuf()
             if not pixbuf:
                 if self._failed_pixbuf_index<10:
-                    import os.path, sys
-                    if sys.platform.startswith("win"):
-                        appdata = os.environ.get("APPDATA")
-                        if not os.path.exists(appdata):
-                            os.mkdir(appdata)
-                        xpra_path = os.path.join(appdata, "Xpra")
-                        if not os.path.exists(xpra_path):
-                            os.mkdir(xpra_path)
-                    else:
-                        xpra_path = os.path.expanduser("~/.xpra")
-                    failed_pixbuf_file = os.path.join(xpra_path, "failed-%s.%s" % (self._failed_pixbuf_index, coding))
-                    f = open(failed_pixbuf_file, 'wb')
-                    f.write(img_data)
-                    f.close()
-                    self._failed_pixbuf_index += 1
-                    log.error("failed %s pixbuf=%s data saved to %s, len=%s" % (coding, pixbuf, failed_pixbuf_file, len(img_data)))
+                    log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
                 elif self._failed_pixbuf_index==10:
                     log.error("too many pixbuf failures! (will no longer be logged)")
                     self._failed_pixbuf_index += 1
@@ -554,6 +539,7 @@ class XpraClient(gobject.GObject):
             capabilities_request["xkbmap_query"] = self.xkbmap_query
         if self.xmodmap_data:
             capabilities_request["xmodmap_data"] = self.xmodmap_data
+        capabilities_request["cursors"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
@@ -636,6 +622,18 @@ class XpraClient(gobject.GObject):
         window = self._id_to_window[id]
         window.draw(x, y, width, height, coding, data)
 
+    def _process_cursor(self, packet):
+        (_, new_cursor) = packet
+        (x, y, w, h, xhot, yhot, serial, pixels) = new_cursor
+        log.debug("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (x,y, serial, w,h, len(pixels)))
+        import array
+        bytes = array.array('b')
+        bytes.fromstring(pixels)
+        pixbuf = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
+        cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, xhot, yhot)
+        for window in self._window_to_id.keys():
+            window.window.set_cursor(cursor)
+
     def _process_window_metadata(self, packet):
         (_, id, metadata) = packet
         window = self._id_to_window[id]
@@ -670,6 +668,7 @@ class XpraClient(gobject.GObject):
         "new-window": _process_new_window,
         "new-override-redirect": _process_new_override_redirect,
         "draw": _process_draw,
+        "cursor": _process_cursor,
         "window-metadata": _process_window_metadata,
         "configure-override-redirect": _process_configure_override_redirect,
         "lost-window": _process_lost_window,
