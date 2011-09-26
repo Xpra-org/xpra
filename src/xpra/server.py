@@ -530,7 +530,7 @@ class XpraServer(gobject.GObject):
         self.send_cursor()
     
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image])
+        self._send(["cursor", self.cursor_image or ""])
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window

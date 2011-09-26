@@ -624,13 +624,17 @@ class XpraClient(gobject.GObject):
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet
-        (x, y, w, h, xhot, yhot, serial, pixels) = new_cursor
-        log.debug("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (x,y, serial, w,h, len(pixels)))
-        import array
-        bytes = array.array('b')
-        bytes.fromstring(pixels)
-        pixbuf = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
-        cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, xhot, yhot)
+        cursor = None
+        if len(new_cursor)>0:
+            (_, _, w, h, xhot, yhot, serial, pixels) = new_cursor
+            log.debug("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
+            import array
+            bytes = array.array('b')
+            bytes.fromstring(pixels)
+            pixbuf = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
+            x = max(0, min(xhot, w-1))
+            y = max(0, min(yhot, h-1))
+            cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, x, y)
         for window in self._window_to_id.keys():
             window.window.set_cursor(cursor)
 
