@@ -4,11 +4,12 @@
 %define version 0.0.7.27
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
-%define is_centos5 %(test -e /etc/redhat-release && grep "CentOS release 5." /etc/redhat-release && echo 1 || echo 0)
+%define include_egg 1
 
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging
-%if %is_centos5
+%if 0%{?el5}
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, python-uuid
+%define include_egg 0
 %endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0
@@ -150,7 +151,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/xpra
 %{python_sitelib}/parti
 %{python_sitelib}/wimpiggy
-%if %{defined include_egg}
+%if %{include_egg}
 %{python_sitelib}/parti_all-*.egg-info
 %endif
 /usr/share/man/man1/xpra.1*

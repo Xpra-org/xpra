@@ -6,11 +6,15 @@ rm -fr build install
 rm -f xpra/wait_for_x_server.c
 rm -f wimpiggy/lowlevel/bindings.c
 python ./setup.py sdist
+PYTHON_SITELIB=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
 SOURCES=~/rpmbuild/SOURCES/
+DIST="unknown"
 grep CentOS /etc/redhat-release
 if [ "$?" == "0" ]; then
 	SOURCES="/usr/src/redhat/SOURCES/"
+	FULL_VERSION=`cat /etc/redhat-release | sed 's/[^0-9\.]//g'`
+	MAJOR_VERSION=`echo $FULL_VERSION | sed 's+\..*++g'`
+	DIST="el${MAJOR_VERSION}"
 fi
 cp dist/parti-all-*.tar.gz ${SOURCES}
-PYTHON_SITELIB=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
-rpmbuild -ba xpra.spec --define "python_sitelib ${PYTHON_SITELIB}" --define "build_no ${BUILD_NO}" ${EXTRA_ARGS} --define "include_egg 1"
+rpmbuild -ba xpra.spec --define "python_sitelib ${PYTHON_SITELIB}" --define "build_no ${BUILD_NO}" --define "dist .${DIST}" --define "${DIST} 1"
