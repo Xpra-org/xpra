@@ -74,3 +74,13 @@ def get_keymap_spec():
         log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
     xmodmap_data = get_keyboard_data("xmodmap", "-pke");
     return xkbmap_print, xkbmap_query, xmodmap_data
+
+system_bell = None
+try:
+    from wimpiggy.lowlevel.bindings import device_bell
+    def x11_system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+        log("system_bell(%s,%s,%s,%s,%s,%s,%s,%s)" % (window, device, percent, pitch, duration, bell_class, bell_id, bell_name))
+        device_bell(window, device, bell_class, bell_id, percent, bell_name)
+    system_bell = x11_system_bell
+except ImportError, e:
+    log.error("cannot import device_bell (turning feature off) : %s", e)

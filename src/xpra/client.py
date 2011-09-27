@@ -22,6 +22,8 @@ from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
 from xpra.scripts.main import ENCODINGS
 
+from xpra.platform.gui import system_bell
+
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
 
@@ -540,6 +542,7 @@ class XpraClient(gobject.GObject):
         if self.xmodmap_data:
             capabilities_request["xmodmap_data"] = self.xmodmap_data
         capabilities_request["cursors"] = True
+        capabilities_request["bell"] = system_bell is not None
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
@@ -637,6 +640,15 @@ class XpraClient(gobject.GObject):
             cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, x, y)
         for window in self._window_to_id.keys():
             window.window.set_cursor(cursor)
+    
+    def _process_bell(self, packet):
+        (_, id, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet
+        log("_process_bell(%s) using system_bell=%s" % (packet, system_bell))
+        if id==0:
+            window = gtk.gdk.get_default_root_window()
+        else:
+            window = self._id_to_window[id]
+        system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def _process_window_metadata(self, packet):
         (_, id, metadata) = packet
@@ -673,6 +685,7 @@ class XpraClient(gobject.GObject):
         "new-override-redirect": _process_new_override_redirect,
         "draw": _process_draw,
         "cursor": _process_cursor,
+        "bell": _process_bell,
         "window-metadata": _process_window_metadata,
         "configure-override-redirect": _process_configure_override_redirect,
         "lost-window": _process_lost_window,

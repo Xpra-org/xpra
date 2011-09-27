@@ -310,6 +310,7 @@ class XpraServer(gobject.GObject):
         ### Create the WM object
         self._wm = Wm("Xpra", clobber)
         self._wm.connect("new-window", self._new_window_signaled)
+        self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
 
         ### Create our window managing data structures:
@@ -531,6 +532,15 @@ class XpraServer(gobject.GObject):
     
     def send_cursor(self):
         self._send(["cursor", self.cursor_image or ""])
+
+    def _bell_signaled(self, wm, event):
+        log("_bell_signaled(%s,%r)" % (wm, event))
+        if event.window==gtk.gdk.get_default_root_window():
+            id = 0
+        else:
+            id = self._window_to_id[event.window]
+        if self.send_bell:
+            self._send(["bell", id, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window
@@ -786,7 +796,7 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         for cap in ("deflate", "__prerelease_version", "challenge_response",
                         "keymap", "xkbmap_query", "xmodmap_data", "modifiers",
-                        "cursors",
+                        "cursors", "bell",
                         "png_window_icons", "encodings", "encoding", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
@@ -921,6 +931,7 @@ class XpraServer(gobject.GObject):
             self._make_keymask_match([])
             self.set_keymap()
         self.send_cursors = capabilities.get("cursors", False)
+        self.send_bell = capabilities.get("bell", False)
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = capabilities.get("png_window_icons", False)
         # now we can set the modifiers to match the client

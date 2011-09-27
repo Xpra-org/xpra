@@ -106,8 +106,8 @@ def premultiply_argb_in_place(buf):
     # b is a Python buffer object, containing non-premultiplied ARGB32 data in
     # native-endian.
     # We convert to premultiplied ARGB32 data, in-place.
-    cdef unsigned int * cbuf
-    cdef Py_ssize_t cbuf_len
+    cdef unsigned int * cbuf = <unsigned int *> 0
+    cdef Py_ssize_t cbuf_len = 0
     cdef unsigned int a, r, g, b
     assert sizeof(int) == 4
     PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)
@@ -132,6 +132,8 @@ def premultiply_argb_in_place(buf):
 
 include "constants.pxi"
 ctypedef unsigned long CARD32
+ctypedef unsigned short CARD16
+ctypedef unsigned char CARD8
 
 cdef extern from *:
     ctypedef struct Display:
@@ -389,8 +391,8 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     # interpret atoms when dealing with the clipboard, therefore, we need to
     # be able to take an array of GDK atom objects (integers) and figure out
     # what they mean.
-    cdef GdkAtom * array
-    cdef Py_ssize_t array_len_bytes
+    cdef GdkAtom * array = <GdkAtom*> 0
+    cdef Py_ssize_t array_len_bytes = 0
     PyObject_AsReadBuffer(atom_string, <void **>&array, &array_len_bytes)
     array_len = array_len_bytes / sizeof(GdkAtom)
     objects = []
@@ -454,10 +456,10 @@ def XGetWindowProperty(pywindow, property, req_type):
     # (Except, I've found window icons that are strictly larger, hence the
     # added * 5...)
     buffer_size = 64 * 1024 * 5
-    cdef Atom xactual_type
-    cdef int actual_format
-    cdef unsigned long nitems, bytes_after
-    cdef unsigned char * prop
+    cdef Atom xactual_type = <Atom> 0
+    cdef int actual_format = 0
+    cdef unsigned long nitems = 0, bytes_after = 0
+    cdef unsigned char * prop = <unsigned char*> 0
     cdef Status status
     xreq_type = get_xatom(pywindow, req_type)
     # This is the most bloody awful API I have ever seen.  You will probably
@@ -521,9 +523,9 @@ def XRemoveFromSaveSet(pywindow):
 
 # Children listing
 def _query_tree(pywindow):
-    cdef Window root, parent
-    cdef Window * children
-    cdef unsigned int nchildren
+    cdef Window root = 0, parent = 0
+    cdef Window * children = <Window *> 0
+    cdef unsigned int nchildren = 0
     if not XQueryTree(get_xdisplay_for(pywindow),
                       get_xwindow(pywindow),
                       &root, &parent, &children, &nchildren):
@@ -586,8 +588,8 @@ def XSetInputFocus(pywindow, time=None):
 
 def printFocus(display_source):
     # Debugging
-    cdef Window w
-    cdef int revert_to
+    cdef Window w = 0
+    cdef int revert_to = 0
     cXGetInputFocus(get_xdisplay_for(display_source), &w, &revert_to)
     log("Current focus: %s, %s", hex(w), revert_to)
     
@@ -607,7 +609,7 @@ def calc_constrained_size(width, height, hints):
         return (width, height, width, height)
 
     cdef cGdkGeometry geom
-    cdef int new_width, new_height
+    cdef int new_width = 0, new_height = 0
     flags = 0
     
     if hints.max_size is not None:
@@ -652,8 +654,8 @@ cdef extern from *:
 
 def get_rectangle_from_region(region):
     cdef GdkRegion * cregion
-    cdef GdkRectangle * rectangles
-    cdef int count
+    cdef GdkRectangle * rectangles = <GdkRectangle*> 0
+    cdef int count = 0
     cregion = <GdkRegion *>unwrap_boxed(region, gtk.gdk.Region)
     gdk_region_get_rectangles(cregion, &rectangles, &count)
     if count == 0:
@@ -733,7 +735,7 @@ cdef extern from "X11/extensions/XTest.h":
 
 def _ensure_XTest_support(display_source):
     display = get_display_for(display_source)
-    cdef int ignored
+    cdef int ignored = 0
     if display.get_data("XTest-support") is None:
         display.set_data("XTest-support",
                          XTestQueryExtension(get_xdisplay_for(display),
@@ -765,7 +767,7 @@ def xtest_fake_button(display_source, button, is_press):
 cdef _ensure_extension_support(display_source, major, minor, extension,
                                Bool (*query_extension)(Display*, int*, int*),
                                Status (*query_version)(Display*, int*, int*)):
-    cdef int event_base, ignored, cmajor, cminor
+    cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
     display = get_display_for(display_source)
     key = extension + "-support"
     event_key = extension + "-event-base"
@@ -901,7 +903,7 @@ def has_randr():
 cdef _get_screen_sizes(display_source):
     cdef Display * display
     display = get_xdisplay_for(display_source)
-    cdef int num_sizes
+    cdef int num_sizes = 0
     cdef XRRScreenSize * xrrs
     cdef XRRScreenSize xrr
     xrrs = XRRSizes(display, 0, &num_sizes)
@@ -917,13 +919,13 @@ def get_screen_sizes():
 cdef _set_screen_size(display_source, pywindow, width, height):
     cdef Display * display
     cdef XRRScreenConfiguration *config
-    cdef int num_sizes
-    cdef int num_rates
-    cdef short* rates
-    cdef short rate
-    cdef Rotation rotation
-    cdef Time time
-    cdef int sizeID
+    cdef int num_sizes = 0
+    cdef int num_rates = 0
+    cdef short* rates = <short*> 0
+    cdef short rate = 0
+    cdef Rotation rotation = 0
+    cdef Time time = 0
+    cdef int sizeID = 0
     cdef XRRScreenSize *xrrs
     cdef XRRScreenSize xrr
 
@@ -954,6 +956,71 @@ def set_screen_size(width, height):
     display = gtk.gdk.display_get_default()
     root_window = gtk.gdk.get_default_root_window()
     _set_screen_size(display, root_window, width, height)
+
+###################################
+# XKB bell
+###################################
+cdef extern from "X11/extensions/XKB.h":
+    unsigned int XkbUseCoreKbd
+    unsigned int XkbBellNotifyMask
+    unsigned int XkbBellNotify
+    ctypedef struct XkbAnyEvent:
+        unsigned long   serial
+        Bool            send_event
+        Display *       display
+        Time            time
+        int             xkb_type
+        unsigned int    device
+
+cdef extern from "X11/extensions/XKBproto.h":
+    ctypedef struct XkbBellNotifyEvent:
+        int         type
+        CARD32      serial
+        Bool        send_event
+        Display*	display
+        Time        time
+        int         xkb_type
+        int         device
+        int         percent
+        int         pitch
+        int         duration
+        int         bell_class
+        int         bell_id
+        Atom        name
+        Window      window
+        Bool        event_only
+
+cdef extern from "X11/XKBlib.h":
+    Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
+    Bool XkbSelectEvents(Display *, unsigned int deviceID, unsigned int affect, unsigned int values)
+    Bool XkbDeviceBell(Display *, Window w, int deviceSpec, int bellClass, int bellID, int percent, Atom name)
+
+def get_XKB_event_base():
+    cdef int opcode = 0
+    cdef int event_base = 0
+    cdef int error_base = 0
+    cdef int major = 0
+    cdef int minor = 0
+    cdef Display * display
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    XkbQueryExtension(display, &opcode, &event_base, &error_base, &major, &minor)
+    return int(event_base)
+
+def selectBellNotification(pywindow, on):
+    cdef Display * display
+    cdef int bits = XkbBellNotifyMask
+    display = get_xdisplay_for(pywindow)
+    if not on:
+        bits = 0
+    XkbSelectEvents(display, XkbUseCoreKbd, XkbBellNotifyMask, bits)
+
+def device_bell(pywindow, deviceSpec, bellClass, bellID, percent, name):
+    cdef Display * display
+    cdef Window window
+    display = get_xdisplay_for(pywindow)
+    window = get_xwindow(pywindow)
+    name_atom = get_xatom(pywindow, name)
+    return XkbDeviceBell(display, window, deviceSpec, bellClass, bellID,  percent, name_atom)
 
 
 ###################################
@@ -995,7 +1062,6 @@ cdef extern from "X11/extensions/Xfixes.h":
 
     Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
     XFixesCursorImage* XFixesGetCursorImage(Display *)
-    void XcursorImageDestroy(XFixesCursorImage *image)
 
 cdef argbdata_to_pixdata(unsigned long* data, len):
     if len <= 0:
@@ -1032,11 +1098,11 @@ def get_cursor_image():
         return (image.x, image.y, image.width, image.height, image.xhot, image.yhot,
             image.cursor_serial, pixels_string)
     finally:
-        XcursorImageDestroy(image)
+        XFree(image)
 
 def get_XFixes_event_base():
-    cdef int event_base
-    cdef int error_base
+    cdef int event_base = 0
+    cdef int error_base = 0
     cdef Display * display
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     XFixesQueryExtension(display, &event_base, &error_base)
@@ -1173,8 +1239,8 @@ def sendConfigureNotify(pywindow):
     XGetWindowAttributes(display, window, &attrs)
 
     # Figure out where the window actually is in root coordinate space
-    cdef int dest_x, dest_y
-    cdef Window child
+    cdef int dest_x = 0, dest_y = 0
+    cdef Window child = 0
     if not XTranslateCoordinates(display, window,
                                  get_xwindow(gtk.gdk.get_default_root_window()),
                                  0, 0,
@@ -1381,6 +1447,7 @@ def _route_event(event, signal, parent_signal):
         else:
             log("  received event on a parent window but have no parent signal")
 
+XKBNotify = get_XKB_event_base()
 CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
 _x_event_signals = {
     MapRequest: (None, "child-map-request-event"),
@@ -1396,6 +1463,7 @@ _x_event_signals = {
     PropertyNotify: ("wimpiggy-property-notify-event", None),
     KeyPress: ("wimpiggy-key-press-event", None),
     CursorNotify: ("wimpiggy-cursor-event", None),
+    XKBNotify: ("wimpiggy-xkb-event", None),
     "XDamageNotify": ("wimpiggy-damage-event", None),
     }
 
@@ -1408,6 +1476,8 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef XEvent * e
     cdef XDamageNotifyEvent * damage_e
     cdef XFixesCursorNotifyEvent * cursor_e
+    cdef XkbAnyEvent * xkb_e
+    cdef XkbBellNotifyEvent * bell_e
     e = <XEvent*>e_gdk
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         return GDK_FILTER_CONTINUE
@@ -1420,13 +1490,15 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         else:
             damage_type = -1
         if e.type in my_events:
+            log("x_event_filter event=%s", str(my_events.get(e.type)))
             pyev = AdHocStruct()
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
             pyev.display = d
             # Unmarshal:
             try:
-                pyev.delivered_to = _gw(d, e.xany.window)
+                if e.type != XKBNotify:
+                    pyev.delivered_to = _gw(d, e.xany.window)
                 if e.type == MapRequest:
                     log("MapRequest received")
                     pyev.window = _gw(d, e.xmaprequest.window)
@@ -1511,9 +1583,37 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.hardware_keycode = e.xkey.keycode
                     pyev.state = e.xkey.state
                 elif e.type == CursorNotify:
+                    log("Cursor event received")
                     pyev.window = _gw(d, e.xany.window)
                     cursor_e = <XFixesCursorNotifyEvent*>e
                     pyev.cursor_serial = cursor_e.cursor_serial
+                elif e.type == XKBNotify:
+                    # note we could just cast directly to XkbBellNotifyEvent
+                    # but this would be dirty, and we may want to catch
+                    # other types of XKB events in the future 
+                    xkb_e = <XkbAnyEvent*>e
+                    log("XKB event received xkb_type=%s", xkb_e.xkb_type)
+                    if xkb_e.xkb_type!=XkbBellNotify:
+                        return GDK_FILTER_CONTINUE
+                    bell_e = <XkbBellNotifyEvent*>e
+                    pyev.type = "bell"
+                    pyev.device = int(bell_e.device)
+                    pyev.percent = int(bell_e.percent)
+                    pyev.pitch = int(bell_e.pitch)
+                    pyev.duration = int(bell_e.duration)
+                    pyev.bell_class = int(bell_e.bell_class)
+                    pyev.bell_id = int(bell_e.bell_id)
+                    # no idea why window is not set in XkbBellNotifyEvent
+                    # since we can fire it from a specific window 
+                    # but we need one for the dispatch logic, so use root if unset
+                    if bell_e.window!=0:
+                        pyev.window = _gw(d, bell_e.window)
+                    else:
+                        pyev.window = gtk.gdk.get_default_root_window()
+                    pyev.event_only = bool(bell_e.event_only)
+                    pyev.delivered_to = pyev.window
+                    pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
+                    log("XKB BellEvent: event=%r", pyev)
                 elif e.type == damage_type:
                     log("DamageNotify received")
                     damage_e = <XDamageNotifyEvent*>e

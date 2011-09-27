@@ -123,6 +123,8 @@ class Wm(gobject.GObject):
         # Public use:
         # A new window has shown up:
         "new-window": one_arg_signal,
+        # X11 bell event:
+        "bell": one_arg_signal,
         # You can emit this to cause the WM to quit, or the WM may
         # spontaneously raise it if another WM takes over the display.  By
         # default, unmanages all windows:
@@ -136,6 +138,7 @@ class Wm(gobject.GObject):
         "wimpiggy-focus-in-event": one_arg_signal,
         "wimpiggy-focus-out-event": one_arg_signal,
         "wimpiggy-client-message-event": one_arg_signal,
+        "wimpiggy-xkb-event": one_arg_signal,
         }
 
     def __init__(self, name, replace_other_wm, display=None):
@@ -198,6 +201,7 @@ class Wm(gobject.GObject):
 
         # Also watch for focus change events on the root window
         wimpiggy.lowlevel.selectFocusChange(self._root)
+        wimpiggy.lowlevel.selectBellNotification(self._root, True)
 
         # FIXME:
         # Need viewport abstraction for _NET_CURRENT_DESKTOP...
@@ -207,6 +211,13 @@ class Wm(gobject.GObject):
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)
         wimpiggy.lowlevel.selectCursorChange(self._root, on)
+
+    def do_wimpiggy_xkb_event(self, event):
+        log("do_wimpiggy_xkb_event(%r)" % event)
+        if event.type!="bell":
+            log.error("do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            return
+        self.emit("bell", event)
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
