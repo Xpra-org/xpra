@@ -35,7 +35,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
                                xtest_fake_button, #@UnresolvedImport
                                is_override_redirect, is_mapped, #@UnresolvedImport
                                add_event_receiver, #@UnresolvedImport
-                               selectCursorChange, get_cursor_image, #@UnresolvedImport
+                               get_cursor_image, #@UnresolvedImport
                                get_children, #@UnresolvedImport
                                has_randr, get_screen_sizes, set_screen_size) #@UnresolvedImport
 from wimpiggy.prop import prop_set

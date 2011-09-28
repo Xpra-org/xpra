@@ -487,7 +487,7 @@ class XpraClient(gobject.GObject):
         if sendkeymap:
             #old clients won't know what to do with it, but that's ok
             self.query_xkbmap()
-            log.info("keys_changed")
+            log("keys_changed")
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
             def nn(x):
                 if x is None:
