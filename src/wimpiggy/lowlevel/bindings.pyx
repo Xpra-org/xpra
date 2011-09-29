@@ -878,6 +878,7 @@ cdef extern from "X11/extensions/Xrandr.h":
     XRRScreenSize *XRRSizes(Display *dpy, int screen, int *nsizes)
     void XRRSetScreenSize(Display *dpy, Window w, int width, int height, int mmWidth, int mmHeight)
     
+    ctypedef unsigned short SizeID
     ctypedef struct XRRScreenConfiguration:
         pass
     ctypedef unsigned short Rotation
@@ -887,6 +888,7 @@ cdef extern from "X11/extensions/Xrandr.h":
     XRRScreenConfiguration *XRRGetScreenInfo(Display *, Window w)
     XRRScreenSize *XRRConfigSizes(XRRScreenConfiguration *config, int *nsizes)
     short *XRRConfigRates(XRRScreenConfiguration *config, int sizeID, int *nrates)
+    SizeID XRRConfigCurrentConfiguration(XRRScreenConfiguration *config, Rotation *rotation)
 
     void XRRFreeScreenConfigInfo(XRRScreenConfiguration *)
 
@@ -932,25 +934,52 @@ cdef _set_screen_size(display_source, pywindow, width, height):
     #print "_set_screen_size(%s,%s,%s,%s)" % (display_source, pywindow, width, height)
     display = get_xdisplay_for(display_source)
     window = get_xwindow(pywindow)
-    config = XRRGetScreenInfo(display, window)
-    xrrs = XRRConfigSizes(config, &num_sizes)
-    sizes = []
-    sizeID = -1
-    for i in range(num_sizes):
-        xrr = xrrs[i]
-        if xrr.width==width and xrr.height==height:
-            sizeID = i
-    if sizeID<0:
-        print "size not found!"
-    else:
-        rates = XRRConfigRates(config, sizeID, &num_rates)
-        rate = rates[0]
-        rotation = 1          #RR_Rotate_0
-        time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
-        status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time) 
-        if status != Success:
-            print "failed to set new screen size"
-    XRRFreeScreenConfigInfo(config)
+    try:
+        config = XRRGetScreenInfo(display, window)
+        xrrs = XRRConfigSizes(config, &num_sizes)
+        sizes = []
+        sizeID = -1
+        for i in range(num_sizes):
+            xrr = xrrs[i]
+            if xrr.width==width and xrr.height==height:
+                sizeID = i
+        if sizeID<0:
+            print "size not found!"
+        else:
+            rates = XRRConfigRates(config, sizeID, &num_rates)
+            rate = rates[0]
+            rotation = 1          #RR_Rotate_0
+            time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
+            status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time) 
+            if status != Success:
+                print "failed to set new screen size"
+    finally:
+        XRRFreeScreenConfigInfo(config)
+
+def get_screen_size():
+    return _get_screen_size(gtk.gdk.get_default_root_window())
+
+def _get_screen_size(pywindow):
+    cdef Display * display
+    cdef Window window
+    cdef XRRScreenSize *xrrs
+    cdef Rotation original_rotation
+    cdef int num_sizes = 0
+    cdef SizeID size_id
+    display = get_xdisplay_for(pywindow)
+    window = get_xwindow(pywindow)
+    cdef XRRScreenConfiguration *config
+    try:
+        config = XRRGetScreenInfo(display, window)
+        xrrs = XRRConfigSizes(config, &num_sizes)
+        #short original_rate = XRRConfigCurrentRate(config);
+        size_id = XRRConfigCurrentConfiguration(config, &original_rotation);
+        
+        width = xrrs[size_id].width;
+        height = xrrs[size_id].height;
+        return int(width), int(height)
+    finally:
+        XRRFreeScreenConfigInfo(config)
 
 def set_screen_size(width, height):
     display = gtk.gdk.display_get_default()
@@ -977,7 +1006,7 @@ cdef extern from "X11/extensions/XKBproto.h":
         int         type
         CARD32      serial
         Bool        send_event
-        Display*	display
+        Display*    display
         Time        time
         int         xkb_type
         int         device

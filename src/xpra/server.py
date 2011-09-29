@@ -37,7 +37,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
                                add_event_receiver, #@UnresolvedImport
                                get_cursor_image, #@UnresolvedImport
                                get_children, #@UnresolvedImport
-                               has_randr, get_screen_sizes, set_screen_size) #@UnresolvedImport
+                               has_randr, get_screen_sizes, set_screen_size, get_screen_size) #@UnresolvedImport
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
@@ -834,10 +834,14 @@ class XpraServer(gobject.GObject):
             w, h = new_size
             try:
                 set_screen_size(w, h)
-                (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
-                log.info("our new resolution is: %sx%s" % (root_w,root_h))
+                (root_w, root_h) = get_screen_size()
+                if root_w!=w or root_h!=h:
+                    log.error("odd, failed to set the new resolution, "
+                              "tried to set it to %sx%s and ended up with %sx%s" % (w,h, root_w, root_h))
+                else:
+                    log.info("successfully set new resolution to: %sx%s" % (root_w,root_h))
             except Exception, e:
-                log.error("failed to set new resolution: %s" % e)
+                log.error("ouch, failed to set new resolution: %s" % e, exc_info=True)
         w = min(client_w, root_w)
         h = min(client_h, root_h)
         return w,h
