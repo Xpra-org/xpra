@@ -250,6 +250,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                                      executable=xvfb_executable)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
+            return
         raw_cookie = os.urandom(16)
         baked_cookie = raw_cookie.encode("hex")
         try:
