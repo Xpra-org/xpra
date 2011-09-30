@@ -22,7 +22,7 @@ from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
 from xpra.scripts.main import ENCODINGS
 
-from xpra.platform.gui import system_bell
+from xpra.platform.gui import system_bell, notifications_wrapper
 
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
@@ -378,6 +378,13 @@ class XpraClient(gobject.GObject):
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
+        
+        self.notifications = None
+        if notifications_wrapper:
+            try:
+                self.notifications = notifications_wrapper()
+            except ImportError, e:
+                log.error("failed to load notification wrapper (turning feature off) : %s", e)
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -543,6 +550,7 @@ class XpraClient(gobject.GObject):
             capabilities_request["xmodmap_data"] = self.xmodmap_data
         capabilities_request["cursors"] = True
         capabilities_request["bell"] = system_bell is not None
+        capabilities_request["notifications"] = self.notifications is not None
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
@@ -650,6 +658,18 @@ class XpraClient(gobject.GObject):
             window = self._id_to_window[id]
         system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
+    def _process_notify_show(self, packet):
+        (_, id, app_name, replaces_id, app_icon, summary, body, expire_timeout) = packet
+        log("_process_notify_show(%s,%s,%s,%s,%s,%s,%s) notifications wrapper=%s", id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.notifications)
+        if self.notifications:
+            self.notifications.notify(id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
+
+    def _process_notify_close(self, packet):
+        (_, id) = packet
+        log("_process_notify_close(%s)", id)
+        if self.notifications:
+            self.notifications.close_callback(id)
+
     def _process_window_metadata(self, packet):
         (_, id, metadata) = packet
         window = self._id_to_window[id]
@@ -686,6 +706,8 @@ class XpraClient(gobject.GObject):
         "draw": _process_draw,
         "cursor": _process_cursor,
         "bell": _process_bell,
+        "notify_show": _process_notify_show,
+        "notify_close": _process_notify_close,
         "window-metadata": _process_window_metadata,
         "configure-override-redirect": _process_configure_override_redirect,
         "lost-window": _process_lost_window,

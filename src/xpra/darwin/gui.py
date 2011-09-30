@@ -29,6 +29,7 @@ def get_keymap_spec():
     return None,None,None
 
 system_bell = None
+notifications_wrapper = None
 
 class ClipboardProtocolHelper(object):
     def __init__(self, send_packet_cb):

@@ -84,3 +84,16 @@ try:
     system_bell = x11_system_bell
 except ImportError, e:
     log.error("cannot import device_bell (turning feature off) : %s", e)
+
+class notifications_wrapper:
+    def __init__(self):
+        import pynotify
+        pynotify.init("Xpra")
+
+    def notify(self, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+        import pynotify
+        n = pynotify.Notification("Title", "message")
+        n.show()
+
+    def close_callback(self, id):
+        pass

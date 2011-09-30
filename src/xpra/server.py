@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 # Todo:
-#   cursors
 #   xsync resize stuff
 #   shape?
 #   any other interesting metadata? _NET_WM_TYPE, WM_TRANSIENT_FOR, etc.?
@@ -336,6 +335,7 @@ class XpraServer(gobject.GObject):
         self.xkbmap_query = None
         self.xmodmap_data = None
 
+        self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
         #store list of currently pressed keys
@@ -376,6 +376,14 @@ class XpraServer(gobject.GObject):
         log.info("randr enabled: %s" % self.randr)
 
         self.pulseaudio = pulseaudio
+        
+        try:
+            from xpra.dbus_notifications_forwarder import register
+            self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback, replace=True)
+            log.info("using notification forwarder: %s", self.notifications_forwarder)
+        except Exception, e:
+            log.error("failed to load dbus notifications forwarder: %s", e)
+            self.notifications_forwarder = None
 
         ### All right, we're ready to accept customers:
         for sock in sockets:
@@ -541,6 +549,16 @@ class XpraServer(gobject.GObject):
             id = self._window_to_id[event.window]
         if self.send_bell:
             self._send(["bell", id, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
+
+    def notify_callback(self, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+        log("notify_callback(%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.send_notifications)
+        if self.send_notifications:
+            self._send(["notify_show", int(id), str(app_name), int(replaces_id), str(app_icon), str(summary), str(body), long(expire_timeout)])
+    
+    def notify_close_callback(self, id):
+        log("notify_close_callback(%s)", id)
+        if self.send_notifications:
+            self._send(["notify_close", int(id)])
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window
@@ -796,7 +814,7 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         for cap in ("deflate", "__prerelease_version", "challenge_response",
                         "keymap", "xkbmap_query", "xmodmap_data", "modifiers",
-                        "cursors", "bell",
+                        "cursors", "bell", "notifications",
                         "png_window_icons", "encodings", "encoding", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
@@ -936,6 +954,8 @@ class XpraServer(gobject.GObject):
             self.set_keymap()
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
+        self.send_notifications = capabilities.get("notifications", False)
+        log.info("send_cursors=%s, send_bell=%s, send_notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = capabilities.get("png_window_icons", False)
         # now we can set the modifiers to match the client
