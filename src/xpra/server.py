@@ -163,7 +163,8 @@ class ServerSource(object):
                 del d[id]
  
     def damage(self, id, window, x, y, w, h):
-        MAX_EVENTS = 20     #maximum number of damage events
+        BATCH_EVENTS = True
+        MAX_EVENTS = 30     #maximum number of damage events
         TIME_UNIT = 1       #per second
         BATCH_DELAY = 50    #how long to batch updates for (in millis)
         def damage_now():
@@ -171,6 +172,8 @@ class ServerSource(object):
             _, region = self._damage.setdefault(id, (window, gtk.gdk.Region()))
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             self._protocol.source_has_more()
+        if not BATCH_EVENTS:
+            return damage_now()
         #find the oldest event time in the queue
         now = time.time()
         last_events = self._damage_last_events.setdefault(id, Queue.Queue())
