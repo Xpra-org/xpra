@@ -92,7 +92,7 @@ class notifications_wrapper:
 
     def notify(self, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         import pynotify
-        n = pynotify.Notification("Title", "message")
+        n = pynotify.Notification(summary, body)
         n.show()
 
     def close_callback(self, id):
