@@ -49,7 +49,6 @@ public class DragView extends View {
 	private int mRegistrationX;
 	private int mRegistrationY;
 
-	private float mScale;
 	private float mAnimationScale = 1.0f;
 
 	private WindowManager.LayoutParams mLayoutParams;
@@ -79,7 +78,7 @@ public class DragView extends View {
 
 		Matrix scale = new Matrix();
 		float scaleFactor = width;
-		scaleFactor = this.mScale = (scaleFactor + DRAG_SCALE) / scaleFactor;
+		scaleFactor = (scaleFactor + DRAG_SCALE) / scaleFactor;
 		scale.setScale(scaleFactor, scaleFactor);
 		this.mBitmap = Bitmap.createBitmap(bitmap, left, top, width, height, scale, true);
 
