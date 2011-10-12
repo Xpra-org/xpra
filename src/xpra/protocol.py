@@ -107,6 +107,7 @@ class Protocol(object):
         self.jpegquality = 0
         self._source_has_more = False
         self._recv_counter = 0
+        self._send_size = False
         self._closed = False
         self._read_decoder = IncrBDecode()
         self._compressor = None
@@ -136,12 +137,16 @@ class Protocol(object):
         if packet is not None:
             log("writing %s", dump_packet(packet), type="raw.write")
             data_payload = bencode(packet)
-            data = data_payload
-            if self._compressor is not None:
-                self._write_queue.put(self._compressor.compress(data))
-                self._write_queue.put(self._compressor.flush(zlib.Z_SYNC_FLUSH))
+            size = len(data_payload)
+            if self._send_size:
+                data = ("PS%014d" % size) + data_payload
             else:
-                self._write_queue.put(data)
+                data = data_payload            
+            #log("data_payload=%s", data_payload, type="raw.write")
+            if self._compressor is not None:
+                data = self._compressor.compress(data)
+                data = data+self._compressor.flush(zlib.Z_SYNC_FLUSH)
+            self._write_queue.put(data)
 
     def _write_thread_loop(self):
         try:
@@ -223,7 +228,7 @@ class Protocol(object):
             try:
                 self._read_decoder.add(buf)
             except:
-                log.error("bencoder read buffer is in an inconsistent state, cannot continue")
+                log.error("bencoder read buffer is in an inconsistent state, cannot continue", exc_info=True)
                 self._connection_lost()
                 return
             while not self._closed:

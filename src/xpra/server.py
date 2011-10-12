@@ -818,6 +818,7 @@ class XpraServer(gobject.GObject):
         for cap in ("deflate", "__prerelease_version", "challenge_response",
                         "keymap", "xkbmap_query", "xmodmap_data", "modifiers",
                         "cursors", "bell", "notifications",
+                        "packet_size",
                         "png_window_icons", "encodings", "encoding", "jpeg"):
             if cap in client_capabilities:
                 capabilities[cap] = client_capabilities[cap]
@@ -940,12 +941,10 @@ class XpraServer(gobject.GObject):
         self._protocol = proto
         ServerSource(self._protocol, self.encoding)
         # do screen size calculations/modifications:
-        capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
-        capabilities["raw_keycodes_feature"] = True
-        capabilities["focus_modifiers_feature"] = True
-        self._send(["hello", capabilities])
+        self.send_hello(capabilities)
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
+        self._protocol._send_size = capabilities.get("packet_size", False)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
         if "keymap" in capabilities:
@@ -958,7 +957,7 @@ class XpraServer(gobject.GObject):
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = capabilities.get("notifications", False)
-        log.info("send_cursors=%s, send_bell=%s, send_notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
+        log.debug("send_cursors=%s, send_bell=%s, send_notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = capabilities.get("png_window_icons", False)
         # now we can set the modifiers to match the client
@@ -979,6 +978,23 @@ class XpraServer(gobject.GObject):
                 self._send_new_window_packet(window)
         if self.send_cursors:
             self.send_cursor()
+
+    def send_hello(self, client_capabilities):
+        capabilities = {}
+        capabilities["__prerelease_version"] = xpra.__version__
+        if "deflate" in client_capabilities:
+            capabilities["deflate"] = client_capabilities.get("deflate")
+        capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
+        capabilities["raw_keycodes_feature"] = True
+        capabilities["focus_modifiers_feature"] = True
+        capabilities["packet_size"] = True
+        capabilities["cursors"] = True
+        capabilities["bell"] = True
+        capabilities["notifications"] = True
+        capabilities["png_window_icons"] = True
+        capabilities["encodings"] = ["rgb24", "jpeg", "png"]
+        capabilities["encoding"] = self.encoding
+        self._send(["hello", capabilities])
 
     def disconnect(self, reason):
         log.info("Disconnecting existing client, reason is: %s" % reason)

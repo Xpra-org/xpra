@@ -551,6 +551,7 @@ class XpraClient(gobject.GObject):
         capabilities_request["cursors"] = True
         capabilities_request["bell"] = system_bell is not None
         capabilities_request["notifications"] = self.notifications is not None
+        capabilities_request["packet_size"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
@@ -611,6 +612,7 @@ class XpraClient(gobject.GObject):
                          % (avail_w, avail_h, root_w, root_h))
         if self._clipboard_helper:
             self._clipboard_helper.send_all_tokens()
+        self._protocol._send_size = capabilities.get("packet_size", False)
         self._client_extras.handshake_complete(capabilities)
         self.emit("handshake-complete")
 

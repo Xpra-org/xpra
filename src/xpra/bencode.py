@@ -17,6 +17,7 @@ class IncrBDecode(object):
         self._buf = initial_buf
         self._offset = 0
         self._result = None
+        self._packet_size = -1
         self._nesteds = []
         self._states = {
             "l": self._list_start,
@@ -33,10 +34,22 @@ class IncrBDecode(object):
     def add(self, bytes):
         assert self._result is None
         self._buf += bytes
+    
+    def _may_have_full_packet(self):
+        """ this does not really belong here
+            (see protocol.py for the write side) """
+        if self._packet_size<0 and len(self._buf)>=16 and self._buf.startswith("PS"):
+            #spotted packet size header:
+            self._packet_size = int(self._buf[2:16])
+            self._buf = self._buf[16:]
+        return self._packet_size<0 or len(self._buf)>=self._packet_size
 
     def process(self):
+        if not self._may_have_full_packet():
+            return  None
         self._state()
         if self._result is not None:
+            self._packet_size = -1
             return self._result, self._buf[self._offset:]
 
     def unprocessed(self):
