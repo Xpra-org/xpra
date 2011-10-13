@@ -175,6 +175,11 @@ class ApplicationWindow:
 		opts.remote_xpra = ".xpra/run-xpra"
 		opts.debug = None
 		opts.dock_icon = None
+		
+		import logging
+		logging.root.setLevel(logging.INFO)
+		logging.root.addHandler(logging.StreamHandler(sys.stderr))
+
 		app = XpraClient(socket_wrapper, opts)
 		app.run()
 
