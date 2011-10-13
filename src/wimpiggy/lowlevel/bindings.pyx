@@ -1423,9 +1423,9 @@ def add_event_receiver(window, receiver):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         receivers = set()
+        window.set_data(_ev_receiver_key, receivers)
     if receiver not in receivers:
         receivers.add(receiver)
-    window.set_data(_ev_receiver_key, receivers)
 
 def remove_event_receiver(window, receiver):
     receivers = window.get_data(_ev_receiver_key)
@@ -1434,7 +1434,7 @@ def remove_event_receiver(window, receiver):
     receivers.discard(receiver)
     if not receivers:
         receivers = None
-    window.set_data(_ev_receiver_key, receivers)
+        window.set_data(_ev_receiver_key, receivers)
 
 def _maybe_send_event(window, signal, event):
     handlers = window.get_data(_ev_receiver_key)
@@ -1636,11 +1636,14 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     # since we can fire it from a specific window 
                     # but we need one for the dispatch logic, so use root if unset
                     if bell_e.window!=0:
+                        log("using bell_e.window=%s", bell_e.window)
                         pyev.window = _gw(d, bell_e.window)
                     else:
-                        pyev.window = gtk.gdk.get_default_root_window()
+                        pyev.window = d.get_default_screen().get_root_window()
+                        log("bell using root window=%s", pyev.window)
                     pyev.event_only = bool(bell_e.event_only)
                     pyev.delivered_to = pyev.window
+                    pyev.window_model = None
                     pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
                     log("XKB BellEvent: event=%r", pyev)
                 elif e.type == damage_type:
