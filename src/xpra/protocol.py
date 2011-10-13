@@ -130,24 +130,31 @@ class Protocol(object):
         if self._write_queue.empty() and self._source_has_more:
             self._flush_one_packet_into_buffer()
 
+    def _queue_write(self, data, flush=False):
+        if len(data)==0:
+            return
+        if self._compressor is None:
+            self._write_queue.put(data)
+            return
+        c = self._compressor.compress(data)
+        if c:
+            self._write_queue.put(c)
+        if not flush:
+            return
+        c = self._compressor.flush(zlib.Z_SYNC_FLUSH)
+        if c:
+            self._write_queue.put(c)
+
     def _flush_one_packet_into_buffer(self):
         if not self.source:
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            def add(x):
-                if len(x)>0:
-                    self._write_queue.put(x)
             log("writing %s", dump_packet(packet), type="raw.write")
             data = bencode(packet)
             if self._send_size:
-                add("PS%014d" % len(data))
-            #log("data_payload=%s", data_payload, type="raw.write")
-            if self._compressor is not None:
-                add(self._compressor.compress(data))
-                add(self._compressor.flush(zlib.Z_SYNC_FLUSH))
-            else:
-                add(data)
+                self._queue_write("PS%014d" % len(data))
+            self._queue_write(data, True)
 
     def _write_thread_loop(self):
         try:
