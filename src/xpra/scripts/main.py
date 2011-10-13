@@ -22,7 +22,15 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            add_client_options)
 from xpra.protocol import TwoFileConnection, SocketConnection
 
-ENCODINGS = ["rgb24", "jpeg", "png"]
+ENCODINGS = ["rgb24"]
+try:
+    import Image
+    assert Image
+    ENCODINGS.append("jpeg")
+    ENCODINGS.append("png")
+except:
+    pass
+
 
 def nox():
     if "DISPLAY" in os.environ:
@@ -102,14 +110,15 @@ def main(script_file, cmdline):
     parser.add_option("--encoding", action="store",
                       metavar="ENCODING",
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use: rgb24, jpeg or png. Default: rgb24")
-    parser.add_option("--jpeg-quality", action="store",
-                      metavar="LEVEL",
-                      dest="jpegquality", type="int", default="80",
-                      help="Use jpeg compression with given quality (1-100). Default: 80")
-    parser.add_option("-b", "--max-bandwidth", action="store",
-                      dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
-                      help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
+                      help="What image compression algorithm to use: %s. Default: rgb24" % (", ".join(ENCODINGS)))
+    if "jpeg" in ENCODINGS:
+        parser.add_option("--jpeg-quality", action="store",
+                          metavar="LEVEL",
+                          dest="jpegquality", type="int", default="80",
+                          help="Use jpeg compression with given quality (1-100). Default: 80")
+        parser.add_option("-b", "--max-bandwidth", action="store",
+                          dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
+                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
     parser.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=0.0,
                       metavar="DELAY",

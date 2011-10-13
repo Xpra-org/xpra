@@ -17,7 +17,6 @@ import sys
 import subprocess
 import hmac
 import uuid
-import Image
 import StringIO
 import re
 import os
@@ -271,6 +270,7 @@ class ServerSource(object):
                 rows.append(raw_data[i*rowstride : i*rowstride+rowwidth])
             data = "".join(rows)
         if self._encoding in ["jpeg", "png"]:
+            import Image
             im = Image.fromstring("RGB", (width,height), data)
             buf = StringIO.StringIO()
             if self._encoding=="jpeg":
@@ -646,6 +646,7 @@ class XpraServer(gobject.GObject):
                 h = surf.get_height()
                 log("found new window icon: %sx%s, sending as png=%s" % (w,h,self.png_window_icons))
                 if self.png_window_icons:
+                    import Image
                     img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "BGRA", 0, 1)
                     MAX_SIZE = 64
                     if w>MAX_SIZE or h>MAX_SIZE:
@@ -963,7 +964,7 @@ class XpraServer(gobject.GObject):
         self.send_notifications = capabilities.get("notifications", False)
         log.debug("send_cursors=%s, send_bell=%s, send_notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         self._wm.enableCursors(self.send_cursors)
-        self.png_window_icons = capabilities.get("png_window_icons", False)
+        self.png_window_icons = capabilities.get("png_window_icons", False) and "png" in ENCODINGS
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
         log.debug("setting modifiers to %s" % str(modifiers))
@@ -995,8 +996,8 @@ class XpraServer(gobject.GObject):
         capabilities["cursors"] = True
         capabilities["bell"] = True
         capabilities["notifications"] = True
-        capabilities["png_window_icons"] = True
-        capabilities["encodings"] = ["rgb24", "jpeg", "png"]
+        capabilities["png_window_icons"] = "png" in ENCODINGS
+        capabilities["encodings"] = ENCODINGS
         capabilities["encoding"] = self.encoding
         self._send(["hello", capabilities])
 

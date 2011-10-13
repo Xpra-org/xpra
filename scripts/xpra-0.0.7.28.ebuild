@@ -14,8 +14,8 @@ SRC_URI="https://winswitch.org/src/${P}.tar.bz2"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="amd64 ppc x86"
-IUSE="+server +ssh"
-EAPI="2"
+IUSE="+server +ssh +png +jpeg"
+EAPI="3"
 PYTHON_DEPEND="2"
 RESTRICT_PYTHON_ABIS="3.*"
 
@@ -25,7 +25,8 @@ RESTRICT_PYTHON_ABIS="3.*"
 
 DEPEND="dev-python/pycrypto
 dev-python/pygtk
-dev-python/imaging
+png? ( dev-python/imaging )
+jpeg? ( dev-python/imaging )
 ssh? ( net-misc/openssh )
 server? ( x11-base/xorg-server[-minimal] )
 server? ( dev-python/cython )
