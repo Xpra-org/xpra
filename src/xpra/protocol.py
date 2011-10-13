@@ -135,18 +135,19 @@ class Protocol(object):
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
+            def add(x):
+                if len(x)>0:
+                    self._write_queue.put(x)
             log("writing %s", dump_packet(packet), type="raw.write")
-            data_payload = bencode(packet)
-            size = len(data_payload)
+            data = bencode(packet)
             if self._send_size:
-                data = ("PS%014d" % size) + data_payload
-            else:
-                data = data_payload            
+                add("PS%014d" % len(data))
             #log("data_payload=%s", data_payload, type="raw.write")
             if self._compressor is not None:
-                data = self._compressor.compress(data)
-                data = data+self._compressor.flush(zlib.Z_SYNC_FLUSH)
-            self._write_queue.put(data)
+                add(self._compressor.compress(data))
+                add(self._compressor.flush(zlib.Z_SYNC_FLUSH))
+            else:
+                add(data)
 
     def _write_thread_loop(self):
         try:
