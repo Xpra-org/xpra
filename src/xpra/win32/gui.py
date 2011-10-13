@@ -73,3 +73,6 @@ class ClientExtras(object):
             winsound.Beep(pitch, duration)
         import gtk.gdk
         gtk.gdk.beep()
+
+    def get_keymap_spec(self):
+        return None,None,None

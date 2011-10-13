@@ -471,8 +471,7 @@ class XpraClient(gobject.GObject):
         return  shortcuts
 
     def query_xkbmap(self):
-        from xpra.platform.gui import get_keymap_spec
-        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = get_keymap_spec()
+        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -583,7 +582,8 @@ class XpraClient(gobject.GObject):
 
     def _process_hello(self, packet):
         (_, capabilities) = packet
-        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
+        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False) and \
+                            (self.xkbmap_print is not None or self.xkbmap_query is not None or self.xmodmap_data is not None)
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])

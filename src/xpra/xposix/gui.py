@@ -93,37 +93,26 @@ class ClientExtras(object):
     def close_notify(self, id):
         pass
 
-
-def get_keymap_spec():
-    def get_keyboard_data(command, arg):
-        # Find the client's current keymap so we can send it to the server:
-        try:
-            import subprocess
-            cmd = [command, arg]
-            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-            (out,_) = process.communicate(None)
-            if process.returncode==0:
-                return out
-            log.error("'%s %s' failed with exit code %s\n" % (command, arg, process.returncode))
-        except Exception, e:
-            log.error("error running '%s %s': %s\n" % (command, arg, e))
-        return None
-    xkbmap_print = get_keyboard_data("setxkbmap", "-print")
-    if xkbmap_print is None:
-        log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
-    xkbmap_query = get_keyboard_data("setxkbmap", "-query")
-    if xkbmap_query is None and xkbmap_print is not None:
-        log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
-        log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-    xmodmap_data = get_keyboard_data("xmodmap", "-pke");
-    return xkbmap_print, xkbmap_query, xmodmap_data
-
-system_bell = None
-try:
-    from wimpiggy.lowlevel.bindings import device_bell
-    def x11_system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        log("system_bell(%s,%s,%s,%s,%s,%s,%s,%s)" % (window, device, percent, pitch, duration, bell_class, bell_id, bell_name))
-        device_bell(window, device, bell_class, bell_id, percent, bell_name)
-    system_bell = x11_system_bell
-except ImportError, e:
-    log.error("cannot import x11 device_bell bindings (turning feature off) : %s", e)
+    def get_keymap_spec(self):
+        def get_keyboard_data(command, arg):
+            # Find the client's current keymap so we can send it to the server:
+            try:
+                import subprocess
+                cmd = [command, arg]
+                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+                (out,_) = process.communicate(None)
+                if process.returncode==0:
+                    return out
+                log.error("'%s %s' failed with exit code %s\n" % (command, arg, process.returncode))
+            except Exception, e:
+                log.error("error running '%s %s': %s\n" % (command, arg, e))
+            return None
+        xkbmap_print = get_keyboard_data("setxkbmap", "-print")
+        if xkbmap_print is None:
+            log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
+        xkbmap_query = get_keyboard_data("setxkbmap", "-query")
+        if xkbmap_query is None and xkbmap_print is not None:
+            log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
+            log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
+        xmodmap_data = get_keyboard_data("xmodmap", "-pke");
+        return xkbmap_print, xkbmap_query, xmodmap_data

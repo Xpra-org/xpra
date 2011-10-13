@@ -32,9 +32,6 @@ def grok_modifier_map(display_source):
                                 | modifier_map["num"])
     return modifier_map
 
-def get_keymap_spec():
-    return None,None,None
-
 
 xpra_icon_filename = None
 if "XDG_DATA_DIRS" in os.environ:
@@ -116,3 +113,6 @@ class ClientExtras(object):
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         import Carbon.Snd           #@UnresolvedImport
         Carbon.Snd.SysBeep(1)
+
+    def get_keymap_spec(self):
+        return None,None,None
