@@ -156,9 +156,26 @@ class ApplicationWindow:
 			return
 		self.window.hide()
 		# launch Xpra client in the same gtk.main():
-		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
+		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable, AdHocStruct
 		gtk_main_quit_on_fatal_exceptions_enable()
-		app = XpraClient(socket_wrapper, 3, 100, None, None, False, False)
+		opts = AdHocStruct()
+		opts.clipboard = True
+		opts.pulseaudio = True
+		opts.password_file = None
+		opts.title_suffix = None
+		opts.title = "@title@ on @client-machine@"
+		opts.encoding = "rgb24"
+		opts.jpegquality = 80
+		opts.max_bandwidth = 0.0
+		opts.auto_refresh_delay = 0.0
+		opts.key_shortcuts = []
+		opts.compression_level = 3
+		from xpra.platform import DEFAULT_SSH_CMD
+		opts.ssh = DEFAULT_SSH_CMD
+		opts.remote_xpra = ".xpra/run-xpra"
+		opts.debug = None
+		opts.dock_icon = None
+		app = XpraClient(socket_wrapper, opts)
 		app.run()
 
 	def launch_xpra(self):
