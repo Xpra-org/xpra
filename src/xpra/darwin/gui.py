@@ -107,7 +107,7 @@ class ClientExtras(object):
             icon = Growl.Image.imageFromPath(self.icon_filename)
         else:
             icon = None
-        sticky = expire_timeout>30
+        sticky = expire_timeout>30*1000
         self.growl_notifier.notify('highlight', summary, body, icon, sticky)
 
     def close_notify(self, id):
