@@ -213,10 +213,13 @@ class Wm(gobject.GObject):
         wimpiggy.lowlevel.selectCursorChange(self._root, on)
 
     def do_wimpiggy_xkb_event(self, event):
-        log("do_wimpiggy_xkb_event(%r)" % event)
+        log("wm.do_wimpiggy_xkb_event(%r)" % event)
         if event.type!="bell":
-            log.error("do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            log.error("wm.do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
+        self.do_bell_event(event)
+    
+    def do_bell_event(self, event):
         self.emit("bell", event)
 
     def do_get_property(self, pspec):
@@ -237,6 +240,10 @@ class Wm(gobject.GObject):
             log("Window disappeared on us, never mind")
             return
         win.connect("unmanaged", self._handle_client_unmanaged)
+        def bell_event(window_model, event):
+            self.do_bell_event(event)
+        win.connect("bell", bell_event)
+        #win.connect("bell", self.do_bell_event)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")

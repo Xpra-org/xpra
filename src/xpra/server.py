@@ -546,17 +546,21 @@ class XpraServer(gobject.GObject):
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)" % (wm, event))
-        if event.window==gtk.gdk.get_default_root_window():
-            id = 0
-        else:
-            id = self._window_to_id[event.window]
-        if self.send_bell:
-            self._send(["bell", id, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
+        if not self.send_bell:
+            return
+        id = 0
+        if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
+            try:
+                id = self._window_to_id[event.window_model]
+            except:
+                pass
+        log("_bell_signaled(%s,%r) id=%s" % (wm, event, id))
+        self._send(["bell", id, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
 
-    def notify_callback(self, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
-        log("notify_callback(%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.send_notifications)
+    def notify_callback(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+        log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.send_notifications)
         if self.send_notifications:
-            self._send(["notify_show", int(id), str(app_name), int(replaces_id), str(app_icon), str(summary), str(body), long(expire_timeout)])
+            self._send(["notify_show", dbus_id, int(id), str(app_name), int(replaces_id), str(app_icon), str(summary), str(body), long(expire_timeout)])
     
     def notify_close_callback(self, id):
         log("notify_close_callback(%s)", id)

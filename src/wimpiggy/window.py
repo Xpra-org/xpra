@@ -392,6 +392,9 @@ class WindowModel(BaseWindowModel):
                   gobject.PARAM_READABLE),
         }
     __gsignals__ = {
+        # X11 bell event:
+        "bell": one_arg_signal,
+        
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),
                                non_none_list_accumulator),
@@ -401,6 +404,7 @@ class WindowModel(BaseWindowModel):
         "wimpiggy-property-notify-event": one_arg_signal,
         "wimpiggy-unmap-event": one_arg_signal,
         "wimpiggy-destroy-event": one_arg_signal,
+        "wimpiggy-xkb-event": one_arg_signal,
         }
 
     def __init__(self, parking_window, client_window):
@@ -464,6 +468,14 @@ class WindowModel(BaseWindowModel):
             trap.call(setup_client)
         except XError, e:
             raise Unmanageable, e
+
+    def do_wimpiggy_xkb_event(self, event):
+        log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)
+        if event.type!="bell":
+            log.error("WindowModel.do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            return
+        event.window_model = self
+        self.emit("bell", event)
 
     def do_child_map_request_event(self, event):
         # If we get a MapRequest then it might mean that someone tried to map

@@ -22,8 +22,6 @@ from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
 from xpra.scripts.main import ENCODINGS
 
-from xpra.platform.gui import system_bell, notifications_wrapper
-
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
 
@@ -379,12 +377,7 @@ class XpraClient(gobject.GObject):
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
         
-        self.notifications = None
-        if notifications_wrapper:
-            try:
-                self.notifications = notifications_wrapper()
-            except ImportError, e:
-                log.error("failed to load notification wrapper (turning feature off) : %s", e)
+        self._client_extras = ClientExtras(self.send, opts.pulseaudio, opts)
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -406,7 +399,6 @@ class XpraClient(gobject.GObject):
             self._clipboard_helper = ClipboardProtocolHelper(self.send)
         else:
             self._clipboard_helper = None
-        self._client_extras = ClientExtras(self.send, opts.pulseaudio, opts)
 
         self._focused = None
         def compute_receive_bandwidth(delay):
@@ -549,8 +541,8 @@ class XpraClient(gobject.GObject):
         if self.xmodmap_data:
             capabilities_request["xmodmap_data"] = self.xmodmap_data
         capabilities_request["cursors"] = True
-        capabilities_request["bell"] = system_bell is not None
-        capabilities_request["notifications"] = self.notifications is not None
+        capabilities_request["bell"] = True
+        capabilities_request["notifications"] = self._client_extras.can_notify()
         capabilities_request["packet_size"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
@@ -613,7 +605,7 @@ class XpraClient(gobject.GObject):
         if self._clipboard_helper:
             self._clipboard_helper.send_all_tokens()
         self._protocol._send_size = capabilities.get("packet_size", False)
-        self._client_extras.handshake_complete(capabilities)
+        self._client_extras.handshake_complete()
         self.emit("handshake-complete")
 
     def _process_new_common(self, packet, override_redirect):
@@ -653,24 +645,26 @@ class XpraClient(gobject.GObject):
     
     def _process_bell(self, packet):
         (_, id, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet
-        log("_process_bell(%s) using system_bell=%s" % (packet, system_bell))
-        if id==0:
-            window = gtk.gdk.get_default_root_window()
-        else:
-            window = self._id_to_window[id]
-        system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        gdkwindow = None
+        if id!=0:
+            try:
+                gdkwindow = self._id_to_window[id].window
+            except:
+                pass
+        if gdkwindow is None:
+            gdkwindow = gtk.gdk.get_default_root_window()
+        log("_process_bell(%s) gdkwindow=%s", packet, gdkwindow)
+        self._client_extras.system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def _process_notify_show(self, packet):
-        (_, id, app_name, replaces_id, app_icon, summary, body, expire_timeout) = packet
-        log("_process_notify_show(%s,%s,%s,%s,%s,%s,%s) notifications wrapper=%s", id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.notifications)
-        if self.notifications:
-            self.notifications.notify(id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
+        (_, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout) = packet
+        log("_process_notify_show(%s)", packet)
+        self._client_extras.show_notify(dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
 
     def _process_notify_close(self, packet):
         (_, id) = packet
         log("_process_notify_close(%s)", id)
-        if self.notifications:
-            self.notifications.close_callback(id)
+        self._client_extras.close_notify(id)
 
     def _process_window_metadata(self, packet):
         (_, id, metadata) = packet

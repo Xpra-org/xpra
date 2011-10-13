@@ -6,6 +6,8 @@
 # Platform-specific code for Posix systems with X11 display -- the parts that
 # may import gtk.
 
+import os
+
 from wimpiggy.keys import grok_modifier_map
 assert grok_modifier_map		#make pydev happy: this import is needed as it is part of the gui "interface"
 
@@ -18,6 +20,7 @@ from xpra.xposix.xroot_props import XRootPropWatcher
 from wimpiggy.log import Logger
 log = Logger()
 
+
 class ClientExtras(object):
     def __init__(self, send_packet_cb, pulseaudio, opts):
         self.send = send_packet_cb
@@ -29,7 +32,22 @@ class ClientExtras(object):
             self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
             self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
 
-    def handshake_complete(self, capabilities):
+        self.has_x11_bell = False
+        try:
+            from wimpiggy.lowlevel.bindings import device_bell
+            self.has_x11_bell = device_bell is not None
+        except ImportError, e:
+            log.error("cannot import x11 bell bindings (will use gtk fallback) : %s", e)
+        self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
+        self.has_pynotify = False
+        try:
+            import pynotify
+            pynotify.init("Xpra")
+            self.has_pynotify = True
+        except ImportError, e:
+            log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
+
+    def handshake_complete(self):
         self._xsettings_watcher = XSettingsWatcher()
         self._xsettings_watcher.connect("xsettings-changed",
                                         self._handle_xsettings_changed)
@@ -49,6 +67,31 @@ class ClientExtras(object):
         if value is not None:
             self.send(["server-settings",
                        {self.ROOT_PROPS[prop]: value.encode("utf-8")}])
+
+    def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+        if not self.has_x11_bell:
+            import gtk.gdk
+            gtk.gdk.beep()
+            return
+        from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
+        device_bell(window, device, bell_class, bell_id, percent, bell_name)
+
+    def can_notify(self):
+        return  self.has_pynotify
+    
+    def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+        if self.dbus_id==dbus_id:
+            log.error("remote dbus instance is the same as our local one, "
+                      "cannot forward notification to ourself as this would create a loop")
+            return
+        import pynotify
+        n = pynotify.Notification(summary, body)
+        n.set_urgency(pynotify.URGENCY_LOW)
+        n.set_timeout(expire_timeout)
+        n.show()
+
+    def close_notify(self, id):
+        pass
 
 
 def get_keymap_spec():
@@ -83,17 +126,4 @@ try:
         device_bell(window, device, bell_class, bell_id, percent, bell_name)
     system_bell = x11_system_bell
 except ImportError, e:
-    log.error("cannot import device_bell (turning feature off) : %s", e)
-
-class notifications_wrapper:
-    def __init__(self):
-        import pynotify
-        pynotify.init("Xpra")
-
-    def notify(self, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
-        import pynotify
-        n = pynotify.Notification(summary, body)
-        n.show()
-
-    def close_callback(self, id):
-        pass
+    log.error("cannot import x11 device_bell bindings (turning feature off) : %s", e)

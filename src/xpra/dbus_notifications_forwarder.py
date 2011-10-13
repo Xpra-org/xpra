@@ -3,6 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gtk
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
@@ -18,7 +19,7 @@ We register this class as handling notifications on the session dbus,
 optionally replacing an existing instance if one exists.
 
 The generalized callback signatures are:
- notify_callback(id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
+ notify_callback(dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
  close_callback(id)
 """
 class DBUSNotificationsForwarder(dbus.service.Object):
@@ -28,21 +29,23 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def __init__(self, bus, notify_callback=None, close_callback=None):
         self.notify_callback = notify_callback
         self.close_callback = close_callback
-        self.counter = 1
+        self.counter = 0
+        self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         dbus.service.Object.__init__(self, bus_name, BUS_PATH)
  
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_id, app_icon, summary, body, actions, hints, expire_timeout):
         log("Notify(%s,%s,%s,%s,%s,%s,%s,%s)" % (app_name, replaces_id, app_icon, summary, body, actions, hints, expire_timeout))
-        if replaces_id<=0:
+        if replaces_id==0:
             self.counter += 1
             id = self.counter
         else:
             id = replaces_id
         if self.notify_callback:
-            self.notify_callback(id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
-        return self.counter
+            self.notify_callback(self.dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
+        log("Notify returning %s", id)
+        return id
 
     @dbus.service.method(BUS_NAME, out_signature='ssss')
     def GetServerInformation(self):
@@ -61,7 +64,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         if self.close_callback:
             self.close_callback(id)
 
-def register(notify_callback=None, close_callback=None, replace=True):
+def register(notify_callback=None, close_callback=None, replace=False):
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
     if replace:
