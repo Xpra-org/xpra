@@ -19,7 +19,7 @@ log = Logger()
 
 from xpra.protocol import Protocol
 from xpra.keys import mask_to_names, MODIFIER_NAMES
-from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras, grok_modifier_map
+from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras
 from xpra.scripts.main import ENCODINGS
 
 import xpra
@@ -482,7 +482,7 @@ class XpraClient(gobject.GObject):
 
     def _do_keys_changed(self, sendkeymap=False):
         self._keymap_changing = False
-        self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
+        self._modifier_map = self._client_extras.grok_modifier_map(gtk.gdk.display_get_default())
         if sendkeymap:
             #old clients won't know what to do with it, but that's ok
             self.query_xkbmap()

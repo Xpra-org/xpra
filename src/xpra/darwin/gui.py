@@ -6,39 +6,9 @@
 import os.path
 import gtk.gdk
 
+from xpra.platform.client_extras_base import ClientExtrasBase
 from wimpiggy.log import Logger
 log = Logger()
-
-
-def grok_modifier_map(display_source):
-    modifier_map = {
-        "shift": 1 << 0,
-        "lock": 1 << 1,
-        "control": 1 << 2,
-        "mod1": 1 << 3,
-        "mod2": 1 << 4,
-        "mod3": 1 << 5,
-        "mod4": 1 << 6,
-        "mod5": 1 << 7,
-        "scroll": 0,
-        "num": 0,
-        "meta": 1 << 3,
-        "super": 0,
-        "hyper": 0,
-        "alt": 0,
-        }
-    modifier_map["nuisance"] = (modifier_map["lock"]
-                                | modifier_map["scroll"]
-                                | modifier_map["num"])
-    return modifier_map
-
-
-xpra_icon_filename = None
-if "XDG_DATA_DIRS" in os.environ:
-    filename = os.path.join(os.environ["XDG_DATA_DIRS"], "icons", "xpra.png")
-    if filename and os.path.exists(filename):
-        log.debug("found xpra icon: %s", filename)
-        xpra_icon_filename = filename
 
 
 class ClipboardProtocolHelper(object):
@@ -55,9 +25,14 @@ class ClipboardProtocolHelper(object):
             self.send(["clipboard-contents-none", request_id, selection])
 
 
-class ClientExtras(object):
+class ClientExtras(ClientExtrasBase):
     def __init__(self, send_packet_cb, pulseaudio, opts):
-        self.send = send_packet_cb
+        ClientExtrasBase.__init__(self, send_packet_cb, pulseaudio, opts)
+        self.locate_icon_filename(opts.tray_icon)
+        self.setup_growl()
+        self.setup_macdock()
+
+    def setup_growl(self):
         self.growl_notifier = None
         try:
             import Growl        #@UnresolvedImport
@@ -66,18 +41,21 @@ class ClientExtras(object):
             log.error("using growl for notications: %s", self.growl_notifier)
         except Exception, e:
             log.error("failed to load Growl: %s, notifications will not be shown", e)
-        # ensure icon_filename points to a valid file (or None)
-        self.icon_filename = xpra_icon_filename
-        if opts.dock_icon and os.path.exists(opts.dock_icon):
-            self.icon_filename = opts.dock_icon
-        elif self.icon_filename and not os.path.exists(self.icon_filename):
-            self.icon_filename = None
-        log.info("darwin client extras using icon_filename=%s", self.icon_filename)
-        self.setup_macdock()
     
+    def locate_icon_filename(self, opts_tray_icon):
+        # ensure icon_filename points to a valid file (or None)
+        self.icon_filename = None
+        if opts_tray_icon and os.path.exists(opts_tray_icon):
+            self.icon_filename = opts_tray_icon
+        else:
+            #try to find the default icon:
+            x = os.path.join(self.get_data_dir(), "icons", "xpra.png")
+            if os.path.exists(x):
+                self.icon_filename = x
+        log.info("darwin client extras using icon_filename=%s", self.icon_filename)
+
     def setup_macdock(self):
         log.debug("setup_macdock()")
-        self.mac_dock = None
         try:
             import gtk_osxapplication		#@UnresolvedImport
             self.macapp = gtk_osxapplication.OSXApplication()
@@ -85,16 +63,28 @@ class ClientExtras(object):
                 log.debug("setup_macdock() loading icon from %s", self.icon_filename)
                 pixbuf = gtk.gdk.pixbuf_new_from_file(self.icon_filename)
                 self.macapp.set_dock_icon_pixbuf(pixbuf)
+            #setup the menu:
+            menu = gtk.MenuBar()
+            # We need to add it to a widget (otherwise it just does not work)
+            self.hidden_window = gtk.Window()
+            self.hidden_window.add(menu)
+            quit_item = gtk.MenuItem("Quit")
+            quit_item.connect("activate", self.exit)
+            menu.add(quit_item)
+            menu.show_all()
+            self.macapp.set_menu_bar(menu)
+            quit_item.hide()
+
+            item = gtk.MenuItem("About")
+            item.show()
+            item.connect("activate", self.about)
+            self.macapp.insert_app_menu_item(item, 0)
+            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 1)
+            
             self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
             self.macapp.ready()
         except Exception, e:
             log.debug("failed to create dock: %s", e)
-
-    def exit(self):
-        pass
-
-    def handshake_complete(self):
-        pass
 
     def can_notify(self):
         return  self.growl_notifier is not None
@@ -110,12 +100,14 @@ class ClientExtras(object):
         sticky = expire_timeout>30*1000
         self.growl_notifier.notify('highlight', summary, body, icon, sticky)
 
-    def close_notify(self, id):
-        pass
-
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         import Carbon.Snd           #@UnresolvedImport
         Carbon.Snd.SysBeep(1)
 
-    def get_keymap_spec(self):
-        return None,None,None
+    def grok_modifier_map(self, display_source):
+        map = ClientExtrasBase.grok_modifier_map(self, display_source)
+        map["meta"] = 1 << 3
+        return  map
+
+    def get_data_dir(self):
+        return  os.environ.get("XDG_DATA_DIRS", os.getcwd())

@@ -9,8 +9,6 @@
 import os
 
 from wimpiggy.keys import grok_modifier_map
-assert grok_modifier_map		#make pydev happy: this import is needed as it is part of the gui "interface"
-
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is part of the gui "interface"
 
@@ -119,3 +117,6 @@ class ClientExtras(object):
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
         xmodmap_data = get_keyboard_data("xmodmap", "-pke");
         return xkbmap_print, xkbmap_query, xmodmap_data
+
+    def grok_modifier_map(self, display_source):
+        grok_modifier_map(display_source)
