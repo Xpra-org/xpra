@@ -492,9 +492,15 @@ class XpraServer(gobject.GObject):
         import signal
         try:
             oldsignal = signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-            process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            process.communicate(stdin)
-            return  process.poll()
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (out,err) = process.communicate(stdin)
+            code = process.poll()
+            l = log.debug
+            if code!=0:
+                l = log.error
+            l("signal_safe_exec(%s,%s) stdout=%s", cmd, stdin, out)
+            l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
+            return  code
         finally:
             signal.signal(signal.SIGCHLD, oldsignal)
 
