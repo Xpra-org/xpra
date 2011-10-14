@@ -20,17 +20,14 @@ log = Logger()
 
 class ClientExtrasBase(object):
 
-    def __init__(self, send_packet_cb, pulseaudio, opts):
-        self.send = send_packet_cb
+    def __init__(self, client):
+        self.client = client
         self.license_text = None
 
     def quit(self, *args):
         gtk_main_quit_really()
 
     def exit(self):
-        pass
-
-    def handshake_complete(self):
         pass
 
     def can_notify(self):

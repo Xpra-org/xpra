@@ -14,18 +14,20 @@ assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is
 
 from xpra.xposix.xsettings import XSettingsWatcher
 from xpra.xposix.xroot_props import XRootPropWatcher
+from xpra.platform.client_extras_base import ClientExtrasBase
 
 from wimpiggy.log import Logger
 log = Logger()
 
 
-class ClientExtras(object):
-    def __init__(self, send_packet_cb, pulseaudio, opts):
-        self.send = send_packet_cb
+class ClientExtras(ClientExtrasBase):
+    def __init__(self, client, opts):
+        ClientExtrasBase.__init__(self, client)
+        client.connect("handshake-complete", self.handshake_complete)
         self.ROOT_PROPS = {
             "RESOURCE_MANAGER": "resource-manager"
             }
-        if pulseaudio:
+        if opts.pulseaudio:
             self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
             self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
             self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
@@ -48,7 +50,8 @@ class ClientExtras(object):
     def exit(self):
         pass
 
-    def handshake_complete(self):
+    def handshake_complete(self, *args):
+        log.info("handshake_complete(%s)" % str(args))
         self._xsettings_watcher = XSettingsWatcher()
         self._xsettings_watcher.connect("xsettings-changed",
                                         self._handle_xsettings_changed)
@@ -61,12 +64,12 @@ class ClientExtras(object):
     def _handle_xsettings_changed(self, *args):
         blob = self._xsettings_watcher.get_settings_blob()
         if blob is not None:
-            self.send(["server-settings", {"xsettings-blob": blob}])
+            self.client.send(["server-settings", {"xsettings-blob": blob}])
 
     def _handle_root_prop_changed(self, obj, prop, value):
         assert prop in self.ROOT_PROPS
         if value is not None:
-            self.send(["server-settings",
+            self.client.send(["server-settings",
                        {self.ROOT_PROPS[prop]: value.encode("utf-8")}])
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
@@ -119,4 +122,4 @@ class ClientExtras(object):
         return xkbmap_print, xkbmap_query, xmodmap_data
 
     def grok_modifier_map(self, display_source):
-        grok_modifier_map(display_source)
+        return grok_modifier_map(display_source)

@@ -377,7 +377,7 @@ class XpraClient(gobject.GObject):
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
         
-        self._client_extras = ClientExtras(self.send, opts.pulseaudio, opts)
+        self._client_extras = ClientExtras(self, opts)
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -615,7 +615,6 @@ class XpraClient(gobject.GObject):
                 screen = display.get_screen(i)
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
-        self._client_extras.handshake_complete()
         self.emit("handshake-complete")
 
     def _screen_size_changed(self, *args):

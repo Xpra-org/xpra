@@ -33,8 +33,8 @@ class ClipboardProtocolHelper(object):
 
 
 class ClientExtras(ClientExtrasBase):
-    def __init__(self, send_packet_cb, pulseaudio, opts):
-        ClientExtrasBase.__init__(self, send_packet_cb, pulseaudio, opts)
+    def __init__(self, client, opts):
+        ClientExtrasBase.__init__(self, client)
         self.setup_menu()
         self.setup_tray(opts.tray_icon)
     
