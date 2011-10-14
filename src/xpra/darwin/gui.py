@@ -90,6 +90,9 @@ class ClientExtras(object):
         except Exception, e:
             log.debug("failed to create dock: %s", e)
 
+    def exit(self):
+        pass
+
     def handshake_complete(self):
         pass
 

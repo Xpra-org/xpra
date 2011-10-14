@@ -13,6 +13,6 @@ DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 
 def add_client_options(parser):
-    parser.add_option("--dock-icon", action="store",
-                          dest="dock_icon", default=None,
+    parser.add_option("--tray-icon", action="store",
+                          dest="tray_icon", default=None,
                           help="Path to the image which will be used as icon for the dock")

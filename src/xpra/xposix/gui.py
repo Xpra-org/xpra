@@ -47,6 +47,9 @@ class ClientExtras(object):
         except ImportError, e:
             log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
 
+    def exit(self):
+        pass
+
     def handshake_complete(self):
         self._xsettings_watcher = XSettingsWatcher()
         self._xsettings_watcher.connect("xsettings-changed",

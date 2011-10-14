@@ -37,7 +37,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-key\-shortcut=key:action\fP]
 [\fB\-\-title\-suffix=VALUE\fP]
 [\fB\-\-title=VALUE\fP]
-[\fB\-\-dock\-icon=filename\fP]
+[\fB\-\-tray\-icon=filename\fP]
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 [\fB\-\-password\-file=filename\fP]
 .HP
@@ -295,13 +295,14 @@ compressed but also lossless so it can be used instead of
 \fBrgb24\fP (which is inefficent without the \fB\-\-compress\fP option).
 When specifying this option on the server, it will act as default
 for clients that do not specify which encoding they want to be using.
+\fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
 .TP
 \fB\-\-jpeg\-quality\fP=\fIVALUE\fP
 This option sets the JPEG compression quality of pixel data sent by
 the server, jpeg must first be enabled with \fB\-\-encoding=jpeg\fP.
 The valid values range from 0 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
-particularly useful).
+particularly useful). (requires \fBjpeg\fP encoding)
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically
@@ -315,6 +316,7 @@ will use an almost lossless quality setting of 95%.
 \fB\-\-max\-bandwidth\fP=\fIBW\fP
 Specify the link's maximal receive bandwidth. Xpra will adjust the
 JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
+(requires \fBjpeg\fP encoding)
 .TP
 \fB\-\-key\-shortcut\fP=\fIkey:action\fP
 Can be specified multiple times to add multiple key shortcuts.
@@ -356,10 +358,11 @@ hostname.
 
 The default value used is "@title@ on @client-machine@".
 .TP
-\fB\-\-dock\-icon\fP=\fIFILENAME\fP
-This options applies on Mac OS X only and allows the icon shown in
-the dock to be specified. By default it uses a simple 'xpra' icon
-if it finds one.
+\fB\-\-tray\-icon\fP=\fIFILENAME\fP
+This options applies to Mac OS X and Microsoft Windows only
+and it allows the icon shown in the dock/tray to be specified.
+By default it uses a simple default 'xpra' icon if it finds it.
+(on Windows, the icon must be in \fBico\fP format)
 
 .SS Options for attach, stop
 .TP

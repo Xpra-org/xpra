@@ -426,6 +426,7 @@ class XpraClient(gobject.GObject):
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
+        self._client_extras.exit()
         if self._protocol:
             self._protocol.close()
 

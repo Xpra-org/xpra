@@ -1,6 +1,6 @@
 [Setup]
 AppName=Xpra
-AppVerName=Xpra 0.0.7.27
+AppVerName=Xpra 0.0.7.28
 AppPublisher=devloop
 AppPublisherURL=http://xpra.devloop.org.uk/
 DefaultDirName={pf}\Xpra
@@ -10,7 +10,7 @@ OutputBaseFilename=setup
 Compression=lzma
 SolidCompression=true
 AllowUNCPath=false
-VersionInfoVersion=0.0.7.27
+VersionInfoVersion=0.0.7.28
 VersionInfoCompany=devloop
 VersionInfoDescription=screen for X
 

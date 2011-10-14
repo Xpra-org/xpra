@@ -32,10 +32,6 @@ setup(
                       'icon_resources': [(1, "xpra.ico")],
 					  "dest_base": "Xpra-Launcher",
                   },
-#                  {
-#                      'script': 'xpra/scripts/main.py',
-#                      'icon_resources': [(1, "xpra.ico")],
-#                  }
               ],
 
     console = [
@@ -57,6 +53,7 @@ setup(
     data_files=[
                    ('COPYING'),
                    ('website.url'),
+                   ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % DLLs)),
                ]
