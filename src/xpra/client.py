@@ -606,8 +606,22 @@ class XpraClient(gobject.GObject):
         if self._clipboard_helper:
             self._clipboard_helper.send_all_tokens()
         self._protocol._send_size = capabilities.get("packet_size", False)
+        randr = capabilities.get("resize_screen", False)
+        log.debug("server has randr: %s" % randr)
+        if randr:
+            display = gtk.gdk.display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                i += 1
         self._client_extras.handshake_complete()
         self.emit("handshake-complete")
+
+    def _screen_size_changed(self, *args):
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        log.debug("sending updated screen size to server: %sx%s", root_w, root_h)
+        self.send(["desktop_size", root_w, root_h])
 
     def _process_new_common(self, packet, override_redirect):
         (_, id, x, y, w, h, metadata) = packet

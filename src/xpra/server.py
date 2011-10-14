@@ -831,21 +831,24 @@ class XpraServer(gobject.GObject):
 
     def _get_desktop_size_capability(self, client_capabilities):
         (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
-        if "desktop_size" not in client_capabilities:
+        client_size = client_capabilities.get("desktop_size")
+        log.info("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
+        if not client_size:
             """ client did not specify size, just return what we have """
             return	root_w, root_h
-        client_w, client_h = client_capabilities["desktop_size"]
+        client_w, client_h = client_size
         if not self.randr:
             """ server does not support randr - return minimum of the client/server dimensions """
             w = min(client_w, root_w)
             h = min(client_h, root_h)
             return	w,h
-
-        if client_w==root_w or client_h==root_h:
-            return	root_w,root_h	#unlikely: perfect match!
-
         log.debug("client resolution is %sx%s, current server resolution is %sx%s" % (client_w,client_h,root_w,root_h))
+        return self.set_screen_size(client_w, client_h)
 
+    def set_screen_size(self, client_w, client_h):
+        (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+        if client_w==root_w and client_h==root_h:
+            return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
         new_size = None
         for w,h in get_screen_sizes():
@@ -856,22 +859,30 @@ class XpraServer(gobject.GObject):
                 if ew*eh<w*h:
                     continue		#we found a better (smaller) candidate already
             new_size = w,h
-        log.info("best resolution for client(%sx%s) is: %s" % (client_w,client_h,new_size))
+        log.debug("best resolution for client(%sx%s) is: %s", client_w, client_h, new_size)
         if new_size:
             w, h = new_size
-            try:
-                set_screen_size(w, h)
-                (root_w, root_h) = get_screen_size()
-                if root_w!=w or root_h!=h:
-                    log.error("odd, failed to set the new resolution, "
-                              "tried to set it to %sx%s and ended up with %sx%s" % (w,h, root_w, root_h))
-                else:
-                    log.info("successfully set new resolution to: %sx%s" % (root_w,root_h))
-            except Exception, e:
-                log.error("ouch, failed to set new resolution: %s" % e, exc_info=True)
+            if w==root_w and h==root_h:
+                log.info("best resolution for client %sx%s is unchanged: %sx%s", client_w, client_h, w, h)
+            else:
+                try:
+                    set_screen_size(w, h)
+                    (root_w, root_h) = get_screen_size()
+                    if root_w!=w or root_h!=h:
+                        log.error("odd, failed to set the new resolution, "
+                                  "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
+                    else:
+                        log.info("new resolution set for client %sx%s : screen now set to %sx%s", client_w, client_h, root_w, root_h)
+                except Exception, e:
+                    log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         w = min(client_w, root_w)
         h = min(client_h, root_h)
         return w,h
+
+    def _process_desktop_size(self, proto, packet):
+        (_, width, height) = packet
+        log.debug("client requesting new size: %sx%s", width, height)
+        self.set_screen_size(width, height)
 
     def version_no_minor(self, version):
         if not version:
@@ -883,9 +894,8 @@ class XpraServer(gobject.GObject):
             return version
 
     def _process_hello(self, proto, packet):
-        (_, client_capabilities) = packet
+        (_, capabilities) = packet
         log.info("Handshake complete; enabling connection")
-        capabilities = self._calculate_capabilities(client_capabilities)
         remote_version = capabilities.get("__prerelease_version")
         if self.version_no_minor(remote_version) != self.version_no_minor(xpra.__version__):
             log.error("Sorry, this pre-release server only works with clients "
@@ -999,6 +1009,7 @@ class XpraServer(gobject.GObject):
         capabilities["png_window_icons"] = "png" in ENCODINGS
         capabilities["encodings"] = ENCODINGS
         capabilities["encoding"] = self.encoding
+        capabilities["resize_screen"] = self.randr
         self._send(["hello", capabilities])
 
     def disconnect(self, reason):
@@ -1194,6 +1205,7 @@ class XpraServer(gobject.GObject):
         "shutdown-server": _process_shutdown_server,
         "jpeg-quality": _process_jpeg_quality,
         "buffer-refresh": _process_buffer_refresh,
+        "desktop_size": _process_desktop_size,
         "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
