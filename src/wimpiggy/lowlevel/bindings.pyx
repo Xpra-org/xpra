@@ -920,6 +920,7 @@ def get_screen_sizes():
 
 cdef _set_screen_size(display_source, pywindow, width, height):
     cdef Display * display
+    cdef Window window
     cdef XRRScreenConfiguration *config
     cdef int num_sizes = 0
     cdef int num_rates = 0
@@ -931,7 +932,6 @@ cdef _set_screen_size(display_source, pywindow, width, height):
     cdef XRRScreenSize *xrrs
     cdef XRRScreenSize xrr
 
-    #print "_set_screen_size(%s,%s,%s,%s)" % (display_source, pywindow, width, height)
     display = get_xdisplay_for(display_source)
     window = get_xwindow(pywindow)
     try:
