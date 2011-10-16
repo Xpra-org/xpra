@@ -173,8 +173,13 @@ class ClientWindow(gtk.Window):
 
     def refresh_window(self):
         log.debug("Automatic refresh for id ", self._id)
-        self._client.send(["buffer-refresh", self._id, True, 95])
-        self._refresh_requested = True
+        self._client.send_refresh(self, self._id)
+
+    def refresh_all_windows(self):
+        #this method is only here because we may want to fire it
+        #from a --key-shortcut action and the event is delivered to
+        #the "ClientWindow"
+        self._client.send_refresh_all()
 
     def draw(self, x, y, width, height, coding, img_data):
         gc = self._backing.new_gc()
@@ -362,10 +367,16 @@ class XpraClient(gobject.GObject):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
+        if opts.window_icon:
+            try:
+                gtk.window_set_default_icon_from_file(opts.window_icon)
+            except Exception, e:
+                log.error("failed to set window icon %s: %s, continuing", opts.window_icon, e)
         title = opts.title
         if opts.title_suffix is not None:
             title = "@title@ %s" % opts.title_suffix
         self.title = title
+        self.session_name = opts.session_name
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.encoding = opts.encoding
@@ -376,7 +387,10 @@ class XpraClient(gobject.GObject):
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
-        
+
+        self.server_capabilities = {}
+        self.bell_enabled = True
+        self.notifications_enabled = True
         self._client_extras = ClientExtras(self, opts)
 
         self._protocol = Protocol(conn, self.process_packet)
@@ -406,17 +420,18 @@ class XpraClient(gobject.GObject):
             self._protocol._recv_counter = 0;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
 
+            q = self.jpegquality
             if bw > self.max_bandwidth:
-                self.jpegquality -= 10;
+                q -= 10;
             elif bw < self.max_bandwidth:
-                self.jpegquality += 5;
+                q += 5;
 
-            if self.jpegquality > 95:
-                self.jpegquality = 95;
-            elif self.jpegquality < 10:
-                self.jpegquality = 10;
+            if q > 95:
+                q = 95;
+            elif q < 10:
+                q = 10;
 
-            self.send_jpeg_quality()
+            self.send_jpeg_quality(q)
             return True
 
         if (self.max_bandwidth):
@@ -553,8 +568,18 @@ class XpraClient(gobject.GObject):
         capabilities_request["png_window_icons"] = True
         self.send(["hello", capabilities_request])
 
-    def send_jpeg_quality(self):
+    def send_jpeg_quality(self, q):
+        assert q>0 and q<100
+        self.jpegquality = q
         self.send(["jpeg-quality", self.jpegquality])
+
+    def send_refresh(self, id):
+        self.send(["buffer-refresh", id, True, 95])
+        self._refresh_requested = True
+
+    def send_refresh_all(self):
+        log.debug("Automatic refresh for all windows ")
+        self.send_refresh(-1)
 
     def _process_disconnect(self, packet):
         log.error("server requested disconnect: %s" % str(packet))
@@ -583,6 +608,11 @@ class XpraClient(gobject.GObject):
 
     def _process_hello(self, packet):
         (_, capabilities) = packet
+        self.server_capabilities = capabilities
+        if not self.session_name:
+            self.session_name = capabilities.get("session_name", "Xpra")
+        import glib
+        glib.set_application_name(self.session_name)
         self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False) and \
                             (self.xkbmap_print is not None or self.xkbmap_query is not None or self.xmodmap_data is not None)
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
@@ -615,7 +645,19 @@ class XpraClient(gobject.GObject):
                 screen = display.get_screen(i)
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
+        e = capabilities.get("encoding")
+        if e and e!=self.encoding:
+            log.debug("server is using %s encoding" % e)
+            self.encoding = e
+        self.bell_enabled = capabilities.get("bell", False)
+        self.notifications_enabled = capabilities.get("notifications", False)
         self.emit("handshake-complete")
+
+    def set_encoding(self, encoding):
+        assert encoding in ENCODINGS
+        assert encoding in self.server_capabilities.get("encodings", ["rgb24"])
+        self.encoding = encoding
+        self.send(["encoding", encoding])
 
     def _screen_size_changed(self, *args):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
@@ -658,6 +700,8 @@ class XpraClient(gobject.GObject):
             window.window.set_cursor(cursor)
     
     def _process_bell(self, packet):
+        if not self.bell_enabled:
+            return
         (_, id, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet
         gdkwindow = None
         if id!=0:
@@ -671,11 +715,15 @@ class XpraClient(gobject.GObject):
         self._client_extras.system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def _process_notify_show(self, packet):
+        if not self.notifications_enabled:
+            return
         (_, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout) = packet
         log("_process_notify_show(%s)", packet)
         self._client_extras.show_notify(dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
 
     def _process_notify_close(self, packet):
+        if not self.notifications_enabled:
+            return
         (_, id) = packet
         log("_process_notify_close(%s)", id)
         self._client_extras.close_notify(id)

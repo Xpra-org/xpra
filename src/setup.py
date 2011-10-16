@@ -13,6 +13,7 @@
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make-constants-pxi.py hack.)
 
+import glob
 from distutils.core import setup
 from distutils.extension import Extension
 import commands, os, sys
@@ -101,7 +102,13 @@ setup(
     scripts=["scripts/parti", "scripts/parti-repl",
              "scripts/xpra",
              ],
-    data_files=[("share/man/man1", ["xpra.1"])],
+    data_files=[
+                ("share/man/man1", ["xpra.1", "parti.1"]),
+                ("share/parti", ["README", "README.parti"]),
+                ("share/xpra", ["README.xpra"]),
+                ("share/wimpiggy", ["README.wimpiggy"]),
+                ("share/xpra/icons", glob.glob("icons/*")),
+                ],
     ext_modules=ext_modules,
     cmdclass=cmdclass,
     )

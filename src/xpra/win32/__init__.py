@@ -13,6 +13,5 @@ GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 
 def add_client_options(parser):
-    parser.add_option("--tray-icon", action="store",
-                          dest="tray_icon", default=None,
-                          help="Path to the image which will be used as icon for the system tray")
+    from xpra.platform import add_notray_option
+    add_notray_option(parser, ", this will also disable notifications!")

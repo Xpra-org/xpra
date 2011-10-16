@@ -52,6 +52,7 @@ setup(
 
     data_files=[
                    ('COPYING'),
+                   ('README', 'README.xpra'),
                    ('website.url'),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % DLLs)),

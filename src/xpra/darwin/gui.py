@@ -36,12 +36,18 @@ class ClientExtras(ClientExtrasBase):
         self.growl_notifier = None
         try:
             import Growl        #@UnresolvedImport
-            self.growl_notifier = Growl.GrowlNotifier("Xpra", ["highlight"])
+            name = self.client.session_name or "Xpra"
+            self.growl_notifier = Growl.GrowlNotifier(name, ["highlight"])
             self.growl_notifier.register()
-            log.error("using growl for notications: %s", self.growl_notifier)
+            log.error("using growl for notications")
+            def set_session_name(*args):
+                self.growl_notifier.applicationName = self.client.session_name
+            if not self.client.session_name:
+                #session_name will get set during handshake
+                self.client.connect("handshake-complete", set_session_name)
         except Exception, e:
             log.error("failed to load Growl: %s, notifications will not be shown", e)
-    
+
     def locate_icon_filename(self, opts_tray_icon):
         # ensure icon_filename points to a valid file (or None)
         self.icon_filename = None
@@ -54,8 +60,12 @@ class ClientExtras(ClientExtrasBase):
                 self.icon_filename = x
         log.info("darwin client extras using icon_filename=%s", self.icon_filename)
 
+    def updated_menus(self):
+        self.macapp.sync_menubar()
+
     def setup_macdock(self):
         log.debug("setup_macdock()")
+        self.macapp = None
         try:
             import gtk_osxapplication		#@UnresolvedImport
             self.macapp = gtk_osxapplication.OSXApplication()
@@ -75,16 +85,25 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.set_menu_bar(menu)
             quit_item.hide()
 
-            item = gtk.MenuItem("About")
-            item.show()
-            item.connect("activate", self.about)
-            self.macapp.insert_app_menu_item(item, 0)
-            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 1)
+            self.macapp.insert_app_menu_item(self.make_aboutmenuitem(), 0)
+            self.macapp.insert_app_menu_item(self.make_bellmenuitem(), 1)
+            self.macapp.insert_app_menu_item(self.make_notificationsmenuitem(), 2)
+            self.macapp.insert_app_menu_item(self.make_encodingsmenuitem(), 3)
+            self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 4)
+            self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 5)
+            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 4)
             
             self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
-            self.macapp.ready()
+            self.client.connect("handshake-complete", self.handshake_complete)
         except Exception, e:
-            log.debug("failed to create dock: %s", e)
+            log.error("failed to create dock: %s", e)
+
+    def handshake_complete(self, *args):
+        if self.macapp:
+            self.set_checkboxes()
+            self.update_encodings_menu()
+            self.update_jpeg_menu()
+            self.macapp.ready()
 
     def can_notify(self):
         return  self.growl_notifier is not None

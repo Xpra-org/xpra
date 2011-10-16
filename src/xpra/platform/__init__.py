@@ -16,3 +16,8 @@ elif _os.name == "posix":
     from xpra.xposix import *
 else:
     raise OSError, "Unknown OS %s" % (_os.name)
+
+def add_notray_option(parser, extra_text=""):
+    parser.add_option("--no-tray", action="store",
+                          dest="no_tray", default=None,
+                          help="Disables the system tray icon%s" % extra_text)

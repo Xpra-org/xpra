@@ -6,6 +6,7 @@
 # Platform-specific code for Posix systems with X11 display -- the parts that
 # may import gtk.
 
+import sys
 import os
 
 from wimpiggy.keys import grok_modifier_map
@@ -23,21 +24,50 @@ log = Logger()
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client)
-        client.connect("handshake-complete", self.handshake_complete)
-        self.ROOT_PROPS = {
-            "RESOURCE_MANAGER": "resource-manager"
-            }
-        if opts.pulseaudio:
-            self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
-            self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
-            self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
+        self.setup_menu(True)
+        self.setup_tray(opts.tray_icon)
+        self.setup_xprops(opts.pulseaudio)
+        self.setup_x11_bell()
+        self.setup_pynotify()
 
-        self.has_x11_bell = False
+    def exit(self):
+        if self.tray_widget:
+            self.tray_widget.set_visible(False)
+            self.tray_widget = None
+
+    def get_data_dir(self):
+        #is there a better/cleaner way?
+        options = ["/usr/share/xpra", "/usr/local/share/xpra"]
+        if sys.executable.startswith("/usr/local"):
+            options.reverse()
+        for x in options:
+            if os.path.exists(x):
+                return x
+        return  os.getcwd()
+
+    def setup_tray(self, tray_icon_filename):
+        self.tray_widget = None
         try:
-            from wimpiggy.lowlevel.bindings import device_bell
-            self.has_x11_bell = device_bell is not None
-        except ImportError, e:
-            log.error("cannot import x11 bell bindings (will use gtk fallback) : %s", e)
+            import pygtk
+            pygtk.require("2.0")
+            import gtk
+            self.tray_widget = gtk.StatusIcon()
+            self.tray_widget.connect('popup-menu', self.activate_menu)
+            self.tray_widget.connect('activate', self.activate_menu)
+            filename = tray_icon_filename or os.path.join(self.get_data_dir(), "icons", "xpra.png")
+            if filename and os.path.exists(filename):
+                pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+                self.tray_widget.set_from_pixbuf(pixbuf)
+            def show_tray(*args):
+                log.info("showing tray")
+                #session_name will get set during handshake
+                self.tray_widget.set_tooltip(self.client.session_name)
+                self.tray_widget.set_visible(True)
+            self.client.connect("handshake-complete", show_tray)
+        except Exception, e:
+            log.error("failed to setup tray: %s", e)
+
+    def setup_pynotify(self):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         self.has_pynotify = False
         try:
@@ -47,20 +77,35 @@ class ClientExtras(ClientExtrasBase):
         except ImportError, e:
             log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
 
-    def exit(self):
-        pass
+    def setup_x11_bell(self):
+        self.has_x11_bell = False
+        try:
+            from wimpiggy.lowlevel.bindings import device_bell
+            self.has_x11_bell = device_bell is not None
+        except ImportError, e:
+            log.error("cannot import x11 bell bindings (will use gtk fallback) : %s", e)
 
-    def handshake_complete(self, *args):
-        log.info("handshake_complete(%s)" % str(args))
-        self._xsettings_watcher = XSettingsWatcher()
-        self._xsettings_watcher.connect("xsettings-changed",
-                                        self._handle_xsettings_changed)
-        self._handle_xsettings_changed()
-        self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
-        self._root_props_watcher.connect("root-prop-changed",
-                                        self._handle_root_prop_changed)
-        self._root_props_watcher.notify_all()
-        
+    def setup_xprops(self, pulseaudio):
+        self.client.connect("handshake-complete", self.setup_xprops)
+        self.ROOT_PROPS = {
+            "RESOURCE_MANAGER": "resource-manager"
+            }
+        if pulseaudio:
+            self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
+            self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
+            self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
+        def handshake_complete(*args):
+            log.info("handshake_complete(%s)" % str(args))
+            self._xsettings_watcher = XSettingsWatcher()
+            self._xsettings_watcher.connect("xsettings-changed",
+                                            self._handle_xsettings_changed)
+            self._handle_xsettings_changed()
+            self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
+            self._root_props_watcher.connect("root-prop-changed",
+                                            self._handle_root_prop_changed)
+            self._root_props_watcher.notify_all()
+        self.client.connect("handshake-complete", handshake_complete)
+
     def _handle_xsettings_changed(self, *args):
         blob = self._xsettings_watcher.get_settings_blob()
         if blob is not None:

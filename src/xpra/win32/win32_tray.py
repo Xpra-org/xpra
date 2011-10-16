@@ -15,8 +15,8 @@ from xpra.win32.win32_NotifyIcon import win32NotifyIcon
 
 class Win32Tray:
 
-	def __init__(self, activate_menu, exit, icon_filename):
-		self.tray_widget = win32NotifyIcon("Xpra", activate_menu, exit, None, icon_filename)
+	def __init__(self, name, activate_menu, exit, icon_filename):
+		self.tray_widget = win32NotifyIcon(name, activate_menu, exit, None, icon_filename)
 		#now let's try to hook the session notification
 		self.detect_win32_session_events(self.getHWND())
 		self.balloon_click_callback = None
@@ -55,21 +55,21 @@ class Win32Tray:
 					log.debug("Session state change!")
 				elif msg==win32con.WM_DESTROY:
 					# Restore the old WndProc
-					log.debug("WM_DESTROY, restoring call handler", hWnd, msg, wParam, lParam)
+					log.debug("WM_DESTROY, restoring call handler")
 					win32api.SetWindowLong(app_hwnd, win32con.GWL_WNDPROC, self.oldWndProc)
 				elif msg==win32con.WM_COMMAND:
-					log.debug("WM_COMMAND", hWnd, msg, wParam, lParam)
+					log.debug("WM_COMMAND")
 				elif msg==WM_TRAYICON:
-					log.debug("WM_TRAYICON", hWnd, msg, wParam, lParam)
+					log.debug("WM_TRAYICON")
 					if lParam==NIN_BALLOONSHOW:
-						log.info("NIN_BALLOONSHOW", hWnd, msg, wParam, lParam)
+						log.debug("NIN_BALLOONSHOW")
 					if lParam==NIN_BALLOONHIDE:
-						log.debug("NIN_BALLOONHIDE", hWnd, msg, wParam, lParam)
+						log.debug("NIN_BALLOONHIDE")
 						self.balloon_click_callback = None
 					elif lParam==NIN_BALLOONTIMEOUT:
-						log.debug("NIN_BALLOONTIMEOUT", hWnd, msg, wParam, lParam)
+						log.debug("NIN_BALLOONTIMEOUT")
 					elif lParam==NIN_BALLOONUSERCLICK:
-						log.info("NIN_BALLOONUSERCLICK, balloon_click_callback=%s" % self.balloon_click_callback, hWnd, msg, wParam, lParam)
+						log.info("NIN_BALLOONUSERCLICK, balloon_click_callback=%s" % self.balloon_click_callback)
 						if self.balloon_click_callback:
 							self.balloon_click_callback()
 							self.balloon_click_callback = None

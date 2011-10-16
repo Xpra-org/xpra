@@ -101,12 +101,21 @@ def main(script_file, cmdline):
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
+    parser.add_option("--session-name", action="store",
+                      dest="session_name", default=None,
+                      help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
     parser.add_option("--title-suffix", action="store",
                       dest="title_suffix", default=None,
                       help="Text which is appended to the window's title (deprecated - use --title instead)")
     parser.add_option("--title", action="store",
                       dest="title", default="@title@ on @client-machine@",
                       help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
+    parser.add_option("--window-icon", action="store",
+                          dest="window_icon", default=None,
+                          help="Path to the default image which will be used for all windows (the application may override this)")
+    parser.add_option("--tray-icon", action="store",
+                          dest="tray_icon", default=None,
+                          help="Path to the image which will be used as icon for the system-tray or dock")
     parser.add_option("--encoding", action="store",
                       metavar="ENCODING",
                       dest="encoding", type="str",

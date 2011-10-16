@@ -50,7 +50,7 @@ class PyNOTIFYICONDATA:
 		# GUID guidItem;
 	)
 	_struct = struct.Struct(_struct_format)
-	
+
 	hWnd = 0
 	uID = 0
 	uFlags = 0
@@ -79,7 +79,7 @@ class PyNOTIFYICONDATA:
 		self.uTimeoutOrVersion,
 		self.szInfoTitle,
 		self.dwInfoFlags)
-	
+
 	def __setattr__(self, name, value):
 		# avoid wrong field names
 		if not hasattr(self, name):
@@ -97,6 +97,8 @@ def notify(hwnd, title, message, timeout=5000):
 	nid.dwInfoFlags = NIIF_INFO	#choice([NIIF_INFO, NIIF_WARNING, NIIF_ERROR])
 	nid.szInfo = "%s" % visible_command(message, 255, False)		#prevent overflow
 	nid.szInfoTitle = "%s" % visible_command(title, 63)
+	if timeout<=0:
+		timeout = 5000
 	nid.uTimeoutOrVersion = timeout
 	#import win32con
 	#WM_TRAYICON = win32con.WM_USER + 20
@@ -106,11 +108,11 @@ def notify(hwnd, title, message, timeout=5000):
 	Shell_NotifyIcon = windll.shell32.Shell_NotifyIconA
 	Shell_NotifyIcon(NIM_MODIFY, nid.pack())
 
-	
+
 def main():
 	notify(0, "title", "message")
 	import time
 	time.sleep(10)
-	
+
 if __name__=='__main__':
 	main()

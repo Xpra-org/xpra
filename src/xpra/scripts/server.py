@@ -299,7 +299,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # This import is delayed because the module depends on gtk:
     import xpra.server
-    app = xpra.server.XpraServer(upgrading, sockets, opts.password_file, opts.pulseaudio, opts.clipboard, opts.randr, opts.encoding)
+    app = xpra.server.XpraServer(upgrading, sockets, opts.session_name,
+                                 opts.password_file, opts.pulseaudio, opts.clipboard, opts.randr, opts.encoding)
     def cleanup_socket(self):
         print "removing socket"
         try:
