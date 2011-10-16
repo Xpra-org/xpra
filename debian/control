@@ -7,9 +7,9 @@ Uploaders: أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org
 Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxtst-dev, libxcomposite-dev, libxdamage-dev, python-all-dev, cython, python-gobject-dev, python-gtk2-dev
 X-Python-Version: all
 Standards-Version: 3.9.1
-Homepage: http://xpra.devloop.org.uk/
-Vcs-Svn: http://xpra.devloop.org.uk/svn/Xpra/
-Vcs-Browser: http://xpra.devloop.org.uk/trac/browser/
+Homepage: http://xpra.org/
+Vcs-Svn: http://xpra.org/svn/Xpra/
+Vcs-Browser: http://xpra.org/trac/browser/
 
 Package: parti
 Architecture: all

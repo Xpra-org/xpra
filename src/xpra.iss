@@ -2,7 +2,7 @@
 AppName=Xpra
 AppVerName=Xpra 0.0.7.28
 AppPublisher=devloop
-AppPublisherURL=http://xpra.devloop.org.uk/
+AppPublisherURL=http://xpra.org/
 DefaultDirName={pf}\Xpra
 DefaultGroupName=Xpra
 DisableProgramGroupPage=true
