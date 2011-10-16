@@ -487,7 +487,7 @@ class XpraClient(gobject.GObject):
         return  shortcuts
 
     def query_xkbmap(self):
-        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
+        self.xkbmap_layout, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -507,6 +507,8 @@ class XpraClient(gobject.GObject):
                 if x is None:
                     return  ""
                 return x
+            if self.xkbmap_layout:
+                self.send(["layout-changed", nn(self.xkbmap_layout)])
             self.send(["keymap-changed", nn(self.xkbmap_print), nn(self.xkbmap_query), nn(self.xmodmap_data), self.mask_to_names(current_mask)])
 
     def update_focus(self, id, gotit):
@@ -549,6 +551,8 @@ class XpraClient(gobject.GObject):
         if self.jpegquality:
             capabilities_request["jpeg"] = self.jpegquality
         self.query_xkbmap()
+        if self.xkbmap_layout:
+            capabilities_request["xkbmap_layout"] = self.xkbmap_layout
         if self.xkbmap_print:
             capabilities_request["keymap"] = self.xkbmap_print
         if self.xkbmap_query:

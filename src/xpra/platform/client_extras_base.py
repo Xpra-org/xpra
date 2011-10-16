@@ -64,7 +64,7 @@ class ClientExtrasBase(object):
         gtk.gdk.beep()
 
     def get_keymap_spec(self):
-        return None,None,None
+        return None,None,None,None
 
 
     def about(self, *args):

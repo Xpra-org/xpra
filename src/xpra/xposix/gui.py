@@ -164,7 +164,7 @@ class ClientExtras(ClientExtrasBase):
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
         xmodmap_data = get_keyboard_data("xmodmap", "-pke");
-        return xkbmap_print, xkbmap_query, xmodmap_data
+        return None, xkbmap_print, xkbmap_query, xmodmap_data
 
     def grok_modifier_map(self, display_source):
         return grok_modifier_map(display_source)

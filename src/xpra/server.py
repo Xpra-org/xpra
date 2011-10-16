@@ -337,6 +337,7 @@ class XpraServer(gobject.GObject):
                 self._add_new_or_window(window)
         
         ## These may get set by the client:
+        self.xkbmap_layout = None
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xmodmap_data = None
@@ -397,7 +398,8 @@ class XpraServer(gobject.GObject):
             self.add_listen_socket(sock)
 
     def set_keymap(self):
-        """ xkbmap_print is the output of "setxkbmap -print" on the client
+        """ xkbmap_layout is the generic layout name (used on non posix platforms)
+            xkbmap_print is the output of "setxkbmap -print" on the client
             xkbmap_query is the output of "setxkbmap -query" on the client
             xmodmap_data is the output of "xmodmap -pke" on the client
             Use those to try to setup the correct keyboard map for the client
@@ -409,7 +411,7 @@ class XpraServer(gobject.GObject):
                 if returncode==0:
                     log.info("%s successfully applied" % str(args))
                 else:
-                    log.info("%s failed with exit code %s\n" % (str(args), returncode))
+                    log.info("%s failed with exit code %s" % (str(args), returncode))
                 return returncode
             except Exception, e:
                 log.info("error calling '%s': %s" % (str(args), e))
@@ -455,7 +457,12 @@ class XpraServer(gobject.GObject):
                         exec_keymap_command(["setxkbmap", layout])
                         break 
             except Exception, e: 
-                log.info("error setting keymap: %s" % e) 
+                log.info("error setting keymap: %s" % e)
+        else:
+            #just set the layout (use 'us' if we don't even have that information!)
+            layout = self.xkbmap_layout or "us"
+            set_layout = ["setxkbmap", "-layout", layout]
+            exec_keymap_command(set_layout)
 
         if self.xkbmap_print:
             exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
@@ -464,31 +471,34 @@ class XpraServer(gobject.GObject):
         if not self.xkbmap_query and not self.xkbmap_print and not self.xmodmap_data:
             """ use a default xmodmap for clients that supply nothing at all: """
             xmodmap_data = """clear Lock
-                               clear Shift
-                               clear Control
-                               clear Mod1
-                               clear Mod2
-                               clear Mod3
-                               clear Mod4
-                               clear Mod5
-                               keycode any = Shift_L
-                               keycode any = Control_L
-                               keycode any = Meta_L
-                               keycode any = Alt_L
-                               keycode any = Hyper_L
-                               keycode any = Super_L
-                               add Shift = Shift_L Shift_R
-                               add Control = Control_L Control_R
-                               add Mod1 = Meta_L Meta_R
-                               add Mod2 = Alt_L Alt_R
-                               add Mod3 = Hyper_L Hyper_R
-                               add Mod4 = Super_L Super_R
-                            """
+clear Shift
+clear Control
+clear Mod1
+clear Mod2
+clear Mod3
+clear Mod4
+clear Mod5
+keycode any = Shift_L
+keycode any = Control_L
+keycode any = Meta_L
+keycode any = Alt_L
+keycode any = Hyper_L
+keycode any = Super_L
+add Shift = Shift_L Shift_R
+add Control = Control_L Control_R
+add Mod1 = Meta_L Meta_R
+add Mod2 = Alt_L Alt_R
+add Mod3 = Hyper_L Hyper_R
+add Mod4 = Super_L Super_R
+"""
             # Really stupid hack to force backspace to work.
             xmodmap_data += "keycode any = BackSpace"
  
         if xmodmap_data:
-            exec_keymap_command(["xmodmap", "-"], xmodmap_data)
+            if exec_keymap_command(["xmodmap", "-"], xmodmap_data)!=0:
+                log.error("re-running xmodmap one line at a time to workaround one or more broken mappings..")
+                for mod in xmodmap_data.split("\n"):
+                    exec_keymap_command(["xmodmap", "-"], mod)
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
@@ -502,7 +512,7 @@ class XpraServer(gobject.GObject):
             l = log.debug
             if code!=0:
                 l = log.error
-            l("signal_safe_exec(%s,%s) stdout=%s", cmd, stdin, out)
+            l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
             l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
             return  code
         finally:
@@ -886,16 +896,19 @@ class XpraServer(gobject.GObject):
     def _set_encoding(self, encoding):
         if encoding:
             assert encoding in self.encodings
-        if encoding not in ENCODINGS:
-            log.error("encoding %s is not supported by this server! " \
-                     "Will use the first commonly supported encoding instead" % encoding)
-            encoding = None
+            if encoding not in ENCODINGS:
+                log.error("encoding %s is not supported by this server! " \
+                         "Will use the first commonly supported encoding instead" % encoding)
+                encoding = None
+        else:
+            log.debug("encoding not specified, will use the first match")
         if not encoding:
             #not specified or not supported, find intersection of supported encodings:
             common = [e for e in self.encodings if e in ENCODINGS]
             log.debug("encodings supported by both ends: %s", common)
             if not common:
-                raise Exception("cannot find compatible encoding between client (%s) and server (%s)" % (self.encodings, ENCODINGS))
+                raise Exception("cannot find compatible encoding between "
+                                "client (%s) and server (%s)" % (self.encodings, ENCODINGS))
             encoding = common[0]
         self.encoding = encoding
         log.debug("encoding set to %s", encoding)
@@ -913,6 +926,33 @@ class XpraServer(gobject.GObject):
         else:
             return version
 
+    def _send_password_challenge(self, proto):
+        self.salt = "%s" % uuid.uuid4()
+        log.info("Password required, sending challenge")
+        packet = ("challenge", self.salt)
+        socket = proto._conn._s
+        log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
+        from xpra.bencode import bencode
+        import select
+        data = bencode(packet)
+        written = 0
+        while written < len(data):
+            select.select([], [socket], [])
+            written += socket.send(data[written:])
+
+    def _verify_password(self, proto, client_hash):
+        passwordFile = open(self.password_file, "rU")
+        password  = passwordFile.read()
+        hash = hmac.HMAC(password, self.salt)
+        if client_hash != hash.hexdigest():
+            def login_failed(*args):
+                log.error("Password supplied does not match! dropping the connection.")
+                proto.close()
+            gobject.timeout_add(1000, login_failed)
+        self.salt = None            #prevent replay attacks
+        log.info("Password matches!")
+        sys.stdout.flush()
+
     def _process_hello(self, proto, packet):
         (_, capabilities) = packet
         log.info("Handshake complete; enabling connection")
@@ -926,34 +966,11 @@ class XpraServer(gobject.GObject):
             log.debug("password auth required")
             client_hash = capabilities.get("challenge_response")
             if not client_hash or not self.salt:
-                self.salt = "%s" % uuid.uuid4()
-                capabilities["challenge"] = self.salt
-                log.info("Password required, sending challenge")
-                packet = ("challenge", self.salt)
-                socket = proto._conn._s
-                log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
-                from xpra.bencode import bencode
-                import select
-                data = bencode(packet)
-                written = 0
-                while written < len(data):
-                    select.select([], [socket], [])
-                    written += socket.send(data[written:])
+                self._send_password_challenge(proto)
                 return
-            passwordFile = open(self.password_file, "rU")
-            password  = passwordFile.read()
-            hash = hmac.HMAC(password, self.salt)
-            if client_hash != hash.hexdigest():
-                log.error("Password supplied does not match! dropping the connection.")
-                def login_failed(*args):
-                    proto.close()
-                gobject.timeout_add(1000, login_failed)
+            del capabilities["challenge_response"]
+            if not self._verify_password(proto, client_hash):
                 return
-            else:
-                log.info("Password matches!")
-                sys.stdout.flush()
-                del capabilities["challenge_response"]
-                self.salt = None            #prevent replay attacks
 
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
@@ -971,13 +988,13 @@ class XpraServer(gobject.GObject):
         self._protocol._send_size = capabilities.get("packet_size", False)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
-        if "keymap" in capabilities:
-            self.xkbmap_print = capabilities["keymap"]
-            self.xkbmap_query = capabilities.get("xkbmap_query", None)
-            self.xmodmap_data = capabilities.get("xmodmap_data", None)
-            #always clear modifiers before setting a new keymap
-            self._make_keymask_match([])
-            self.set_keymap()
+        self.xkbmap_layout = capabilities.get("xkbmap_layout", None)
+        self.xkbmap_print = capabilities.get("keymap", None)
+        self.xkbmap_query = capabilities.get("xkbmap_query", None)
+        self.xmodmap_data = capabilities.get("xmodmap_data", None)
+        #always clear modifiers before setting a new keymap
+        self._make_keymask_match([])
+        self.set_keymap()
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = capabilities.get("notifications", False)
@@ -1098,6 +1115,12 @@ class XpraServer(gobject.GObject):
             (_, id) = packet
         self._focus(id, modifiers)
     
+    def _process_layout(self, proto, packet):
+        (_, layout) = packet
+        if layout!=self.xkbmap_layout:
+            self.xkbmap_layout = layout
+            self.set_keymap()
+
     def _process_keymap(self, proto, packet):
         if len(packet)==3:
             (_, self.xkbmap_print, self.xkbmap_query) = packet
@@ -1215,6 +1238,7 @@ class XpraServer(gobject.GObject):
         "resize-window": _process_resize_window,
         "focus": _process_focus,
         "key-action": _process_key_action,
+        "layout-changed": _process_layout,
         "keymap-changed": _process_keymap,
         "button-action": _process_button_action,
         "pointer-position": _process_pointer_position,
