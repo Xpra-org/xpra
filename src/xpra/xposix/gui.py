@@ -127,7 +127,7 @@ class ClientExtras(ClientExtrasBase):
 
     def can_notify(self):
         return  self.has_pynotify
-    
+
     def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         if self.dbus_id==dbus_id:
             log.error("remote dbus instance is the same as our local one, "
@@ -164,7 +164,16 @@ class ClientExtras(ClientExtrasBase):
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
         xmodmap_data = get_keyboard_data("xmodmap", "-pke");
-        return None, xkbmap_print, xkbmap_query, xmodmap_data
+        return xkbmap_print, xkbmap_query, xmodmap_data
+
+    def get_keyboard_repeat(self):
+        try:
+            from wimpiggy.lowlevel import get_key_repeat_rate
+            delay, interval = get_key_repeat_rate()
+            return delay,interval
+        except Exception, e:
+            log.error("failed to get keyboard repeat rate: %s", e)
+        return None
 
     def grok_modifier_map(self, display_source):
         return grok_modifier_map(display_source)

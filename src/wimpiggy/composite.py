@@ -64,10 +64,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self, x, y, w, h):
         if self._damage_handle is not None:
             trap.swallow(xdamage_acknowledge,
-                         self._window, self._damage_handle,
-                         x - self._border_width,
-                         y - self._border_width,
-                         w, h)
+                         self._window, self._damage_handle)
 
     def invalidate_pixmap(self):
         log("invalidating named pixmap", type="pixmap")

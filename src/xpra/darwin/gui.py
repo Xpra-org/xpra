@@ -89,10 +89,11 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.insert_app_menu_item(self.make_bellmenuitem(), 1)
             self.macapp.insert_app_menu_item(self.make_notificationsmenuitem(), 2)
             self.macapp.insert_app_menu_item(self.make_encodingsmenuitem(), 3)
-            self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 4)
-            self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 5)
-            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 4)
-            
+            self.macapp.insert_app_menu_item(self.make_layoutsmenuitem(), 4)
+            self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 5)
+            self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 6)
+            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 7)
+
             self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
             self.client.connect("handshake-complete", self.handshake_complete)
         except Exception, e:

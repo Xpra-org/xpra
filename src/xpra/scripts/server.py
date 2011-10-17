@@ -63,7 +63,7 @@ class ChildReaper(object):
     def __call__(self, signum, frame):
         while 1:
             try:
-                pid, status = os.waitpid(-1, os.WNOHANG)
+                pid, _ = os.waitpid(-1, os.WNOHANG)
             except OSError:
                 break
             if pid == 0:

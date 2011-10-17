@@ -25,6 +25,11 @@ from xpra.scripts.main import ENCODINGS
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
 
+def nn(x):
+    if x is None:
+        return  ""
+    return x
+
 class ClientSource(object):
     def __init__(self, protocol):
         self._ordinary_packets = []
@@ -266,56 +271,11 @@ class ClientWindow(gtk.Window):
     def void(self):
         pass
 
-    def _key_action(self, event, depressed):
-        log.debug("key_action(%s,%s)" % (event, depressed))
-        modifiers = self._client.mask_to_names(event.state)
-        name = gtk.gdk.keyval_name(event.keyval)
-        shortcut = self._client.key_shortcuts.get(name)
-        if shortcut:
-            (req_mods, action) = shortcut
-            mods_found = True
-            for rm in req_mods:
-                if rm not in modifiers:
-                    mods_found = False
-                    break
-            if mods_found:
-                if not depressed:
-                    """ when the key is released, just ignore it - do NOT send it to the server! """
-                    return
-                try:
-                    method = getattr(self, action)
-                    log.info("key_action(%s,%s) has been handled by shortcut=%s" % (event, depressed, shortcut))
-                except AttributeError, e:
-                    log.error("key dropped, invalid method name in shortcut %s: %s" % (action, e))
-                    return
-                try:
-                    method()
-                    return
-                except Exception, e:
-                    log.error("key_action(%s,%s) failed to execute shortcut=%s: %s" % (event, depressed, shortcut, e))
-        
-        def nn(arg):
-            if arg is not None:
-                return  arg
-            return  ""
-        if self._client._raw_keycodes_feature:
-            """ for versions newer than 0.0.7.24, we send ALL the raw information we have """
-            keycode = event.hardware_keycode
-            log.debug("key_action(%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
-            self._client.send(["key-action", self._id, nn(name), depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
-        else:
-            """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...) """
-            # Apparently some weird keys (e.g. "media keys") can have no keyval or
-            # no keyval name (I believe that both give us a None here).  Another
-            # reason to upgrade to the version above
-            if name is not None:
-                self._client.send(["key-action", self._id, nn(name), depressed, modifiers])
-
     def do_key_press_event(self, event):
-        self._key_action(event, True)
+        self._client.handle_key_action(event, self, True)
 
     def do_key_release_event(self, event):
-        self._key_action(event, False)
+        self._client.handle_key_action(event, self, False)
 
     def _pointer_modifiers(self, event):
         pointer = (int(event.x_root), int(event.y_root))
@@ -396,6 +356,9 @@ class XpraClient(gobject.GObject):
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
 
+        self.key_repeat_delay = -1
+        self.key_repeat_interval = -1
+        self.keycodes_pressed = {}
         self._raw_keycodes_feature = False
         self._focus_modifiers_feature = False
         self._remote_version = None
@@ -482,12 +445,98 @@ class XpraClient(gobject.GObject):
                 if not valid:
                     continue
             keyname = keyspec[len(keyspec)-1]
-            shortcuts[keyname] = (modifiers, action)                
+            shortcuts[keyname] = (modifiers, action)
         log.debug("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         return  shortcuts
 
+    def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
+        shortcut = self.key_shortcuts.get(key_name)
+        if not shortcut:
+            return  False
+        (req_mods, action) = shortcut
+        for rm in req_mods:
+            if rm not in modifiers:
+                #modifier is missing, bail out
+                return False
+        if not depressed:
+            """ when the key is released, just ignore it - do NOT send it to the server! """
+            return  True
+        try:
+            method = getattr(window, action)
+            log.info("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
+        except AttributeError, e:
+            log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
+            return  True
+        try:
+            method()
+        except Exception, e:
+            log.error("key_handled_as_shortcut(%s,%s,%s,%s) failed to execute shortcut=%s: %s", window, key_name, modifiers, depressed, shortcut, e)
+        return  True
+
+    def handle_key_action(self, event, window, depressed):
+        log.debug("handle_key_action(%s,%s,%s)" % (event, window, depressed))
+        modifiers = self.mask_to_names(event.state)
+        name = gtk.gdk.keyval_name(event.keyval)
+        if self.key_handled_as_shortcut(window, name, modifiers, depressed):
+            return
+        id = self._window_to_id[window]
+        if not self._raw_keycodes_feature:
+            """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...)
+                also used on win32 and osx since those don't have keymaps/keycode
+            """
+            # Apparently some weird keys (e.g. "media keys") can have no keyval or
+            # no keyval name (I believe that both give us a None here).
+            # Another reason to use the _raw_keycodes_feature wherever possible.
+            if name is not None:
+                self.send(["key-action", id, nn(name), depressed, modifiers])
+            return
+        keycode = event.hardware_keycode
+        log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
+        self.send(["key-action", id, nn(name), depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
+        if keycode and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+            self._key_repeat(depressed, keycode)
+
+    def _key_repeat(self, depressed, keycode):
+        if not depressed and keycode in self.keycodes_pressed:
+            """ stop the timer and clear this keycode: """
+            gobject.source_remove(self.keycodes_pressed[keycode])
+            del self.keycodes_pressed[keycode]
+        elif depressed and keycode not in self.keycodes_pressed:
+            """ we must ping the server regularly for as long as the key is still pressed: """
+            LATENCY_JITTER = 100
+            MIN_DELAY = 20
+            delay = max(self.key_repeat_delay-LATENCY_JITTER, MIN_DELAY)
+            interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
+            def continue_key_repeat(*args):
+                #if the key is still pressed (redundant check?)
+                #confirm it and continue, otherwise stop
+                log.debug("continue_key_repeat")
+                if keycode in self.keycodes_pressed:
+                    self.send(["key-repeat", keycode])
+                    return  True
+                else:
+                    del self.keycodes_pressed[keycode]
+                    return  False
+            def start_key_repeat(*args):
+                #if the key is still pressed (redundant check?)
+                #confirm it and start repeat:
+                log.debug("start_key_repeat")
+                if keycode in self.keycodes_pressed:
+                    self.send(["key-repeat", keycode])
+                    self.keycodes_pressed[keycode] = gobject.timeout_add(interval, continue_key_repeat)
+                else:
+                    del self.keycodes_pressed[keycode]
+                return  False   #never run this timer again
+            self.keycodes_pressed[keycode] = gobject.timeout_add(delay, start_key_repeat)
+
+    def clear_repeat(self):
+        for timer in self.keycodes_pressed.values():
+            gobject.source_remove(timer)
+        self.keycodes_pressed = {}
+
     def query_xkbmap(self):
-        self.xkbmap_layout, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
+        self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
+        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -502,14 +551,17 @@ class XpraClient(gobject.GObject):
             #old clients won't know what to do with it, but that's ok
             self.query_xkbmap()
             log("keys_changed")
-            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            def nn(x):
-                if x is None:
-                    return  ""
-                return x
             if self.xkbmap_layout:
-                self.send(["layout-changed", nn(self.xkbmap_layout)])
-            self.send(["keymap-changed", nn(self.xkbmap_print), nn(self.xkbmap_query), nn(self.xmodmap_data), self.mask_to_names(current_mask)])
+                self.send_layout()
+            self.send_keymap()
+
+    def send_layout(self):
+        self.send(["layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant)])
+
+    def send_keymap(self):
+        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+        self.send(["keymap-changed", nn(self.xkbmap_print), nn(self.xkbmap_query), nn(self.xmodmap_data), self.mask_to_names(current_mask)])
+
 
     def update_focus(self, id, gotit):
         def send_focus(_id):
@@ -519,11 +571,13 @@ class XpraClient(gobject.GObject):
                 self.send(["focus", _id, self.mask_to_names(current_mask)])
             else:
                 self.send(["focus", _id])
-
+        log.debug("update_focus(%s,%s) _focused=%s", id, gotit, self._focused)
         if gotit and self._focused is not id:
+            self.clear_repeat()
             send_focus(id)
             self._focused = id
         if not gotit and self._focused is id:
+            self.clear_repeat()
             send_focus(0)
             self._focused = None
 
@@ -553,6 +607,8 @@ class XpraClient(gobject.GObject):
         self.query_xkbmap()
         if self.xkbmap_layout:
             capabilities_request["xkbmap_layout"] = self.xkbmap_layout
+            if self.xkbmap_variant:
+                capabilities_request["xkbmap_variant"] = self.xkbmap_variant
         if self.xkbmap_print:
             capabilities_request["keymap"] = self.xkbmap_print
         if self.xkbmap_query:
@@ -570,6 +626,9 @@ class XpraClient(gobject.GObject):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         capabilities_request["png_window_icons"] = True
+        key_repeat = self._client_extras.get_keyboard_repeat()
+        if key_repeat:
+            capabilities_request["key_repeat"] = key_repeat
         self.send(["hello", capabilities_request])
 
     def send_jpeg_quality(self, q):
@@ -655,6 +714,7 @@ class XpraClient(gobject.GObject):
             self.encoding = e
         self.bell_enabled = capabilities.get("bell", False)
         self.notifications_enabled = capabilities.get("notifications", False)
+        self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
 
     def set_encoding(self, encoding):
@@ -702,7 +762,7 @@ class XpraClient(gobject.GObject):
             cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, x, y)
         for window in self._window_to_id.keys():
             window.window.set_cursor(cursor)
-    
+
     def _process_bell(self, packet):
         if not self.bell_enabled:
             return

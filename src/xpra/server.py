@@ -31,6 +31,7 @@ from wimpiggy.util import (AdHocStruct,
 from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
                                xtest_fake_key, #@UnresolvedImport
                                xtest_fake_button, #@UnresolvedImport
+                               set_key_repeat_rate, #@UnresolvedImport
                                is_override_redirect, is_mapped, #@UnresolvedImport
                                add_event_receiver, #@UnresolvedImport
                                get_cursor_image, #@UnresolvedImport
@@ -117,7 +118,7 @@ class DesktopManager(gtk.Widget):
         self._models[model].window = window
 
     def window_size(self, model):
-        (x, y, w, h) = self._models[model].geom
+        (_, _, w, h) = self._models[model].geom
         return (w, h)
 
     def window_position(self, model, w, h):
@@ -160,7 +161,7 @@ class ServerSource(object):
         for d in [self._damage, self._damage_delayed, self._damage_delayed_expired]:
             if id in d:
                 del d[id]
- 
+
     def damage(self, id, window, x, y, w, h):
         BATCH_EVENTS = True
         MAX_EVENTS = 30     #maximum number of damage events
@@ -335,12 +336,15 @@ class XpraServer(gobject.GObject):
         for window in get_children(root):
             if (is_override_redirect(window) and is_mapped(window)):
                 self._add_new_or_window(window)
-        
+
         ## These may get set by the client:
         self.xkbmap_layout = None
+        self.xkbmap_variant = None
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xmodmap_data = None
+        self.key_repeat_delay = -1
+        self.key_repeat_interval = -1
         self.encodings = ["rgb24"]
 
         self.send_notifications = False
@@ -349,6 +353,8 @@ class XpraServer(gobject.GObject):
         #store list of currently pressed keys
         #(using a map only so we can display their names in debug messages)
         self.keys_pressed = {}
+        #timers for cancelling key repeat when we get jitter
+        self.keys_repeat = {}
         ### Set up keymap:
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
@@ -384,7 +390,7 @@ class XpraServer(gobject.GObject):
         log.info("randr enabled: %s" % self.randr)
 
         self.pulseaudio = pulseaudio
-        
+
         try:
             from xpra.dbus_notifications_forwarder import register
             self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback, replace=True)
@@ -447,58 +453,69 @@ class XpraServer(gobject.GObject):
                 exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
         elif self.xkbmap_print:
             #try to guess the layout by parsing "setxkbmap -print"
-            try: 
-                sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)") 
-                for line in self.xkbmap_print.splitlines(): 
-                    m = sym_re.match(line) 
+            try:
+                sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
+                for line in self.xkbmap_print.splitlines():
+                    m = sym_re.match(line)
                     if m:
-                        layout = m.group(1) 
-                        log.info("guessing keyboard layout='%s'" % layout) 
+                        layout = m.group(1)
+                        log.info("guessing keyboard layout='%s'" % layout)
                         exec_keymap_command(["setxkbmap", layout])
-                        break 
-            except Exception, e: 
+                        break
+            except Exception, e:
                 log.info("error setting keymap: %s" % e)
         else:
             #just set the layout (use 'us' if we don't even have that information!)
             layout = self.xkbmap_layout or "us"
             set_layout = ["setxkbmap", "-layout", layout]
-            exec_keymap_command(set_layout)
+            if self.xkbmap_variant:
+                set_layout += ["-variant", self.xkbmap_variant]
+            if not exec_keymap_command(set_layout) and self.xkbmap_variant:
+                log.info("error setting keymap with variant %s, retrying with just layout %s", self.xkbmap_variant, self.xkbmap_layout)
+                set_layout = ["setxkbmap", "-layout", layout]
+                exec_keymap_command(set_layout)
 
         if self.xkbmap_print:
             exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
 
-        xmodmap_data = self.xmodmap_data
-        if not self.xkbmap_query and not self.xkbmap_print and not self.xmodmap_data:
-            """ use a default xmodmap for clients that supply nothing at all: """
-            xmodmap_data = """clear Lock
-clear Shift
-clear Control
-clear Mod1
-clear Mod2
-clear Mod3
-clear Mod4
-clear Mod5
-keycode any = Shift_L
-keycode any = Control_L
-keycode any = Meta_L
-keycode any = Alt_L
-keycode any = Hyper_L
-keycode any = Super_L
-add Shift = Shift_L Shift_R
-add Control = Control_L Control_R
-add Mod1 = Meta_L Meta_R
-add Mod2 = Alt_L Alt_R
-add Mod3 = Hyper_L Hyper_R
-add Mod4 = Super_L Super_R
-"""
-            # Really stupid hack to force backspace to work.
-            xmodmap_data += "keycode any = BackSpace"
- 
-        if xmodmap_data:
-            if exec_keymap_command(["xmodmap", "-"], xmodmap_data)!=0:
+        def setxmodmap(xmodmap_data):
+            if exec_keymap_command(["xmodmap", "-"], xmodmap_data)==0:
+                return
+            lines = xmodmap_data.split("\n")
+            if len(lines)>1:
                 log.error("re-running xmodmap one line at a time to workaround one or more broken mappings..")
-                for mod in xmodmap_data.split("\n"):
+                for mod in lines:
                     exec_keymap_command(["xmodmap", "-"], mod)
+        if self.xmodmap_data:
+            setxmodmap(self.xmodmap_data)
+        elif not self.xkbmap_query and not self.xkbmap_print:
+            """ use a default xmodmap for clients that supply nothing at all: """
+            xmodmap = ["clear Lock",
+                       "clear Shift",
+                       "clear Control",
+                       "clear Mod1",
+                       "clear Mod2",
+                       "clear Mod3",
+                       "clear Mod4",
+                       "clear Mod5",
+                       "keycode any = Shift_L",
+                       "keycode any = Control_L",
+                       "keycode any = Meta_L",
+                       "keycode any = Alt_L",
+                       "keycode any = Hyper_L",
+                       "keycode any = Super_L",
+                       "add Shift = Shift_L Shift_R",
+                       "add Control = Control_L Control_R",
+                        # Really stupid hack to force backspace to work.
+                        "keycode any = BackSpace"]
+            setxmodmap("\n".join(xmodmap))
+            #do those two separately because they tend to fail...
+            may_fail = ["add Mod1 = Meta_L Meta_R",
+                        "add Mod4 = Super_L Super_R",
+                        "add Mod2 = Alt_L Alt_R",
+                        "add Mod3 = Hyper_L Hyper_R"]
+            for mod in may_fail:
+                setxmodmap(mod)
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
@@ -541,7 +558,7 @@ add Mod4 = Super_L Super_R
 
     def _new_connection(self, listener, *args):
         log.info("New connection received")
-        sock, addr = listener.accept()
+        sock, _ = listener.accept()
         self._potential_protocols.append(Protocol(SocketConnection(sock),
                                                   self.process_packet))
         return True
@@ -560,7 +577,7 @@ add Mod4 = Super_L Super_R
         self.cursor_image = get_cursor_image()
         log("do_wimpiggy_cursor_event(%s) new_cursor=%s" % (event, self.cursor_image))
         self.send_cursor()
-    
+
     def send_cursor(self):
         self._send(["cursor", self.cursor_image or ""])
 
@@ -581,7 +598,7 @@ add Mod4 = Super_L Super_R
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.send_notifications)
         if self.send_notifications:
             self._send(["notify_show", dbus_id, int(id), str(app_name), int(replaces_id), str(app_icon), str(summary), str(body), long(expire_timeout)])
-    
+
     def notify_close_callback(self, id):
         log("notify_close_callback(%s)", id)
         if self.send_notifications:
@@ -592,8 +609,6 @@ add Mod4 = Super_L Super_R
         if event.override_redirect:
             self._add_new_or_window(raw_window)
 
-    _window_export_properties = ("title", "size-hints")
-
     def _add_new_window_common(self, window):
         id = self._max_window_id
         self._max_window_id += 1
@@ -602,12 +617,13 @@ add Mod4 = Super_L Super_R
         window.connect("client-contents-changed", self._contents_changed)
         window.connect("unmanaged", self._lost_window)
 
+    _window_export_properties = ("title", "size-hints")
     def _add_new_window(self, window):
         log("Discovered new ordinary window")
         self._add_new_window_common(window)
         for prop in self._window_export_properties:
             window.connect("notify::%s" % prop, self._update_metadata)
-        (x, y, w, h, depth) = window.get_property("client-window").get_geometry()
+        (x, y, w, h, _) = window.get_property("client-window").get_geometry()
         self._desktop_manager.add_window(window, x, y, w, h)
         self._send_new_window_packet(window)
 
@@ -771,6 +787,8 @@ add Mod4 = Super_L Super_R
             log.debug("clearing keys pressed: %s" % str(self.keys_pressed))
             for keycode in self.keys_pressed.keys():
                 xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+                #cancel any repeat timers:
+                self._key_repeat(False, keycode)
             self.keys_pressed = {}
 
     def _focus(self, id, modifiers):
@@ -988,7 +1006,21 @@ add Mod4 = Super_L Super_R
         self._protocol._send_size = capabilities.get("packet_size", False)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
+        key_repeat = capabilities.get("key_repeat", None)
+        if key_repeat:
+            self.key_repeat_delay, self.key_repeat_interval = key_repeat
+            assert self.key_repeat_delay>0
+            assert self.key_repeat_interval>0
+            set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
+            log.info("setting key repeat rate from client: %s / %s", self.key_repeat_delay, self.key_repeat_interval)
+        else:
+            #dont do any jitter compensation:
+            self.key_repeat_delay = -1
+            self.key_repeat_interval = -1
+            #but do set a default repeat rate:
+            set_key_repeat_rate(500, 30)
         self.xkbmap_layout = capabilities.get("xkbmap_layout", None)
+        self.xkbmap_variant = capabilities.get("xkbmap_variant", None)
         self.xkbmap_print = capabilities.get("keymap", None)
         self.xkbmap_query = capabilities.get("xkbmap_query", None)
         self.xmodmap_data = capabilities.get("xmodmap_data", None)
@@ -1036,6 +1068,8 @@ add Mod4 = Super_L Super_R
         capabilities["encodings"] = ENCODINGS
         capabilities["encoding"] = self.encoding
         capabilities["resize_screen"] = self.randr
+        if "key_repeat" in client_capabilities:
+            capabilities["key_repeat"] = client_capabilities.get("key_repeat")
         if self.session_name:
             capabilities["session_name"] = self.session_name
         self._send(["hello", capabilities])
@@ -1108,17 +1142,18 @@ add Mod4 = Super_L Super_R
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_focus(self, proto, packet):
-        modifiers = None
         if len(packet)==3:
             (_, id, modifiers) = packet
         else:
+            modifiers = None
             (_, id) = packet
         self._focus(id, modifiers)
-    
+
     def _process_layout(self, proto, packet):
-        (_, layout) = packet
-        if layout!=self.xkbmap_layout:
+        (_, layout, variant) = packet
+        if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant:
             self.xkbmap_layout = layout
+            self.xkbmap_variant = variant
             self.set_keymap()
 
     def _process_keymap(self, proto, packet):
@@ -1142,22 +1177,45 @@ add Mod4 = Super_L Super_R
             raise Exception("invalid number of arguments for key-action: %s" % len(packet))
         self._make_keymask_match(modifiers)
         self._focus(id, None)
-        level = 0
-        if "shift" in modifiers:
-            level = 1
-        group = 0
-        #not sure this is right...
-        if "meta" in modifiers:
-            group = 1
         if not keycode:
+            level = 0
+            if "shift" in modifiers:
+                level = 1
+            group = 0
+            #not sure this is right...
+            if "meta" in modifiers:
+                group = 1
             keycode = self._keycode(keycode, string, keyval, keyname, group=group, level=level)
         log.debug("now %spressing keycode=%s, keyname=%s" % (depressed, keycode, keyname))
         if keycode:
-            xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
-            if depressed and keycode not in self.keys_pressed:
-                self.keys_pressed[keycode] = keyname
-            elif not depressed and keycode in self.keys_pressed:
-                del self.keys_pressed[keycode]
+            self._handle_keycode(depressed, keycode, keyname)
+    
+    def _handle_keycode(self, depressed, keycode, keyname):
+        xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
+        if depressed and keycode not in self.keys_pressed:
+            self.keys_pressed[keycode] = keyname
+        elif not depressed and keycode in self.keys_pressed:
+            del self.keys_pressed[keycode]
+        if self.key_repeat_delay>0 and self.key_repeat_interval>0:
+            self._key_repeat(depressed, keycode, self.key_repeat_delay)
+
+    def _key_repeat_timeout(self, keycode):
+        keyname = self.keys_pressed.get(keycode, "")
+        log.info("key repeat timeout for keycode %s / '%s' - jitter on the line?", keycode, keyname)
+        self._handle_keycode(False, keycode, keyname)
+
+    def _key_repeat(self, depressed, keycode, delay_ms=0):
+        timer = self.keys_repeat.get(keycode, None)
+        #cancel existing timer:
+        if timer:
+            gobject.source_remove(timer)
+        #schedule a new one if the key is down:
+        if depressed:
+            self.keys_repeat[keycode] = gobject.timeout_add(delay_ms, self._key_repeat_timeout, keycode)
+
+    def _process_key_repeat(self, proto, packet):
+        (_, keycode) = packet
+        self._key_repeat(True, keycode, self.key_repeat_interval)
 
     def _process_button_action(self, proto, packet):
         (_, id, button, depressed, pointer, modifiers) = packet
@@ -1238,6 +1296,7 @@ add Mod4 = Super_L Super_R
         "resize-window": _process_resize_window,
         "focus": _process_focus,
         "key-action": _process_key_action,
+        "key-repeat": _process_key_repeat,
         "layout-changed": _process_layout,
         "keymap-changed": _process_keymap,
         "button-action": _process_button_action,
