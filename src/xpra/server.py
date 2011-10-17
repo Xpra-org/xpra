@@ -511,9 +511,9 @@ class XpraServer(gobject.GObject):
             setxmodmap("\n".join(xmodmap))
             #do those two separately because they tend to fail...
             may_fail = ["add Mod1 = Meta_L Meta_R",
-                        "add Mod4 = Super_L Super_R",
                         "add Mod2 = Alt_L Alt_R",
-                        "add Mod3 = Hyper_L Hyper_R"]
+                        "add Mod3 = Hyper_L Hyper_R",
+                        "add Mod4 = Super_L Super_R"]
             for mod in may_fail:
                 setxmodmap(mod)
 
@@ -792,7 +792,7 @@ class XpraServer(gobject.GObject):
             self.keys_pressed = {}
 
     def _focus(self, id, modifiers):
-        log.debug("_focus(%s,%s)" % (id, modifiers))
+        log.debug("_focus(%s,%s) has_focus=%s" % (id, modifiers, self._has_focus))
         if self._has_focus != id:
             if id == 0:
                 self._clear_keys_pressed()
@@ -800,7 +800,12 @@ class XpraServer(gobject.GObject):
                 self._wm.get_property("toplevel").reset_x_focus()
             else:
                 window = self._id_to_window[id]
-                window.give_client_focus()
+                #no idea why we can't call this straight away!
+                #but with win32 clients, it would often fail!???
+                def give_focus():
+                    window.give_client_focus()
+                    return False
+                gobject.idle_add(give_focus)
                 if modifiers is not None:
                     self._make_keymask_match(modifiers)
             self._has_focus = id
@@ -1083,6 +1088,7 @@ class XpraServer(gobject.GObject):
         #from this connection as these could potentially set some keys pressed, etc
         #so it is now safe to clear them:
         self._clear_keys_pressed()
+        self._focus(0, [])
         log.info("Connection lost")
 
     def _process_disconnect(self, proto, packet):
@@ -1201,7 +1207,7 @@ class XpraServer(gobject.GObject):
 
     def _key_repeat_timeout(self, keycode):
         keyname = self.keys_pressed.get(keycode, "")
-        log.info("key repeat timeout for keycode %s / '%s' - jitter on the line?", keycode, keyname)
+        log.debug("key repeat timeout for keycode %s / '%s' - clearing it", keycode, keyname)
         self._handle_keycode(False, keycode, keyname)
 
     def _key_repeat(self, depressed, keycode, delay_ms=0):
@@ -1281,6 +1287,7 @@ class XpraServer(gobject.GObject):
             log.info("xpra client disconnected.")
             self._clear_keys_pressed()
             self._protocol = None
+        self._focus(0, [])
         sys.stdout.flush()
 
     def _process_gibberish(self, proto, packet):
