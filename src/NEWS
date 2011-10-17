@@ -1,3 +1,17 @@
+v0.0.7.28 (2011-10-18)
+======================
+	-- much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
+	-- forwarding of system notifications, system bell and custom cursors
+	-- system tray menu to make it easier to change settings and disconnect
+	-- automatically resize Xdummy to match the client's screen size whenever it changes
+	-- PNG image compression support
+	-- JPEG and PNG compression are now optional, only available if the Python Imaging Library is installed
+	-- scale window icons before sending if they are too big
+	-- fixed keyboard mapping for OSX and MS Windows clients
+	-- compensate for line jitter causing keys to repeat
+	-- fixed cython warnings, unused variables, etc
+
+
 v0.0.7.27 (2011-09-20)
 ======================
 	-- compatibility fix for python 2.4 (remove "with" statement)
@@ -19,6 +33,30 @@ v0.0.7.25 (2011-08-31)
 	-- Proper keymap and modifiers support
 
 
+v0.0.7.24 (2011-08-15)
+======================
+	-- Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
+	-- Keyboard fixes for AltGr and special keys for non Unix-like clients
+
+
+v0.0.7.23-2 (2011-07-27)
+======================
+	-- More keymap fixes..
+
+
+v0.0.7.23 (2011-07-20)
+======================
+	-- Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
+	-- Handle keyval level (shifted keys) explicitly, should fix missing key mappings
+	-- More generic option for setting window titles
+	-- Exit if the server dies
+
+
+v0.0.7.22 (2011-06-02)
+======================
+	-- minor fixes: jpeg, man page, etc
+
+
 v0.0.7.21 (2011-05-24)
 ======================
   New features:
@@ -27,11 +65,64 @@ v0.0.7.21 (2011-05-24)
 	-- Disable randr
 
 
+v0.0.7.20 (2011-05-04)
+======================
+	-- more reliable fix for keyboard mapping issues
+
+
+v0.0.7.19 (2011-04-25)
+======================
+	-- xrandr support when running against Xdummy, screen resizes on demand
+	-- fixes for keyboard mapping issues: multiple keycodes for the same key
+
+
+v0.0.7.18-2 (2011-04-04)
+======================
+	-- Fix for older distros (like CentOS) with old versions of pycairo
+
+
+v0.0.7.18 (2011-03-28)
+======================
+	-- Fix jpeg compression on MS Windows
+	-- Add ability to disable clipboard code
+	-- Updated man page
+
+
+v0.0.7.17 (2011-04-04)
+======================
+	-- Honour the pulseaudio flag on client
+
+
 v0.0.7.16 (2010-08-25)
 ======================
-Lots of new features and options.
+	-- Merged upstream changes
+
+
+v0.0.7.15 (2010-07-01)
+======================
+	-- Add option to disable Pulseaudio forwarding as this can be a real network hog
+	-- Use logging rather than print statements
+
+
+v0.0.7.13 (2010-05-04)
+======================
+	-- Ignore minor version differences in the future (must bump to 0.0.8 to cause incompatibility error)
+
+
+v0.0.7.12 (2010-03-13)
+======================
+	-- bump screen resolution
+
+
+v0.0.7.11 (2010-01-11)
+======================
+	-- first rpm spec file
+
+
+v0.0.7.x (2009)
+======================
+	-- Start of this fork
 	-- Password file support
-	-- Ability to disable pulseaudio and clipboard code
 	-- Better OSX/win32 support
 	-- JPEG compression
 	-- Lots of small fixes

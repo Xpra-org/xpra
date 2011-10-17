@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.27
+%define version 0.0.7.28
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -25,7 +25,7 @@ License: GPL
 Requires: %{requires}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
-URL: http://xpra.devloop.org.uk/
+URL: http://xpra.org/
 Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
@@ -43,6 +43,18 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Tue Oct 18 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.28-1
+- much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
+- forwarding of system notifications, system bell and custom cursors
+- system tray menu to make it easier to change settings and disconnect
+- automatically resize Xdummy to match the client's screen size whenever it changes
+- PNG image compression support
+- JPEG and PNG compression are now optional, only available if the Python Imaging Library is installed
+- scale window icons before sending if they are too big
+- fixed keyboard mapping for OSX and MS Windows clients
+- compensate for line jitter causing keys to repeat
+- fixed cython warnings, unused variables, etc
+
 * Fri Sep 22 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.27-1
 - compatibility fix for python 2.4 (remove "with" statement)
 - slow down updates from windows that refresh continuously
@@ -63,7 +75,7 @@ So basically it's screen for remote X apps.
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 
-* Fri Jul 27 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-1
+* Fri Jul 27 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-2
 - More keymap fixes..
 
 * Wed Jul 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-1
@@ -154,7 +166,9 @@ rm -rf $RPM_BUILD_ROOT
 %if %{include_egg}
 %{python_sitelib}/parti_all-*.egg-info
 %endif
-/usr/share/man/man1/xpra.1*
+/usr/share/xpra
+/usr/share/man/man1/xpra.*
+/usr/share/man/man1/parti.*
 
 
 ###
