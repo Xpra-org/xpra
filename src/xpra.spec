@@ -167,6 +167,8 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/parti_all-*.egg-info
 %endif
 /usr/share/xpra
+/usr/share/parti
+/usr/share/wimpiggy
 /usr/share/man/man1/xpra.*
 /usr/share/man/man1/parti.*
 
