@@ -43,6 +43,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Tue Oct 18 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.28-2
+- fix password mode - oops
+
 * Tue Oct 18 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.28-1
 - much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
 - forwarding of system notifications, system bell and custom cursors

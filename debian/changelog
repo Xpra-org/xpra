@@ -1,3 +1,9 @@
+xpra (0.0.7.28-2) UNRELEASED; urgency=low
+
+  * fix password mode - oops
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Oct 2011 00:37:15 +0700
+
 xpra (0.0.7.28-1) UNRELEASED; urgency=low
 
   * much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
