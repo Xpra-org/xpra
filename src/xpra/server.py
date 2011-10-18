@@ -972,9 +972,11 @@ class XpraServer(gobject.GObject):
                 log.error("Password supplied does not match! dropping the connection.")
                 proto.close()
             gobject.timeout_add(1000, login_failed)
+            return False
         self.salt = None            #prevent replay attacks
         log.info("Password matches!")
         sys.stdout.flush()
+        return True
 
     def _process_hello(self, proto, packet):
         (_, capabilities) = packet
