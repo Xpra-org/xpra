@@ -32,8 +32,11 @@ class ClientExtras(ClientExtrasBase):
 
     def exit(self):
         if self.tray_widget:
-            self.tray_widget.set_visible(False)
+            self.hide_tray()
             self.tray_widget = None
+    
+    def hide_tray(self):
+        pass
 
     def get_data_dir(self):
         #is there a better/cleaner way?
@@ -45,7 +48,20 @@ class ClientExtras(ClientExtrasBase):
                 return x
         return  os.getcwd()
 
-    def setup_tray(self, tray_icon_filename):
+    def get_icons_dir(self):
+        return os.path.join(self.get_data_dir(), "icons")
+    
+    def get_tray_icon_filename(self, cmdlineoverride):
+        if cmdlineoverride and os.path.exists(cmdlineoverride):
+            log.debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
+            return  cmdlineoverride
+        f = os.path.join(self.get_icons_dir(), "xpra.png")
+        if os.path.exists(f):
+            log.debug("get_tray_icon_filename using default: %s", f)
+            return  f
+        return  None
+
+    def setup_statusicon(self, tray_icon_filename):
         self.tray_widget = None
         try:
             import pygtk
@@ -54,18 +70,51 @@ class ClientExtras(ClientExtrasBase):
             self.tray_widget = gtk.StatusIcon()
             self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
-            filename = tray_icon_filename or os.path.join(self.get_data_dir(), "icons", "xpra.png")
-            if filename and os.path.exists(filename):
+            filename = self.get_tray_icon_filename(tray_icon_filename)
+            if filename:
                 pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
                 self.tray_widget.set_from_pixbuf(pixbuf)
+            def hide_tray(*args):
+                self.tray_widget.set_visible(False)
+            self.hide_tray = hide_tray
             def show_tray(*args):
                 log.info("showing tray")
                 #session_name will get set during handshake
                 self.tray_widget.set_tooltip(self.client.session_name)
                 self.tray_widget.set_visible(True)
             self.client.connect("handshake-complete", show_tray)
+            return True
         except Exception, e:
-            log.error("failed to setup tray: %s", e)
+            log.error("failed to setup gtk.StatusIcon: %s", e)
+            return False
+
+    def setup_appindicator(self, tray_icon_filename):
+        try:
+            import appindicator            #@UnresolvedImport
+            filename = self.get_tray_icon_filename(tray_icon_filename)
+            self.tray_widget = appindicator.Indicator("Xpra", filename, appindicator.CATEGORY_APPLICATION_STATUS)
+            if hasattr(self.tray_widget, "set_icon_theme_path"):
+                self.tray_widget.set_icon_theme_path(self.get_icons_dir())
+            self.tray_widget.set_attention_icon("xpra.png")
+            if filename:
+                self.tray_widget.set_icon(filename)
+            else:
+                self.tray_widget.set_label("Xpra")
+            def hide_appindicator(*args):
+                self.tray_widget.set_status(appindicator.STATUS_PASSIVE)
+            self.hide_tray = hide_appindicator
+            def show_appindicator(*args):
+                self.tray_widget.set_status(appindicator.STATUS_ACTIVE)
+            self.tray_widget.set_menu(self.menu)
+            self.client.connect("handshake-complete", show_appindicator)
+            return  True
+        except Exception, e:
+            log.info("failed to setup appindicator: %s", e)
+            return False
+
+    def setup_tray(self, tray_icon_filename):
+        if not self.setup_appindicator(tray_icon_filename) and not self.setup_statusicon(tray_icon_filename):
+            log.error("failed to setup gtk.StatusIcon and appindicator, there will be no system-tray icon")
 
     def setup_pynotify(self):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
@@ -94,17 +143,15 @@ class ClientExtras(ClientExtrasBase):
             self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
             self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
             self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
-        def handshake_complete(*args):
-            log.info("handshake_complete(%s)" % str(args))
+        def setup_xprop_xsettings(client):
+            log.debug("setup_xprop_xsettings(%s)", client)
             self._xsettings_watcher = XSettingsWatcher()
-            self._xsettings_watcher.connect("xsettings-changed",
-                                            self._handle_xsettings_changed)
+            self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
             self._handle_xsettings_changed()
             self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
-            self._root_props_watcher.connect("root-prop-changed",
-                                            self._handle_root_prop_changed)
+            self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
             self._root_props_watcher.notify_all()
-        self.client.connect("handshake-complete", handshake_complete)
+        self.client.connect("handshake-complete", setup_xprop_xsettings)
 
     def _handle_xsettings_changed(self, *args):
         blob = self._xsettings_watcher.get_settings_blob()
@@ -114,8 +161,7 @@ class ClientExtras(ClientExtrasBase):
     def _handle_root_prop_changed(self, obj, prop, value):
         assert prop in self.ROOT_PROPS
         if value is not None:
-            self.client.send(["server-settings",
-                       {self.ROOT_PROPS[prop]: value.encode("utf-8")}])
+            self.client.send(["server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")}])
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if not self.has_x11_bell:

@@ -168,7 +168,7 @@ class ClientExtrasBase(object):
 
 
     def get_data_dir(self):
-        return  os.path.dirname(sys.executable)
+        return  os.path.dirname(sys.executable) or os.getcwd()
 
     def get_icon_filename(self, icon_name):
         filename = os.path.join(self.get_data_dir(), 'icons', icon_name)
