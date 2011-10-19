@@ -95,16 +95,12 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 7)
 
             self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
-            self.client.connect("handshake-complete", self.handshake_complete)
+            def dock_ready(*args):
+                self.macapp.ready()
+            self.client.connect("handshake-complete", dock_ready)
         except Exception, e:
             log.error("failed to create dock: %s", e)
 
-    def handshake_complete(self, *args):
-        if self.macapp:
-            self.set_checkboxes()
-            self.update_encodings_menu()
-            self.update_jpeg_menu()
-            self.macapp.ready()
 
     def can_notify(self):
         return  self.growl_notifier is not None

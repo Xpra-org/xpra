@@ -62,6 +62,8 @@ def ensure_item_selected(submenu, item):
     return item
 
 def set_checkeditems(submenu, is_match_func):
+    """ recursively descends a submenu and any of its sub menus
+        and set any "CheckMenuItem" to active if is_match_func(item) """
     if submenu is None:
         return
     for x in submenu.get_children():
@@ -210,6 +212,7 @@ class ClientExtrasBase(object):
 
 
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
+        """ Utility method for easily creating an ImageMenuItem """
         menu_item = gtk.ImageMenuItem(title)
         image = None
         if icon_name:
@@ -229,6 +232,7 @@ class ClientExtrasBase(object):
         return menu_item
 
     def checkitem(self, title, cb=None):
+        """ Utility method for easily creating a CheckMenuItem """
         check_item = gtk.CheckMenuItem(title)
         if cb:
             check_item.connect("toggled", cb)
@@ -253,11 +257,25 @@ class ClientExtrasBase(object):
         return  self.menuitem("About", "information.png", None, self.about)
 
     def make_bellmenuitem(self):
-        self.bell_menuitem = self.checkitem("Bell", self.bell_toggled)
+        def bell_toggled(*args):
+            self.client.bell_enabled = self.bell_menuitem.get_active()
+            log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
+        self.bell_menuitem = self.checkitem("Bell", bell_toggled)
+        def set_bellmenuitem(*args):
+            self.bell_menuitem.set_active(self.client.bell_enabled)
+            self.bell_menuitem.set_sensitive(self.client.server_capabilities.get("bell", False))
+        self.client.connect("handshake-complete", set_bellmenuitem)
         return  self.bell_menuitem
 
     def make_notificationsmenuitem(self):
-        self.notifications_menuitem = self.checkitem("Notifications", self.notifications_toggled)
+        def notifications_toggled(*args):
+            self.client.notifications_enabled = self.notifications_menuitem.get_active()
+            log.debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
+        self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
+        def set_notifications_menuitem(*args):
+            self.notifications_menuitem.set_active(self.client.notifications_enabled)
+            self.notifications_menuitem.set_sensitive(self.client.server_capabilities.get("notifications", False))
+        self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
     def make_encodingsmenuitem(self):
@@ -265,6 +283,24 @@ class ClientExtrasBase(object):
         self.encodings_submenu = gtk.Menu()
         encodings.set_submenu(self.encodings_submenu)
         self.popup_menu_workaround(self.encodings_submenu)
+        def set_encodingsmenuitem(*args):
+            for encoding in ENCODINGS:
+                encoding_item = gtk.CheckMenuItem(encoding)
+                encoding_item.get_label()
+                def encoding_changed(item):
+                    item = ensure_item_selected(self.encodings_submenu, item)
+                    enc = item.get_label()
+                    if self.client.encoding!=enc:
+                        self.client.set_encoding(enc)
+                        log.debug("setting encoding to %s", enc)
+                        self.update_jpeg_menu()
+                        self.updated_menus()
+                encoding_item.set_active(encoding==self.client.encoding)
+                encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
+                encoding_item.connect("toggled", encoding_changed)
+                self.encodings_submenu.append(encoding_item)
+            self.encodings_submenu.show_all()
+        self.client.connect("handshake-complete", set_encodingsmenuitem)
         return encodings
 
     def make_layoutsmenuitem(self):
@@ -333,6 +369,7 @@ class ClientExtrasBase(object):
         self.popup_menu_workaround(self.jpeg_submenu)
         jpeg_options = [10, 50, 80, 95]
         if self.client.jpegquality>0 and self.client.jpegquality not in jpeg_options:
+            """ add the current value to the list of options """
             i = 0
             for x in jpeg_options:
                 if self.client.jpegquality<x:
@@ -351,38 +388,22 @@ class ClientExtrasBase(object):
             qi.connect('activate', set_jpeg_quality)
             self.jpeg_submenu.append(qi)
         self.jpeg_submenu.show_all()
+        def set_jpegmenu(*args):
+            if self.jpeg_quality:
+                self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
+                self.updated_menus()
+        self.client.connect("handshake-complete", set_jpegmenu)
         return self.jpeg_quality
 
     def updated_menus(self):
         """ subclasses may override this method - see darwin """
         pass
 
-    def update_jpeg_menu(self, *args):
-        if self.jpeg_quality:
-            self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
-            self.updated_menus()
-
-    def update_encodings_menu(self, *args):
-        if self.encodings_submenu:
-            for encoding in ENCODINGS:
-                encoding_item = gtk.CheckMenuItem(encoding)
-                encoding_item.get_label()
-                def encoding_changed(item):
-                    item = ensure_item_selected(self.encodings_submenu, item)
-                    enc = item.get_label()
-                    if self.client.encoding!=enc:
-                        self.client.set_encoding(enc)
-                        log.debug("setting encoding to %s", enc)
-                        self.update_jpeg_menu()
-                        self.updated_menus()
-                encoding_item.set_active(encoding==self.client.encoding)
-                encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
-                encoding_item.connect("toggled", encoding_changed)
-                self.encodings_submenu.append(encoding_item)
-            self.encodings_submenu.show_all()
-
     def make_refreshmenuitem(self):
-        return self.menuitem("Refresh", "retry.png", None, self.force_refresh)
+        def force_refresh(*args):
+            log.debug("force refresh")
+            self.client.send_refresh_all()
+        return self.menuitem("Refresh", "retry.png", None, force_refresh)
 
     def make_disconnectmenuitem(self):
         return self.menuitem("Disconnect", "quit.png", None, self.quit)
@@ -391,7 +412,6 @@ class ClientExtrasBase(object):
         return self.menuitem("Close Menu", "close.png", None, self.close_menu)
 
     def setup_menu(self, show_close=False):
-        self.client.connect("handshake-complete", self.handshake_complete)
         self.menu_shown = False
         menu = gtk.Menu()
         menu.set_title(self.client.session_name or "Xpra")
@@ -455,32 +475,6 @@ class ClientExtrasBase(object):
         log.debug("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)
-
-    def bell_toggled(self, *args):
-        self.client.bell_enabled = self.bell_menuitem.get_active()
-        log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
-
-    def notifications_toggled(self, *args):
-        self.client.notifications_enabled = self.notifications_menuitem.get_active()
-        log.debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
-
-    def force_refresh(self, *args):
-        log.debug("force refresh")
-        self.client.send_refresh_all()
-
-
-    def set_checkboxes(self):
-        self.bell_menuitem.set_active(self.client.bell_enabled)
-        self.bell_menuitem.set_sensitive(self.client.server_capabilities.get("bell", False))
-        self.notifications_menuitem.set_active(self.client.notifications_enabled)
-        self.notifications_menuitem.set_sensitive(self.client.server_capabilities.get("notifications", False))
-
-    def handshake_complete(self, *args):
-        self.set_checkboxes()
-        #populate encoding submenu and show unsupported encodings as greyed out:
-        self.update_encodings_menu()
-        #jpeg menu: enable it when encoding uses jpeg:
-        self.update_jpeg_menu()
 
 
 
