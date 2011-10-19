@@ -9,6 +9,12 @@
 import sys
 import os
 
+import pygtk
+pygtk.require("2.0")
+import gtk
+_display = gtk.gdk.get_display()
+assert _display, "cannot open the display with GTK, is DISPLAY set?"
+
 from wimpiggy.keys import grok_modifier_map
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is part of the gui "interface"
@@ -64,9 +70,6 @@ class ClientExtras(ClientExtrasBase):
     def setup_statusicon(self, tray_icon_filename):
         self.tray_widget = None
         try:
-            import pygtk
-            pygtk.require("2.0")
-            import gtk
             self.tray_widget = gtk.StatusIcon()
             self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
