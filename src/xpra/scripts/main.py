@@ -291,19 +291,6 @@ def connect_or_fail(display_desc):
     else:
         assert False, "unsupported display type in connect"
 
-def handshake_complete_msg(*args):
-    sys.stdout.write("Attached (press Control-C to detach)\n")
-    sys.stdout.flush()
-
-def got_gibberish_msg(obj, data):
-    if "assword" in data:
-        sys.stdout.write("Your ssh program appears to be asking for a password.\n"
-                         + GOT_PASSWORD_PROMPT_SUGGESTION)
-        sys.stdout.flush()
-    if "login" in data:
-        sys.stdout.write("Your ssh program appears to be asking for a username.\n"
-                         "Perhaps try using something like 'ssh:USER@host:display'?\n")
-        sys.stdout.flush()
 
 def run_client(parser, opts, extra_args):
     from xpra.client import XpraClient
@@ -316,6 +303,18 @@ def run_client(parser, opts, extra_args):
         parser.error("use --title or --title-suffix but not both!")
 
     app = XpraClient(conn, opts)
+    def handshake_complete_msg(*args):
+        sys.stdout.write("Attached (press Control-C to detach)\n")
+        sys.stdout.flush()
+    def got_gibberish_msg(obj, data):
+        if "assword" in data:
+            sys.stdout.write("Your ssh program appears to be asking for a password.\n"
+                             + GOT_PASSWORD_PROMPT_SUGGESTION)
+            sys.stdout.flush()
+        if "login" in data:
+            sys.stdout.write("Your ssh program appears to be asking for a username.\n"
+                             "Perhaps try using something like 'ssh:USER@host:display'?\n")
+            sys.stdout.flush()
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
     app.run()
