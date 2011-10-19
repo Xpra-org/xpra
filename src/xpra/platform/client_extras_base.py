@@ -248,9 +248,15 @@ class ClientExtrasBase(object):
     def menu_deactivated(self, *args):
         self.menu_shown = False
 
-    def activate_menu(self, *args):
+    def activate_menu(self, widget, *args):
+        self.show_menu(1, 0)
+
+    def popup_menu(self, widget, button, time, *args):
+        self.show_menu(button, time)
+
+    def show_menu(self, button, time):
         self.close_menu()
-        self.menu.popup(None, None, None, 1, 0, None)
+        self.menu.popup(None, None, None, button, time, None)
         self.menu_shown = True
 
     def make_aboutmenuitem(self):

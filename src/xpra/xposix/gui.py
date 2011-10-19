@@ -52,7 +52,7 @@ class ClientExtras(ClientExtrasBase):
             pygtk.require("2.0")
             import gtk
             self.tray_widget = gtk.StatusIcon()
-            self.tray_widget.connect('popup-menu', self.activate_menu)
+            self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
             filename = tray_icon_filename or os.path.join(self.get_data_dir(), "icons", "xpra.png")
             if filename and os.path.exists(filename):
