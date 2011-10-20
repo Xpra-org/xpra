@@ -328,11 +328,6 @@ class XpraClient(gobject.GObject):
         gobject.GObject.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
-        if opts.window_icon:
-            try:
-                gtk.window_set_default_icon_from_file(opts.window_icon)
-            except Exception, e:
-                log.error("failed to set window icon %s: %s, continuing", opts.window_icon, e)
         title = opts.title
         if opts.title_suffix is not None:
             title = "@title@ %s" % opts.title_suffix

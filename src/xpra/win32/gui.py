@@ -16,7 +16,7 @@ log = Logger()
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
-        ClientExtrasBase.__init__(self, client)
+        ClientExtrasBase.__init__(self, client, opts)
         self.setup_menu()
         self.setup_tray(opts.tray_icon)
         self.setup_clipboard_helper(ClipboardProtocolHelper)

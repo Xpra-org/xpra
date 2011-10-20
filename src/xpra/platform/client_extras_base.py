@@ -77,9 +77,20 @@ def set_checkeditems(submenu, is_match_func):
 
 class ClientExtrasBase(object):
 
-    def __init__(self, client):
+    def __init__(self, client, opts):
         self.client = client
         self.license_text = None
+        self.set_window_icon(opts.window_icon)
+
+    def set_window_icon(self, window_icon):
+        if not window_icon:
+            window_icon = self.get_icon_filename("xpra.png")
+        if window_icon and os.path.exists(window_icon):
+            try:
+                gtk.window_set_default_icon_from_file(window_icon)
+                log.debug("set default window icon to %s", window_icon)
+            except Exception, e:
+                log.error("failed to set window icon %s: %s, continuing", window_icon, e)
 
     def quit(self, *args):
         gtk_main_quit_really()
