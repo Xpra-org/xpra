@@ -17,8 +17,6 @@ assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
 from wimpiggy.keys import grok_modifier_map
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
-assert ClipboardProtocolHelper	#make pydev happy: this import is needed as it is part of the gui "interface"
-
 from xpra.xposix.xsettings import XSettingsWatcher
 from xpra.xposix.xroot_props import XRootPropWatcher
 from xpra.platform.client_extras_base import ClientExtrasBase
@@ -35,14 +33,12 @@ class ClientExtras(ClientExtrasBase):
         self.setup_xprops(opts.pulseaudio)
         self.setup_x11_bell()
         self.setup_pynotify()
+        self.setup_clipboard_helper(ClipboardProtocolHelper)
 
     def exit(self):
         if self.tray_widget:
             self.hide_tray()
             self.tray_widget = None
-    
-    def hide_tray(self):
-        pass
 
     def get_data_dir(self):
         #is there a better/cleaner way?
@@ -56,7 +52,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_icons_dir(self):
         return os.path.join(self.get_data_dir(), "icons")
-    
+
     def get_tray_icon_filename(self, cmdlineoverride):
         if cmdlineoverride and os.path.exists(cmdlineoverride):
             log.debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
@@ -88,7 +84,7 @@ class ClientExtras(ClientExtrasBase):
             self.client.connect("handshake-complete", show_tray)
             return True
         except Exception, e:
-            log.error("failed to setup gtk.StatusIcon: %s", e)
+            log.debug("could not setup gtk.StatusIcon: %s", e)
             return False
 
     def setup_appindicator(self, tray_icon_filename):
@@ -112,8 +108,13 @@ class ClientExtras(ClientExtrasBase):
             self.client.connect("handshake-complete", show_appindicator)
             return  True
         except Exception, e:
-            log.info("failed to setup appindicator: %s", e)
+            log.debug("could not setup appindicator: %s", e)
             return False
+
+    def hide_tray(self):
+        """ this method will be re-defined by one  of the setup_* methods
+            (if one succeeds) """
+        pass
 
     def setup_tray(self, tray_icon_filename):
         if not self.setup_appindicator(tray_icon_filename) and not self.setup_statusicon(tray_icon_filename):

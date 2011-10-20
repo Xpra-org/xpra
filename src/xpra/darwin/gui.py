@@ -11,26 +11,13 @@ from wimpiggy.log import Logger
 log = Logger()
 
 
-class ClipboardProtocolHelper(object):
-    def __init__(self, send_packet_cb):
-        self.send = send_packet_cb
-
-    def send_all_tokens(self):
-        pass
-
-    def process_clipboard_packet(self, packet):
-        packet_type = packet[0]
-        if packet_type == "clipboard_request":
-            (_, request_id, selection, _) = packet
-            self.send(["clipboard-contents-none", request_id, selection])
-
-
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client)
         self.locate_icon_filename(opts.tray_icon)
         self.setup_growl()
         self.setup_macdock()
+        self.clipboard_helper = None
 
     def setup_growl(self):
         self.growl_notifier = None
@@ -39,7 +26,7 @@ class ClientExtras(ClientExtrasBase):
             name = self.client.session_name or "Xpra"
             self.growl_notifier = Growl.GrowlNotifier(name, ["highlight"])
             self.growl_notifier.register()
-            log.error("using growl for notications")
+            log.info("using growl for notications")
             def set_session_name(*args):
                 self.growl_notifier.applicationName = self.client.session_name
             if not self.client.session_name:
@@ -58,7 +45,7 @@ class ClientExtras(ClientExtrasBase):
             x = os.path.join(self.get_data_dir(), "icons", "xpra.png")
             if os.path.exists(x):
                 self.icon_filename = x
-        log.info("darwin client extras using icon_filename=%s", self.icon_filename)
+        log.debug("darwin client extras using icon_filename=%s", self.icon_filename)
 
     def updated_menus(self):
         self.macapp.sync_menubar()
@@ -79,7 +66,7 @@ class ClientExtras(ClientExtrasBase):
             self.hidden_window = gtk.Window()
             self.hidden_window.add(menu)
             quit_item = gtk.MenuItem("Quit")
-            quit_item.connect("activate", self.exit)
+            quit_item.connect("activate", self.quit)
             menu.add(quit_item)
             menu.show_all()
             self.macapp.set_menu_bar(menu)
@@ -94,8 +81,23 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 6)
             self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 7)
 
-            self.macapp.connect("NSApplicationBlockTermination", gtk.main_quit)
+            #dock menu (does not work!)
+            #menu = gtk.Menu()
+            #quit_item = gtk.MenuItem("Disconnect")
+            #quit_item.connect("activate", self.quit)
+            #menu.add(quit_item)
+            #menu.show_all()
+            #self.macapp.set_dock_menu(menu)
+
+            self.macapp.connect("NSApplicationBlockTermination", self.quit)
+            def active(*args):
+                log.debug("active()")
+            def inactive(*args):
+                log.debug("inactive()")
+            self.macapp.connect("NSApplicationDidBecomeActive", active)
+            self.macapp.connect("NSApplicationWillResignActive", inactive)
             def dock_ready(*args):
+                log.debug("dock_ready()")
                 self.macapp.ready()
             self.client.connect("handshake-complete", dock_ready)
         except Exception, e:

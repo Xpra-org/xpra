@@ -19,7 +19,7 @@ log = Logger()
 
 from xpra.protocol import Protocol
 from xpra.keys import mask_to_names, MODIFIER_NAMES
-from xpra.platform.gui import ClipboardProtocolHelper, ClientExtras
+from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 
 import xpra
@@ -319,6 +319,7 @@ gobject.type_register(ClientWindow)
 
 class XpraClient(gobject.GObject):
     __gsignals__ = {
+        "clipboard-toggled": n_arg_signal(0),
         "handshake-complete": n_arg_signal(0),
         "received-gibberish": n_arg_signal(1),
         }
@@ -352,6 +353,7 @@ class XpraClient(gobject.GObject):
         self.bell_enabled = True
         self.notifications_enabled = True
         self._client_extras = ClientExtras(self, opts)
+        self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -370,12 +372,6 @@ class XpraClient(gobject.GObject):
         self._keymap.connect("keys-changed", self._keys_changed)
         self._xsettings_watcher = None
         self._root_props_watcher = None
-
-        # FIXME: these should perhaps be merged.
-        if opts.clipboard:
-            self._clipboard_helper = ClipboardProtocolHelper(self.send)
-        else:
-            self._clipboard_helper = None
 
         self._focused = None
         def compute_receive_bandwidth(delay):
@@ -617,6 +613,7 @@ class XpraClient(gobject.GObject):
             capabilities_request["xmodmap_data"] = self.xmodmap_data
         capabilities_request["cursors"] = True
         capabilities_request["bell"] = True
+        capabilities_request["clipboard"] = self.clipboard_enabled
         capabilities_request["notifications"] = self._client_extras.can_notify()
         capabilities_request["packet_size"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
@@ -696,8 +693,6 @@ class XpraClient(gobject.GObject):
                          "Please complain to "
                          "parti-discuss@partiwm.org"
                          % (avail_w, avail_h, root_w, root_h))
-        if self._clipboard_helper:
-            self._clipboard_helper.send_all_tokens()
         self._protocol._send_size = capabilities.get("packet_size", False)
         randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s" % randr)
@@ -714,8 +709,18 @@ class XpraClient(gobject.GObject):
             self.encoding = e
         self.bell_enabled = capabilities.get("bell", False)
         self.notifications_enabled = capabilities.get("notifications", False)
+        clipboard_server_support = capabilities.get("clipboard", True) 
+        self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
+        #ui may want to know this is now set:
+        self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
+        if clipboard_server_support:
+            #from now on, we will send a message to the server whenever the clipboard flag changes:
+            self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
+
+    def send_clipboard_enabled_status(self, *args):
+        self.send(["set-clipboard-enabled", self.clipboard_enabled])
 
     def set_encoding(self, encoding):
         assert encoding in ENCODINGS
@@ -842,8 +847,8 @@ class XpraClient(gobject.GObject):
         packet_type = packet[0]
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
-            if self._clipboard_helper:
-                self._clipboard_helper.process_clipboard_packet(packet)
+            if self.clipboard_enabled:
+                self._client_extras.process_clipboard_packet(packet)
         else:
             self._packet_handlers[packet_type](self, packet)
 

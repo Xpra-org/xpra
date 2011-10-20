@@ -87,6 +87,30 @@ class ClientExtrasBase(object):
     def exit(self):
         pass
 
+    def supports_clipboard(self):
+        return self.clipboard_helper is not None
+
+    def process_clipboard_packet(self, packet):
+        if self.clipboard_helper:
+            self.clipboard_helper.process_clipboard_packet(packet)
+        else:
+            log.warn("received a clipboard packet but clipboard is not supported!")
+
+    def setup_clipboard_helper(self, helperClass):
+        def clipboard_send(data):
+            if self.client.clipboard_enabled:
+                self.client.send(data)
+            else:
+                log.info("clipboard is disabled, not sending clipboard packet")
+        self.clipboard_helper = helperClass(clipboard_send)
+        def clipboard_toggled(*args):
+            log.debug("clipboard_toggled enabled=%s", self.client.clipboard_enabled)
+            if self.client.clipboard_enabled:
+                self.clipboard_helper.send_all_tokens()
+            else:
+                pass    #FIXME: todo!
+        self.client.connect("clipboard-toggled", clipboard_toggled)
+
     def can_notify(self):
         return  False
 
@@ -284,6 +308,18 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
+    def make_clipboardmenuitem(self):
+        def clipboard_toggled(*args):
+            self.client.clipboard_enabled = self.clipboard_menuitem.get_active()
+            log.debug("clipboard_toggled(%s) clipboard_enabled=%s", args, self.client.clipboard_enabled)
+            self.client.emit("clipboard-toggled")
+        self.clipboard_menuitem = self.checkitem("Clipboard", clipboard_toggled)
+        def set_clipboard_menuitem(*args):
+            self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
+            self.clipboard_menuitem.set_sensitive(self.client.server_capabilities.get("clipboard", True))
+        self.client.connect("handshake-complete", set_clipboard_menuitem)
+        return self.clipboard_menuitem
+
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "configure.png", "Choose picture data encoding", None)
         self.encodings_submenu = gtk.Menu()
@@ -303,6 +339,7 @@ class ClientExtrasBase(object):
                         self.updated_menus()
                 encoding_item.set_active(encoding==self.client.encoding)
                 encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
+                encoding_item.set_draw_as_radio(True)
                 encoding_item.connect("toggled", encoding_changed)
                 self.encodings_submenu.append(encoding_item)
             self.encodings_submenu.show_all()
@@ -326,6 +363,7 @@ class ClientExtrasBase(object):
                     self.client.xkbmap_variant = variant
                     self.client.send_layout()
             l = self.checkitem(title, set_layout)
+            l.set_draw_as_radio(True)
             l.keyboard_layout = layout
             l.keyboard_variant = variant
             return l
@@ -390,6 +428,7 @@ class ClientExtrasBase(object):
                 self.client.send_jpeg_quality(q)
         for q in jpeg_options:
             qi = gtk.CheckMenuItem("%s%%" % q)
+            qi.set_draw_as_radio(True)
             qi.set_active(q==self.client.jpegquality)
             qi.connect('activate', set_jpeg_quality)
             self.jpeg_submenu.append(qi)
@@ -430,6 +469,7 @@ class ClientExtrasBase(object):
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())
+        menu.append(self.make_clipboardmenuitem())
         if len(ENCODINGS)>1:
             menu.append(self.make_encodingsmenuitem())
         else:

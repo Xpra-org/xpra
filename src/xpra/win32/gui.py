@@ -9,22 +9,9 @@
 import os.path
 
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
+from xpra.platform.default_clipboard import ClipboardProtocolHelper
 from wimpiggy.log import Logger
 log = Logger()
-
-
-class ClipboardProtocolHelper(object):
-    def __init__(self, send_packet_cb):
-        self.send = send_packet_cb
-
-    def send_all_tokens(self):
-        pass
-
-    def process_clipboard_packet(self, packet):
-        packet_type = packet[0]
-        if packet_type == "clipboard_request":
-            (_, request_id, selection, _) = packet
-            self.send(["clipboard-contents-none", request_id, selection])
 
 
 class ClientExtras(ClientExtrasBase):
@@ -32,6 +19,7 @@ class ClientExtras(ClientExtrasBase):
         ClientExtrasBase.__init__(self, client)
         self.setup_menu()
         self.setup_tray(opts.tray_icon)
+        self.setup_clipboard_helper(ClipboardProtocolHelper)
 
     def exit(self):
         if self.tray:
@@ -43,7 +31,6 @@ class ClientExtras(ClientExtrasBase):
     def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         if self.notify:
             self.notify(self.tray.getHWND(), summary, body, expire_timeout)
-
 
 
     def setup_tray(self, tray_icon_filename):

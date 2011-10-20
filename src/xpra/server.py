@@ -372,8 +372,14 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
 
         ### Clipboard handling:
+        self.clipboard_enabled = clipboard
         if clipboard:
-            self._clipboard_helper = ClipboardProtocolHelper(self._send)
+            def send_clipboard(packet):
+                if self.clipboard_enabled:
+                    self._send(packet)
+                else:
+                    log.debug("clipboard is disabled, dropping packet")
+            self._clipboard_helper = ClipboardProtocolHelper(send_clipboard)
         else:
             self._clipboard_helper = None
 
@@ -1037,7 +1043,8 @@ class XpraServer(gobject.GObject):
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = capabilities.get("notifications", False)
-        log.debug("send_cursors=%s, send_bell=%s, send_notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
+        self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
+        log.debug("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = capabilities.get("png_window_icons", False) and "png" in ENCODINGS
         # now we can set the modifiers to match the client
@@ -1071,6 +1078,7 @@ class XpraServer(gobject.GObject):
         capabilities["cursors"] = True
         capabilities["bell"] = True
         capabilities["notifications"] = True
+        capabilities["clipboard"] = self.clipboard_enabled
         capabilities["png_window_icons"] = "png" in ENCODINGS
         capabilities["encodings"] = ENCODINGS
         capabilities["encoding"] = self.encoding
@@ -1095,6 +1103,14 @@ class XpraServer(gobject.GObject):
 
     def _process_disconnect(self, proto, packet):
         self.disconnect("on client request")
+
+    def _process_clipboard_enabled_status(self, proto, packet):
+        (_, clipboard_enabled) = packet
+        if self._clipboard_helper:
+            self.clipboard_enabled = clipboard_enabled
+            log.debug("toggled clipboard to %s", self.clipboard_enabled)
+        else:
+            log.warn("client toggled clipboard-enabled but we do not support clipboard at all! ignoring it")
 
     def _process_server_settings(self, proto, packet):
         (_, settings) = packet
@@ -1197,7 +1213,7 @@ class XpraServer(gobject.GObject):
         log.debug("now %spressing keycode=%s, keyname=%s" % (depressed, keycode, keyname))
         if keycode:
             self._handle_keycode(depressed, keycode, keyname)
-    
+
     def _handle_keycode(self, depressed, keycode, keyname):
         xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
         if depressed and keycode not in self.keys_pressed:
@@ -1308,6 +1324,7 @@ class XpraServer(gobject.GObject):
         "key-repeat": _process_key_repeat,
         "layout-changed": _process_layout,
         "keymap-changed": _process_keymap,
+        "set-clipboard-enabled": _process_clipboard_enabled_status,
         "button-action": _process_button_action,
         "pointer-position": _process_pointer_position,
         "close-window": _process_close_window,
@@ -1326,7 +1343,7 @@ class XpraServer(gobject.GObject):
         packet_type = packet[0]
         if (isinstance(packet_type, str)
             and packet_type.startswith("clipboard-")):
-            if self._clipboard_helper:
+            if self.clipboard_enabled:
                 self._clipboard_helper.process_clipboard_packet(packet)
         else:
             self._packet_handlers[packet_type](self, proto, packet)
