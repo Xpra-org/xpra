@@ -826,6 +826,18 @@ class XpraServer(gobject.GObject):
             log("Queuing packet: %s", packet)
             self._protocol.source.queue_ordinary_packet(packet)
 
+    def _raw_send(self, proto, packet):
+        #this method is only used before we create the server source
+        socket = proto._conn._s
+        log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
+        from xpra.bencode import bencode
+        import select
+        data = bencode(packet)
+        written = 0
+        while written < len(data):
+            select.select([], [socket], [])
+            written += socket.send(data[written:])
+
     def _damage(self, window, x, y, width, height):
         if self._protocol is not None and self._protocol.source is not None:
             id = self._window_to_id[window]
@@ -959,15 +971,7 @@ class XpraServer(gobject.GObject):
         self.salt = "%s" % uuid.uuid4()
         log.info("Password required, sending challenge")
         packet = ("challenge", self.salt)
-        socket = proto._conn._s
-        log.debug("proto=%s, conn=%s, socket=%s" % (repr(proto), repr(proto._conn), socket))
-        from xpra.bencode import bencode
-        import select
-        data = bencode(packet)
-        written = 0
-        while written < len(data):
-            select.select([], [socket], [])
-            written += socket.send(data[written:])
+        self._raw_send(proto, packet)
 
     def _verify_password(self, proto, client_hash):
         passwordFile = open(self.password_file, "rU")
@@ -976,7 +980,11 @@ class XpraServer(gobject.GObject):
         if client_hash != hash.hexdigest():
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
-                proto.close()
+                try:
+                    self._raw_send(proto, ["disconnect", "invalid password"])
+                    proto.close()
+                except Exception, e:
+                    log.error("password does not match and failed to close connection %s: %s", proto, e)
             gobject.timeout_add(1000, login_failed)
             return False
         self.salt = None            #prevent replay attacks
