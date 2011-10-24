@@ -416,6 +416,7 @@ class WindowModel(BaseWindowModel):
 
         BaseWindowModel.__init__(self, client_window)
         self.parking_window = parking_window
+        self._setup_done = False
 
         self.connect("notify::iconic", self._handle_iconic_update)
 
@@ -468,6 +469,12 @@ class WindowModel(BaseWindowModel):
             trap.call(setup_client)
         except XError, e:
             raise Unmanageable, e
+        self._setup_done = True
+
+    def prop_get(self, key, type):
+        # Utility wrapper for prop_get on the client_window
+        # also allows us to ignore property errors during setup_client
+        return prop_get(self.client_window, key, type, ignore_errors=not self._setup_done)
 
     def do_wimpiggy_xkb_event(self, event):
         log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)
@@ -627,8 +634,7 @@ class WindowModel(BaseWindowModel):
             self._property_handlers[name](self)
 
     def _handle_wm_hints(self):
-        wm_hints = prop_get(self.client_window,
-                            "WM_HINTS", "wm-hints")
+        wm_hints = self.prop_get("WM_HINTS", "wm-hints")
         if wm_hints is not None:
             # GdkWindow or None
             self._internal_set_property("group-leader", wm_hints.group_leader)
@@ -645,8 +651,7 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_HINTS"] = _handle_wm_hints
 
     def _handle_wm_normal_hints(self):
-        size_hints = prop_get(self.client_window,
-                              "WM_NORMAL_HINTS", "wm-size-hints")
+        size_hints = self.prop_get("WM_NORMAL_HINTS", "wm-size-hints")
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
@@ -659,8 +664,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
     def _handle_title_change(self):
-        wm_name = prop_get(self.client_window, "WM_NAME", "latin1")
-        net_wm_name = prop_get(self.client_window, "_NET_WM_NAME", "utf8")
+        wm_name = self.prop_get("WM_NAME", "latin1")
+        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8")
         if net_wm_name is not None:
             self._internal_set_property("title", net_wm_name)
         else:
@@ -671,8 +676,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_icon_title_change(self):
-        wm_icon_name = prop_get(self.client_window, "WM_ICON_NAME", "latin1")
-        net_wm_icon_name = prop_get(self.client_window, "_NET_WM_ICON_NAME", "utf8")
+        wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1")
+        net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8")
         if net_wm_icon_name is not None:
             self._internal_set_property("icon-title", net_wm_icon_name)
         else:
@@ -683,12 +688,11 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_NET_WM_ICON_NAME"] = _handle_icon_title_change
 
     def _handle_wm_strut(self):
-        partial = prop_get(self.client_window,
-                           "_NET_WM_STRUT_PARTIAL", "strut-partial")
+        partial = self.prop_get("_NET_WM_STRUT_PARTIAL", "strut-partial")
         if partial is not None:
             self._internal_set_property("strut", partial)
             return
-        full = prop_get(self.client_window, "_NET_WM_STRUT", "strut")
+        full = self.prop_get("_NET_WM_STRUT", "strut")
         # Might be None:
         self._internal_set_property("strut", full)
 
@@ -697,7 +701,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_net_wm_icon(self):
         log("_NET_WM_ICON changed on %s, re-reading", self.client_window.xid)
-        surf = prop_get(self.client_window, "_NET_WM_ICON", "icon")
+        surf = self.prop_get("_NET_WM_ICON", "icon")
         if surf is not None:
             # FIXME: There is no Pixmap.new_for_display(), so this isn't
             # actually display-clean.  Oh well.
@@ -725,8 +729,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))
 
-        class_instance = prop_get(self.client_window,
-                                  "WM_CLASS", "latin1")
+        class_instance = self.prop_get("WM_CLASS", "latin1")
         if class_instance:
             try:
                 (c, i, _) = class_instance.split("\0")
@@ -735,20 +738,17 @@ class WindowModel(BaseWindowModel):
             else:
                 self._internal_set_property("class-instance", (c, i))
 
-        transient_for = prop_get(self.client_window,
-                                 "WM_TRANSIENT_FOR", "window")
+        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
         # May be None
         self._internal_set_property("transient-for", transient_for)
 
-        protocols = prop_get(self.client_window,
-                             "WM_PROTOCOLS", ["atom"])
+        protocols = self.prop_get("WM_PROTOCOLS", ["atom"])
         if protocols is None:
             protocols = []
         self._internal_set_property("protocols", protocols)
         self.notify("can-focus")
 
-        window_types = prop_get(self.client_window,
-                                "_NET_WM_WINDOW_TYPE", ["atom"])
+        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
         if window_types:
             self._internal_set_property("window-type", window_types)
         else:
@@ -762,15 +762,13 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("window-type",
                               [gtk.gdk.atom_intern(assume_type)])
 
-        pid = prop_get(self.client_window,
-                       "_NET_WM_PID", "u32")
+        pid = self.prop_get("_NET_WM_PID", "u32")
         if pid is not None:
             self._internal_set_property("pid", pid)
         else:
             self._internal_set_property("pid", -1)
 
-        client_machine = prop_get(self.client_window,
-                                  "WM_CLIENT_MACHINE", "latin1")
+        client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1")
         # May be None
         self._internal_set_property("client-machine", client_machine)
 
@@ -789,8 +787,7 @@ class WindowModel(BaseWindowModel):
         # initial states are read off from the client, and (2) is accomplished
         # by having WM_HINTS affect _NET_WM_STATE.  But this means that
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
-        net_wm_state = prop_get(self.client_window,
-                                "_NET_WM_STATE", ["atom"])
+        net_wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
         if net_wm_state:
             self._internal_set_property("state", ImmutableSet(net_wm_state))
         else:
