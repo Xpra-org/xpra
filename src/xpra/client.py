@@ -759,6 +759,12 @@ class XpraClient(gobject.GObject):
             pixbuf = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
             x = max(0, min(xhot, w-1))
             y = max(0, min(yhot, h-1))
+            size = gtk.gdk.display_get_default().get_default_cursor_size()
+            if size>0 and (size<w or size<h):
+                ratio = float(max(w,h))/size
+                pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gtk.gdk.INTERP_BILINEAR)
+                x = int(x/ratio)
+                y = int(y/ratio)
             cursor = gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, x, y)
         for window in self._window_to_id.keys():
             window.window.set_cursor(cursor)
