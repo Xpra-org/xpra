@@ -152,9 +152,14 @@ class Protocol(object):
         if packet is not None:
             log("writing %s", dump_packet(packet), type="raw.write")
             data = bencode(packet)
-            if self._send_size:
-                self._queue_write("PS%014d" % len(data))
-            self._queue_write(data, True)
+            l = len(data)
+            if l<=1024:
+                #send size and data together (low copy overhead):
+                self._queue_write("PS%014d%s" % (l, data), True)
+            else:
+                if self._send_size:
+                    self._queue_write("PS%014d" % l)
+                self._queue_write(data, True)
 
     def _write_thread_loop(self):
         try:
