@@ -822,7 +822,8 @@ class XpraClient(gobject.GObject):
         self.quit()
 
     def _process_gibberish(self, packet):
-        [_, data] = packet
+        (_, data) = packet
+        log.info("Received uninterpretable nonsense: %s", repr(data))
         self.emit("received-gibberish", data)
 
     _packet_handlers = {
