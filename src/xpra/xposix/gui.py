@@ -77,7 +77,7 @@ class ClientExtras(ClientExtrasBase):
                 self.tray_widget.set_visible(False)
             self.hide_tray = hide_tray
             def show_tray(*args):
-                log.info("showing tray")
+                log.debug("showing tray")
                 #session_name will get set during handshake
                 self.tray_widget.set_tooltip(self.client.session_name)
                 self.tray_widget.set_visible(True)
