@@ -6,7 +6,7 @@
 import pygtk
 pygtk.require('2.0')
 
-__version__ = "0.0.7.28"
+__version__ = "0.0.7.29"
 import wimpiggy
 assert wimpiggy.__version__ == __version__
 svn_revision="unknown"
