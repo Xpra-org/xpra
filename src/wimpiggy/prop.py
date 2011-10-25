@@ -266,7 +266,7 @@ def _prop_decode_list(disp, type, data):
     return props
 
 # May return None.
-def prop_get(target, key, type):
+def prop_get(target, key, type, ignore_errors=False):
     if isinstance(type, list):
         scalar_type = type[0]
     else:
@@ -277,8 +277,9 @@ def prop_get(target, key, type):
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
         #print atom, repr(data[:100])
     except (XError, PropertyError):
-        log.info("Missing window or missing property or wrong property type %s (%s)",
-                 key, type)
+        if not ignore_errors:
+            log.info("Missing window or missing property or wrong property type %s (%s)",
+                     key, type, exc_info=True)
         return None
     try:
         return _prop_decode(target, type, data)
