@@ -175,8 +175,7 @@ class Protocol(object):
                         log("write thread: writing %s", repr_ellipsized(buf))
                         buf = buf[self._conn.write(buf):]
                 except (OSError, IOError, socket.error), e:
-                    log.info("Error writing to connection: %s", e)
-                    main_thread_call(self._connection_lost)
+                    main_thread_call(self._connection_lost, "Error writing to connection: %s" % e)
                     break
                 except TypeError:
                     assert self._closed
@@ -194,8 +193,7 @@ class Protocol(object):
             try:
                 buf = self._conn.read(8192)
             except (ValueError, OSError, IOError, socket.error), e:
-                log.info("Error reading from connection: %s", e)
-                main_thread_call(self._connection_lost)
+                main_thread_call(self._connection_lost, "Error reading from connection: %s" % e)
                 return
             except TypeError:
                 assert self._closed
@@ -215,8 +213,8 @@ class Protocol(object):
                 break
         log("read thread: ended")
 
-    def _connection_lost(self):
-        log("_connection_lost")
+    def _connection_lost(self, message="", exc_info=False):
+        log.info("connection lost: %s", message, exc_info=exc_info)
         if not self._closed:
             self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
             self.close()
@@ -234,15 +232,14 @@ class Protocol(object):
                 log("main thread: processed all read data")
                 return
             if not buf:
-                self._connection_lost()
+                self._connection_lost("empty marker in read queue")
                 return
             if self._decompressor is not None:
                 buf = self._decompressor.decompress(buf)
             try:
                 self._read_decoder.add(buf)
             except:
-                log.error("bencoder read buffer is in an inconsistent state, cannot continue", exc_info=True)
-                self._connection_lost()
+                self._connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
                 return
             while not self._closed:
                 had_deflate = (self._decompressor is not None)
@@ -250,10 +247,9 @@ class Protocol(object):
                     result = self._read_decoder.process()
                 except ValueError:
                     # Peek at the data we got, in case we can make sense of it:
-                    self._process_packet([Protocol.GIBBERISH,
-                                          self._read_decoder.unprocessed()])
+                    self._process_packet([Protocol.GIBBERISH, self._read_decoder.unprocessed()])
                     # Then hang up:
-                    self._connection_lost()
+                    self._connection_lost("gibberish received")
                     return
                 if result is None:
                     break
