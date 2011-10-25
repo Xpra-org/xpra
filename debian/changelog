@@ -1,3 +1,14 @@
+xpra (0.0.7.29-1) UNRELEASED; urgency=low
+  * fix partial packets on boundary causing connection to drop
+  * support ubuntu's appindicator (yet another system tray implementation)
+  * improve disconnection diagnostic messages
+  * scale cursor down to the client's default size
+  * better handling of right click on system tray icon
+  * posix: detect when there is no DISPLAY and error out
+  * remove harmless warnings about missing properties on startup
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 25 Oct 2011 23:25:26 +0700
+
 xpra (0.0.7.28-2) UNRELEASED; urgency=low
 
   * fix password mode - oops
