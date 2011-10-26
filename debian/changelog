@@ -1,3 +1,8 @@
+xpra (0.0.7.29-2) UNRELEASED; urgency=low
+  * fix partial packets on boundary causing connection to drop (properly this time)
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 26 Oct 2011 14:43:00 +0700
+
 xpra (0.0.7.29-1) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop
   * support ubuntu's appindicator (yet another system tray implementation)

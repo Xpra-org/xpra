@@ -43,6 +43,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed Oct 26 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.29-2
+- fix partial packets on boundary causing connection to drop (properly this time)
+
 * Tue Oct 25 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.29-1
 - fix partial packets on boundary causing connection to drop
 - improve disconnection diagnostic messages
