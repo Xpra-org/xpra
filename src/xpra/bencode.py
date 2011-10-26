@@ -38,7 +38,7 @@ class IncrBDecode(object):
     def _may_have_full_packet(self):
         """ this does not really belong here
             (see protocol.py for the write side) """
-        if self._packet_size<0 and self._buf.startswith("PS"):
+        if self._packet_size<0 and self._buf.startswith("P"):
             #spotted packet size header
             if len(self._buf)<16:
                 return None     #incomplete
