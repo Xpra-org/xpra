@@ -178,7 +178,6 @@ class ServerSource(object):
             """ move the delayed rectangles to expired list """
             log("send_delayed for %s ", id)
             delayed = self._damage_delayed.get(id)
-            log.info("send_delayed expiring %s", delayed)
             if delayed:
                 del self._damage_delayed[id]
                 self._damage_delayed_expired[id] = delayed
