@@ -1038,10 +1038,9 @@ class XpraServer(gobject.GObject):
         key_repeat = capabilities.get("key_repeat", None)
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
-            assert self.key_repeat_delay>0
-            assert self.key_repeat_interval>0
-            set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-            log.info("setting key repeat rate from client: %s / %s", self.key_repeat_delay, self.key_repeat_interval)
+            if self.key_repeat_delay>0 and self.key_repeat_interval>0:
+                set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
+                log.info("setting key repeat rate from client: %s / %s", self.key_repeat_delay, self.key_repeat_interval)
         else:
             #dont do any jitter compensation:
             self.key_repeat_delay = -1
@@ -1231,11 +1230,18 @@ class XpraServer(gobject.GObject):
             self._handle_keycode(depressed, keycode, keyname)
 
     def _handle_keycode(self, depressed, keycode, keyname):
-        xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
         if depressed and keycode not in self.keys_pressed:
+            log.debug("handle keycode pressing %s: key %s", keycode, keyname)
             self.keys_pressed[keycode] = keyname
+            xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
         elif not depressed and keycode in self.keys_pressed:
+            log.debug("handle keycode releasing %s: key %s", keycode, keyname)
             del self.keys_pressed[keycode]
+            xtest_fake_key(gtk.gdk.display_get_default(), keycode, depressed)
+        else:
+            #key was already pressed/released
+            log.debug("handle keycode %s: key %s was already pressed/released, ignoring", keycode, keyname)
+            return
         if self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(depressed, keycode, self.key_repeat_delay)
 
@@ -1246,11 +1252,13 @@ class XpraServer(gobject.GObject):
 
     def _key_repeat(self, depressed, keycode, delay_ms=0):
         timer = self.keys_repeat.get(keycode, None)
-        #cancel existing timer:
         if timer:
+            log.debug("cancelling key repeat timer: %s", timer)
             gobject.source_remove(timer)
-        #schedule a new one if the key is down:
         if depressed:
+            delay_ms = max(250, delay_ms)
+            delay_ms = min(2000, delay_ms)
+            log.debug("scheduling key repeat timer with delay %s", delay_ms)
             self.keys_repeat[keycode] = gobject.timeout_add(delay_ms, self._key_repeat_timeout, keycode)
 
     def _process_key_repeat(self, proto, packet):

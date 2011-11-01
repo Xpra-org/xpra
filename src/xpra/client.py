@@ -479,7 +479,7 @@ class XpraClient(gobject.GObject):
             # no keyval name (I believe that both give us a None here).
             # Another reason to use the _raw_keycodes_feature wherever possible.
             if name is not None:
-                self.send(["key-action", id, nn(name), depressed, modifiers])
+                self.send(["key-action", id, name, depressed, modifiers])
             return
         keycode = event.hardware_keycode
         log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
@@ -490,6 +490,7 @@ class XpraClient(gobject.GObject):
     def _key_repeat(self, depressed, keycode):
         if not depressed and keycode in self.keycodes_pressed:
             """ stop the timer and clear this keycode: """
+            log.debug("key repeat: clearing timer for %s", keycode)
             gobject.source_remove(self.keycodes_pressed[keycode])
             del self.keycodes_pressed[keycode]
         elif depressed and keycode not in self.keycodes_pressed:
@@ -518,6 +519,7 @@ class XpraClient(gobject.GObject):
                 else:
                     del self.keycodes_pressed[keycode]
                 return  False   #never run this timer again
+            log.debug("key repeat: starting timer for %s with delay %s and interval %s", keycode, delay, start_key_repeat)
             self.keycodes_pressed[keycode] = gobject.timeout_add(delay, start_key_repeat)
 
     def clear_repeat(self):
