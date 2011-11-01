@@ -157,6 +157,11 @@ def main(script_file, cmdline):
     # let the platform specific code add its own options:
     add_client_options(parser)
     (options, args) = parser.parse_args(cmdline[1:])
+    if "jpeg" not in ENCODINGS:
+        #ensure the default values are set even though
+        #the option is not shown to the user as it is not available
+        options.jpegquality = 80
+        options.max_bandwidth = 0
 
     if not args:
         parser.error("need a mode")
