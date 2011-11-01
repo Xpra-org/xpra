@@ -818,6 +818,9 @@ class XpraClient(gobject.GObject):
         if window._refresh_timer:
             gobject.source_remove(window._refresh_timer)
         window.destroy()
+        if len(self._id_to_window)==0:
+            log.debug("last window gone, clearing key repeat")
+            self.clear_repeat()
 
     def _process_connection_lost(self, packet):
         log.error("Connection lost")
