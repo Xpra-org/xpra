@@ -1,3 +1,10 @@
+xpra (0.0.7.30-1) UNRELEASED; urgency=low
+  * fix for update batching causing screen corruption
+  * fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
+  * fix for jitter compensation code being a little bit too trigger-happy
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 01 Nov 2011 15:08:06 +0700
+
 xpra (0.0.7.29-2) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop (properly this time)
 

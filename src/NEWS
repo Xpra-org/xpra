@@ -1,13 +1,20 @@
-v0.0.7.28 (2011-10-25)
+v0.0.7.30 (2011-11-01)
 ======================
-- fix partial packets on boundary causing connection to drop
-- clipboard support on MS Windows
-- support ubuntu's appindicator (yet another system tray implementation)
-- improve disconnection diagnostic messages
-- scale cursor down to the client's default size
-- better handling of right click on system tray icon
-- posix: detect when there is no DISPLAY and error out
-- remove harmless warnings about missing properties on startup
+	-- fix for update batching causing screen corruption
+	-- fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
+	-- fix for jitter compensation code being a little bit too trigger-happy
+
+
+v0.0.7.29 (2011-10-25)
+======================
+	-- fix partial packets on boundary causing connection to drop
+	-- clipboard support on MS Windows
+	-- support ubuntu's appindicator (yet another system tray implementation)
+	-- improve disconnection diagnostic messages
+	-- scale cursor down to the client's default size
+	-- better handling of right click on system tray icon
+	-- posix: detect when there is no DISPLAY and error out
+	-- remove harmless warnings about missing properties on startup
 
 
 v0.0.7.28 (2011-10-18)

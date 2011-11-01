@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.29
+%define version 0.0.7.30
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -43,6 +43,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Tue Nov 01 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.30-1
+- fix for update batching causing screen corruption
+- fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
+- fix for jitter compensation code being a little bit too trigger-happy
+
 * Wed Oct 26 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.29-2
 - fix partial packets on boundary causing connection to drop (properly this time)
 
