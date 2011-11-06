@@ -153,13 +153,13 @@ class Protocol(object):
             log("writing %s", dump_packet(packet), type="raw.write")
             data = bencode(packet)
             l = len(data)
-            if l<=1024:
-                #send size and data together (low copy overhead):
-                self._queue_write("PS%014d%s" % (l, data), True)
-            else:
-                if self._send_size:
-                    self._queue_write("PS%014d" % l)
-                self._queue_write(data, True)
+            if self._send_size:
+                if l<=1024:
+                    #send size and data together (low copy overhead):
+                    self._queue_write("PS%014d%s" % (l, data), True)
+                    return
+                self._queue_write("PS%014d" % l)
+            self._queue_write(data, True)
 
     def _write_thread_loop(self):
         try:
