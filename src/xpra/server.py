@@ -167,15 +167,45 @@ class ServerSource(object):
         MAX_EVENTS = 30     #maximum number of damage events
         TIME_UNIT = 1       #per second
         BATCH_DELAY = 50    #how long to batch updates for (in millis)
+        def add_damage_to_region(region):
+            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         def damage_now():
             log("damage(%s, %s, %s, %s, %s)", id, x, y, w, h)
             _, region = self._damage.setdefault(id, (window, gtk.gdk.Region()))
-            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+            add_damage_to_region(region)
             self._protocol.source_has_more()
         if not BATCH_EVENTS:
             return damage_now()
+
+        #record this damage event in the damage_last_events queue:
+        now = time.time()
+        last_events = self._damage_last_events.setdefault(id, Queue.Queue())
+        last_events.put(now)
+
+        delayed = self._damage_delayed.get(id)
+        if delayed:
+            (window, region) = delayed
+            add_damage_to_region(region)
+            log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
+            return
+
+        if last_events.qsize()<MAX_EVENTS:
+            log("damage(%s, %s, %s, %s, %s) recent event list is too small, not batching", id, x, y, w, h)
+            return damage_now()
+
+        #find the oldest event time in the queue
+        #removing events beyond MAX_EVENTS:
+        while last_events.qsize()>=MAX_EVENTS:
+            when = last_events.get(False)
+        if now-when>TIME_UNIT:
+            log("damage(%s, %s, %s, %s, %s) damage events are outside the batching time limit, not batching", id, x, y, w, h)
+            return damage_now()
+        #create a new delayed region:
+        region = gtk.gdk.Region()
+        add_damage_to_region(region)
+        self._damage_delayed[id] = (window, region)
         def send_delayed():
-            """ move the delayed rectangles to expired list """
+            """ move the delayed rectangles to the expired list """
             log("send_delayed for %s ", id)
             delayed = self._damage_delayed.get(id)
             if delayed:
@@ -183,37 +213,8 @@ class ServerSource(object):
                 self._damage_delayed_expired[id] = delayed
                 self._protocol.source_has_more()
             return False
-
-        delayed = self._damage_delayed.get(id)
-        log("damage(%s, %s, %s, %s, %s) using delayed=%s", id, x, y, w, h, delayed)
-        #record this damage event in the damage_last_events queue:
-        now = time.time()
-        last_events = self._damage_last_events.setdefault(id, Queue.Queue())
-        last_events.put(now)
-        if delayed:
-            #found a delayed region, use it:
-            (window, region) = delayed
-            log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
-        else:
-            if last_events.qsize()<MAX_EVENTS:
-                #queue is too small to cause batching:
-                log("damage(%s, %s, %s, %s, %s) recent event list is too small, not batching", id, x, y, w, h)
-                return damage_now()
-            #find the oldest event time in the queue
-            #removing events beyond MAX_EVENTS:
-            while last_events.qsize()>=MAX_EVENTS:
-                when = last_events.get(False)
-            if now-when>TIME_UNIT:
-                log("damage(%s, %s, %s, %s, %s) damage events are outside the batching time limit, not batching", id, x, y, w, h)
-                return damage_now()
-            #create a new delayed region:
-            region = gtk.gdk.Region()
-            self._damage_delayed[id] = (window, region)
-            # delayed list did not exist, must schedule it to run
-            log("damage(%s, %s, %s, %s, %s) scheduling batching expiry", id, x, y, w, h)
-            gobject.timeout_add(BATCH_DELAY, send_delayed)
-
-        region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry", id, x, y, w, h)
+        gobject.timeout_add(BATCH_DELAY, send_delayed)
 
     def next_packet(self):
         if self._ordinary_packets:
@@ -224,15 +225,12 @@ class ServerSource(object):
             packet = None
         return packet, self._have_more()
 
-    def find_damage_packet(self):
-        #if len(self._damage)==1:
-        src = self._damage
-        if self._damage_delayed_expired:
-            src = self._damage_delayed_expired
-        return  src, src.items()[0]
-
     def next_damage_packet(self):
-        damage_dict, item = self.find_damage_packet()
+        if self._damage_delayed_expired:
+            damage_dict = self._damage_delayed_expired
+        else:
+            damage_dict = self._damage
+        item = damage_dict.items()[0]
         id, (window, damage) = item
         (x, y, w, h) = get_rectangle_from_region(damage)
         rect = gtk.gdk.Rectangle(x, y, w, h)
