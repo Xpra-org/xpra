@@ -880,7 +880,7 @@ class XpraServer(gobject.GObject):
         self._cancel_damage(window)
         del self._window_to_id[window]
         del self._id_to_window[id]
-        if id in self._server_source._damage_last_events:
+        if self._server_source and id in self._server_source._damage_last_events:
             del self._server_source._damage_last_events[id]
 
     def _contents_changed(self, window, event):
