@@ -311,6 +311,7 @@ class XpraServer(gobject.GObject):
         # This must happen early, before loading in windows at least:
         self._protocol = None
         self._potential_protocols = []
+        self._server_source = None
 
         self.encoding = encoding or "rgb24"
         assert self.encoding in ENCODINGS
@@ -879,8 +880,8 @@ class XpraServer(gobject.GObject):
         self._cancel_damage(window)
         del self._window_to_id[window]
         del self._id_to_window[id]
-        if id in self._damage_last_events:
-            del self._damage_last_events[id]
+        if id in self._server_source._damage_last_events:
+            del self._server_source._damage_last_events[id]
 
     def _contents_changed(self, window, event):
         if (isinstance(window, OverrideRedirectWindowModel)
@@ -1027,7 +1028,7 @@ class XpraServer(gobject.GObject):
         self.encodings = capabilities.get("encodings", ["rgb24"])
         self._set_encoding(capabilities.get("encoding", None))
         self._protocol = proto
-        ServerSource(self._protocol, self.encoding)
+        self._server_source = ServerSource(self._protocol, self.encoding)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
         if "deflate" in capabilities:
