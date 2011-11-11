@@ -550,7 +550,7 @@ class XpraClient(gobject.GObject):
                 else:
                     del self.keycodes_pressed[keycode]
                 return  False   #never run this timer again
-            log.debug("key repeat: starting timer for %s with delay %s and interval %s", keycode, delay, start_key_repeat)
+            log.debug("key repeat: starting timer for %s with delay %s and interval %s", keycode, delay, interval)
             self.keycodes_pressed[keycode] = gobject.timeout_add(delay, start_key_repeat)
 
     def clear_repeat(self):
