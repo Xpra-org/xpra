@@ -138,6 +138,9 @@ def main(script_file, cmdline):
                       dest="key_shortcuts", type="str", default=[],
                       help="Define key shortcuts that will trigger specific actions."
                       + " Defaults to Meta+Shift+F4:quit if no shortcuts are defined.")
+    parser.add_option("--enable-mmap", action="store_true",
+                      dest="mmap", default=False,
+                      help="Enable memory mapped transfers for local connections")
     parser.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",

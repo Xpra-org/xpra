@@ -15,6 +15,7 @@ import gtk
 import gobject
 import webbrowser
 
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
@@ -97,6 +98,9 @@ class ClientExtrasBase(object):
 
     def exit(self):
         pass
+
+    def supports_mmap(self):
+        return XPRA_LOCAL_SERVERS_SUPPORTED
 
     def supports_clipboard(self):
         return self.clipboard_helper is not None

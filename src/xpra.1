@@ -28,6 +28,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
+[\fB\-\-enable\-mmap\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-encoding=ENCODING\fP]
@@ -196,6 +197,12 @@ filter like \fBxpra.protocol.raw\fP is more specific than one like
 \fBxpra.protocol\fP. Additionally, logging can be disabled for a
 specific subsystem by prefixing a minus sign to its name, like so:
 \fB\-\-debug=all,-wimpiggy\fP.
+.TP
+\fB\-\-enable\-mmap\fP
+Enables memory mapped pixel data transfer for local connections.
+This must be enabled on both the server and client to take effect.
+This method of data transfer between the client and server offers
+lower overheads and reduces both CPU consumption and context switches.
 .TP
 \fB\-\-no\-clipboard\fP
 Disables clipboard synchronization.

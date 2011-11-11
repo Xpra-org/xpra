@@ -22,6 +22,8 @@ import re
 import os
 import Queue
 import time
+import struct
+import ctypes
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -130,9 +132,9 @@ class DesktopManager(gtk.Widget):
 gobject.type_register(DesktopManager)
 
 class ServerSource(object):
-    # Strategy: if we have ordinary packets to send, send those.  When we
-    # don't, then send window updates.
-    def __init__(self, protocol, encoding):
+    # Strategy: if we have ordinary packets to send, send those.
+    # When we don't, then send window updates (expired ones first).
+    def __init__(self, protocol, encoding, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
@@ -140,6 +142,8 @@ class ServerSource(object):
         self._damage_last_events = {}
         self._damage_delayed = {}
         self._damage_delayed_expired = {}
+        self._mmap = mmap
+        self._mmap_size = mmap_size
         protocol.source = self
         if self._have_more():
             protocol.source_has_more()
@@ -247,6 +251,37 @@ class ServerSource(object):
         (x2, y2, w2, h2, coding, data) = self._get_rgb_data(pixmap, x, y, w, h)
         if not w2 or not h2:
             return None
+        if self._mmap and self._mmap_size>0:
+            data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
+            data_end = ctypes.c_uint.from_buffer(self._mmap, 4)
+            start = max(8, data_start.value)
+            end = max(8, data_end.value)
+            if end<start:
+                available = start-end
+                chunk = available
+            else:
+                chunk = self._mmap_size-end
+                available = chunk+(start-8)
+            l = len(data)
+            if l<available:
+                self._mmap.seek(end)
+                if l<chunk:
+                    """ fits in one chunk """
+                    self._mmap.write(data)
+                    data = [(end, l)]
+                    data_end.value = end+l
+                else:
+                    """ split in 2 chunks: wrap around the end of the mmap buffer """
+                    self._mmap.write(data[:chunk])
+                    self._mmap.seek(8)
+                    self._mmap.write(data[chunk:])
+                    l2 = l-chunk
+                    data = [(end, chunk), (8, l2)]
+                    data_end.value = 8+l2
+                coding = "mmap"
+                log("sending damage with mmap: %s", data)
+            else:
+                log("mmap area full... ouch!")
         return ["draw", id, x2, y2, w2, h2, coding, data]
 
     def _get_rgb_data(self, pixmap, x, y, width, height):
@@ -299,7 +334,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-cursor-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, session_name, password_file, pulseaudio, clipboard, randr, encoding):
+    def __init__(self, clobber, sockets, session_name, password_file, pulseaudio, clipboard, randr, encoding, mmap):
         gobject.GObject.__init__(self)
 
         # Do this before creating the Wm object, to avoid clobbering its
@@ -313,6 +348,7 @@ class XpraServer(gobject.GObject):
         self._potential_protocols = []
         self._server_source = None
 
+        self.supports_mmap = mmap
         self.encoding = encoding or "rgb24"
         assert self.encoding in ENCODINGS
         self.png_window_icons = False
@@ -353,6 +389,8 @@ class XpraServer(gobject.GObject):
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.encodings = ["rgb24"]
+        self.mmap = None
+        self.mmap_size = 0
 
         self.send_notifications = False
         self.last_cursor_serial = None
@@ -1024,11 +1062,21 @@ class XpraServer(gobject.GObject):
         # set this as our new one:
         if self._protocol is not None:
             self.disconnect("new valid connection received")
-        #if "encodings" not specified, use pre v0.0.7.26 default:
+        #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
         self.encodings = capabilities.get("encodings", ["rgb24"])
         self._set_encoding(capabilities.get("encoding", None))
+        #mmap:
+        self.close_mmap()
+        mmap_file = capabilities.get("mmap_file")
+        log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
+        if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
+            import mmap
+            file = open(mmap_file, "r+b")
+            self.mmap_size = os.path.getsize(mmap_file)
+            self.mmap = mmap.mmap(file.fileno(), self.mmap_size)
+            log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding)
+        self._server_source = ServerSource(self._protocol, self.encoding, self.mmap, self.mmap_size)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
         if "deflate" in capabilities:
@@ -1103,6 +1151,8 @@ class XpraServer(gobject.GObject):
             capabilities["key_repeat"] = client_capabilities.get("key_repeat")
         if self.session_name:
             capabilities["session_name"] = self.session_name
+        if self.mmap_size>0:
+            capabilities["mmap_enabled"] = True
         self._send(["hello", capabilities])
 
     def disconnect(self, reason):
@@ -1116,6 +1166,13 @@ class XpraServer(gobject.GObject):
         self._clear_keys_pressed()
         self._focus(0, [])
         log.info("Connection lost")
+        self.close_mmap()
+
+    def close_mmap(self):
+        if self.mmap:
+            self.mmap.close()
+        self.mmap = None
+        self.mmap_size = 0
 
     def _process_disconnect(self, proto, packet):
         self.disconnect("on client request")

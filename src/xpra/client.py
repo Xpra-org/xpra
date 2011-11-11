@@ -188,7 +188,21 @@ class ClientWindow(gtk.Window):
 
     def draw(self, x, y, width, height, coding, img_data):
         gc = self._backing.new_gc()
-        if coding != "rgb24":
+        if coding == "mmap":
+            assert self._client.supports_mmap
+            log("drawing from mmap: %s", img_data)
+            data = ""
+            import ctypes
+            data_start = ctypes.c_uint.from_buffer(self._client.mmap, 0)
+            for offset, length in img_data:
+                self._client.mmap.seek(offset)
+                data += self._client.mmap.read(length)
+                data_start.value = offset+length
+            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data)
+        elif coding == "rgb24":
+            assert len(img_data) == width * height * 3
+            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
+        else:
             loader = gtk.gdk.PixbufLoader(coding)
             loader.write(img_data, len(img_data))
             loader.close()
@@ -201,9 +215,6 @@ class ClientWindow(gtk.Window):
                     self._failed_pixbuf_index += 1
             else:
                 self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
-        else:
-            assert len(img_data) == width * height * 3
-            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
         self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height), False)
 
         if self._refresh_requested:
@@ -349,6 +360,26 @@ class XpraClient(gobject.GObject):
         self.notifications_enabled = True
         self._client_extras = ClientExtras(self, opts)
         self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
+        self.mmap_enabled = False
+        self.supports_mmap = opts.mmap and self._client_extras.supports_mmap()
+        self.mmap = None
+        self.mmap_file = None
+        self.mmap_size = 0
+        if self.supports_mmap:
+            import os
+            import mmap
+            import tempfile
+            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap")
+            #keep a reference to it so it does not disappear!
+            self._mmap_temp_file = temp
+            self.mmap_file = temp.name
+            self.mmap_size = mmap.PAGESIZE*1024*8   #generally 32MB
+            fd = temp.file.fileno()
+            log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
+            os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
+            assert os.write(fd, '\x00')
+            os.lseek(fd, 0, os.SEEK_SET)
+            self.mmap = mmap.mmap(fd, length=self.mmap_size)
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
@@ -623,6 +654,8 @@ class XpraClient(gobject.GObject):
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             capabilities_request["key_repeat"] = key_repeat
+        if self.mmap_file:
+            capabilities_request["mmap_file"] = self.mmap_file
         self.send(["hello", capabilities_request])
 
     def send_jpeg_quality(self, q):
@@ -708,6 +741,9 @@ class XpraClient(gobject.GObject):
         self.notifications_enabled = capabilities.get("notifications", False)
         clipboard_server_support = capabilities.get("clipboard", True) 
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
+        self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
+        if self.mmap_enabled:
+            log.info("mmap enabled using %s", self.mmap_file)
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
