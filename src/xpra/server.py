@@ -709,16 +709,18 @@ class XpraServer(gobject.GObject):
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")
-            for attr, metakey in [
-                ("max_size", "maximum-size"),
-                ("min_size", "minimum-size"),
-                ("base_size", "base-size"),
-                ("resize_inc", "increment"),
-                ("min_aspect_ratio", "minimum-aspect"),
-                ("max_aspect_ratio", "maximum-aspect"),
-                ]:
-                if hints is not None and getattr(hints, attr) is not None:
-                    hints_metadata[metakey] = getattr(hints, attr)
+            if hints is not None:
+                for attr, metakey in [
+                    ("max_size", "maximum-size"),
+                    ("min_size", "minimum-size"),
+                    ("base_size", "base-size"),
+                    ("resize_inc", "increment"),
+                    ("min_aspect_ratio", "minimum-aspect"),
+                    ("max_aspect_ratio", "maximum-aspect"),
+                    ]:
+                    v = getattr(hints, attr)
+                    if v is not None and v>=0 and v<(2**32-1):
+                        hints_metadata[metakey] = getattr(hints, attr)
             return {"size-constraints": hints_metadata}
         elif propname == "class-instance":
             c_i = window.get_property("class-instance")

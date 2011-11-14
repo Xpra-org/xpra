@@ -574,11 +574,25 @@ class WindowModel(BaseWindowModel):
         if maybe_owner and self.get_property("owner") is maybe_owner:
             self._update_client_geometry()
 
+    def _sanitize_size_hints(self, size_hints):
+        if size_hints is None:
+            return
+        for attr in ["max_size", "min_size", "base_size",
+                    "resize_inc", "min_aspect", "max_aspect"]:
+            #"min_aspect_ratio", "max_aspect_ratio" ??
+            v = getattr(size_hints, attr)
+            if v is not None:
+                w,h = v
+                if w<0 or h<0 or w>=(2**32-1) or h>(2**32-1):
+                    log.info("clearing invalid size hint value for %s: %s", attr, v)
+                    setattr(size_hints, attr, None)
+
     def _update_client_geometry(self):
         owner = self.get_property("owner")
         if owner is not None:
             (allocated_w, allocated_h) = owner.window_size(self)
             hints = self.get_property("size-hints")
+            self._sanitize_size_hints(hints)
             size = wimpiggy.lowlevel.calc_constrained_size(allocated_w,
                                                            allocated_h,
                                                            hints)
