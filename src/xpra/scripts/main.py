@@ -190,9 +190,9 @@ def main(script_file, cmdline):
         nox()
         from xpra.scripts.server import run_server
         run_server(parser, options, mode, script_file, args)
-    elif mode == "attach":
+    elif mode == "attach" or mode == "detach":
         try:
-            run_client(parser, options, args)
+            run_client(parser, options, args, mode=="detach")
         except KeyboardInterrupt:
             sys.stdout.write("Exiting on keyboard interrupt\n")
     elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
@@ -300,7 +300,7 @@ def connect_or_fail(display_desc):
         assert False, "unsupported display type in connect"
 
 
-def run_client(parser, opts, extra_args):
+def run_client(parser, opts, extra_args, detach):
     from xpra.client import XpraClient
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
@@ -325,6 +325,11 @@ def run_client(parser, opts, extra_args):
             sys.stdout.flush()
     app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
+    if detach:
+        def do_detach(*args):
+            sys.stdout.write("handshake-complete: detaching")
+            app.quit()
+        app.connect("handshake-complete", do_detach)
     app.run()
 
 def run_proxy(parser, opts, extra_args):

@@ -47,6 +47,9 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 .HP
+\fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+.HP
 \fBxpra\fP \fBlist\fP
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:DISPLAY\fP [...any options accepted by
@@ -155,6 +158,8 @@ This command starts a new xpra server, including any necessary setup.
 .SS xpra attach
 This command attachs to a running xpra server, and forwards any
 applications using that server to appear on your current screen.
+.SS xpra detach
+Detaches the given xpra display.
 .SS xpra stop
 This command attachs to a running xpra server, and requests that it
 terminate immediately.  This generally causes any applications using
