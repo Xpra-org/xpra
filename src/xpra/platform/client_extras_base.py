@@ -336,7 +336,7 @@ class ClientExtrasBase(object):
         return self.clipboard_menuitem
 
     def make_encodingsmenuitem(self):
-        encodings = self.menuitem("Encoding", "configure.png", "Choose picture data encoding", None)
+        encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
         self.encodings_submenu = gtk.Menu()
         encodings.set_submenu(self.encodings_submenu)
         self.popup_menu_workaround(self.encodings_submenu)
