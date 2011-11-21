@@ -20,9 +20,8 @@ import uuid
 import StringIO
 import re
 import os
-import Queue
+from collections import deque
 import time
-import struct
 import ctypes
 
 from wimpiggy.wm import Wm
@@ -168,9 +167,10 @@ class ServerSource(object):
 
     def damage(self, id, window, x, y, w, h):
         BATCH_EVENTS = True
-        MAX_EVENTS = 30     #maximum number of damage events
-        TIME_UNIT = 1       #per second
-        BATCH_DELAY = 50    #how long to batch updates for (in millis)
+        MAX_PIXELS = 800*600*25 #small screen at 25 frames
+        MAX_EVENTS = 30         #maximum number of damage events
+        TIME_UNIT = 1           #per second
+        BATCH_DELAY = 50        #how long to batch updates for (in millis)
         def add_damage_to_region(region):
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         def damage_now():
@@ -183,8 +183,8 @@ class ServerSource(object):
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(id, Queue.Queue())
-        last_events.put(now)
+        last_events = self._damage_last_events.setdefault(id, deque(maxlen=MAX_EVENTS))
+        last_events.append((now, w*h))
 
         delayed = self._damage_delayed.get(id)
         if delayed:
@@ -193,17 +193,22 @@ class ServerSource(object):
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
             return
 
-        if last_events.qsize()<MAX_EVENTS:
-            log("damage(%s, %s, %s, %s, %s) recent event list is too small, not batching", id, x, y, w, h)
-            return damage_now()
+        pixel_count = 0
+        for last_time,pixels in last_events:
+            pixel_count += pixels
+            if pixel_count>=MAX_PIXELS:
+                break
+        if pixel_count>=MAX_PIXELS:
+            log.info("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
+        else:
+            if len(last_events)<MAX_EVENTS:
+                log("damage(%s, %s, %s, %s, %s) recent event list is too small, not batching", id, x, y, w, h)
+                return damage_now()
+            when,_ = last_events[0]
+            if now-when>TIME_UNIT:
+                log("damage(%s, %s, %s, %s, %s) damage events are outside the batching time limit, not batching", id, x, y, w, h)
+                return damage_now()
 
-        #find the oldest event time in the queue
-        #removing events beyond MAX_EVENTS:
-        while last_events.qsize()>=MAX_EVENTS:
-            when = last_events.get(False)
-        if now-when>TIME_UNIT:
-            log("damage(%s, %s, %s, %s, %s) damage events are outside the batching time limit, not batching", id, x, y, w, h)
-            return damage_now()
         #create a new delayed region:
         region = gtk.gdk.Region()
         add_damage_to_region(region)
