@@ -720,8 +720,8 @@ class XpraClient(gobject.GObject):
                 log.warn("Server's virtual screen is too small -- "
                          "(server: %sx%s vs. client: %sx%s)\n"
                          "You may see strange behavior.\n"
-                         "Please complain to "
-                         "parti-discuss@partiwm.org"
+                         "Please see "
+                         "http://xpra.org/trac/ticket/10"
                          % (avail_w, avail_h, root_w, root_h))
         self._protocol._send_size = capabilities.get("packet_size", False)
         randr = capabilities.get("resize_screen", False)
