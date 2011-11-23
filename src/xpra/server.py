@@ -306,25 +306,32 @@ class ServerSource(object):
             via idle_add.
         """
         while True:
-            id, window, damage, sequence = self._damage_request_queue.get(True)
+            id, window, damage, _ = self._damage_request_queue.get(True)
             regions = []
-            (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
-            full_pixels = ww*wh
-            pixel_count = 0
-            while not damage.empty():
-                try:
-                    (x, y, w, h) = get_rectangle_from_region(damage)
-                    pixel_count += w*h
-                    #favor full screen updates over many regions:
-                    if pixel_count+4096*len(regions)>=full_pixels*9/10:
-                        regions = [(0, 0, ww, wh, True)]
+            try:
+                (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
+            except KeyError, e:
+                ww, wh = 512, 512
+            try:
+                full_pixels = ww*wh
+                pixel_count = 0
+                while not damage.empty():
+                    try:
+                        (x, y, w, h) = get_rectangle_from_region(damage)
+                        pixel_count += w*h
+                        #favor full screen updates over many regions:
+                        if pixel_count+4096*len(regions)>=full_pixels*9/10:
+                            regions = [(0, 0, ww, wh, True)]
+                            break
+                        regions.append((x, y, w, h, False))
+                        rect = gtk.gdk.Rectangle(x, y, w, h)
+                        damage.subtract(gtk.gdk.region_rectangle(rect))
+                    except ValueError:
+                        log.error("damage_to_data: damage is empty: %s", damage)
                         break
-                    regions.append((x, y, w, h, False))
-                    rect = gtk.gdk.Rectangle(x, y, w, h)
-                    damage.subtract(gtk.gdk.region_rectangle(rect))
-                except ValueError:
-                    log.error("damage_to_data: damage is empty: %s", damage)
-                    break
+            except Exception, e:
+                log.error("damage_to_data: error processing region %s: %s", damage, e)
+                continue
             gobject.idle_add(self._process_damage_regions, id, window, regions)
 
     def _process_damage_regions(self, id, window, regions):
@@ -372,43 +379,51 @@ class ServerSource(object):
 
     def data_to_packet(self):
         while True:
-            id, x, y, w, h, coding, data, rowstride = self._damage_data_queue.get(True)
-            log("data_to_packet: damage data: %s", (id, x, y, w, h, coding))
-            #pad rowstride:
-            rowwidth = w * 3
-            if rowwidth != rowstride:
-                rows = []
-                for i in xrange(h):
-                    rows.append(data[i*rowstride : i*rowstride+rowwidth])
-                data = "".join(rows)
-            #encode to jpeg/png:
-            if self._encoding in ["jpeg", "png"]:
-                import Image
-                im = Image.fromstring("RGB", (w, h), data)
-                buf = StringIO.StringIO()
-                if self._encoding=="jpeg":
-                    q = min(99, max(1, self._protocol.jpegquality))
-                    log.debug("sending with jpeg quality %s" % q)
-                    im.save(buf, "JPEG", quality=q)
-                else:
-                    log.debug("sending as %s" % self._encoding)
-                    im.save(buf, self._encoding.upper())
-                data = buf.getvalue()
-                buf.close()
-            #send via mmap?
-            if self._mmap and self._mmap_size>0:
-                mmap_data = self._mmap_send(data)
-                if mmap_data is not None:
-                    coding = "mmap"
-                    data = mmap_data
-            #actual network packet:
-            packet = ["draw", id, x, y, w, h, coding, data]
-            if self._send_damage_sequence:
-                packet.append(self._damage_packet_sequence)
-                self._damage_packet_sequence += 1
-            log("data_to_packet adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
-            self._damage_packet_queue.put(packet)
-            self._protocol.source_has_more()
+            item = self._damage_data_queue.get(True)
+            try:
+                packet = self.make_data_packet(item)
+                log("data_to_packet adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
+                self._damage_packet_queue.put(packet)
+                self._protocol.source_has_more()
+            except Exception, e:
+                log.error("error processing damage data: %s", e)
+
+    def make_data_packet(self, item):
+        id, x, y, w, h, coding, data, rowstride = item
+        log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
+        #pad rowstride:
+        rowwidth = w * 3
+        if rowwidth != rowstride:
+            rows = []
+            for i in xrange(h):
+                rows.append(data[i*rowstride : i*rowstride+rowwidth])
+            data = "".join(rows)
+        #encode to jpeg/png:
+        if self._encoding in ["jpeg", "png"]:
+            import Image
+            im = Image.fromstring("RGB", (w, h), data)
+            buf = StringIO.StringIO()
+            if self._encoding=="jpeg":
+                q = min(99, max(1, self._protocol.jpegquality))
+                log.debug("sending with jpeg quality %s" % q)
+                im.save(buf, "JPEG", quality=q)
+            else:
+                log.debug("sending as %s" % self._encoding)
+                im.save(buf, self._encoding.upper())
+            data = buf.getvalue()
+            buf.close()
+        #send via mmap?
+        if self._mmap and self._mmap_size>0:
+            mmap_data = self._mmap_send(data)
+            if mmap_data is not None:
+                coding = "mmap"
+                data = mmap_data
+        #actual network packet:
+        packet = ["draw", id, x, y, w, h, coding, data]
+        if self._send_damage_sequence:
+            packet.append(self._damage_packet_sequence)
+            self._damage_packet_sequence += 1
+        return packet
 
     def _mmap_send(self, data):
         data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
