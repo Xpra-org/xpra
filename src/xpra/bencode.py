@@ -85,7 +85,7 @@ class IncrBDecode(object):
         pass
 
     def _sniff(self):
-        if len(self._buf) <= self._offset:
+        if len(self._buf) <= self._offset or (self._packet_size>0 and self._offset>=self._packet_size):
             return
         new_state = self._states.get(self._buf[self._offset])
         if new_state is None:
