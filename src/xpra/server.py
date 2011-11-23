@@ -248,7 +248,7 @@ class ServerSource(object):
             del damage_dict[id]
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
-        window.acknowledge_changes(x, y, w, h)
+        window.acknowledge_changes()
         pixmap = window.get_property("client-contents")
         if pixmap is None:
             log.error("wtf, pixmap is None?")

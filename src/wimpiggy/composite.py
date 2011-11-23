@@ -61,7 +61,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         remove_event_receiver(self._window, self)
         self._window = None
 
-    def acknowledge_changes(self, x, y, w, h):
+    def acknowledge_changes(self):
         if self._damage_handle is not None:
             trap.swallow(xdamage_acknowledge,
                          self._window, self._damage_handle)

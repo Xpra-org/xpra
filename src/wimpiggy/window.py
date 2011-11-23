@@ -245,8 +245,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def do_get_property_client_contents_handle(self, name):
         return self._composite.get_property("contents-handle")
 
-    def acknowledge_changes(self, x, y, w, h):
-        self._composite.acknowledge_changes(x, y, w, h)
+    def acknowledge_changes(self):
+        self._composite.acknowledge_changes()
 
     def do_wimpiggy_configure_event(self, event):
         self._geometry = (event.x, event.y, event.width, event.height,
@@ -1127,8 +1127,7 @@ class WindowView(gtk.Widget):
 
         # It's important to acknowledge changes *before* we redraw them, to
         # avoid a race condition.
-        self.model.acknowledge_changes(event.area.x, event.area.y,
-                                       event.area.width, event.area.height)
+        self.model.acknowledge_changes()
 
         cr.set_source_pixmap(self.model.get_property("client-contents"),
                              0, 0)
