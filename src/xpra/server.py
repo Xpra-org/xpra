@@ -210,9 +210,9 @@ class ServerSource(object):
 
     def damage(self, id, window, x, y, w, h):
         """ decide what to do with the damage area:
-            * send it now (if not congested and small)
+            * send it now (if not congested or BATCH_EVENTS is off)
             * add it to an existing delayed region
-            * replaced the delayed region with a full-window update
+            * create a new delayed region if we find the client needs it
             Also takes care of adjusting the batch-delay in case
             of congestion.
         """
