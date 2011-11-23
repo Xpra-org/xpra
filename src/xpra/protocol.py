@@ -14,7 +14,7 @@ import os
 import socket # for socket.error
 import zlib
 
-from Queue import Queue, Empty
+from Queue import Queue
 from threading import Thread, Lock
 
 from xpra.bencode import bencode, IncrBDecode
@@ -101,7 +101,7 @@ class Protocol(object):
         self._conn = conn
         self._process_packet_cb = process_packet_cb
         self._write_queue = Queue()
-        self._read_queue = Queue()
+        self._read_queue = Queue(5)
         # Invariant: if .source is None, then _source_has_more == False
         self.source = None
         self.jpegquality = 0
@@ -112,7 +112,6 @@ class Protocol(object):
         self._read_decoder = IncrBDecode()
         self._compressor = None
         self._decompressor = None
-        self._read_loop_count = CachedCounter()
         self._write_thread = Thread(target=self._write_thread_loop)
         self._write_thread.daemon = True
         self._write_thread.start()
@@ -120,6 +119,9 @@ class Protocol(object):
         self._read_thread = Thread(target=self._read_thread_loop)
         self._read_thread.daemon = True
         self._read_thread.start()
+        self._read_parser_thread = Thread(target=self._read_parse_thread_loop)
+        self._read_parser_thread.deamon = True
+        self._read_parser_thread.start()
         self._maybe_queue_more_writes()
 
     def source_has_more(self):
@@ -191,7 +193,6 @@ class Protocol(object):
             self._conn.close()
 
     def _read_thread_loop(self):
-        last_scheduled_read = -1
         while not self._closed:
             log("read thread: waiting for data to arrive")
             try:
@@ -205,13 +206,6 @@ class Protocol(object):
             log("read thread: got data %s", repr_ellipsized(buf))
             self._recv_counter += len(buf)
             self._read_queue.put(buf)
-            #schedule the read thread to run if it has not fired since we started
-            #reading in this loop (-1!=0), or if it has already fired since
-            #the last time we scheduled it to run:
-            c = self._read_loop_count.value()
-            if last_scheduled_read!=c:
-                last_scheduled_read = c
-                main_thread_call(self._handle_read)
             if not buf:
                 log("read thread: eof")
                 break
@@ -223,28 +217,17 @@ class Protocol(object):
             self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
             self.close()
 
-    def _handle_read(self):
-        if self._closed:
-            return
-        log("main thread: woken to handle read data")
+    def _read_parse_thread_loop(self):
         while not self._closed:
-            self._read_loop_count.inc()
-            try:
-                buf = self._read_queue.get(block=False)
-                log("main thread: found read data %s", repr_ellipsized(buf))
-            except Empty:
-                log("main thread: processed all read data")
-                return
+            buf = self._read_queue.get()
             if not buf:
-                self._connection_lost("empty marker in read queue")
-                return
+                return self._connection_lost("empty marker in read queue")
             if self._decompressor is not None:
                 buf = self._decompressor.decompress(buf)
             try:
                 self._read_decoder.add(buf)
             except:
-                self._connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
-                return
+                return self._connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
             while not self._closed:
                 had_deflate = (self._decompressor is not None)
                 try:
@@ -253,18 +236,16 @@ class Protocol(object):
                     # Peek at the data we got, in case we can make sense of it:
                     self._process_packet([Protocol.GIBBERISH, self._read_decoder.unprocessed()])
                     # Then hang up:
-                    self._connection_lost("gibberish received")
-                    return
+                    return self._connection_lost("gibberish received")
                 if result is None:
                     break
                 packet, unprocessed = result
-                self._process_packet(packet)
+                main_thread_call(self._process_packet, packet)
                 if not had_deflate and (self._decompressor is not None):
                     # deflate was just enabled: so decompress the unprocessed
                     # data
                     unprocessed = self._decompressor.decompress(unprocessed)
                 self._read_decoder = IncrBDecode(unprocessed)
-        log("main thread: read handled")
 
     def _process_packet(self, decoded):
         if self._closed:
@@ -293,4 +274,5 @@ class Protocol(object):
     def close(self):
         if not self._closed:
             self._write_queue.put(None)
+            self._read_queue.put(None)
             self._closed = True
