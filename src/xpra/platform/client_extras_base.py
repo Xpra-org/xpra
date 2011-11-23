@@ -350,7 +350,7 @@ class ClientExtrasBase(object):
                     if self.client.encoding!=enc:
                         self.client.set_encoding(enc)
                         log.debug("setting encoding to %s", enc)
-                        self.update_jpeg_menu()
+                        self.set_jpegmenu()
                         self.updated_menus()
                 encoding_item.set_active(encoding==self.client.encoding)
                 encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
@@ -448,13 +448,14 @@ class ClientExtrasBase(object):
             qi.connect('activate', set_jpeg_quality)
             self.jpeg_submenu.append(qi)
         self.jpeg_submenu.show_all()
-        def set_jpegmenu(*args):
-            if self.jpeg_quality:
-                self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
-                self.updated_menus()
-        self.client.connect("handshake-complete", set_jpegmenu)
+        self.client.connect("handshake-complete", self.set_jpegmenu)
         return self.jpeg_quality
 
+    def set_jpegmenu(self, *args):
+        if self.jpeg_quality:
+            self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
+            self.updated_menus()
+    
     def updated_menus(self):
         """ subclasses may override this method - see darwin """
         pass
