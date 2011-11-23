@@ -32,10 +32,15 @@ def nn(x):
 
 class ClientSource(object):
     def __init__(self, protocol):
+        self._priority_packets = []
         self._ordinary_packets = []
         self._mouse_position = None
         self._protocol = protocol
         self._protocol.source = self
+
+    def queue_priority_packet(self, packet):
+        self._priority_packets.append(packet)
+        self._protocol.source_has_more()
 
     def queue_ordinary_packet(self, packet):
         self._ordinary_packets.append(packet)
@@ -50,7 +55,9 @@ class ClientSource(object):
         self._protocol.source_has_more()
 
     def next_packet(self):
-        if self._ordinary_packets:
+        if self._priority_packets:
+            packet = self._priority_packets.pop(0)
+        elif self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
         elif self._mouse_position is not None:
             packet = self._mouse_position
@@ -58,7 +65,8 @@ class ClientSource(object):
         else:
             packet = None
         has_more = packet is not None and \
-                (bool(self._ordinary_packets) or self._mouse_position is not None)
+                (bool(self._priority_packets) or bool(self._ordinary_packets) \
+                 or self._mouse_position is not None)
         return packet, has_more
 
 class ClientWindow(gtk.Window):
@@ -536,7 +544,7 @@ class XpraClient(gobject.GObject):
                 #confirm it and continue, otherwise stop
                 log.debug("continue_key_repeat")
                 if keycode in self.keycodes_pressed:
-                    self.send(["key-repeat", keycode])
+                    self.send_now(["key-repeat", keycode])
                     return  True
                 else:
                     del self.keycodes_pressed[keycode]
@@ -546,7 +554,7 @@ class XpraClient(gobject.GObject):
                 #confirm it and start repeat:
                 log.debug("start_key_repeat")
                 if keycode in self.keycodes_pressed:
-                    self.send(["key-repeat", keycode])
+                    self.send_now(["key-repeat", keycode])
                     self.keycodes_pressed[keycode] = gobject.timeout_add(interval, continue_key_repeat)
                 else:
                     del self.keycodes_pressed[keycode]
@@ -611,6 +619,9 @@ class XpraClient(gobject.GObject):
 
     def send(self, packet):
         self._protocol.source.queue_ordinary_packet(packet)
+
+    def send_now(self, packet):
+        self._protocol.source.queue_priority_packet(packet)
 
     def send_positional(self, packet):
         self._protocol.source.queue_positional_packet(packet)
@@ -792,7 +803,7 @@ class XpraClient(gobject.GObject):
         window = self._id_to_window[id]
         window.draw(x, y, width, height, coding, data)
         if packet_sequence and self.send_damage_sequence:
-            self.send(["damage-sequence", packet_sequence])
+            self.send_now(["damage-sequence", packet_sequence])
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet
