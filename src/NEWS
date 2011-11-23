@@ -1,3 +1,11 @@
+v0.0.7.31 (2011-11-23)
+======================
+	-- threaded server for much lower latency
+	-- adaptive damage batching
+	-- memory mapped transfers for local connections
+	-- xpra "detach" command
+
+
 v0.0.7.30 (2011-11-01)
 ======================
 	-- fix for update batching causing screen corruption

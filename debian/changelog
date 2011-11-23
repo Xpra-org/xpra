@@ -1,3 +1,11 @@
+xpra (0.0.7.31-1) UNRELEASED; urgency=low
+  * threaded server for much lower latency
+  * adaptive damage batching
+  * memory mapped transfers for local connections
+  * xpra "detach" command
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 23 Nov 2011 17:46:03 +0700
+
 xpra (0.0.7.30-1) UNRELEASED; urgency=low
   * fix for update batching causing screen corruption
   * fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
