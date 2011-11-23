@@ -9,6 +9,7 @@ import gtk
 import gobject
 import cairo
 import re
+import os
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -375,10 +376,12 @@ class XpraClient(gobject.GObject):
         self.mmap_file = None
         self.mmap_size = 0
         if self.supports_mmap:
-            import os
             import mmap
             import tempfile
-            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap")
+            dotxpradir = os.path.expanduser("~/.xpra")
+            if not os.path.exists(dotxpradir):
+                os.mkdir(dotxpradir, 0700)
+            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=dotxpradir)
             #keep a reference to it so it does not disappear!
             self._mmap_temp_file = temp
             self.mmap_file = temp.name
@@ -438,6 +441,11 @@ class XpraClient(gobject.GObject):
         self._client_extras.exit()
         if self._protocol:
             self._protocol.close()
+        self.clean_mmap()
+
+    def clean_mmap(self):
+        if self.mmap_file and os.path.exists(self.mmap_file):
+            os.unlink(self.mmap_file)
 
     def quit(self):
         gtk_main_quit_really()
@@ -758,6 +766,8 @@ class XpraClient(gobject.GObject):
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
+        #the server will have a handle on the mmap file by now, safe to delete:
+        self.clean_mmap()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
