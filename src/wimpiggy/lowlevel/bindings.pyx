@@ -872,6 +872,9 @@ def xcomposite_name_window_pixmap(window):
 # Randr
 ###################################
 
+cdef extern from "X11/extensions/randr.h":
+    cdef unsigned int RR_Rotate_0
+
 cdef extern from "X11/extensions/Xrandr.h":
     Bool XRRQueryExtension(Display *, int *, int *)
     Status XRRQueryVersion(Display *, int * major, int * minor)
