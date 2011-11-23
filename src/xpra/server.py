@@ -10,7 +10,9 @@
 #   shape?
 #   any other interesting metadata? _NET_WM_TYPE, WM_TRANSIENT_FOR, etc.?
 
-import gtk
+import gtk.gdk
+gtk.gdk.threads_init()
+
 import gobject
 import cairo
 import sys
@@ -23,6 +25,12 @@ import os
 from collections import deque
 import time
 import ctypes
+import thread
+import Queue
+from math import log as mathlog
+from math import sqrt
+def logp2(x):
+    return mathlog(1+x, 2)
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -131,24 +139,59 @@ class DesktopManager(gtk.Widget):
 gobject.type_register(DesktopManager)
 
 class ServerSource(object):
-    # Strategy: if we have ordinary packets to send, send those.
-    # When we don't, then send window updates (expired ones first).
-    def __init__(self, protocol, encoding, mmap, mmap_size):
+    """
+    Strategy: if we have ordinary packets to send, send those.
+    When we don't, then send window updates (expired ones first).
+    The UI thread adds damage requests to a queue - see damage()
+    """
+    BATCH_EVENTS = True
+    MAX_EVENTS = 80                     #maximum number of damage events
+    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
+    TIME_UNIT = 1                       #per second
+    MIN_BATCH_DELAY = 5
+    AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
+    MAX_BATCH_DELAY = 1000
+    
+    def __init__(self, protocol, encoding, send_damage_sequence, mmap, mmap_size, desktop_manager):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
         self._damage = {}
         self._damage_last_events = {}
         self._damage_delayed = {}
-        self._damage_delayed_expired = {}
+        # for managing sequence numbers:
+        self._send_damage_sequence = send_damage_sequence
+        self._damage_sequence = 0               #increase with every Region
+        self._damage_packet_sequence = 0        #increase with every packet send
+        self.last_client_packet_sequence = -1
+        self.last_client_delta = None
+        self._sequence = 0
+        self.batch_delay = ServerSource.MIN_BATCH_DELAY
+        # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
+        self._desktop_manager = desktop_manager
         protocol.source = self
+        self._damage_request_queue = Queue.Queue()
+        self._damage_data_queue = Queue.Queue()
+        self._damage_packet_queue = Queue.Queue(2)
         if self._have_more():
             protocol.source_has_more()
+        thread.start_new_thread(self.damage_to_data, ())
+        thread.start_new_thread(self.data_to_packet, ())
 
     def _have_more(self):
-        return bool(self._ordinary_packets) or bool(self._damage) or bool(self._damage_delayed_expired)
+        return bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
+
+    def next_packet(self):
+        if self._ordinary_packets:
+            packet = self._ordinary_packets.pop(0)
+        else:
+            try:
+                packet = self._damage_packet_queue.get(False)
+            except Queue.Empty:
+                packet = None
+        return packet, packet is not None and self._have_more()
 
     def send_packet_now(self, packet):
         assert self._protocol
@@ -161,135 +204,151 @@ class ServerSource(object):
         self._protocol.source_has_more()
 
     def cancel_damage(self, id):
-        for d in [self._damage, self._damage_delayed, self._damage_delayed_expired]:
+        for d in [self._damage, self._damage_delayed]:
             if id in d:
                 del d[id]
 
     def damage(self, id, window, x, y, w, h):
-        BATCH_EVENTS = True
-        MAX_PIXELS = 800*600*25 #small screen at 25 frames
-        MAX_EVENTS = 30         #maximum number of damage events
-        TIME_UNIT = 1           #per second
-        BATCH_DELAY = 50        #how long to batch updates for (in millis)
-        def add_damage_to_region(region):
+        """ decide what to do with the damage area:
+            * send it now (if not congested and small)
+            * add it to an existing delayed region
+            * replaced the delayed region with a full-window update
+            Also takes care of adjusting the batch-delay in case
+            of congestion.
+        """
+        def damage_now(reason):
+            log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", id, x, y, w, h, reason, self._sequence)
+            region = gtk.gdk.Region()
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-        def damage_now():
-            log("damage(%s, %s, %s, %s, %s)", id, x, y, w, h)
-            _, region = self._damage.setdefault(id, (window, gtk.gdk.Region()))
-            add_damage_to_region(region)
-            self._protocol.source_has_more()
-        if not BATCH_EVENTS:
-            return damage_now()
+            item = id, window, region, self._sequence
+            self._damage_request_queue.put(item)
+            self._sequence += 1
+        if not ServerSource.BATCH_EVENTS:
+            return damage_now("batching disabled")
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(id, deque(maxlen=MAX_EVENTS))
+        last_events = self._damage_last_events.setdefault(id, deque(maxlen=ServerSource.MAX_EVENTS))
         last_events.append((now, w*h))
 
         delayed = self._damage_delayed.get(id)
         if delayed:
-            (window, region) = delayed
-            add_damage_to_region(region)
+            (_, _, region, _) = delayed
+            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
             return
+        
+        def update_batch_delay(reason, factor=1, delta=0):
+            self.batch_delay = max(ServerSource.MIN_BATCH_DELAY, min(ServerSource.MAX_BATCH_DELAY, int(self.batch_delay*factor-delta)))
+            log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch_delay)
 
-        pixel_count = 0
-        for last_time,pixels in last_events:
-            pixel_count += pixels
-            if pixel_count>=MAX_PIXELS:
-                break
-        if pixel_count>=MAX_PIXELS:
-            log.info("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
+        last_delta = self.last_client_delta
+        delta = self._damage_packet_sequence-self.last_client_packet_sequence
+        self.last_client_delta = delta
+        if self._damage_packet_queue.full():
+            update_batch_delay("damage packet queue is full", 1+sqrt(self.batch_delay)/10)
+        elif self.last_client_packet_sequence>=0 and delta>5:
+            if delta>10 or last_delta<delta:
+                update_batch_delay("client %s damage packets behind" % delta, logp2(self._damage_packet_sequence-self.last_client_packet_sequence))
+            else:
+                update_batch_delay("client %s damage packets behind" % delta, 1.2)
+        elif self._damage_request_queue.qsize()>3:
+            update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), 0.8+logp2(self._damage_request_queue.qsize()))
+        elif self._damage_data_queue.qsize()>3:
+            update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), 0.8+logp2(self._damage_data_queue.qsize()))
         else:
-            if len(last_events)<MAX_EVENTS:
-                log("damage(%s, %s, %s, %s, %s) recent event list is too small, not batching", id, x, y, w, h)
-                return damage_now()
-            when,_ = last_events[0]
-            if now-when>TIME_UNIT:
-                log("damage(%s, %s, %s, %s, %s) damage events are outside the batching time limit, not batching", id, x, y, w, h)
-                return damage_now()
+            #if batch delay had been increased, reduce it:
+            if self.batch_delay>ServerSource.MIN_BATCH_DELAY and (self.last_client_packet_sequence<0 or delta<=2):
+                if self.last_client_packet_sequence<0:
+                    update_batch_delay("no feedback... guessing", 0.8)
+                elif self.batch_delay>ServerSource.AVG_BATCH_DELAY:
+                    update_batch_delay("client up to date", 0.7+(delta*0.1))
+                else:
+                    update_batch_delay("client up to date", 1.0, 3-delta)
+            else:
+                pixel_count = 0
+                for last_time,pixels in last_events:
+                    pixel_count += pixels
+                    if pixel_count>=ServerSource.MAX_PIXELS:
+                        break
+                if pixel_count>=ServerSource.MAX_PIXELS:
+                    log.info("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
+                else:
+                    if len(last_events)<ServerSource.MAX_EVENTS:
+                        return damage_now("recent event list is too small, not batching")
+                    when,_ = last_events[0]
+                    if now-when>ServerSource.TIME_UNIT:
+                        return damage_now("%s damage events took %s seconds, not batching" % (ServerSource.MAX_EVENTS, (now-when)))
+                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", id, x, y, w, h, ServerSource.MAX_EVENTS, (now-when))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
-        add_damage_to_region(region)
-        self._damage_delayed[id] = (window, region)
+        region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+        self._damage_delayed[id] = (id, window, region, self._sequence)
+        self._sequence += 1
         def send_delayed():
             """ move the delayed rectangles to the expired list """
-            log("send_delayed for %s ", id)
+            log("send_delayed for %s", id)
             delayed = self._damage_delayed.get(id)
             if delayed:
                 del self._damage_delayed[id]
-                self._damage_delayed_expired[id] = delayed
-                self._protocol.source_has_more()
+                self._damage_request_queue.put(delayed)
+                log("moving region %s to expired list", delayed)
             return False
-        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry", id, x, y, w, h)
-        gobject.timeout_add(BATCH_DELAY, send_delayed)
+        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", id, x, y, w, h, self._sequence, self.batch_delay)
+        gobject.timeout_add(self.batch_delay, send_delayed)
 
-    def next_packet(self):
-        if self._ordinary_packets:
-            packet = self._ordinary_packets.pop(0)
-        elif self._damage or self._damage_delayed_expired:
-            packet = self.next_damage_packet()
-        else:
-            packet = None
-        return packet, self._have_more()
+    def damage_to_data(self):
+        """ pick items off the damage_request_queue
+            and places the damage pixel data in the _damage_data_queue.
+            this method runs in a thread but most of the actual processing
+            is done in process_regions() which runs in the gtk main thread
+            via idle_add.
+        """
+        while True:
+            id, window, damage, sequence = self._damage_request_queue.get(True)
+            regions = []
+            (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
+            full_pixels = ww*wh
+            pixel_count = 0
+            while not damage.empty():
+                try:
+                    (x, y, w, h) = get_rectangle_from_region(damage)
+                    pixel_count += w*h
+                    #favor full screen updates over many regions:
+                    if pixel_count+4096*len(regions)>=full_pixels*9/10:
+                        regions = [(0, 0, ww, wh, True)]
+                        break
+                    regions.append((x, y, w, h, False))
+                    rect = gtk.gdk.Rectangle(x, y, w, h)
+                    damage.subtract(gtk.gdk.region_rectangle(rect))
+                except ValueError:
+                    log.error("damage_to_data: damage is empty: %s", damage)
+                    break
+            gobject.idle_add(self._process_damage_regions, id, window, regions)
 
-    def next_damage_packet(self):
-        if self._damage_delayed_expired:
-            damage_dict = self._damage_delayed_expired
-        else:
-            damage_dict = self._damage
-        item = damage_dict.items()[0]
-        id, (window, damage) = item
-        (x, y, w, h) = get_rectangle_from_region(damage)
-        rect = gtk.gdk.Rectangle(x, y, w, h)
-        damage.subtract(gtk.gdk.region_rectangle(rect))
-        if damage.empty():
-            del damage_dict[id]
+    def _process_damage_regions(self, id, window, regions):
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
+        log("damage_to_data: regions=%s, sending damage ack", regions)
         window.acknowledge_changes()
         pixmap = window.get_property("client-contents")
+        log("damage_to_data: pixmap size=%s", pixmap.get_size())
         if pixmap is None:
             log.error("wtf, pixmap is None?")
-            return  None
-        (x2, y2, w2, h2, coding, data) = self._get_rgb_data(pixmap, x, y, w, h)
-        if not w2 or not h2:
-            return None
-        if self._mmap and self._mmap_size>0:
-            data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
-            data_end = ctypes.c_uint.from_buffer(self._mmap, 4)
-            start = max(8, data_start.value)
-            end = max(8, data_end.value)
-            if end<start:
-                available = start-end
-                chunk = available
-            else:
-                chunk = self._mmap_size-end
-                available = chunk+(start-8)
-            l = len(data)
-            if l<available:
-                self._mmap.seek(end)
-                if l<chunk:
-                    """ fits in one chunk """
-                    self._mmap.write(data)
-                    data = [(end, l)]
-                    data_end.value = end+l
-                else:
-                    """ split in 2 chunks: wrap around the end of the mmap buffer """
-                    self._mmap.write(data[:chunk])
-                    self._mmap.seek(8)
-                    self._mmap.write(data[chunk:])
-                    l2 = l-chunk
-                    data = [(end, chunk), (8, l2)]
-                    data_end.value = 8+l2
-                coding = "mmap"
-                log("sending damage with mmap: %s", data)
-            else:
-                log("mmap area full... ouch!")
-        return ["draw", id, x2, y2, w2, h2, coding, data]
+            return
+        #TODO: here we could split a single large full_window update into chunks...
+        for region in regions:
+            (x, y, w, h, full_window) = region
+            if full_window:
+                log("damage_to_data sending full window: %s", pixmap.get_size())
+                w, h = pixmap.get_size()
+            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h)
+            if data:
+                log("damage_to_data adding to data queue, size=%s, full=%s", self._damage_data_queue.qsize(), self._damage_data_queue.full())
+                self._damage_data_queue.put(data)
 
-    def _get_rgb_data(self, pixmap, x, y, width, height):
+    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height):
         pixmap_w, pixmap_h = pixmap.get_size()
         # Just in case we somehow end up with damage larger than the pixmap,
         # we don't want to start requesting random chunks of memory (this
@@ -302,35 +361,86 @@ class ServerSource(object):
         if y + height > pixmap_h:
             height = pixmap_h - y
         if width <= 0 or height <= 0:
-            return (0, 0, 0, 0, self._encoding, "")
+            return None
         pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
         pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),
                                  x, y, 0, 0, width, height)
         raw_data = pixbuf.get_pixels()
-        rowwidth = width * 3
         rowstride = pixbuf.get_rowstride()
-        if rowwidth == rowstride:
-            data = raw_data
-        else:
-            rows = []
-            for i in xrange(height):
-                rows.append(raw_data[i*rowstride : i*rowstride+rowwidth])
-            data = "".join(rows)
-        if self._encoding in ["jpeg", "png"]:
-            import Image
-            im = Image.fromstring("RGB", (width,height), data)
-            buf = StringIO.StringIO()
-            if self._encoding=="jpeg":
-                q = min(99, max(1, self._protocol.jpegquality))
-                log.debug("sending with jpeg quality %s" % q)
-                im.save(buf, "JPEG", quality=q)
-            else:
-                log.debug("sending as %s" % self._encoding)
-                im.save(buf, self._encoding.upper())
-            data=buf.getvalue()
-            buf.close()
+        return (id, x, y, width, height, self._encoding, raw_data, rowstride)
 
-        return (x, y, width, height, self._encoding, data)
+
+    def data_to_packet(self):
+        while True:
+            id, x, y, w, h, coding, data, rowstride = self._damage_data_queue.get(True)
+            log("data_to_packet: damage data: %s", (id, x, y, w, h, coding))
+            #pad rowstride:
+            rowwidth = w * 3
+            if rowwidth != rowstride:
+                rows = []
+                for i in xrange(h):
+                    rows.append(data[i*rowstride : i*rowstride+rowwidth])
+                data = "".join(rows)
+            #encode to jpeg/png:
+            if self._encoding in ["jpeg", "png"]:
+                import Image
+                im = Image.fromstring("RGB", (w, h), data)
+                buf = StringIO.StringIO()
+                if self._encoding=="jpeg":
+                    q = min(99, max(1, self._protocol.jpegquality))
+                    log.debug("sending with jpeg quality %s" % q)
+                    im.save(buf, "JPEG", quality=q)
+                else:
+                    log.debug("sending as %s" % self._encoding)
+                    im.save(buf, self._encoding.upper())
+                data = buf.getvalue()
+                buf.close()
+            #send via mmap?
+            if self._mmap and self._mmap_size>0:
+                mmap_data = self._mmap_send(data)
+                if mmap_data is not None:
+                    coding = "mmap"
+                    data = mmap_data
+            #actual network packet:
+            packet = ["draw", id, x, y, w, h, coding, data]
+            if self._send_damage_sequence:
+                packet.append(self._damage_packet_sequence)
+                self._damage_packet_sequence += 1
+            log("data_to_packet adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
+            self._damage_packet_queue.put(packet)
+            self._protocol.source_has_more()
+
+    def _mmap_send(self, data):
+        data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
+        data_end = ctypes.c_uint.from_buffer(self._mmap, 4)
+        start = max(8, data_start.value)
+        end = max(8, data_end.value)
+        if end<start:
+            available = start-end
+            chunk = available
+        else:
+            chunk = self._mmap_size-end
+            available = chunk+(start-8)
+        l = len(data)
+        if l>=available:
+            log("mmap area full... ouch!")
+            return None
+        self._mmap.seek(end)
+        if l<chunk:
+            """ fits in one chunk """
+            self._mmap.write(data)
+            data = [(end, l)]
+            data_end.value = end+l
+        else:
+            """ split in 2 chunks: wrap around the end of the mmap buffer """
+            self._mmap.write(data[:chunk])
+            self._mmap.seek(8)
+            self._mmap.write(data[chunk:])
+            l2 = l-chunk
+            data = [(end, chunk), (8, l2)]
+            data_end.value = 8+l2
+        log("sending damage with mmap: %s", data)
+        return data
 
 
 class XpraServer(gobject.GObject):
@@ -397,6 +507,7 @@ class XpraServer(gobject.GObject):
         self.mmap = None
         self.mmap_size = 0
 
+        self.send_damage_sequence = False
         self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
@@ -939,13 +1050,13 @@ class XpraServer(gobject.GObject):
         log.info("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
             """ client did not specify size, just return what we have """
-            return	root_w, root_h
+            return    root_w, root_h
         client_w, client_h = client_size
         if not self.randr:
             """ server does not support randr - return minimum of the client/server dimensions """
             w = min(client_w, root_w)
             h = min(client_h, root_h)
-            return	w,h
+            return    w,h
         log.debug("client resolution is %sx%s, current server resolution is %sx%s" % (client_w,client_h,root_w,root_h))
         return self.set_screen_size(client_w, client_h)
 
@@ -957,11 +1068,11 @@ class XpraServer(gobject.GObject):
         new_size = None
         for w,h in get_screen_sizes():
             if w<client_w or h<client_h:
-                continue			#size is too small for client
+                continue            #size is too small for client
             if new_size:
                 ew,eh = new_size
                 if ew*eh<w*h:
-                    continue		#we found a better (smaller) candidate already
+                    continue        #we found a better (smaller) candidate already
             new_size = w,h
         log.debug("best resolution for client(%sx%s) is: %s", client_w, client_h, new_size)
         if new_size:
@@ -1069,6 +1180,7 @@ class XpraServer(gobject.GObject):
         # set this as our new one:
         if self._protocol is not None:
             self.disconnect("new valid connection received")
+        self.send_damage_sequence = capabilities.get("damage_sequence", False)
         #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
         self.encodings = capabilities.get("encodings", ["rgb24"])
         self._set_encoding(capabilities.get("encoding", None))
@@ -1083,7 +1195,7 @@ class XpraServer(gobject.GObject):
             self.mmap = mmap.mmap(file.fileno(), self.mmap_size)
             log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding, self.mmap, self.mmap_size)
+        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.mmap, self.mmap_size, self._desktop_manager)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
         if "deflate" in capabilities:
@@ -1154,6 +1266,8 @@ class XpraServer(gobject.GObject):
         capabilities["encodings"] = ENCODINGS
         capabilities["encoding"] = self.encoding
         capabilities["resize_screen"] = self.randr
+        if client_capabilities.get("damage_sequence", False):
+            capabilities["damage_sequence"] = True
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat"] = client_capabilities.get("key_repeat")
         if self.session_name:
@@ -1244,6 +1358,8 @@ class XpraServer(gobject.GObject):
             self._damage(window, 0, 0, w, h)
         (x, y, _, _) = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
+        (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
+        log("resize_window to %sx%s, desktop manager set it to %sx%s", w, h, ww, wh)
 
     def _process_focus(self, proto, packet):
         if len(packet)==3:
@@ -1362,6 +1478,11 @@ class XpraServer(gobject.GObject):
         log.info("Shutting down in response to request")
         self.quit(False)
 
+    def _process_damage_sequence(self, proto, packet):
+        (_, packet_sequence) = packet
+        log("received sequence: %s", packet_sequence)
+        self._server_source.last_client_packet_sequence = packet_sequence
+
     def _process_buffer_refresh(self, proto, packet):
         (_, id, _, jpeg_qual) = packet
         if self.encoding=="jpeg":
@@ -1419,6 +1540,7 @@ class XpraServer(gobject.GObject):
         "close-window": _process_close_window,
         "shutdown-server": _process_shutdown_server,
         "jpeg-quality": _process_jpeg_quality,
+        "damage-sequence": _process_damage_sequence,
         "buffer-refresh": _process_buffer_refresh,
         "desktop_size": _process_desktop_size,
         "encoding": _process_encoding,

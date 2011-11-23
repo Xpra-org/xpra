@@ -52,14 +52,14 @@ class ClientSource(object):
     def next_packet(self):
         if self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
-            return packet, (bool(self._ordinary_packets)
-                            or self._mouse_position is not None)
         elif self._mouse_position is not None:
             packet = self._mouse_position
             self._mouse_position = None
-            return packet, False
         else:
-            return None, False
+            packet = None
+        has_more = packet is not None and \
+                (bool(self._ordinary_packets) or self._mouse_position is not None)
+        return packet, has_more
 
 class ClientWindow(gtk.Window):
     def __init__(self, client, id, x, y, w, h, metadata, override_redirect):
@@ -360,6 +360,7 @@ class XpraClient(gobject.GObject):
         self.notifications_enabled = True
         self._client_extras = ClientExtras(self, opts)
         self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
+        self.send_damage_sequence = False
         self.mmap_enabled = False
         self.supports_mmap = opts.mmap and self._client_extras.supports_mmap()
         self.mmap = None
@@ -651,6 +652,7 @@ class XpraClient(gobject.GObject):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities_request["desktop_size"] = [root_w, root_h]
         capabilities_request["png_window_icons"] = True
+        capabilities_request["damage_sequence"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             capabilities_request["key_repeat"] = key_repeat
@@ -741,6 +743,7 @@ class XpraClient(gobject.GObject):
         self.notifications_enabled = capabilities.get("notifications", False)
         clipboard_server_support = capabilities.get("clipboard", True) 
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
+        self.send_damage_sequence = capabilities.get("damage_sequence", False)
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
@@ -781,9 +784,15 @@ class XpraClient(gobject.GObject):
         self._process_new_common(packet, True)
 
     def _process_draw(self, packet):
-        (_, id, x, y, width, height, coding, data) = packet
+        (id, x, y, width, height, coding, data) = packet[1:8]
+        if len(packet)==9:
+            packet_sequence = packet[8]
+        else:
+            packet_sequence = None
         window = self._id_to_window[id]
         window.draw(x, y, width, height, coding, data)
+        if packet_sequence and self.send_damage_sequence:
+            self.send(["damage-sequence", packet_sequence])
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet

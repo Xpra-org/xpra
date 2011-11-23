@@ -116,6 +116,7 @@ class Protocol(object):
         self._write_thread = Thread(target=self._write_thread_loop)
         self._write_thread.daemon = True
         self._write_thread.start()
+        self._write_lock = Lock()
         self._read_thread = Thread(target=self._read_thread_loop)
         self._read_thread.daemon = True
         self._read_thread.start()
@@ -150,16 +151,20 @@ class Protocol(object):
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            log("writing %s", dump_packet(packet), type="raw.write")
+            #log("writing %s", dump_packet(packet), type="raw.write")
             data = bencode(packet)
             l = len(data)
-            if self._send_size:
-                if l<=1024:
-                    #send size and data together (low copy overhead):
-                    self._queue_write("PS%014d%s" % (l, data), True)
-                    return
-                self._queue_write("PS%014d" % l)
-            self._queue_write(data, True)
+            self._write_lock.acquire()
+            try:
+                if self._send_size:
+                    if l<=1024:
+                        #send size and data together (low copy overhead):
+                        self._queue_write("PS%014d%s" % (l, data), True)
+                        return
+                    self._queue_write("PS%014d" % l)
+                self._queue_write(data, True)
+            finally:
+                self._write_lock.release()
 
     def _write_thread_loop(self):
         try:
@@ -172,7 +177,6 @@ class Protocol(object):
                     break
                 try:
                     while buf:
-                        log("write thread: writing %s", repr_ellipsized(buf))
                         buf = buf[self._conn.write(buf):]
                 except (OSError, IOError, socket.error), e:
                     main_thread_call(self._connection_lost, "Error writing to connection: %s" % e)
