@@ -947,15 +947,17 @@ cdef _set_screen_size(display_source, pywindow, width, height):
             if xrr.width==width and xrr.height==height:
                 sizeID = i
         if sizeID<0:
-            print "size not found!"
-        else:
-            rates = XRRConfigRates(config, sizeID, &num_rates)
-            rate = rates[0]
-            rotation = 1          #RR_Rotate_0
-            time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
-            status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time)
-            if status != Success:
-                print "failed to set new screen size"
+            print "size not found for %sx%s" % (width, height)
+            return False
+        rates = XRRConfigRates(config, sizeID, &num_rates)
+        rate = rates[0]
+        rotation = RR_Rotate_0
+        time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
+        status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time)
+        if status != Success:
+            print "failed to set new screen size"
+            return False
+        return True
     finally:
         XRRFreeScreenConfigInfo(config)
 
@@ -987,7 +989,7 @@ def _get_screen_size(pywindow):
 def set_screen_size(width, height):
     display = gtk.gdk.display_get_default()
     root_window = gtk.gdk.get_default_root_window()
-    _set_screen_size(display, root_window, width, height)
+    return _set_screen_size(display, root_window, width, height)
 
 ###################################
 # XKB bell
@@ -1218,7 +1220,7 @@ def xdamage_stop(display_source, handle):
     XDamageDestroy(get_xdisplay_for(display_source), handle)
 
 def xdamage_acknowledge(display_source, handle):
-	# def xdamage_acknowledge(display_source, handle, x, y, width, height):
+    # def xdamage_acknowledge(display_source, handle, x, y, width, height):
     # cdef XRectangle rect
     # rect.x = x
     # rect.y = y
