@@ -152,7 +152,7 @@ class ServerSource(object):
     AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
     MAX_BATCH_DELAY = 1000
     
-    def __init__(self, protocol, encoding, send_damage_sequence, mmap, mmap_size, desktop_manager):
+    def __init__(self, protocol, encoding, send_damage_sequence, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
@@ -170,7 +170,6 @@ class ServerSource(object):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
-        self._desktop_manager = desktop_manager
         protocol.source = self
         self._damage_request_queue = Queue.Queue()
         self._damage_data_queue = Queue.Queue()
@@ -309,7 +308,7 @@ class ServerSource(object):
             id, window, damage, _ = self._damage_request_queue.get(True)
             regions = []
             try:
-                (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
+                (_, _, ww, wh) = window.get_property("geometry")
             except KeyError, e:
                 ww, wh = 512, 512
             try:
@@ -1210,7 +1209,7 @@ class XpraServer(gobject.GObject):
             self.mmap = mmap.mmap(file.fileno(), self.mmap_size)
             log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.mmap, self.mmap_size, self._desktop_manager)
+        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.mmap, self.mmap_size)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
         if "deflate" in capabilities:
