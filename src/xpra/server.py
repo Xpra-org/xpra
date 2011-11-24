@@ -339,10 +339,10 @@ class ServerSource(object):
         log("damage_to_data: regions=%s, sending damage ack", regions)
         window.acknowledge_changes()
         pixmap = window.get_property("client-contents")
-        log("damage_to_data: pixmap size=%s", pixmap.get_size())
         if pixmap is None:
             log.error("wtf, pixmap is None?")
             return
+        log("damage_to_data: pixmap size=%s", pixmap.get_size())
         #TODO: here we could split a single large full_window update into chunks...
         for region in regions:
             (x, y, w, h, full_window) = region
