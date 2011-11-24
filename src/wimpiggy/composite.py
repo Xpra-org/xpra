@@ -75,9 +75,10 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
 
     def _cleanup_listening(self, listening):
         # Don't want to stop listening to self._window!:
-        assert self._window not in self._listening_to
-        for w in self._listening_to:
-            remove_event_receiver(w, self)
+        if self._listening_to:
+            assert self._window not in self._listening_to
+            for w in self._listening_to:
+                remove_event_receiver(w, self)
 
     def do_get_property_contents_handle(self, name):
         if self._contents_handle is None:
