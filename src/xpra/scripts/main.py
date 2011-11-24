@@ -191,10 +191,7 @@ def main(script_file, cmdline):
         from xpra.scripts.server import run_server
         run_server(parser, options, mode, script_file, args)
     elif mode == "attach" or mode == "detach":
-        try:
-            run_client(parser, options, args, mode=="detach")
-        except KeyboardInterrupt:
-            sys.stdout.write("Exiting on keyboard interrupt\n")
+        run_client(parser, options, args, mode=="detach")
     elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         run_stop(parser, options, args)
@@ -330,7 +327,12 @@ def run_client(parser, opts, extra_args, detach):
             sys.stdout.write("handshake-complete: detaching")
             app.quit()
         app.connect("handshake-complete", do_detach)
-    app.run()
+    import signal
+    signal.signal(signal.SIGINT, app.quit)
+    try:
+        app.run()
+    finally:
+        app.cleanup()
 
 def run_proxy(parser, opts, extra_args):
     from xpra.proxy import XpraProxy

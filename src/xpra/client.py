@@ -438,6 +438,8 @@ class XpraClient(gobject.GObject):
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
+
+    def cleanup(self):
         self._client_extras.exit()
         if self._protocol:
             self._protocol.close()
@@ -447,7 +449,7 @@ class XpraClient(gobject.GObject):
         if self.mmap_file and os.path.exists(self.mmap_file):
             os.unlink(self.mmap_file)
 
-    def quit(self):
+    def quit(self, *args):
         gtk_main_quit_really()
 
     def parse_shortcuts(self, strs):
