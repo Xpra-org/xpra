@@ -10,7 +10,6 @@ log = Logger()
 class XRootPropWatcher(gobject.GObject):
     __gsignals__ = {
         "root-prop-changed": n_arg_signal(2),
-
         "wimpiggy-property-notify-event": n_arg_signal(1),
         }
 
@@ -26,7 +25,7 @@ class XRootPropWatcher(gobject.GObject):
 
     def _notify(self, prop):
         v = prop_get(gtk.gdk.get_default_root_window(),
-                     prop, "latin1")
+                     prop, "latin1", ignore_errors=True)
         self.emit("root-prop-changed", prop, v)
 
     def notify_all(self):

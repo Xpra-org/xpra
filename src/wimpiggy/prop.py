@@ -289,4 +289,3 @@ def prop_get(target, key, type, ignore_errors=False):
                  + "  Data: %r[...?]",
                  key, type, data[:100])
         raise
-        return None
