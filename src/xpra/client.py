@@ -385,7 +385,7 @@ class XpraClient(gobject.GObject):
             #keep a reference to it so it does not disappear!
             self._mmap_temp_file = temp
             self.mmap_file = temp.name
-            self.mmap_size = mmap.PAGESIZE*1024*8   #generally 32MB
+            self.mmap_size = max(4096, mmap.PAGESIZE)*32   #generally 128MB
             fd = temp.file.fileno()
             log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
             os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
