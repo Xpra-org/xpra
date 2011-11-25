@@ -365,7 +365,7 @@ class ServerSource(object):
                 w, h = pixmap.get_size()
             data = self._get_rgb_rawdata(id, pixmap, x, y, w, h, sequence)
             if data:
-                log("process_damage_regions: adding to data queue, size=%s, full=%s", self._damage_data_queue.qsize(), self._damage_data_queue.full())
+                log("process_damage_regions: adding pixel data %s to queue, queue size=%s", data[:6], self._damage_data_queue.qsize())
                 self._damage_data_queue.put(data)
 
     def _get_rgb_rawdata(self, id, pixmap, x, y, width, height, sequence):
@@ -397,6 +397,8 @@ class ServerSource(object):
                 packet = self.make_data_packet(item)
                 if packet:
                     log("data_to_packet: adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
+                    if self._damage_packet_queue.full():
+                        self._protocol.source_has_more()
                     self._damage_packet_queue.put(packet)
                     self._protocol.source_has_more()
             except Exception, e:
