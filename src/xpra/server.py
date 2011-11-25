@@ -55,7 +55,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.protocol import Protocol, SocketConnection
+from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
@@ -786,7 +786,7 @@ class XpraServer(gobject.GObject):
         self.send_cursor()
 
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image or ""], "cursor")
+        self._send(["cursor", self.cursor_image or ""])
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)" % (wm, event))
@@ -1024,12 +1024,9 @@ class XpraServer(gobject.GObject):
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
-    def _send(self, packet, packetlog=None):
+    def _send(self, packet):
         if self._protocol is not None:
-            if packetlog:
-                log("Queuing packet: %s", packetlog)
-            else:
-                log("Queuing packet: %s", packet)
+            log("Queuing packet: %s", dump_packet(packet))
             self._protocol.source.queue_ordinary_packet(packet)
 
     def _raw_send(self, proto, packet):

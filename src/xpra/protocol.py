@@ -60,7 +60,7 @@ def repr_ellipsized(obj, limit=100):
         return repr(obj)
 
 def dump_packet(packet):
-    return "[" + ", ".join([repr_ellipsized(x, 50) for x in packet]) + "]"
+    return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
 
 def main_thread_call(fn, *args, **kwargs):
     log("Queueing main thread call to %s" % (fn,))
