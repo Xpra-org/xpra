@@ -162,11 +162,10 @@ class ServerSource(object):
         self._damage_delayed = {}
         # for managing sequence numbers:
         self._send_damage_sequence = send_damage_sequence
-        self._damage_sequence = 0               #increase with every Region
+        self._sequence = 0                      #increase with every Region
         self._damage_packet_sequence = 0        #increase with every packet send
-        self.last_client_packet_sequence = -1
-        self.last_client_delta = None
-        self._sequence = 0
+        self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
+        self.last_client_delta = None           #last delta between our damage_packet_sequence and last_client_packet_sequence
         self.batch_delay = ServerSource.MIN_BATCH_DELAY
         # mmap:
         self._mmap = mmap
@@ -175,8 +174,6 @@ class ServerSource(object):
         self._damage_request_queue = Queue.Queue()
         self._damage_data_queue = Queue.Queue()
         self._damage_packet_queue = Queue.Queue(2)
-        if self._have_more():
-            protocol.source_has_more()
         thread.start_new_thread(self.damage_to_data, ())
         thread.start_new_thread(self.data_to_packet, ())
 
@@ -298,6 +295,8 @@ class ServerSource(object):
                 del self._damage_delayed[id]
                 self._damage_request_queue.put(delayed)
                 log("moving region %s to expired list", delayed)
+            else:
+                log("window %s already removed from delayed list?", id)
             return False
         log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", id, x, y, w, h, self._sequence, self.batch_delay)
         gobject.timeout_add(self.batch_delay, send_delayed)
@@ -461,7 +460,7 @@ class ServerSource(object):
             available = chunk+(start-8)
         l = len(data)
         if l>=available:
-            log("mmap area full... ouch!")
+            log("mmap area full: we need more than %s but only %s left! ouch!", l, available)
             return None
         self._mmap.seek(end)
         if l<chunk:
@@ -783,11 +782,11 @@ class XpraServer(gobject.GObject):
             return
         self.last_cursor_serial = event.cursor_serial
         self.cursor_image = get_cursor_image()
-        log("do_wimpiggy_cursor_event(%s) new_cursor=%s" % (event, self.cursor_image))
+        log("do_wimpiggy_cursor_event(%s) new_cursor=%s" % (event, self.cursor_image[:7]))
         self.send_cursor()
 
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image or ""])
+        self._send(["cursor", self.cursor_image or ""], "cursor")
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)" % (wm, event))
@@ -1025,9 +1024,12 @@ class XpraServer(gobject.GObject):
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
-    def _send(self, packet):
+    def _send(self, packet, packetlog=None):
         if self._protocol is not None:
-            log("Queuing packet: %s", packet)
+            if packetlog:
+                log("Queuing packet: %s", packetlog)
+            else:
+                log("Queuing packet: %s", packet)
             self._protocol.source.queue_ordinary_packet(packet)
 
     def _raw_send(self, proto, packet):
