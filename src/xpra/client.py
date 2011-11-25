@@ -376,22 +376,30 @@ class XpraClient(gobject.GObject):
         self.mmap_file = None
         self.mmap_size = 0
         if self.supports_mmap:
-            import mmap
-            import tempfile
-            dotxpradir = os.path.expanduser("~/.xpra")
-            if not os.path.exists(dotxpradir):
-                os.mkdir(dotxpradir, 0700)
-            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=dotxpradir)
-            #keep a reference to it so it does not disappear!
-            self._mmap_temp_file = temp
-            self.mmap_file = temp.name
-            self.mmap_size = max(4096, mmap.PAGESIZE)*32   #generally 128MB
-            fd = temp.file.fileno()
-            log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
-            os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
-            assert os.write(fd, '\x00')
-            os.lseek(fd, 0, os.SEEK_SET)
-            self.mmap = mmap.mmap(fd, length=self.mmap_size)
+            try:
+                import mmap
+                import tempfile
+                dotxpradir = os.path.expanduser("~/.xpra")
+                if not os.path.exists(dotxpradir):
+                    os.mkdir(dotxpradir, 0700)
+                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=dotxpradir)
+                #keep a reference to it so it does not disappear!
+                self._mmap_temp_file = temp
+                self.mmap_file = temp.name
+                self.mmap_size = max(4096, mmap.PAGESIZE)*32   #generally 128MB
+                fd = temp.file.fileno()
+                log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
+                os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
+                assert os.write(fd, '\x00')
+                os.lseek(fd, 0, os.SEEK_SET)
+                self.mmap = mmap.mmap(fd, length=self.mmap_size)
+            except Exception, e:
+                log.error("failed to setup mmap: %s", e)
+                self.supports_mmap = False
+                self.clean_mmap()
+                self.mmap = None
+                self.mmap_file = None
+                self.mmap_size = 0
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
