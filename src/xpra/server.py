@@ -1375,12 +1375,13 @@ class XpraServer(gobject.GObject):
         window = self._id_to_window[id]
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(window)
-        if self._desktop_manager.visible(window):
-            self._damage(window, 0, 0, w, h)
         (x, y, _, _) = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
         (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
-        log("resize_window to %sx%s, desktop manager set it to %sx%s", w, h, ww, wh)
+        visible = self._desktop_manager.visible(window)
+        log("resize_window to %sx%s, desktop manager set it to %sx%s, visible=%s", w, h, ww, wh, visible)
+        if visible:
+            self._damage(window, 0, 0, w, h)
 
     def _process_focus(self, proto, packet):
         if len(packet)==3:
