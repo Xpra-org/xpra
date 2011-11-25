@@ -156,7 +156,7 @@ class ServerSource(object):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
-        self._damage = {}
+        self._damage_cancelled = {}
         self._damage_last_events = {}
         self._damage_delayed = {}
         # for managing sequence numbers:
@@ -203,9 +203,13 @@ class ServerSource(object):
         self._protocol.source_has_more()
 
     def cancel_damage(self, id):
-        for d in [self._damage, self._damage_delayed]:
-            if id in d:
-                del d[id]
+        #if delayed, we can just drop it now
+        if id in self._damage_delayed:
+            log("cancel_damage: %s, removed batched region", id)
+            del self._damage_delayed[id]
+        #for those being processed in separate threads, drop by sequence:
+        log("cancel_damage: %s, dropping all damage up to sequence=%s", id, self._sequence)
+        self._damage_cancelled[id] = self._sequence
 
     def damage(self, id, window, x, y, w, h):
         """ decide what to do with the damage area:
@@ -271,7 +275,7 @@ class ServerSource(object):
                     if pixel_count>=ServerSource.MAX_PIXELS:
                         break
                 if pixel_count>=ServerSource.MAX_PIXELS:
-                    log.info("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
+                    log("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
                 else:
                     if len(last_events)<ServerSource.MAX_EVENTS:
                         return damage_now("recent event list is too small, not batching")
@@ -305,7 +309,11 @@ class ServerSource(object):
             via idle_add.
         """
         while True:
-            id, window, damage, _ = self._damage_request_queue.get(True)
+            id, window, damage, sequence = self._damage_request_queue.get(True)
+            log("damage_to_data: processing sequence=%s", sequence)
+            if self._damage_cancelled.get(id, 0)>sequence:
+                log("damage_to_data: dropping request with sequence=%s", sequence)
+                continue
             regions = []
             try:
                 if (isinstance(window, OverrideRedirectWindowModel)):
@@ -334,30 +342,32 @@ class ServerSource(object):
             except Exception, e:
                 log.error("damage_to_data: error processing region %s: %s", damage, e)
                 continue
-            gobject.idle_add(self._process_damage_regions, id, window, regions)
+            gobject.idle_add(self._process_damage_regions, id, window, ww, wh, regions, sequence)
 
-    def _process_damage_regions(self, id, window, regions):
+    def _process_damage_regions(self, id, window, ww, wh, regions, sequence):
+        if self._damage_cancelled.get(id, 0)>sequence:
+            log("process_damage_regions: dropping damage request with sequence=%s", sequence)
+            return
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
-        log("damage_to_data: regions=%s, sending damage ack", regions)
+        log("process_damage_regions: regions=%s, sending damage ack", regions)
         window.acknowledge_changes()
         pixmap = window.get_property("client-contents")
         if pixmap is None:
             log.error("wtf, pixmap is None?")
             return
-        log("damage_to_data: pixmap size=%s", pixmap.get_size())
-        #TODO: here we could split a single large full_window update into chunks...
+        log("process_damage_regions: pixmap size=%s, window size=%s", pixmap.get_size(), (ww, wh))
         for region in regions:
             (x, y, w, h, full_window) = region
             if full_window:
-                log("damage_to_data sending full window: %s", pixmap.get_size())
+                log("process_damage_regions: sending full window: %s", pixmap.get_size())
                 w, h = pixmap.get_size()
-            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h)
+            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h, sequence)
             if data:
-                log("damage_to_data adding to data queue, size=%s, full=%s", self._damage_data_queue.qsize(), self._damage_data_queue.full())
+                log("process_damage_regions: adding to data queue, size=%s, full=%s", self._damage_data_queue.qsize(), self._damage_data_queue.full())
                 self._damage_data_queue.put(data)
 
-    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height):
+    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height, sequence):
         pixmap_w, pixmap_h = pixmap.get_size()
         # Just in case we somehow end up with damage larger than the pixmap,
         # we don't want to start requesting random chunks of memory (this
@@ -376,7 +386,7 @@ class ServerSource(object):
                                  x, y, 0, 0, width, height)
         raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()
-        return (id, x, y, width, height, self._encoding, raw_data, rowstride)
+        return (id, x, y, width, height, self._encoding, raw_data, rowstride, sequence)
 
 
     def data_to_packet(self):
@@ -384,14 +394,18 @@ class ServerSource(object):
             item = self._damage_data_queue.get(True)
             try:
                 packet = self.make_data_packet(item)
-                log("data_to_packet adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
-                self._damage_packet_queue.put(packet)
-                self._protocol.source_has_more()
+                if packet:
+                    log("data_to_packet: adding to packet queue, size=%s, full=%s", self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
+                    self._damage_packet_queue.put(packet)
+                    self._protocol.source_has_more()
             except Exception, e:
                 log.error("error processing damage data: %s", e)
 
     def make_data_packet(self, item):
-        id, x, y, w, h, coding, data, rowstride = item
+        id, x, y, w, h, coding, data, rowstride, sequence = item
+        if self._damage_cancelled.get(id, 0)>sequence:
+            log("make_data_packet: dropping data packet with sequence=%s", sequence)
+            return  None
         log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
         #pad rowstride:
         rowwidth = w * 3
@@ -414,6 +428,10 @@ class ServerSource(object):
                 im.save(buf, self._encoding.upper())
             data = buf.getvalue()
             buf.close()
+        #check cancellation list again since the code above may take some time:
+        if self._damage_cancelled.get(id, 0)>sequence:
+            log("make_data_packet: dropping data packet with sequence=%s", sequence)
+            return  None
         #send via mmap?
         if self._mmap and self._mmap_size>0:
             mmap_data = self._mmap_send(data)
