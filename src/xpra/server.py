@@ -1519,6 +1519,10 @@ class XpraServer(gobject.GObject):
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
+        try:
+            proto.close()
+        except:
+            pass
         self.quit(False)
 
     def _process_damage_sequence(self, proto, packet):
