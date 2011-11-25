@@ -22,6 +22,25 @@ import math
 import os
 from socket import gethostname
 import wimpiggy.lowlevel
+from wimpiggy.lowlevel import (
+               const,                                       #@UnresolvedImport
+               add_event_receiver,                          #@UnresolvedImport
+               remove_event_receiver,                       #@UnresolvedImport
+               get_display_for,                             #@UnresolvedImport
+               geometry_with_border,                        #@UnresolvedImport
+               calc_constrained_size,                       #@UnresolvedImport
+               is_mapped,                                   #@UnresolvedImport
+               show_unraised_without_extra_stupid_stuff,    #@UnresolvedImport
+               unmap_with_serial,                           #@UnresolvedImport
+               XDeleteProperty,                             #@UnresolvedImport
+               XAddToSaveSet,                               #@UnresolvedImport
+               XRemoveFromSaveSet,                          #@UnresolvedImport
+               XSetInputFocus,                              #@UnresolvedImport
+               XKillClient,                                 #@UnresolvedImport
+               sendConfigureNotify,                         #@UnresolvedImport
+               configureAndNotify,                          #@UnresolvedImport
+               substructureRedirect                         #@UnresolvedImport
+               )
 from wimpiggy.util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)
@@ -219,7 +238,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         self.client_window = client_window
         self._internal_set_property("client-window", client_window)
-        wimpiggy.lowlevel.add_event_receiver(client_window, self)
+        add_event_receiver(client_window, self)
 
         def setup():
             # Keith Packard says that composite state is undefined following a
@@ -229,8 +248,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             h = self._composite.connect("contents-changed",
                                         self._forward_contents_changed)
             self._damage_forward_handle = h
-            gwb = wimpiggy.lowlevel.geometry_with_border
-            self._geometry = gwb(self.client_window)
+            self._geometry = geometry_with_border(self.client_window)
         try:
             trap.call(setup)
         except XError, e:
@@ -261,7 +279,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
-        wimpiggy.lowlevel.remove_event_receiver(self.client_window, self)
+        remove_event_receiver(self.client_window, self)
         self._composite.disconnect(self._damage_forward_handle)
         self._composite.destroy()
 
@@ -285,7 +303,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
             # notice... but it might be unmapped already, and any event
             # already generated, and our request for that event is too late!
             # So double check now, *after* putting in our request:
-            if not wimpiggy.lowlevel.is_mapped(self.client_window):
+            if not is_mapped(self.client_window):
                 raise Unmanageable, "window already unmapped"
         try:
             trap.call(setup)
@@ -428,8 +446,8 @@ class WindowModel(BaseWindowModel):
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK)
-        wimpiggy.lowlevel.substructureRedirect(self.corral_window)
-        wimpiggy.lowlevel.add_event_receiver(self.corral_window, self)
+        substructureRedirect(self.corral_window)
+        add_event_receiver(self.corral_window, self)
         log("created corral window 0x%x", self.corral_window.xid)
 
         # The WM_HINTS input field
@@ -447,10 +465,9 @@ class WindowModel(BaseWindowModel):
             # UnmapNotify later, we'll know that it's just from us unmapping
             # the window, not from the client withdrawing the window.
             self.startup_unmap_serial = None
-            if wimpiggy.lowlevel.is_mapped(self.client_window):
+            if is_mapped(self.client_window):
                 log("hiding inherited window")
-                self.startup_unmap_serial \
-                    = wimpiggy.lowlevel.unmap_with_serial(self.client_window)
+                self.startup_unmap_serial = unmap_with_serial(self.client_window)
 
             # Process properties
             self._read_initial_properties()
@@ -459,12 +476,12 @@ class WindowModel(BaseWindowModel):
             # For now, we never use the Iconic state at all.
             self._internal_set_property("iconic", False)
 
-            wimpiggy.lowlevel.XAddToSaveSet(self.client_window)
+            XAddToSaveSet(self.client_window)
             self.client_window.reparent(self.corral_window, 0, 0)
             client_size = self.client_window.get_geometry()[2:4]
             self.corral_window.resize(*client_size)
             # We CANNOT use .show_unraised here, because of GTK+ bug #526635:
-            wimpiggy.lowlevel.show_unraised_without_extra_stupid_stuff(self.client_window)
+            show_unraised_without_extra_stupid_stuff(self.client_window)
         try:
             trap.call(setup_client)
         except XError, e:
@@ -539,12 +556,12 @@ class WindowModel(BaseWindowModel):
             # windows are no longer inferior to any of our windows!* (see
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
-            wimpiggy.lowlevel.XRemoveFromSaveSet(self.client_window)
-            wimpiggy.lowlevel.sendConfigureNotify(self.client_window)
+            XRemoveFromSaveSet(self.client_window)
+            sendConfigureNotify(self.client_window)
             if exiting:
                 # We CANNOT use .show_unraised here, because of GTK+ bug
                 # #526635:
-                wimpiggy.lowlevel.show_unraised_without_extra_stupid_stuff(self.client_window)
+                show_unraised_without_extra_stupid_stuff(self.client_window)
         trap.swallow(unmanageit)
         self.corral_window.destroy()
         BaseWindowModel.do_unmanaged(self, exiting)
@@ -568,7 +585,7 @@ class WindowModel(BaseWindowModel):
             winner.take_window(self, self.corral_window)
             self._update_client_geometry()
             self.corral_window.show_unraised()
-        trap.swallow(wimpiggy.lowlevel.sendConfigureNotify, self.client_window)
+        trap.swallow(sendConfigureNotify, self.client_window)
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
         if maybe_owner and self.get_property("owner") is maybe_owner:
@@ -583,9 +600,9 @@ class WindowModel(BaseWindowModel):
             v = getattr(size_hints, attr)
             if v is not None:
                 w,h = v
-                if w<0 or h<0 or w>=(2**32-1) or h>(2**32-1):
+                if w>=(2**32-1) or h>(2**32-1):
                     log.info("clearing invalid size hint value for %s: %s", attr, v)
-                    setattr(size_hints, attr, None)
+                    setattr(size_hints, attr, (-1,-1))
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
@@ -593,35 +610,31 @@ class WindowModel(BaseWindowModel):
             (allocated_w, allocated_h) = owner.window_size(self)
             hints = self.get_property("size-hints")
             self._sanitize_size_hints(hints)
-            size = wimpiggy.lowlevel.calc_constrained_size(allocated_w,
-                                                           allocated_h,
-                                                           hints)
+            size = calc_constrained_size(allocated_w, allocated_h, hints)
             (w, h, wvis, hvis) = size
             (x, y) = owner.window_position(self, w, h)
             self.corral_window.move_resize(x, y, w, h)
-            trap.swallow(wimpiggy.lowlevel.configureAndNotify,
-                         self.client_window, 0, 0, w, h)
+            trap.swallow(configureAndNotify, self.client_window, 0, 0, w, h)
             self._internal_set_property("actual-size", (w, h))
             self._internal_set_property("user-friendly-size", (wvis, hvis))
 
     def do_child_configure_request_event(self, event):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
         # ConfigureNotify telling the client that nothing has happened.
-        trap.swallow(wimpiggy.lowlevel.sendConfigureNotify,
-                     event.window)
+        trap.swallow(sendConfigureNotify, event.window)
 
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
-        if event.value_mask & wimpiggy.lowlevel.const["CWX"]:
+        if event.value_mask & const["CWX"]:
             x = event.x
-        if event.value_mask & wimpiggy.lowlevel.const["CWY"]:
+        if event.value_mask & const["CWY"]:
             y = event.y
         self._internal_set_property("requested-position", (x, y))
 
         (w, h) = self.get_property("requested-size")
-        if event.value_mask & wimpiggy.lowlevel.const["CWWidth"]:
+        if event.value_mask & const["CWWidth"]:
             w = event.width
-        if event.value_mask & wimpiggy.lowlevel.const["CWHeight"]:
+        if event.value_mask & const["CWHeight"]:
             h = event.height
         self._internal_set_property("requested-size", (w, h))
         self._update_client_geometry()
@@ -721,7 +734,7 @@ class WindowModel(BaseWindowModel):
             # actually display-clean.  Oh well.
             pixmap = gtk.gdk.Pixmap(None,
                                     surf.get_width(), surf.get_height(), 32)
-            screen = wimpiggy.lowlevel.get_display_for(pixmap).get_default_screen()
+            screen = get_display_for(pixmap).get_default_screen()
             pixmap.set_colormap(screen.get_rgba_colormap())
             cr = pixmap.cairo_create()
             cr.set_source_surface(surf)
@@ -892,14 +905,12 @@ class WindowModel(BaseWindowModel):
         if self.get_property("iconic"):
             trap.swallow(prop_set, self.client_window, "WM_STATE",
                          ["u32"],
-                         [wimpiggy.lowlevel.const["IconicState"],
-                          wimpiggy.lowlevel.const["XNone"]])
+                         [const["IconicState"], const["XNone"]])
             self._state_add("_NET_WM_STATE_HIDDEN")
         else:
             trap.swallow(prop_set, self.client_window, "WM_STATE",
                          ["u32"],
-                         [wimpiggy.lowlevel.const["NormalState"],
-                          wimpiggy.lowlevel.const["XNone"]])
+                         [const["NormalState"], const["XNone"]])
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
     def _write_initial_properties_and_setup(self):
@@ -921,7 +932,7 @@ class WindowModel(BaseWindowModel):
                   ]
         def doit():
             for prop in remove:
-                wimpiggy.lowlevel.XDeleteProperty(self.client_window, prop)
+                XDeleteProperty(self.client_window, prop)
         trap.swallow(doit)
 
     ################################
@@ -953,8 +964,7 @@ class WindowModel(BaseWindowModel):
         # the WM's XSetInputFocus.
         if self._input_field:
             log("... using XSetInputFocus")
-            trap.swallow(wimpiggy.lowlevel.XSetInputFocus,
-                         self.client_window, now)
+            trap.swallow(XSetInputFocus, self.client_window, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
             trap.swallow(wimpiggy.lowlevel.send_wm_take_focus,
@@ -981,7 +991,7 @@ class WindowModel(BaseWindowModel):
                 os.kill(pid, 9)
             except OSError:
                 log.warn("failed to kill() client with pid %s", pid)
-        trap.swallow(wimpiggy.lowlevel.XKillClient, self.client_window)
+        trap.swallow(XKillClient, self.client_window)
 
 gobject.type_register(WindowModel)
 
