@@ -740,6 +740,9 @@ class XpraServer(gobject.GObject):
         log.info("\nxpra end of gtk.main().")
         return self._upgrading
 
+    def cleanup(self, *args):
+        self.disconnect("shutting down")
+
     def _new_connection(self, listener, *args):
         log.info("New connection received")
         sock, _ = listener.accept()
@@ -1294,12 +1297,13 @@ class XpraServer(gobject.GObject):
         self._send(["hello", capabilities])
 
     def disconnect(self, reason):
-        log.info("Disconnecting existing client, reason is: %s" % reason)
-        # send message asking for disconnection politely:
-        self._protocol.source.send_packet_now(["disconnect", reason])
-        self._protocol.close()
-        #this ensures that from now on we ignore any incoming packets coming
-        #from this connection as these could potentially set some keys pressed, etc
+        if self._protocol:
+            log.info("Disconnecting existing client, reason is: %s" % reason)
+            # send message asking for disconnection politely:
+            self._protocol.source.send_packet_now(["disconnect", reason])
+            self._protocol.close()
+            #this ensures that from now on we ignore any incoming packets coming
+            #from this connection as these could potentially set some keys pressed, etc
         #so it is now safe to clear them:
         self._clear_keys_pressed()
         self._focus(0, [])

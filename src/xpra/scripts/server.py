@@ -16,7 +16,7 @@ import atexit
 import signal
 import socket
 
-from xpra.wait_for_x_server import wait_for_x_server
+from xpra.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 _cleanups = []
@@ -332,6 +332,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return False # Only call once
     gobject.timeout_add(0, check_once)
 
+    _cleanups.append(app.cleanup)
     if app.run():
         # Upgrading, so leave X server running
         _cleanups.remove(kill_xvfb)
