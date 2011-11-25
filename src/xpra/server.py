@@ -308,7 +308,10 @@ class ServerSource(object):
             id, window, damage, _ = self._damage_request_queue.get(True)
             regions = []
             try:
-                (_, _, ww, wh) = window.get_property("geometry")
+                if (isinstance(window, OverrideRedirectWindowModel)):
+                    (_, _, ww, wh) = window.get_property("geometry")
+                else:
+                    ww, wh = window.get_property("actual-size")
             except KeyError, e:
                 ww, wh = 512, 512
             try:
