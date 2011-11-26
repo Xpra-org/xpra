@@ -116,9 +116,39 @@ class ClientExtras(ClientExtrasBase):
             (if one succeeds) """
         pass
 
+    def _is_ubuntu_11_10_or_later(self):
+        lsb = "/etc/lsb-release"
+        if not os.path.exists(lsb):
+            return  False
+        try:
+            try:
+                f = open(lsb, mode='rb')
+                data = f.read()
+            finally:
+                f.close()
+            props = {}
+            for l in data.splitlines():
+                parts = l.split("=", 1)
+                if len(parts)!=2:
+                    continue
+                props[parts[0].strip()] = parts[1].strip()
+            log("found lsb properties: %s", props)
+            if props.get("DISTRIB_ID")=="Ubuntu":
+                version = [int(x) for x in props.get("DISTRIB_RELEASE", "0").split(".")]
+                log("detected Ubuntu release %s", version)
+                return version>=[11,10]
+        except:
+            return False
+
     def setup_tray(self, tray_icon_filename):
-        if not self.setup_appindicator(tray_icon_filename) and not self.setup_statusicon(tray_icon_filename):
-            log.error("failed to setup gtk.StatusIcon and appindicator, there will be no system-tray icon")
+        """ choose the most appropriate tray implementation
+            Ubuntu is a disaster in this area, see:
+            http://xpra.org/trac/ticket/43#comment:8
+        """
+        if self._is_ubuntu_11_10_or_later() and self.setup_appindicator(tray_icon_filename):
+            return
+        if not self.setup_statusicon(tray_icon_filename):
+            log.error("failed to setup system-tray")
 
     def setup_pynotify(self):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
