@@ -17,11 +17,23 @@ else:
 from wimpiggy.error import trap
 import wimpiggy.selection
 from wimpiggy.world_window import WorldWindow
-import wimpiggy.lowlevel
 from wimpiggy.prop import prop_set
 from wimpiggy.util import no_arg_signal, one_arg_signal
 
 from wimpiggy.window import WindowModel, Unmanageable
+from wimpiggy.lowlevel import (
+               const,                                       #@UnresolvedImport
+               printFocus,                                  #@UnresolvedImport
+               add_event_receiver,                          #@UnresolvedImport
+               substructureRedirect,                        #@UnresolvedImport
+               configureAndNotify,                          #@UnresolvedImport
+               get_children,                                #@UnresolvedImport
+               is_override_redirect,                        #@UnresolvedImport
+               is_mapped,                                   #@UnresolvedImport
+               selectFocusChange,                           #@UnresolvedImport
+               selectBellNotification,                      #@UnresolvedImport
+               selectCursorChange,                          #@UnresolvedImport
+               )
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -186,22 +198,22 @@ class Wm(gobject.GObject):
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
-        wimpiggy.lowlevel.add_event_receiver(self._root, self)
-        wimpiggy.lowlevel.substructureRedirect(self._root)
+        add_event_receiver(self._root, self)
+        substructureRedirect(self._root)
 
-        for w in wimpiggy.lowlevel.get_children(self._root):
+        for w in get_children(self._root):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
             if (w.get_window_type() == gtk.gdk.WINDOW_FOREIGN
-                and not wimpiggy.lowlevel.is_override_redirect(w)
-                and wimpiggy.lowlevel.is_mapped(w)):
+                and not is_override_redirect(w)
+                and is_mapped(w)):
                 log("Wm managing pre-existing child")
                 self._manage_client(w)
 
         # Also watch for focus change events on the root window
-        wimpiggy.lowlevel.selectFocusChange(self._root)
-        wimpiggy.lowlevel.selectBellNotification(self._root, True)
+        selectFocusChange(self._root)
+        selectBellNotification(self._root, True)
 
         # FIXME:
         # Need viewport abstraction for _NET_CURRENT_DESKTOP...
@@ -210,7 +222,7 @@ class Wm(gobject.GObject):
 
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)
-        wimpiggy.lowlevel.selectCursorChange(self._root, on)
+        selectCursorChange(self._root, on)
 
     def do_wimpiggy_xkb_event(self, event):
         log("wm.do_wimpiggy_xkb_event(%r)" % event)
@@ -307,7 +319,7 @@ class Wm(gobject.GObject):
         if event.window in self._windows:
             return
         log("Reconfigure on withdrawn window")
-        trap.swallow(wimpiggy.lowlevel.configureAndNotify,
+        trap.swallow(configureAndNotify,
                      event.window, event.x, event.y,
                      event.width, event.height,
                      event.value_mask)
@@ -317,12 +329,11 @@ class Wm(gobject.GObject):
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
-        if event.detail in (wimpiggy.lowlevel.const["NotifyPointerRoot"],
-                            wimpiggy.lowlevel.const["NotifyDetailNone"]):
+        if event.detail in (const["NotifyPointerRoot"], const["NotifyDetailNone"]):
             self._world_window.reset_x_focus()
 
     def do_wimpiggy_focus_out_event(self, event):
-        wimpiggy.lowlevel.printFocus(self._display)
+        printFocus(self._display)
 
     def do_desktop_list_changed(self, desktops):
         prop_set(self._root, "_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
