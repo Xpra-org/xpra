@@ -91,6 +91,10 @@ class DesktopManager(gtk.Widget):
             model.set_property("iconic", False)
 
     def configure_window(self, model, x, y, w, h):
+        if not self.visible(model):
+            self._models[model].shown = True
+            model.set_property("iconic", False)
+            model.ownership_election()
         self._models[model].geom = (x, y, w, h)
         model.maybe_recalculate_geometry_for(self)
 
