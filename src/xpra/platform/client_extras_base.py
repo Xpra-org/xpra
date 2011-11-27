@@ -81,6 +81,7 @@ class ClientExtrasBase(object):
     def __init__(self, client, opts):
         self.client = client
         self.license_text = None
+        self.about_dialog = None
         self.set_window_icon(opts.window_icon)
 
     def set_window_icon(self, window_icon):
@@ -152,6 +153,9 @@ class ClientExtrasBase(object):
         return None
 
     def about(self, *args):
+        if self.about_dialog:
+            self.about_dialog.present()
+            return
         dialog = gtk.AboutDialog()
         def on_website_hook(dialog, web, *args):
             webbrowser.open("http://xpra.org/")
