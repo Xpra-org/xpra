@@ -77,7 +77,7 @@ class TestLowlevelMisc(TestLowlevel):
                       l.XGetWindowProperty, r, "ASDF", "ASDF")
 
         for n in (8, 16, 32):
-            print n
+            print(n)
             l.XChangeProperty(r, "ASDF", ("GHJK", n, data))
             assert l.XGetWindowProperty(r, "ASDF", "GHJK") == data
 
@@ -134,13 +134,13 @@ class TestLowlevelMisc(TestLowlevel):
         gtk.gdk.flush()
 
         def do_child(disp_name, xwindow1, xwindow2, xwindow3):
-            print "child: in do_child"
+            print("child: in do_child")
             d2 = gtk.gdk.Display(disp_name)
             w1on2 = l.get_pywindow(d2, xwindow1)
             w2on2 = l.get_pywindow(d2, xwindow2)
             w3on2 = l.get_pywindow(d2, xwindow3)
             mywin = self.window(d2)
-            print "child: mywin == %s" % l.get_xwindow(mywin)
+            print("child: mywin == %s" % l.get_xwindow(mywin))
             w1on2.reparent(mywin, 0, 0)
             w2on2.reparent(mywin, 0, 0)
             w3on2.reparent(mywin, 0, 0)
@@ -152,14 +152,14 @@ class TestLowlevelMisc(TestLowlevel):
             l.XAddToSaveSet(w3on2)
             l.XRemoveFromSaveSet(w3on2)
             gtk.gdk.flush()
-            print "child: finished"
+            print("child: finished")
         import os
-        print "prefork: ", os.getpid()
+        print("prefork: ", os.getpid())
         pid = os.fork()
         if not pid:
             # Child
             try:
-                print "child: pid ", os.getpid()
+                print("child: pid ", os.getpid())
                 name = self.display.get_name()
                 # This is very important, though I don't know why.  If we
                 # don't close this display then something inside
@@ -177,15 +177,15 @@ class TestLowlevelMisc(TestLowlevel):
             finally:
                 os._exit(0)
         # Parent
-        print "parent: ", os.getpid()
-        print "parent: child is ", pid
-        print "parent: waiting for child"
+        print("parent: ", os.getpid())
+        print("parent: child is ", pid)
+        print("parent: waiting for child")
         os.waitpid(pid, 0)
-        print "parent: child exited"
+        print("parent: child exited")
         # Is there a race condition here, where the child exits but the X
         # server doesn't notice until after we send our commands?
-        print map(l.get_xwindow, [w1, w2, w3])
-        print map(l.get_xwindow, l.get_children(self.root()))
+        print(map(l.get_xwindow, [w1, w2, w3]))
+        print(map(l.get_xwindow, l.get_children(self.root())))
         assert w1 in l.get_children(self.root())
         assert w2 not in l.get_children(self.root())
         assert w3 not in l.get_children(self.root())
@@ -220,11 +220,11 @@ class _EventRoutingReceiver(MockEventReceiver):
         self.tag = tag
         self.store_in = store_in
     def do_wimpiggy_map_event(self, event):
-        print "map_event in %s" % self.tag
+        print("map_event in %s" % self.tag)
         self.store_in.add(("map", self.tag))
         gtk.main_quit()
     def do_wimpiggy_child_map_event(self, event):
-        print "child_map_event in %s" % self.tag
+        print("child_map_event in %s" % self.tag)
         self.store_in.add(("child-map", self.tag))
         gtk.main_quit()
 
@@ -264,7 +264,7 @@ class TestUnmapWithSerial(TestLowlevel, MockEventReceiver):
         pass
 
     def do_wimpiggy_unmap_event(self, event):
-        print "hi!"
+        print("do_wimpiggy_unmap_event hi!")
         self._event = event
         gtk.main_quit()
 
@@ -274,7 +274,7 @@ class TestUnmapWithSerial(TestLowlevel, MockEventReceiver):
         self._event = None
         l.add_event_receiver(w, self)
         serial = l.unmap_with_serial(w)
-        print serial
+        print(serial)
         gtk.main()
         assert self._event is not None
         assert self._event.serial == serial
@@ -353,7 +353,7 @@ class TestFocusStuff(TestLowlevel, MockEventReceiver):
 
 class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
     def do_wimpiggy_client_message_event(self, event):
-        print "got clientmessage"
+        print("got clientmessage")
         self.evs.append(event)
         gtk.main_quit()
 
@@ -439,7 +439,7 @@ class TestSendConfigureNotify(TestLowlevel):
                             event_mask=gtk.gdk.ALL_EVENTS_MASK)
         self.ev = None
         def myfilter(ev, data=None):
-            print "ev %s" % (ev.type,)
+            print("ev %s" % (ev.type,))
             if ev.type == gtk.gdk.CONFIGURE:
                 self.ev = ev
                 gtk.main_quit()
@@ -474,7 +474,7 @@ class TestSendConfigureNotify(TestLowlevel):
         # Reparenting doesn't trigger a ConfigureNotify.
         w1.reparent(w2on1, 13, 14)
         # To double-check that it's still a TOPLEVEL:
-        print w1.get_window_type()
+        print(w1.get_window_type())
         w1.resize(15, 16)
         gtk.main()
 
@@ -494,11 +494,11 @@ class TestSendConfigureNotify(TestLowlevel):
 
 class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
     def do_child_map_request_event(self, event):
-        print "do_child_map_request_event"
+        print("do_child_map_request_event")
         self.map_ev = event
         gtk.main_quit()
     def do_child_configure_request_event(self, event):
-        print "do_child_configure_request_event"
+        print("do_child_configure_request_event")
         self.conf_ev = event
         gtk.main_quit()
 
@@ -517,7 +517,7 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
 
         # gdk_window_show does both a map and a configure (to raise the
         # window)
-        print "showing w2"
+        print("showing w2")
         w2.show()
         # Can't just call gtk.main() twice, the two events may be delivered
         # together and processed in a single mainloop iteration.
@@ -530,7 +530,7 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.window is w1
         for field in ("x", "y", "width", "height",
                       "border_width", "above", "detail", "value_mask"):
-            print field
+            print(field)
             assert hasattr(self.conf_ev, field)
 
         self.map_ev = None
@@ -626,7 +626,7 @@ class TestGeometryConstraints(object):
             return f
         def t(w, h, hints, exp_w, exp_h, exp_vw, exp_vh):
             got = l.calc_constrained_size(w, h, hints)
-            print repr(hints)
+            print(repr(hints))
             assert got == (exp_w, exp_h, exp_vw, exp_vh)
         t(150, 100, None, 150, 100, 150, 100)
         t(150, 100, hints(), 150, 100, 150, 100)
@@ -644,7 +644,7 @@ class TestGeometryConstraints(object):
                               max_size=(100, 150), min_size=(0, 140)),
               93, 144, 9, 14)
         except AssertionError:
-            print ("Assertion Failed!  But *cough* *cough* actually gdk "
+            print("Assertion Failed!  But *cough* *cough* actually gdk "
                    + "(and apparently every wm ever) has a bug here. "
                    + "and it's trivial and I'm ignoring it for now. "
                    + "(see http://bugzilla.gnome.org/show_bug.cgi?id=492961)")
@@ -676,23 +676,23 @@ class TestGeometryConstraints(object):
 
 class TestRegion(object):
     def test_get_rectangle_from_region(self):
-        print 1
+        print(1)
         region = gtk.gdk.Region()
         assert_raises(ValueError, l.get_rectangle_from_region, region)
-        print 2
+        print(2)
         rect1 = gtk.gdk.Rectangle(1, 2, 3, 4)
         region = gtk.gdk.region_rectangle(rect1)
         (x, y, w, h) = l.get_rectangle_from_region(region)
         assert (x, y, w, h) == (1, 2, 3, 4)
-        print 3
+        print(3)
         region.union_with_rect(gtk.gdk.Rectangle(10, 11, 12, 13))
         (x, y, w, h) = l.get_rectangle_from_region(region)
         assert (x, y, w, h) in [(1, 2, 3, 4), (10, 11, 12, 13)]
-        print 4
+        print(4)
         region.subtract(gtk.gdk.region_rectangle(rect1))
         (x, y, w, h) = l.get_rectangle_from_region(region)
         assert (x, y, w, h) == (10, 11, 12, 13)
-        print 5
+        print(5)
 
 class TestImageOptimizations(object):
     def test_premultiply_argb_in_place(self):

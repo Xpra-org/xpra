@@ -62,7 +62,7 @@ log = Logger()
 # For debugging:
 def _dump_recursion_info():
     # This is how deeply nested in recursive main-loops we are:
-    print "gtk depth: %s" % (gtk.main_level())
+    print("gtk depth: %s" % (gtk.main_level()))
     import ctypes
     class ThreadState(ctypes.Structure):
         _fields_ = [("next", ctypes.c_voidp),
@@ -73,7 +73,7 @@ def _dump_recursion_info():
                      ctypes.POINTER(ThreadState))
     # This is Python's count of the recursion depth -- i.e., the thing that
     # will eventually trigger the 'Maximum recursion depth exceeded' message.
-    print "python internal depth: %s" % ts[0].recursion_depth
+    print("python internal depth: %s" % ts[0].recursion_depth)
     import inspect
     count = 0
     frame = inspect.currentframe()
@@ -82,9 +82,9 @@ def _dump_recursion_info():
         count += 1
     # This is the number of frames in the current stack. It probably only
     # counts up to the last call to gtk.main().
-    print "stack frames: %s" % count
+    print("stack frames: %s" % count)
     # The number of NestedMainLoops in progress:
-    print "NestedMainLoops: %s" % len(NestedMainLoop._stack)
+    print("NestedMainLoops: %s" % len(NestedMainLoop._stack))
 
 class NestedMainLoop(object):
     _stack = []

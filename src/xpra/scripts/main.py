@@ -360,19 +360,19 @@ def run_stop(parser, opts, extra_args):
             else:
                 break
         if final_state is DotXpra.DEAD:
-            print "xpra at %s has exited." % display_desc["display"]
+            print("xpra at %s has exited." % display_desc["display"])
             sys.exit(0)
         elif final_state is DotXpra.UNKNOWN:
-            print ("How odd... I'm not sure what's going on with xpra at %s"
+            print("How odd... I'm not sure what's going on with xpra at %s"
                    % display_desc["display"])
             sys.exit(1)
         elif final_state is DotXpra.LIVE:
-            print "Failed to shutdown xpra at %s" % display_desc["display"]
+            print("Failed to shutdown xpra at %s" % display_desc["display"])
             sys.exit(1)
         else:
             assert False
     else:
-        print "Sent shutdown command"
+        print("Sent shutdown command")
 
 def run_list(parser, opts, extra_args):
     assert "gtk" not in sys.modules

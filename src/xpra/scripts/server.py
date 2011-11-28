@@ -28,7 +28,7 @@ def run_cleanups():
             pass
 
 def deadly_signal(signum, frame):
-    print "got signal %s, exiting" % signum
+    print("got signal %s, exiting" % signum)
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
@@ -57,7 +57,7 @@ class ChildReaper(object):
         if (self._children_pids
             and self._exit_with_children
             and self._children_pids.issubset(self._dead_pids)):
-            print "all children have exited and --exit-with-children was specified, exiting"
+            print("all children have exited and --exit-with-children was specified, exiting")
             self._app.quit(False)
 
     def __call__(self, signum, frame):
@@ -157,7 +157,7 @@ def close_all_fds(exceptions=[]):
                     # by listdir() is already closed.
                     pass
             return
-    print "Uh-oh, can't close fds, please port me to your system..."
+    print("Uh-oh, can't close fds, please port me to your system...")
 
 def run_server(parser, opts, mode, xpra_file, extra_args):
     if len(extra_args) != 1:
@@ -165,7 +165,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     display_name = extra_args.pop(0)
 
     if opts.exit_with_children and not opts.children:
-        print "--exit-with-children specified without any children to spawn; exiting immediately"
+        print("--exit-with-children specified without any children to spawn; exiting immediately")
         return
 
     atexit.register(run_cleanups)
@@ -302,7 +302,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     app = xpra.server.XpraServer(upgrading, sockets, opts.session_name,
                                  opts.password_file, opts.pulseaudio, opts.clipboard, opts.randr, opts.encoding, opts.mmap)
     def cleanup_socket(self):
-        print "removing socket"
+        print("removing socket")
         try:
             os.unlink(sockpath)
         except:

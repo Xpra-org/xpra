@@ -14,7 +14,7 @@ def process(input):
 def test_decoding():
     
     def t(str, value, remainder):
-        print str
+        print(str)
         # Test "one-shot":
         assert process(str) == (value, remainder)
         # With gibberish added:
@@ -25,7 +25,7 @@ def test_decoding():
             decoder.add(c)
             retval = decoder.process()
             if retval is not None:
-                print retval
+                print(retval)
                 assert retval == (value, "")
                 assert str[i + 1:] == remainder
                 break
@@ -44,9 +44,9 @@ def test_decoding():
 
     t("l0:e", [""], "")
 
-    print "------"
+    print("------")
     def te(str, exc):
-        print str
+        print(str)
         try:
             process(str)
         except exc:
@@ -89,11 +89,11 @@ def test_encoding():
 
     def t(v, encstr=None):
         be = bencode(v)
-        print "bencode(%s)=%s" % (v, be)
+        print("bencode(%s)=%s" % (v, be))
         if encstr:
             assert be==encstr
         restored = process(be)
-        print "decode(%s)=%s" % (be, restored)
+        print("decode(%s)=%s" % (be, restored))
         list = restored[0]
         assert list==v
         return list

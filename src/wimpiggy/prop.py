@@ -48,8 +48,8 @@ class WMSizeHints(object):
          max_aspect_num, max_aspect_denom,
          base_width, base_height,
          win_gravity) = struct.unpack("@" + "I" * 18, data)
-        #print repr(data)
-        #print struct.unpack("@" + "i" * 18, data)
+        #print(repr(data))
+        #print(struct.unpack("@" + "i" * 18, data))
         # We only extract the pieces we care about:
         if flags & const["PMaxSize"]:
             self.max_size = (max_width, max_height)
@@ -279,9 +279,9 @@ def prop_get(target, key, type, ignore_errors=False):
         scalar_type = type
     (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[scalar_type]
     try:
-        #print atom
+        #print(atom)
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
-        #print atom, repr(data[:100])
+        #print(atom, repr(data[:100]))
     except (XError, PropertyError):
         if not ignore_errors:
             log.info("Missing window or missing property or wrong property type %s (%s)",

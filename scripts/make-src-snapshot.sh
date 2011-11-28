@@ -2,7 +2,7 @@
 
 VERSION=$1
 if [ -z "${VERSION}" ]; then
-	VERSION=`PYTHONPATH="./src" python -c "from xpra import __version__; print __version__"`
+	VERSION=`PYTHONPATH="./src" python -c "from xpra import __version__; print(__version__)"`
 fi
 DIR=xpra-${VERSION}
 cp -apr src ${DIR}

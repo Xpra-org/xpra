@@ -48,7 +48,7 @@ class TestKeys(TestWithSession):
     def test_grok_modifier_map(self):
         self.clear_xmodmap()
         mm = wimpiggy.keys.grok_modifier_map(self.display)
-        print mm
+        print(mm)
         assert mm == {"shift": 1, "lock": 2, "control": 4,
                       "mod1": 8, "mod2": 16, "mod3": 32, "mod4": 64,
                       "mod5": 128,
@@ -62,7 +62,7 @@ class TestKeys(TestWithSession):
                         add Mod5 = Scroll_Lock Super_R
                         """)
         mm = wimpiggy.keys.grok_modifier_map(self.display)
-        print mm
+        print(mm)
         assert mm["scroll"] == 128
         assert mm["num"] == 8
         assert mm["meta"] == 16 | 64
@@ -125,14 +125,14 @@ class TestKeys(TestWithSession):
                         add Mod4 = Super_L
                         """)
 
-        print 1
+        print(1)
         root = self.display.get_default_screen().get_root_window()
         keymap = gtk.gdk.keymap_get_for_display(self.display)
         def keycode(name):
             keyval = gtk.gdk.keyval_from_name(name)
             return keymap.get_entries_for_keyval(keyval)[0][0]
 
-        print 2
+        print(2)
         m = wimpiggy.keys.HotkeyManager(root)
         m.add_hotkeys({"<shift><alt>r": "shift-alt-r",
                        "<mod4>r": "mod4-r"})
@@ -146,9 +146,9 @@ class TestKeys(TestWithSession):
         press_unpress(["Shift_L", "Alt_L", "r"])
         def shift_alt_r(obj, ev):
             assert ev == "shift-alt-r"
-        print 3
+        print(3)
         assert_mainloop_emits(m, "hotkey::shift-alt-r", shift_alt_r)
-        print 4
+        print(4)
         press_unpress(["Alt_L", "Shift_L", "r"])
         assert_mainloop_emits(m, "hotkey::shift-alt-r", shift_alt_r)
 
@@ -165,7 +165,7 @@ class TestKeys(TestWithSession):
         assert_mainloop_emits(m, "hotkey::mod4-r", mod4_r)
 
         # And make sure we handle changing modifier maps correctly
-        print "Redoing modmap"
+        print("Redoing modmap")
         self.clear_xmodmap()
         # We assert the keymap change is noticed mostly because it delays
         # further execution until the key change has a chance to propagate
@@ -181,11 +181,11 @@ class TestKeys(TestWithSession):
         assert_mainloop_emits(keymap, "keys-changed")
 
         # Alt_L is now mod4, but this should still work:
-        print "shift/alt/r?"
+        print("shift/alt/r?")
         press_unpress(["Shift_L", "Alt_L", "r"])
         assert_mainloop_emits(m, "hotkey::shift-alt-r", shift_alt_r)
         # And it should trigger the explicit mod4-version too
-        print "mod4/r?"
+        print("mod4/r?")
         press_unpress(["Alt_L", "r"])
         assert_mainloop_emits(m, "hotkey::mod4-r", mod4_r)
 

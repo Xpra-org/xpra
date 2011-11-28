@@ -1089,7 +1089,7 @@ class WindowView(gtk.Widget):
         x2i = int(math.ceil(x2))
         y2i = int(math.ceil(y2))
         transformed = gtk.gdk.Rectangle(x1i, y1i, x2i - x1i, y2i - y1i)
-#        print ("damage (%s, %s, %s, %s) -> expose on (%s, %s, %s, %s)" %
+#        print("damage (%s, %s, %s, %s) -> expose on (%s, %s, %s, %s)" %
 #               (event.area.x, event.area.y, event.area.width, event.area.height,
 #                transformed.x, transformed.y, transformed.width, transformed.height))
         self._image_window.invalidate_rect(transformed, False)
@@ -1101,7 +1101,7 @@ class WindowView(gtk.Widget):
         debug = False
 
         if debug:
-            print ("redrawing rectangle at (%s, %s, %s, %s)"
+            print("redrawing rectangle at (%s, %s, %s, %s)"
                    % (event.area.x, event.area.y,
                       event.area.width, event.area.height))
 

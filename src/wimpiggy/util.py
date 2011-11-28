@@ -42,7 +42,7 @@ class AutoPropGObjectMixin(object):
 
 def dump_exc():
     """Call this from a except: clause to print a nice traceback."""
-    print "".join(traceback.format_exception(*sys.exc_info()))
+    print("".join(traceback.format_exception(*sys.exc_info())))
 
 
 # A simple little class whose instances we can stick random bags of attributes
@@ -112,15 +112,15 @@ def gtk_main_quit_on_fatal_exceptions_enable():
     oldhook = sys.excepthook
     def gtk_main_quit_on_fatal_exception(type, val, tb):
         if issubclass(type, (KeyboardInterrupt, SystemExit)):
-            print "Shutting down main-loop"
+            print("Shutting down main-loop")
             gtk_main_quit_really()
         if issubclass(type, RuntimeError) and "recursion" in val.message:
             # We weren't getting tracebacks from this -- maybe calling oldhook
             # was hitting the limit again or something? -- so try this
             # instead. (I don't know why print_exception wouldn't trigger the
             # same problem as calling oldhook, though.)
-            print traceback.print_exception(type, val, tb)
-            print "Maximum recursion depth exceeded"
+            print(traceback.print_exception(type, val, tb))
+            print("Maximum recursion depth exceeded")
         else:
             return oldhook(type, val, tb)
     sys.excepthook = gtk_main_quit_on_fatal_exception

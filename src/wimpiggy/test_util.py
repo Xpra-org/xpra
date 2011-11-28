@@ -93,8 +93,8 @@ import gtk
 import gobject
 class Test_gtk_main_quit_really(object):
     def _run_gtk_main(self):
-        print "_run_gtk_main"
-        print gtk.main_level()
+        print("_run_gtk_main")
+        print(gtk.main_level())
         if gtk.main_level() < 3:
             gobject.timeout_add(0, self._run_gtk_main)
         else:
@@ -104,7 +104,7 @@ class Test_gtk_main_quit_really(object):
 
     def _count_iters(self):
         self._iters += 1
-        print "iter!"
+        print("iter!")
         if self._iters > 5:
             gtk.main_quit()
             return False

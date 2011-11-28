@@ -84,9 +84,9 @@ cdef cGObject * unwrap(box, pyclass) except? NULL:
 #     cdef cGObject * unwrapped
 #     unwrapped = unwrap(box, gobject.GObject)
 #     if unwrapped == NULL:
-#         print "contents is NULL!"
+#         print("contents is NULL!")
 #     else:
-#         print "contents is %s" % (<long long>unwrapped)
+#         print("contents is %s" % (<long long>unwrapped))
 
 cdef object wrap(cGObject * contents):
     # Put a raw GObject* into a PyGObject wrapper.
@@ -905,7 +905,7 @@ def has_randr():
                                  XRRQueryVersion)
         return True
     except Exception, e:
-        print "Randr not supported: %s" % e
+        print("Randr not supported: %s" % e)
         return False
 
 cdef _get_screen_sizes(display_source):
@@ -950,7 +950,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
             if xrr.width==width and xrr.height==height:
                 sizeID = i
         if sizeID<0:
-            print "size not found for %sx%s" % (width, height)
+            print("size not found for %sx%s" % (width, height))
             return False
         rates = XRRConfigRates(config, sizeID, &num_rates)
         rate = rates[0]
@@ -958,7 +958,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
         time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
         status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time)
         if status != Success:
-            print "failed to set new screen size"
+            print("failed to set new screen size")
             return False
         return True
     finally:

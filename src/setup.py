@@ -16,17 +16,19 @@
 import glob
 from distutils.core import setup
 from distutils.extension import Extension
-import commands, os, sys
+import subprocess, sys
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages, **kw):
     flag_map = {'-I': 'include_dirs',
                 '-L': 'library_dirs',
                 '-l': 'libraries'}
-    cmd = "pkg-config --libs --cflags %s" % (" ".join(packages),)
-    (status, output) = commands.getstatusoutput(cmd)
-    if not (os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0) and not ('clean' in sys.argv):
-        raise Exception, ("call to pkg-config ('%s') failed" % (cmd,))
+    cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, _) = proc.communicate()
+    status = proc.wait()
+    if status!=0 and not ('clean' in sys.argv):
+        raise Exception("call to pkg-config ('%s') failed" % (cmd,))
     for token in output.split():
         if flag_map.has_key(token[:2]):
             kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])

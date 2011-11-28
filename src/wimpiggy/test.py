@@ -174,7 +174,7 @@ class TestWithSession(object):
         # display.  So the end result is that we always need a valid default
         # display of some sort:
         gtk.gdk.display_manager_get().set_default_display(self.display)
-        print "Opened new display %r" % (self.display,)
+        print("Opened new display %r" % (self.display,))
 
         os.environ["DBUS_SESSION_BUS_ADDRESS"] = _the_session._dbus_address
 
@@ -187,7 +187,7 @@ class TestWithSession(object):
 
     def clone_display(self):
         clone = gtk.gdk.Display(self.display.get_name())
-        print "Cloned new display %r" % (clone,)
+        print("Cloned new display %r" % (clone,))
         return clone
 
 
@@ -203,27 +203,27 @@ class MockEventReceiver(gobject.GObject):
         "wimpiggy-child-map-event": one_arg_signal,
         }
     def do_child_map_request_event(self, event):
-        print "do_child_map_request_event"
+        print("do_child_map_request_event")
         assert False
     def do_child_configure_request_event(self, event):
-        print "do_child_configure_request_event"
+        print("do_child_configure_request_event")
         assert False
     def do_wimpiggy_focus_in_event(self, event):
-        print "do_wimpiggy_focus_in_event"
+        print("do_wimpiggy_focus_in_event")
         assert False
     def do_wimpiggy_focus_out_event(self, event):
-        print "do_wimpiggy_focus_out_event"
+        print("do_wimpiggy_focus_out_event")
         assert False
     def do_wimpiggy_client_message_event(self, event):
-        print "do_wimpiggy_client_message_event"
+        print("do_wimpiggy_client_message_event")
         assert False
     def do_wimpiggy_map_event(self, event):
-        print "do_wimpiggy_map_event"
+        print("do_wimpiggy_map_event")
         assert False
     def do_wimpiggy_child_map_event(self, event):
-        print "do_wimpiggy_child_map_event"
+        print("do_wimpiggy_child_map_event")
         assert False
     def do_wimpiggy_unmap_event(self, event):
-        print "do_wimpiggy_unmap_event"
+        print("do_wimpiggy_unmap_event")
 gobject.type_register(MockEventReceiver)
 

@@ -6,7 +6,7 @@ rm -fr build install
 rm -f xpra/wait_for_x_server.c
 rm -f wimpiggy/lowlevel/bindings.c
 python ./setup.py sdist
-PYTHON_SITELIB=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
+PYTHON_SITELIB=`python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
 SOURCES=~/rpmbuild/SOURCES/
 DIST="unknown"
 grep CentOS /etc/redhat-release
