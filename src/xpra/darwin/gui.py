@@ -123,9 +123,9 @@ class ClientExtras(ClientExtrasBase):
         Carbon.Snd.SysBeep(1)
 
     def grok_modifier_map(self, display_source):
-        map = ClientExtrasBase.grok_modifier_map(self, display_source)
-        map["meta"] = 1 << 3
-        return  map
+        modifiers = ClientExtrasBase.grok_modifier_map(self, display_source)
+        modifiers["meta"] = 1 << 3
+        return  modifiers
 
     def get_data_dir(self):
         return  os.environ.get("XDG_DATA_DIRS", os.getcwd())

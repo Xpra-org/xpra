@@ -31,9 +31,9 @@ class IncrBDecode(object):
 
         self._string_length = None
 
-    def add(self, bytes):
+    def add(self, data):
         assert self._result is None
-        self._buf += bytes
+        self._buf += data
     
     def _may_have_full_packet(self):
         """ this does not really belong here

@@ -1,7 +1,7 @@
 import gtk
 import gobject
 from wimpiggy.util import n_arg_signal
-from wimpiggy.lowlevel import add_event_receiver
+from wimpiggy.lowlevel import add_event_receiver    #@UnresolvedImport
 from wimpiggy.prop import prop_get
 
 from wimpiggy.log import Logger

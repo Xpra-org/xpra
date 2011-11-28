@@ -14,9 +14,14 @@ from struct import pack, unpack
 
 from wimpiggy.util import no_arg_signal, one_arg_signal
 from wimpiggy.error import XError
-from wimpiggy.lowlevel import (get_xatom, get_pywindow, sendClientMessage,
-                               myGetSelectionOwner, const,
-                               add_event_receiver, remove_event_receiver)
+from wimpiggy.lowlevel import (
+                get_xatom,                  #@UnresolvedImport
+                get_pywindow,               #@UnresolvedImport
+                sendClientMessage,          #@UnresolvedImport
+                myGetSelectionOwner, const, #@UnresolvedImport
+                add_event_receiver,         #@UnresolvedImport
+                remove_event_receiver       #@UnresolvedImport
+                )
 from wimpiggy.error import trap
 
 from wimpiggy.log import Logger

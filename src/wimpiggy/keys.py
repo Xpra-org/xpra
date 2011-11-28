@@ -7,9 +7,13 @@ import gobject
 import gtk
 from wimpiggy.util import one_arg_signal
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import (get_display_for, #@UnresolvedImport
-                               get_modifier_map, grab_key, ungrab_all_keys, #@UnresolvedImport
-                               add_event_receiver, remove_event_receiver) #@UnresolvedImport
+from wimpiggy.lowlevel import (
+                get_display_for,            #@UnresolvedImport
+                get_modifier_map,           #@UnresolvedImport
+                grab_key, ungrab_all_keys,  #@UnresolvedImport
+                add_event_receiver,         #@UnresolvedImport
+                remove_event_receiver       #@UnresolvedImport
+                )
 
 from wimpiggy.log import Logger
 log = Logger()

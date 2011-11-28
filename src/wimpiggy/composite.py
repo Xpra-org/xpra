@@ -6,14 +6,18 @@
 import gobject
 from wimpiggy.util import one_arg_signal, AutoPropGObjectMixin
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import (xcomposite_redirect_window, #@UnresolvedImport
-                               xcomposite_unredirect_window, #@UnresolvedImport
-                               xcomposite_name_window_pixmap, #@UnresolvedImport
-                               xdamage_start, xdamage_stop, #@UnresolvedImport
-                               xdamage_acknowledge, #@UnresolvedImport
-                               add_event_receiver, remove_event_receiver, #@UnresolvedImport
-                               get_parent, addXSelectInput, const, #@UnresolvedImport
-                               geometry_with_border) #@UnresolvedImport
+from wimpiggy.lowlevel import (
+           xcomposite_redirect_window,      #@UnresolvedImport
+           xcomposite_unredirect_window,    #@UnresolvedImport
+           xcomposite_name_window_pixmap,   #@UnresolvedImport
+           xdamage_start, xdamage_stop,     #@UnresolvedImport
+           xdamage_acknowledge,             #@UnresolvedImport
+           add_event_receiver,              #@UnresolvedImport
+           remove_event_receiver,           #@UnresolvedImport
+           get_parent,                      #@UnresolvedImport
+           addXSelectInput, const,          #@UnresolvedImport
+           geometry_with_border             #@UnresolvedImport
+           )
 
 from wimpiggy.log import Logger
 log = Logger()

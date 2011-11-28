@@ -5,11 +5,14 @@
 
 import gtk
 import gobject
-import wimpiggy.lowlevel
 import wimpiggy.window
 import wimpiggy.prop
 from wimpiggy.error import trap
 from wimpiggy.log import Logger
+from wimpiggy.lowlevel import (
+               const,                           #@UnresolvedImport
+               send_wm_take_focus               #@UnresolvedImport
+               )
 log = Logger()
 
 # This file defines Wimpiggy's top-level widget.  It is a magic window that
@@ -129,8 +132,8 @@ class WorldWindow(gtk.Window):
             # (ICCCM violating) to use CurrentTime in a WM_TAKE_FOCUS message,
             # but GTK doesn't happen to care, and this guarantees that we
             # *will* get the focus, and thus a real FocusIn event.
-            current_time = wimpiggy.lowlevel.const["CurrentTime"]
-            wimpiggy.lowlevel.send_wm_take_focus(self.window, current_time)
+            current_time = const["CurrentTime"]
+            send_wm_take_focus(self.window, current_time)
 
     def do_focus_in_event(self, *args):
         log("world window got focus", type="focus")
@@ -154,7 +157,7 @@ class WorldWindow(gtk.Window):
         # an XSetInputFocus on itself.  Note not swallowing errors here, this
         # should always succeed.
         now = gtk.gdk.x11_get_server_time(self.window)
-        wimpiggy.lowlevel.send_wm_take_focus(self.window, now)
+        send_wm_take_focus(self.window, now)
 
     def reset_x_focus(self):
         focus = self.get_focus()
@@ -168,8 +171,7 @@ class WorldWindow(gtk.Window):
         else:
             self._take_focus()
             wimpiggy.prop.prop_set(gtk.gdk.get_default_root_window(),
-                                   "_NET_ACTIVE_WINDOW", "u32",
-                                   wimpiggy.lowlevel.const["XNone"])
+                                   "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
 
     def _after_set_focus(self, *args):
         # GTK focus has changed.  See comment in __init__ for why this isn't a

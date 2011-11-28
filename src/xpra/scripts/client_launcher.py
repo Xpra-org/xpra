@@ -188,9 +188,10 @@ class ApplicationWindow:
 		cmd = "xpra"
 		if sys.platform.startswith("win"):
 			if hasattr(sys, "frozen"):
-				dir = os.path.dirname(sys.executable)
-			dir = os.path.dirname(sys.argv[0])
-			cmd = os.path.join(dir, "xpra.exe")
+				exedir = os.path.dirname(sys.executable)
+			else:
+				exedir = os.path.dirname(sys.argv[0])
+			cmd = os.path.join(exedir, "xpra.exe")
 			if not os.path.exists(cmd):
 				self.info.set_text("Xpra command not found!")
 				return
