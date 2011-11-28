@@ -1,9 +1,11 @@
-v0.0.7.31 (2011-11-23)
+v0.0.7.31 (2011-11-28)
 ======================
 	-- threaded server for much lower latency
-	-- adaptive damage batching
-	-- memory mapped transfers for local connections
+	-- fast memory mapped transfers for local connections
+	-- adaptive damage batching, fixes window refresh
 	-- xpra "detach" command
+	-- fixed system tray for Ubuntu clients
+	-- fixed maximized windows on Ubuntu clients
 
 
 v0.0.7.30 (2011-11-01)

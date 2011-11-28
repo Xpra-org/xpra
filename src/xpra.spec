@@ -43,11 +43,13 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed Nov 23 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
+* Wed Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
 - threaded server for much lower latency
-- adaptive damage batching
-- memory mapped transfers for local connections
+- fast memory mapped transfers for local connections
+- adaptive damage batching, fixes window refresh
 - xpra "detach" command
+- fixed system tray for Ubuntu clients
+- fixed maximized windows on Ubuntu clients
 
 * Tue Nov 01 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.30-1
 - fix for update batching causing screen corruption
