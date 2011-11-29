@@ -1513,7 +1513,7 @@ class XpraServer(gobject.GObject):
             self._desktop_manager.raise_window(self._id_to_window[id])
             self._move_pointer(pointer)
         else:
-            log.error("_process_pointer_position() invalid window id: %s" % id)
+            log("_process_pointer_position() invalid window id: %s", id)
 
     def _process_close_window(self, proto, packet):
         (_, id) = packet
