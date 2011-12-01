@@ -32,7 +32,9 @@ class ClientExtras(ClientExtrasBase):
         self.setup_tray(opts.tray_icon)
         self.setup_xprops(opts.pulseaudio)
         self.setup_x11_bell()
-        self.setup_pynotify()
+        self.has_dbusnotify = False
+        self.has_pynotify = False
+        self.setup_dbusnotify() or self.setup_pynotify()
         self.setup_clipboard_helper(ClipboardProtocolHelper)
 
     def exit(self):
@@ -150,15 +152,30 @@ class ClientExtras(ClientExtrasBase):
         if not self.setup_statusicon(tray_icon_filename):
             log.error("failed to setup system-tray")
 
+    def setup_dbusnotify(self):
+        self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
+        try:
+            import dbus.glib
+            assert dbus.glib
+            bus = dbus.SessionBus()
+            obj = bus.get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+            self.dbusnotify = dbus.Interface(obj, 'org.freedesktop.Notifications')
+            self.has_dbusnotify = True
+            log.info("using dbusnotify: %s", self.dbusnotify)
+        except Exception, e:
+            log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
+        return self.has_dbusnotify
+
     def setup_pynotify(self):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
-        self.has_pynotify = False
         try:
             import pynotify
             pynotify.init("Xpra")
             self.has_pynotify = True
+            log.info("using pynotify: %s", pynotify)
         except ImportError, e:
             log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
+        return self.has_pynotify
 
     def setup_x11_bell(self):
         self.has_x11_bell = False
@@ -206,18 +223,37 @@ class ClientExtras(ClientExtrasBase):
         device_bell(window, device, bell_class, bell_id, percent, bell_name)
 
     def can_notify(self):
-        return  self.has_pynotify
+        return  self.has_dbusnotify or self.has_pynotify
 
     def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         if self.dbus_id==dbus_id:
             log.error("remote dbus instance is the same as our local one, "
                       "cannot forward notification to ourself as this would create a loop")
             return
-        import pynotify
-        n = pynotify.Notification(summary, body)
-        n.set_urgency(pynotify.URGENCY_LOW)
-        n.set_timeout(expire_timeout)
-        n.show()
+        if self.has_dbusnotify:
+            def cbReply(*args):
+                log("notification reply: %s", args)
+                return False
+            def cbError(*args):
+                log.error("notification error: %s", args)
+                return False
+            try:
+                self.dbusnotify.Notify("Xpra", 0, app_icon, summary, body, [], [], expire_timeout,
+                     reply_handler = cbReply,
+                     error_handler = cbError)
+            except:
+                log.error("dbus notify failed", exc_info=True)
+        elif self.has_pynotify:
+            try:
+                import pynotify
+                n = pynotify.Notification(summary, body)
+                n.set_urgency(pynotify.URGENCY_LOW)
+                n.set_timeout(expire_timeout)
+                n.show()
+            except:
+                log.error("pynotify failed", exc_info=True)
+        else:
+            log.error("notification cannot be displayed, no backend support!")
 
     def close_notify(self, id):
         pass
@@ -248,7 +284,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_keyboard_repeat(self):
         try:
-            from wimpiggy.lowlevel import get_key_repeat_rate
+            from wimpiggy.lowlevel import get_key_repeat_rate   #@UnresolvedImport
             delay, interval = get_key_repeat_rate()
             return delay,interval
         except Exception, e:

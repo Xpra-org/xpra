@@ -6,13 +6,13 @@
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
 
-%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging
+%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %if 0%{?el5}
-%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, python-uuid
+%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python, python-uuid
 %define include_egg 0
 %endif
 %if %is_suse
-%define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0
+%define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
 %endif
 
 

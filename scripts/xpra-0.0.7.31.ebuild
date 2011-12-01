@@ -25,6 +25,7 @@ RESTRICT_PYTHON_ABIS="3.*"
 
 DEPEND="dev-python/pycrypto
 dev-python/pygtk
+dev-python/dbus-python
 png? ( dev-python/imaging )
 jpeg? ( dev-python/imaging )
 ssh? ( net-misc/openssh )
