@@ -50,6 +50,13 @@ class ClientExtras(ClientExtrasBase):
         for x in options:
             if os.path.exists(x):
                 return x
+        try:
+            # test for a local install (from do-build):
+            d = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "../share/xpra"))
+            if os.path.exists(d):
+                return d
+        except:
+            pass
         return  os.getcwd()
 
     def get_icons_dir(self):
