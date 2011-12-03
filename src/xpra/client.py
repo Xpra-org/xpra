@@ -588,6 +588,7 @@ class XpraClient(gobject.GObject):
     def query_xkbmap(self):
         self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
         self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
+        self.xkbmap_mod_clear, self.xkbmap_mod_add = self._client_extras.get_keymap_modifiers()
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -669,6 +670,10 @@ class XpraClient(gobject.GObject):
             capabilities_request["xkbmap_query"] = self.xkbmap_query
         if self.xmodmap_data:
             capabilities_request["xmodmap_data"] = self.xmodmap_data
+        if self.xkbmap_mod_clear:
+            capabilities_request["xkbmap_mod_clear"] = self.xkbmap_mod_clear
+        if self.xkbmap_mod_add:
+            capabilities_request["xkbmap_mod_add"] = self.xkbmap_mod_add
         capabilities_request["cursors"] = True
         capabilities_request["bell"] = True
         capabilities_request["clipboard"] = self.clipboard_enabled

@@ -25,8 +25,6 @@ log = Logger("wimpiggy.lowlevel")
 # Headers, python magic
 ###################################
 
-cdef extern from "X11/Xlib.h":
-    pass
 cdef extern from "X11/Xutil.h":
     pass
 
@@ -59,9 +57,11 @@ init_pygtk()
 # GObject
 ###################################
 
-cdef extern from *:
+cdef extern from "glib-2.0/glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
+
+cdef extern from "pygtk-2.0/pygobject.h":
     cGObject * pygobject_get(object box)
     ctypedef void** const_void_pp "const void**"
     object pygobject_new(cGObject * contents)
@@ -136,7 +136,10 @@ ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
 ctypedef unsigned char CARD8
 
-cdef extern from *:
+cdef extern from "X11/X.h":
+    unsigned long NoSymbol
+
+cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
     # To make it easier to translate stuff in the X header files into
@@ -151,6 +154,7 @@ cdef extern from *:
     ctypedef XID Drawable
     ctypedef XID Window
     ctypedef XID Pixmap
+    ctypedef XID KeySym
     ctypedef CARD32 Time
 
     int XFree(void * data)
@@ -200,9 +204,9 @@ cdef extern from *:
         int mode, detail
     # We have to generate synthetic ConfigureNotify's:
     ctypedef struct XConfigureEvent:
-        Window event   # Same as xany.window, confusingly.  The selected-on
-                       # window.
-        Window window  # The effected window.
+        Window event    # Same as xany.window, confusingly.
+                        # The selected-on window.
+        Window window   # The effected window.
         int x, y, width, height, border_width
         Window above
         Bool override_redirect
@@ -295,8 +299,12 @@ cdef extern from *:
     ctypedef struct XModifierKeymap:
         int max_keypermod
         KeyCode * modifiermap # an array with 8*max_keypermod elements
-    XModifierKeymap * XGetModifierMapping(Display * display)
-    int XFreeModifiermap(XModifierKeymap *)
+    XModifierKeymap* XGetModifierMapping(Display* display)
+    int XFreeModifiermap(XModifierKeymap* modifiermap)
+    int XDisplayKeycodes(Display* display, int* min_keycodes, int* max_keycodes)
+    KeySym XStringToKeysym(char* string)
+    int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
+
     int XGrabKey(Display * display, int keycode, unsigned int modifiers,
                  Window grab_window, Bool owner_events,
                  int pointer_mode, int keyboard_mode)
@@ -313,22 +321,16 @@ cdef extern from *:
     # XMapWindow
     int XMapWindow(Display *, Window)
 
+    ctypedef struct XRectangle:
+        short x, y
+        unsigned short width, height
+
+
 ######
 # GDK primitives, and wrappers for Xlib
 ######
 
 # Basic utilities:
-
-cdef extern from *:
-    ctypedef struct cGdkWindow "GdkWindow":
-        pass
-    Window GDK_WINDOW_XID(cGdkWindow *)
-
-    ctypedef struct cGdkDisplay "GdkDisplay":
-        pass
-    Display * GDK_DISPLAY_XDISPLAY(cGdkDisplay *)
-
-    cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
 def get_xwindow(pywindow):
     return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
@@ -356,14 +358,6 @@ cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
 cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
 
-# Atom stuff:
-cdef extern from *:
-    ctypedef void * GdkAtom
-    # FIXME: this should have stricter type checking
-    GdkAtom PyGdkAtom_Get(object)
-    object PyGdkAtom_New(GdkAtom)
-    Atom gdk_x11_atom_to_xatom_for_display(cGdkDisplay *, GdkAtom)
-    GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
 
 def get_xatom(display_source, str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
@@ -598,7 +592,7 @@ def printFocus(display_source):
 
 # Geometry hints
 
-cdef extern from *:
+cdef extern from "gtk-2.0/gdk/gdkwindow.h":
     ctypedef struct cGdkGeometry "GdkGeometry":
         int min_width, min_height, max_width, max_height,
         int base_width, base_height, width_inc, height_inc
@@ -647,13 +641,30 @@ def calc_constrained_size(width, height, hints):
 
 
 # gdk_region_get_rectangles (pygtk bug #517099)
-cdef extern from *:
+cdef extern from "gtk-2.0/gdk/gdktypes.h":
     ctypedef struct GdkRegion:
         pass
     ctypedef struct GdkRectangle:
         int x, y, width, height
     void gdk_region_get_rectangles(GdkRegion *, GdkRectangle **, int *)
     void g_free(void *)
+
+    ctypedef struct cGdkWindow "GdkWindow":
+        pass
+    Window GDK_WINDOW_XID(cGdkWindow *)
+
+    ctypedef struct cGdkDisplay "GdkDisplay":
+        pass
+    Display * GDK_DISPLAY_XDISPLAY(cGdkDisplay *)
+
+    cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
+
+    ctypedef void * GdkAtom
+    # FIXME: this should have stricter type checking
+    GdkAtom PyGdkAtom_Get(object)
+    object PyGdkAtom_New(GdkAtom)
+    Atom gdk_x11_atom_to_xatom_for_display(cGdkDisplay *, GdkAtom)
+    GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
 
 def get_rectangle_from_region(region):
     cdef GdkRegion * cregion
@@ -683,6 +694,93 @@ def get_modifier_map(display_source):
         return (xmodmap.max_keypermod, keycode_array)
     finally:
         XFreeModifiermap(xmodmap)
+
+# xmodmap's "keycode" action done implemented in python
+# some of the methods aren't very pythonic
+# that's intentional so as to keep as close as possible
+# to the original C xmodmap code
+
+min_keycode = -1
+max_keycode = -1
+cdef get_minmax_keycodes(Display *display):
+    cdef int cmin_keycode, cmax_keycode
+    global min_keycode, max_keycode
+    if min_keycode==-1 and max_keycode==-1:
+        XDisplayKeycodes(display, &cmin_keycode, &cmax_keycode)
+        min_keycode = cmin_keycode
+        max_keycode = cmax_keycode
+    return min_keycode, max_keycode
+
+def parse_keysym(symbol):
+    if symbol=="NoSymbol":
+        return  NoSymbol
+    keysym = XStringToKeysym(symbol)
+    if keysym==NoSymbol:
+        if symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+            return int(symbol)
+        return  None
+    return keysym
+
+def get_keysym_list(symbols):
+    """ convert a list of key symbols into a list of KeySym values
+        by calling parse_keysym on each one
+    """
+    keysymlist = []
+    for x in symbols:
+        keysym = parse_keysym(x)
+        if keysym is not None:
+            keysymlist.append(keysym)
+    return keysymlist
+
+def xmodmap_do_keycode(display_source, keycode_str, symbols):
+    if keycode_str=="any":
+        keycode = 0
+    elif keycode_str[:1]=="x":
+        #int("0x101", 16)=257
+        keycode = int("0"+keycode_str, 16)
+    else:
+        keycode = int(keycode_str)
+    min_keycode, max_keycode = get_minmax_keycodes(get_xdisplay_for(display_source))
+    if keycode<min_keycode or keycode>max_keycode:
+        log.error("keycode value %s is out of range (%s-%s)", keycode, min_keycode, max_keycode)
+        return False
+    keysyms = get_keysym_list(symbols)
+    log("xmodmap_do_keycode keycode=%s, keysyms=%s", keycode, keysyms)
+    return xmodmap_exec_keycode(display_source, keycode, keysyms)
+
+cdef xmodmap_exec_keycode(display_source, keycode, keysyms):
+    cdef KeySym ckeysyms[8]
+    cdef Display * display
+    display = get_xdisplay_for(display_source)
+    if keycode==0:
+        log.error("exec_keycode does not handle zero keycode yet..")
+        return False
+    elif len(keysyms)==0:
+        ckeysyms[0] = NoSymbol
+        return XChangeKeyboardMapping(display, keycode, 1, ckeysyms, 1)==0
+    else:
+        assert len(keysyms)<=8
+        for i in range(0, len(keysyms)):
+            ckeysyms[i] = keysyms[i]
+        return XChangeKeyboardMapping(display, keycode, len(keysyms), ckeysyms, 1)==0
+
+def set_xmodmap(display_source, xmodmap_data):
+    unhandled = []
+    map = None
+    for line in xmodmap_data:
+        if not line:
+            continue
+        parts = line.split()
+        if parts[0]=="keycode" and len(parts)>2 and parts[2]=="=":
+            if not xmodmap_do_keycode(display_source, parts[1], parts[3:]):
+                log.error("failed to set keycode: %s", parts[3:])
+                unhandled.append(line)
+        else:
+            log.error("set_xmodmap did not handle: %s", line)
+            unhandled.append(line)
+    log("%s lines total, %s unprocessed", len(xmodmap_data), len(unhandled))
+    return unhandled
+            
 
 def grab_key(pywindow, keycode, modifiers):
     XGrabKey(get_xdisplay_for(pywindow), keycode, modifiers,
@@ -1120,6 +1218,10 @@ cdef extern from "X11/extensions/Xfixes.h":
     Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
     XFixesCursorImage* XFixesGetCursorImage(Display *)
 
+    ctypedef XID XserverRegion
+    XserverRegion XFixesCreateRegion(Display *, XRectangle *, int nrectangles)
+    void XFixesDestroyRegion(Display *, XserverRegion)
+
 cdef argbdata_to_pixdata(unsigned long* data, len):
     if len <= 0:
         return None
@@ -1181,15 +1283,6 @@ def selectCursorChange(pywindow, on):
 # Xdamage
 ###################################
 
-cdef extern from *:
-    ctypedef struct XRectangle:
-        short x, y
-        unsigned short width, height
-
-cdef extern from "X11/extensions/Xfixes.h":
-    ctypedef XID XserverRegion
-    XserverRegion XFixesCreateRegion(Display *, XRectangle *, int nrectangles)
-    void XFixesDestroyRegion(Display *, XserverRegion)
 
 cdef extern from "X11/extensions/Xdamage.h":
     ctypedef XID Damage
@@ -1399,7 +1492,7 @@ def configureAndNotify(pywindow, x, y, width, height, fields=None):
 #      and selectFocusChange.
 #   -- Receive interesting signals on 'obj'.
 
-cdef extern from *:
+cdef extern from "gtk-2.0/gdk/gdkevents.h":
     ctypedef enum GdkFilterReturn:
         GDK_FILTER_CONTINUE   # If we ignore the event
         GDK_FILTER_TRANSLATE  # If we converted the event to a GdkEvent

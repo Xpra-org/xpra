@@ -17,6 +17,7 @@ import webbrowser
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
+from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
 from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
@@ -144,9 +145,13 @@ class ClientExtrasBase(object):
         """ layout, variant, variants"""
         return None,None,None
 
+    def get_keymap_modifiers(self):
+        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD
+
     def get_keymap_spec(self):
         """ xkbmap_print, xkbmap_query, xmodmap """
-        return None,None,None
+        # default map for non xposix clients:
+        return None,None,XMODMAP_MOD_DEFAULTS
 
     def get_keyboard_repeat(self):
         """ (delay_ms,interval_ms) or None"""

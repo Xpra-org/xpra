@@ -37,15 +37,19 @@ from wimpiggy.util import (AdHocStruct,
                            one_arg_signal,
                            gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from wimpiggy.lowlevel import (get_rectangle_from_region, #@UnresolvedImport
-                               xtest_fake_key, #@UnresolvedImport
-                               xtest_fake_button, #@UnresolvedImport
-                               set_key_repeat_rate, #@UnresolvedImport
-                               is_override_redirect, is_mapped, #@UnresolvedImport
-                               add_event_receiver, #@UnresolvedImport
-                               get_cursor_image, #@UnresolvedImport
-                               get_children, #@UnresolvedImport
-                               has_randr, get_screen_sizes, set_screen_size, get_screen_size) #@UnresolvedImport
+from wimpiggy.lowlevel import (get_rectangle_from_region,   #@UnresolvedImport
+                               xtest_fake_key,              #@UnresolvedImport
+                               xtest_fake_button,           #@UnresolvedImport
+                               set_key_repeat_rate,         #@UnresolvedImport
+                               set_xmodmap,                 #@UnresolvedImport
+                               is_override_redirect,        #@UnresolvedImport
+                               is_mapped,                   #@UnresolvedImport
+                               add_event_receiver,          #@UnresolvedImport
+                               get_cursor_image,            #@UnresolvedImport
+                               get_children,                #@UnresolvedImport
+                               has_randr, get_screen_sizes, #@UnresolvedImport
+                               set_screen_size,             #@UnresolvedImport
+                               get_screen_size)             #@UnresolvedImport
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
@@ -156,7 +160,7 @@ class ServerSource(object):
     MIN_BATCH_DELAY = 5
     AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
     MAX_BATCH_DELAY = 1000
-    
+
     def __init__(self, protocol, encoding, send_damage_sequence, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
@@ -242,7 +246,7 @@ class ServerSource(object):
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
             return
-        
+
         def update_batch_delay(reason, factor=1, delta=0):
             self.batch_delay = max(ServerSource.MIN_BATCH_DELAY, min(ServerSource.MAX_BATCH_DELAY, int(self.batch_delay*factor-delta)))
             log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch_delay)
@@ -622,10 +626,17 @@ class XpraServer(gobject.GObject):
         def exec_keymap_command(args, stdin=None):
             try:
                 returncode = self.signal_safe_exec(args, stdin)
+                def logstdin():
+                    if not stdin or len(stdin)<32:
+                        return  stdin
+                    return stdin[:30].replace("\n", "\\n")+".."
                 if returncode==0:
-                    log.info("%s successfully applied" % str(args))
+                    if not stdin:
+                        log.info("%s", args)
+                    else:
+                        log.info("%s with stdin=%s", args, logstdin())
                 else:
-                    log.info("%s failed with exit code %s" % (str(args), returncode))
+                    log.info("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
                 return returncode
             except Exception, e:
                 log.info("error calling '%s': %s" % (str(args), e))
@@ -683,47 +694,31 @@ class XpraServer(gobject.GObject):
                 set_layout = ["setxkbmap", "-layout", layout]
                 exec_keymap_command(set_layout)
 
+        display = os.environ.get("DISPLAY")
         if self.xkbmap_print:
-            exec_keymap_command(["xkbcomp", "-", os.environ.get("DISPLAY")], self.xkbmap_print)
+            exec_keymap_command(["xkbcomp", "-", display], self.xkbmap_print)
 
-        def setxmodmap(xmodmap_data):
-            if exec_keymap_command(["xmodmap", "-"], xmodmap_data)==0:
+        def exec_xmodmap(xmodmap_data):
+            if not xmodmap_data or len(xmodmap_data)==0:
                 return
-            lines = xmodmap_data.split("\n")
-            if len(lines)>1:
-                log.error("re-running xmodmap one line at a time to workaround one or more broken mappings..")
-                for mod in lines:
-                    exec_keymap_command(["xmodmap", "-"], mod)
-        if self.xmodmap_data:
-            setxmodmap(self.xmodmap_data)
-        elif not self.xkbmap_query and not self.xkbmap_print:
-            """ use a default xmodmap for clients that supply nothing at all: """
-            xmodmap = ["clear Lock",
-                       "clear Shift",
-                       "clear Control",
-                       "clear Mod1",
-                       "clear Mod2",
-                       "clear Mod3",
-                       "clear Mod4",
-                       "clear Mod5",
-                       "keycode any = Shift_L",
-                       "keycode any = Control_L",
-                       "keycode any = Meta_L",
-                       "keycode any = Alt_L",
-                       "keycode any = Hyper_L",
-                       "keycode any = Super_L",
-                       "add Shift = Shift_L Shift_R",
-                       "add Control = Control_L Control_R",
-                        # Really stupid hack to force backspace to work.
-                        "keycode any = BackSpace"]
-            setxmodmap("\n".join(xmodmap))
-            #do those two separately because they tend to fail...
-            may_fail = ["add Mod1 = Meta_L Meta_R",
-                        "add Mod2 = Alt_L Alt_R",
-                        "add Mod3 = Hyper_L Hyper_R",
-                        "add Mod4 = Super_L Super_R"]
-            for mod in may_fail:
-                setxmodmap(mod)
+            if exec_keymap_command(["xmodmap", "-display", display, "-"], "\n".join(xmodmap_data))==0:
+                return
+            log.error("re-running %s xmodmap lines one at a time to workaround the error..", len(xmodmap_data))
+            for mod in xmodmap_data:
+                exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
+
+        # note: our code does not handle add/clear so use exec for those:
+        if not self.xmodmap_data and not self.xkbmap_mod_add and not self.xkbmap_mod_clear:
+            #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
+            from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
+            exec_xmodmap(XMODMAP_MOD_CLEAR)
+            set_xmodmap(XMODMAP_MOD_DEFAULTS)
+            exec_xmodmap(XMODMAP_MOD_ADD)
+        else:
+            exec_xmodmap(self.xkbmap_mod_clear)
+            unset = set_xmodmap(gtk.gdk.get_default_root_window(), self.xmodmap_data.splitlines())
+            exec_xmodmap(unset)
+            exec_xmodmap(self.xkbmap_mod_add)
 
     def signal_safe_exec(self, cmd, stdin):
         """ this is a bit of a hack,
@@ -734,11 +729,8 @@ class XpraServer(gobject.GObject):
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (out,err) = process.communicate(stdin)
             code = process.poll()
-            l = log.debug
-            if code!=0:
-                l = log.error
-            l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
-            l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
+            log.debug("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
+            log.debug("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
             return  code
         finally:
             signal.signal(signal.SIGCHLD, oldsignal)
@@ -1259,11 +1251,14 @@ class XpraServer(gobject.GObject):
             self.key_repeat_interval = -1
             #but do set a default repeat rate:
             set_key_repeat_rate(500, 30)
-        self.xkbmap_layout = capabilities.get("xkbmap_layout", None)
-        self.xkbmap_variant = capabilities.get("xkbmap_variant", None)
-        self.xkbmap_print = capabilities.get("keymap", None)
-        self.xkbmap_query = capabilities.get("xkbmap_query", None)
-        self.xmodmap_data = capabilities.get("xmodmap_data", None)
+        self.xkbmap_layout = capabilities.get("xkbmap_layout")
+        self.xkbmap_variant = capabilities.get("xkbmap_variant")
+        self.xkbmap_print = capabilities.get("keymap")
+        self.xkbmap_query = capabilities.get("xkbmap_query")
+        self.xmodmap_data = capabilities.get("xmodmap_data")
+        self.xkbmap_mod_clear = capabilities.get("xkbmap_mod_clear")
+        self.xkbmap_mod_add = capabilities.get("xkbmap_mod_add")
+
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
         self.set_keymap()

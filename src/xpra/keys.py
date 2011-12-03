@@ -13,3 +13,22 @@ def mask_to_names(mask, modifier_map):
             modifiers.append(modifier)
             mask &= ~modifier_mask
     return modifiers
+
+XMODMAP_MOD_CLEAR = ["clear Lock", "clear Shift", "clear Control",
+                 "clear Mod1", "clear Mod2", "clear Mod3", "clear Mod4", "clear Mod5"]
+XMODMAP_MOD_ADD = ["add Lock = Caps_Lock",
+                 "add Shift = Shift_L Shift_R",
+                 "add Control = Control_L Control_R",
+                 "add Mod1 = Meta_L Meta_R",
+                 "add Mod2 = Alt_L Alt_R",
+                 "add Mod3 = Hyper_L Hyper_R",
+                 "add Mod4 = Super_L Super_R"]
+
+XMODMAP_MOD_DEFAULTS = ["keycode any = Shift_L",
+                   "keycode any = Control_L",
+                   "keycode any = Meta_L",
+                   "keycode any = Alt_L",
+                   "keycode any = Hyper_L",
+                   "keycode any = Super_L",
+                    # Really stupid hack to force backspace to work.
+                   "keycode any = BackSpace"]

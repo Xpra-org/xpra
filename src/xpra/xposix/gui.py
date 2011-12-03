@@ -265,28 +265,47 @@ class ClientExtras(ClientExtrasBase):
     def close_notify(self, id):
         pass
 
+    def exec_get_keyboard_data(self, cmd):
+        # Find the client's current keymap so we can send it to the server:
+        try:
+            import subprocess
+            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+            (out,_) = process.communicate(None)
+            if process.returncode==0:
+                return out
+            log.error("'%s' failed with exit code %s", cmd, process.returncode)
+        except Exception, e:
+            log.error("error running '%s': %s", cmd, e)
+        return None
+
+    def get_keymap_modifiers(self):
+        xmodmap_pm = self.exec_get_keyboard_data(["xmodmap", "-pm"])
+        if not xmodmap_pm:
+            return ClientExtrasBase.get_keymap_modifiers(self)
+        #parse it so we can feed it back to xmodmap (ala "xmodmap -pke")
+        clear = []
+        add = []
+        for line in xmodmap_pm.splitlines():
+            if not line or line.startswith("xmodmap:"):
+                continue
+            parts = line.split()
+            #ie: ['shift', 'Shift_L', '(0x32),', 'Shift_R', '(0x3e)']
+            clear.append("clear %s" % parts[0])
+            if len(parts)>1:
+                nohex = [x for x in parts[1:] if not x.startswith("(")]
+                add.append("add %s = %s" % (parts[0], " ".join(nohex)))
+        log("get_keymap_modifiers parsed to clear=%s, add=%s", clear, add)
+        return  clear, add
+
     def get_keymap_spec(self):
-        def get_keyboard_data(command, arg):
-            # Find the client's current keymap so we can send it to the server:
-            try:
-                import subprocess
-                cmd = [command, arg]
-                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-                (out,_) = process.communicate(None)
-                if process.returncode==0:
-                    return out
-                log.error("'%s %s' failed with exit code %s\n" % (command, arg, process.returncode))
-            except Exception, e:
-                log.error("error running '%s %s': %s\n" % (command, arg, e))
-            return None
-        xkbmap_print = get_keyboard_data("setxkbmap", "-print")
+        xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
         if xkbmap_print is None:
             log.error("your keyboard mapping will probably be incorrect unless you are using a 'us' layout");
-        xkbmap_query = get_keyboard_data("setxkbmap", "-query")
+        xkbmap_query = self.exec_get_keyboard_data(["setxkbmap", "-query"])
         if xkbmap_query is None and xkbmap_print is not None:
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-        xmodmap_data = get_keyboard_data("xmodmap", "-pke");
+        xmodmap_data = self.exec_get_keyboard_data(["xmodmap", "-pke"]);
         return xkbmap_print, xkbmap_query, xmodmap_data
 
     def get_keyboard_repeat(self):
