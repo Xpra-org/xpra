@@ -285,8 +285,8 @@ class ClientExtras(ClientExtrasBase):
         #parse it so we can feed it back to xmodmap (ala "xmodmap -pke")
         clear = []
         add = []
-        for line in xmodmap_pm.splitlines():
-            if not line or line.startswith("xmodmap:"):
+        for line in xmodmap_pm.splitlines()[1:]:
+            if not line:
                 continue
             parts = line.split()
             #ie: ['shift', 'Shift_L', '(0x32),', 'Shift_R', '(0x3e)']
