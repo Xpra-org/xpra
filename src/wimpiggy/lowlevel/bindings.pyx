@@ -330,6 +330,32 @@ cdef extern from "X11/Xlib.h":
 # GDK primitives, and wrappers for Xlib
 ######
 
+# gdk_region_get_rectangles (pygtk bug #517099)
+cdef extern from "gtk-2.0/gdk/gdktypes.h":
+    ctypedef struct GdkRegion:
+        pass
+    ctypedef struct GdkRectangle:
+        int x, y, width, height
+    void gdk_region_get_rectangles(GdkRegion *, GdkRectangle **, int *)
+    void g_free(void *)
+
+    ctypedef struct cGdkWindow "GdkWindow":
+        pass
+    Window GDK_WINDOW_XID(cGdkWindow *)
+
+    ctypedef struct cGdkDisplay "GdkDisplay":
+        pass
+    Display * GDK_DISPLAY_XDISPLAY(cGdkDisplay *)
+
+    cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
+
+    ctypedef void * GdkAtom
+    # FIXME: this should have stricter type checking
+    GdkAtom PyGdkAtom_Get(object)
+    object PyGdkAtom_New(GdkAtom)
+    Atom gdk_x11_atom_to_xatom_for_display(cGdkDisplay *, GdkAtom)
+    GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
+
 # Basic utilities:
 
 def get_xwindow(pywindow):
@@ -639,32 +665,6 @@ def calc_constrained_size(width, height, hints):
 
     return (new_width, new_height, vis_width, vis_height)
 
-
-# gdk_region_get_rectangles (pygtk bug #517099)
-cdef extern from "gtk-2.0/gdk/gdktypes.h":
-    ctypedef struct GdkRegion:
-        pass
-    ctypedef struct GdkRectangle:
-        int x, y, width, height
-    void gdk_region_get_rectangles(GdkRegion *, GdkRectangle **, int *)
-    void g_free(void *)
-
-    ctypedef struct cGdkWindow "GdkWindow":
-        pass
-    Window GDK_WINDOW_XID(cGdkWindow *)
-
-    ctypedef struct cGdkDisplay "GdkDisplay":
-        pass
-    Display * GDK_DISPLAY_XDISPLAY(cGdkDisplay *)
-
-    cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
-
-    ctypedef void * GdkAtom
-    # FIXME: this should have stricter type checking
-    GdkAtom PyGdkAtom_Get(object)
-    object PyGdkAtom_New(GdkAtom)
-    Atom gdk_x11_atom_to_xatom_for_display(cGdkDisplay *, GdkAtom)
-    GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
 
 def get_rectangle_from_region(region):
     cdef GdkRegion * cregion
