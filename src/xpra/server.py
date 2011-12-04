@@ -1315,6 +1315,7 @@ class XpraServer(gobject.GObject):
         if "deflate" in client_capabilities:
             capabilities["deflate"] = client_capabilities.get("deflate")
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
+        capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["raw_keycodes_feature"] = True
         capabilities["focus_modifiers_feature"] = True
         capabilities["packet_size"] = True

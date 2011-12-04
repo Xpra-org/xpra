@@ -236,6 +236,10 @@ class ClientExtrasBase(object):
 
         # now add some rows with info:
         row = 0
+        self.server_version_label = gtk.Label()
+        row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
+        self.server_randr_label = gtk.Label()
+        row = add_row(row, gtk.Label("Server RandR Support"), self.server_randr_label)
         if self.client.server_start_time>0:
             self.session_started_label = gtk.Label()
             row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
@@ -252,6 +256,18 @@ class ClientExtrasBase(object):
             def settimedeltastr(label, from_time):
                 delta = datetime.timedelta(seconds=(long(time.time())-long(from_time)))
                 label.set_text(str(delta))
+            if self.client.mmap_enabled:
+                self.server_version_label.set_text("%s (mmap in use)" % self.client._remote_version)
+            else:
+                self.server_version_label.set_text(self.client._remote_version)
+            size_info = ""
+            if self.client.server_actual_desktop_size:
+                w,h = self.client.server_actual_desktop_size
+                size_info = " - %sx%s" % (w,h)
+            if self.client.server_randr:
+                self.server_randr_label.set_text("Yes%s" % size_info)
+            else:
+                self.server_randr_label.set_text("No%s" % size_info)
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             settimedeltastr(self.session_connected_label, self.client.start_time)

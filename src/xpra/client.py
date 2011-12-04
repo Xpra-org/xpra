@@ -429,21 +429,14 @@ class XpraClient(gobject.GObject):
             bw = (self._protocol._recv_counter / 1024) * 1000/ delay;
             self._protocol._recv_counter = 0;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
-
             q = self.jpegquality
             if bw > self.max_bandwidth:
-                q -= 10;
+                q -= 10
             elif bw < self.max_bandwidth:
-                q += 5;
-
-            if q > 95:
-                q = 95;
-            elif q < 10:
-                q = 10;
-
+                q += 5
+            q = max(10, min(95 ,q))
             self.send_jpeg_quality(q)
             return True
-
         if (self.max_bandwidth):
             gobject.timeout_add(2000, compute_receive_bandwidth, 2000);
 
@@ -754,8 +747,10 @@ class XpraClient(gobject.GObject):
             log.error("sorry, I only know how to talk to v%s.x servers", self.version_no_minor(xpra.__version__))
             self.quit()
             return
-        if "desktop_size" in capabilities:
-            avail_w, avail_h = capabilities["desktop_size"]
+        self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
+        self.server_desktop_size = capabilities.get("desktop_size")
+        if self.server_desktop_size:
+            avail_w, avail_h = self.server_desktop_size
             root_w, root_h = gtk.gdk.get_default_root_window().get_size()
             if (avail_w, avail_h) < (root_w, root_h):
                 log.warn("Server's virtual screen is too small -- "
@@ -765,9 +760,9 @@ class XpraClient(gobject.GObject):
                          "http://xpra.org/trac/ticket/10"
                          % (avail_w, avail_h, root_w, root_h))
         self._protocol._send_size = capabilities.get("packet_size", False)
-        randr = capabilities.get("resize_screen", False)
-        log.debug("server has randr: %s" % randr)
-        if randr:
+        self.server_randr = capabilities.get("resize_screen", False)
+        log.debug("server has randr: %s", self.server_randr)
+        if self.server_randr:
             display = gtk.gdk.display_get_default()
             i=0
             while i<display.get_n_screens():
