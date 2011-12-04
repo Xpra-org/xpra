@@ -546,6 +546,7 @@ class XpraServer(gobject.GObject):
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xmodmap_data = None
+        self.keymap_changing = False
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.encodings = ["rgb24"]
@@ -616,6 +617,23 @@ class XpraServer(gobject.GObject):
             self.add_listen_socket(sock)
 
     def set_keymap(self):
+        try:
+            #prevent _keys_changed() from firing:
+            #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
+            self.keymap_changing = True
+            try:
+                self.do_set_keymap()
+            except:
+                log.error("set_keymap", exc_info=True)
+        finally:
+            # re-enable via idle_add to give all the pending
+            # events a chance to run first (and get ignored)
+            def reenable_keymap_changes(*args):
+                self.keymap_changing = False
+                self._keys_changed()
+            gobject.idle_add(reenable_keymap_changes)
+
+    def do_set_keymap(self):
         """ xkbmap_layout is the generic layout name (used on non posix platforms)
             xkbmap_print is the output of "setxkbmap -print" on the client
             xkbmap_query is the output of "setxkbmap -query" on the client
@@ -767,7 +785,8 @@ class XpraServer(gobject.GObject):
         return True
 
     def _keys_changed(self, *args):
-        self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
+        if not self.keymap_changing:
+            self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
