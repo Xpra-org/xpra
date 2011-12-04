@@ -12,8 +12,11 @@ import os.path
 import pygtk
 pygtk.require("2.0")
 import gtk
+import pango
 import gobject
 import webbrowser
+import time
+import datetime
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
@@ -82,7 +85,10 @@ class ClientExtrasBase(object):
     def __init__(self, client, opts):
         self.client = client
         self.license_text = None
+        self.session_info_window = None
         self.about_dialog = None
+        self.tray_icon = opts.tray_icon
+        self.session_name = opts.session_name
         self.set_window_icon(opts.window_icon)
 
     def set_window_icon(self, window_icon):
@@ -189,6 +195,121 @@ class ClientExtrasBase(object):
         dialog.connect("response", response)
         self.about_dialog = dialog
         dialog.show()
+
+    def session_info(self, *args):
+        if self.session_info_window:
+            self.session_info_window.present()
+            return
+        window = gtk.Window()
+        window.set_title(self.session_name or "Session Info")
+        window.set_destroy_with_parent(True)
+        window.set_resizable(True)
+        window.set_decorated(True)
+        pixbuf = None
+        if self.tray_icon:
+            pixbuf = self.get_pixbuf(self.tray_icon)
+        if not pixbuf:
+            pixbuf = self.get_pixbuf("xpra.png")
+        if pixbuf:
+            window.set_icon(pixbuf)
+        window.set_position(gtk.WIN_POS_CENTER)
+
+        # Contents box
+        vbox = gtk.VBox(False, 0)
+        vbox.set_spacing(2)
+        # Title:
+        #label = gtk.Label(self.session_name or "Session Info")
+        #label.modify_font(pango.FontDescription("sans 16"))
+        #vbox.add(label)
+        table = gtk.Table(1, columns=2)
+        table.set_col_spacings(3)
+        table.set_row_spacings(3)
+        vbox.add(table)
+        def add_row(row, label, widget):
+            l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
+            l_al.add(label)
+            table.attach(l_al, 0, 1, row, row + 1, xpadding=10)
+            w_al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+            w_al.add(widget)
+            table.attach(w_al, 1, 2, row, row + 1, xpadding=10)
+            return row + 1
+
+        # now add some rows with info:
+        row = 0
+        if self.client.server_start_time>0:
+            self.session_started_label = gtk.Label()
+            row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
+        self.session_connected_label = gtk.Label()
+        row = add_row(row, gtk.Label("Session Connected"), self.session_connected_label)
+        self.windows_managed_label = gtk.Label()
+        row = add_row(row, gtk.Label("Windows Managed"), self.windows_managed_label)
+        self.pixels_per_second_label = gtk.Label()
+        row = add_row(row, gtk.Label("Pixels/s"), self.pixels_per_second_label)
+
+        def populate_table(*args):
+            if not self.session_info_window:
+                return False
+            def settimedeltastr(label, from_time):
+                delta = datetime.timedelta(seconds=(long(time.time())-long(from_time)))
+                label.set_text(str(delta))
+            if self.client.server_start_time>0:
+                settimedeltastr(self.session_started_label, self.client.server_start_time)
+            settimedeltastr(self.session_connected_label, self.client.start_time)
+            real, redirect = 0, 0
+            for w in self.client._window_to_id.keys():
+                if w._override_redirect:
+                    redirect +=1
+                else:
+                    real += 1
+            self.windows_managed_label.set_text("%s (%s transient)" % (real, redirect))
+            pixels = "n/a"
+            if len(self.client.pixel_counter)>0:
+                total = 0
+                now = time.time()
+                mint = now-20       #ignore records older than 20 seconds
+                startt = now        #when we actually start counting from
+                for (t, count) in self.client.pixel_counter:
+                    if t>=mint:
+                        total += count
+                        startt = min(t, startt)
+                if total>0 and startt!=now:
+                    pvalue = long(total/(now-startt))
+                    if pvalue>1000*1000*1000:
+                        pixels = "%sG" % (long(pvalue/1000/1000/100)/10.0)
+                    elif pvalue>1000*1000:
+                        pixels = "%sM" % (long(pvalue/1000/100)/10.0)
+                    elif pvalue>1000:
+                        pixels = "%sK" % (long(pvalue/100)/10.0)
+                    else:
+                        pixels = str(pvalue)
+                    
+            self.pixels_per_second_label.set_text(pixels)
+            return True
+        gobject.timeout_add(1000, populate_table)
+
+        window.set_border_width(15)
+        window.add(vbox)
+        window.set_geometry_hints(vbox)
+        def window_deleted(*args):
+            self.session_info_window = None
+        window.connect('delete_event', window_deleted)
+        def close_window(*args):
+            self.session_info_window = None
+            window.destroy()
+        self.add_close_accel(window, close_window)
+        self.session_info_window = window
+        populate_table()
+        window.show_all()
+
+    def add_close_accel(self, window, callback):
+        # key accelerators
+        accel_group = gtk.AccelGroup()
+        accel_group.connect_group(ord('w'), gtk.gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+        window.add_accel_group(accel_group)
+        accel_group = gtk.AccelGroup()
+        escape_key, modifier = gtk.accelerator_parse('Escape')
+        accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
+        window.add_accel_group(accel_group)
 
 
 
@@ -308,7 +429,10 @@ class ClientExtrasBase(object):
         self.menu_shown = True
 
     def make_aboutmenuitem(self):
-        return  self.menuitem("About", "information.png", None, self.about)
+        return  self.menuitem("About Xpra", "information.png", None, self.about)
+
+    def make_sessioninfomenuitem(self):
+        return  self.menuitem(self.session_name or "Session Info", "statistics.png", None, self.session_info)
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
@@ -491,6 +615,7 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_menu_title)
 
         menu.append(self.make_aboutmenuitem())
+        menu.append(self.make_sessioninfomenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())

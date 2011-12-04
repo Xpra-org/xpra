@@ -496,6 +496,8 @@ class XpraServer(gobject.GObject):
 
     def __init__(self, clobber, sockets, session_name, password_file, pulseaudio, clipboard, randr, encoding, mmap):
         gobject.GObject.__init__(self)
+        
+        self.start_time = time.time()
 
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
@@ -1332,6 +1334,7 @@ class XpraServer(gobject.GObject):
             capabilities["session_name"] = self.session_name
         if self.mmap_size>0:
             capabilities["mmap_enabled"] = True
+        capabilities["start_time"] = long(self.start_time)
         self._send(["hello", capabilities])
 
     def disconnect(self, reason):

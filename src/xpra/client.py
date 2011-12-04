@@ -10,6 +10,8 @@ import gobject
 import cairo
 import re
 import os
+import time
+from collections import deque
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -346,6 +348,7 @@ class XpraClient(gobject.GObject):
 
     def __init__(self, conn, opts):
         gobject.GObject.__init__(self)
+        self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
         title = opts.title
@@ -403,6 +406,8 @@ class XpraClient(gobject.GObject):
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
+        
+        self.pixel_counter = deque(maxlen=100)
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -781,6 +786,7 @@ class XpraClient(gobject.GObject):
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
+        self.server_start_time = capabilities.get("start_time", -1)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         #ui may want to know this is now set:
@@ -825,8 +831,11 @@ class XpraClient(gobject.GObject):
             packet_sequence = packet[8]
         else:
             packet_sequence = None
-        window = self._id_to_window[id]
+        window = self._id_to_window.get(id)
+        if not window:
+            return      #window is already gone!
         window.draw(x, y, width, height, coding, data)
+        self.pixel_counter.append((time.time(), width*height))
         if packet_sequence and self.send_damage_sequence:
             self.send_now(["damage-sequence", packet_sequence])
 
