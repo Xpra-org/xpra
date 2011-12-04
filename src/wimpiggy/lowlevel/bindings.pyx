@@ -767,6 +767,8 @@ cdef xmodmap_exec_keycode(display_source, keycode, keysyms):
 def set_xmodmap(display_source, xmodmap_data):
     unhandled = []
     map = None
+    if type(xmodmap_data)==str and xmodmap_data.find("\n"):
+        xmodmap_data = xmodmap_data.splitlines()
     for line in xmodmap_data:
         if not line:
             continue

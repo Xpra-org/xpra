@@ -767,8 +767,7 @@ class XpraClient(gobject.GObject):
             self.session_name = capabilities.get("session_name", "Xpra")
         import glib
         glib.set_application_name(self.session_name)
-        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False) and \
-                            (self.xkbmap_print is not None or self.xkbmap_query is not None or self.xmodmap_data is not None)
+        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False) and self._client_extras.supports_raw_keycodes()
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])

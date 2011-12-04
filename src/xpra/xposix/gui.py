@@ -297,6 +297,9 @@ class ClientExtras(ClientExtrasBase):
         log("get_keymap_modifiers parsed to clear=%s, add=%s", clear, add)
         return  clear, add
 
+    def supports_raw_keycodes(self):
+        return True
+
     def get_keymap_spec(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
         if xkbmap_print is None:

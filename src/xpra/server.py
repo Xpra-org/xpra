@@ -42,6 +42,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,   #@UnresolvedImport
                                xtest_fake_button,           #@UnresolvedImport
                                set_key_repeat_rate,         #@UnresolvedImport
                                set_xmodmap,                 #@UnresolvedImport
+                               ungrab_all_keys,             #@UnresolvedImport
                                is_override_redirect,        #@UnresolvedImport
                                is_mapped,                   #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
@@ -631,6 +632,10 @@ class XpraServer(gobject.GObject):
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
             self.keymap_changing = True
             try:
+                ungrab_all_keys(gtk.gdk.get_default_root_window())
+            except:
+                log.error("set_keymap", exc_info=True)
+            try:
                 self.do_set_keymap()
             except:
                 log.error("set_keymap", exc_info=True)
@@ -728,13 +733,17 @@ class XpraServer(gobject.GObject):
         def exec_xmodmap(xmodmap_data):
             if not xmodmap_data or len(xmodmap_data)==0:
                 return
+            start = time.time()
             if exec_keymap_command(["xmodmap", "-display", display, "-"], "\n".join(xmodmap_data))==0:
+                return
+            if time.time()-start>5:
+                log.error("xmodmap timeout.. the keymap has not been applied")
                 return
             log.error("re-running %s xmodmap lines one at a time to workaround the error..", len(xmodmap_data))
             for mod in xmodmap_data:
                 exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
 
-        # note: our code does not handle add/clear so use exec for those:
+        # note: our code does not handle add/clear so we use exec_xmodmap for those
         if not self.xmodmap_data and not self.xkbmap_mod_add and not self.xkbmap_mod_clear:
             #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
             from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
@@ -743,7 +752,7 @@ class XpraServer(gobject.GObject):
             exec_xmodmap(XMODMAP_MOD_ADD)
         else:
             exec_xmodmap(self.xkbmap_mod_clear)
-            unset = set_xmodmap(gtk.gdk.get_default_root_window(), self.xmodmap_data.splitlines())
+            unset = set_xmodmap(gtk.gdk.get_default_root_window(), self.xmodmap_data)
             exec_xmodmap(unset)
             exec_xmodmap(self.xkbmap_mod_add)
 

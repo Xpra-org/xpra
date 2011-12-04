@@ -151,6 +151,9 @@ class ClientExtrasBase(object):
         """ layout, variant, variants"""
         return None,None,None
 
+    def supports_raw_keycodes(self):
+        return False
+
     def get_keymap_modifiers(self):
         return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD
 
