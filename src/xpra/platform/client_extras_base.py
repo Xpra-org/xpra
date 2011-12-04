@@ -238,8 +238,17 @@ class ClientExtrasBase(object):
         row = 0
         self.server_version_label = gtk.Label()
         row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
+        if self.client.server_platform:
+            row = add_row(row, gtk.Label("Server Platform"), gtk.Label(self.client.server_platform))
         self.server_randr_label = gtk.Label()
         row = add_row(row, gtk.Label("Server RandR Support"), self.server_randr_label)
+        if self.client.can_ping:
+            self.server_load_label = gtk.Label()
+            row = add_row(row, gtk.Label("Server Load"), self.server_load_label)
+            self.server_latency_label = gtk.Label()
+            row = add_row(row, gtk.Label("Server Latency"), self.server_latency_label)
+            self.client_latency_label = gtk.Label()
+            row = add_row(row, gtk.Label("Client Latency"), self.client_latency_label)
         if self.client.server_start_time>0:
             self.session_started_label = gtk.Label()
             row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
@@ -253,6 +262,7 @@ class ClientExtrasBase(object):
         def populate_table(*args):
             if not self.session_info_window:
                 return False
+            self.client.send_ping()
             def settimedeltastr(label, from_time):
                 delta = datetime.timedelta(seconds=(long(time.time())-long(from_time)))
                 label.set_text(str(delta))
@@ -268,6 +278,14 @@ class ClientExtrasBase(object):
                 self.server_randr_label.set_text("Yes%s" % size_info)
             else:
                 self.server_randr_label.set_text("No%s" % size_info)
+            if self.client.can_ping:
+                if self.client.server_load:
+                    self.server_load_label.set_text(" ".join([str(x/1000.0) for x in self.client.server_load]))
+                if len(self.client.server_latency)>0:
+                    avg = sum(self.client.server_latency)/len(self.client.server_latency)
+                    self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
+                if self.client.client_latency>=0:
+                    self.client_latency_label.set_text("%sms" % self.client.client_latency)
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             settimedeltastr(self.session_connected_label, self.client.start_time)

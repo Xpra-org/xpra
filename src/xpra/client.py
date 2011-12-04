@@ -408,6 +408,9 @@ class XpraClient(gobject.GObject):
         ClientSource(self._protocol)
         
         self.pixel_counter = deque(maxlen=100)
+        self.server_latency = deque(maxlen=100)
+        self.server_load = None
+        self.client_latency = -1
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -685,12 +688,38 @@ class XpraClient(gobject.GObject):
         capabilities_request["desktop_size"] = [root_w, root_h]
         capabilities_request["png_window_icons"] = True
         capabilities_request["damage_sequence"] = True
+        capabilities_request["ping"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             capabilities_request["key_repeat"] = key_repeat
         if self.mmap_file:
             capabilities_request["mmap_file"] = self.mmap_file
         self.send(["hello", capabilities_request])
+
+    def send_ping(self):
+        if self.can_ping:
+            self.send(["ping", long(1000*time.time())])
+
+    def _process_ping_echo(self, packet):
+        (_, echoedtime, l1, l2, l3, cl) = packet[:6]
+        diff = long(1000*time.time()-echoedtime)
+        self.server_latency.append(diff)
+        self.server_load = (l1, l2, l3)
+        self.client_latency = cl
+        log("ping echo server load=%s, measured client latency=%s", self.server_load, cl)
+    
+    def _process_ping(self, packet):
+        assert self.can_ping
+        (_, echotime) = packet[:2]
+        try:
+            (fl1, fl2, fl3) = os.getloadavg()
+            l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
+        except:
+            l1,l2,l3 = 0,0,0
+        sl = -1
+        if len(self.server_latency)>0:
+            sl = self.server_latency[-1]
+        self.send(["ping_echo", echotime, l1, l2, l3, sl])
 
     def send_jpeg_quality(self, q):
         assert q>0 and q<100
@@ -778,10 +807,13 @@ class XpraClient(gobject.GObject):
         clipboard_server_support = capabilities.get("clipboard", True) 
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
+        self.can_ping = capabilities.get("ping", False)
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
         self.server_start_time = capabilities.get("start_time", -1)
+        self.server_platform = capabilities.get("platform")
+
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         #ui may want to know this is now set:
@@ -927,6 +959,8 @@ class XpraClient(gobject.GObject):
         "bell": _process_bell,
         "notify_show": _process_notify_show,
         "notify_close": _process_notify_close,
+        "ping": _process_ping,
+        "ping_echo": _process_ping_echo,
         "window-metadata": _process_window_metadata,
         "configure-override-redirect": _process_configure_override_redirect,
         "lost-window": _process_lost_window,

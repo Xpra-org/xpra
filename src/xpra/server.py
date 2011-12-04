@@ -555,6 +555,8 @@ class XpraServer(gobject.GObject):
         self.mmap = None
         self.mmap_size = 0
 
+        self.reset_statistics()
+
         self.send_damage_sequence = False
         self.send_notifications = False
         self.last_cursor_serial = None
@@ -617,6 +619,11 @@ class XpraServer(gobject.GObject):
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
+
+    def reset_statistics(self):
+        self.client_latency = deque(maxlen=100)
+        self.client_load = None
+        self.server_latency = -1
 
     def set_keymap(self):
         try:
@@ -1237,6 +1244,7 @@ class XpraServer(gobject.GObject):
         # set this as our new one:
         if self._protocol is not None:
             self.disconnect("new valid connection received")
+        self.reset_statistics()
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
         #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
         self.encodings = capabilities.get("encodings", ["rgb24"])
@@ -1286,6 +1294,7 @@ class XpraServer(gobject.GObject):
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = capabilities.get("notifications", False)
+        self.can_ping = capabilities.get("ping", False)
         self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
         log.debug("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
         self._wm.enableCursors(self.send_cursors)
@@ -1316,6 +1325,7 @@ class XpraServer(gobject.GObject):
             capabilities["deflate"] = client_capabilities.get("deflate")
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
+        capabilities["platform"] = sys.platform
         capabilities["raw_keycodes_feature"] = True
         capabilities["focus_modifiers_feature"] = True
         capabilities["packet_size"] = True
@@ -1329,6 +1339,7 @@ class XpraServer(gobject.GObject):
         capabilities["resize_screen"] = self.randr
         if client_capabilities.get("damage_sequence", False):
             capabilities["damage_sequence"] = True
+        capabilities["ping"] = True
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat"] = client_capabilities.get("key_repeat")
         if self.session_name:
@@ -1337,6 +1348,33 @@ class XpraServer(gobject.GObject):
             capabilities["mmap_enabled"] = True
         capabilities["start_time"] = long(self.start_time)
         self._send(["hello", capabilities])
+
+    def send_ping(self):
+        if self.can_ping:
+            self._send(["ping", long(1000*time.time())])
+
+    def _process_ping_echo(self, proto, packet):
+        (_, echoedtime, l1, l2, l3, sl) = packet[:6]
+        diff = long(1000*time.time()-echoedtime)
+        self.client_latency.append(diff)
+        self.client_load = (l1, l2, l3)
+        self.server_latency = sl
+        log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
+    
+    def _process_ping(self, proto, packet):
+        assert self.can_ping
+        (_, echotime) = packet[:2]
+        try:
+            (fl1, fl2, fl3) = os.getloadavg()
+            l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
+        except:
+            l1,l2,l3 = 0,0,0
+        cl = -1
+        if len(self.client_latency)>0:
+            cl = self.client_latency[-1]
+        self._send(["ping_echo", echotime, l1, l2, l3, cl])
+        #if the client is pinging us, ping it too:
+        gobject.timeout_add(500, self.send_ping)
 
     def disconnect(self, reason):
         if self._protocol:
@@ -1612,6 +1650,8 @@ class XpraServer(gobject.GObject):
         "buffer-refresh": _process_buffer_refresh,
         "desktop_size": _process_desktop_size,
         "encoding": _process_encoding,
+        "ping": _process_ping,
+        "ping_echo": _process_ping_echo,
         "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
