@@ -406,11 +406,11 @@ class XpraClient(gobject.GObject):
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
-        
+
         self.pixel_counter = deque(maxlen=100)
         self.server_latency = deque(maxlen=100)
         self.server_load = None
-        self.client_latency = -1
+        self.client_latency = deque(maxlen=100)
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -705,9 +705,10 @@ class XpraClient(gobject.GObject):
         diff = long(1000*time.time()-echoedtime)
         self.server_latency.append(diff)
         self.server_load = (l1, l2, l3)
-        self.client_latency = cl
+        if cl>=0:
+            self.client_latency.append(cl)
         log("ping echo server load=%s, measured client latency=%s", self.server_load, cl)
-    
+
     def _process_ping(self, packet):
         assert self.can_ping
         (_, echotime) = packet[:2]
@@ -804,7 +805,7 @@ class XpraClient(gobject.GObject):
             self.encoding = e
         self.bell_enabled = capabilities.get("bell", False)
         self.notifications_enabled = capabilities.get("notifications", False)
-        clipboard_server_support = capabilities.get("clipboard", True) 
+        clipboard_server_support = capabilities.get("clipboard", True)
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
         self.can_ping = capabilities.get("ping", False)

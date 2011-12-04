@@ -280,12 +280,13 @@ class ClientExtrasBase(object):
                 self.server_randr_label.set_text("No%s" % size_info)
             if self.client.can_ping:
                 if self.client.server_load:
-                    self.server_load_label.set_text(" ".join([str(x/1000.0) for x in self.client.server_load]))
+                    self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
                 if len(self.client.server_latency)>0:
                     avg = sum(self.client.server_latency)/len(self.client.server_latency)
                     self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
-                if self.client.client_latency>=0:
-                    self.client_latency_label.set_text("%sms" % self.client.client_latency)
+                if len(self.client.client_latency)>0:
+                    avg = sum(self.client.client_latency)/len(self.client.client_latency)
+                    self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             settimedeltastr(self.session_connected_label, self.client.start_time)
@@ -295,7 +296,7 @@ class ClientExtrasBase(object):
                     redirect +=1
                 else:
                     real += 1
-            self.windows_managed_label.set_text("%s (%s transient)" % (real, redirect))
+            self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
             pixels = "n/a"
             if len(self.client.pixel_counter)>0:
                 total = 0
@@ -307,16 +308,21 @@ class ClientExtrasBase(object):
                         total += count
                         startt = min(t, startt)
                 if total>0 and startt!=now:
-                    pvalue = long(total/(now-startt))
-                    if pvalue>1000*1000*1000:
-                        pixels = "%sG" % (long(pvalue/1000/1000/100)/10.0)
-                    elif pvalue>1000*1000:
-                        pixels = "%sM" % (long(pvalue/1000/100)/10.0)
-                    elif pvalue>1000:
-                        pixels = "%sK" % (long(pvalue/100)/10.0)
-                    else:
-                        pixels = str(pvalue)
-                    
+                    def pixelstr(v):
+                        if v>1000*1000*1000:
+                            return "%sG" % (long(v/1000/1000/100)/10.0)
+                        elif v>1000*1000:
+                            return "%sM" % (long(v/1000/100)/10.0)
+                        elif v>1000:
+                            return "%sK" % (long(v/100)/10.0)
+                        else:
+                            return str(v)
+                    t, last = self.client.pixel_counter[-1]
+                    if t<now-5:
+                        last = 0
+                    avg = long(total/(now-startt))
+                    pixels = "%s  (%s)" % (pixelstr(last), pixelstr(avg))
+
             self.pixels_per_second_label.set_text(pixels)
             return True
         gobject.timeout_add(1000, populate_table)
@@ -622,7 +628,7 @@ class ClientExtrasBase(object):
         if self.jpeg_quality:
             self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
             self.updated_menus()
-    
+
     def updated_menus(self):
         """ subclasses may override this method - see darwin """
         pass
