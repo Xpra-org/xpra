@@ -16,11 +16,9 @@ gtk.gdk.threads_init()
 import gobject
 import cairo
 import sys
-import subprocess
 import hmac
 import uuid
 import StringIO
-import re
 import os
 from collections import deque
 import time
@@ -41,7 +39,6 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,   #@UnresolvedImport
                                xtest_fake_key,              #@UnresolvedImport
                                xtest_fake_button,           #@UnresolvedImport
                                set_key_repeat_rate,         #@UnresolvedImport
-                               set_xmodmap,                 #@UnresolvedImport
                                ungrab_all_keys,             #@UnresolvedImport
                                is_override_redirect,        #@UnresolvedImport
                                is_mapped,                   #@UnresolvedImport
@@ -62,6 +59,7 @@ log = Logger()
 import xpra
 from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names
+from xpra.xkbhelper import do_set_xmodmap, do_set_keymap
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
@@ -634,11 +632,21 @@ class XpraServer(gobject.GObject):
             try:
                 ungrab_all_keys(gtk.gdk.get_default_root_window())
             except:
-                log.error("set_keymap", exc_info=True)
+                log.error("error ungrabbing keys", exc_info=True)
             try:
-                self.do_set_keymap()
+                do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
+                              self.xkbmap_print, self.xkbmap_query)
             except:
-                log.error("set_keymap", exc_info=True)
+                log.error("error setting new keymap", exc_info=True)
+            try:
+                clear,data,add = self.xkbmap_mod_clear, self.xmodmap_data, self.xkbmap_mod_add
+                if not clear and not data and not add:
+                    #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
+                    from xpra.keys import XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD
+                    clear,data,add = XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD 
+                do_set_xmodmap(clear, data, add)
+            except:
+                log.error("error setting xmodmap", exc_info=True)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
@@ -646,130 +654,6 @@ class XpraServer(gobject.GObject):
                 self.keymap_changing = False
                 self._keys_changed()
             gobject.idle_add(reenable_keymap_changes)
-
-    def do_set_keymap(self):
-        """ xkbmap_layout is the generic layout name (used on non posix platforms)
-            xkbmap_print is the output of "setxkbmap -print" on the client
-            xkbmap_query is the output of "setxkbmap -query" on the client
-            xmodmap_data is the output of "xmodmap -pke" on the client
-            Use those to try to setup the correct keyboard map for the client
-            so that all the keycodes sent will be mapped
-        """
-        def exec_keymap_command(args, stdin=None):
-            try:
-                returncode = self.signal_safe_exec(args, stdin)
-                def logstdin():
-                    if not stdin or len(stdin)<32:
-                        return  stdin
-                    return stdin[:30].replace("\n", "\\n")+".."
-                if returncode==0:
-                    if not stdin:
-                        log.info("%s", args)
-                    else:
-                        log.info("%s with stdin=%s", args, logstdin())
-                else:
-                    log.info("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
-                return returncode
-            except Exception, e:
-                log.info("error calling '%s': %s" % (str(args), e))
-                return -1
-        #First we try to use data from setxkbmap -query
-        if self.xkbmap_query:
-            """ The xkbmap_query data will look something like this:
-            rules:      evdev
-            model:      evdev
-            layout:     gb
-            options:    grp:shift_caps_toggle
-            And we want to call something like:
-            setxkbmap -rules evdev -model evdev -layout gb
-            setxkbmap -option "" -option grp:shift_caps_toggle
-            (we execute the options separately in case that fails..)
-            """
-            #parse the data into a dict:
-            settings = {}
-            opt_re = re.compile("(\w*):\s*(.*)")
-            for line in self.xkbmap_query.splitlines():
-                m = opt_re.match(line)
-                if m:
-                    settings[m.group(1)] = m.group(2).strip()
-            #construct the command line arguments for setxkbmap:
-            args = ["setxkbmap"]
-            for setting in ["rules", "model", "layout"]:
-                if setting in settings:
-                    args += ["-%s" % setting, settings.get(setting)]
-            if len(args)>0:
-                exec_keymap_command(args)
-            #try to set the options:
-            if "options" in settings:
-                exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
-        elif self.xkbmap_print:
-            #try to guess the layout by parsing "setxkbmap -print"
-            try:
-                sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
-                for line in self.xkbmap_print.splitlines():
-                    m = sym_re.match(line)
-                    if m:
-                        layout = m.group(1)
-                        log.info("guessing keyboard layout='%s'" % layout)
-                        exec_keymap_command(["setxkbmap", layout])
-                        break
-            except Exception, e:
-                log.info("error setting keymap: %s" % e)
-        else:
-            #just set the layout (use 'us' if we don't even have that information!)
-            layout = self.xkbmap_layout or "us"
-            set_layout = ["setxkbmap", "-layout", layout]
-            if self.xkbmap_variant:
-                set_layout += ["-variant", self.xkbmap_variant]
-            if not exec_keymap_command(set_layout) and self.xkbmap_variant:
-                log.info("error setting keymap with variant %s, retrying with just layout %s", self.xkbmap_variant, self.xkbmap_layout)
-                set_layout = ["setxkbmap", "-layout", layout]
-                exec_keymap_command(set_layout)
-
-        display = os.environ.get("DISPLAY")
-        if self.xkbmap_print:
-            exec_keymap_command(["xkbcomp", "-", display], self.xkbmap_print)
-
-        def exec_xmodmap(xmodmap_data):
-            if not xmodmap_data or len(xmodmap_data)==0:
-                return
-            start = time.time()
-            if exec_keymap_command(["xmodmap", "-display", display, "-"], "\n".join(xmodmap_data))==0:
-                return
-            if time.time()-start>5:
-                log.error("xmodmap timeout.. the keymap has not been applied")
-                return
-            log.error("re-running %s xmodmap lines one at a time to workaround the error..", len(xmodmap_data))
-            for mod in xmodmap_data:
-                exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
-
-        # note: our code does not handle add/clear so we use exec_xmodmap for those
-        if not self.xmodmap_data and not self.xkbmap_mod_add and not self.xkbmap_mod_clear:
-            #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
-            from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
-            exec_xmodmap(XMODMAP_MOD_CLEAR)
-            set_xmodmap(gtk.gdk.get_default_root_window(), XMODMAP_MOD_DEFAULTS)
-            exec_xmodmap(XMODMAP_MOD_ADD)
-        else:
-            exec_xmodmap(self.xkbmap_mod_clear)
-            unset = set_xmodmap(gtk.gdk.get_default_root_window(), self.xmodmap_data)
-            exec_xmodmap(unset)
-            exec_xmodmap(self.xkbmap_mod_add)
-
-    def signal_safe_exec(self, cmd, stdin):
-        """ this is a bit of a hack,
-        the problem is that we won't catch SIGCHLD at all while this command is running! """
-        import signal
-        try:
-            oldsignal = signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (out,err) = process.communicate(stdin)
-            code = process.poll()
-            log.debug("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
-            log.debug("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
-            return  code
-        finally:
-            signal.signal(signal.SIGCHLD, oldsignal)
 
 
     def add_listen_socket(self, sock):

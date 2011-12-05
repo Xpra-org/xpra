@@ -24,6 +24,9 @@ log = Logger("wimpiggy.lowlevel")
 ###################################
 # Headers, python magic
 ###################################
+cdef extern from "stdlib.h":
+    void* malloc(size_t __size)
+    void free(void* mem)
 
 cdef extern from "X11/Xutil.h":
     pass
@@ -732,7 +735,7 @@ def get_keysym_list(symbols):
             keysymlist.append(keysym)
     return keysymlist
 
-def xmodmap_do_keycode(display_source, keycode_str, symbols):
+def parse_keycode(display_source, keycode_str):
     if keycode_str=="any":
         keycode = 0
     elif keycode_str[:1]=="x":
@@ -742,44 +745,57 @@ def xmodmap_do_keycode(display_source, keycode_str, symbols):
         keycode = int(keycode_str)
     min_keycode, max_keycode = get_minmax_keycodes(get_xdisplay_for(display_source))
     if keycode<min_keycode or keycode>max_keycode:
-        log.error("keycode value %s is out of range (%s-%s)", keycode, min_keycode, max_keycode)
-        return False
-    keysyms = get_keysym_list(symbols)
-    log("xmodmap_do_keycode keycode=%s, keysyms=%s", keycode, keysyms)
-    return xmodmap_exec_keycode(display_source, keycode, keysyms)
+        log.error("keycode %s: value %s is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
+        return -1
+    return keycode
 
-cdef xmodmap_exec_keycode(display_source, keycode, keysyms):
-    cdef KeySym ckeysyms[8]
-    cdef Display * display
+def xmodmap_setkeycodes(display_source, keycodes):
+    cdef KeySym* ckeysyms
+    cdef Display* display
+    cdef int num_codes
+    cdef int keysyms_per_keycode
+    cdef first_keycode
     display = get_xdisplay_for(display_source)
-    if keycode==0:
-        log.error("exec_keycode does not handle zero keycode yet..")
-        return False
-    elif len(keysyms)==0:
-        ckeysyms[0] = NoSymbol
-        return XChangeKeyboardMapping(display, keycode, 1, ckeysyms, 1)==0
-    else:
-        assert len(keysyms)<=8
-        for i in range(0, len(keysyms)):
-            ckeysyms[i] = keysyms[i]
-        return XChangeKeyboardMapping(display, keycode, len(keysyms), ckeysyms, 1)==0
+    first_keycode = min(keycodes.keys())
+    last_keycode = max(keycodes.keys())
+    num_codes = 1+last_keycode-first_keycode
+    keysyms_per_keycode = 1
+    for keysyms in keycodes.values():
+        keysyms_per_keycode = max(keysyms_per_keycode, len(keysyms))
+    ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
+    try:
+        for i in range(0, num_codes):
+            keysyms = keycodes.get(first_keycode+i, [])
+            for j in range(0, keysyms_per_keycode):
+                if j<len(keysyms):
+                    keysym = keysyms[j]
+                else:
+                    keysym = NoSymbol
+                ckeysyms[i*keysyms_per_keycode+j] = keysym
+        return XChangeKeyboardMapping(display, first_keycode, keysyms_per_keycode, ckeysyms, num_codes)==0
+    finally:
+        free(ckeysyms)
 
 def set_xmodmap(display_source, xmodmap_data):
     unhandled = []
     map = None
     if type(xmodmap_data)==str and xmodmap_data.find("\n"):
         xmodmap_data = xmodmap_data.splitlines()
+    keycodes = {}
     for line in xmodmap_data:
         if not line:
             continue
         parts = line.split()
         if parts[0]=="keycode" and len(parts)>2 and parts[2]=="=":
-            if not xmodmap_do_keycode(display_source, parts[1], parts[3:]):
-                log.error("failed to set keycode: %s", parts[3:])
-                unhandled.append(line)
+            keycode = parse_keycode(display_source, parts[1])
+            if keycode>=0:
+                keysyms = get_keysym_list(parts[3:])
+                keycodes[keycode] = keysyms
         else:
             log.error("set_xmodmap did not handle: %s", line)
             unhandled.append(line)
+    log.info("calling xmodmap_setkeycodes with %s", keycodes)
+    xmodmap_setkeycodes(display_source, keycodes)
     log("%s lines total, %s unprocessed", len(xmodmap_data), len(unhandled))
     return unhandled
             
