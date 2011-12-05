@@ -8,6 +8,7 @@ import re
 import subprocess
 import time
 
+from wimpiggy.error import trap
 from wimpiggy.lowlevel import set_xmodmap                 #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
@@ -67,11 +68,16 @@ def exec_xmodmap(xmodmap_data):
 
 def c_xmodmap(data):
     import gtk.gdk
-    unset = set_xmodmap(gtk.gdk.get_default_root_window(), data)
-    exec_xmodmap(unset)
-
-
-
+    try:
+        unset = trap.call_synced(set_xmodmap, gtk.gdk.get_default_root_window(), data)
+    except:
+        log.error("c_xmodmap", exc_info=True)
+        unset = data
+    if unset is None:
+        #None means an X11 error occurred, re-do all:
+        unset = data
+    if len(unset)>0:
+        exec_xmodmap(unset)
 
 
 def do_set_keymap(xkbmap_layout, xkbmap_variant,
@@ -151,10 +157,10 @@ def do_set_xmodmap(xkbmap_mod_clear, xmodmap_data, xkbmap_mod_add):
     if not xmodmap_data and not xkbmap_mod_add and not xkbmap_mod_clear:
         #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
         from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
-        exec_xmodmap(XMODMAP_MOD_CLEAR)
+        c_xmodmap(XMODMAP_MOD_CLEAR)
         c_xmodmap(XMODMAP_MOD_DEFAULTS)
-        exec_xmodmap(XMODMAP_MOD_ADD)
+        c_xmodmap(XMODMAP_MOD_ADD)
     else:
-        exec_xmodmap(xkbmap_mod_clear)
+        c_xmodmap(xkbmap_mod_clear)
         c_xmodmap(xmodmap_data)
-        exec_xmodmap(xkbmap_mod_add)
+        c_xmodmap(xkbmap_mod_add)

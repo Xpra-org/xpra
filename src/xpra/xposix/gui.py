@@ -290,7 +290,7 @@ class ClientExtras(ClientExtrasBase):
             #ie: ['shift', 'Shift_L', '(0x32),', 'Shift_R', '(0x3e)']
             clear.append("clear %s" % parts[0])
             if len(parts)>1:
-                nohex = [x for x in parts[1:] if not x.startswith("(")]
+                nohex = set([x for x in parts[1:] if not x.startswith("(")])
                 add.append("add %s = %s" % (parts[0], " ".join(nohex)))
         log("get_keymap_modifiers parsed to clear=%s, add=%s", clear, add)
         return  clear, add

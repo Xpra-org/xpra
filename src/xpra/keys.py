@@ -25,10 +25,16 @@ XMODMAP_MOD_ADD = ["add Lock = Caps_Lock",
                  "add Mod4 = Super_L Super_R"]
 
 XMODMAP_MOD_DEFAULTS = ["keycode any = Shift_L",
+                   "keycode any = Shift_R",
                    "keycode any = Control_L",
+                   "keycode any = Control_R",
                    "keycode any = Meta_L",
+                   "keycode any = Meta_R",
                    "keycode any = Alt_L",
+                   "keycode any = Alt_R",
                    "keycode any = Hyper_L",
+                   "keycode any = Hyper_R",
                    "keycode any = Super_L",
+                   "keycode any = Super_R",
                     # Really stupid hack to force backspace to work.
                    "keycode any = BackSpace"]
