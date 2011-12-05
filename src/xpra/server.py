@@ -748,7 +748,7 @@ class XpraServer(gobject.GObject):
             #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
             from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
             exec_xmodmap(XMODMAP_MOD_CLEAR)
-            set_xmodmap(XMODMAP_MOD_DEFAULTS)
+            set_xmodmap(gtk.gdk.get_default_root_window(), XMODMAP_MOD_DEFAULTS)
             exec_xmodmap(XMODMAP_MOD_ADD)
         else:
             exec_xmodmap(self.xkbmap_mod_clear)
