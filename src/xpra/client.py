@@ -368,16 +368,29 @@ class XpraClient(gobject.GObject):
             self.jpegquality = 50
 
         self.server_capabilities = {}
+
+        self.can_ping = False
+        self.mmap_enabled = False
+        self.server_start_time = -1
+        self.server_platform = ""
+        self.server_actual_desktop_size = None
+        self.server_desktop_size = None
+        self.server_randr = False
+        self.pixel_counter = deque(maxlen=100)
+        self.server_latency = deque(maxlen=100)
+        self.server_load = None
+        self.client_latency = deque(maxlen=100)
         self.bell_enabled = True
         self.notifications_enabled = True
-        self._client_extras = ClientExtras(self, opts)
-        self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
         self.send_damage_sequence = False
-        self.mmap_enabled = False
-        self.supports_mmap = opts.mmap and self._client_extras.supports_mmap()
+        self.clipboard_enabled = False
         self.mmap = None
         self.mmap_file = None
         self.mmap_size = 0
+
+        self._client_extras = ClientExtras(self, opts)
+        self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
+        self.supports_mmap = opts.mmap and self._client_extras.supports_mmap()
         if self.supports_mmap:
             try:
                 import mmap
@@ -406,11 +419,6 @@ class XpraClient(gobject.GObject):
 
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
-
-        self.pixel_counter = deque(maxlen=100)
-        self.server_latency = deque(maxlen=100)
-        self.server_load = None
-        self.client_latency = deque(maxlen=100)
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1

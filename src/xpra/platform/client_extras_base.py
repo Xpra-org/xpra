@@ -269,10 +269,11 @@ class ClientExtrasBase(object):
             def settimedeltastr(label, from_time):
                 delta = datetime.timedelta(seconds=(long(time.time())-long(from_time)))
                 label.set_text(str(delta))
+            v = self.client._remote_version or "unknown"
             if self.client.mmap_enabled:
-                self.server_version_label.set_text("%s (mmap in use)" % self.client._remote_version)
+                self.server_version_label.set_text("%s (mmap in use)" % v)
             else:
-                self.server_version_label.set_text(self.client._remote_version)
+                self.server_version_label.set_text(v)
             size_info = ""
             if self.client.server_actual_desktop_size:
                 w,h = self.client.server_actual_desktop_size
