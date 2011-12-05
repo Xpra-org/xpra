@@ -12,6 +12,7 @@ import time
 from optparse import OptionParser
 import logging
 from subprocess import Popen, PIPE
+import signal
 
 import xpra
 from xpra.bencode import bencode
@@ -171,8 +172,10 @@ def main(script_file, cmdline):
     if options.encoding and options.encoding not in ENCODINGS:
         parser.error("illegal encoding")
 
-    logging.root.setLevel(logging.INFO)
-    if options.debug is not None:
+    def toggle_logging(level):
+        if not options.debug:
+            logging.root.setLevel(level)
+            return
         categories = options.debug.split(",")
         for cat in categories:
             if cat.startswith("-"):
@@ -181,8 +184,20 @@ def main(script_file, cmdline):
                 logger = logging.root
             else:
                 logger = logging.getLogger(cat)
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(level)
+    def toggle_debug_on(*args):
+        toggle_logging(logging.DEBUG)
+    def toggle_debug_off(*args):
+        toggle_logging(logging.INFO)
+        
+    if options.debug is not None:
+        toggle_debug_on()
+    else:
+        toggle_debug_off()
     logging.root.addHandler(logging.StreamHandler(sys.stderr))
+    if os.name=="posix":
+        signal.signal(signal.SIGUSR1, toggle_debug_on)
+        signal.signal(signal.SIGUSR2, toggle_debug_off)
 
     mode = args.pop(0)
 
