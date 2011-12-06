@@ -90,13 +90,16 @@ class Protocol(object):
         self._compressor = None
         self._decompressor = None
         self._write_thread = Thread(target=self._write_thread_loop)
+        self._write_thread.name = "write_loop"
         self._write_thread.daemon = True
         self._write_thread.start()
         self._write_lock = Lock()
         self._read_thread = Thread(target=self._read_thread_loop)
+        self._read_thread.name = "read_loop"
         self._read_thread.daemon = True
         self._read_thread.start()
         self._read_parser_thread = Thread(target=self._read_parse_thread_loop)
+        self._read_parser_thread.name = "read_parse_loop"
         self._read_parser_thread.deamon = True
         self._read_parser_thread.start()
         self._maybe_queue_more_writes()

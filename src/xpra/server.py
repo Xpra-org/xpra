@@ -23,7 +23,7 @@ import os
 from collections import deque
 import time
 import ctypes
-import thread
+from threading import Thread
 import Queue
 from math import log as mathlog
 from math import sqrt
@@ -181,8 +181,15 @@ class ServerSource(object):
         self._damage_request_queue = Queue.Queue()
         self._damage_data_queue = Queue.Queue()
         self._damage_packet_queue = Queue.Queue(2)
-        thread.start_new_thread(self.damage_to_data, ())
-        thread.start_new_thread(self.data_to_packet, ())
+        
+        self._damagedata_thread = Thread(target=self.damage_to_data)
+        self._damagedata_thread.name = "damage_to_data"
+        self._damagedata_thread.daemon = True
+        self._damagedata_thread.start()
+        self._datapacket_thread = Thread(target=self.data_to_packet)
+        self._datapacket_thread.name = "data_to_packet"
+        self._datapacket_thread.daemon = True
+        self._datapacket_thread.start()
 
     def _have_more(self):
         return bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
@@ -1253,6 +1260,8 @@ class XpraServer(gobject.GObject):
         self.client_load = (l1, l2, l3)
         self.server_latency = sl
         log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
+        from xpra.util import stacktraces
+        log.info("stacktraces:\n %s", "\n".join(stacktraces()))
     
     def _process_ping(self, proto, packet):
         assert self.can_ping
