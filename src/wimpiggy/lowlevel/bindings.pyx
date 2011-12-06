@@ -723,13 +723,13 @@ cdef XModifierKeymap* work_keymap = NULL
 cdef XModifierKeymap*   get_keymap(Display * display, load):
     global work_keymap
     if work_keymap==NULL and load:
-        log.info("retrieving keymap")
+        log("retrieving keymap")
         work_keymap = XGetModifierMapping(display)
     return work_keymap
 
 cdef set_keymap(XModifierKeymap* new_keymap):
     global work_keymap
-    log.info("setting new keymap")
+    log("setting new keymap")
     work_keymap = new_keymap
 
 cdef parse_keysym(symbol):
@@ -828,7 +828,7 @@ cdef xmodmap_clearmodifier(Display * display, int modifier):
     cdef XModifierKeymap* keymap
     keymap = get_keymap(display, True)
     keycode = <KeyCode*> keymap.modifiermap
-    log.info("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
+    log("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
     for i in range(0, keymap.max_keypermod):
         keycode[modifier*keymap.max_keypermod+i] = 0
 
@@ -838,12 +838,12 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
     cdef KeySym keysym
     keymap = get_keymap(display, True)
     success = True
-    log.info("add modifier: modifier %s=%s", modifier, keysyms)
+    log("add modifier: modifier %s=%s", modifier, keysyms)
     for keysym_str in keysyms:
         keysym = XStringToKeysym(keysym_str)
-        log.info("add modifier: keysym(%s)=%s", keysym_str, keysym)
+        log("add modifier: keysym(%s)=%s", keysym_str, keysym)
         keycodes = KeysymToKeycodes(display, keysym)
-        log.info("add modifier: keycodes(%s)=%s", keysym, keycodes)
+        log("add modifier: keycodes(%s)=%s", keysym, keycodes)
         if len(keycodes)==0:
             log.error("xmodmap_exec_add: no keycodes found for keysym=%s", keysym)
             success = False
@@ -854,9 +854,9 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
                     keymap = XInsertModifiermapEntry(keymap, keycode, modifier)
                     if keymap!=NULL:
                         set_keymap(keymap)
-                        log.info("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
+                        log("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                     else:
-                        log.info("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
+                        log.error("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                         success = False
                 else:
                     log.info("add modifier: failed, found zero keycode for %s", modifier)
@@ -878,7 +878,7 @@ cdef native_xmodmap(display_source, xmodmap_data):
     new_keysyms = []
     try:
         for line in xmodmap_data:
-            log.debug("parsing: %s", line)
+            log("parsing: %s", line)
             if not line:
                 continue
             parts = line.split()
@@ -903,20 +903,18 @@ cdef native_xmodmap(display_source, xmodmap_data):
                 if modifier>=0:
                     if xmodmap_addmodifier(display, modifier, parts[3:]):
                         continue
-            log.error("set_xmodmap did not handle: %s", line)
+            log.info("set_xmodmap did not handle: %s", line)
             unhandled.append(line)
         if len(keycodes)>0:
-            log.info("calling xmodmap_setkeycodes with %s", keycodes)
+            log("calling xmodmap_setkeycodes with %s", keycodes)
             xmodmap_setkeycodes(display, keycodes, new_keysyms)
     finally:
         keymap = get_keymap(display, False)
         if keymap!=NULL:
             set_keymap(NULL)
-            log.info("saving modified keymap")
+            log("saving modified keymap")
             XSetModifierMapping(display, keymap)
-            log.info("freeing modified keymap")
             XFreeModifiermap(keymap)
-            log.info("keymap done")
     log("%s lines total, %s unprocessed", len(xmodmap_data), len(unhandled))
     return unhandled
 
