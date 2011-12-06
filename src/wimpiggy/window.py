@@ -21,7 +21,6 @@ import cairo
 import math
 import os
 from socket import gethostname
-import wimpiggy.lowlevel
 from wimpiggy.lowlevel import (
                const,                                       #@UnresolvedImport
                add_event_receiver,                          #@UnresolvedImport
@@ -37,6 +36,8 @@ from wimpiggy.lowlevel import (
                XRemoveFromSaveSet,                          #@UnresolvedImport
                XSetInputFocus,                              #@UnresolvedImport
                XKillClient,                                 #@UnresolvedImport
+               send_wm_take_focus,                          #@UnresolvedImport
+               send_wm_delete_window,                       #@UnresolvedImport
                sendConfigureNotify,                         #@UnresolvedImport
                configureAndNotify,                          #@UnresolvedImport
                substructureRedirect                         #@UnresolvedImport
@@ -967,8 +968,7 @@ class WindowModel(BaseWindowModel):
             trap.swallow(XSetInputFocus, self.client_window, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
-            trap.swallow(wimpiggy.lowlevel.send_wm_take_focus,
-                         self.client_window, now)
+            trap.swallow(send_wm_take_focus, self.client_window, now)
 
     ################################
     # Killing clients:
@@ -976,8 +976,7 @@ class WindowModel(BaseWindowModel):
 
     def request_close(self):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
-            trap.swallow(wimpiggy.lowlevel.send_wm_delete_window,
-                         self.client_window)
+            trap.swallow(send_wm_delete_window, self.client_window)
         else:
             # You don't wanna play ball?  Then no more Mr. Nice Guy!
             self.force_quit()
