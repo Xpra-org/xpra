@@ -610,6 +610,11 @@ class XpraServer(gobject.GObject):
         self.salt = None
 
         self.randr = randr and has_randr()
+        if self.randr and len(get_screen_sizes())<=1:
+            #disable randr when we are dealing with a Xvfb
+            #with only one resolution available
+            #since we don't support adding them on the fly yet
+            self.randr = False
         log.info("randr enabled: %s" % self.randr)
 
         self.pulseaudio = pulseaudio
