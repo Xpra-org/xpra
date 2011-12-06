@@ -12,7 +12,6 @@ import os.path
 import pygtk
 pygtk.require("2.0")
 import gtk
-import pango
 import gobject
 import webbrowser
 import time
@@ -220,10 +219,6 @@ class ClientExtrasBase(object):
         # Contents box
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(2)
-        # Title:
-        #label = gtk.Label(self.session_name or "Session Info")
-        #label.modify_font(pango.FontDescription("sans 16"))
-        #vbox.add(label)
         table = gtk.Table(1, columns=2)
         table.set_col_spacings(3)
         table.set_row_spacings(3)
