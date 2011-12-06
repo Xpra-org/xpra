@@ -1265,8 +1265,6 @@ class XpraServer(gobject.GObject):
         self.client_load = (l1, l2, l3)
         self.server_latency = sl
         log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
-        from xpra.util import stacktraces
-        log.info("stacktraces:\n %s", "\n".join(stacktraces()))
     
     def _process_ping(self, proto, packet):
         assert self.can_ping
