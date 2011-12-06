@@ -1514,7 +1514,7 @@ class XpraServer(gobject.GObject):
             log.info("xpra client disconnected.")
             self._clear_keys_pressed()
             self._protocol = None
-        self._focus(0, [])
+            self._focus(0, [])
         sys.stdout.flush()
 
     def _process_gibberish(self, proto, packet):
