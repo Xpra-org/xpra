@@ -457,14 +457,18 @@ class XpraClient(gobject.GObject):
         gtk.main()
 
     def cleanup(self):
-        self._client_extras.exit()
+        if self._client_extras:
+            self._client_extras.exit()
+            self._client_extras = None
         if self._protocol:
             self._protocol.close()
+            self._protocol = None
         self.clean_mmap()
 
     def clean_mmap(self):
         if self.mmap_file and os.path.exists(self.mmap_file):
             os.unlink(self.mmap_file)
+            self.mmap_file = None
 
     def quit(self, *args):
         gtk_main_quit_really()
