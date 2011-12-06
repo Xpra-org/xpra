@@ -70,29 +70,6 @@ def main_thread_call(fn, *args, **kwargs):
     gobject.timeout_add(0, cb)
 
 
-class CachedCounter(object):
-    """ A simple atomic counter with read access to the value (unlike itertools) """
-    def __init__(self, initial=0):
-        self._lock = Lock()
-        self._value = initial
-
-    def inc(self, v=1):
-        try:
-            self._lock.acquire()
-            self._value += v
-        finally:
-            self._lock.release()
-
-    def value(self):
-        try:
-            self._lock.acquire()
-            return self._value
-        finally:
-            self._lock.release()
-
-    def __str__(self):
-        return  str(self._value)
-
 class Protocol(object):
     CONNECTION_LOST = object()
     GIBBERISH = object()
@@ -181,7 +158,7 @@ class Protocol(object):
                     while buf:
                         buf = buf[self._conn.write(buf):]
                 except (OSError, IOError, socket.error), e:
-                    main_thread_call(self._connection_lost, "Error writing to connection: %s" % e)
+                    self._call_connection_lost("Error writing to connection: %s" % e)
                     break
                 except TypeError:
                     assert self._closed
@@ -199,7 +176,7 @@ class Protocol(object):
                 try:
                     buf = self._conn.read(8192)
                 except (ValueError, OSError, IOError, socket.error), e:
-                    main_thread_call(self._connection_lost, "Error reading from connection: %s" % e)
+                    self._call_connection_lost("Error reading from connection: %s" % e)
                     return
                 except TypeError:
                     assert self._closed
@@ -213,6 +190,9 @@ class Protocol(object):
         finally:
             log("read thread: ended")
 
+    def _call_connection_lost(self, message="", exc_info=False):
+        main_thread_call(self._connection_lost, message="", exc_info=False)
+
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
         if not self._closed:
@@ -224,13 +204,13 @@ class Protocol(object):
             while not self._closed:
                 buf = self._read_queue.get()
                 if not buf:
-                    return self._connection_lost("empty marker in read queue")
+                    return self._call_connection_lost("empty marker in read queue")
                 if self._decompressor is not None:
                     buf = self._decompressor.decompress(buf)
                 try:
                     self._read_decoder.add(buf)
                 except:
-                    return self._connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
+                    return self._call_connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
                 while not self._closed:
                     had_deflate = (self._decompressor is not None)
                     try:
@@ -239,7 +219,7 @@ class Protocol(object):
                         # Peek at the data we got, in case we can make sense of it:
                         self._process_packet([Protocol.GIBBERISH, self._read_decoder.unprocessed()])
                         # Then hang up:
-                        return self._connection_lost("gibberish received")
+                        return self._call_connection_lost("gibberish received")
                     if result is None:
                         break
                     packet, unprocessed = result
