@@ -227,14 +227,6 @@ sending pulseaudio cookies and information to the server.
 Note: what the application does with this information is beyond the
 scope of this document.
 .TP
-\fB\-\-no\-keyboard\-sync\fP
-Disables keyboard state synchronization. Normally the key presses
-and key release events are sent to the server as they occur so that
-the server can maintain a consistent keyboard state.
-Using this option can prevent keys from repeating unexpectedly on
-high latency links but it may also disrupt applications which access
-the keyboard directly (games, etc).
-.TP
 \fB\-\-session\-name\fP=\fIVALUE\fP
 Sets the name of this session. This value may be used in
 notifications, utilities, tray menu, etc.
@@ -374,6 +366,14 @@ If no shortcuts are defined on the command line,
 the following default one will be used:
 .br
 \fIMeta+Shift+F4:quit\fP
+.TP
+\fB\-\-no\-keyboard\-sync\fP
+Disables keyboard state synchronization. Normally the key presses
+and key release events are sent to the server as they occur so that
+the server can maintain a consistent keyboard state.
+Using this option can prevent keys from repeating unexpectedly on
+high latency links but it may also disrupt applications which access
+the keyboard directly (games, etc).
 .TP
 \fB\-\-title\-suffix\fP=\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.
