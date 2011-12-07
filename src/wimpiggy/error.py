@@ -38,12 +38,24 @@ log = Logger()
 class XError(Exception):
     pass
 
-### Exceptions cannot be new-style classes.  Who came up with _that_ one?
-# # Define its more precise subclasses, XBadRequest, XBadValue, etc.
-# _all_errors = ["BadRequest", "BadValue", "BadWindow", "BadPixmap", "BadAtom",
-#                "BadCursor", "BadFont", "BadMatch", "BadDrawable", "BadAccess",
-#                "BadAlloc", "BadColor", "BadGC", "BadIDChoice", "BadName",
-#                "BadLength", "BadImplementation"]
+
+xerror_to_name = None
+def XErrorToName(xerror):
+    global xerror_to_name
+    try:
+        if xerror_to_name is None:
+            xerror_to_name = {}
+            from wimpiggy.lowlevel import const     #@UnresolvedImport
+            for name,code in const.items():
+                if name=="Success" or name.startswith("Bad"):
+                    xerror_to_name[code] = name
+            log("XErrorToName(..) initialized error names: %s", xerror_to_name)
+        if xerror.message in xerror_to_name:
+            return xerror_to_name.get(xerror.message)
+    except:
+        log.error("XErrorToName", exc_info=True)
+    return xerror
+
 _exc_for_error = {}
 # for error in _all_errors:
 #     exc_name = "X%s" % error
@@ -105,18 +117,18 @@ class _ErrorManager(object):
     def swallow_unsynced(self, fun, *args, **kwargs):
         try:
             self.call_unsynced(fun, *args, **kwargs)
+            return True
         except XError, e:
-            log("Ignoring X error: %s", e)
-            pass
-        return None
+            log("Ignoring X error: %s on %s", XErrorToName(e), fun)
+            return False
 
     def swallow_synced(self, fun, *args, **kwargs):
         try:
             self.call_synced(fun, *args, **kwargs)
+            return True
         except XError, e:
-            log("Ignoring X error: %s", e)
-            pass
-        return None
+            log("Ignoring X error: %s on %s", XErrorToName(e), fun)
+            return False
 
     swallow = swallow_unsynced
 
