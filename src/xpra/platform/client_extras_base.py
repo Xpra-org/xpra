@@ -104,7 +104,8 @@ class ClientExtrasBase(object):
         gtk_main_quit_really()
 
     def exit(self):
-        pass
+        self.close_about()
+        self.close_session_info()
 
     def supports_mmap(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED
@@ -191,12 +192,19 @@ class ClientExtrasBase(object):
         if pixbuf:
             dialog.set_logo(pixbuf)
         dialog.set_program_name("Xpra")
-        def response(*args):
-            dialog.destroy()
-            self.about_dialog = None
-        dialog.connect("response", response)
+        dialog.connect("response", self.close_about)
         self.about_dialog = dialog
         dialog.show()
+    
+    def close_about(self, *args):
+        log.info("closing %s", self.about_dialog)
+        try:
+            if self.about_dialog:
+                self.about_dialog.destroy()
+                self.about_dialog = None
+        except:
+            log.error("closing about dialog", exc_info=True)
+            
 
     def session_info(self, *args):
         if self.session_info_window:
@@ -332,13 +340,19 @@ class ClientExtrasBase(object):
         def window_deleted(*args):
             self.session_info_window = None
         window.connect('delete_event', window_deleted)
-        def close_window(*args):
-            self.session_info_window = None
-            window.destroy()
-        self.add_close_accel(window, close_window)
+        self.add_close_accel(window, self.close_session_info)
         self.session_info_window = window
         populate_table()
         window.show_all()
+    
+    def close_session_info(self, *args):
+        log.info("closing %s", self.session_info_window)
+        try:
+            if self.session_info_window:
+                self.session_info_window.destroy()
+                self.session_info_window = None
+        except:
+            log.error("closing session info", exc_info=True)
 
     def add_close_accel(self, window, callback):
         # key accelerators

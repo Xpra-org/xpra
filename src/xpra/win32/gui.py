@@ -22,6 +22,7 @@ class ClientExtras(ClientExtrasBase):
         self.setup_clipboard_helper(ClipboardProtocolHelper)
 
     def exit(self):
+        ClientExtrasBase.exit(self)
         if self.tray:
             self.tray.close()
 
