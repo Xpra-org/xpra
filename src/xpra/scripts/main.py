@@ -99,6 +99,9 @@ def main(script_file, cmdline):
     parser.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=True,
                       help="Disable pulseaudio support via X11 root window properties")
+    parser.add_option("--no-keyboard-sync", action="store_false",
+                      dest="keyboard_sync", default=True,
+                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")

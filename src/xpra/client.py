@@ -420,9 +420,11 @@ class XpraClient(gobject.GObject):
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
 
+        self.keyboard_sync = opts.keyboard_sync
+        self.key_repeat_modifiers = False
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.keycodes_pressed = {}
+        self.keys_pressed = {}
         self._raw_keycodes_feature = False
         self._focus_modifiers_feature = False
         self._remote_version = None
@@ -544,59 +546,86 @@ class XpraClient(gobject.GObject):
         id = self._window_to_id[window]
         if not self._raw_keycodes_feature:
             """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...)
-                also used on win32 and osx since those don't have keymaps/keycode
+                also used on win32 and osx since those don't have valid keymaps/keycode (yet?)
             """
             # Apparently some weird keys (e.g. "media keys") can have no keyval or
             # no keyval name (I believe that both give us a None here).
             # Another reason to use the _raw_keycodes_feature wherever possible.
-            if name is not None:
-                self.send(["key-action", id, name, depressed, modifiers])
-            return
-        keycode = event.hardware_keycode
-        log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
-        self.send(["key-action", id, nn(name), depressed, modifiers, nn(event.keyval), nn(event.string), nn(keycode)])
-        if keycode and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(depressed, keycode)
+            if name is None:
+                return
+            self.send(["key-action", id, name, depressed, modifiers])
+            keyval = ""
+            keycode = 0
+        else:
+            keyval = nn(event.keyval)
+            keycode = event.hardware_keycode
+            log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
+            self.send(["key-action", id, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode)])
+        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+            self._key_repeat(depressed, name, keyval, keycode)
 
-    def _key_repeat(self, depressed, keycode):
-        if not depressed and keycode in self.keycodes_pressed:
+    def _key_repeat(self, depressed, name, keyval, keycode):
+        """ this method takes care of scheduling the sending of
+            "key-repeat" packets to the server so that it can
+            maintain a consistent keyboard state.
+        """
+        #we keep track of which keys are still pressed in a dict,
+        #the key is either the keycode (if _raw_keycodes_feature) or the key name (otherwise)
+        if keycode==0:
+            if not self.key_repeat_modifiers:
+                #we can't handle key-repeat by key name without this feature
+                return
+            key = name
+        else:
+            key = keycode 
+        if not depressed and key in self.keys_pressed:
             """ stop the timer and clear this keycode: """
-            log.debug("key repeat: clearing timer for %s", keycode)
-            gobject.source_remove(self.keycodes_pressed[keycode])
-            del self.keycodes_pressed[keycode]
-        elif depressed and keycode not in self.keycodes_pressed:
+            log.debug("key repeat: clearing timer for %s / %s", name, keycode)
+            gobject.source_remove(self.keys_pressed[key])
+            del self.keys_pressed[key]
+        elif depressed and key not in self.keys_pressed:
             """ we must ping the server regularly for as long as the key is still pressed: """
+            #TODO: we can have latency measurements (see ping).. use them?
             LATENCY_JITTER = 100
             MIN_DELAY = 20
             delay = max(self.key_repeat_delay-LATENCY_JITTER, MIN_DELAY)
             interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
+            def send_key_repeat():
+                if self.key_repeat_modifiers:
+                    #supports extended mode, send the extra data:
+                    (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+                    modifiers = self.mask_to_names(current_mask)
+                    packet = ["key-repeat", name, keyval, keycode, modifiers]
+                else:
+                    packet = ["key-repeat", keycode]
+                self.send_now(packet)
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
                 log.debug("continue_key_repeat")
-                if keycode in self.keycodes_pressed:
-                    self.send_now(["key-repeat", keycode])
+                if key in self.keys_pressed:
+                    send_key_repeat()
                     return  True
                 else:
-                    del self.keycodes_pressed[keycode]
+                    del self.keys_pressed[key]
                     return  False
             def start_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and start repeat:
                 log.debug("start_key_repeat")
-                if keycode in self.keycodes_pressed:
-                    self.send_now(["key-repeat", keycode])
-                    self.keycodes_pressed[keycode] = gobject.timeout_add(interval, continue_key_repeat)
+                if key in self.keys_pressed:
+                    send_key_repeat()
+                    self.keys_pressed[key] = gobject.timeout_add(interval, continue_key_repeat)
                 else:
-                    del self.keycodes_pressed[keycode]
+                    del self.keys_pressed[key]
                 return  False   #never run this timer again
-            log.debug("key repeat: starting timer for %s with delay %s and interval %s", keycode, delay, interval)
-            self.keycodes_pressed[keycode] = gobject.timeout_add(delay, start_key_repeat)
+            log.debug("key repeat: starting timer for %s / %s with delay %s and interval %s", name, keycode, delay, interval)
+            self.keys_pressed[key] = gobject.timeout_add(delay, start_key_repeat)
 
     def clear_repeat(self):
-        for timer in self.keycodes_pressed.values():
+        for timer in self.keys_pressed.values():
             gobject.source_remove(timer)
-        self.keycodes_pressed = {}
+        self.keys_pressed = {}
 
     def query_xkbmap(self):
         self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
@@ -703,7 +732,9 @@ class XpraClient(gobject.GObject):
         capabilities_request["ping"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
-            capabilities_request["key_repeat"] = key_repeat
+            delay_ms,interval_ms = key_repeat
+            capabilities_request["key_repeat"] = (delay_ms,interval_ms)
+        capabilities_request["keyboard_sync"] = self.keyboard_sync and key_repeat
         if self.mmap_file:
             capabilities_request["mmap_file"] = self.mmap_file
         self.send(["hello", capabilities_request])
@@ -831,6 +862,7 @@ class XpraClient(gobject.GObject):
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
+        self.key_repeat_modifiers = capabilities.get("key_repeat_modifiers", False)
         self.emit("handshake-complete")
         if clipboard_server_support:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
