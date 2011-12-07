@@ -963,12 +963,18 @@ class WindowModel(BaseWindowModel):
         # XSetInputFocus well, while Qt apps ignore (!!!) WM_TAKE_FOCUS
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.
+        success = True
         if self._input_field:
             log("... using XSetInputFocus")
-            trap.swallow(XSetInputFocus, self.client_window, now)
+            if not trap.swallow(XSetInputFocus, self.client_window, now):
+                log("XSetInputFocus failed...")
+                success = False
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
-            trap.swallow(send_wm_take_focus, self.client_window, now)
+            if not trap.swallow(send_wm_take_focus, self.client_window, now):
+                log("WM_TAKE_FOCUS failed...")
+                success = False
+        return success
 
     ################################
     # Killing clients:
