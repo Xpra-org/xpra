@@ -63,6 +63,7 @@ from xpra.xkbhelper import do_set_xmodmap, do_set_keymap
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
+from xpra.version_util import is_compatible_with
 
 class DesktopManager(gtk.Widget):
     def __init__(self):
@@ -1097,15 +1098,6 @@ class XpraServer(gobject.GObject):
         (_, encoding) = packet
         self._set_encoding(encoding)
 
-    def version_no_minor(self, version):
-        if not version:
-            return    version
-        p = version.rfind(".")
-        if p>0:
-            return version[:p]
-        else:
-            return version
-
     def _send_password_challenge(self, proto):
         self.salt = "%s" % uuid.uuid4()
         log.info("Password required, sending challenge")
@@ -1135,9 +1127,7 @@ class XpraServer(gobject.GObject):
         (_, capabilities) = packet
         log.info("Handshake complete; enabling connection")
         remote_version = capabilities.get("__prerelease_version")
-        if self.version_no_minor(remote_version) != self.version_no_minor(xpra.__version__):
-            log.error("Sorry, this pre-release server only works with clients "
-                      + "of the same major version (v%s), but this client is using v%s", xpra.__version__, remote_version)
+        if not is_compatible_with(remote_version):
             proto.close()
             return
         if self.password_file:
@@ -1165,9 +1155,9 @@ class XpraServer(gobject.GObject):
         log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
         if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
             import mmap
-            file = open(mmap_file, "r+b")
+            f = open(mmap_file, "r+b")
             self.mmap_size = os.path.getsize(mmap_file)
-            self.mmap = mmap.mmap(file.fileno(), self.mmap_size)
+            self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
             log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
         self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.mmap, self.mmap_size)

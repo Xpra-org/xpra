@@ -24,6 +24,7 @@ from xpra.protocol import Protocol
 from xpra.keys import mask_to_names, MODIFIER_NAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
+from xpra.version_util import is_compatible_with
 
 import xpra
 default_capabilities = {"__prerelease_version": xpra.__version__}
@@ -795,14 +796,6 @@ class XpraClient(gobject.GObject):
         hash = hmac.HMAC(password, salt)
         self.send_hello(hash.hexdigest())
 
-    def version_no_minor(self, version):
-        if not version:
-            return version
-        p = version.rfind(".")
-        if p>0:
-            return version[:p]
-        return version
-
     def _process_hello(self, packet):
         (_, capabilities) = packet
         self.server_capabilities = capabilities
@@ -815,8 +808,7 @@ class XpraClient(gobject.GObject):
         if "deflate" in capabilities:
             self._protocol.enable_deflate(capabilities["deflate"])
         self._remote_version = capabilities.get("__prerelease_version")
-        if self.version_no_minor(self._remote_version) != self.version_no_minor(xpra.__version__):
-            log.error("sorry, I only know how to talk to v%s.x servers", self.version_no_minor(xpra.__version__))
+        if not is_compatible_with(self._remote_version):
             self.quit()
             return
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
