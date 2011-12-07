@@ -195,16 +195,15 @@ class ClientExtrasBase(object):
         dialog.connect("response", self.close_about)
         self.about_dialog = dialog
         dialog.show()
-    
+
     def close_about(self, *args):
-        log.info("closing %s", self.about_dialog)
         try:
             if self.about_dialog:
                 self.about_dialog.destroy()
                 self.about_dialog = None
         except:
             log.error("closing about dialog", exc_info=True)
-            
+
 
     def session_info(self, *args):
         if self.session_info_window:
@@ -344,9 +343,8 @@ class ClientExtrasBase(object):
         self.session_info_window = window
         populate_table()
         window.show_all()
-    
+
     def close_session_info(self, *args):
-        log.info("closing %s", self.session_info_window)
         try:
             if self.session_info_window:
                 self.session_info_window.destroy()
