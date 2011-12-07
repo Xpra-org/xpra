@@ -345,7 +345,6 @@ def run_client(parser, opts, extra_args, detach):
             sys.stdout.write("handshake-complete: detaching")
             app.quit()
         app.connect("handshake-complete", do_detach)
-    import signal
     signal.signal(signal.SIGINT, app.quit)
     try:
         app.run()
