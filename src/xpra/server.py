@@ -1412,13 +1412,16 @@ class XpraServer(gobject.GObject):
         else:
             raise Exception("invalid number of arguments for key-action: %s" % len(packet))
         self._focus(id, None)
-        self._handle_key(pressed, name, keyval, keycode, modifiers)
+        self._make_keymask_match(modifiers)
+        self._handle_key(id, pressed, name, keyval, keycode, modifiers)
 
-    def _handle_key(self, pressed, name, keyval, keycode, modifiers):
+    def _handle_key(self, id, pressed, name, keyval, keycode, modifiers):
         """ Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        self._make_keymask_match(modifiers)
+        if pressed and (id is not None) and (id not in self._id_to_window):
+            log("window %s is gone, ignoring key press", id)
+            return
         if not keycode:
             keycode = self._keycode_from_keyname(keyval, name, modifiers)
             if not keycode:
@@ -1433,11 +1436,12 @@ class XpraServer(gobject.GObject):
             del self.keys_pressed[keycode]
             xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
         if pressed:
-            if not self.keyboard_sync and keycode in self.keys_pressed:
-                #keyboard is not synced: client manages repeat so unpress and re-press it
-                unpress()
             if keycode not in self.keys_pressed:
                 press()
+                if not self.keyboard_sync:
+                    #keyboard is not synced: client manages repeat so unpress
+                    #it immediately
+                    unpress()
             else:
                 log.debug("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
         else:
@@ -1446,9 +1450,9 @@ class XpraServer(gobject.GObject):
             else:
                 log.debug("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
+            self._key_repeat(id, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
-    def _key_repeat(self, pressed, name, keyval, keycode, modifiers, delay_ms=0):
+    def _key_repeat(self, id, pressed, name, keyval, keycode, modifiers, delay_ms=0):
         """ Schedules/cancels the key repeat timeouts """
         if keycode==0:
             key = name
@@ -1464,19 +1468,20 @@ class XpraServer(gobject.GObject):
             def _key_repeat_timeout(when):
                 now = time.time()
                 log.debug("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", name, keycode, now, when, delay_ms)
-                self._handle_key(False, name, keyval, keycode, modifiers)
+                self._handle_key(id, False, name, keyval, keycode, modifiers)
             now = time.time()
             self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
         if len(packet)==2:
             (_, keycode) = packet
-            name, keyval, modifiers = None,None,None
-        elif len(packet)==5:
-            (_, name, keyval, keycode, modifiers) = packet
+            id, name, keyval, modifiers = None,None,None,None
+        elif len(packet)==6:
+            (_, id, name, keyval, keycode, modifiers) = packet
         else:
             raise Exception("unknown key-repeat packet format: %s", packet)
-        self._key_repeat(True, name, keyval, keycode, modifiers, self.key_repeat_interval)
+        self._make_keymask_match(modifiers)
+        self._key_repeat(id, True, name, keyval, keycode, modifiers, self.key_repeat_interval)
 
     def _process_button_action(self, proto, packet):
         (_, id, button, pressed, pointer, modifiers) = packet

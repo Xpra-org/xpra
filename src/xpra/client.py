@@ -562,9 +562,9 @@ class XpraClient(gobject.GObject):
             log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s" % (event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode))
             self.send(["key-action", id, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode)])
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(depressed, name, keyval, keycode)
+            self._key_repeat(id, depressed, name, keyval, keycode)
 
-    def _key_repeat(self, depressed, name, keyval, keycode):
+    def _key_repeat(self, id, depressed, name, keyval, keycode):
         """ this method takes care of scheduling the sending of
             "key-repeat" packets to the server so that it can
             maintain a consistent keyboard state.
@@ -595,7 +595,7 @@ class XpraClient(gobject.GObject):
                     #supports extended mode, send the extra data:
                     (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
                     modifiers = self.mask_to_names(current_mask)
-                    packet = ["key-repeat", name, keyval, keycode, modifiers]
+                    packet = ["key-repeat", id, name, keyval, keycode, modifiers]
                 else:
                     packet = ["key-repeat", keycode]
                 self.send_now(packet)
