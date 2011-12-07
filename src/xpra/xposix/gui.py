@@ -164,10 +164,11 @@ class ClientExtras(ClientExtrasBase):
             import dbus.glib
             assert dbus.glib
             bus = dbus.SessionBus()
-            obj = bus.get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
-            self.dbusnotify = dbus.Interface(obj, 'org.freedesktop.Notifications')
+            FD_NOTIFICATIONS = 'org.freedesktop.Notifications'
+            obj = bus.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
+            self.dbusnotify = dbus.Interface(obj, FD_NOTIFICATIONS)
             self.has_dbusnotify = True
-            log.info("using dbusnotify: %s", self.dbusnotify)
+            log.info("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
         except Exception, e:
             log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
         return self.has_dbusnotify

@@ -577,7 +577,7 @@ class XpraClient(gobject.GObject):
                 return
             key = name
         else:
-            key = keycode 
+            key = keycode
         if not depressed and key in self.keys_pressed:
             """ stop the timer and clear this keycode: """
             log.debug("key repeat: clearing timer for %s / %s", name, keycode)
