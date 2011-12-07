@@ -88,9 +88,10 @@ class ClientWindow(gtk.Window):
         self._metadata = {}
         self._override_redirect = override_redirect
         self._new_backing(w, h)
-        self._failed_pixbuf_index = 0
         self._refresh_timer = None
         self._refresh_requested = False
+        # used for only sending focus events *after* the window is mapped:
+        self._been_mapped = False
 
         self.update_metadata(metadata)
 
@@ -220,11 +221,7 @@ class ClientWindow(gtk.Window):
             loader.close()
             pixbuf = loader.get_pixbuf()
             if not pixbuf:
-                if self._failed_pixbuf_index<10:
-                    log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-                elif self._failed_pixbuf_index==10:
-                    log.error("too many pixbuf failures! (will no longer be logged)")
-                    self._failed_pixbuf_index += 1
+                log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
             else:
                 self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
         self.window.invalidate_rect(gtk.gdk.Rectangle(x, y, width, height), False)
@@ -261,6 +258,8 @@ class ClientWindow(gtk.Window):
             self._client.send(["map-window", self._id, x, y, w, h])
             self._pos = (x, y)
             self._size = (w, h)
+        self._been_mapped = True
+        gobject.idle_add(self._focus_change)
 
     def do_configure_event(self, event):
         log("Got configure event")
@@ -335,8 +334,8 @@ class ClientWindow(gtk.Window):
 
     def _focus_change(self, *args):
         log.debug("_focus_change(%s)" % str(args))
-        self._client.update_focus(self._id,
-                                  self.get_property("has-toplevel-focus"))
+        if self._been_mapped:
+            self._client.update_focus(self._id, self.get_property("has-toplevel-focus"))
 
 gobject.type_register(ClientWindow)
 
@@ -603,7 +602,7 @@ class XpraClient(gobject.GObject):
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
-                log.debug("continue_key_repeat")
+                log.debug("continue_key_repeat for %s / %s", name, keycode)
                 if key in self.keys_pressed:
                     send_key_repeat()
                     return  True
@@ -613,7 +612,7 @@ class XpraClient(gobject.GObject):
             def start_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and start repeat:
-                log.debug("start_key_repeat")
+                log.debug("start_key_repeat for %s / %s", name, keycode)
                 if key in self.keys_pressed:
                     send_key_repeat()
                     self.keys_pressed[key] = gobject.timeout_add(interval, continue_key_repeat)
