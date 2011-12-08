@@ -237,6 +237,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         log("new window %s", hex(client_window.xid))
 
+        self._composite = None
         self.client_window = client_window
         self._internal_set_property("client-window", client_window)
         add_event_receiver(client_window, self)
@@ -281,8 +282,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def do_unmanaged(self, wm_exiting):
         remove_event_receiver(self.client_window, self)
-        self._composite.disconnect(self._damage_forward_handle)
-        self._composite.destroy()
+        if self._composite:
+            self._composite.disconnect(self._damage_forward_handle)
+            self._composite.destroy()
 
 gobject.type_register(BaseWindowModel)
 
