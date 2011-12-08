@@ -11,7 +11,7 @@ xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * key mappings: fire change callbacks only once when all the work is done
   * use dbus for tray notifications if available, prefered to pynotify
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 23 Nov 2011 16:04:44 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Dec 2011 16:04:44 +0700
 
 xpra (0.0.7.31-1) UNRELEASED; urgency=low
   * threaded server for much lower latency
