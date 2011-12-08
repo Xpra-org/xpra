@@ -24,7 +24,7 @@ DLLs="Z:\\"
 setup(
     name = 'Xpra',
     description = 'screen for X',
-    version = '0.0.7.31',
+    version = '0.0.7.32',
 
     windows = [
                   {

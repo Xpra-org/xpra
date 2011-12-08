@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.31
+%define version 0.0.7.32
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -43,6 +43,19 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Thu Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
+- bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
+- bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
+- bug fix: initial windows should get focus (partial fix)
+- support key repeat latency workaround without needing raw keycodes (OS X and MS Windows)
+- command line switch to enable client side key repeat: "--no-keyboard-sync" (for high latency/jitter links)
+- session info dialog: shows realtime connection and server details
+- key mappings: try harder to unpress all keys before setting the new keymap
+- key mappings: try to reset modifier keys as well as regular keys
+- key mappings: apply keymap using Cython code rather than execing xmodmap
+- key mappings: fire change callbacks only once when all the work is done
+- use dbus for tray notifications if available, prefered to pynotify
+
 * Wed Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
 - threaded server for much lower latency
 - fast memory mapped transfers for local connections
