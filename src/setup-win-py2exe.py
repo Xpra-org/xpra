@@ -19,7 +19,19 @@ import glob
 # b9030d821e099c79de1c9125b790e2da  Microsoft.VC90.MFC/mfc90u.dll
 # d4e7c1546cf3131b7d84b39f8da9e321  Microsoft.VC90.MFC/mfcm90.dll
 # 371226b8346f29011137c7aa9e93f2f6  Microsoft.VC90.MFC/mfcm90u.dll
+#
+# This is where I keep them, you will obviously need to change this value:
 DLLs="Z:\\"
+
+
+# Add build info to build_info.py file:
+import add_build_info
+try:
+    add_build_info.main()
+except:
+    traceback.print_exc()
+    print("failed to update build_info")
+
 
 setup(
     name = 'Xpra',
