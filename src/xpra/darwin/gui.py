@@ -80,7 +80,8 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.insert_app_menu_item(self.make_layoutsmenuitem(), 5)
             self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 6)
             self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 7)
-            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 8)
+            self.macapp.insert_app_menu_item(self.make_raisewindowsmenuitem(), 8)
+            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 9)
 
             #dock menu (does not work!)
             #menu = gtk.Menu()

@@ -650,6 +650,13 @@ class ClientExtrasBase(object):
             self.client.send_refresh_all()
         return self.menuitem("Refresh", "retry.png", None, force_refresh)
 
+    def make_raisewindowsmenuitem(self):
+        def raise_windows(*args):
+            for win in self.client._window_to_id.keys():
+                if not win._override_redirect:
+                    win.present()
+        return self.menuitem("Raise Windows", "raise.png", None, raise_windows)
+
     def make_disconnectmenuitem(self):
         return self.menuitem("Disconnect", "quit.png", None, self.quit)
 
@@ -682,6 +689,7 @@ class ClientExtrasBase(object):
             self.jpeg_submenu = None
         menu.append(self.make_layoutsmenuitem())
         menu.append(self.make_refreshmenuitem())
+        menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_disconnectmenuitem())
