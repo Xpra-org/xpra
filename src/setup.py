@@ -16,7 +16,7 @@
 import glob
 from distutils.core import setup
 from distutils.extension import Extension
-import subprocess, sys
+import subprocess, sys, traceback
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages, **kw):
@@ -75,6 +75,53 @@ import parti
 import xpra
 assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
+# Add build info to build_info.py file:
+try:
+    import getpass
+    import socket
+    import platform
+    from datetime import date
+    props = {"BUILT_BY":getpass.getuser(),
+            "BUILT_ON":socket.gethostname(),
+            "BUILD_DATE":date.today().isoformat(),
+            "BUILD_CPU":(platform.uname()[5] or "unknown"),
+            "BUILD_BIT": platform.architecture()[0]
+            }
+    #find revision:
+    rev = None
+    SVN_REVISION_TXT = "Revision: "
+    proc = subprocess.Popen("svn info", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    for line in out.splitlines():
+        line_str = str(line)
+        if line_str.startswith(SVN_REVISION_TXT):
+            rev = line_str[len(SVN_REVISION_TXT):].strip()
+            props["REVISION"] = rev
+            break
+    #find number of local files modified:
+    if rev:
+        changes = 0
+        proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        for line in out.splitlines():
+            if sys.platform.startswith("win") and line.find("\\wcw"):
+                """ windows is easily confused, symlinks for example - ignore them """
+                continue
+            if line.startswith("M") and line.find("build_info.py")<0:
+                changes += 1
+                print("WARNING: found modified file: %s" % line)
+        props["LOCAL_MODIFICATIONS"] = changes
+    #append to build_info.py:
+    f = open("./xpra/build_info.py", 'a')
+    for name,value in props.items():
+        f.write("%s='%s'\n" % (name,value))
+    f.close()
+    print("updated build_info.py with %s" % props)
+except:
+    traceback.print_exc()
+    raise Exception("failed to update build_info")
+
+
 wimpiggy_desc = "A library for writing window managers, using GTK+"
 parti_desc = "A tabbing/tiling window manager using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
@@ -89,13 +136,13 @@ full_desc = """This package contains several sub-projects:
 
 setup(
     name="parti-all",
-    author="Nathaniel Smith",
-    author_email="parti-discuss@partiwm.org",
+    author="Antoine Martin",
+    author_email="antoine@nagafix.co.uk",
     version=parti.__version__,
-    url="http://partiwm.org",
+    url="http://xpra.org/",
     description="A window manager library, a window manager, and a 'screen for X' utility",
     long_description=full_desc,
-    download_url="http://partiwm.org/static/downloads/",
+    download_url="http://xpra.org/src/",
     packages=["wimpiggy", "wimpiggy.lowlevel",
               "parti", "parti.trays", "parti.addons", "parti.scripts",
               "xpra", "xpra.scripts", "xpra.platform",

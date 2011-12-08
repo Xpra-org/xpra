@@ -192,6 +192,17 @@ class ClientExtrasBase(object):
         if pixbuf:
             dialog.set_logo(pixbuf)
         dialog.set_program_name("Xpra")
+        comments = ''
+        try:
+            from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
+            comments += "Built on %s by %s. %s" % (BUILT_ON, BUILT_BY, BUILD_DATE)
+            if LOCAL_MODIFICATIONS==0:
+                comments += "\n(svn revision %s)" % REVISION
+            else:
+                comments += "\n(svn revision %s with %s local changes)" % (REVISION, LOCAL_MODIFICATIONS)
+        except Exception, e:
+            log.error("could not find the build information: %s", e)
+        dialog.set_comments(comments)
         dialog.connect("response", self.close_about)
         self.about_dialog = dialog
         dialog.show()
