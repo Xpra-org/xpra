@@ -3,14 +3,17 @@ v0.0.7.32 (2011-12-08)
 	-- bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
 	-- bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
 	-- bug fix: initial windows should get focus (partial fix)
+	-- bug fix: correctly clear focus when a window goes away
 	-- support key repeat latency workaround without needing raw keycodes (OS X and MS Windows)
 	-- command line switch to enable client side key repeat: "--no-keyboard-sync" (for high latency/jitter links)
 	-- session info dialog: shows realtime connection and server details
+	-- menu entry in system tray to raise all managed windows
 	-- key mappings: try harder to unpress all keys before setting the new keymap
 	-- key mappings: try to reset modifier keys as well as regular keys
 	-- key mappings: apply keymap using Cython code rather than execing xmodmap
 	-- key mappings: fire change callbacks only once when all the work is done
 	-- use dbus for tray notifications if available, prefered to pynotify
+	-- show full version information in about dialog
 
 
 v0.0.7.31 (2011-11-28)

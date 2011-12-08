@@ -50,11 +50,13 @@ So basically it's screen for remote X apps.
 - support key repeat latency workaround without needing raw keycodes (OS X and MS Windows)
 - command line switch to enable client side key repeat: "--no-keyboard-sync" (for high latency/jitter links)
 - session info dialog: shows realtime connection and server details
+- menu entry in system tray to raise all managed windows
 - key mappings: try harder to unpress all keys before setting the new keymap
 - key mappings: try to reset modifier keys as well as regular keys
 - key mappings: apply keymap using Cython code rather than execing xmodmap
 - key mappings: fire change callbacks only once when all the work is done
 - use dbus for tray notifications if available, prefered to pynotify
+- show full version information in about dialog
 
 * Wed Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
 - threaded server for much lower latency

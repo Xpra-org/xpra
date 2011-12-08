@@ -2,16 +2,19 @@ xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
   * bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
   * bug fix: initial windows should get focus (partial fix)
+  * bug fix: correctly clear focus when a window goes away
   * support key repeat latency workaround without needing raw keycodes (OS X and MS Windows)
   * command line switch to enable client side key repeat: "--no-keyboard-sync" (for high latency/jitter links)
   * session info dialog: shows realtime connection and server details
+  * menu entry in system tray to raise all managed windows
   * key mappings: try harder to unpress all keys before setting the new keymap
   * key mappings: try to reset modifier keys as well as regular keys
   * key mappings: apply keymap using Cython code rather than execing xmodmap
   * key mappings: fire change callbacks only once when all the work is done
   * use dbus for tray notifications if available, prefered to pynotify
+  * show full version information in about dialog
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Dec 2011 16:04:44 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Dec 2011 23:23:52 +0700
 
 xpra (0.0.7.31-1) UNRELEASED; urgency=low
   * threaded server for much lower latency
