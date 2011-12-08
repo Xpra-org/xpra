@@ -5,11 +5,15 @@ if [ -z "${VERSION}" ]; then
 	VERSION=`PYTHONPATH="./src" python -c "from xpra import __version__; print(__version__)"`
 fi
 DIR=xpra-${VERSION}
+svn revert "src/xpra/build_info.py"
 cp -apr src ${DIR}
 rm -fr "${DIR}/build"
 rm -fr "${DIR}/install"
 rm -fr "${DIR}/wimpiggy/lowlevel/bindings.c"
 rm -fr "${DIR}/wimpiggy/lowlevel/constants.pxi"
+pushd "${DIR}"
+python -c "from add_build_info import append_svn_props; append_svn_props()"
+popd
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 

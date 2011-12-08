@@ -13,4 +13,6 @@ BUILD_BIT=""						#32bit/64bit
 REVISION="unknown"
 LOCAL_MODIFICATIONS="unknown"
 
-# Values below are generated during build and override the default values above:
+# The values which may appear below are generated during the build process
+# or when using the make-src-snapshot.sh script.
+# They will override the default values defined above.

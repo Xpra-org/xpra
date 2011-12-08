@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Parti.
+# Copyright (C) 2010-2011 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -76,52 +77,12 @@ import xpra
 assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
 # Add build info to build_info.py file:
+import add_build_info
 try:
-    import getpass
-    import socket
-    import platform
-    from datetime import date
-    props = {"BUILT_BY":getpass.getuser(),
-            "BUILT_ON":socket.gethostname(),
-            "BUILD_DATE":date.today().isoformat(),
-            "BUILD_CPU":(platform.uname()[5] or "unknown"),
-            "BUILD_BIT": platform.architecture()[0]
-            }
-    #find revision:
-    rev = None
-    proc = subprocess.Popen("svnversion -n", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    if out:
-        pos = out.find(":")
-        if pos>=0:
-            out = out[pos+1:]
-        rev_str = ""
-        for c in out:
-            if c in "0123456789":
-                rev_str += c
-        rev = int(rev_str)
-        props["REVISION"] = rev
-        #find number of local files modified:
-        changes = 0
-        proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        (out, err) = proc.communicate()
-        for line in out.splitlines():
-            if sys.platform.startswith("win") and line.find("\\wcw"):
-                """ windows is easily confused, symlinks for example - ignore them """
-                continue
-            if line.startswith("M") and line.find("build_info.py")<0:
-                changes += 1
-                print("WARNING: found modified file: %s" % line)
-        props["LOCAL_MODIFICATIONS"] = changes
-    #append to build_info.py:
-    f = open("./xpra/build_info.py", 'a')
-    for name,value in props.items():
-        f.write("%s='%s'\n" % (name,value))
-    f.close()
-    print("updated build_info.py with %s" % props)
+    add_build_info.main()
 except:
     traceback.print_exc()
-    raise Exception("failed to update build_info")
+    print("failed to update build_info")
 
 
 wimpiggy_desc = "A library for writing window managers, using GTK+"
