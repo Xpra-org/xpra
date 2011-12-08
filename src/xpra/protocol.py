@@ -63,7 +63,6 @@ def dump_packet(packet):
     return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
 
 def main_thread_call(fn, *args, **kwargs):
-    log("Queueing main thread call to %s" % (fn,))
     def cb(*foo):
         fn(*args, **kwargs)
         return False
@@ -151,7 +150,6 @@ class Protocol(object):
     def _write_thread_loop(self):
         try:
             while True:
-                log("write thread: waiting for data to write")
                 buf = self._write_queue.get()
                 # Used to signal that we should exit:
                 if buf is None:
@@ -175,7 +173,6 @@ class Protocol(object):
     def _read_thread_loop(self):
         try:
             while not self._closed:
-                log("read thread: waiting for data to arrive")
                 try:
                     buf = self._conn.read(8192)
                 except (ValueError, OSError, IOError, socket.error), e:
