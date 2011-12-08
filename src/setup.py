@@ -89,17 +89,19 @@ try:
             }
     #find revision:
     rev = None
-    SVN_REVISION_TXT = "Revision: "
-    proc = subprocess.Popen("svn info", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("svnversion -n", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    for line in out.splitlines():
-        line_str = str(line)
-        if line_str.startswith(SVN_REVISION_TXT):
-            rev = line_str[len(SVN_REVISION_TXT):].strip()
-            props["REVISION"] = rev
-            break
-    #find number of local files modified:
-    if rev:
+    if out:
+        pos = out.find(":")
+        if pos>=0:
+            out = out[pos+1:]
+        rev_str = ""
+        for c in out:
+            if c in "0123456789":
+                rev_str += c
+        rev = int(rev_str)
+        props["REVISION"] = rev
+        #find number of local files modified:
         changes = 0
         proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
