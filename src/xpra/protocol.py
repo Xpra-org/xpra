@@ -62,12 +62,6 @@ def repr_ellipsized(obj, limit=100):
 def dump_packet(packet):
     return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
 
-def main_thread_call(fn, *args, **kwargs):
-    def cb(*foo):
-        fn(*args, **kwargs)
-        return False
-    gobject.timeout_add(0, cb)
-
 
 class Protocol(object):
     CONNECTION_LOST = object()
@@ -111,6 +105,7 @@ class Protocol(object):
     def _maybe_queue_more_writes(self):
         if self._write_queue.empty() and self._source_has_more:
             self._flush_one_packet_into_buffer()
+        return False
 
     def _queue_write(self, data, flush=False):
         if len(data)==0:
@@ -165,7 +160,7 @@ class Protocol(object):
                     assert self._closed
                     break
                 if self._write_queue.empty():
-                    main_thread_call(self._maybe_queue_more_writes)
+                    gobject.idle_add(self._maybe_queue_more_writes)
         finally:
             log("write thread: ended, closing socket")
             self._conn.close()
@@ -191,13 +186,14 @@ class Protocol(object):
             log("read thread: ended")
 
     def _call_connection_lost(self, message="", exc_info=False):
-        main_thread_call(self._connection_lost, message="", exc_info=False)
+        gobject.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
         if not self._closed:
             self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
             self.close()
+        return False
 
     def _read_parse_thread_loop(self):
         try:
@@ -223,7 +219,7 @@ class Protocol(object):
                     if result is None:
                         break
                     packet, unprocessed = result
-                    main_thread_call(self._process_packet, packet)
+                    gobject.idle_add(self._process_packet, packet)
                     if not had_deflate and (self._decompressor is not None):
                         # deflate was just enabled: so decompress the unprocessed
                         # data
@@ -246,6 +242,7 @@ class Protocol(object):
             log.warn("Unhandled error while processing packet from peer",
                      exc_info=True)
             # Ignore and continue, maybe things will work out anyway
+        return False
 
     def enable_deflate(self, level):
         assert self._compressor is None and self._decompressor is None
