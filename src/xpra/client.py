@@ -279,7 +279,16 @@ class ClientWindow(gtk.Window):
         self.window.move_resize(x, y, w, h)
         self._new_backing(w, h)
 
+    def destroy(self):
+        self._unfocus()
+        gtk.Window.destroy(self)
+
+    def _unfocus(self):
+        if self._client._focused==self._id:
+            self._client.update_focus(self._id, False)
+
     def do_unmap_event(self, event):
+        self._unfocus()
         if not self._override_redirect:
             self._client.send(["unmap-window", self._id])
 
@@ -333,7 +342,7 @@ class ClientWindow(gtk.Window):
         self._button_action(scroll_map[event.direction], event, False)
 
     def _focus_change(self, *args):
-        log.debug("_focus_change(%s)" % str(args))
+        log("_focus_change(%s)", args)
         if self._been_mapped:
             self._client.update_focus(self._id, self.get_property("has-toplevel-focus"))
 
@@ -665,7 +674,7 @@ class XpraClient(gobject.GObject):
                 self.send(["focus", _id, self.mask_to_names(current_mask)])
             else:
                 self.send(["focus", _id])
-        log.debug("update_focus(%s,%s) _focused=%s", id, gotit, self._focused)
+        log("update_focus(%s,%s) _focused=%s", id, gotit, self._focused)
         if gotit and self._focused is not id:
             self.clear_repeat()
             send_focus(id)
