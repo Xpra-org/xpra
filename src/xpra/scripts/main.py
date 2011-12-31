@@ -102,6 +102,9 @@ def main(script_file, cmdline):
     parser.add_option("--no-keyboard-sync", action="store_false",
                       dest="keyboard_sync", default=True,
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
+    # let the platform specific code add its own options:
+    # adds "--no-tray" for platforms that support it
+    add_client_options(parser)
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
@@ -161,8 +164,6 @@ def main(script_file, cmdline):
     parser.add_option("-d", "--debug", action="store",
                       dest="debug", default=None, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\")")
-    # let the platform specific code add its own options:
-    add_client_options(parser)
     (options, args) = parser.parse_args(cmdline[1:])
     if "jpeg" not in ENCODINGS:
         #ensure the default values are set even though
