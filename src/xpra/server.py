@@ -510,6 +510,11 @@ class XpraServer(gobject.GObject):
         # selecting SubstructureRedirect.
         root = gtk.gdk.get_default_root_window()
         root.set_events(root.get_events() | gtk.gdk.SUBSTRUCTURE_MASK)
+        root.property_change(gtk.gdk.atom_intern("XPRA_SERVER", False),
+                            gtk.gdk.atom_intern("STRING", False),
+                            8,
+                            gtk.gdk.PROP_MODE_REPLACE,
+                            xpra.__version__)
         add_event_receiver(root, self)
 
         # This must happen early, before loading in windows at least:
