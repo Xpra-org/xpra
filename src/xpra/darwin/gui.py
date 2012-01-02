@@ -77,7 +77,8 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.insert_app_menu_item(self.make_bellmenuitem(), 2)
             self.macapp.insert_app_menu_item(self.make_notificationsmenuitem(), 3)
             self.macapp.insert_app_menu_item(self.make_encodingsmenuitem(), 4)
-            self.macapp.insert_app_menu_item(self.make_layoutsmenuitem(), 5)
+            if not self.client.readonly:
+                self.macapp.insert_app_menu_item(self.make_layoutsmenuitem(), 5)
             self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 6)
             self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 7)
             self.macapp.insert_app_menu_item(self.make_raisewindowsmenuitem(), 8)

@@ -314,23 +314,33 @@ class ClientWindow(gtk.Window):
         return pointer, modifiers
 
     def do_motion_notify_event(self, event):
+        if self._client.readonly:
+            return
         (pointer, modifiers) = self._pointer_modifiers(event)
         self._client.send_mouse_position(["pointer-position", self._id,
                                           pointer, modifiers])
 
     def _button_action(self, button, event, depressed):
+        if self._client.readonly:
+            return
         (pointer, modifiers) = self._pointer_modifiers(event)
         self._client.send_positional(["button-action", self._id,
                                       button, depressed,
                                       pointer, modifiers])
 
     def do_button_press_event(self, event):
+        if self._client.readonly:
+            return
         self._button_action(event.button, event, True)
 
     def do_button_release_event(self, event):
+        if self._client.readonly:
+            return
         self._button_action(event.button, event, False)
 
     def do_scroll_event(self, event):
+        if self._client.readonly:
+            return
         # Map scroll directions back to mouse buttons.  Mapping is taken from
         # gdk/x11/gdkevents-x11.c.
         scroll_map = {gtk.gdk.SCROLL_UP: 4,
@@ -364,6 +374,7 @@ class XpraClient(gobject.GObject):
         if opts.title_suffix is not None:
             title = "@title@ %s" % opts.title_suffix
         self.title = title
+        self.readonly = opts.readonly
         self.session_name = opts.session_name
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
@@ -398,7 +409,7 @@ class XpraClient(gobject.GObject):
         self.mmap_size = 0
 
         self._client_extras = ClientExtras(self, opts)
-        self.clipboard_enabled = opts.clipboard and self._client_extras.supports_clipboard()
+        self.clipboard_enabled = not self.readonly and opts.clipboard and self._client_extras.supports_clipboard()
         self.supports_mmap = opts.mmap and self._client_extras.supports_mmap()
         if self.supports_mmap:
             try:
@@ -547,6 +558,8 @@ class XpraClient(gobject.GObject):
         return  True
 
     def handle_key_action(self, event, window, depressed):
+        if self.readonly:
+            return
         log.debug("handle_key_action(%s,%s,%s)" % (event, window, depressed))
         modifiers = self.mask_to_names(event.state)
         name = gtk.gdk.keyval_name(event.keyval)

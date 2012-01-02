@@ -36,7 +36,7 @@ except:
 setup(
     name = 'Xpra',
     description = 'screen for X',
-    version = '0.0.7.32',
+    version = '0.0.7.33',
 
     windows = [
                   {

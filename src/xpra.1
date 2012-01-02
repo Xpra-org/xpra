@@ -38,6 +38,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
 [\fB\-\-max\-bandwidth=BW\fP]
 [\fB\-\-key\-shortcut=key:action\fP]
+[\fB\-\-readonly\fP]
 [\fB\-\-title\-suffix=VALUE\fP]
 [\fB\-\-title=VALUE\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
@@ -366,6 +367,10 @@ If no shortcuts are defined on the command line,
 the following default one will be used:
 .br
 \fIMeta+Shift+F4:quit\fP
+.TP
+\fB\-\-readonly\fP
+Read only mode prevents all keyboard and mouse activity from being sent
+to the server.
 .TP
 \fB\-\-no\-keyboard\-sync\fP
 Disables keyboard state synchronization. Normally the key presses

@@ -148,6 +148,9 @@ def main(script_file, cmdline):
     parser.add_option("--disable-mmap", action="store_false",
                       dest="mmap", default=True,
                       help="Disable memory mapped transfers for local connections")
+    parser.add_option("--readonly", action="store_true",
+                      dest="readonly", default=False,
+                      help="Ignore all keyboard input and mouse events from client")
     parser.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",

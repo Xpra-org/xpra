@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.32
+%define version 0.0.7.33
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -43,6 +43,10 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Tue Jan 03 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
+- readonly command line option
+- correctly stop all network related threads on disconnection
+
 * Thu Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
 - bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
 - bug fix: don't remove window focus when just any connection is lost, only when the real client goes away

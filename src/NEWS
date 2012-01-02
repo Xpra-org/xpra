@@ -1,3 +1,8 @@
+v0.0.7.33 (2012-01-03)
+======================
+	-- readonly command line option
+	-- correctly stop all network related threads on disconnection
+
 v0.0.7.32 (2011-12-08)
 ======================
 	-- bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls

@@ -1,3 +1,9 @@
+xpra (0.0.7.33-1) UNRELEASED; urgency=low
+  * readonly command line option
+  * correctly stop all network related threads on disconnection
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 03 Jan 2012 02:06:49 +0700
+
 xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
   * bug fix: don't remove window focus when just any connection is lost, only when the real client goes away

@@ -688,7 +688,8 @@ class ClientExtrasBase(object):
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())
-        menu.append(self.make_clipboardmenuitem())
+        if not self.client.readonly:
+            menu.append(self.make_clipboardmenuitem())
         if len(ENCODINGS)>1:
             menu.append(self.make_encodingsmenuitem())
         else:
@@ -698,7 +699,8 @@ class ClientExtrasBase(object):
         else:
             self.jpeg_quality = None
             self.jpeg_submenu = None
-        menu.append(self.make_layoutsmenuitem())
+        if not self.client.readonly:
+            menu.append(self.make_layoutsmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
