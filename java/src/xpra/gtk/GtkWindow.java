@@ -18,7 +18,6 @@ import org.freedesktop.cairo.Surface;
 import org.gnome.gdk.Event;
 import org.gnome.gdk.EventButton;
 import org.gnome.gdk.EventConfigure;
-import org.gnome.gdk.EventExpose;
 import org.gnome.gdk.EventFocus;
 import org.gnome.gdk.EventKey;
 import org.gnome.gdk.EventMask;
@@ -109,13 +108,13 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 				return false;
 			}
 		});
-		this.drawingArea.connect(new ExposeEvent() {
+		/*this.drawingArea.connect(new ExposeEvent() {
 			@Override
 			public boolean onExposeEvent(Widget arg0, EventExpose arg1) {
 				do_expose_event(arg0, arg1);
 				return false;
 			}
-		});
+		});*/
 		this.connect(new UnmapEvent() {
 			@Override
 			public boolean onUnmapEvent(Widget arg0, Event arg1) {
