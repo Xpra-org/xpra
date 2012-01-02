@@ -183,6 +183,8 @@ class ServerSource(object):
         self._damage_data_queue = Queue.Queue()
         self._damage_packet_queue = Queue.Queue(2)
 
+        self._closed = False
+
         self._damagedata_thread = Thread(target=self.damage_to_data)
         self._damagedata_thread.name = "damage_to_data"
         self._damagedata_thread.daemon = True
@@ -192,10 +194,15 @@ class ServerSource(object):
         self._datapacket_thread.daemon = True
         self._datapacket_thread.start()
 
+    def close(self):
+        self._closed = True
+
     def _have_more(self):
-        return bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
+        return not self._closed and bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
 
     def next_packet(self):
+        if self._closed:
+            return  None, False
         if self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
         else:
@@ -323,7 +330,7 @@ class ServerSource(object):
             is done in process_regions() which runs in the gtk main thread
             via idle_add.
         """
-        while True:
+        while not self._closed:
             id, window, damage, sequence = self._damage_request_queue.get(True)
             log("damage_to_data: processing sequence=%s", sequence)
             if self._damage_cancelled.get(id, 0)>sequence:
@@ -405,7 +412,7 @@ class ServerSource(object):
 
 
     def data_to_packet(self):
-        while True:
+        while not self._closed:
             item = self._damage_data_queue.get(True)
             try:
                 packet = self.make_data_packet(item)
@@ -1291,6 +1298,9 @@ class XpraServer(gobject.GObject):
             self._protocol.close()
             #this ensures that from now on we ignore any incoming packets coming
             #from this connection as these could potentially set some keys pressed, etc
+            if self._server_source is self._protocol.source:
+                self._server_source.close()
+                self._server_source = None
         #so it is now safe to clear them:
         self._clear_keys_pressed()
         self._focus(0, [])
@@ -1557,6 +1567,9 @@ class XpraServer(gobject.GObject):
         proto.close()
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
+        if proto.source is self._server_source:
+            self._server_source.close()
+            self._server_source = None
         if proto is self._protocol:
             log.info("xpra client disconnected.")
             self._clear_keys_pressed()
