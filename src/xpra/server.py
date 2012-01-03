@@ -1298,7 +1298,7 @@ class XpraServer(gobject.GObject):
             self._protocol.close()
             #this ensures that from now on we ignore any incoming packets coming
             #from this connection as these could potentially set some keys pressed, etc
-            if self._server_source is self._protocol.source:
+            if self._server_source and (self._server_source is self._protocol.source):
                 self._server_source.close()
                 self._server_source = None
         #so it is now safe to clear them:
@@ -1567,7 +1567,7 @@ class XpraServer(gobject.GObject):
         proto.close()
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
-        if proto.source is self._server_source:
+        if proto.source and (proto.source is self._server_source):
             self._server_source.close()
             self._server_source = None
         if proto is self._protocol:
