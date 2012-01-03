@@ -1,7 +1,7 @@
 Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=48
 Name: Parti
 Maintainer: Antoine Martin <antoine@nagafix.co.uk>
-Source: http://partiwm.org/
+Source: http://xpra.org/
 
 Files: *
 Copyright: 2008-2010 Nathaniel Smith <njs@pobox.com>
@@ -16,7 +16,7 @@ Copyright: 2008,2010, Nathaniel Smith <njs@pobox.com>
 License: GPL-2+
 
 Files: xpra/scripts/client_launcher.py
-Copyright: 2009-2011, Antoine Martin <antoine@nagafix.co.uk>
+Copyright: 2009-2012, Antoine Martin <antoine@nagafix.co.uk>
 License: GPL-2+
 
 Files: parti/addons/ipython_view.py
