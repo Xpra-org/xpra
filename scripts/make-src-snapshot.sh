@@ -9,6 +9,7 @@ svn revert "src/xpra/build_info.py"
 cp -apr src ${DIR}
 rm -fr "${DIR}/build"
 rm -fr "${DIR}/install"
+rm -f "${DIR}xpra/wait_for_x_server.c"
 rm -fr "${DIR}/wimpiggy/lowlevel/bindings.c"
 rm -fr "${DIR}/wimpiggy/lowlevel/constants.pxi"
 pushd "${DIR}"
