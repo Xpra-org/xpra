@@ -11,7 +11,7 @@ Files: xpra/server.py
        xpra/scripts/main.py
        xpra/client.py
 Copyright: 2008,2010, Nathaniel Smith <njs@pobox.com>
-           2010-2011, Antoine Martin <antoine@devloop.org.uk>,
+           2010-2012, Antoine Martin <antoine@devloop.org.uk>,
            2011, Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 License: GPL-2+
 

@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Parti.
-# Copyright (C) 2011 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -180,7 +180,7 @@ class ClientExtrasBase(object):
         dialog.set_name("Xpra")
         from xpra import __version__
         dialog.set_version(__version__)
-        dialog.set_copyright('Copyright (c) 2009-2011')
+        dialog.set_copyright('Copyright (c) 2009-2012')
         dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',
                             'Nathaniel Smith <njs@pobox.com>',
                             'Serviware - Arthur Huillet <ahuillet@serviware.com>'))

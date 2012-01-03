@@ -43,7 +43,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Jan 03 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
+* Tue Jan 03 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
 - readonly command line option
 - correctly stop all network related threads on disconnection
 
