@@ -28,6 +28,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
+[\fB\-\-no\-mmap\fP]
 [\fB\-\-disable\-mmap\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
@@ -205,12 +206,14 @@ filter like \fBxpra.protocol.raw\fP is more specific than one like
 specific subsystem by prefixing a minus sign to its name, like so:
 \fB\-\-debug=all,-wimpiggy\fP.
 .TP
-\fB\-\-disable\-mmap\fP
+\fB\-\-no\-mmap\fP
 Disables memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and context switches.
+\fB\-\-disable\-mmap\fP
+Deprecated, please use \fB\-\-no\-mmap\fP instead.
 .TP
 \fB\-\-no\-clipboard\fP
 Disables clipboard synchronization.

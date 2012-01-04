@@ -105,6 +105,12 @@ def main(script_file, cmdline):
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(parser)
+    parser.add_option("--no-mmap", action="store_false",
+                      dest="mmap", default=True,
+                      help="Disable memory mapped transfers for local connections")
+    parser.add_option("--disable-mmap", action="store_false",
+                      dest="mmap", default=True,
+                      help="Disable memory mapped transfers for local connections")
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
@@ -145,9 +151,6 @@ def main(script_file, cmdline):
                       dest="key_shortcuts", type="str", default=[],
                       help="Define key shortcuts that will trigger specific actions."
                       + " Defaults to Meta+Shift+F4:quit if no shortcuts are defined.")
-    parser.add_option("--disable-mmap", action="store_false",
-                      dest="mmap", default=True,
-                      help="Disable memory mapped transfers for local connections")
     parser.add_option("--readonly", action="store_true",
                       dest="readonly", default=False,
                       help="Ignore all keyboard input and mouse events from client")
