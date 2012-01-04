@@ -234,7 +234,7 @@ class ClientWindow(gtk.Window):
         else:
             if self._refresh_timer:
                 gobject.source_remove(self._refresh_timer)
-            if self._client.auto_refresh_delay:
+            if self._client.auto_refresh_delay and coding == "jpeg":
                 self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
 
     def do_expose_event(self, event):
