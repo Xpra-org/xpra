@@ -418,13 +418,16 @@ class XpraClient(gobject.GObject):
             try:
                 import mmap
                 import tempfile
-                dotxpradir = os.path.expanduser("~/.xpra")
-                if not os.path.exists(dotxpradir):
-                    os.mkdir(dotxpradir, 0700)
-                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=dotxpradir)
+                from stat import S_IRUSR,S_IWUSR
+                mmap_dir = os.getenv("TMPDIR", "/tmp")
+                if not os.path.exists(mmap_dir):
+                    raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 #keep a reference to it so it does not disappear!
                 self._mmap_temp_file = temp
                 self.mmap_file = temp.name
+                #ensure that the permissions are strict:
+                os.chmod(self.mmap_file, S_IRUSR|S_IWUSR)
                 self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
                 fd = temp.file.fileno()
                 log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
