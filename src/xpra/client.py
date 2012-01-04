@@ -199,7 +199,7 @@ class ClientWindow(gtk.Window):
         #the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw(self, x, y, width, height, coding, img_data):
+    def draw(self, x, y, width, height, coding, img_data, rowstride):
         gc = self._backing.new_gc()
         if coding == "mmap":
             assert self._client.supports_mmap
@@ -211,10 +211,13 @@ class ClientWindow(gtk.Window):
                 self._client.mmap.seek(offset)
                 data += self._client.mmap.read(length)
                 data_start.value = offset+length
-            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data)
+            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
         elif coding == "rgb24":
-            assert len(img_data) == width * height * 3
-            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data)
+            if rowstride>0:
+                assert len(img_data) == rowstride * height
+            else:
+                assert len(img_data) == width * 3 * height
+            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, img_data, rowstride)
         else:
             loader = gtk.gdk.PixbufLoader(coding)
             loader.write(img_data, len(img_data))
@@ -751,6 +754,7 @@ class XpraClient(gobject.GObject):
         capabilities_request["desktop_size"] = [root_w, root_h]
         capabilities_request["png_window_icons"] = True
         capabilities_request["damage_sequence"] = True
+        capabilities_request["rowstride"] = True
         capabilities_request["ping"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
@@ -911,14 +915,15 @@ class XpraClient(gobject.GObject):
 
     def _process_draw(self, packet):
         (id, x, y, width, height, coding, data) = packet[1:8]
-        if len(packet)==9:
+        packet_sequence, rowstride = None, -1
+        if len(packet)>=9:
             packet_sequence = packet[8]
-        else:
-            packet_sequence = None
+        if len(packet)>=10:
+            rowstride = int(packet[9])
         window = self._id_to_window.get(id)
         if not window:
             return      #window is already gone!
-        window.draw(x, y, width, height, coding, data)
+        window.draw(x, y, width, height, coding, data, rowstride)
         self.pixel_counter.append((time.time(), width*height))
         if packet_sequence and self.send_damage_sequence:
             self.send_now(["damage-sequence", packet_sequence])

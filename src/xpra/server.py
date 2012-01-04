@@ -161,7 +161,7 @@ class ServerSource(object):
     AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
     MAX_BATCH_DELAY = 1000
 
-    def __init__(self, protocol, encoding, send_damage_sequence, mmap, mmap_size):
+    def __init__(self, protocol, encoding, send_damage_sequence, send_rowstride, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
@@ -170,6 +170,7 @@ class ServerSource(object):
         self._damage_delayed = {}
         # for managing sequence numbers:
         self._send_damage_sequence = send_damage_sequence
+        self._send_rowstride = send_rowstride
         self._sequence = 0                      #increase with every Region
         self._damage_packet_sequence = 0        #increase with every packet send
         self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
@@ -431,17 +432,26 @@ class ServerSource(object):
             log("make_data_packet: dropping data packet with sequence=%s", sequence)
             return  None
         log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
-        #pad rowstride:
+        #remove rowstride padding but only if we can't send the rowstride value to client
+        #removing the padding takes a lot of cpu/memory bandwidth for little benefit
+        #not worth it, especially on large buffers
         rowwidth = w * 3
-        if rowwidth != rowstride:
+        if rowwidth!=rowstride and not (self._send_damage_sequence and self._send_rowstride):
             rows = []
             for i in xrange(h):
                 rows.append(data[i*rowstride : i*rowstride+rowwidth])
             data = "".join(rows)
+            rowstride = rowwidth
+        #send via mmap?
+        if self._mmap and self._mmap_size>0:
+            mmap_data = self._mmap_send(data)
+            if mmap_data is not None:
+                coding = "mmap"
+                data = mmap_data
         #encode to jpeg/png:
-        if self._encoding in ["jpeg", "png"]:
+        if coding in ["jpeg", "png"]:
             import Image
-            im = Image.fromstring("RGB", (w, h), data)
+            im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
             buf = StringIO.StringIO()
             if self._encoding=="jpeg":
                 q = min(99, max(1, self._protocol.jpegquality))
@@ -453,20 +463,17 @@ class ServerSource(object):
             data = buf.getvalue()
             buf.close()
         #check cancellation list again since the code above may take some time:
-        if self._damage_cancelled.get(id, 0)>sequence:
+        #but always send mmap data so we can reclaim the space!
+        if self._damage_cancelled.get(id, 0)>sequence and coding!="mmap":
             log("make_data_packet: dropping data packet with sequence=%s", sequence)
             return  None
-        #send via mmap?
-        if self._mmap and self._mmap_size>0:
-            mmap_data = self._mmap_send(data)
-            if mmap_data is not None:
-                coding = "mmap"
-                data = mmap_data
         #actual network packet:
         packet = ["draw", id, x, y, w, h, coding, data]
         if self._send_damage_sequence:
             packet.append(self._damage_packet_sequence)
             self._damage_packet_sequence += 1
+            if self._send_rowstride:
+                packet.append(rowstride)
         return packet
 
     def _mmap_send(self, data):
@@ -1104,7 +1111,9 @@ class XpraServer(gobject.GObject):
                                 "client (%s) and server (%s)" % (self.encodings, ENCODINGS))
             encoding = common[0]
         self.encoding = encoding
-        log.debug("encoding set to %s", encoding)
+        if self._server_source is not None:
+            self._server_source._encoding = encoding
+        log.info("encoding set to %s, client supports %s, server supports %s", encoding, self.encodings, ENCODINGS)
 
     def _process_encoding(self, proto, packet):
         (_, encoding) = packet
@@ -1158,6 +1167,7 @@ class XpraServer(gobject.GObject):
             self.disconnect("new valid connection received")
         self.reset_statistics()
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
+        self.send_rowstride = self.send_damage_sequence and capabilities.get("rowstride", False)
         #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
         self.encodings = capabilities.get("encodings", ["rgb24"])
         self._set_encoding(capabilities.get("encoding", None))
@@ -1172,7 +1182,7 @@ class XpraServer(gobject.GObject):
             self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
             log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.mmap, self.mmap_size)
+        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.send_rowstride, self.mmap, self.mmap_size)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
         if "deflate" in capabilities:
