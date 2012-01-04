@@ -407,6 +407,7 @@ class XpraClient(gobject.GObject):
         self.send_damage_sequence = False
         self.clipboard_enabled = False
         self.mmap = None
+        self.mmap_token = None
         self.mmap_file = None
         self.mmap_size = 0
 
@@ -417,6 +418,8 @@ class XpraClient(gobject.GObject):
             try:
                 import mmap
                 import tempfile
+                import uuid
+                import ctypes
                 from stat import S_IRUSR,S_IWUSR
                 mmap_dir = os.getenv("TMPDIR", "/tmp")
                 if not os.path.exists(mmap_dir):
@@ -434,6 +437,15 @@ class XpraClient(gobject.GObject):
                 assert os.write(fd, '\x00')
                 os.lseek(fd, 0, os.SEEK_SET)
                 self.mmap = mmap.mmap(fd, length=self.mmap_size)
+                #write the 16 byte token one byte at a time - no endianness
+                self.mmap_token = uuid.uuid4().int
+                log.debug("mmap_token=%s", self.mmap_token)
+                v = self.mmap_token
+                for i in range(0,16):
+                    poke = ctypes.c_ubyte.from_buffer(self.mmap, 512+i)
+                    poke.value = v % 256
+                    v = v>>8
+                assert v==0
             except Exception, e:
                 log.error("failed to setup mmap: %s", e)
                 self.supports_mmap = False
@@ -786,6 +798,7 @@ class XpraClient(gobject.GObject):
         capabilities_request["keyboard_sync"] = self.keyboard_sync and key_repeat
         if self.mmap_file:
             capabilities_request["mmap_file"] = self.mmap_file
+            capabilities_request["mmap_token"] = self.mmap_token
         self.send(["hello", capabilities_request])
 
     def send_ping(self):

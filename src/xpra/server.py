@@ -1202,7 +1202,20 @@ class XpraServer(gobject.GObject):
             f = open(mmap_file, "r+b")
             self.mmap_size = os.path.getsize(mmap_file)
             self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
-            log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
+            mmap_token = capabilities.get("mmap_token")
+            if mmap_token:
+                #verify the token:
+                v = 0
+                for i in range(0,16):
+                    v = v<<8
+                    peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
+                    v += peek.value
+                log.debug("mmap_token=%s, verification=%s", mmap_token, v)
+                if v!=mmap_token:
+                    log.error("WARNING: mmap token verification failed, not using mmap area!")
+                    self.close_mmap()
+            if self.mmap:
+                log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
         self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.send_rowstride, self.mmap, self.mmap_size)
         # do screen size calculations/modifications:
