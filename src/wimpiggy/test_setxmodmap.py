@@ -13,7 +13,7 @@ _root = gtk.gdk.get_default_root_window()
 
 
 from wimpiggy.keys import grok_modifier_map
-from wimpiggy.lowlevel import get_modifier_map, set_xmodmap
+from wimpiggy.lowlevel import get_modifier_map, set_xmodmap     #@UnresolvedImport
 
 from wimpiggy.log import Logger
 log = Logger()

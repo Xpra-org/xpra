@@ -21,7 +21,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol
-from xpra.keys import mask_to_names, MODIFIER_NAMES
+from xpra.keys import mask_to_names, get_modifiers_ignored, DEFAULT_MODIFIER_NAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
@@ -385,7 +385,6 @@ class XpraClient(gobject.GObject):
         self.jpegquality = opts.jpegquality
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
-        self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
@@ -451,12 +450,14 @@ class XpraClient(gobject.GObject):
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.keys_pressed = {}
+        self.send_nuisance_modifiers = False
         self._raw_keycodes_feature = False
         self._focus_modifiers_feature = False
         self._remote_version = None
         self._keymap_changing = False
         self._keymap = gtk.gdk.keymap_get_default()
         self._do_keys_changed()
+        self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
         self.send_hello()
 
         self._keymap.connect("keys-changed", self._keys_changed)
@@ -512,6 +513,7 @@ class XpraClient(gobject.GObject):
             strs = ["meta+shift+F4:quit"]
         log.debug("parse_shortcuts(%s)" % str(strs))
         shortcuts = {}
+        modifier_names = self.get_modifier_names()
         for s in strs:
             #example for s: Control+F8:some_action()
             parts = s.split(":", 1)
@@ -527,8 +529,8 @@ class XpraClient(gobject.GObject):
                 valid = True
                 for mod in keyspec[:len(keyspec)-1]:
                     lmod = mod.lower()
-                    if lmod not in MODIFIER_NAMES:
-                        log.error("invalid modifier: %s" % mod)
+                    if lmod not in modifier_names:
+                        log.error("invalid modifier: %s, valid modifiers are: %s", mod, modifier_names)
                         valid = False
                         break
                     modifiers.append(lmod)
@@ -658,7 +660,9 @@ class XpraClient(gobject.GObject):
     def query_xkbmap(self):
         self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
         self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
-        self.xkbmap_mod_clear, self.xkbmap_mod_add = self._client_extras.get_keymap_modifiers()
+        self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings = self._client_extras.get_keymap_modifiers()
+        self.xkbmap_mod_ignore = get_modifiers_ignored(self.xkbmap_mod_meanings)
+        log.info("ignoring modifiers: %s", self.xkbmap_mod_ignore)
 
     def _keys_changed(self, *args):
         self._keymap = gtk.gdk.keymap_get_default()
@@ -668,11 +672,11 @@ class XpraClient(gobject.GObject):
 
     def _do_keys_changed(self, sendkeymap=False):
         self._keymap_changing = False
-        self._modifier_map = self._client_extras.grok_modifier_map(gtk.gdk.display_get_default())
+        self.query_xkbmap()
+        self._modifier_map = self._client_extras.grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
+        log("do_keys_changed() modifier_map=%s" % self._modifier_map)
         if sendkeymap:
             #old clients won't know what to do with it, but that's ok
-            self.query_xkbmap()
-            log("keys_changed")
             if self.xkbmap_layout:
                 self.send_layout()
             self.send_keymap()
@@ -685,26 +689,40 @@ class XpraClient(gobject.GObject):
         self.send(["keymap-changed", nn(self.xkbmap_print), nn(self.xkbmap_query), nn(self.xmodmap_data), self.mask_to_names(current_mask)])
 
 
+    def send_focus(self, _id):
+        """ with v0.0.7.24 onwards, we want to set the modifier map when we get focus """
+        if self._focus_modifiers_feature:
+            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+            self.send(["focus", _id, self.mask_to_names(current_mask)])
+        else:
+            self.send(["focus", _id])
+
     def update_focus(self, id, gotit):
-        def send_focus(_id):
-            """ with v0.0.7.24 onwards, we want to set the modifier map when we get focus """
-            if self._focus_modifiers_feature:
-                (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-                self.send(["focus", _id, self.mask_to_names(current_mask)])
-            else:
-                self.send(["focus", _id])
         log("update_focus(%s,%s) _focused=%s", id, gotit, self._focused)
         if gotit and self._focused is not id:
             self.clear_repeat()
-            send_focus(id)
+            self.send_focus(id)
             self._focused = id
         if not gotit and self._focused is id:
             self.clear_repeat()
-            send_focus(0)
+            self.send_focus(0)
             self._focused = None
 
+    def get_modifier_names(self):
+        modifier_names = DEFAULT_MODIFIER_NAMES
+        if self.xkbmap_mod_meanings:
+            modifier_names = set(modifier_names + self.xkbmap_mod_meanings.values())
+        return modifier_names
+
     def mask_to_names(self, mask):
-        return mask_to_names(mask, self._modifier_map)
+        mn = mask_to_names(mask, self._modifier_map, self.get_modifier_names())
+        if self.send_nuisance_modifiers:
+            log("mask_to_names(%s)=%s", mask, mn)
+            return  mn
+        #remove nuisance modifiers (lock, num, scroll):
+        no_nuisance = list(set(mn).difference(self.xkbmap_mod_ignore))
+        log("mask_to_names(%s)=%s (raw=%s)", mask, no_nuisance, mn)
+        return no_nuisance
 
     def send(self, packet):
         self._protocol.source.queue_ordinary_packet(packet)
@@ -744,6 +762,8 @@ class XpraClient(gobject.GObject):
             capabilities_request["xkbmap_mod_clear"] = self.xkbmap_mod_clear
         if self.xkbmap_mod_add:
             capabilities_request["xkbmap_mod_add"] = self.xkbmap_mod_add
+        if self.xkbmap_mod_meanings:
+            capabilities_request["xkbmap_mod_meanings"] = self.xkbmap_mod_meanings
         capabilities_request["cursors"] = True
         capabilities_request["bell"] = True
         capabilities_request["clipboard"] = self.clipboard_enabled
@@ -871,6 +891,7 @@ class XpraClient(gobject.GObject):
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
         self.can_ping = capabilities.get("ping", False)
+        self.send_nuisance_modifiers = capabilities.get("modifiers_nuisance", False)
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)

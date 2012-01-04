@@ -125,8 +125,8 @@ class ClientExtras(ClientExtrasBase):
         import Carbon.Snd           #@UnresolvedImport
         Carbon.Snd.SysBeep(1)
 
-    def grok_modifier_map(self, display_source):
-        modifiers = ClientExtrasBase.grok_modifier_map(self, display_source)
+    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
+        modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)
         modifiers["meta"] = 1 << 3
         return  modifiers
 

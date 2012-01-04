@@ -58,7 +58,8 @@ log = Logger()
 
 import xpra
 from xpra.protocol import Protocol, SocketConnection, dump_packet
-from xpra.keys import mask_to_names
+from xpra.keys import mask_to_names, get_modifiers_ignored, \
+    DEFAULT_KEYNAME_FOR_MOD, DEFAULT_MODIFIER_NAMES, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.xkbhelper import do_set_xmodmap, do_set_keymap
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
@@ -573,6 +574,8 @@ class XpraServer(gobject.GObject):
         self.xkbmap_variant = None
         self.xkbmap_print = None
         self.xkbmap_query = None
+        self.xkbmap_mod_meanings = DEFAULT_MODIFIER_MEANINGS
+        self.xkbmap_mod_ignore = DEFAULT_MODIFIER_NUISANCE
         self.xmodmap_data = None
         self.keymap_changing = False
         self.keyboard_sync = True
@@ -598,14 +601,7 @@ class XpraServer(gobject.GObject):
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
 
-        self._keyname_for_mod = {
-            "shift": "Shift_L",
-            "control": "Control_L",
-            "meta": "Meta_L",
-            "super": "Super_L",
-            "hyper": "Hyper_L",
-            "alt": "Alt_L",
-            }
+        self._keyname_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
         #clear all modifiers
         self._make_keymask_match([])
 
@@ -671,6 +667,7 @@ class XpraServer(gobject.GObject):
                               self.xkbmap_print, self.xkbmap_query)
             except:
                 log.error("error setting new keymap", exc_info=True)
+            self._keyname_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
             try:
                 clear,data,add = self.xkbmap_mod_clear, self.xmodmap_data, self.xkbmap_mod_add
                 if not clear and not data and not add:
@@ -678,8 +675,19 @@ class XpraServer(gobject.GObject):
                     from xpra.keys import XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD
                     clear,data,add = XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD
                 do_set_xmodmap(clear, data, add)
+                if self.xkbmap_mod_meanings:
+                    self._keyname_for_mod = {}
+                    for k,m in self.xkbmap_mod_meanings.items():
+                        if m not in self._keyname_for_mod:
+                            self._keyname_for_mod[m] = k
+                    for m,k in DEFAULT_KEYNAME_FOR_MOD.items():
+                        if m not in self._keyname_for_mod:
+                            self._keyname_for_mod[m] = k
+                    log.info("keyname_for_mod=%s" % self._keyname_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
+            self.xkbmap_mod_ignore = get_modifiers_ignored(self.xkbmap_mod_meanings)
+            log.info("will ignore these modifiers: %s", self.xkbmap_mod_ignore)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
@@ -721,7 +729,7 @@ class XpraServer(gobject.GObject):
 
     def _keys_changed(self, *args):
         if not self.keymap_changing:
-            self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default())
+            self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
@@ -877,10 +885,14 @@ class XpraServer(gobject.GObject):
 
     def _keycodes(self, keyname):
         keyval = gtk.gdk.keyval_from_name(keyname)
+        if keyval==0:
+            log.error("no keyval found for %s", keyname)
+            return  []
         entries = self._keymap.get_entries_for_keyval(keyval)
         keycodes = []
-        for _keycode,_group,_level in entries:
-            keycodes.append(_keycode)
+        if entries:
+            for _keycode,_group,_level in entries:
+                keycodes.append(_keycode)
         return  keycodes
 
     def _keycode(self, keycode, keyval, keyname, group=0, level=0):
@@ -913,34 +925,44 @@ class XpraServer(gobject.GObject):
             return  kc
         return entries[0][0]    #nasty fallback!
 
-    def _make_keymask_match(self, modifier_list):
+    def _make_keymask_match(self, modifier_list, ignored_modifier_keycode=None):
         #FIXME: we should probably cache the keycode
         # and clear the cache in _keys_changed
         def get_current_mask():
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            return  mask_to_names(current_mask, self._modifier_map)
+            modifier_names = DEFAULT_MODIFIER_NAMES[:]
+            if self.xkbmap_mod_meanings:
+                modifier_names = set(modifier_names + self.xkbmap_mod_meanings.values())
+            return  mask_to_names(current_mask, self._modifier_map, modifier_names)
         current = set(get_current_mask())
         wanted = set(modifier_list)
-        #print("_make_keymask_match(%s) current mask: %s, wanted: %s\n" % (modifier_list, current, wanted))
+        #log.debug("make_keymask_match(%s) current mask: %s, wanted: %s", modifier_list, current, wanted)
         display = gtk.gdk.display_get_default()
-        for modifier in current.difference(wanted):
-            keyname = self._keyname_for_mod[modifier]
-            keycodes = self._keycodes(keyname)
-            for keycode in keycodes:
-                xtest_fake_key(display, keycode, False)
-                new_mask = get_current_mask()
-                #print("_make_keymask_match(%s) removed modifier %s using %s: %s" % (modifier_list, modifier, keycode, (modifier not in new_mask)))
-                if modifier not in new_mask:
-                    break
-        for modifier in wanted.difference(current):
-            keyname = self._keyname_for_mod[modifier]
-            keycodes = self._keycodes(keyname)
-            for keycode in keycodes:
-                xtest_fake_key(display, keycode, True)
-                new_mask = get_current_mask()
-                #print("_make_keymask_match(%s) added modifier %s using %s: %s" % (modifier_list, modifier, keycode, (modifier in new_mask)))
-                if modifier in new_mask:
-                    break
+
+        def change_mask(modifiers, press, info):
+            for modifier in modifiers:
+                keyname = self._keyname_for_mod.get(modifier)
+                if not keyname:
+                    log.error("unknown modifier: %s", modifier)
+                    continue
+                keycodes = self._keycodes(keyname)
+                if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
+                    continue
+                #nuisance keys (lock, num, scroll) are toggled by a
+                #full key press + key release (so act accordingly in the loop below)
+                nuisance = modifier in self.xkbmap_mod_ignore
+                for keycode in keycodes:
+                    if nuisance:
+                        xtest_fake_key(display, keycode, True)
+                        xtest_fake_key(display, keycode, False)
+                    else:
+                        xtest_fake_key(display, keycode, press)
+                    new_mask = get_current_mask()
+                    #log.debug("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
+                    if (modifier in new_mask)==press:
+                        break
+        change_mask(current.difference(wanted), False, "remove")
+        change_mask(wanted.difference(current), True, "add")
 
     def _clear_keys_pressed(self):
         if len(self.keys_pressed)>0:
@@ -1210,6 +1232,7 @@ class XpraServer(gobject.GObject):
         self.xmodmap_data = capabilities.get("xmodmap_data")
         self.xkbmap_mod_clear = capabilities.get("xkbmap_mod_clear")
         self.xkbmap_mod_add = capabilities.get("xkbmap_mod_add")
+        self.xkbmap_mod_meanings = capabilities.get("xkbmap_mod_meanings", DEFAULT_MODIFIER_MEANINGS)
 
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
@@ -1266,6 +1289,7 @@ class XpraServer(gobject.GObject):
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat"] = client_capabilities.get("key_repeat")
             capabilities["key_repeat_modifiers"] = True
+        capabilities["modifiers_nuisance"] = True
         if self.session_name:
             capabilities["session_name"] = self.session_name
         if self.mmap_size>0:
@@ -1437,13 +1461,14 @@ class XpraServer(gobject.GObject):
         else:
             raise Exception("invalid number of arguments for key-action: %s" % len(packet))
         self._focus(id, None)
-        self._make_keymask_match(modifiers)
+        self._make_keymask_match(modifiers, keycode)
         self._handle_key(id, pressed, name, keyval, keycode, modifiers)
 
     def _handle_key(self, id, pressed, name, keyval, keycode, modifiers):
         """ Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
+        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", id, pressed, name, keyval, keycode, modifiers)
         if pressed and (id is not None) and (id not in self._id_to_window):
             log("window %s is gone, ignoring key press", id)
             return

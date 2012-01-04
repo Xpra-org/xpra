@@ -105,7 +105,22 @@ class HotkeyManager(gobject.GObject):
 gobject.type_register(HotkeyManager)
 
 
-def grok_modifier_map(display_source):
+DEFAULT_MODIFIER_MEANINGS = {
+        "Scroll_Lock": "scroll",
+        "Num_Lock": "num",
+        "Meta_L": "meta",
+        "Meta_R": "meta",
+        "Super_L": "super",
+        "Super_R": "super",
+        "Hyper_L": "hyper",
+        "Hyper_R": "hyper",
+        "Alt_L": "alt",
+        "Alt_R": "alt",
+        #"ISO_Level3_Shift": "mod5",
+        #"Mode_switch": "mod5",
+        }
+
+def grok_modifier_map(display_source, meanings):
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
     modifier_map = {
@@ -124,18 +139,8 @@ def grok_modifier_map(display_source):
         "hyper": 0,
         "alt": 0,
         }
-    meanings = {
-        "Scroll_Lock": "scroll",
-        "Num_Lock": "num",
-        "Meta_L": "meta",
-        "Meta_R": "meta",
-        "Super_L": "super",
-        "Super_R": "super",
-        "Hyper_L": "hyper",
-        "Hyper_R": "hyper",
-        "Alt_L": "alt",
-        "Alt_R": "alt",
-        }
+    if meanings is None or len(meanings)==0:
+        meanings = DEFAULT_MODIFIER_MEANINGS
 
     disp = get_display_for(display_source)
     (max_keypermod, keycodes) = get_modifier_map(disp)
@@ -156,6 +161,7 @@ def grok_modifier_map(display_source):
     modifier_map["nuisance"] = (modifier_map["lock"]
                                 | modifier_map["scroll"]
                                 | modifier_map["num"])
+    log.debug("grok_modifier_map(%s,%s)=%s" % (display_source, meanings, modifier_map))
     return modifier_map
 
 def parse_key(name, keymap, modifier_map):

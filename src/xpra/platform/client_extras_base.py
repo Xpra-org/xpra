@@ -19,7 +19,7 @@ import datetime
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
-from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
+from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR, DEFAULT_MODIFIER_MEANINGS
 from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
@@ -155,7 +155,7 @@ class ClientExtrasBase(object):
         return False
 
     def get_keymap_modifiers(self):
-        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD
+        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, DEFAULT_MODIFIER_MEANINGS
 
     def get_keymap_spec(self):
         """ xkbmap_print, xkbmap_query, xmodmap """
@@ -375,7 +375,7 @@ class ClientExtrasBase(object):
 
 
 
-    def grok_modifier_map(self, display_source):
+    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
         modifier_map = {
             "shift": 1 << 0,
             "lock": 1 << 1,
