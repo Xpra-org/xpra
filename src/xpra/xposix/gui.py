@@ -34,7 +34,8 @@ class ClientExtras(ClientExtrasBase):
         self.setup_x11_bell()
         self.has_dbusnotify = False
         self.has_pynotify = False
-        self.setup_dbusnotify() or self.setup_pynotify()
+        if not self.setup_dbusnotify() and not self.setup_pynotify():
+            log.error("turning notifications off")
         self.setup_clipboard_helper(ClipboardProtocolHelper)
 
     def exit(self):
@@ -170,7 +171,7 @@ class ClientExtras(ClientExtrasBase):
             self.has_dbusnotify = True
             log.info("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
         except Exception, e:
-            log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
+            log.error("cannot import dbus.glib notification wrapper: %s", e)
         return self.has_dbusnotify
 
     def setup_pynotify(self):
@@ -181,7 +182,7 @@ class ClientExtras(ClientExtrasBase):
             self.has_pynotify = True
             log.info("using pynotify: %s", pynotify)
         except ImportError, e:
-            log.error("cannot import pynotify wrapper (turning notifications off) : %s", e)
+            log.error("cannot import pynotify wrapper: %s", e)
         return self.has_pynotify
 
     def setup_x11_bell(self):
@@ -285,6 +286,7 @@ class ClientExtras(ClientExtrasBase):
         #parse it so we can feed it back to xmodmap (ala "xmodmap -pke")
         clear = []
         add = []
+        meanings = {}
         for line in xmodmap_pm.splitlines()[1:]:
             if not line:
                 continue
@@ -292,10 +294,19 @@ class ClientExtras(ClientExtrasBase):
             #ie: ['shift', 'Shift_L', '(0x32),', 'Shift_R', '(0x3e)']
             clear.append("clear %s" % parts[0])
             if len(parts)>1:
-                nohex = set([x for x in parts[1:] if not x.startswith("(")])
-                add.append("add %s = %s" % (parts[0], " ".join(nohex)))
-        log("get_keymap_modifiers parsed to clear=%s, add=%s", clear, add)
-        return  clear, add
+                nohex = [x for x in parts[1:] if not x.startswith("(")]
+                add.append("add %s = %s" % (parts[0], " ".join(set(nohex))))
+                #hack: for the following line:
+                # mod5        Mode_switch (0x8),  ISO_Level3_Shift (0x7c)
+                #we actually want to record: "ISO_Level3_Shift"
+                #so we always grab the second entry, if there is one
+                #(makes no difference for Shift/Control, etc)
+                #meanings[nohex[min(len(nohex)-1, 1)]] = parts[0]
+                #on the other hand, this relies on the order of the dict being preserved:
+                for x in nohex:
+                    meanings[x] = parts[0]
+        log.info("get_keymap_modifiers parsed to clear=%s, add=%s, meanings=%s", clear, add, meanings)
+        return  clear, add, meanings
 
     def supports_raw_keycodes(self):
         return True
@@ -320,5 +331,5 @@ class ClientExtras(ClientExtrasBase):
             log.error("failed to get keyboard repeat rate: %s", e)
         return None
 
-    def grok_modifier_map(self, display_source):
-        return grok_modifier_map(display_source)
+    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
+        return grok_modifier_map(display_source, xkbmap_mod_meanings)
