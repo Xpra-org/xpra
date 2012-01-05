@@ -732,7 +732,8 @@ class XpraClient(gobject.GObject):
             log("mask_to_names(%s)=%s", mask, mn)
             return  mn
         #remove nuisance modifiers (lock, num, scroll):
-        no_nuisance = list(set(mn).difference(self.xkbmap_mod_ignore))
+        std = [x for x in mn if x in DEFAULT_MODIFIER_NAMES]
+        no_nuisance = list(set(std).difference(self.xkbmap_mod_ignore))
         log("mask_to_names(%s)=%s (raw=%s)", mask, no_nuisance, mn)
         return no_nuisance
 
