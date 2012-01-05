@@ -795,7 +795,7 @@ class XpraClient(gobject.GObject):
         if key_repeat:
             delay_ms,interval_ms = key_repeat
             capabilities_request["key_repeat"] = (delay_ms,interval_ms)
-        capabilities_request["keyboard_sync"] = self.keyboard_sync and key_repeat
+        capabilities_request["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
         if self.mmap_file:
             capabilities_request["mmap_file"] = self.mmap_file
             capabilities_request["mmap_token"] = self.mmap_token
