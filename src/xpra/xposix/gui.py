@@ -15,10 +15,6 @@ import gtk
 _display = gtk.gdk.get_display()
 assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
-from wimpiggy.keys import grok_modifier_map
-from xpra.xposix.xclipboard import ClipboardProtocolHelper
-from xpra.xposix.xsettings import XSettingsWatcher
-from xpra.xposix.xroot_props import XRootPropWatcher
 from xpra.platform.client_extras_base import ClientExtrasBase
 
 from wimpiggy.log import Logger
@@ -36,7 +32,11 @@ class ClientExtras(ClientExtrasBase):
         self.has_pynotify = False
         if not self.setup_dbusnotify() and not self.setup_pynotify():
             log.error("turning notifications off")
-        self.setup_clipboard_helper(ClipboardProtocolHelper)
+        try:
+            from xpra.xposix.xclipboard import ClipboardProtocolHelper
+            self.setup_clipboard_helper(ClipboardProtocolHelper)
+        except ImportError:
+            self.clipboard_helper = None
 
     def exit(self):
         ClientExtrasBase.exit(self)
@@ -204,12 +204,17 @@ class ClientExtras(ClientExtrasBase):
             self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
         def setup_xprop_xsettings(client):
             log.debug("setup_xprop_xsettings(%s)", client)
-            self._xsettings_watcher = XSettingsWatcher()
-            self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
-            self._handle_xsettings_changed()
-            self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
-            self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-            self._root_props_watcher.notify_all()
+            try:
+                from xpra.xposix.xsettings import XSettingsWatcher
+                from xpra.xposix.xroot_props import XRootPropWatcher
+                self._xsettings_watcher = XSettingsWatcher()
+                self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
+                self._handle_xsettings_changed()
+                self._root_props_watcher = XRootPropWatcher(self.ROOT_PROPS.keys())
+                self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
+                self._root_props_watcher.notify_all()
+            except ImportError, e:
+                log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
         self.client.connect("handshake-complete", setup_xprop_xsettings)
 
     def _handle_xsettings_changed(self, *args):
@@ -305,7 +310,7 @@ class ClientExtras(ClientExtrasBase):
                 #on the other hand, this relies on the order of the dict being preserved:
                 for x in nohex:
                     meanings[x] = parts[0]
-        log.info("get_keymap_modifiers parsed to clear=%s, add=%s, meanings=%s", clear, add, meanings)
+        log("get_keymap_modifiers parsed to clear=%s, add=%s, meanings=%s", clear, add, meanings)
         return  clear, add, meanings
 
     def supports_raw_keycodes(self):
@@ -332,4 +337,8 @@ class ClientExtras(ClientExtrasBase):
         return None
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
-        return grok_modifier_map(display_source, xkbmap_mod_meanings)
+        try:
+            from wimpiggy.keys import grok_modifier_map
+            return grok_modifier_map(display_source, xkbmap_mod_meanings)
+        except ImportError:
+            return ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)
