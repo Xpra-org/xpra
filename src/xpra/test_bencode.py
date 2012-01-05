@@ -95,7 +95,22 @@ def test_encoding():
         restored = process(be)
         print("decode(%s)=%s" % (be, restored))
         list = restored[0]
-        assert list==v
+        if len(list)!=len(v):
+            print("MISMATCH!")
+            print("v=%s" % v)
+            print("l=%s" % list)
+        assert len(list)==2
+        assert list[0]==v[0]
+        for ok,ov in v[1].items():
+            d = list[1]
+            if ok not in d:
+                print("restored dict is missing %s" % ok)
+                return list
+            rv = d.get(ok)
+            if rv!=ov:
+                print("value for %s does not match: %s vs %s" % (ok, ov, rv))
+                return list
+                
         return list
 
     def test_hello():
@@ -110,7 +125,23 @@ def test_encoding():
         hello = ["hello", d]
         t(hello, "l5:hellod20:__prerelease_version8:0.0.7.2618:challenge_response40:ba59e4110119264f4a6eaf3adc075ea2c540855012:desktop_sizeli480ei800ee4:jpegi4eee")
 
+    def test_large_hello():
+        d = {'start_time': 1325786122L,
+                'resize_screen': False, 'bell': True, 'desktop_size': [800, 600], 'modifiers_nuisance': True,
+                'actual_desktop_size': [3840, 2560], 'encodings': ['rgb24', 'jpeg', 'png'],
+                'ping': True, 'damage_sequence': True, 'packet_size': True,
+                'encoding': 'rgb24', 'platform': 'linux2', 'clipboard': True, 'cursors': True,
+                'raw_keycodes_feature': True, 'focus_modifiers_feature': True, '__prerelease_version': '0.0.7.33',
+                'notifications': True, 'png_window_icons': True,
+                }
+        hello = ["hello", d]
+        t(hello, "l5:hellod20:__prerelease_version8:0.0.7.3319:actual_desktop_sizeli3840ei2560ee4:belli1e9:clipboardi1e7:cursorsi1e15:damage_sequencei1e12:desktop_sizeli800ei600ee8:encoding5:rgb249:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e11:packet_sizei1e4:pingi1e8:platform6:linux216:png_window_iconsi1e20:raw_keycodes_featurei1e13:resize_screeni0e10:start_timei1325786122eee")
+
+        d['some_new_feature_we_may_add'] = {"with_a_nested_dict" : {"containing_another_dict" : ["with", "nested", "arrays", ["in", ["it"]]]}}
+        t(hello, "l5:hellod20:__prerelease_version8:0.0.7.3319:actual_desktop_sizeli3840ei2560ee4:belli1e9:clipboardi1e7:cursorsi1e15:damage_sequencei1e12:desktop_sizeli800ei600ee8:encoding5:rgb249:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e11:packet_sizei1e4:pingi1e8:platform6:linux216:png_window_iconsi1e20:raw_keycodes_featurei1e13:resize_screeni0e27:some_new_feature_we_may_addd18:with_a_nested_dictd23:containing_another_dictl4:with6:nested6:arraysl2:inl2:iteeeee10:start_timei1325786122eee")
+
     test_hello()
+    test_large_hello()
 
 def main():
     test_decoding()
