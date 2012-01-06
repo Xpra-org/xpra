@@ -202,6 +202,7 @@ class ClientWindow(gtk.Window):
     def draw(self, x, y, width, height, coding, img_data, rowstride):
         gc = self._backing.new_gc()
         if coding == "mmap":
+            """ see _mmap_send() in server.py for details """
             assert self._client.supports_mmap
             import ctypes
             data_start = ctypes.c_uint.from_buffer(self._client.mmap, 0)
@@ -215,6 +216,7 @@ class ClientWindow(gtk.Window):
                 self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
             else:
                 #re-construct the buffer from discontiguous chunks:
+                log("drawing from discontiguous area: %s", img_data)
                 data = ""
                 for offset, length in img_data:
                     self._client.mmap.seek(offset)

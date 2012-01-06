@@ -478,34 +478,67 @@ class ServerSource(object):
         return packet
 
     def _mmap_send(self, data):
+        #mmap_area=[&S&E-------------data-------------]
+        #The first pair of 4 bytes are occupied by:
+        #S=data_start index is only updated by the client and tells us where it has read up to
+        #E=data_end index is only updated here and marks where we have written up to (matches current seek)
+        # '-' denotes unused space
+        # '+' is for data we have written
+        # '*' is for data we have just written in this call
+        # E and S show the location pointed to by data_start/data_end
         data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
         data_end = ctypes.c_uint.from_buffer(self._mmap, 4)
         start = max(8, data_start.value)
         end = max(8, data_end.value)
         if end<start:
+            #we have wrapped around but the client hasn't yet:
+            #[++++++++E--------------------S+++++]
+            #so there is one chunk available:
             available = start-end
             chunk = available
         else:
+            #we have not wrapped around yet, or the client has wrapper around too:
+            #[------------S++++++++++++E---------]
+            #so there are two chunks available:
             chunk = self._mmap_size-end
             available = chunk+(start-8)
         l = len(data)
         if l>=available:
             log("mmap area full: we need more than %s but only %s left! ouch!", l, available)
             return None
-        self._mmap.seek(end)
         if l<chunk:
-            """ fits in one chunk """
+            """ data fits in the first chunk """
+            #ie: initially:
+            #[----------------------------------]
+            #[*********E------------------------]
+            #or if data already existed:
+            #[+++++++++E------------------------]
+            #[+++++++++**********E--------------]
+            self._mmap.seek(end)
             self._mmap.write(data)
             data = [(end, l)]
             data_end.value = end+l
         else:
-            """ split in 2 chunks: wrap around the end of the mmap buffer """
-            self._mmap.write(data[:chunk])
-            self._mmap.seek(8)
-            self._mmap.write(data[chunk:])
-            l2 = l-chunk
-            data = [(end, chunk), (8, l2)]
-            data_end.value = 8+l2
+            """ data does not fit in first chunk alone """
+            if available>=(self._mmap_size/2) and available>=(l*3) and l<(start-8):
+                """ still plenty of free space, don't wrap around: just start again """
+                #[------------------S+++++++++E------]
+                #[*******E----------S+++++++++-------]
+                self._mmap.seek(8)
+                self._mmap.write(data)
+                data = [(8, l)]
+                data_end.value = 8+l
+            else:
+                """ split in 2 chunks: wrap around the end of the mmap buffer """
+                #[------------------S+++++++++E------]
+                #[******E-----------S+++++++++*******]
+                self._mmap.seek(end)
+                self._mmap.write(data[:chunk])
+                self._mmap.seek(8)
+                self._mmap.write(data[chunk:])
+                l2 = l-chunk
+                data = [(end, chunk), (8, l2)]
+                data_end.value = 8+l2
         log("sending damage with mmap: %s", data)
         return data
 
