@@ -203,15 +203,24 @@ class ClientWindow(gtk.Window):
         gc = self._backing.new_gc()
         if coding == "mmap":
             assert self._client.supports_mmap
-            log("drawing from mmap: %s", img_data)
-            data = ""
             import ctypes
             data_start = ctypes.c_uint.from_buffer(self._client.mmap, 0)
-            for offset, length in img_data:
-                self._client.mmap.seek(offset)
-                data += self._client.mmap.read(length)
+            if len(img_data)==1:
+                #construct an array directly from the mmap zone:
+                offset, length = img_data[0]
+                arraytype = ctypes.c_char * length 
+                data = arraytype.from_buffer(self._client.mmap, offset)
+                self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
                 data_start.value = offset+length
-            self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
+                self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
+            else:
+                #re-construct the buffer from discontiguous chunks:
+                data = ""
+                for offset, length in img_data:
+                    self._client.mmap.seek(offset)
+                    data += self._client.mmap.read(length)
+                    data_start.value = offset+length
+                self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
         elif coding == "rgb24":
             if rowstride>0:
                 assert len(img_data) == rowstride * height
@@ -234,6 +243,7 @@ class ClientWindow(gtk.Window):
         else:
             if self._refresh_timer:
                 gobject.source_remove(self._refresh_timer)
+                self._refresh_timer = None
             if self._client.auto_refresh_delay and coding == "jpeg":
                 self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
 
