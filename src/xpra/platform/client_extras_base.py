@@ -317,12 +317,14 @@ class ClientExtrasBase(object):
             pixels = "n/a"
             if len(self.client.pixel_counter)>0:
                 total = 0
+                total_n = 0
                 now = time.time()
                 mint = now-20       #ignore records older than 20 seconds
                 startt = now        #when we actually start counting from
                 for (t, count) in self.client.pixel_counter:
                     if t>=mint:
                         total += count
+                        total_n += 1
                         startt = min(t, startt)
                 if total>0 and startt!=now:
                     def pixelstr(v):
@@ -337,7 +339,7 @@ class ClientExtrasBase(object):
                     t, last = self.client.pixel_counter[-1]
                     if t<now-5:
                         last = 0
-                    avg = long(total/(now-startt))
+                    avg = long(total/(now-startt)/total_n)
                     pixels = "%s  (%s)" % (pixelstr(last), pixelstr(avg))
 
             self.pixels_per_second_label.set_text(pixels)
