@@ -52,7 +52,7 @@ class KeyboardStateInfoWindow:
 		vbox.add(self.mouse)
 		
 		self.keys = gtk.Label()
-		fixed = pango.FontDescription('monospace 8')
+		fixed = pango.FontDescription('monospace 9')
 		self.keys.modify_font(fixed)
 		vbox.add(self.keys)
 
@@ -60,7 +60,7 @@ class KeyboardStateInfoWindow:
 		self.window.show_all()
 		gobject.timeout_add(100, self.populate_modifiers)
 
-		self.key_events = deque(maxlen=50)
+		self.key_events = deque(maxlen=35)
 		self.window.connect("key-press-event", self.key_press)
 		self.window.connect("key-release-event", self.key_release)
 
@@ -87,11 +87,16 @@ class KeyboardStateInfoWindow:
 	def add_key_event(self, etype, event):
 		modifiers = self.mask_to_names(event.state, short_modifier_names)
 		name = gtk.gdk.keyval_name(event.keyval)
-		keyval = event.keyval
-		keycode = event.hardware_keycode
-		group = event.group
-		self.key_events.append("%s%s%s%s%s%s%s%s" %
-					(etype.ljust(5, ' '), name.ljust(24, ' '), str(event.string).ljust(4), str(keyval).ljust(10, ' '), str(keycode).ljust(10, ' '), event.is_modifier, str(group).ljust(3, ' '), str(modifiers)))
+		text = ""
+		for v,l in ((etype, 5), (name, 24), (event.string, 4),
+					(event.keyval, 10), (event.hardware_keycode, 10),
+					(event.is_modifier, 2), (event.group, 2),
+					(modifiers, -1)):
+			s = str(v).replace("\n", "\\n").replace("\r", "\\r")
+			if l>0:
+				s = s.ljust(l)
+			text += s
+		self.key_events.append(text)
 		self.keys.set_text("\n".join(self.key_events))
 
 	def destroy(self, *args):
