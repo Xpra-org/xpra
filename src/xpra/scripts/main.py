@@ -60,7 +60,7 @@ def main(script_file, cmdline):
         start_str = ""
         list_str = ""
         upgrade_str = ""
-        note_str = "(This xpra install does not support starting local servers.)"
+        note_str = "(This xpra installation does not support starting local servers.)"
         stop_str = ""
     parser = OptionParser(version="xpra v%s" % xpra.__version__,
                           usage="".join(["\n",
