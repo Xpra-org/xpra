@@ -17,7 +17,7 @@ import zlib
 from Queue import Queue
 from threading import Thread, Lock
 
-from xpra.bencode import bencode, IncrBDecode
+from xpra.bencode import bencode, bdecode
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -74,12 +74,12 @@ class Protocol(object):
         self._read_queue = Queue(5)
         # Invariant: if .source is None, then _source_has_more == False
         self.source = None
-        self.jpegquality = 0
         self._source_has_more = False
         self._recv_counter = 0
         self._send_size = False
         self._closed = False
-        self._read_decoder = IncrBDecode()
+        self._read_buffer = ""
+        self._current_packet_size = -1
         self._compressor = None
         self._decompressor = None
         self._write_thread = Thread(target=self._write_thread_loop)
@@ -183,7 +183,8 @@ class Protocol(object):
                     log("read thread: eof")
                     break
         finally:
-            log("read thread: ended")
+            log("read thread: ended, closing socket")
+            self._conn.close()
 
     def _call_connection_lost(self, message="", exc_info=False):
         gobject.idle_add(self._connection_lost, message, exc_info)
@@ -203,28 +204,58 @@ class Protocol(object):
                     return self._call_connection_lost("empty marker in read queue")
                 if self._decompressor is not None:
                     buf = self._decompressor.decompress(buf)
-                try:
-                    self._read_decoder.add(buf)
-                except:
-                    return self._call_connection_lost("read buffer is in an inconsistent state, cannot continue", exc_info=True)
+                log.debug("read_parse: adding %s bytes to read buffer of size %s", len(buf), len(self._read_buffer))
+                self._read_buffer += buf
                 while not self._closed:
                     had_deflate = (self._decompressor is not None)
                     try:
-                        result = self._read_decoder.process()
+                        if self._current_packet_size<0 and self._read_buffer.startswith("P"):
+                            #spotted packet size header
+                            if len(self._read_buffer)<16:
+                                log.debug("incomplete size header: %s", self._read_buffer)
+                                break   #incomplete
+                            self._current_packet_size = int(self._read_buffer[2:16])
+                            self._read_buffer = self._read_buffer[16:]
+                        
+                        if self._current_packet_size>0 and len(self._read_buffer)<self._current_packet_size:
+                            log.debug("incomplete packet: only %s of %s bytes received", len(self._read_buffer), self._current_packet_size)
+                            break
+
+                        result = bdecode(self._read_buffer)
                     except ValueError:
-                        # Peek at the data we got, in case we can make sense of it:
-                        self._process_packet([Protocol.GIBBERISH, self._read_decoder.unprocessed()])
-                        # Then hang up:
-                        return self._call_connection_lost("gibberish received")
+                        #could be a partial packet (without size header)
+                        #or could be just a broken packet...
+                        def packet_error(buf):
+                            # Peek at the data we got, in case we can make sense of it:
+                            self._process_packet([Protocol.GIBBERISH, buf])
+                            # Then hang up:
+                            return self._call_connection_lost("gibberish received")
+
+                        if self._current_packet_size>0:
+                            #we had the size, so the packet should have been valid!
+                            packet_error(self._read_buffer)
+                            return
+                        else:
+                            #wait a little before deciding
+                            #unsized packets are either old clients (don't really care about them)
+                            #or hello packets (small-ish)
+                            def check_error_state(old_buffer):
+                                if old_buffer==self._read_buffer:
+                                    packet_error(self._read_buffer)
+                            gobject.timeout_add_seconds(1000, check_error_state, self._read_buffer)
+                            break
+
+                    self._current_packet_size = -1
                     if result is None:
                         break
-                    packet, unprocessed = result
+                    packet, l = result
                     gobject.idle_add(self._process_packet, packet)
+                    unprocessed = self._read_buffer[l:]
                     if not had_deflate and (self._decompressor is not None):
                         # deflate was just enabled: so decompress the unprocessed
                         # data
                         unprocessed = self._decompressor.decompress(unprocessed)
-                    self._read_decoder = IncrBDecode(unprocessed)
+                    self._read_buffer = unprocessed
         finally:
             log("read parse thread: ended")
 
@@ -234,7 +265,6 @@ class Protocol(object):
                      " allegedly closed (%s)", dump_packet(decoded))
             return
         try:
-            log("got %s", dump_packet(decoded), type="raw.read")
             self._process_packet_cb(self, decoded)
         except KeyboardInterrupt:
             raise
