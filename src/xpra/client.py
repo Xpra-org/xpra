@@ -793,6 +793,7 @@ class XpraClient(gobject.GObject):
         capabilities_request["bell"] = True
         capabilities_request["clipboard"] = self.clipboard_enabled
         capabilities_request["notifications"] = self._client_extras.can_notify()
+        capabilities_request["dynamic_compression"] = True
         capabilities_request["packet_size"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
@@ -879,12 +880,16 @@ class XpraClient(gobject.GObject):
         glib.set_application_name(self.session_name)
         self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False) and self._client_extras.supports_raw_keycodes()
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
-        if "deflate" in capabilities:
-            self._protocol.enable_deflate(capabilities["deflate"])
         self._remote_version = capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit()
             return
+        if capabilities.get("dynamic_compression", False):
+            self.send_deflate_level()
+        elif "deflate" in capabilities:
+            #"deflate" is the old-style (pre 0.0.7.33): enable straight away:
+            self._protocol.enable_deflate(capabilities["deflate"])
+
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
         self.server_desktop_size = capabilities.get("desktop_size")
         if self.server_desktop_size:
@@ -934,6 +939,9 @@ class XpraClient(gobject.GObject):
         if clipboard_server_support:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
+
+    def send_deflate_level(self):
+        self.send(["set_deflate", self.compression_level])
 
     def send_clipboard_enabled_status(self, *args):
         self.send(["set-clipboard-enabled", self.clipboard_enabled])
@@ -1051,6 +1059,11 @@ class XpraClient(gobject.GObject):
             log.debug("last window gone, clearing key repeat")
             self.clear_repeat()
 
+    def _process_set_deflate(self, packet):
+        #this tell us the server has set its compressor
+        #(the decompressor has been enabled - see protocol)
+        pass
+
     def _process_connection_lost(self, packet):
         log.error("Connection lost")
         self.quit()
@@ -1076,6 +1089,7 @@ class XpraClient(gobject.GObject):
         "window-metadata": _process_window_metadata,
         "configure-override-redirect": _process_configure_override_redirect,
         "lost-window": _process_lost_window,
+        "set_deflate": _process_set_deflate,
         # "clipboard-*" packets are handled by a special case below.
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,

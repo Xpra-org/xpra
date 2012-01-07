@@ -127,18 +127,26 @@ class Protocol(object):
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            #log("writing %s", dump_packet(packet), type="raw.write")
             data = bencode(packet)
             l = len(data)
             self._write_lock.acquire()
             try:
-                if self._send_size:
-                    if l<=1024:
-                        #send size and data together (low copy overhead):
-                        self._queue_write("PS%014d%s" % (l, data), True)
-                        return
-                    self._queue_write("PS%014d" % l)
-                self._queue_write(data, True)
+                try:
+                    if self._send_size:
+                        if l<=1024:
+                            #send size and data together (low copy overhead):
+                            self._queue_write("PS%014d%s" % (l, data), True)
+                            return
+                        self._queue_write("PS%014d" % l)
+                    self._queue_write(data, True)
+                finally:
+                    if packet[0]=="set_deflate":
+                        level = packet[1]
+                        log("set_deflate packet, changing compressor to level=%s", level)
+                        if level==0:
+                            self._compressor = None
+                        else:
+                            self._compressor = zlib.compressobj(level)
             finally:
                 self._write_lock.release()
 
@@ -251,6 +259,13 @@ class Protocol(object):
                     packet, l = result
                     gobject.idle_add(self._process_packet, packet)
                     unprocessed = self._read_buffer[l:]
+                    if packet[0]=="set_deflate":
+                        level = packet[1]
+                        log("set_deflate packet, changing decompressor to level=%s", level)
+                        if level==0:
+                            self._decompressor = None
+                        else:
+                            self._decompressor = zlib.decompressobj()
                     if not had_deflate and (self._decompressor is not None):
                         # deflate was just enabled: so decompress the unprocessed
                         # data
@@ -273,6 +288,7 @@ class Protocol(object):
                      exc_info=True)
             # Ignore and continue, maybe things will work out anyway
         return False
+
 
     def enable_deflate(self, level):
         assert self._compressor is None and self._decompressor is None

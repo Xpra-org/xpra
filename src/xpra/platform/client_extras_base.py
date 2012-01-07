@@ -653,6 +653,29 @@ class ClientExtrasBase(object):
             self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
             self.updated_menus()
 
+    def make_compressionmenu(self):
+        self.compression = self.menuitem("Compression", "compressed.png", "Network packet compression", None)
+        self.compression_submenu = gtk.Menu()
+        self.compression.set_submenu(self.compression_submenu)
+        self.popup_menu_workaround(self.compression_submenu)
+        compression_options = {0 : "None"}
+        def set_compression(item):
+            item = ensure_item_selected(self.compression_submenu, item)
+            c = int(item.get_label().replace("None", "0"))
+            if c!=self.client.compression_level:
+                log.debug("setting compression level to %s", c)
+                self.client.compression_level = c
+                self.client.send_deflate_level()
+        for i in range(0, 10):
+            c = gtk.CheckMenuItem(str(compression_options.get(i, i)))
+            c.set_draw_as_radio(True)
+            c.set_active(i==self.client.compression_level)
+            c.connect('activate', set_compression)
+            self.compression_submenu.append(c)
+        self.compression_submenu.show_all()
+        return self.compression
+
+
     def updated_menus(self):
         """ subclasses may override this method - see darwin """
         pass
@@ -701,6 +724,7 @@ class ClientExtrasBase(object):
         else:
             self.jpeg_quality = None
             self.jpeg_submenu = None
+        menu.append(self.make_compressionmenu())
         if not self.client.readonly:
             menu.append(self.make_layoutsmenuitem())
         menu.append(self.make_refreshmenuitem())

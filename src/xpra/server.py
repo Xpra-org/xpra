@@ -1253,7 +1253,8 @@ class XpraServer(gobject.GObject):
         self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.send_rowstride, self.mmap, self.mmap_size)
         # do screen size calculations/modifications:
         self.send_hello(capabilities)
-        if "deflate" in capabilities:
+        if "deflate" in capabilities and not capabilities.get("dynamic_compression", False):
+            #"deflate" is the old-style (pre 0.0.7.33): enable straight away:
             self._protocol.enable_deflate(capabilities["deflate"])
         self._protocol._send_size = capabilities.get("packet_size", False)
         if "jpeg" in capabilities:
@@ -1320,6 +1321,7 @@ class XpraServer(gobject.GObject):
         capabilities["platform"] = sys.platform
         capabilities["raw_keycodes_feature"] = True
         capabilities["focus_modifiers_feature"] = True
+        capabilities["dynamic_compression"] = True
         capabilities["packet_size"] = True
         capabilities["cursors"] = True
         capabilities["bell"] = True
@@ -1369,6 +1371,13 @@ class XpraServer(gobject.GObject):
         self._send(["ping_echo", echotime, l1, l2, l3, cl])
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.send_ping)
+
+    def _process_set_deflate(self, proto, packet):
+        level = packet[1]
+        log.debug("client has requested compression level=%s", level)
+        #at this point the client is sending compressed, we have enabled the decompressor
+        #we echo it back to set the server's compressor and the client will set its decompressor
+        self._send(["set_deflate", level])
 
     def disconnect(self, reason):
         if self._protocol:
@@ -1690,6 +1699,7 @@ class XpraServer(gobject.GObject):
         "encoding": _process_encoding,
         "ping": _process_ping,
         "ping_echo": _process_ping_echo,
+        "set_deflate": _process_set_deflate,
         "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
