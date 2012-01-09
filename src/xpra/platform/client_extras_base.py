@@ -316,31 +316,36 @@ class ClientExtrasBase(object):
             self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
             pixels = "n/a"
             if len(self.client.pixel_counter)>0:
-                total = 0
-                total_n = 0
                 now = time.time()
-                mint = now-20       #ignore records older than 20 seconds
-                startt = now        #when we actually start counting from
-                for (t, count) in self.client.pixel_counter:
-                    if t>=mint:
-                        total += count
-                        total_n += 1
-                        startt = min(t, startt)
-                if total>0 and startt!=now:
-                    def pixelstr(v):
-                        if v>1000*1000*1000:
-                            return "%sG" % (long(v/1000/1000/100)/10.0)
-                        elif v>1000*1000:
-                            return "%sM" % (long(v/1000/100)/10.0)
-                        elif v>1000:
-                            return "%sK" % (long(v/100)/10.0)
-                        else:
-                            return str(v)
-                    t, last = self.client.pixel_counter[-1]
-                    if t<now-5:
-                        last = 0
-                    avg = long(total/(now-startt)/total_n)
-                    pixels = "%s  (%s)" % (pixelstr(last), pixelstr(avg))
+                def pixelstr(v):
+                    if v>1000*1000*1000:
+                        return "%sG" % (long(v/1000/1000/100)/10.0)
+                    elif v>1000*1000:
+                        return "%sM" % (long(v/1000/100)/10.0)
+                    elif v>1000:
+                        return "%sK" % (long(v/100)/10.0)
+                    else:
+                        return str(v)
+                def average(seconds):
+                    total = 0
+                    total_n = 0
+                    mint = now-seconds      #ignore records older than N seconds
+                    startt = now            #when we actually start counting from
+                    for (t, count) in self.client.pixel_counter:
+                        if t>=mint:
+                            total += count
+                            total_n += 1
+                            startt = min(t, startt)
+                    if total==0 or startt==now:
+                        return  0
+                    return long(total/(now-startt)/total_n)
+                def pixavg(seconds):
+                    avg = average(seconds)
+                    return  pixelstr(avg)
+                p20 = pixavg(20)
+                if p20!="n/a":
+                    p1 = pixavg(1)
+                    pixels = "%s  (%s)" % (p1, p20)
 
             self.pixels_per_second_label.set_text(pixels)
             return True
