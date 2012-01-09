@@ -79,7 +79,6 @@ class Protocol(object):
         self._send_size = False
         self._closed = False
         self._read_buffer = ""
-        self._current_packet_size = -1
         self._compressor = None
         self._decompressor = None
         self._write_thread = Thread(target=self._write_thread_loop)
@@ -206,6 +205,7 @@ class Protocol(object):
 
     def _read_parse_thread_loop(self):
         try:
+            current_packet_size = -1
             while not self._closed:
                 buf = self._read_queue.get()
                 if not buf:
@@ -217,16 +217,16 @@ class Protocol(object):
                 while not self._closed:
                     had_deflate = (self._decompressor is not None)
                     try:
-                        if self._current_packet_size<0 and self._read_buffer.startswith("P"):
+                        if current_packet_size<0 and self._read_buffer.startswith("P"):
                             #spotted packet size header
                             if len(self._read_buffer)<16:
                                 log.debug("incomplete size header: %s", self._read_buffer)
                                 break   #incomplete
-                            self._current_packet_size = int(self._read_buffer[2:16])
+                            current_packet_size = int(self._read_buffer[2:16])
                             self._read_buffer = self._read_buffer[16:]
-                        
-                        if self._current_packet_size>0 and len(self._read_buffer)<self._current_packet_size:
-                            log.debug("incomplete packet: only %s of %s bytes received", len(self._read_buffer), self._current_packet_size)
+
+                        if current_packet_size>0 and len(self._read_buffer)<current_packet_size:
+                            log.debug("incomplete packet: only %s of %s bytes received", len(self._read_buffer), current_packet_size)
                             break
 
                         result = bdecode(self._read_buffer)
@@ -234,12 +234,14 @@ class Protocol(object):
                         #could be a partial packet (without size header)
                         #or could be just a broken packet...
                         def packet_error(buf):
+                            if self._closed:
+                                return
                             # Peek at the data we got, in case we can make sense of it:
                             self._process_packet([Protocol.GIBBERISH, buf])
                             # Then hang up:
-                            return self._call_connection_lost("gibberish received")
+                            return self._connection_lost("gibberish received: %s" % repr_ellipsized(buf))
 
-                        if self._current_packet_size>0:
+                        if current_packet_size>0:
                             #we had the size, so the packet should have been valid!
                             packet_error(self._read_buffer)
                             return
@@ -253,8 +255,8 @@ class Protocol(object):
                             gobject.timeout_add_seconds(1000, check_error_state, self._read_buffer)
                             break
 
-                    self._current_packet_size = -1
-                    if result is None:
+                    current_packet_size = -1
+                    if result is None or self._closed:
                         break
                     packet, l = result
                     gobject.idle_add(self._process_packet, packet)
