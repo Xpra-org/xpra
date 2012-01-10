@@ -301,20 +301,11 @@ class ClientExtras(ClientExtrasBase):
             if len(parts)>1:
                 nohex = [x for x in parts[1:] if not x.startswith("(")]
                 add.append("add %s = %s" % (parts[0], " ".join(set(nohex))))
-                #hack: for the following line:
-                # mod5        Mode_switch (0x8),  ISO_Level3_Shift (0x7c)
-                #we actually want to record: "ISO_Level3_Shift"
-                #so we always grab the second entry, if there is one
-                #(makes no difference for Shift/Control, etc)
-                #meanings[nohex[min(len(nohex)-1, 1)]] = parts[0]
-                #on the other hand, this relies on the order of the dict being preserved:
                 for x in nohex:
+                    #ie: meanings['Shift_L']=shift
                     meanings[x] = parts[0]
-        log("get_keymap_modifiers parsed to clear=%s, add=%s, meanings=%s", clear, add, meanings)
-        return  clear, add, meanings
-
-    def supports_raw_keycodes(self):
-        return True
+        log.debug("get_keymap_modifiers parsed: clear=%s, add=%s, meanings=%s", clear, add, meanings)
+        return  clear, add, meanings, [], []
 
     def get_keymap_spec(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
@@ -324,7 +315,7 @@ class ClientExtras(ClientExtrasBase):
         if xkbmap_query is None and xkbmap_print is not None:
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-        xmodmap_data = self.exec_get_keyboard_data(["xmodmap", "-pke"]);
+        xmodmap_data = self.exec_get_keyboard_data(["xmodmap", "-pke"])
         return xkbmap_print, xkbmap_query, xmodmap_data
 
     def get_keyboard_repeat(self):

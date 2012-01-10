@@ -9,7 +9,7 @@ import subprocess
 import time
 
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import set_xmodmap                 #@UnresolvedImport
+from wimpiggy.lowlevel import set_xmodmap, parse_keycode, parse_keysym, parse_modifier, get_minmax_keycodes         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -56,33 +56,35 @@ def exec_xmodmap(xmodmap_data):
     if not xmodmap_data or len(xmodmap_data)==0:
         return
     start = time.time()
-    if exec_keymap_command(["xmodmap", "-display", display, "-"], "\n".join(xmodmap_data))==0:
+    stdin = xmodmap_data
+    if type(xmodmap_data)==list:
+        stdin = "\n".join(xmodmap_data)
+    if exec_keymap_command(["xmodmap", "-display", display, "-"], stdin)==0:
         return
     if time.time()-start>5:
         log.error("xmodmap timeout.. the keymap has not been applied")
         return
     log.error("re-running %s xmodmap lines one at a time to workaround the error..", len(xmodmap_data))
-    if type(xmodmap_data)!=str:
-        for mod in xmodmap_data:
-            exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
+    for mod in stdin.splitlines():
+        exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
 
-def c_xmodmap(data):
+def apply_xmodmap(instructions):
     import gtk.gdk
     try:
-        unset = trap.call_synced(set_xmodmap, gtk.gdk.get_default_root_window(), data)
+        unset = trap.call_synced(set_xmodmap, gtk.gdk.get_default_root_window(), instructions)
     except:
-        log.error("c_xmodmap", exc_info=True)
-        unset = data
+        log.error("apply_xmodmap", exc_info=True)
+        unset = instructions
     if unset is None:
         #None means an X11 error occurred, re-do all:
-        unset = data
-    if len(unset)>0:
-        exec_xmodmap(unset)
+        unset = instructions
+    return unset
 
 
 def do_set_keymap(xkbmap_layout, xkbmap_variant,
                   xkbmap_print, xkbmap_query):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
+        xkbmap_variant is the layout variant (may not be set)  
         xkbmap_print is the output of "setxkbmap -print" on the client
         xkbmap_query is the output of "setxkbmap -query" on the client
         Use those to try to setup the correct keyboard map for the client
@@ -146,21 +148,215 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         exec_keymap_command(["xkbcomp", "-", display], xkbmap_print)
 
 
-def do_set_xmodmap(xkbmap_mod_clear, xmodmap_data, xkbmap_mod_add):
-    """ xkbmap_mod_clear is list of modifier clear instructions
-            (ie: "clear shift") 
-        xmodmap_data is the output of "xmodmap -pke" on the client
-        xkbmap_mod_add is a list of modifier add instructions
-            (ie: "add shift = Shift_L Shift_R")
+def parse_xmodmap(xmodmap_data):
+    if type(xmodmap_data)==str and xmodmap_data.find("\n"):
+        xmodmap_data = xmodmap_data.splitlines()
+    import pygtk
+    pygtk.require("2.0")
+    import gtk
+    root = gtk.gdk.get_default_root_window()
+    instructions = []
+    for line in xmodmap_data:
+        log("parsing: %s", line)
+        if not line:
+            continue
+        try:
+            parts = line.split()
+            if parts[0]=="keycode" and len(parts)>2 and parts[2]=="=":
+                keycode = parse_keycode(root, parts[1])
+                if len(parts)==3:
+                    #ie: 'keycode 123 ='
+                    continue
+                if keycode==0 and len(parts)==4:
+                    #keycode=0 means "any", ie: 'keycode any = Shift_L'
+                    instructions.append(("keycode", 0, parts[2:3]))
+                    continue
+                elif keycode>0:
+                    #ie: keycode   9 = Escape NoSymbol Escape
+                    keysyms = parts[3:]
+                    instructions.append(("keycode", keycode, keysyms))
+                    continue
+            elif parts[0]=="clear" and len(parts)>=2:
+                #ie: 'clear Lock' 
+                modifier = parse_modifier(parts[1])
+                if modifier<0:
+                    log.error("unknown modifier: %s, ignoring '%s'", parts[1], line)
+                else:
+                    instructions.append(("clear", modifier))
+                continue
+            elif parts[0]=="add" and len(parts)>=3:
+                #ie: 'add Control = Control_L Control_R'
+                modifier = parse_modifier(parts[1])
+                keysyms = parts[3:]
+                if modifier<0:
+                    log.error("unknown modifier: %s, ignoring '%s'", parts[1], line)
+                elif len(keysyms)==0:
+                    log.error("no keysyms! ignoring '%s'", line)
+                else:
+                    instructions.append(("add", modifier, keysyms))
+                continue
+            log.error("parse_xmodmap instruction not recognized: %s (%s parts: %s)", line, len(parts), parts)
+        except Exception, e:
+            log.error("cannot parse %s: %s", line, e)
+    return instructions
+
+
+
+def set_xmodmap_from_text(data):
+    instructions = parse_xmodmap(data)
+    unset = apply_xmodmap(instructions)
+    if len(unset)>0:
+        #re-do everything... ouch!
+        exec_xmodmap(data)
+
+
+
+def set_all_keycodes(xkbmap_keycodes, xkbmap_initial_keycodes):
     """
-    # note: our code does not handle add/clear so we use exec_xmodmap for those
-    if not xmodmap_data and not xkbmap_mod_add and not xkbmap_mod_clear:
-        #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
-        from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR
-        c_xmodmap(XMODMAP_MOD_CLEAR)
-        c_xmodmap(XMODMAP_MOD_DEFAULTS)
-        c_xmodmap(XMODMAP_MOD_ADD)
-    else:
-        c_xmodmap(xkbmap_mod_clear)
-        c_xmodmap(xmodmap_data)
-        c_xmodmap(xkbmap_mod_add)
+        Both parameters should contain a list of:
+        (keyval, keyname, keycode, group, level)
+        The first one contains the desired keymap,
+        the second one the initial X11 server keycodes.
+        We try to preserve the initial keycodes
+        Returns a translation map for keycodes.
+    """
+    # The preserve_keycodes is a dict containing {keysym:keycode}
+    # for keys we want to preserve the keycode for.
+    # By default, all keys which have a name and group=level=0
+    preserve_keycodes = {}
+    for (_, keyname, keycode, group, level) in xkbmap_initial_keycodes:
+        if group==0 and level==0 and keyname:
+            preserve_keycodes[keyname] = keycode
+    # convert the keycode entries into a dict where the keycode is the key:
+    # {keycode : (keyval, name, keycode, group, level)}
+    # since the instructions are generated per keycode in set_keycodes()
+    keycodes = {}
+    log.info("set_all_keycodes_preserve(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
+    for entry in xkbmap_keycodes:
+        _, _, keycode, _, _ = entry
+        entries = keycodes.setdefault(keycode, [])
+        entries.append(entry)
+    return set_keycodes(keycodes, preserve_keycodes)
+
+def set_keycodes(keycodes, preserve_keycodes={}):
+    """
+        The keycodes given may not match the range that the server supports,
+        so we return a translation map for those keycodes that have been
+        remapped.
+        The preserve_keycodes is a dict containing {keysym:keycode}
+        for keys we want to preserve the keycode for.
+    """
+    kcmin,kcmax = get_minmax_keycodes()
+    free_keycodes = []
+    for i in range(kcmin, kcmax):
+        if i not in keycodes.keys() and i not in preserve_keycodes.values():
+            free_keycodes.append(i)
+    log.debug("set_keycodes(..) min=%s, max=%s, free_keycodes=%s", kcmin, kcmax, free_keycodes)
+
+    used = []
+    trans = {}
+    instructions = []
+    for keycode, entries in keycodes.items():
+        server_keycode = keycode
+        if preserve_keycodes:
+            for entry in entries:
+                (_, name, _, group, level) = entry
+                if group==0 and level==0 and name in preserve_keycodes:
+                    server_keycode = preserve_keycodes.get(name)
+                    if server_keycode!=keycode:
+                        log.info("set_keycodes key %s(%s) mapped to keycode=%s", keycode, entries, server_keycode)
+        if server_keycode==0 or server_keycode in used or server_keycode<kcmin or server_keycode>kcmax:
+            if len(free_keycodes)>0:
+                server_keycode = free_keycodes[0]
+                free_keycodes = free_keycodes[1:]
+                log.info("set_keycodes key %s(%s) out of range or already in use, using free keycode=%s", keycode, entries, server_keycode)
+            else:
+                log.error("set_keycodes: no free keycodes!, cannot translate %s: %s", keycode, entries)
+                continue
+        if server_keycode!=keycode and keycode!=0:
+            trans[keycode] = server_keycode
+        used.append(server_keycode)
+        keysyms = []
+        #sort them by group then level
+        def sort_key(entry):
+            (_, _, _, group, level) = entry
+            return group*10+level
+        for (_, name, _keycode, _, _) in sorted(entries, key=sort_key):
+            assert _keycode == keycode
+            keysym = parse_keysym(name)
+            if keysym is None:
+                log.error("cannot find keysym for %s", name)
+            else:
+                keysyms.append(keysym)
+        if len(keysyms)>0:
+            instructions.append(("keycode", server_keycode, keysyms))
+    log.debug("instructions=%s", instructions)
+    unset = apply_xmodmap(instructions)
+    log.debug("unset=%s", unset)
+    log.debug("translated keycodes=%s", trans)
+    log.debug("%s free keycodes=%s", len(free_keycodes), free_keycodes)
+    return  trans
+
+
+def clear_modifiers(modifiers):
+    set_xmodmap_from_text([("clear %s" % x) for x in modifiers])
+
+def set_modifiers(xkbmap_mod_meanings):
+    """
+        xkbmap_mod_meanings maps a keyname to a modifier
+    """
+    #first generate a {modifier : [keynames]} dict:
+    modifiers = {}
+    for keyname, modifier in xkbmap_mod_meanings.items():
+        keynames = modifiers.setdefault(modifier, [])
+        keynames.append(keyname)
+    log.debug("set_modifiers(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
+    set_modifiers_from_dict(modifiers)
+
+def set_modifiers_from_dict(modifiers):
+    instructions = []
+    for modifier, keynames in modifiers.items():
+        mod = parse_modifier(modifier)
+        if mod>=0:
+            instructions.append(("add", mod, keynames))
+        else:
+            log.error("set_modifiers_from_dict: unknown modifier %s", modifier)
+    log.debug("set_modifiers_from_dict: %s", instructions)
+    unset = apply_xmodmap(instructions)
+    log.debug("unset=%s", unset)
+
+def set_modifiers_from_keycodes(xkbmap_keycodes):
+    """
+        Some platforms can't tell us about modifier mappings
+        So we try to find matches from the defaults below:
+    """
+    pref = {
+            "Shift_L"   : "shift",
+            "Shift_R"   : "shift",
+            "Caps_Lock" : "lock",
+            "Control_L" : "control",
+            "Control_R" : "control",
+            "Alt_L"     : "mod1",
+            "Alt_R"     : "mod1",
+            "Num_Lock"  : "mod2",
+            "Meta_L"    : "mod3",
+            "Meta_R"    : "mod3",
+            "Super_L"   : "mod4",
+            "Super_R"   : "mod4",
+            "Hyper_L"   : "mod4",
+            "Hyper_R"   : "mod4",
+            "ISO_Level3_Shift"  : "mod5",
+            "Mode_switch"       : "mod5",
+            }
+    #{keycode : (keyval, name, keycode, group, level)}
+    matches = {}
+    log.info("set_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
+    for entry in xkbmap_keycodes:
+        _, keyname, _, _, _ = entry
+        modifier = pref.get(keyname)
+        if modifier:
+            keynames = matches.setdefault(modifier, [])
+            if keyname not in keynames:
+                keynames.append(keyname)
+    log.debug("set_modifiers_from_keycodes(..) found matches: %s", matches)
+    set_modifiers_from_dict(matches)

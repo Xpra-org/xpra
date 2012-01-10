@@ -40,6 +40,7 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,   #@UnresolvedImport
                                xtest_fake_button,           #@UnresolvedImport
                                set_key_repeat_rate,         #@UnresolvedImport
                                ungrab_all_keys,             #@UnresolvedImport
+                               unpress_all_keys,            #@UnresolvedImport
                                is_override_redirect,        #@UnresolvedImport
                                is_mapped,                   #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
@@ -58,9 +59,9 @@ log = Logger()
 
 import xpra
 from xpra.protocol import Protocol, SocketConnection, dump_packet
-from xpra.keys import mask_to_names, get_modifiers_ignored, \
-    DEFAULT_KEYNAME_FOR_MOD, DEFAULT_MODIFIER_NAMES, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.xkbhelper import do_set_xmodmap, do_set_keymap
+from xpra.keys import mask_to_names, get_gtk_keymap, \
+    DEFAULT_KEYNAME_FOR_MOD, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_xmodmap_from_text, set_modifiers, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
@@ -607,9 +608,10 @@ class XpraServer(gobject.GObject):
         self.xkbmap_variant = None
         self.xkbmap_print = None
         self.xkbmap_query = None
-        self.xkbmap_mod_meanings = DEFAULT_MODIFIER_MEANINGS
-        self.xkbmap_mod_ignore = DEFAULT_MODIFIER_NUISANCE
+        self.xkbmap_mod_meanings = {}
+        self.xkbmap_mod_managed = []
         self.xmodmap_data = None
+        self.keycode_translation = {}
         self.keymap_changing = False
         self.keyboard_sync = True
         self.key_repeat_delay = -1
@@ -630,11 +632,12 @@ class XpraServer(gobject.GObject):
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
         ### Set up keymap:
+        self.xkbmap_initial = get_gtk_keymap()
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
 
-        self._keyname_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
+        self._keynames_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
         #clear all modifiers
         self._make_keymask_match([])
 
@@ -687,40 +690,69 @@ class XpraServer(gobject.GObject):
         self.server_latency = -1
 
     def set_keymap(self):
-        try:
-            #prevent _keys_changed() from firing:
-            #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
-            self.keymap_changing = True
+        def clean_state():
             try:
                 ungrab_all_keys(gtk.gdk.get_default_root_window())
             except:
                 log.error("error ungrabbing keys", exc_info=True)
             try:
+                unpress_all_keys(gtk.gdk.get_default_root_window())
+            except:
+                log.error("error unpressing keys", exc_info=True)
+        try:
+            #prevent _keys_changed() from firing:
+            #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
+            self.keymap_changing = True
+            clean_state()
+            try:
                 do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
                               self.xkbmap_print, self.xkbmap_query)
             except:
                 log.error("error setting new keymap", exc_info=True)
-            self._keyname_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
+            self._keynames_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
             try:
-                clear,data,add = self.xkbmap_mod_clear, self.xmodmap_data, self.xkbmap_mod_add
-                if not clear and not data and not add:
-                    #clients before v0.0.7.32 didn't send defaults, so duplicate them here for now:
-                    from xpra.keys import XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD
-                    clear,data,add = XMODMAP_MOD_CLEAR, XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD
-                do_set_xmodmap(clear, data, add)
+                #first clear all existing modifiers:
+                clean_state()
+                modifiers = ALL_X11_MODIFIERS.keys()  #just clear all of them (set or not)
+                clear_modifiers(modifiers)
+
+                #now set all the keycodes:
+                clean_state()
+                if len(self.xkbmap_keycodes)>0:
+                    #version 0.0.7.33 and above:
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
+                else:
+                    self.keycode_translation = {}
+                    set_xmodmap_from_text(self.xmodmap_data)
+
+                #now set the new modifier mappings:
+                clean_state()
+                log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes))
                 if self.xkbmap_mod_meanings:
-                    self._keyname_for_mod = {}
+                    #version 0.0.7.33 and above with Unix-like OS:
+                    set_modifiers(self.xkbmap_mod_meanings)
+                elif self.xkbmap_keycodes:
+                    #try to guess...
+                    set_modifiers_from_keycodes(self.xkbmap_keycodes)
+                else:
+                    set_xmodmap_from_text(self.xkbmap_mod_add)
+
+                clean_state()
+                #build keynames_for_mod
+                if self.xkbmap_mod_meanings:
+                    self._keynames_for_mod = {}
+                    def add_keyname(mod, keyname):
+                        l = self._keynames_for_mod.setdefault(mod, [])
+                        l.append(keyname)
                     for k,m in self.xkbmap_mod_meanings.items():
-                        if m not in self._keyname_for_mod:
-                            self._keyname_for_mod[m] = k
-                    for m,k in DEFAULT_KEYNAME_FOR_MOD.items():
-                        if m not in self._keyname_for_mod:
-                            self._keyname_for_mod[m] = k
-                    log.info("keyname_for_mod=%s" % self._keyname_for_mod)
+                        add_keyname(m, k)
+                    for m,kl in DEFAULT_KEYNAME_FOR_MOD.items():
+                        if m not in self._keynames_for_mod:
+                            for k in kl:
+                                add_keyname(m, k)
+                    log.debug("keyname_for_mod=%s", self._keynames_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
-            self.xkbmap_mod_ignore = get_modifiers_ignored(self.xkbmap_mod_meanings)
-            log.info("will ignore these modifiers: %s", self.xkbmap_mod_ignore)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
@@ -958,32 +990,73 @@ class XpraServer(gobject.GObject):
             return  kc
         return entries[0][0]    #nasty fallback!
 
-    def _make_keymask_match(self, modifier_list, ignored_modifier_keycode=None):
+    def _make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+        """
+            Given a list of modifiers that should be set, try to press the right keys
+            to make the server's modifier list match it.
+            Things to take into consideration:
+            * xkbmap_mod_managed is a list of modifiers which are "server-managed":
+                these never show up in the client's modifier list as it is not aware of them,
+                so we just always leave them as they are and rely on some client key event to toggle them.
+                ie: "num" on win32, which is toggled by the "Num_Lock" key presses.
+            * when called from '_handle_key', we ignore the modifier key which may be pressed
+                or released as it should be set by that key press event.
+            * when called from mouse position/click events we ignore 'xkbmap_mod_pointermissing'
+                which is set by the client to indicate modifiers which are missing from mouse events.
+                ie: on win32, "lock" is missing.
+            * if the modifier is a "nuisance" one ("lock", "num", "scroll") then we must
+                simulate a full keypress (down then up).
+            * some modifiers can be set by multiple keys ("shift" by both "Shift_L" and "Shift_R" for example)
+                so we try to find the matching modifier in the currently pressed keys (keys_pressed)
+                to make sure we unpress the right one.
+            
+        """
         #FIXME: we should probably cache the keycode
         # and clear the cache in _keys_changed
         def get_current_mask():
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            modifier_names = DEFAULT_MODIFIER_NAMES[:]
-            if self.xkbmap_mod_meanings:
-                modifier_names = set(modifier_names + self.xkbmap_mod_meanings.values())
-            return  mask_to_names(current_mask, self._modifier_map, modifier_names)
+            modifiers = mask_to_names(current_mask, self._modifier_map)
+            log.debug("get_modifier_mask()=%s", modifiers)
+            return modifiers
         current = set(get_current_mask())
         wanted = set(modifier_list)
-        #log.debug("make_keymask_match(%s) current mask: %s, wanted: %s", modifier_list, current, wanted)
+        log.debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
         display = gtk.gdk.display_get_default()
 
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
-                keyname = self._keyname_for_mod.get(modifier)
-                if not keyname:
+                if modifier in self.xkbmap_mod_managed:
+                    log.debug("modifier is server managed: %s", modifier)
+                    continue
+                keynames = self._keynames_for_mod.get(modifier)
+                if not keynames:
                     log.error("unknown modifier: %s", modifier)
                     continue
-                keycodes = self._keycodes(keyname)
+                if ignored_modifier_keynames:
+                    for imk in ignored_modifier_keynames:
+                        if imk in keynames:
+                            log.debug("modifier %s ignored (ignored keyname=%s)", modifier, imk)
+                            continue
+                keycodes = []
+                #log.info("keynames(%s)=%s", modifier, keynames)
+                for keyname in keynames:
+                    if keyname in self.keys_pressed.values():
+                        #found the key which was pressed to set this modifier
+                        for keycode, name in self.keys_pressed.items():
+                            if name==keyname:
+                                log.debug("found the key pressed for %s: %s", modifier, name)
+                                keycodes.insert(0, keycode)
+                    kcs = self._keycodes(keyname)
+                    for kc in kcs:
+                        if kc not in keycodes:
+                            keycodes.append(kc)
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
+                    log.debug("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
                 #nuisance keys (lock, num, scroll) are toggled by a
                 #full key press + key release (so act accordingly in the loop below)
-                nuisance = modifier in self.xkbmap_mod_ignore
+                nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
+                log.debug("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 for keycode in keycodes:
                     if nuisance:
                         xtest_fake_key(display, keycode, True)
@@ -994,20 +1067,32 @@ class XpraServer(gobject.GObject):
                     #log.debug("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
                     if (modifier in new_mask)==press:
                         break
+                    elif not nuisance:
+                        log.debug("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
+                        xtest_fake_key(display, keycode, not press)
+                        new_mask = get_current_mask()
+                        #maybe doing the full keypress (down+up or u+down) worked:
+                        if (modifier in new_mask)==press:
+                            break
+
         change_mask(current.difference(wanted), False, "remove")
         change_mask(wanted.difference(current), True, "add")
 
     def _clear_keys_pressed(self):
-        if len(self.keys_pressed)>0:
-            log.debug("clearing keys pressed: %s", self.keys_pressed)
-            for keycode in self.keys_pressed.keys():
-                xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
-                #cancel any repeat timers:
-            self.keys_pressed = {}
+        #make sure the timers don't fire and interfere:
         if len(self.keys_repeat_timers)>0:
             for timer in self.keys_repeat_timers.values():
                 gobject.source_remove(timer)
             self.keys_repeat_timers = {}
+        #clear all the keys we know about:
+        if len(self.keys_pressed)>0:
+            log.debug("clearing keys pressed: %s", self.keys_pressed)
+            for keycode in self.keys_pressed.keys():
+                xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+            self.keys_pressed = {}
+        #this will take care of any remaining ones we are not aware of:
+        #(there should not be any - but we want to be certain)
+        unpress_all_keys(gtk.gdk.display_get_default())
 
     def _focus(self, id, modifiers):
         log.debug("_focus(%s,%s) has_focus=%s", id, modifiers, self._has_focus)
@@ -1025,7 +1110,7 @@ class XpraServer(gobject.GObject):
                     return False
                 gobject.idle_add(give_focus)
                 if modifiers is not None:
-                    self._make_keymask_match(modifiers)
+                    self._make_keymask_match(modifiers, self.xkbmap_mod_pointermissing)
             self._has_focus = id
 
     def _move_pointer(self, pos):
@@ -1279,7 +1364,10 @@ class XpraServer(gobject.GObject):
         self.xmodmap_data = capabilities.get("xmodmap_data")
         self.xkbmap_mod_clear = capabilities.get("xkbmap_mod_clear")
         self.xkbmap_mod_add = capabilities.get("xkbmap_mod_add")
-        self.xkbmap_mod_meanings = capabilities.get("xkbmap_mod_meanings", DEFAULT_MODIFIER_MEANINGS)
+        self.xkbmap_mod_meanings = capabilities.get("xkbmap_mod_meanings")
+        self.xkbmap_mod_managed = capabilities.get("xkbmap_mod_managed", [])
+        self.xkbmap_mod_pointermissing = capabilities.get("xkbmap_mod_pointermissing")
+        self.xkbmap_keycodes = capabilities.get("xkbmap_keycodes", [])
 
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
@@ -1320,6 +1408,7 @@ class XpraServer(gobject.GObject):
         capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["platform"] = sys.platform
         capabilities["raw_keycodes_feature"] = True
+        capabilities["raw_keycodes_full"] = True
         capabilities["focus_modifiers_feature"] = True
         capabilities["dynamic_compression"] = True
         capabilities["packet_size"] = True
@@ -1485,10 +1574,14 @@ class XpraServer(gobject.GObject):
             self.set_keymap()
 
     def _process_keymap(self, proto, packet):
-        if len(packet)==3:
-            (_, self.xkbmap_print, self.xkbmap_query) = packet
-        elif len(packet)==5:
-            (_, self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, modifiers) = packet
+        self.xkbmap_print, self.xkbmap_query = packet[1:3]
+        self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings = None, None, None
+        self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = None, None, None
+        self.xmodmap_data, modifiers = None, []
+        if len(packet)>=5:
+            self.xmodmap_data, modifiers = packet[3:5]
+        if len(packet)>=12:
+            self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = packet[5:11]
         self._make_keymask_match([])
         self.set_keymap()
         self._make_keymask_match(modifiers)
@@ -1499,28 +1592,38 @@ class XpraServer(gobject.GObject):
             (keyval may be used if supplied - generally isn't)
         """
         level = 0
-        if "shift" in modifiers:
+        shifted_key = keyname.startswith("Shift_")
+        shift_mod = ("shift" in modifiers) or shifted_key
+        caps_mod = "lock" in modifiers
+        if (shift_mod or caps_mod) and not (shift_mod and caps_mod):    #xor
             level = 1
         group = 0
         #not sure this is right...
         if "meta" in modifiers:
             group = 1
-        return self._keycode(None, keyval, keyname, group=group, level=level)
+        kc = self._keycode(None, keyval, keyname, group=group, level=level)
+        log.info("keycode_from_name(%s,%s,%s) level=%s, group=%s, keycode=%s", keyval, keyname, modifiers, level, group, kc)
+        return kc
 
     def _process_key_action(self, proto, packet):
-        if len(packet)==5:
-            (_, id, name, pressed, modifiers) = packet
-            keyval, keycode = None, 0
-        elif len(packet)==8:
-            (_, id, name, pressed, modifiers, keyval, _, keycode) = packet
-        else:
-            raise Exception("invalid number of arguments for key-action: %s" % len(packet))
+        (id, keyname, pressed, modifiers) = packet[1:5]
+        keyval, keycode = None, 0
+        if len(packet)>=8:
+            (keyval, _, client_keycode) = packet[5:8]
+            keycode = self.keycode_translation.get(client_keycode, client_keycode)
+        if len(packet)>=10:
+            #currently unused:
+            group, is_modifier = packet[8:10]
         self._focus(id, None)
-        self._make_keymask_match(modifiers, keycode)
-        self._handle_key(id, pressed, name, keyval, keycode, modifiers)
+        self._make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
+        #negative keycodes are used for key events without a real keypress/unpress
+        #for example, used by win32 to send Caps_Lock/Num_Lock changes
+        if keycode>=0:
+            self._handle_key(id, pressed, keyname, keyval, keycode, modifiers)
 
     def _handle_key(self, id, pressed, name, keyval, src_keycode, modifiers):
-        """ Does the actual press/unpress for keys
+        """
+            Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
         log.debug("handle_key(%s,%s,%s,%s,%s,%s)", id, pressed, name, keyval, src_keycode, modifiers)
@@ -1561,40 +1664,36 @@ class XpraServer(gobject.GObject):
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(id, pressed, name, keyval, src_keycode, modifiers, self.key_repeat_delay)
 
-    def _key_repeat(self, id, pressed, name, keyval, keycode, modifiers, delay_ms=0):
+    def _key_repeat(self, id, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
         """ Schedules/cancels the key repeat timeouts """
         if keycode==0:
-            key = name
+            key = keyname
         else:
             key = keycode
         timer = self.keys_repeat_timers.get(key, None)
         if timer:
-            log.debug("cancelling key repeat timer: %s for %s / %s", timer, name, keycode)
+            log.debug("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
             gobject.source_remove(timer)
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
-            log.debug("scheduling key repeat timer with delay %s for %s / %s", delay_ms, name, keycode)
+            log.debug("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             def _key_repeat_timeout(when):
                 now = time.time()
-                log.debug("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", name, keycode, now, when, delay_ms)
-                self._handle_key(id, False, name, keyval, keycode, modifiers)
+                log.debug("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
+                self._handle_key(id, False, keyname, keyval, keycode, modifiers)
             now = time.time()
             self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
-        if len(packet)==2:
-            (_, keycode) = packet
-            id, name, keyval, modifiers = None,None,None,None
-        elif len(packet)==6:
-            (_, id, name, keyval, keycode, modifiers) = packet
-        else:
-            raise Exception("unknown key-repeat packet format: %s", packet)
-        self._make_keymask_match(modifiers)
-        self._key_repeat(id, True, name, keyval, keycode, modifiers, self.key_repeat_interval)
+        (id, keyname, keyval, client_keycode, modifiers) = packet[1:6]
+        keycode = self.keycode_translation.get(client_keycode, client_keycode)
+        #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
+        self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
+        self._key_repeat(id, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
 
     def _process_button_action(self, proto, packet):
         (_, id, button, pressed, pointer, modifiers) = packet
-        self._make_keymask_match(modifiers)
+        self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
         self._desktop_manager.raise_window(self._id_to_window[id])
         self._move_pointer(pointer)
         try:
@@ -1608,7 +1707,7 @@ class XpraServer(gobject.GObject):
 
     def _process_pointer_position(self, proto, packet):
         (_, id, pointer, modifiers) = packet
-        self._make_keymask_match(modifiers)
+        self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
         if id in self._id_to_window:
             self._desktop_manager.raise_window(self._id_to_window[id])
             self._move_pointer(pointer)

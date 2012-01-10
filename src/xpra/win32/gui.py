@@ -6,10 +6,13 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
+import time
 import os.path
+from collections import deque
 
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
 from xpra.platform.default_clipboard import ClipboardProtocolHelper
+from xpra.keys import XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -20,6 +23,8 @@ class ClientExtras(ClientExtrasBase):
         self.setup_menu()
         self.setup_tray(opts.tray_icon)
         self.setup_clipboard_helper(ClipboardProtocolHelper)
+        self._last_key_events = deque(maxlen=5)
+        self._dropped_num_lock_press = False
 
     def exit(self):
         ClientExtrasBase.exit(self)
@@ -61,6 +66,54 @@ class ClientExtras(ClientExtrasBase):
             self.notify = notify
         except Exception, e:
             log.error("failed to load native win32 balloon: %s", e)
+
+    def translate_key(self, pressed, keyval, keyname, keycode, group, is_modifier, modifiers):
+        """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
+            they are reported as not pressed when the key is down, etc
+            So we set the keycode to -1 to tell the server to ignore the actual keypress
+            Having the "modifiers" set ought to be enough.
+        """
+        if self.client._raw_keycodes_full:
+            if keyval==2**24-1 and keyname=="VoidSymbol":
+                keyname = "XCaps_Lock"
+                keycode = -1
+            if keyname=="XNum_Lock":
+                keycode = -1
+        return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
+
+    def current_modifiers(self, modifiers):
+        """
+            Workaround for win32: numlock is not reported by gtk, but we can query it via pywin
+        """
+        if True:   #was caused by virtualbox?
+            try:
+                import win32api     #@UnresolvedImport
+                import win32con     #@UnresolvedImport
+                if win32api.GetKeyState(win32con.VK_NUMLOCK):
+                    if "num" not in modifiers:
+                        modifiers.append("num")
+                if win32api.GetKeyState(win32con.VK_CAPITAL):
+                    if "lock" not in modifiers:
+                        modifiers.append("lock")
+            except:
+                pass
+        return modifiers
+
+
+    def get_gtk_keymap(self):
+        return  get_gtk_keymap(add_if_missing=["Caps_Lock"])
+
+    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
+        modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)
+        #modifiers["meta"] = 1 << 3
+        return  modifiers
+
+    def get_keymap_modifiers(self):
+        """
+            ask the server to manage numlock, and lock can be missing from mouse events
+            (or maybe this is virtualbox causing it?)
+        """
+        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, {}, [], ["lock"]
 
     def get_layout_spec(self):
         layout = None

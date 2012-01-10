@@ -310,6 +310,8 @@ cdef extern from "X11/Xlib.h":
     XModifierKeymap* XInsertModifiermapEntry(XModifierKeymap* modifiermap, KeyCode keycode_entry, int modifier)
     KeySym XKeycodeToKeysym(Display* display, KeyCode keycode, int index)
     KeySym XStringToKeysym(char* string)
+    char* XKeysymToString(KeySym keysym)
+
     int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
     int XSetModifierMapping(Display* display, XModifierKeymap* modifiermap)
 
@@ -318,6 +320,7 @@ cdef extern from "X11/Xlib.h":
                  int pointer_mode, int keyboard_mode)
     int XUngrabKey(Display * display, int keycode, unsigned int modifiers,
                    Window grab_window)
+    int XQueryKeymap(Display * display, char [32] keys_return)
 
     # XKillClient
     int cXKillClient "XKillClient" (Display *, XID)
@@ -710,7 +713,7 @@ def get_modifier_map(display_source):
 
 min_keycode = -1
 max_keycode = -1
-cdef get_minmax_keycodes(Display *display):
+cdef _get_minmax_keycodes(Display *display):
     cdef int cmin_keycode, cmax_keycode
     global min_keycode, max_keycode
     if min_keycode==-1 and max_keycode==-1:
@@ -719,8 +722,13 @@ cdef get_minmax_keycodes(Display *display):
         max_keycode = cmax_keycode
     return min_keycode, max_keycode
 
+def get_minmax_keycodes():
+    cdef Display * display
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    return  _get_minmax_keycodes(display)
+
 cdef XModifierKeymap* work_keymap = NULL
-cdef XModifierKeymap*   get_keymap(Display * display, load):
+cdef XModifierKeymap* get_keymap(Display * display, load):
     global work_keymap
     if work_keymap==NULL and load:
         log("retrieving keymap")
@@ -732,9 +740,9 @@ cdef set_keymap(XModifierKeymap* new_keymap):
     log("setting new keymap")
     work_keymap = new_keymap
 
-cdef parse_keysym(symbol):
+cdef _parse_keysym(symbol):
     cdef KeySym keysym
-    if symbol=="NoSymbol":
+    if symbol in ["NoSymbol", "VoidSymbol"]:
         return  NoSymbol
     keysym = XStringToKeysym(symbol)
     if keysym==NoSymbol:
@@ -743,18 +751,21 @@ cdef parse_keysym(symbol):
         return  None
     return keysym
 
+def parse_keysym(symbol):
+    return _parse_keysym(symbol)
+
 def get_keysym_list(symbols):
     """ convert a list of key symbols into a list of KeySym values
         by calling parse_keysym on each one
     """
     keysymlist = []
     for x in symbols:
-        keysym = parse_keysym(x)
+        keysym = _parse_keysym(x)
         if keysym is not None:
             keysymlist.append(keysym)
     return keysymlist
 
-cdef parse_keycode(Display* display, keycode_str):
+cdef _parse_keycode(Display* display, keycode_str):
     if keycode_str=="any":
         #find a free one:
         keycode = 0
@@ -763,11 +774,16 @@ cdef parse_keycode(Display* display, keycode_str):
         keycode = int("0"+keycode_str, 16)
     else:
         keycode = int(keycode_str)
-    min_keycode, max_keycode = get_minmax_keycodes(display)
+    min_keycode, max_keycode = _get_minmax_keycodes(display)
     if keycode!=0 and keycode<min_keycode or keycode>max_keycode:
         log.error("keycode %s: value %s is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
         return -1
     return keycode
+
+def parse_keycode(display_source, keycode_str):
+    cdef Display * display
+    display = get_xdisplay_for(display_source)
+    return _parse_keycode(display, keycode_str)
 
 cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     cdef KeySym keysym
@@ -784,11 +800,29 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
     try:
         for i in range(0, num_codes):
-            keysyms = keycodes.get(first_keycode+i)
-            if keysyms is None and len(new_keysyms)>0:
-                #no keysyms for this keycode yet, assign one of the "new_keysyms"
-                keysyms = new_keysyms[:1]
-                new_keysyms = new_keysyms[1:]
+            keysyms_strs = keycodes.get(first_keycode+i)
+            log("set keycode %s: %s", first_keycode+i, keysyms_strs)
+            if keysyms_strs is None:
+                if len(new_keysyms)>0:
+                    #no keysyms for this keycode yet, assign one of the "new_keysyms"
+                    keysyms = new_keysyms[:1]
+                    new_keysyms = new_keysyms[1:]
+                    log("assigned keycode %s to %s", i, keysyms[0])
+                else:
+                    keysyms = []
+                    log("keycode %s is still free", i)
+            else:
+                keysyms = []
+                for ks in keysyms_strs:
+                    if type(ks) in [long, int]:
+                        k = ks
+                    else:
+                        k = parse_keysym(ks)
+                    if k is not None:
+                        keysyms.append(k)
+                    else:
+                        keysyms.append(NoSymbol)
+                        log.info("cannot find keysym: %s", k)
             for j in range(0, keysyms_per_keycode):
                 keysym = NoSymbol
                 if keysyms and j<len(keysyms):
@@ -800,7 +834,7 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
 
 cdef KeysymToKeycodes(Display *display, KeySym keysym):
     cdef int i, j
-    min_keycode, max_keycode = get_minmax_keycodes(display)
+    min_keycode, max_keycode = _get_minmax_keycodes(display)
     keycodes = []
     for i in range(min_keycode, max_keycode+1):
         for j in range(0,8):
@@ -845,7 +879,7 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
         keycodes = KeysymToKeycodes(display, keysym)
         log("add modifier: keycodes(%s)=%s", keysym, keycodes)
         if len(keycodes)==0:
-            log.error("xmodmap_exec_add: no keycodes found for keysym=%s", keysym)
+            log.error("xmodmap_exec_add: no keycodes found for keysym %s/%s", keysym_str, keysym)
             success = False
         else:
             for k in keycodes:
@@ -864,7 +898,36 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
     return success
 
 
-cdef native_xmodmap(display_source, xmodmap_data):
+cdef _get_keycodes_down(Display * display):
+    cdef char[32] keymap
+    masktable = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80]
+    down = []
+    XQueryKeymap(display, keymap)
+    for i in range(0, 256):
+        if keymap[i >> 3] & masktable[i & 7]:
+            down.append(i)
+    return down
+
+def get_keycodes_down(display_source):
+    cdef Display * display
+    cdef char* key
+    display = get_xdisplay_for(display_source)
+    keycodes = _get_keycodes_down(display)
+    keys = {}
+    for keycode in keycodes:
+        keysym = XKeycodeToKeysym(display, keycode, 0)
+        key = XKeysymToString(keysym)
+        keys[keycode] = str(key)
+    return keys
+
+def unpress_all_keys(display_source):
+    cdef Display * display
+    display = get_xdisplay_for(display_source)
+    keycodes = _get_keycodes_down(display)
+    for keycode in keycodes:
+        xtest_fake_key(display_source, keycode, False)
+
+cdef native_xmodmap(display_source, instructions):
     cdef Display * display
     cdef XModifierKeymap* keymap
     cdef int modifier
@@ -872,38 +935,40 @@ cdef native_xmodmap(display_source, xmodmap_data):
     display = get_xdisplay_for(display_source)
     unhandled = []
     map = None
-    if type(xmodmap_data)==str and xmodmap_data.find("\n"):
-        xmodmap_data = xmodmap_data.splitlines()
     keycodes = {}
     new_keysyms = []
     try:
-        for line in xmodmap_data:
-            log("parsing: %s", line)
+        for line in instructions:
+            log("processing: %s", line)
             if not line:
                 continue
-            parts = line.split()
-            if parts[0]=="keycode" and len(parts)>2 and parts[2]=="=":
-                keycode = parse_keycode(display, parts[1])
-                if keycode==0 and len(parts)==4:
-                    new_keysyms.append(parse_keysym(parts[3]))
+            cmd = line[0]
+            if cmd=="keycode":
+                #line = ("keycode", keycode, [keysyms])
+                keycode = int(line[1])
+                keysyms = line[2]
+                if keycode==0:
+                    #keycode=0 means "any", ie: 'keycode any = Shift_L'
+                    assert len(keysyms)==1
+                    new_keysyms.append(keysyms[0])
                     continue
                 elif keycode>0:
-                    keysyms = get_keysym_list(parts[3:])
                     keycodes[keycode] = keysyms
                     continue
-            elif parts[0]=="clear" and len(parts)>=2:
-                modifier = parse_modifier(parts[1])
+            elif cmd=="clear":
+                #ie: ("clear", "Lock")
+                modifier = line[1]
                 if modifier>=0:
                     xmodmap_clearmodifier(display, modifier)
                     continue
-            elif parts[0]=="add" and len(parts)>=3:
-                if keymap==NULL:
-                    keymap = XGetModifierMapping(display)
-                modifier = parse_modifier(parts[1])
+            elif cmd=="add":
+                #ie: ("add", "Control", ["Control_L", "Control_R"])
+                modifier = line[1]
+                keysyms = line[2]
                 if modifier>=0:
-                    if xmodmap_addmodifier(display, modifier, parts[3:]):
+                    if xmodmap_addmodifier(display, modifier, keysyms):
                         continue
-            log.info("set_xmodmap did not handle: %s", line)
+            log.error("set_xmodmap could not handle instruction: %s", line)
             unhandled.append(line)
         if len(keycodes)>0:
             log("calling xmodmap_setkeycodes with %s", keycodes)
@@ -913,9 +978,11 @@ cdef native_xmodmap(display_source, xmodmap_data):
         if keymap!=NULL:
             set_keymap(NULL)
             log("saving modified keymap")
-            XSetModifierMapping(display, keymap)
+            if XSetModifierMapping(display, keymap)==MappingBusy:
+                log.error("cannot change keymap: mapping busy: %s" % get_keycodes_down(display_source))
+                unhandled = instructions
             XFreeModifiermap(keymap)
-    log("%s lines total, %s unprocessed", len(xmodmap_data), len(unhandled))
+    log.info("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
     return unhandled
 
 def set_xmodmap(display_source, xmodmap_data):

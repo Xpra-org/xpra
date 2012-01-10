@@ -7,6 +7,7 @@ import os.path
 import gtk.gdk
 
 from xpra.platform.client_extras_base import ClientExtrasBase
+from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -125,6 +126,9 @@ class ClientExtras(ClientExtrasBase):
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         import Carbon.Snd           #@UnresolvedImport
         Carbon.Snd.SysBeep(1)
+
+    def get_gtk_keymap(self):
+        return  get_gtk_keymap(add_if_missing=["Control_L"])
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
         modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)

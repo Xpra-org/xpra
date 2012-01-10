@@ -19,7 +19,7 @@ import datetime
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
-from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR, DEFAULT_MODIFIER_MEANINGS
+from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR, get_gtk_keymap
 from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
@@ -151,11 +151,14 @@ class ClientExtrasBase(object):
         """ layout, variant, variants"""
         return None,None,None
 
-    def supports_raw_keycodes(self):
-        return False
+    def translate_key(self, depressed, keyval, name, keycode, group, is_modifier, modifiers):
+        return depressed, keyval, name, keycode, group, is_modifier, modifiers
+
+    def get_gtk_keymap(self):
+        return  get_gtk_keymap()
 
     def get_keymap_modifiers(self):
-        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, DEFAULT_MODIFIER_MEANINGS
+        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, {}, [], []
 
     def get_keymap_spec(self):
         """ xkbmap_print, xkbmap_query, xmodmap """
@@ -392,17 +395,13 @@ class ClientExtrasBase(object):
             "mod3": 1 << 5,
             "mod4": 1 << 6,
             "mod5": 1 << 7,
-            "scroll": 0,
-            "num": 0,
-            "meta": 0,
-            "super": 0,
-            "hyper": 0,
-            "alt": 0,
             }
-        modifier_map["nuisance"] = (modifier_map["lock"]
-                                    | modifier_map["scroll"]
-                                    | modifier_map["num"])
         return modifier_map
+
+    def current_modifiers(self, modifiers):
+        """ subclasses may filter or add modifiers (see win32)
+            this default implementation just leaves them unchanged """
+        return  modifiers
 
 
     def get_data_dir(self):
@@ -615,6 +614,11 @@ class ClientExtrasBase(object):
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
         def set_selected_layout(*args):
+            if self.client._raw_keycodes_full:
+                #server supports raw keycode and we do too
+                #so no need to let the user select the keymap
+                keyboard.hide()
+                return
             layout = self.client.xkbmap_layout
             variant = self.client.xkbmap_variant
             def is_match(checkitem):

@@ -139,7 +139,7 @@ def grok_modifier_map(display_source, meanings):
         "hyper": 0,
         "alt": 0,
         }
-    if meanings is None or len(meanings)==0:
+    if not meanings:
         meanings = DEFAULT_MODIFIER_MEANINGS
 
     disp = get_display_for(display_source)
@@ -156,8 +156,9 @@ def grok_modifier_map(display_source, meanings):
                     continue
                 for (keyval, _, _, _) in entries:
                     keyval_name = gtk.gdk.keyval_name(keyval)
-                    if keyval_name in meanings:
-                        modifier_map[meanings[keyval_name]] |= (1 << i)
+                    modifier = meanings.get(keyval_name)
+                    if modifier:
+                        modifier_map[modifier] |= (1 << i)
     modifier_map["nuisance"] = (modifier_map["lock"]
                                 | modifier_map["scroll"]
                                 | modifier_map["num"])

@@ -4,7 +4,7 @@
 
 import sys
 import pygtk
-pygtk.require('2.10')
+pygtk.require('2.0')
 import gtk
 import pango
 import gobject
