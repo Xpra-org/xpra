@@ -797,11 +797,13 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     keysyms_per_keycode = 1
     for keysyms in keycodes.values():
         keysyms_per_keycode = max(keysyms_per_keycode, len(keysyms))
+    keysyms_per_keycode = min(8, keysyms_per_keycode)
     ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
     try:
         for i in range(0, num_codes):
-            keysyms_strs = keycodes.get(first_keycode+i)
-            log("set keycode %s: %s", first_keycode+i, keysyms_strs)
+            keycode = first_keycode+i
+            keysyms_strs = keycodes.get(keycode)
+            log("setting keycode %s: %s", keycode, keysyms_strs)
             if keysyms_strs is None:
                 if len(new_keysyms)>0:
                     #no keysyms for this keycode yet, assign one of the "new_keysyms"
@@ -968,7 +970,7 @@ cdef native_xmodmap(display_source, instructions):
                 if modifier>=0:
                     if xmodmap_addmodifier(display, modifier, keysyms):
                         continue
-            log.error("set_xmodmap could not handle instruction: %s", line)
+            log.error("native_xmodmap could not handle instruction: %s", line)
             unhandled.append(line)
         if len(keycodes)>0:
             log("calling xmodmap_setkeycodes with %s", keycodes)
@@ -982,7 +984,7 @@ cdef native_xmodmap(display_source, instructions):
                 log.error("cannot change keymap: mapping busy: %s" % get_keycodes_down(display_source))
                 unhandled = instructions
             XFreeModifiermap(keymap)
-    log.info("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
+    log.debug("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
     return unhandled
 
 def set_xmodmap(display_source, xmodmap_data):

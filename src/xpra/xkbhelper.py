@@ -231,7 +231,7 @@ def set_all_keycodes(xkbmap_keycodes, xkbmap_initial_keycodes):
     # {keycode : (keyval, name, keycode, group, level)}
     # since the instructions are generated per keycode in set_keycodes()
     keycodes = {}
-    log.info("set_all_keycodes_preserve(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
+    log.debug("set_all_keycodes_preserve(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
     for entry in xkbmap_keycodes:
         _, _, keycode, _, _ = entry
         entries = keycodes.setdefault(keycode, [])
@@ -264,12 +264,12 @@ def set_keycodes(keycodes, preserve_keycodes={}):
                 if group==0 and level==0 and name in preserve_keycodes:
                     server_keycode = preserve_keycodes.get(name)
                     if server_keycode!=keycode:
-                        log.info("set_keycodes key %s(%s) mapped to keycode=%s", keycode, entries, server_keycode)
+                        log.debug("set_keycodes key %s(%s) mapped to keycode=%s", keycode, entries, server_keycode)
         if server_keycode==0 or server_keycode in used or server_keycode<kcmin or server_keycode>kcmax:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]
                 free_keycodes = free_keycodes[1:]
-                log.info("set_keycodes key %s(%s) out of range or already in use, using free keycode=%s", keycode, entries, server_keycode)
+                log.debug("set_keycodes key %s(%s) out of range or already in use, using free keycode=%s", keycode, entries, server_keycode)
             else:
                 log.error("set_keycodes: no free keycodes!, cannot translate %s: %s", keycode, entries)
                 continue
@@ -281,13 +281,16 @@ def set_keycodes(keycodes, preserve_keycodes={}):
         def sort_key(entry):
             (_, _, _, group, level) = entry
             return group*10+level
-        for (_, name, _keycode, _, _) in sorted(entries, key=sort_key):
+        sentries = sorted(entries, key=sort_key)
+        for (_, name, _keycode, _, _) in sentries:
             assert _keycode == keycode
             keysym = parse_keysym(name)
             if keysym is None:
                 log.error("cannot find keysym for %s", name)
             else:
                 keysyms.append(keysym)
+        if len(keysyms)>=2 and len(keysyms)<=6:
+            keysyms = keysyms[:2]+keysyms
         if len(keysyms)>0:
             instructions.append(("keycode", server_keycode, keysyms))
     log.debug("instructions=%s", instructions)
