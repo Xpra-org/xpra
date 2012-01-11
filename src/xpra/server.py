@@ -627,8 +627,9 @@ class XpraServer(gobject.GObject):
         self.last_cursor_serial = None
         self.cursor_image = None
         #store list of currently pressed keys
-        #(using a map only so we can display their names in debug messages)
+        #(using a dict only so we can display their names in debug messages)
         self.keys_pressed = {}
+        self.keys_timedout = {}
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
         ### Set up keymap:
@@ -1637,6 +1638,8 @@ class XpraServer(gobject.GObject):
             if not keycode:
                 log.debug("cannot handle key action %s/%s/%s: no keycode found!", name, keyval, keycode)
                 return
+        if keycode in self.keys_timedout:
+            del self.keys_timedout[keycode]
         def press():
             log.debug("handle keycode pressing %s: key %s", keycode, name)
             if self.keyboard_sync:
@@ -1661,7 +1664,7 @@ class XpraServer(gobject.GObject):
                 unpress()
             else:
                 log.debug("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+        if self.keyboard_sync and keycode>0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(id, pressed, name, keyval, src_keycode, modifiers, self.key_repeat_delay)
 
     def _key_repeat(self, id, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
@@ -1681,6 +1684,7 @@ class XpraServer(gobject.GObject):
                 now = time.time()
                 log.debug("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(id, False, keyname, keyval, keycode, modifiers)
+                self.keys_timedout[keycode] = now
             now = time.time()
             self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
@@ -1689,6 +1693,21 @@ class XpraServer(gobject.GObject):
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
+        if not self.keyboard_sync:
+            #this check should be redundant: clients should not send key-repeat without
+            #having keyboard_sync enabled
+            return
+        if keycode not in self.keys_pressed:
+            #the key is no longer pressed, has it timed out?
+            when_timedout = self.keys_timedout.get(keycode, None)
+            if when_timedout:
+                del self.keys_timedout[keycode]
+            now = time.time()
+            if when_timedout and (now-when_timedout)<30:
+                #not so long ago, just re-press it now:
+                log.debug("key %s/%s, had timed out, re-pressing it", keycode, keyname)
+                self.keys_pressed[keycode] = keyname
+                xtest_fake_key(gtk.gdk.display_get_default(), keycode, True)
         self._key_repeat(id, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
 
     def _process_button_action(self, proto, packet):
