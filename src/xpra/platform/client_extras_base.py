@@ -542,6 +542,11 @@ class ClientExtrasBase(object):
         encodings.set_submenu(self.encodings_submenu)
         self.popup_menu_workaround(self.encodings_submenu)
         def set_encodingsmenuitem(*args):
+            if self.client.mmap_enabled:
+                #mmap disables encoding and uses raw rgb24
+                encodings.set_label("Encoding")
+                encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
+                encodings.set_sensitive(False)
             for encoding in ENCODINGS:
                 encoding_item = gtk.CheckMenuItem(encoding)
                 encoding_item.get_label()
