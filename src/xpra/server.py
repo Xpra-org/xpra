@@ -61,7 +61,7 @@ import xpra
 from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names, get_gtk_keymap, \
     DEFAULT_KEYNAME_FOR_MOD, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
-from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_xmodmap_from_text, set_modifiers, clear_modifiers, set_modifiers_from_keycodes
+from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_xmodmap_from_text, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes, set_modifiers_from_text
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
@@ -710,7 +710,6 @@ class XpraServer(gobject.GObject):
                               self.xkbmap_print, self.xkbmap_query)
             except:
                 log.error("error setting new keymap", exc_info=True)
-            self._keynames_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
             try:
                 #first clear all existing modifiers:
                 clean_state()
@@ -731,27 +730,17 @@ class XpraServer(gobject.GObject):
                 log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes))
                 if self.xkbmap_mod_meanings:
                     #version 0.0.7.33 and above with Unix-like OS:
-                    set_modifiers(self.xkbmap_mod_meanings)
+                    self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
                 elif self.xkbmap_keycodes:
-                    #try to guess...
-                    set_modifiers_from_keycodes(self.xkbmap_keycodes)
+                    #version 0.0.7.33 and above with non-Unix-like OS:
+                    self._keynames_for_mod = set_modifiers_from_keycodes(self.xkbmap_keycodes)
                 else:
-                    set_xmodmap_from_text(self.xkbmap_mod_add)
+                    #older versions: try our best...
+                    self._keynames_for_mod = set_modifiers_from_text(self.xkbmap_mod_add)
 
                 clean_state()
                 #build keynames_for_mod
-                if self.xkbmap_mod_meanings:
-                    self._keynames_for_mod = {}
-                    def add_keyname(mod, keyname):
-                        l = self._keynames_for_mod.setdefault(mod, [])
-                        l.append(keyname)
-                    for k,m in self.xkbmap_mod_meanings.items():
-                        add_keyname(m, k)
-                    for m,kl in DEFAULT_KEYNAME_FOR_MOD.items():
-                        if m not in self._keynames_for_mod:
-                            for k in kl:
-                                add_keyname(m, k)
-                    log.debug("keyname_for_mod=%s", self._keynames_for_mod)
+                log.debug("keyname_for_mod=%s", self._keynames_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
         finally:
@@ -1689,6 +1678,9 @@ class XpraServer(gobject.GObject):
             self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
+        if len(packet)<6:
+            #don't bother trying to make it work with old clients
+            return
         (id, keyname, keyval, client_keycode, modifiers) = packet[1:6]
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:

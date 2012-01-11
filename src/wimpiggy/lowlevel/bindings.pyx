@@ -845,6 +845,14 @@ cdef KeysymToKeycodes(Display *display, KeySym keysym):
                 break
     return keycodes
 
+def get_keycodes(display_source, keyname):
+    codes = []
+    keysym = _parse_keysym(keyname)
+    if not keysym:
+        return  codes
+    cdef Display * display
+    display = get_xdisplay_for(display_source)
+    return KeysymToKeycodes(display, keysym)
 
 def parse_modifier(name):
     return {

@@ -81,25 +81,6 @@ class ClientExtras(ClientExtrasBase):
                 keycode = -1
         return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
 
-    def current_modifiers(self, modifiers):
-        """
-            Workaround for win32: numlock is not reported by gtk, but we can query it via pywin
-        """
-        if True:   #was caused by virtualbox?
-            try:
-                import win32api     #@UnresolvedImport
-                import win32con     #@UnresolvedImport
-                if win32api.GetKeyState(win32con.VK_NUMLOCK):
-                    if "num" not in modifiers:
-                        modifiers.append("num")
-                if win32api.GetKeyState(win32con.VK_CAPITAL):
-                    if "lock" not in modifiers:
-                        modifiers.append("lock")
-            except:
-                pass
-        return modifiers
-
-
     def get_gtk_keymap(self):
         return  get_gtk_keymap(add_if_missing=["Caps_Lock"])
 
