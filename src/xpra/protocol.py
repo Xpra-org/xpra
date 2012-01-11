@@ -212,15 +212,16 @@ class Protocol(object):
                     return self._call_connection_lost("empty marker in read queue")
                 if self._decompressor is not None:
                     buf = self._decompressor.decompress(buf)
-                log.debug("read_parse: adding %s bytes to read buffer of size %s", len(buf), len(self._read_buffer))
-                self._read_buffer += buf
-                while not self._closed:
+                if self._read_buffer:
+                    self._read_buffer = self._read_buffer + buf
+                else:
+                    self._read_buffer = buf
+                while not self._closed and len(self._read_buffer)>0:
                     had_deflate = (self._decompressor is not None)
                     try:
-                        if current_packet_size<0 and self._read_buffer.startswith("P"):
+                        if current_packet_size<0 and len(self._read_buffer)>0 and self._read_buffer[0]=="P":
                             #spotted packet size header
                             if len(self._read_buffer)<16:
-                                log.debug("incomplete size header: %s", self._read_buffer)
                                 break   #incomplete
                             current_packet_size = int(self._read_buffer[2:16])
                             self._read_buffer = self._read_buffer[16:]
