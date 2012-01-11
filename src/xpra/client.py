@@ -21,7 +21,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol
-from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
+from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
@@ -545,7 +545,7 @@ class XpraClient(gobject.GObject):
         modifier_names = {}
         meanings = self.xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
         for pub_name,mod_name in meanings.items():
-            if mod_name in DEFAULT_MODIFIER_NUISANCE:
+            if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
                 continue
             #just hope that xxx_L is mapped to the same modifier as xxx_R!
             if pub_name.endswith("_L") or pub_name.endswith("_R"):
