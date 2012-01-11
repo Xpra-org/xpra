@@ -15,6 +15,7 @@ import cairo
 from wimpiggy.lowlevel import (
                 XGetWindowProperty,         #@UnresolvedImport
                 XChangeProperty,            #@UnresolvedImport
+                NoSuchProperty,             #@UnresolvedImport
                 PropertyError,              #@UnresolvedImport
                 get_xatom, get_pyatom,      #@UnresolvedImport
                 get_xwindow, get_pywindow,  #@UnresolvedImport
@@ -282,6 +283,9 @@ def prop_get(target, key, type, ignore_errors=False):
         #print(atom)
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
         #print(atom, repr(data[:100]))
+    except NoSuchProperty:
+        log.debug("Missing property %s (%s)", key, type)
+        return None
     except (XError, PropertyError):
         if not ignore_errors:
             log.info("Missing window or missing property or wrong property type %s (%s)",
