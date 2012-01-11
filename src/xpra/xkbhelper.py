@@ -333,24 +333,8 @@ def set_modifiers_from_keycodes(xkbmap_keycodes):
         Some platforms can't tell us about modifier mappings
         So we try to find matches from the defaults below:
     """
-    pref = {
-            "Shift_L"   : "shift",
-            "Shift_R"   : "shift",
-            "Caps_Lock" : "lock",
-            "Control_L" : "control",
-            "Control_R" : "control",
-            "Alt_L"     : "mod1",
-            "Alt_R"     : "mod1",
-            "Num_Lock"  : "mod2",
-            "Meta_L"    : "mod3",
-            "Meta_R"    : "mod3",
-            "Super_L"   : "mod4",
-            "Super_R"   : "mod4",
-            "Hyper_L"   : "mod4",
-            "Hyper_R"   : "mod4",
-            "ISO_Level3_Shift"  : "mod5",
-            "Mode_switch"       : "mod5",
-            }
+    from xpra.keys import DEFAULT_MODIFIER_MEANINGS
+    pref = DEFAULT_MODIFIER_MEANINGS
     #{keycode : (keyval, name, keycode, group, level)}
     matches = {}
     log.info("set_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])

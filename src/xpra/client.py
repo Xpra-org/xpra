@@ -21,7 +21,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol
-from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NAMES, DEFAULT_MODIFIER_NUISANCE
+from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
@@ -538,11 +538,23 @@ class XpraClient(gobject.GObject):
             strs = ["meta+shift+F4:quit"]
         log.debug("parse_shortcuts(%s)" % str(strs))
         shortcuts = {}
-        if self.xkbmap_mod_meanings:
-            #add all the known modifiers (but not nuisance ones):
-            modifier_names = set(self.xkbmap_mod_meanings.values()).difference(DEFAULT_MODIFIER_NUISANCE)
-        else:
-            modifier_names = DEFAULT_MODIFIER_NAMES[:]
+        #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
+        #but the user expects the name of the key to be used, ie: "alt" or "super"
+        #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
+        #so generate a map from one to the other:
+        modifier_names = {}
+        meanings = self.xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
+        for pub_name,mod_name in meanings.items():
+            if mod_name in DEFAULT_MODIFIER_NUISANCE:
+                continue
+            #just hope that xxx_L is mapped to the same modifier as xxx_R!
+            if pub_name.endswith("_L") or pub_name.endswith("_R"):
+                pub_name = pub_name[:-2]
+            elif pub_name=="ISO_Level3_Shift":
+                pub_name = "AltGr"
+            if pub_name not in modifier_names:
+                modifier_names[pub_name.lower()] = mod_name
+        
         for s in strs:
             #example for s: Control+F8:some_action()
             parts = s.split(":", 1)
@@ -551,18 +563,20 @@ class XpraClient(gobject.GObject):
                 continue
             #example for action: "quit"
             action = parts[1]
-            #example for keyspec: ["Control", "F8"]
+            #example for keyspec: ["Alt", "F8"]
             keyspec = parts[0].split("+")
             modifiers = []
             if len(keyspec)>1:
                 valid = True
+                #ie: ["Alt"]
                 for mod in keyspec[:len(keyspec)-1]:
-                    lmod = mod.lower()
-                    if lmod not in modifier_names:
-                        log.error("invalid modifier: %s, valid modifiers are: %s", mod, modifier_names)
+                    #ie: "alt_l" -> "mod1"
+                    imod = modifier_names.get(mod.lower())
+                    if not imod:
+                        log.error("invalid modifier: %s, valid modifiers are: %s", mod, modifier_names.keys())
                         valid = False
                         break
-                    modifiers.append(lmod)
+                    modifiers.append(imod)
                 if not valid:
                     continue
             keyname = keyspec[len(keyspec)-1]
