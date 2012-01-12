@@ -234,19 +234,25 @@ class ServerSource(object):
         log("cancel_damage: %s, dropping all damage up to sequence=%s", id, self._sequence)
         self._damage_cancelled[id] = self._sequence
 
-    def damage(self, id, window, x, y, w, h):
+    def damage(self, id, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
             * send it now (if not congested or BATCH_EVENTS is off)
             * add it to an existing delayed region
             * create a new delayed region if we find the client needs it
             Also takes care of adjusting the batch-delay in case
             of congestion.
+            The options dict is currently used for carrying a different
+            "jpegquality" from the default global one, it could also
+            be used for other purposes. Be aware though that when multiple
+            damage requests are delayed and bundled together,
+            the options may get quashed! So, specify a "batching"=False
+            option to ensure no batching will occur for this request.
         """
         def damage_now(reason):
             log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", id, x, y, w, h, reason, self._sequence)
             region = gtk.gdk.Region()
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-            item = id, window, region, self._sequence
+            item = id, window, region, self._sequence, options
             self._damage_request_queue.put(item)
             self._sequence += 1
         if not ServerSource.BATCH_EVENTS:
@@ -257,9 +263,13 @@ class ServerSource(object):
         last_events = self._damage_last_events.setdefault(id, deque(maxlen=ServerSource.MAX_EVENTS))
         last_events.append((now, w*h))
 
+        if options and options.get("batching", True) is False:
+            damage_now("batching option is off")
+            return
+
         delayed = self._damage_delayed.get(id)
         if delayed:
-            (_, _, region, _) = delayed
+            (_, _, region, _, _) = delayed
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
             return
@@ -310,7 +320,7 @@ class ServerSource(object):
         #create a new delayed region:
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-        self._damage_delayed[id] = (id, window, region, self._sequence)
+        self._damage_delayed[id] = (id, window, region, self._sequence, options)
         self._sequence += 1
         def send_delayed():
             """ move the delayed rectangles to the expired list """
@@ -334,7 +344,7 @@ class ServerSource(object):
             via idle_add.
         """
         while not self._closed:
-            id, window, damage, sequence = self._damage_request_queue.get(True)
+            id, window, damage, sequence, options = self._damage_request_queue.get(True)
             log("damage_to_data: processing sequence=%s", sequence)
             if self._damage_cancelled.get(id, 0)>sequence:
                 log("damage_to_data: dropping request with sequence=%s", sequence)
@@ -367,9 +377,9 @@ class ServerSource(object):
             except Exception, e:
                 log.error("damage_to_data: error processing region %s: %s", damage, e)
                 continue
-            gobject.idle_add(self._process_damage_regions, id, window, ww, wh, regions, sequence)
+            gobject.idle_add(self._process_damage_regions, id, window, ww, wh, regions, sequence, options)
 
-    def _process_damage_regions(self, id, window, ww, wh, regions, sequence):
+    def _process_damage_regions(self, id, window, ww, wh, regions, sequence, options):
         if self._damage_cancelled.get(id, 0)>sequence:
             log("process_damage_regions: dropping damage request with sequence=%s", sequence)
             return
@@ -387,12 +397,12 @@ class ServerSource(object):
             if full_window:
                 log("process_damage_regions: sending full window: %s", pixmap.get_size())
                 w, h = pixmap.get_size()
-            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h, sequence)
+            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h, sequence, options)
             if data:
                 log("process_damage_regions: adding pixel data %s to queue, queue size=%s", data[:6], self._damage_data_queue.qsize())
                 self._damage_data_queue.put(data)
 
-    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height, sequence):
+    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height, sequence, options):
         pixmap_w, pixmap_h = pixmap.get_size()
         # Just in case we somehow end up with damage larger than the pixmap,
         # we don't want to start requesting random chunks of memory (this
@@ -411,7 +421,7 @@ class ServerSource(object):
                                  x, y, 0, 0, width, height)
         raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()
-        return (id, x, y, width, height, self._encoding, raw_data, rowstride, sequence)
+        return (id, x, y, width, height, self._encoding, raw_data, rowstride, sequence, options)
 
 
     def data_to_packet(self):
@@ -429,7 +439,7 @@ class ServerSource(object):
                 log.error("error processing damage data: %s", e)
 
     def make_data_packet(self, item):
-        id, x, y, w, h, coding, data, rowstride, sequence = item
+        id, x, y, w, h, coding, data, rowstride, sequence, options = item
         if self._damage_cancelled.get(id, 0)>sequence:
             log("make_data_packet: dropping data packet with sequence=%s", sequence)
             return  None
@@ -456,7 +466,10 @@ class ServerSource(object):
             im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
             buf = StringIO.StringIO()
             if self._encoding=="jpeg":
-                q = min(99, max(1, self._protocol.jpegquality))
+                q = self._protocol.jpegquality
+                if options and "jpegquality" in options:
+                    q = options.get("jpegquality")
+                q = min(99, max(1, q))
                 log.debug("sending with jpeg quality %s", q)
                 im.save(buf, "JPEG", quality=q)
             else:
@@ -999,7 +1012,6 @@ class XpraServer(gobject.GObject):
             * some modifiers can be set by multiple keys ("shift" by both "Shift_L" and "Shift_R" for example)
                 so we try to find the matching modifier in the currently pressed keys (keys_pressed)
                 to make sure we unpress the right one.
-            
         """
         #FIXME: we should probably cache the keycode
         # and clear the cache in _keys_changed
@@ -1125,10 +1137,10 @@ class XpraServer(gobject.GObject):
             select.select([], [socket], [])
             written += socket.send(data[written:])
 
-    def _damage(self, window, x, y, width, height):
+    def _damage(self, window, x, y, width, height, options=None):
         if self._protocol is not None and self._protocol.source is not None:
             id = self._window_to_id[window]
-            self._protocol.source.damage(id, window, x, y, width, height)
+            self._protocol.source.damage(id, window, x, y, width, height, options)
 
     def _cancel_damage(self, window):
         if self._protocol is not None and self._protocol.source is not None:
@@ -1747,22 +1759,19 @@ class XpraServer(gobject.GObject):
         self._server_source.last_client_packet_sequence = packet_sequence
 
     def _process_buffer_refresh(self, proto, packet):
-        (_, id, _, jpeg_qual) = packet
+        [id, _, jpeg_qual] = packet[1:4]
+        opts = {}
         if self.encoding=="jpeg":
-            qual_save = self._protocol.jpegquality
-            self._protocol.jpegquality = jpeg_qual
-        try:
-            if id==-1:
-                windows = self._id_to_window.values()
-            else:
-                windows = [self._id_to_window[id]]
-            log.debug("Requested refresh for windows: ", windows)
-            for window in windows:
-                (_, _, w, h) = window.get_property("geometry")
-                self._damage(window, 0, 0, w, h)
-        finally:
-            if self.encoding=="jpeg":
-                self._protocol.jpegquality = qual_save
+            opts["jpegquality"] = jpeg_qual
+        if id==-1:
+            windows = self._id_to_window.values()
+        else:
+            windows = [self._id_to_window[id]]
+        log.debug("Requested refresh for windows: ", windows)
+        opts["batching"] = False
+        for window in windows:
+            (_, _, w, h) = window.get_property("geometry")
+            self._damage(window, 0, 0, w, h, opts)
 
     def _process_jpeg_quality(self, proto, packet):
         (_, quality) = packet
