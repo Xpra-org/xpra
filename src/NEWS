@@ -1,7 +1,15 @@
-v0.0.7.33 (2012-01-03)
+v0.0.7.33 (2012-01-13)
 ======================
 	-- readonly command line option
 	-- correctly stop all network related threads on disconnection
+	-- faster pixel data transfers for large areas via mmap
+	-- fix auto-refresh jpeg quality
+	-- fix on-the-fly change of pixel encoding
+	-- fix potential exhaustion of mmap area
+	-- fix potential race in packet compression setup code
+	-- keyboard: better modifiers detection, synchronization of capslock and numlock
+	-- keyboard: support all modifiers correctly with and without keyboard-sync option
+
 
 v0.0.7.32 (2011-12-08)
 ======================

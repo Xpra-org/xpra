@@ -43,9 +43,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Jan 03 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
+* Fri Jan 13 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
 - readonly command line option
 - correctly stop all network related threads on disconnection
+- faster pixel data transfers for large areas
+- fix auto-refresh jpeg quality
+- fix potential exhaustion of mmap area
+- fix potential race in packet compression setup code
+- keyboard: better modifiers detection, synchronization of capslock and numlock
+- keyboard: support all modifiers correctly with and without keyboard-sync option
 
 * Thu Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
 - bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
