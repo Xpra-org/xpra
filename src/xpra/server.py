@@ -1680,7 +1680,9 @@ class XpraServer(gobject.GObject):
     def _process_key_repeat(self, proto, packet):
         if len(packet)<6:
             #don't bother trying to make it work with old clients
-            self.keyboard_sync = False
+            if self.keyboard_sync:
+                log.info("key repeat data is too small (client is too old), disabling keyboard sync")
+                self.keyboard_sync = False
             return
         (id, keyname, keyval, client_keycode, modifiers) = packet[1:6]
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
