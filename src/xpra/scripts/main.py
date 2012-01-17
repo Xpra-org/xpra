@@ -195,7 +195,19 @@ def main(script_file, cmdline):
             else:
                 logger = logging.getLogger(cat)
             logger.setLevel(level)
+
+    def dump_frames(*arsg):
+        import traceback
+        frames = sys._current_frames()
+        print("")
+        print("found %s frames:" % len(frames))
+        for fid,frame in frames.items():
+            print("%s - %s:" % (fid, frame))
+            traceback.print_stack(frame)
+        print("")
+        
     def toggle_debug_on(*args):
+        dump_frames()
         toggle_logging(logging.DEBUG)
     def toggle_debug_off(*args):
         toggle_logging(logging.INFO)
