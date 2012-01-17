@@ -190,7 +190,7 @@ class ClientWindow(gtk.Window):
         cr.fill()
 
     def refresh_window(self):
-        log.debug("Automatic refresh for id ", self._id)
+        log.debug("Automatic refresh for id %s", self._id)
         self._client.send_refresh(self._id)
 
     def refresh_all_windows(self):

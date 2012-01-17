@@ -1777,7 +1777,7 @@ class XpraServer(gobject.GObject):
             windows = self._id_to_window.values()
         else:
             windows = [self._id_to_window[id]]
-        log.debug("Requested refresh for windows: ", windows)
+        log.debug("Requested refresh for windows: %s", windows)
         opts["batching"] = False
         for window in windows:
             if (isinstance(window, OverrideRedirectWindowModel)):
