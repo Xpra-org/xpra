@@ -1770,7 +1770,10 @@ class XpraServer(gobject.GObject):
         log.debug("Requested refresh for windows: ", windows)
         opts["batching"] = False
         for window in windows:
-            (_, _, w, h) = window.get_property("geometry")
+            if (isinstance(window, OverrideRedirectWindowModel)):
+                (_, _, w, h) = window.get_property("geometry")
+            else:
+                w, h = window.get_property("actual-size")
             self._damage(window, 0, 0, w, h, opts)
 
     def _process_jpeg_quality(self, proto, packet):
