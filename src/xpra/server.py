@@ -349,7 +349,7 @@ class ServerSource(object):
             damage_request = self._damage_request_queue.get(True)
             if damage_request is None:
                 return              #empty marker
-            id, window, damage, sequence, options = self._damage_request_queue.get(True)
+            id, window, damage, sequence, options = damage_request
             log("damage_to_data: processing sequence=%s", sequence)
             if self._damage_cancelled.get(id, 0)>sequence:
                 log("damage_to_data: dropping request with sequence=%s", sequence)
