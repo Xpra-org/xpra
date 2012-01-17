@@ -1547,6 +1547,8 @@ def get_cursor_image():
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     try:
         image = XFixesGetCursorImage(display)
+        if image==NULL:
+            return  None
         l = image.width*image.height*4
         pixels = argbdata_to_pixdata(image.pixels, l)
         pixels_string = pixels.tostring()

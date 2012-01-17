@@ -808,7 +808,10 @@ class XpraServer(gobject.GObject):
             return
         self.last_cursor_serial = event.cursor_serial
         self.cursor_image = get_cursor_image()
-        log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
+        if self.cursor_image:
+            log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
+        else:
+            log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         self.send_cursor()
 
     def send_cursor(self):
