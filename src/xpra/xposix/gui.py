@@ -285,6 +285,26 @@ class ClientExtras(ClientExtrasBase):
         return None
 
     def get_keymap_modifiers(self):
+        try:
+            from wimpiggy.lowlevel import get_modifier_mappings         #@UnresolvedImport
+            mod_mappings = get_modifier_mappings()
+            if mod_mappings:
+                #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
+                log.debug("modifier mappings=%s", mod_mappings)
+                meanings = {}
+                clear = []
+                add = []
+                for modifier,keynames in mod_mappings.items():
+                    clear.append("clear %s" % modifier)
+                    add.append("add %s = %s" % (modifier, " ".join(keynames)))
+                    for keyname in keynames:
+                        meanings[keyname] = modifier
+                return  clear, add, meanings, [], []
+        except Exception, e:
+            log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
+        return self.modifiers_fallback()
+
+    def modifiers_fallback(self):
         xmodmap_pm = self.exec_get_keyboard_data(["xmodmap", "-pm"])
         if not xmodmap_pm:
             return ClientExtrasBase.get_keymap_modifiers(self)

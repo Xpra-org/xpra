@@ -306,6 +306,7 @@ cdef extern from "X11/Xlib.h":
     int XFreeModifiermap(XModifierKeymap* modifiermap)
     int XDisplayKeycodes(Display* display, int* min_keycodes, int* max_keycodes)
     KeySym XStringToKeysym(char* string)
+    KeySym* XGetKeyboardMapping(Display* display, KeyCode first_keycode, int keycode_count, int* keysyms_per_keycode_return)
     int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
     XModifierKeymap* XInsertModifiermapEntry(XModifierKeymap* modifiermap, KeyCode keycode_entry, int modifier)
     KeySym XKeycodeToKeysym(Display* display, KeyCode keycode, int index)
@@ -859,13 +860,92 @@ def parse_modifier(name):
             "shift": 0,
             "lock" : 1,
             "control" : 2,
+            "ctrl" : 2,
             "mod1" : 3,
             "mod2" : 4,
             "mod3" : 5,
             "mod4" : 6,
             "mod5" : 7,
-            "ctrl" : 2
             }.get(name.lower(), -1)
+def modifier_name(modifier_index):
+    return {
+            0 : "shift",
+            1 : "lock",
+            2 : "control",
+            3 : "mod1",
+            4 : "mod2",
+            5 : "mod3",
+            6 : "mod4",
+            7 : "mod5",
+            }.get(modifier_index)
+
+
+cdef _get_raw_modifier_mappings(Display * display):
+    """
+        returns a dict: {modifier_index, [keycodes]}
+        for all keycodes (see above for list)
+    """
+    cdef int keysyms_per_keycode
+    cdef XModifierKeymap* keymap
+    cdef KeySym * keyboard_map
+    cdef KeySym keysym
+    cdef KeyCode keycode
+    min_keycode,max_keycode = _get_minmax_keycodes(display)
+    keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
+    mappings = {}
+    i = 0
+    keymap = get_keymap(display, False)
+    assert keymap==NULL
+    keymap = get_keymap(display, True)
+    modifiermap = <KeyCode*> keymap.modifiermap
+    for modifier in range(0, 8):
+        keycodes = []
+        k = 0
+        while k<keymap.max_keypermod:
+            keycode = modifiermap[i]
+            if keycode!=NoSymbol:
+                keycodes.append(keycode)
+            k += 1
+            i += 1
+        mappings[modifier] = keycodes
+    XFreeModifiermap(keymap)
+    set_keymap(NULL)
+    XFree(keyboard_map)
+    return (keysyms_per_keycode, mappings)
+
+cdef _get_modifier_mappings(Display * display):
+    """
+    the mappings from _get_raw_modifier_mappings are in raw format
+    (index and keycode), so here we convert into names:
+    """
+    cdef KeySym keysym
+    keysyms_per_keycode, raw_mappings = _get_raw_modifier_mappings(display)
+    mappings = {}
+    for mod, keycodes in raw_mappings.items():
+        modifier = modifier_name(mod)
+        if not modifier:
+            log.error("cannot find name for modifier %s", mod)
+            continue
+        keynames = []
+        for keycode in keycodes:
+            keysym = 0
+            index = 0
+            while (keysym==0 and index<keysyms_per_keycode):
+                keysym = XKeycodeToKeysym(display, keycode, index)
+                index += 1
+            if keysym==0:
+                log.info("no keysym found for keycode %s", keycode)
+                continue
+            keyname = XKeysymToString(keysym)
+            if keyname not in keynames:
+                keynames.append(keyname)
+        mappings[modifier] = keynames
+    return mappings
+
+def get_modifier_mappings():
+    cdef Display * display
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    return _get_modifier_mappings(display)
 
 cdef xmodmap_clearmodifier(Display * display, int modifier):
     cdef KeyCode* keycode

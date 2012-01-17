@@ -802,7 +802,6 @@ class XpraClient(gobject.GObject):
         capabilities_request["encodings"] = ENCODINGS
         if self.jpegquality:
             capabilities_request["jpeg"] = self.jpegquality
-        self.query_xkbmap()
         if self.xkbmap_layout:
             capabilities_request["xkbmap_layout"] = self.xkbmap_layout
             if self.xkbmap_variant:

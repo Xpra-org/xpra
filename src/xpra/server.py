@@ -622,7 +622,7 @@ class XpraServer(gobject.GObject):
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_mod_meanings = {}
-        self.xkbmap_mod_managed = []
+        self.xkbmap_mod_managed = None
         self.xmodmap_data = None
         self.keycode_translation = {}
         self.keymap_changing = False
