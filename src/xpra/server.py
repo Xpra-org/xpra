@@ -199,6 +199,8 @@ class ServerSource(object):
 
     def close(self):
         self._closed = True
+        self._damage_request_queue.put(None, block=False)
+        self._damage_data_queue.put(None, block=False)
 
     def _have_more(self):
         return not self._closed and bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
@@ -344,6 +346,9 @@ class ServerSource(object):
             via idle_add.
         """
         while not self._closed:
+            damage_request = self._damage_request_queue.get(True)
+            if damage_request is None:
+                return              #empty marker
             id, window, damage, sequence, options = self._damage_request_queue.get(True)
             log("damage_to_data: processing sequence=%s", sequence)
             if self._damage_cancelled.get(id, 0)>sequence:
@@ -427,6 +432,8 @@ class ServerSource(object):
     def data_to_packet(self):
         while not self._closed:
             item = self._damage_data_queue.get(True)
+            if item is None:
+                return              #empty marker
             try:
                 packet = self.make_data_packet(item)
                 if packet:
