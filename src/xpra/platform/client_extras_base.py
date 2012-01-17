@@ -268,9 +268,8 @@ class ClientExtrasBase(object):
             row = add_row(row, gtk.Label("Server Latency"), self.server_latency_label)
             self.client_latency_label = gtk.Label()
             row = add_row(row, gtk.Label("Client Latency"), self.client_latency_label)
-        if self.client.server_start_time>0:
-            self.session_started_label = gtk.Label()
-            row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
+        self.session_started_label = gtk.Label()
+        row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
         self.session_connected_label = gtk.Label()
         row = add_row(row, gtk.Label("Session Connected"), self.session_connected_label)
         self.windows_managed_label = gtk.Label()
@@ -309,6 +308,8 @@ class ClientExtrasBase(object):
                     self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
+            else:
+                self.session_started_label.set_text("unknown")
             settimedeltastr(self.session_connected_label, self.client.start_time)
             real, redirect = 0, 0
             for w in self.client._window_to_id.keys():
