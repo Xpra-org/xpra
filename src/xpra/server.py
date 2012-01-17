@@ -1027,7 +1027,7 @@ class XpraServer(gobject.GObject):
 
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
-                if modifier in self.xkbmap_mod_managed:
+                if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
                     log.debug("modifier is server managed: %s", modifier)
                     continue
                 keynames = self._keynames_for_mod.get(modifier)
