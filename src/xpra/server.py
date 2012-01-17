@@ -1775,8 +1775,10 @@ class XpraServer(gobject.GObject):
             opts["jpegquality"] = jpeg_qual
         if id==-1:
             windows = self._id_to_window.values()
-        else:
+        elif id in self._id_to_window:
             windows = [self._id_to_window[id]]
+        else:
+            return
         log.debug("Requested refresh for windows: %s", windows)
         opts["batching"] = False
         for window in windows:
