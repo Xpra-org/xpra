@@ -13,6 +13,7 @@ gobject.threads_init()
 import os
 import socket # for socket.error
 import zlib
+import errno
 
 from Queue import Queue
 from threading import Thread, Lock
@@ -62,6 +63,14 @@ def repr_ellipsized(obj, limit=100):
 def dump_packet(packet):
     return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
 
+def untilConcludes(f, *a, **kw):
+    while True:
+        try:
+            return f(*a, **kw)
+        except (IOError, OSError), e:
+            if e.args[0] == errno.EINTR:
+                continue
+            raise
 
 class Protocol(object):
     CONNECTION_LOST = object()
@@ -159,7 +168,8 @@ class Protocol(object):
                     break
                 try:
                     while buf and not self._closed:
-                        buf = buf[self._conn.write(buf):]
+                        written = untilConcludes(self._conn.write, buf)
+                        buf = buf[written:]
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
@@ -176,7 +186,7 @@ class Protocol(object):
         try:
             while not self._closed:
                 try:
-                    buf = self._conn.read(8192)
+                    buf = untilConcludes(self._conn.read, 8192)
                 except (ValueError, OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error reading from connection: %s" % e)
                     return
