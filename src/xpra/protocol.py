@@ -158,7 +158,7 @@ class Protocol(object):
                     log("write thread: empty marker, exiting")
                     break
                 try:
-                    while buf:
+                    while buf and not self._closed:
                         buf = buf[self._conn.write(buf):]
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
