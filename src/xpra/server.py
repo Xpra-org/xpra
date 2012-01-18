@@ -233,7 +233,7 @@ class ServerSource(object):
             log("cancel_damage: %s, removed batched region", id)
             del self._damage_delayed[id]
         #for those being processed in separate threads, drop by sequence:
-        log("cancel_damage: %s, dropping all damage up to sequence=%s", id, self._sequence)
+        log("cancel_damage: %s, dropping all damage up to and including sequence=%s", id, self._sequence)
         self._damage_cancelled[id] = self._sequence
 
     def damage(self, id, window, x, y, w, h, options=None):
@@ -251,12 +251,12 @@ class ServerSource(object):
             option to ensure no batching will occur for this request.
         """
         def damage_now(reason):
+            self._sequence += 1
             log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", id, x, y, w, h, reason, self._sequence)
             region = gtk.gdk.Region()
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             item = id, window, region, self._sequence, options
             self._damage_request_queue.put(item)
-            self._sequence += 1
         if not ServerSource.BATCH_EVENTS:
             return damage_now("batching disabled")
 
@@ -322,8 +322,8 @@ class ServerSource(object):
         #create a new delayed region:
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-        self._damage_delayed[id] = (id, window, region, self._sequence, options)
         self._sequence += 1
+        self._damage_delayed[id] = (id, window, region, self._sequence, options)
         def send_delayed():
             """ move the delayed rectangles to the expired list """
             log("send_delayed for %s", id)
@@ -351,7 +351,7 @@ class ServerSource(object):
                 return              #empty marker
             id, window, damage, sequence, options = damage_request
             log("damage_to_data: processing sequence=%s", sequence)
-            if self._damage_cancelled.get(id, 0)>sequence:
+            if self._damage_cancelled.get(id, 0)>=sequence:
                 log("damage_to_data: dropping request with sequence=%s", sequence)
                 continue
             regions = []
@@ -385,7 +385,7 @@ class ServerSource(object):
             gobject.idle_add(self._process_damage_regions, id, window, ww, wh, regions, sequence, options)
 
     def _process_damage_regions(self, id, window, ww, wh, regions, sequence, options):
-        if self._damage_cancelled.get(id, 0)>sequence:
+        if self._damage_cancelled.get(id, 0)>=sequence:
             log("process_damage_regions: dropping damage request with sequence=%s", sequence)
             return
         # It's important to acknowledge changes *before* we extract them,
@@ -447,7 +447,7 @@ class ServerSource(object):
 
     def make_data_packet(self, item):
         id, x, y, w, h, coding, data, rowstride, sequence, options = item
-        if self._damage_cancelled.get(id, 0)>sequence:
+        if self._damage_cancelled.get(id, 0)>=sequence:
             log("make_data_packet: dropping data packet with sequence=%s", sequence)
             return  None
         log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
@@ -486,7 +486,7 @@ class ServerSource(object):
             buf.close()
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if self._damage_cancelled.get(id, 0)>sequence and coding!="mmap":
+        if coding!="mmap" and self._damage_cancelled.get(id, 0)>=sequence:
             log("make_data_packet: dropping data packet with sequence=%s", sequence)
             return  None
         #actual network packet:
@@ -1547,8 +1547,8 @@ class XpraServer(gobject.GObject):
         (_, id) = packet
         window = self._id_to_window[id]
         assert not isinstance(window, OverrideRedirectWindowModel)
-        self._desktop_manager.hide_window(window)
         self._cancel_damage(window)
+        self._desktop_manager.hide_window(window)
 
     def _process_move_window(self, proto, packet):
         (_, id, x, y) = packet
@@ -1785,6 +1785,9 @@ class XpraServer(gobject.GObject):
             if (isinstance(window, OverrideRedirectWindowModel)):
                 (_, _, w, h) = window.get_property("geometry")
             else:
+                if not self._desktop_manager._models[window].shown:
+                    log("window is no longer shown, ignoring buffer refresh which would fail")
+                    return
                 w, h = window.get_property("actual-size")
             self._damage(window, 0, 0, w, h, opts)
 
