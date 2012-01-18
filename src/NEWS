@@ -1,4 +1,4 @@
-v0.0.7.33 (2012-01-19)
+v0.0.7.34 (2012-01-19)
 ======================
 	-- security: restrict access to run-xpra script (chmod)
 	-- security: cursor data sent to the client was too big (exposing server memory)
