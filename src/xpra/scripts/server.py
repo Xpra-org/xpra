@@ -98,7 +98,13 @@ def sh_quotemeta(s):
 def xpra_runner_shell_script(xpra_file, starting_dir):
     script = []
     script.append("#!/bin/sh\n")
-    for var, value in os.environ.iteritems():
+    for var, value in os.environ.items():
+        # these aren't used by xpra, and some should not be exposed
+        # as they are either irrelevant or simply do not match
+        # the new environment used by xpra
+        # TODO: use a whitelist
+        if var in ["XDG_SESSION_COOKIE", "LS_COLORS"]:
+            continue
         # :-separated envvars that people might change while their server is
         # going:
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
@@ -228,12 +234,13 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Write out a shell-script so that we can start our proxy in a clean
     # environment:
-    open(scriptpath, "w").write(xpra_runner_shell_script(xpra_file,
-                                                         starting_dir))
+    scriptfile = open(scriptpath, "w")
     # Unix is a little silly sometimes:
     umask = os.umask(0)
     os.umask(umask)
-    os.chmod(scriptpath, 0777 & ~umask)
+    os.fchmod(scriptfile.fileno(), 0700 & ~umask)
+    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir))
+    scriptfile.close()
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
