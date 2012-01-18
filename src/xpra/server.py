@@ -738,7 +738,7 @@ class XpraServer(gobject.GObject):
 
                 #now set all the keycodes:
                 clean_state()
-                if len(self.xkbmap_keycodes)>0:
+                if self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0:
                     #version 0.0.7.33 and above:
                     self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
                 else:
