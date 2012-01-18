@@ -720,6 +720,7 @@ class XpraClient(gobject.GObject):
         log.debug("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
 
     def _keys_changed(self, *args):
+        log.debug("keys_changed")
         self._keymap = gtk.gdk.keymap_get_default()
         if not self._keymap_changing:
             self._keymap_changing = True

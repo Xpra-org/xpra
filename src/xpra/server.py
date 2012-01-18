@@ -747,7 +747,7 @@ class XpraServer(gobject.GObject):
 
                 #now set the new modifier mappings:
                 clean_state()
-                log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes))
+                log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
                 if self.xkbmap_mod_meanings:
                     #version 0.0.7.33 and above with Unix-like OS:
                     self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
@@ -1592,7 +1592,7 @@ class XpraServer(gobject.GObject):
         self.xmodmap_data, modifiers = None, []
         if len(packet)>=5:
             self.xmodmap_data, modifiers = packet[3:5]
-        if len(packet)>=12:
+        if len(packet)>=11:
             self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = packet[5:11]
         self._make_keymask_match([])
         self.set_keymap()
