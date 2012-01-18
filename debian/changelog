@@ -1,3 +1,17 @@
+xpra (0.0.7.34-1) UNRELEASED; urgency=low
+  * security: restrict access to run-xpra script (chmod)
+  * security: cursor data sent to the client was too big (exposing server memory)
+  * fix thread leak - properly this time, SIGUSR1 now dumps all threads
+  * off-by-one keyboard mapping error could cause modifiers to be lost
+  * pure python/cython method for finding modifier mappings (faster and more reliable)
+  * retry socket read/write after temporary error EINTR
+  * avoid warnings when asked to refresh windows which are now hidden
+  * auto-refresh was using an incorrect window size
+  * logging formatting fixes (only shown with logging on)
+  * hide picture encoding menu when mmap in use (since it is then ignored)
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 19 Jan 2012 02:12:42 +0700
+
 xpra (0.0.7.33-1) UNRELEASED; urgency=low
   * readonly command line option
   * correctly stop all network related threads on disconnection

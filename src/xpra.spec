@@ -1,7 +1,7 @@
 #
 # rpm spec for xpra
 #
-%define version 0.0.7.33
+%define version 0.0.7.34
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -43,6 +43,18 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Thu Jan 19 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.34-1
+- security: restrict access to run-xpra script (chmod)
+- security: cursor data sent to the client was too big (exposing server memory)
+- fix thread leak - properly this time, SIGUSR1 now dumps all threads
+- off-by-one keyboard mapping error could cause modifiers to be lost
+- pure python/cython method for finding modifier mappings (faster and more reliable)
+- retry socket read/write after temporary error EINTR
+- avoid warnings when asked to refresh windows which are now hidden
+- auto-refresh was using an incorrect window size
+- logging formatting fixes (only shown with logging on)
+- hide picture encoding menu when mmap in use (since it is then ignored)
+
 * Fri Jan 13 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
 - readonly command line option
 - correctly stop all network related threads on disconnection
