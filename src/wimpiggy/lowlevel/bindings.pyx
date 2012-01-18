@@ -1549,7 +1549,7 @@ def get_cursor_image():
         image = XFixesGetCursorImage(display)
         if image==NULL:
             return  None
-        l = image.width*image.height*4
+        l = image.width*image.height
         pixels = argbdata_to_pixdata(image.pixels, l)
         pixels_string = pixels.tostring()
         return (image.x, image.y, image.width, image.height, image.xhot, image.yhot,

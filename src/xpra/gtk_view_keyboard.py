@@ -65,6 +65,7 @@ class KeyboardStateInfoWindow:
 		self.key_events = deque(maxlen=35)
 		self.window.connect("key-press-event", self.key_press)
 		self.window.connect("key-release-event", self.key_release)
+		self.window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
 
 	def populate_modifiers(self, *args):
 		(x, y, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
