@@ -164,10 +164,10 @@ class ClientExtras(ClientExtrasBase):
         try:
             import dbus.glib
             assert dbus.glib
-            bus = dbus.SessionBus()
+            self.dbus_session = dbus.SessionBus()
             FD_NOTIFICATIONS = 'org.freedesktop.Notifications'
-            obj = bus.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
-            self.dbusnotify = dbus.Interface(obj, FD_NOTIFICATIONS)
+            self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
+            self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
             self.has_dbusnotify = True
             log.info("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
         except Exception, e:
