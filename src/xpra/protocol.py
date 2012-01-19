@@ -130,12 +130,43 @@ class Protocol(object):
         if c:
             self._write_queue.put(c)
 
+    def verify_packet(self, packet):
+        """ look for None values which may have caused the packet to fail encoding """
+        if type(packet)!=list:
+            return
+        assert len(packet)>0
+        tree = ["'%s' packet" % packet[0]]
+        self.do_verify_packet(tree, packet)
+
+    def do_verify_packet(self, tree, packet):
+        def err(msg):
+            log.error("%s in %s", msg, "->".join(tree))
+        def new_tree(append):
+            nt = tree[:]
+            nt.append(append)
+            return nt
+        if packet is None:
+            return err("None value")
+        if type(packet)==list:
+            i = 0
+            for x in packet:
+                self.do_verify_packet(new_tree("[%s]" % i), x)
+                i += 1
+        elif type(packet)==dict:
+            for k,v in packet.items():
+                self.do_verify_packet(new_tree("key for value='%s'" % v), k)
+                self.do_verify_packet(new_tree("value for key='%s'" % k), v)
+
     def _flush_one_packet_into_buffer(self):
         if not self.source:
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            data = bencode(packet)
+            try:
+                data = bencode(packet)
+            except KeyError or TypeError, e:
+                self.verify_packet(packet)
+                raise e
             l = len(data)
             self._write_lock.acquire()
             try:
