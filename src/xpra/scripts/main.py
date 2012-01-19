@@ -205,7 +205,7 @@ def main(script_file, cmdline):
             print("%s - %s:" % (fid, frame))
             traceback.print_stack(frame)
         print("")
-        
+
     def toggle_debug_on(*args):
         dump_frames()
         toggle_logging(logging.DEBUG)

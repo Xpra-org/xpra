@@ -13,6 +13,11 @@ def mask_to_names(mask, modifier_map):
             mask &= ~modifier_mask
     return modifiers
 
+def nn(x):
+    if x is None:
+        return ""
+    return x
+
 def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
@@ -32,7 +37,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
             for keyval, keycode, group, level in entries:
                 name = gtk.gdk.keyval_name(keyval)
                 if name not in ignore_keys:
-                    keycodes.append((keyval, name, keycode, group, level))
+                    keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
                 if name in add_if_missing:
                     add_if_missing.remove(name)
     #TODO: do this server-side to ensure all modifiers can be set

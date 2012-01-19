@@ -27,7 +27,6 @@ from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
 import xpra
-default_capabilities = {"__prerelease_version": xpra.__version__}
 
 def nn(x):
     if x is None:
@@ -793,7 +792,7 @@ class XpraClient(gobject.GObject):
         self._protocol.source.queue_mouse_position_packet(packet)
 
     def send_hello(self, hash=None):
-        capabilities_request = dict(default_capabilities)
+        capabilities_request = {"__prerelease_version": xpra.__version__}
         if hash:
             capabilities_request["challenge_response"] = hash
         if self.compression_level:
