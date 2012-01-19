@@ -976,7 +976,8 @@ class XpraServer(gobject.GObject):
     def _keycode(self, keycode, keyval, keyname, group=0, level=0):
         log.debug("keycode(%s,%s,%s,%s,%s)", keycode, keyval, keyname, group, level)
         if keycode and self.xkbmap_print is not None:
-            """ versions 0.0.7.24 and above give us the raw keycode,
+            """ versions 0.0.7.24 and above give us the raw keycode on xposix,
+                versions 0.0.7.33 and above give us the raw keycode on all platforms
                 we can only use this if we have applied the same keymap - if the client sent one
             """
             return  keycode
@@ -987,6 +988,9 @@ class XpraServer(gobject.GObject):
             if len(kn)>0 and kn[-1]=="\0":
                 kn = kn[:-1]
             kv = gtk.gdk.keyval_from_name(kn)
+            if not kv:
+                log.error("no keyval found for keyname=%s", kn)
+                return  None
         entries = self._keymap.get_entries_for_keyval(kv)
         if not entries:
             log.error("no keycode found for keyname=%s, keyval=%s", keyname, kv)
