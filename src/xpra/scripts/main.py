@@ -206,20 +206,19 @@ def main(script_file, cmdline):
             traceback.print_stack(frame)
         print("")
 
-    def toggle_debug_on(*args):
-        dump_frames()
-        toggle_logging(logging.DEBUG)
-    def toggle_debug_off(*args):
-        toggle_logging(logging.INFO)
-        
     if options.debug is not None:
-        toggle_debug_on()
+        toggle_logging(logging.DEBUG)
     else:
-        toggle_debug_off()
+        toggle_logging(logging.INFO)
     logging.root.addHandler(logging.StreamHandler(sys.stderr))
     if os.name=="posix":
-        signal.signal(signal.SIGUSR1, toggle_debug_on)
-        signal.signal(signal.SIGUSR2, toggle_debug_off)
+        def sigusr1(*args):
+            dump_frames()
+            toggle_logging(logging.DEBUG)
+        def sigusr2(*args):
+            toggle_logging(logging.INFO)
+        signal.signal(signal.SIGUSR1, sigusr1)
+        signal.signal(signal.SIGUSR2, sigusr2)
 
     mode = args.pop(0)
 
