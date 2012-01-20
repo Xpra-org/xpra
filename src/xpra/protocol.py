@@ -27,14 +27,22 @@ log = Logger()
 # (os.read/os.write-style interface) two-way byte stream:
 
 class TwoFileConnection(object):
-    def __init__(self, writeable, readable):
+    def __init__(self, writeable, readable, abort_test=None):
         self._writeable = writeable
         self._readable = readable
+        self._abort_test = abort_test
+
+    def may_abort(self, action):
+        """ if abort_test is defined, run it """
+        if self._abort_test:
+            self._abort_test(action)
 
     def read(self, n):
+        self.may_abort("read")
         return os.read(self._readable.fileno(), n)
 
     def write(self, buf):
+        self.may_abort("write")
         return os.write(self._writeable.fileno(), buf)
 
     def close(self):

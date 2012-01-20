@@ -316,7 +316,15 @@ def connect_or_fail(display_desc):
             child = Popen(cmd, stdin=PIPE, stdout=PIPE)
         except OSError, e:
             sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
-        return TwoFileConnection(child.stdin, child.stdout)
+        def abort_test(action):
+            """ if ssh dies, we don't need to try to read/write from its sockets """
+            if child.poll()!=0:
+                error_message = "cannot %s using %s: the SSH process has terminated!" % (action, display_desc["full_ssh"])
+                print(error_message)
+                from wimpiggy.util import gtk_main_quit_really
+                gtk_main_quit_really()
+                raise IOError(error_message)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test)
 
     elif XPRA_LOCAL_SERVERS_SUPPORTED and display_desc["type"] == "unix-domain":
         sockdir = DotXpra()
