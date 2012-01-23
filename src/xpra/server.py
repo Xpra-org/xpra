@@ -1507,16 +1507,16 @@ class XpraServer(gobject.GObject):
             for x,y,w,h,pixmap in regions:
                 pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
                 pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
-                screenshot_pixmap.draw_pixbuf(None, pixbuf, 0, 0, x, y)
+                screenshot_pixmap.draw_pixbuf(None, pixbuf, 0, 0, x-minx, y-miny)
             item = _get_rgb_rawdata(-1, screenshot_pixmap, 0, 0, width, height, "png", -1, None)
             (_, x, y, width, height, _, raw_data, rowstride, _, _) = item
             import Image
-            im = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
+            im = Image.fromstring("RGB", (width, height), raw_data, "raw", "RGB", rowstride)
             buf = StringIO.StringIO()
             im.save(buf, "png")
             data = buf.getvalue()
             buf.close()
-            packet = ["screenshot", w, h, "png", rowstride, data]
+            packet = ["screenshot", width, height, "png", rowstride, data]
         return packet
 
     def _process_set_deflate(self, proto, packet):
