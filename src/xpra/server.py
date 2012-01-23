@@ -1485,35 +1485,40 @@ class XpraServer(gobject.GObject):
     def make_screenshot_packet(self):
         log.debug("grabbing screenshot")
         regions = []
-        for window in self._window_to_id.keys():
+        for wid in reversed(sorted(self._id_to_window.keys())):
+            window = self._id_to_window[wid]
             pixmap = window.get_property("client-contents")
             if pixmap is None:
                 continue
             (x, y, _, _) = self._desktop_manager.window_geometry(window)
             w, h = pixmap.get_size()
-            regions.append((x, y, w, h, pixmap))
+            item = (wid, x, y, w, h, pixmap)
+            if self._has_focus==wid:
+                #window with focus first (drawn last)
+                regions.insert(0, item)
+            else:
+                regions.append(item)
         log.debug("screenshot: found regions=%s", regions)
         if len(regions)==0:
-            packet = ["screenshot", 0, 0, "png", ""]
+            packet = ["screenshot", 0, 0, "png", -1, ""]
         else:
-            minx = min([x for (x,_,_,_,_) in regions])
-            miny = min([y for (_,y,_,_,_) in regions])
-            maxx = max([(x+w) for (x,_,w,_,_) in regions])
-            maxy = max([(y+h) for (_,y,_,h,_) in regions])
+            minx = min([x for (_,x,_,_,_,_) in regions])
+            miny = min([y for (_,_,y,_,_,_) in regions])
+            maxx = max([(x+w) for (_,x,_,w,_,_) in regions])
+            maxy = max([(y+h) for (_,_,y,_,h,_) in regions])
             width = maxx-minx
             height = maxy-miny
-            log.debug("screenshot: %sx%s at %sx%s", width, height, minx, miny)
-            screenshot_pixmap = gtk.gdk.Pixmap(None, width, height, depth=24)
-            for x,y,w,h,pixmap in regions:
-                pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
-                pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
-                screenshot_pixmap.draw_pixbuf(None, pixbuf, 0, 0, x-minx, y-miny)
-            item = _get_rgb_rawdata(-1, screenshot_pixmap, 0, 0, width, height, "png", -1, None)
-            (_, x, y, width, height, _, raw_data, rowstride, _, _) = item
+            log.debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
             import Image
-            im = Image.fromstring("RGB", (width, height), raw_data, "raw", "RGB", rowstride)
+            image = Image.new("RGBA", (width, height))
+            for wid, x, y, w, h, pixmap in reversed(regions):
+                (wid, _, _, w, h, _, raw_data, rowstride, _, _) = _get_rgb_rawdata(wid, pixmap, 0, 0, w, h, "rgb24", -1, None)
+                window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
+                tx = x-minx
+                ty = y-miny
+                image.paste(window_image, (tx, ty))
             buf = StringIO.StringIO()
-            im.save(buf, "png")
+            image.save(buf, "png")
             data = buf.getvalue()
             buf.close()
             packet = ["screenshot", width, height, "png", rowstride, data]
