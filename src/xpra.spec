@@ -1,7 +1,9 @@
-#
-# rpm spec for xpra
-#
-%define version 0.0.7.34
+# This file is part of Parti.
+# Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
+# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+%define version 0.0.7.35
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -43,6 +45,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Mon Jan 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.35-1
+- ability to take screenshots
+
 * Thu Jan 19 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.34-1
 - security: restrict access to run-xpra script (chmod)
 - security: cursor data sent to the client was too big (exposing server memory)

@@ -66,6 +66,7 @@ def main(script_file, cmdline):
                           usage="".join(["\n",
                                          start_str,
                                          "\t%prog attach [DISPLAY]\n",
+                                         "\t%prog screenshot filename [DISPLAY]\n",
                                          stop_str,
                                          list_str,
                                          upgrade_str,
@@ -221,13 +222,12 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR2, sigusr2)
 
     mode = args.pop(0)
-
     if mode in ("start", "upgrade") and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         from xpra.scripts.server import run_server
         run_server(parser, options, mode, script_file, args)
-    elif mode == "attach" or mode == "detach":
-        run_client(parser, options, args, mode=="detach")
+    elif mode in ("attach", "detach", "screenshot"):
+        run_client(parser, options, args, mode)
     elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         run_stop(parser, options, args)
@@ -278,7 +278,7 @@ def parse_display_name(parser, opts, display_name):
             desc["host"] = "127.0.0.1"
         return desc
     else:
-        parser.error("unknown format for display name")
+        parser.error("unknown format for display name: %s" % display_name)
 
 def pick_display(parser, opts, extra_args):
     if len(extra_args) == 0:
@@ -341,8 +341,11 @@ def connect_or_fail(display_desc):
         assert False, "unsupported display type in connect"
 
 
-def run_client(parser, opts, extra_args, detach):
-    from xpra.client import XpraClient
+def run_client(parser, opts, extra_args, mode):
+    if mode=="screenshot":
+        screenshot_filename = extra_args[0]
+        extra_args = extra_args[1:]
+
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
@@ -351,10 +354,12 @@ def run_client(parser, opts, extra_args, detach):
     if opts.title_suffix is not None and opts.title!="@title@ on @client-machine@":
         parser.error("use --title or --title-suffix but not both!")
 
-    app = XpraClient(conn, opts)
-    def handshake_complete_msg(*args):
-        sys.stdout.write("Attached (press Control-C to detach)\n")
-        sys.stdout.flush()
+    if mode=="screenshot":
+        from xpra.client_base import ScreenshotXpraClient
+        app = ScreenshotXpraClient(conn, opts, screenshot_filename)
+    else:
+        from xpra.client import XpraClient
+        app = XpraClient(conn, opts)
     def got_gibberish_msg(obj, data):
         if "assword" in data:
             sys.stdout.write("Your ssh program appears to be asking for a password.\n"
@@ -364,13 +369,15 @@ def run_client(parser, opts, extra_args, detach):
             sys.stdout.write("Your ssh program appears to be asking for a username.\n"
                              "Perhaps try using something like 'ssh:USER@host:display'?\n")
             sys.stdout.flush()
-    app.connect("handshake-complete", handshake_complete_msg)
     app.connect("received-gibberish", got_gibberish_msg)
-    if detach:
-        def do_detach(*args):
+    def handshake_complete(*args):
+        if mode=="detach":
             sys.stdout.write("handshake-complete: detaching")
             app.quit()
-        app.connect("handshake-complete", do_detach)
+        elif mode=="attach":
+            sys.stdout.write("Attached (press Control-C to detach)\n")
+            sys.stdout.flush()
+    app.connect("handshake-complete", handshake_complete)
     signal.signal(signal.SIGINT, app.quit)
     try:
         app.run()

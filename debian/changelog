@@ -1,3 +1,6 @@
+xpra (0.0.7.35-1) UNRELEASED; urgency=low
+  * ability to take screenshots
+
 xpra (0.0.7.34-1) UNRELEASED; urgency=low
   * security: restrict access to run-xpra script (chmod)
   * security: cursor data sent to the client was too big (exposing server memory)

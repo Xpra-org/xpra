@@ -67,6 +67,28 @@ from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
+
+def _get_rgb_rawdata(id, pixmap, x, y, width, height, encoding, sequence, options):
+    pixmap_w, pixmap_h = pixmap.get_size()
+    # Just in case we somehow end up with damage larger than the pixmap,
+    # we don't want to start requesting random chunks of memory (this
+    # could happen if a window is resized but we don't throw away our
+    # existing damage map):
+    assert x >= 0
+    assert y >= 0
+    if x + width > pixmap_w:
+        width = pixmap_w - x
+    if y + height > pixmap_h:
+        height = pixmap_h - y
+    if width <= 0 or height <= 0:
+        return None
+    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
+    pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), x, y, 0, 0, width, height)
+    raw_data = pixbuf.get_pixels()
+    rowstride = pixbuf.get_rowstride()
+    return (id, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
+
+
 class DesktopManager(gtk.Widget):
     def __init__(self):
         gtk.Widget.__init__(self)
@@ -188,14 +210,14 @@ class ServerSource(object):
 
         self._closed = False
 
-        self._damagedata_thread = Thread(target=self.damage_to_data)
-        self._damagedata_thread.name = "damage_to_data"
-        self._damagedata_thread.daemon = True
-        self._damagedata_thread.start()
-        self._datapacket_thread = Thread(target=self.data_to_packet)
-        self._datapacket_thread.name = "data_to_packet"
-        self._datapacket_thread.daemon = True
-        self._datapacket_thread.start()
+        def start_daemon_thread(target, name):
+            t = Thread(target=target)
+            t.name = name
+            t.daemon = True
+            t.start()
+            return t
+        self._damagedata_thread = start_daemon_thread(self.damage_to_data, "damage_to_data")
+        self._datapacket_thread = start_daemon_thread(self.data_to_packet, "data_to_packet")
 
     def close(self):
         self._closed = True
@@ -402,32 +424,10 @@ class ServerSource(object):
             if full_window:
                 log("process_damage_regions: sending full window: %s", pixmap.get_size())
                 w, h = pixmap.get_size()
-            data = self._get_rgb_rawdata(id, pixmap, x, y, w, h, sequence, options)
+            data = _get_rgb_rawdata(id, pixmap, x, y, w, h, self._encoding, sequence, options)
             if data:
                 log("process_damage_regions: adding pixel data %s to queue, queue size=%s", data[:6], self._damage_data_queue.qsize())
                 self._damage_data_queue.put(data)
-
-    def _get_rgb_rawdata(self, id, pixmap, x, y, width, height, sequence, options):
-        pixmap_w, pixmap_h = pixmap.get_size()
-        # Just in case we somehow end up with damage larger than the pixmap,
-        # we don't want to start requesting random chunks of memory (this
-        # could happen if a window is resized but we don't throw away our
-        # existing damage map):
-        assert x >= 0
-        assert y >= 0
-        if x + width > pixmap_w:
-            width = pixmap_w - x
-        if y + height > pixmap_h:
-            height = pixmap_h - y
-        if width <= 0 or height <= 0:
-            return None
-        pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
-        pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),
-                                 x, y, 0, 0, width, height)
-        raw_data = pixbuf.get_pixels()
-        rowstride = pixbuf.get_rowstride()
-        return (id, x, y, width, height, self._encoding, raw_data, rowstride, sequence, options)
-
 
     def data_to_packet(self):
         while not self._closed:
@@ -447,8 +447,8 @@ class ServerSource(object):
 
     def make_data_packet(self, item):
         id, x, y, w, h, coding, data, rowstride, sequence, options = item
-        if self._damage_cancelled.get(id, 0)>=sequence:
-            log("make_data_packet: dropping data packet with sequence=%s", sequence)
+        if sequence>=0 and self._damage_cancelled.get(id, 0)>=sequence:
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", id, sequence)
             return  None
         log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
         #remove rowstride padding but only if we can't send the rowstride value to client
@@ -486,8 +486,8 @@ class ServerSource(object):
             buf.close()
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and self._damage_cancelled.get(id, 0)>=sequence:
-            log("make_data_packet: dropping data packet with sequence=%s", sequence)
+        if coding!="mmap" and sequence>=0 and self._damage_cancelled.get(id, 0)>=sequence:
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", id, sequence)
             return  None
         #actual network packet:
         packet = ["draw", id, x, y, w, h, coding, data]
@@ -1139,18 +1139,6 @@ class XpraServer(gobject.GObject):
             log("Queuing packet: %s", dump_packet(packet))
             self._protocol.source.queue_ordinary_packet(packet)
 
-    def _raw_send(self, proto, packet):
-        #this method is only used before we create the server source
-        socket = proto._conn._s
-        log.debug("proto=%s, conn=%s, socket=%s", repr(proto), repr(proto._conn), socket)
-        from xpra.bencode import bencode
-        import select
-        data = bencode(packet)
-        written = 0
-        while written < len(data):
-            select.select([], [socket], [])
-            written += socket.send(data[written:])
-
     def _damage(self, window, x, y, width, height, options=None):
         if self._protocol is not None and self._protocol.source is not None:
             id = self._window_to_id[window]
@@ -1279,7 +1267,13 @@ class XpraServer(gobject.GObject):
         self.salt = "%s" % uuid.uuid4()
         log.info("Password required, sending challenge")
         packet = ("challenge", self.salt)
-        self._raw_send(proto, packet)
+        proto._add_packet_to_queue(packet)
+
+    def send_disconnect(self, proto, reason):
+        def force_disconnect(*args):
+            proto.close()            
+        proto._add_packet_to_queue(["disconnect", reason])
+        gobject.timeout_add(1000, force_disconnect)
 
     def _verify_password(self, proto, client_hash):
         passwordFile = open(self.password_file, "rU")
@@ -1288,11 +1282,7 @@ class XpraServer(gobject.GObject):
         if client_hash != hash.hexdigest():
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
-                try:
-                    self._raw_send(proto, ["disconnect", "invalid password"])
-                    proto.close()
-                except Exception, e:
-                    log.error("password does not match and failed to close connection %s: %s", proto, e)
+                self.send_disconnect(proto, "invalid password")
             gobject.timeout_add(1000, login_failed)
             return False
         self.salt = None            #prevent replay attacks
@@ -1303,7 +1293,7 @@ class XpraServer(gobject.GObject):
     def _process_hello(self, proto, packet):
         (_, capabilities) = packet
         log.info("Handshake complete; enabling connection")
-        remote_version = capabilities.get("__prerelease_version")
+        remote_version = capabilities.get("__prerelease_version") or capabilities.get("version")
         if not is_compatible_with(remote_version):
             proto.close()
             return
@@ -1316,6 +1306,13 @@ class XpraServer(gobject.GObject):
             del capabilities["challenge_response"]
             if not self._verify_password(proto, client_hash):
                 return
+        
+        if capabilities.get("screenshot_request", False):
+            #this is a screenshot request, handle it and disconnect
+            packet = self.make_screenshot_packet()
+            proto._add_packet_to_queue(packet)
+            gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+            return
 
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
@@ -1418,6 +1415,7 @@ class XpraServer(gobject.GObject):
     def send_hello(self, client_capabilities):
         capabilities = {}
         capabilities["__prerelease_version"] = xpra.__version__
+        capabilities["version"] = xpra.__version__
         if "deflate" in client_capabilities:
             capabilities["deflate"] = client_capabilities.get("deflate")
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
@@ -1476,6 +1474,50 @@ class XpraServer(gobject.GObject):
         self._send(["ping_echo", echotime, l1, l2, l3, cl])
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.send_ping)
+
+    def _process_screenshot(self, proto, packet):
+        self.send_screenshot()
+
+    def send_screenshot(self):
+        packet = self.make_screenshot_packet()
+        self._send(packet)
+        
+    def make_screenshot_packet(self):
+        log.debug("grabbing screenshot")
+        regions = []
+        for window in self._window_to_id.keys():
+            pixmap = window.get_property("client-contents")
+            if pixmap is None:
+                continue
+            (x, y, _, _) = self._desktop_manager.window_geometry(window)
+            w, h = pixmap.get_size()
+            regions.append((x, y, w, h, pixmap))
+        log.debug("screenshot: found regions=%s", regions)
+        if len(regions)==0:
+            packet = ["screenshot", 0, 0, "png", ""]
+        else:
+            minx = min([x for (x,_,_,_,_) in regions])
+            miny = min([y for (_,y,_,_,_) in regions])
+            maxx = max([(x+w) for (x,_,w,_,_) in regions])
+            maxy = max([(y+h) for (_,y,_,h,_) in regions])
+            width = maxx-minx
+            height = maxy-miny
+            log.debug("screenshot: %sx%s at %sx%s", width, height, minx, miny)
+            screenshot_pixmap = gtk.gdk.Pixmap(None, width, height, depth=24)
+            for x,y,w,h,pixmap in regions:
+                pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
+                pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
+                screenshot_pixmap.draw_pixbuf(None, pixbuf, 0, 0, x, y)
+            item = _get_rgb_rawdata(-1, screenshot_pixmap, 0, 0, width, height, "png", -1, None)
+            (_, x, y, width, height, _, raw_data, rowstride, _, _) = item
+            import Image
+            im = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
+            buf = StringIO.StringIO()
+            im.save(buf, "png")
+            data = buf.getvalue()
+            buf.close()
+            packet = ["screenshot", w, h, "png", rowstride, data]
+        return packet
 
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
@@ -1839,6 +1881,7 @@ class XpraServer(gobject.GObject):
         "jpeg-quality": _process_jpeg_quality,
         "damage-sequence": _process_damage_sequence,
         "buffer-refresh": _process_buffer_refresh,
+        "screenshot": _process_screenshot,
         "desktop_size": _process_desktop_size,
         "encoding": _process_encoding,
         "ping": _process_ping,

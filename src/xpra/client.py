@@ -20,13 +20,11 @@ from wimpiggy.util import (n_arg_signal,
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.protocol import Protocol
+from xpra.client_base import XpraClientBase
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
-
-import xpra
 
 def nn(x):
     if x is None:
@@ -167,8 +165,7 @@ class ClientWindow(gtk.Window):
 
     def _new_backing(self, w, h):
         old_backing = self._backing
-        self._backing = gtk.gdk.Pixmap(gtk.gdk.get_default_root_window(),
-                                       w, h)
+        self._backing = gtk.gdk.Pixmap(gtk.gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
         if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
@@ -372,15 +369,14 @@ class ClientWindow(gtk.Window):
 
 gobject.type_register(ClientWindow)
 
-class XpraClient(gobject.GObject):
+
+class XpraClient(XpraClientBase):
     __gsignals__ = {
         "clipboard-toggled": n_arg_signal(0),
-        "handshake-complete": n_arg_signal(0),
-        "received-gibberish": n_arg_signal(1),
         }
 
     def __init__(self, conn, opts):
-        gobject.GObject.__init__(self)
+        XpraClientBase.__init__(self, opts)
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
@@ -390,10 +386,7 @@ class XpraClient(gobject.GObject):
         self.title = title
         self.readonly = opts.readonly
         self.session_name = opts.session_name
-        self.password_file = opts.password_file
         self.compression_level = opts.compression_level
-        self.encoding = opts.encoding
-        self.jpegquality = opts.jpegquality
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
         if self.max_bandwidth>0.0 and self.jpegquality==0:
@@ -465,8 +458,8 @@ class XpraClient(gobject.GObject):
                 self.mmap_file = None
                 self.mmap_size = 0
 
-        self._protocol = Protocol(conn, self.process_packet)
-        ClientSource(self._protocol)
+        self.init_packet_handlers()
+        self.ready(conn)
 
         self.keyboard_sync = opts.keyboard_sync
         self.key_repeat_modifiers = False
@@ -504,27 +497,44 @@ class XpraClient(gobject.GObject):
         if (self.max_bandwidth):
             gobject.timeout_add(2000, compute_receive_bandwidth, 2000);
 
+    def init_packet_handlers(self):
+        XpraClientBase.init_packet_handlers(self)
+        for k,v in {
+            "hello":                self._process_hello,
+            "new-window":           self._process_new_window,
+            "new-override-redirect":self._process_new_override_redirect,
+            "draw":                 self._process_draw,
+            "cursor":               self._process_cursor,
+            "bell":                 self._process_bell,
+            "notify_show":          self._process_notify_show,
+            "notify_close":         self._process_notify_close,
+            "ping":                 self._process_ping,
+            "ping_echo":            self._process_ping_echo,
+            "window-metadata":      self._process_window_metadata,
+            "configure-override-redirect":  self._process_configure_override_redirect,
+            "lost-window":          self._process_lost_window,
+            # "clipboard-*" packets are handled by a special case below.
+            }.items():
+            self._packet_handlers[k] = v
 
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
 
+    def quit(self, *args):
+        gtk_main_quit_really()
+
     def cleanup(self):
         if self._client_extras:
             self._client_extras.exit()
             self._client_extras = None
-        if self._protocol:
-            self._protocol.close()
-            self._protocol = None
+        XpraClientBase.cleanup(self)
         self.clean_mmap()
 
     def clean_mmap(self):
         if self.mmap_file and os.path.exists(self.mmap_file):
             os.unlink(self.mmap_file)
             self.mmap_file = None
-
-    def quit(self, *args):
-        gtk_main_quit_really()
 
     def parse_shortcuts(self, strs):
         #TODO: maybe parse with re instead?
@@ -779,29 +789,16 @@ class XpraClient(gobject.GObject):
         log.debug("mask_to_names(%s)=%s (raw=%s)", mask, no_nuisance, mn)
         return no_nuisance
 
-    def send(self, packet):
-        self._protocol.source.queue_ordinary_packet(packet)
-
-    def send_now(self, packet):
-        self._protocol.source.queue_priority_packet(packet)
-
     def send_positional(self, packet):
         self._protocol.source.queue_positional_packet(packet)
 
     def send_mouse_position(self, packet):
         self._protocol.source.queue_mouse_position_packet(packet)
 
-    def send_hello(self, hash=None):
-        capabilities_request = {"__prerelease_version": xpra.__version__}
-        if hash:
-            capabilities_request["challenge_response"] = hash
+    def make_hello(self, hash=None):
+        capabilities_request = XpraClientBase.make_hello(self, hash)
         if self.compression_level:
             capabilities_request["deflate"] = self.compression_level
-        if self.encoding:
-            capabilities_request["encoding"] = self.encoding
-        capabilities_request["encodings"] = ENCODINGS
-        if self.jpegquality:
-            capabilities_request["jpeg"] = self.jpegquality
         if self.xkbmap_layout:
             capabilities_request["xkbmap_layout"] = self.xkbmap_layout
             if self.xkbmap_variant:
@@ -828,8 +825,6 @@ class XpraClient(gobject.GObject):
         capabilities_request["bell"] = True
         capabilities_request["clipboard"] = self.clipboard_enabled
         capabilities_request["notifications"] = self._client_extras.can_notify()
-        capabilities_request["dynamic_compression"] = True
-        capabilities_request["packet_size"] = True
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
@@ -848,7 +843,7 @@ class XpraClient(gobject.GObject):
         if self.mmap_file:
             capabilities_request["mmap_file"] = self.mmap_file
             capabilities_request["mmap_token"] = self.mmap_token
-        self.send(["hello", capabilities_request])
+        return capabilities_request
 
     def send_ping(self):
         if self.can_ping:
@@ -889,23 +884,6 @@ class XpraClient(gobject.GObject):
         log.debug("Automatic refresh for all windows ")
         self.send_refresh(-1)
 
-    def _process_disconnect(self, packet):
-        log.error("server requested disconnect: %s" % str(packet))
-        self.quit()
-        return
-
-    def _process_challenge(self, packet):
-        if not self.password_file:
-            log.error("password is required by the server")
-            self.quit()
-            return
-        import hmac
-        passwordFile = open(self.password_file, "rU")
-        password = passwordFile.read()
-        (_, salt) = packet
-        hash = hmac.HMAC(password, salt)
-        self.send_hello(hash.hexdigest())
-
     def _process_hello(self, packet):
         (_, capabilities) = packet
         self.server_capabilities = capabilities
@@ -916,7 +894,7 @@ class XpraClient(gobject.GObject):
         self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
         self._raw_keycodes_full = capabilities.get("raw_keycodes_full", False)
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
-        self._remote_version = capabilities.get("__prerelease_version")
+        self._remote_version = capabilities.get("__prerelease_version") or capabilities.get("version")
         if not is_compatible_with(self._remote_version):
             self.quit()
             return
@@ -1095,42 +1073,6 @@ class XpraClient(gobject.GObject):
             log.debug("last window gone, clearing key repeat")
             self.clear_repeat()
 
-    def _process_set_deflate(self, packet):
-        #this tell us the server has set its compressor
-        #(the decompressor has been enabled - see protocol)
-        pass
-
-    def _process_connection_lost(self, packet):
-        log.error("Connection lost")
-        self.quit()
-
-    def _process_gibberish(self, packet):
-        (_, data) = packet
-        log.info("Received uninterpretable nonsense: %s", repr(data))
-        self.emit("received-gibberish", data)
-
-    _packet_handlers = {
-        "challenge": _process_challenge,
-        "disconnect": _process_disconnect,
-        "hello": _process_hello,
-        "new-window": _process_new_window,
-        "new-override-redirect": _process_new_override_redirect,
-        "draw": _process_draw,
-        "cursor": _process_cursor,
-        "bell": _process_bell,
-        "notify_show": _process_notify_show,
-        "notify_close": _process_notify_close,
-        "ping": _process_ping,
-        "ping_echo": _process_ping_echo,
-        "window-metadata": _process_window_metadata,
-        "configure-override-redirect": _process_configure_override_redirect,
-        "lost-window": _process_lost_window,
-        "set_deflate": _process_set_deflate,
-        # "clipboard-*" packets are handled by a special case below.
-        Protocol.CONNECTION_LOST: _process_connection_lost,
-        Protocol.GIBBERISH: _process_gibberish,
-        }
-
     def process_packet(self, proto, packet):
         packet_type = packet[0]
         if (isinstance(packet_type, str)
@@ -1138,6 +1080,6 @@ class XpraClient(gobject.GObject):
             if self.clipboard_enabled:
                 self._client_extras.process_clipboard_packet(packet)
         else:
-            self._packet_handlers[packet_type](self, packet)
+            self._packet_handlers[packet_type](packet)
 
 gobject.type_register(XpraClient)

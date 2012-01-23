@@ -170,32 +170,35 @@ class Protocol(object):
             return
         packet, self._source_has_more = self.source.next_packet()
         if packet is not None:
+            self._add_packet_to_queue(packet)
+
+    def _add_packet_to_queue(self, packet):
+        try:
+            data = bencode(packet)
+        except KeyError or TypeError, e:
+            self.verify_packet(packet)
+            raise e
+        l = len(data)
+        self._write_lock.acquire()
+        try:
             try:
-                data = bencode(packet)
-            except KeyError or TypeError, e:
-                self.verify_packet(packet)
-                raise e
-            l = len(data)
-            self._write_lock.acquire()
-            try:
-                try:
-                    if self._send_size:
-                        if l<=1024:
-                            #send size and data together (low copy overhead):
-                            self._queue_write("PS%014d%s" % (l, data), True)
-                            return
-                        self._queue_write("PS%014d" % l)
-                    self._queue_write(data, True)
-                finally:
-                    if packet[0]=="set_deflate":
-                        level = packet[1]
-                        log("set_deflate packet, changing compressor to level=%s", level)
-                        if level==0:
-                            self._compressor = None
-                        else:
-                            self._compressor = zlib.compressobj(level)
+                if self._send_size:
+                    if l<=1024:
+                        #send size and data together (low copy overhead):
+                        self._queue_write("PS%014d%s" % (l, data), True)
+                        return
+                    self._queue_write("PS%014d" % l)
+                self._queue_write(data, True)
             finally:
-                self._write_lock.release()
+                if packet[0]=="set_deflate":
+                    level = packet[1]
+                    log("set_deflate packet, changing compressor to level=%s", level)
+                    if level==0:
+                        self._compressor = None
+                    else:
+                        self._compressor = zlib.compressobj(level)
+        finally:
+            self._write_lock.release()
 
     def _write_thread_loop(self):
         try:

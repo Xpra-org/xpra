@@ -24,8 +24,8 @@ def run_cleanups():
     for c in _cleanups:
         try:
             c()
-        except:
-            pass
+        except Exception, e:
+            print("error running cleanup %s: %s" % (c, e))
 
 def deadly_signal(signum, frame):
     print("got signal %s, exiting" % signum)
