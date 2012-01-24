@@ -217,6 +217,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "geometry": (gobject.TYPE_PYOBJECT,
                      "current (border-corrected, relative to parent) coordinates (x, y, w, h) for the window", "",
                      gobject.PARAM_READABLE),
+        "transient-for": (gobject.TYPE_PYOBJECT,
+                          "Transient for (or None)", "",
+                          gobject.PARAM_READABLE),
+        "window-type": (gobject.TYPE_PYOBJECT,
+                        "Window type",
+                        "NB, most preferred comes first, then fallbacks",
+                        gobject.PARAM_READABLE),
         # NB "notify" signal never fires for the client-contents properties:
         "client-contents": (gobject.TYPE_PYOBJECT,
                             "gtk.gdk.Pixmap containing the window contents", "",
@@ -286,6 +293,26 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite.disconnect(self._damage_forward_handle)
             self._composite.destroy()
 
+    def _read_initial_properties(self):
+        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
+        # May be None
+        self._internal_set_property("transient-for", transient_for)
+
+        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
+        if window_types:
+            self._internal_set_property("window-type", window_types)
+        else:
+            if transient_for is not None:
+                # EWMH says that even if it's transient-for, we MUST check to
+                # see if it's override-redirect (and if so treat as NORMAL).
+                # But we wouldn't be here if this was override-redirect.
+                assume_type = "_NET_WM_TYPE_DIALOG"
+            else:
+                assume_type = "_NET_WM_WINDOW_TYPE_NORMAL"
+            self._internal_set_property("window-type",
+                              [gtk.gdk.atom_intern(assume_type)])
+
+
 gobject.type_register(BaseWindowModel)
 
 
@@ -308,6 +335,8 @@ class OverrideRedirectWindowModel(BaseWindowModel):
             # So double check now, *after* putting in our request:
             if not is_mapped(self.client_window):
                 raise Unmanageable, "window already unmapped"
+
+            self._read_initial_properties()
         try:
             trap.call(setup)
         except XError, e:
@@ -315,6 +344,10 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def do_wimpiggy_unmap_event(self, event):
         self.unmanage()
+
+    def prop_get(self, key, type):
+        return prop_get(self.client_window, key, type, ignore_errors=False)
+
 
 gobject.type_register(OverrideRedirectWindowModel)
 
@@ -360,16 +393,9 @@ class WindowModel(BaseWindowModel):
         "class-instance": (gobject.TYPE_PYOBJECT,
                            "Classic X 'class' and 'instance'", "",
                            gobject.PARAM_READABLE),
-        "transient-for": (gobject.TYPE_PYOBJECT,
-                          "Transient for (or None)", "",
-                          gobject.PARAM_READABLE),
         "protocols": (gobject.TYPE_PYOBJECT,
                       "Supported WM protocols", "",
                       gobject.PARAM_READABLE),
-        "window-type": (gobject.TYPE_PYOBJECT,
-                        "Window type",
-                        "NB, most preferred comes first, then fallbacks",
-                        gobject.PARAM_READABLE),
         "pid": (gobject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
@@ -755,6 +781,8 @@ class WindowModel(BaseWindowModel):
 
     def _read_initial_properties(self):
         # Things that don't change:
+        BaseWindowModel._read_initial_properties(self)
+        
         geometry = self.client_window.get_geometry()
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))
@@ -768,29 +796,11 @@ class WindowModel(BaseWindowModel):
             else:
                 self._internal_set_property("class-instance", (c, i))
 
-        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
-        # May be None
-        self._internal_set_property("transient-for", transient_for)
-
         protocols = self.prop_get("WM_PROTOCOLS", ["atom"])
         if protocols is None:
             protocols = []
         self._internal_set_property("protocols", protocols)
         self.notify("can-focus")
-
-        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
-        if window_types:
-            self._internal_set_property("window-type", window_types)
-        else:
-            if self.get_property("transient-for"):
-                # EWMH says that even if it's transient-for, we MUST check to
-                # see if it's override-redirect (and if so treat as NORMAL).
-                # But we wouldn't be here if this was override-redirect.
-                assume_type = "_NET_WM_TYPE_DIALOG"
-            else:
-                assume_type = "_NET_WM_WINDOW_TYPE_NORMAL"
-            self._internal_set_property("window-type",
-                              [gtk.gdk.atom_intern(assume_type)])
 
         pid = self.prop_get("_NET_WM_PID", "u32")
         if pid is not None:

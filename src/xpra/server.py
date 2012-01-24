@@ -862,7 +862,7 @@ class XpraServer(gobject.GObject):
 
     _window_export_properties = ("title", "size-hints")
     def _add_new_window(self, window):
-        log("Discovered new ordinary window")
+        log.debug("Discovered new ordinary window: %s", window)
         self._add_new_window_common(window)
         for prop in self._window_export_properties:
             window.connect("notify::%s" % prop, self._update_metadata)
@@ -887,7 +887,7 @@ class XpraServer(gobject.GObject):
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
-    _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine")
+    _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type")
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property:
@@ -957,9 +957,28 @@ class XpraServer(gobject.GObject):
                 return {"client-machine": client_machine.encode("utf-8")}
             else:
                 return {}
-
-        else:
-            assert False
+        elif propname == "transient-for":
+            transient_for = window.get_property("transient-for")
+            if transient_for:
+                log.info("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+                #try to find the model for this window:
+                for model in self._desktop_manager._models.keys():
+                    log.info("testing model %s: %s", model, model.client_window.xid)
+                    if model.client_window.xid==transient_for.xid:
+                        wid = self._window_to_id.get(model)
+                        log.info("found match, window id=%s", wid)
+                        return {"transient-for" : wid}
+                return {}
+            return {}
+        elif propname == "window-type":
+            window_types = window.get_property("window-type")
+            log.info("window_types=%s", window_types)
+            wts = []
+            for window_type in window_types:
+                wts.append(str(window_type))
+            log.info("window_types=%s", wts)
+            return {"window-type" : wts}
+        raise Exception("unhandled property name: %s" % propname)
 
     def _keycodes(self, keyname):
         keyval = gtk.gdk.keyval_from_name(keyname)
@@ -1160,7 +1179,10 @@ class XpraServer(gobject.GObject):
     def _send_new_or_window_packet(self, window):
         id = self._window_to_id[window]
         (x, y, w, h) = window.get_property("geometry")
-        self._send(["new-override-redirect", id, x, y, w, h, {}])
+        metadata = {}
+        for propname in ["transient-for", "window-type"]:
+            metadata.update(self._make_metadata(window, propname))
+        self._send(["new-override-redirect", id, x, y, w, h, metadata])
         self._damage(window, 0, 0, w, h)
 
     def _update_metadata(self, window, pspec):

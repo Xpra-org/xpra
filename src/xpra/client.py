@@ -89,6 +89,7 @@ class ClientWindow(gtk.Window):
         self._refresh_requested = False
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
+        self._override_redirect_windows = []
 
         self.update_metadata(metadata)
 
@@ -101,7 +102,18 @@ class ClientWindow(gtk.Window):
 
         self.move(x, y)
         self.set_default_size(w, h)
-
+        if override_redirect:
+            transient_for = self.get_transient_for()
+            type_hint = self.get_type_hint()
+            if transient_for is not None and transient_for.window is not None and type_hint in [gtk.gdk.WINDOW_TYPE_HINT_DIALOG,
+                            gtk.gdk.WINDOW_TYPE_HINT_MENU, gtk.gdk.WINDOW_TYPE_HINT_TOOLBAR,
+                            #gtk.gdk.WINDOW_TYPE_HINT_SPLASHSCREEN, gtk.gdk.WINDOW_TYPE_HINT_UTILITY,
+                            #gtk.gdk.WINDOW_TYPE_HINT_DOCK, gtk.gdk.WINDOW_TYPE_HINT_DESKTOP,
+                            gtk.gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU, gtk.gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                            gtk.gdk.WINDOW_TYPE_HINT_TOOLTIP,
+                            #gtk.gdk.WINDOW_TYPE_HINT_NOTIFICATION,
+                            gtk.gdk.WINDOW_TYPE_HINT_COMBO,gtk.gdk.WINDOW_TYPE_HINT_DND]:
+                transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def update_metadata(self, metadata):
@@ -162,6 +174,39 @@ class ClientWindow(gtk.Window):
                 loader.close()
                 pixbuf = loader.get_pixbuf()
             self.set_icon(pixbuf)
+
+        if "transient-for" in self._metadata:
+            wid = self._metadata.get("transient-for")
+            window = self._client._id_to_window.get(wid)
+            log.debug("found transient-for: %s / %s", wid, window)
+            if window:
+                self.set_transient_for(window)
+
+        if "window-type" in self._metadata:
+            name_to_hint = {
+                            "_NET_WM_WINDOW_TYPE_NORMAL"    : gtk.gdk.WINDOW_TYPE_HINT_NORMAL,
+                            "_NET_WM_WINDOW_TYPE_DIALOG"    : gtk.gdk.WINDOW_TYPE_HINT_DIALOG,
+                            "_NET_WM_WINDOW_TYPE_MENU"      : gtk.gdk.WINDOW_TYPE_HINT_MENU,
+                            "_NET_WM_WINDOW_TYPE_TOOLBAR"   : gtk.gdk.WINDOW_TYPE_HINT_TOOLBAR,
+                            "_NET_WM_WINDOW_TYPE_SPLASH"    : gtk.gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
+                            "_NET_WM_WINDOW_TYPE_UTILITY"   : gtk.gdk.WINDOW_TYPE_HINT_UTILITY,
+                            "_NET_WM_WINDOW_TYPE_DOCK"      : gtk.gdk.WINDOW_TYPE_HINT_DOCK,
+                            "_NET_WM_WINDOW_TYPE_DESKTOP"   : gtk.gdk.WINDOW_TYPE_HINT_DESKTOP,
+                            "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU" : gtk.gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
+                            "_NET_WM_WINDOW_TYPE_POPUP_MENU": gtk.gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                            "_NET_WM_WINDOW_TYPE_TOOLTIP"   : gtk.gdk.WINDOW_TYPE_HINT_TOOLTIP,
+                            "_NET_WM_WINDOW_TYPE_NOTIFICATION" : gtk.gdk.WINDOW_TYPE_HINT_NOTIFICATION,
+                            "_NET_WM_WINDOW_TYPE_COMBO"     : gtk.gdk.WINDOW_TYPE_HINT_COMBO,
+                            "_NET_WM_WINDOW_TYPE_DND"       : gtk.gdk.WINDOW_TYPE_HINT_DND
+                            }
+            window_types = self._metadata.get("window-type")
+            log.debug("window types=%s", window_types)
+            for window_type in window_types:
+                hint = name_to_hint.get(window_type)
+                if hint:
+                    log.debug("setting window type to %s - %s", window_type, hint)
+                    self.set_type_hint(hint)
+                    break
 
     def _new_backing(self, w, h):
         old_backing = self._backing
@@ -278,8 +323,13 @@ class ClientWindow(gtk.Window):
         if not self._override_redirect:
             x, y, w, h = self._geometry()
             if (x, y) != self._pos:
+                ox, oy = self._pos
+                dx, dy = x-ox, y-oy
                 self._pos = (x, y)
                 self._client.send(["move-window", self._id, x, y])
+                for window in self._override_redirect_windows:
+                    x, y = window.get_position()
+                    window.move(x+dx, y+dy)
             if (w, h) != self._size:
                 self._size = (w, h)
                 self._client.send(["resize-window", self._id, w, h])
@@ -972,9 +1022,8 @@ class XpraClient(XpraClientBase):
         self.send(["desktop_size", root_w, root_h])
 
     def _process_new_common(self, packet, override_redirect):
-        (_, id, x, y, w, h, metadata) = packet
-        window = ClientWindow(self, id, x, y, w, h, metadata,
-                              override_redirect)
+        (id, x, y, w, h, metadata) = packet[1:7]
+        window = ClientWindow(self, id, x, y, w, h, metadata, override_redirect)
         self._id_to_window[id] = window
         self._window_to_id[window] = id
         window.show_all()
