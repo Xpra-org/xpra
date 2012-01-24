@@ -288,8 +288,9 @@ def prop_get(target, key, type, ignore_errors=False):
         return None
     except (XError, PropertyError):
         if not ignore_errors:
-            log.info("Missing window or missing property or wrong property type %s (%s)",
-                     key, type, exc_info=True)
+            log.info("Missing window or missing property or wrong property type %s (%s)", key, type)
+            import traceback
+            traceback.print_stack()
         return None
     try:
         return _prop_decode(target, type, data)
