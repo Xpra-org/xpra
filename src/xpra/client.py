@@ -31,45 +31,6 @@ def nn(x):
         return  ""
     return x
 
-class ClientSource(object):
-    def __init__(self, protocol):
-        self._priority_packets = []
-        self._ordinary_packets = []
-        self._mouse_position = None
-        self._protocol = protocol
-        self._protocol.source = self
-
-    def queue_priority_packet(self, packet):
-        self._priority_packets.append(packet)
-        self._protocol.source_has_more()
-
-    def queue_ordinary_packet(self, packet):
-        self._ordinary_packets.append(packet)
-        self._protocol.source_has_more()
-
-    def queue_positional_packet(self, packet):
-        self.queue_ordinary_packet(packet)
-        self._mouse_position = None
-
-    def queue_mouse_position_packet(self, packet):
-        self._mouse_position = packet
-        self._protocol.source_has_more()
-
-    def next_packet(self):
-        if self._priority_packets:
-            packet = self._priority_packets.pop(0)
-        elif self._ordinary_packets:
-            packet = self._ordinary_packets.pop(0)
-        elif self._mouse_position is not None:
-            packet = self._mouse_position
-            self._mouse_position = None
-        else:
-            packet = None
-        has_more = packet is not None and \
-                (bool(self._priority_packets) or bool(self._ordinary_packets) \
-                 or self._mouse_position is not None)
-        return packet, has_more
-
 class ClientWindow(gtk.Window):
     def __init__(self, client, wid, x, y, w, h, metadata, override_redirect):
         if override_redirect:
@@ -249,7 +210,7 @@ class ClientWindow(gtk.Window):
             if len(img_data)==1:
                 #construct an array directly from the mmap zone:
                 offset, length = img_data[0]
-                arraytype = ctypes.c_char * length 
+                arraytype = ctypes.c_char * length
                 data = arraytype.from_buffer(self._client.mmap, offset)
                 self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
                 data_start.value = offset+length
@@ -613,7 +574,7 @@ class XpraClient(XpraClientBase):
                 pub_name = "AltGr"
             if pub_name not in modifier_names:
                 modifier_names[pub_name.lower()] = mod_name
-        
+
         for s in strs:
             #example for s: Control+F8:some_action()
             parts = s.split(":", 1)
@@ -804,7 +765,7 @@ class XpraClient(XpraClientBase):
         packet = ["keymap-changed"]
         if self.keyboard_as_properties:
             props = {"modifiers" : self.mask_to_names(current_mask)}
-            for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+            for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
                   "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
                 props[x] = getattr(self, x)
@@ -861,7 +822,7 @@ class XpraClient(XpraClientBase):
             capabilities["xkbmap_layout"] = self.xkbmap_layout
             if self.xkbmap_variant:
                 capabilities["xkbmap_variant"] = self.xkbmap_variant
-        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
                   "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
             v = getattr(self, x)
