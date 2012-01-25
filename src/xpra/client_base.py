@@ -95,15 +95,15 @@ class XpraClientBase(gobject.GObject):
             Protocol.GIBBERISH: self._process_gibberish,
             }
 
-    def send_hello(self, hash=None):
-        hello = self.make_hello(hash)
+    def send_hello(self, challenge_response=None):
+        hello = self.make_hello(challenge_response)
         self.send(["hello", hello])
 
-    def make_hello(self, hash=None):
+    def make_hello(self, challenge_response=None):
         capabilities_request = {"__prerelease_version": xpra.__version__}
         capabilities_request["version"] = xpra.__version__
-        if hash:
-            capabilities_request["challenge_response"] = hash
+        if challenge_response:
+            capabilities_request["challenge_response"] = challenge_response
         capabilities_request["dynamic_compression"] = True
         capabilities_request["packet_size"] = True
         if self.encoding:
@@ -143,9 +143,9 @@ class XpraClientBase(gobject.GObject):
         import hmac
         passwordFile = open(self.password_file, "rU")
         password = passwordFile.read()
-        (_, salt) = packet
-        hash = hmac.HMAC(password, salt)
-        self.send_hello(hash.hexdigest())
+        salt = packet[1]
+        challenge_response = hmac.HMAC(password, salt)
+        self.send_hello(challenge_response.hexdigest())
 
     def _process_hello(self, packet):
         pass
@@ -153,7 +153,7 @@ class XpraClientBase(gobject.GObject):
     def _process_set_deflate(self, packet):
         #this tell us the server has set its compressor
         #(the decompressor has been enabled - see protocol)
-        pass
+        log.debug("set_deflate: %s", packet[1:])
 
     def _process_connection_lost(self, packet):
         log.error("Connection lost")
@@ -197,7 +197,7 @@ class ScreenshotXpraClient(XpraClientBase):
         self.glib_mainloop.quit()
 
     def _process_screenshot(self, packet):
-        (_, w, h, encoding, rowstride, img_data) = packet
+        (w, h, encoding, _, img_data) = packet[1:6]
         assert encoding=="png"
         f = open(self.screenshot_filename, 'wb')
         f.write(img_data)
@@ -209,7 +209,7 @@ class ScreenshotXpraClient(XpraClientBase):
         XpraClientBase.init_packet_handlers(self)
         self._packet_handlers["screenshot"] = self._process_screenshot
 
-    def make_hello(self, hash=None):
-        capabilities_request = XpraClientBase.make_hello(self, hash)
+    def make_hello(self, challenge_response=None):
+        capabilities_request = XpraClientBase.make_hello(self, challenge_response)
         capabilities_request["screenshot_request"] = True
         return capabilities_request

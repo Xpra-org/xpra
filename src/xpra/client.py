@@ -71,14 +71,13 @@ class ClientSource(object):
         return packet, has_more
 
 class ClientWindow(gtk.Window):
-    def __init__(self, client, id, x, y, w, h, metadata, override_redirect):
+    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect):
         if override_redirect:
-            type = gtk.WINDOW_POPUP
+            gtk.Window.__init__(self, gtk.WINDOW_POPUP)
         else:
-            type = gtk.WINDOW_TOPLEVEL
-        gtk.Window.__init__(self, type)
+            gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         self._client = client
-        self._id = id
+        self._id = wid
         self._pos = (-1, -1)
         self._size = (1, 1)
         self._backing = None
@@ -517,6 +516,7 @@ class XpraClient(XpraClientBase):
         self.key_repeat_interval = -1
         self.keys_pressed = {}
         self.send_nuisance_modifiers = False
+        self.keyboard_as_properties = False
         self._raw_keycodes_feature = False
         self._raw_keycodes_full = False
         self._focus_modifiers_feature = False
@@ -684,7 +684,7 @@ class XpraClient(XpraClientBase):
         if self.key_handled_as_shortcut(window, name, modifiers, depressed):
             return
         log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s", event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode)
-        id = self._window_to_id[window]
+        wid = self._window_to_id[window]
         if not self._raw_keycodes_feature:
             """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...)
                 also used on win32 and osx since those don't have valid keymaps/keycode (yet?)
@@ -694,20 +694,20 @@ class XpraClient(XpraClientBase):
             # Another reason to use the _raw_keycodes_feature wherever possible.
             if name is None:
                 return
-            self.send(["key-action", id, name, depressed, modifiers])
+            self.send(["key-action", wid, name, depressed, modifiers])
             keyval = ""
             keycode = 0
         else:
-            packet = ["key-action", id, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode)]
+            packet = ["key-action", wid, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode)]
             if self._raw_keycodes_full:
                 #these are currently unused, but worth sending just in case:
                 packet.append(group)
                 packet.append(is_modifier)
             self.send(packet)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(id, depressed, name, keyval, keycode)
+            self._key_repeat(wid, depressed, name, keyval, keycode)
 
-    def _key_repeat(self, id, depressed, name, keyval, keycode):
+    def _key_repeat(self, wid, depressed, name, keyval, keycode):
         """ this method takes care of scheduling the sending of
             "key-repeat" packets to the server so that it can
             maintain a consistent keyboard state.
@@ -739,7 +739,7 @@ class XpraClient(XpraClientBase):
                     #supports extended mode, send the extra data:
                     (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
                     modifiers = self.mask_to_names(current_mask)
-                    packet = ["key-repeat", id, name, keyval, keycode, modifiers]
+                    packet = ["key-repeat", wid, name, keyval, keycode, modifiers]
                 else:
                     packet = ["key-repeat", keycode]
                 self.send_now(packet)
@@ -802,28 +802,36 @@ class XpraClient(XpraClientBase):
     def send_keymap(self):
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         packet = ["keymap-changed"]
-        for x in [self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask),
+        if self.keyboard_as_properties:
+            props = {"modifiers" : self.mask_to_names(current_mask)}
+            for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+                props[x] = getattr(self, x)
+            packet.append(props)
+        else:
+            for x in [self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask),
                   self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings,
                   self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes]:
-            packet.append(nn(x))
+                packet.append(nn(x))
         self.send(packet)
 
 
-    def send_focus(self, _id):
+    def send_focus(self, wid):
         """ with v0.0.7.24 onwards, we want to set the modifier map when we get focus """
         if self._focus_modifiers_feature:
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            self.send(["focus", _id, self.mask_to_names(current_mask)])
+            self.send(["focus", wid, self.mask_to_names(current_mask)])
         else:
-            self.send(["focus", _id])
+            self.send(["focus", wid])
 
-    def update_focus(self, id, gotit):
-        log("update_focus(%s,%s) _focused=%s", id, gotit, self._focused)
-        if gotit and self._focused is not id:
+    def update_focus(self, wid, gotit):
+        log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
+        if gotit and self._focused is not wid:
             self.clear_repeat()
-            self.send_focus(id)
-            self._focused = id
-        if not gotit and self._focused is id:
+            self.send_focus(wid)
+            self._focused = wid
+        if not gotit and self._focused is wid:
             self.clear_repeat()
             self.send_focus(0)
             self._focused = None
@@ -845,62 +853,54 @@ class XpraClient(XpraClientBase):
     def send_mouse_position(self, packet):
         self._protocol.source.queue_mouse_position_packet(packet)
 
-    def make_hello(self, hash=None):
-        capabilities_request = XpraClientBase.make_hello(self, hash)
+    def make_hello(self, challenge_response=None):
+        capabilities = XpraClientBase.make_hello(self, challenge_response)
         if self.compression_level:
-            capabilities_request["deflate"] = self.compression_level
+            capabilities["deflate"] = self.compression_level
         if self.xkbmap_layout:
-            capabilities_request["xkbmap_layout"] = self.xkbmap_layout
+            capabilities["xkbmap_layout"] = self.xkbmap_layout
             if self.xkbmap_variant:
-                capabilities_request["xkbmap_variant"] = self.xkbmap_variant
+                capabilities["xkbmap_variant"] = self.xkbmap_variant
+        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+            v = getattr(self, x)
+            if v is not None:
+                capabilities[x] = v
+        #special case: this used to be sent as "keymap" prior to 0.0.7.35:
         if self.xkbmap_print:
-            capabilities_request["keymap"] = self.xkbmap_print
-        if self.xkbmap_query:
-            capabilities_request["xkbmap_query"] = self.xkbmap_query
-        if self.xmodmap_data:
-            capabilities_request["xmodmap_data"] = self.xmodmap_data
-        if self.xkbmap_mod_clear:
-            capabilities_request["xkbmap_mod_clear"] = self.xkbmap_mod_clear
-        if self.xkbmap_mod_add:
-            capabilities_request["xkbmap_mod_add"] = self.xkbmap_mod_add
-        if self.xkbmap_mod_meanings:
-            capabilities_request["xkbmap_mod_meanings"] = self.xkbmap_mod_meanings
-        if self.xkbmap_mod_managed:
-            capabilities_request["xkbmap_mod_managed"] = self.xkbmap_mod_managed
-        if self.xkbmap_mod_managed:
-            capabilities_request["xkbmap_mod_pointermissing"] = self.xkbmap_mod_pointermissing
-        if self.xkbmap_keycodes:
-            capabilities_request["xkbmap_keycodes"] = self.xkbmap_keycodes
-        capabilities_request["cursors"] = True
-        capabilities_request["bell"] = True
-        capabilities_request["clipboard"] = self.clipboard_enabled
-        capabilities_request["notifications"] = self._client_extras.can_notify()
+            capabilities["keymap"] = self.xkbmap_print
+        capabilities["cursors"] = True
+        capabilities["bell"] = True
+        capabilities["clipboard"] = self.clipboard_enabled
+        capabilities["notifications"] = self._client_extras.can_notify()
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
         modifiers = self.mask_to_names(current_mask)
         log.debug("sending modifiers=%s" % str(modifiers))
-        capabilities_request["modifiers"] = modifiers
+        capabilities["modifiers"] = modifiers
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        capabilities_request["desktop_size"] = [root_w, root_h]
-        capabilities_request["png_window_icons"] = True
-        capabilities_request["damage_sequence"] = True
-        capabilities_request["rowstride"] = True
-        capabilities_request["ping"] = True
+        capabilities["desktop_size"] = [root_w, root_h]
+        capabilities["png_window_icons"] = True
+        capabilities["damage_sequence"] = True
+        capabilities["rowstride"] = True
+        capabilities["ping"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat
-            capabilities_request["key_repeat"] = (delay_ms,interval_ms)
-        capabilities_request["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
+            capabilities["key_repeat"] = (delay_ms,interval_ms)
+        capabilities["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
+        capabilities["keyboard_as_properties"] = True
         if self.mmap_file:
-            capabilities_request["mmap_file"] = self.mmap_file
-            capabilities_request["mmap_token"] = self.mmap_token
-        return capabilities_request
+            capabilities["mmap_file"] = self.mmap_file
+            capabilities["mmap_token"] = self.mmap_token
+        return capabilities
 
     def send_ping(self):
         if self.can_ping:
             self.send(["ping", long(1000*time.time())])
 
     def _process_ping_echo(self, packet):
-        (_, echoedtime, l1, l2, l3, cl) = packet[:6]
+        (echoedtime, l1, l2, l3, cl) = packet[1:6]
         diff = long(1000*time.time()-echoedtime)
         self.server_latency.append(diff)
         self.server_load = (l1, l2, l3)
@@ -910,7 +910,7 @@ class XpraClient(XpraClientBase):
 
     def _process_ping(self, packet):
         assert self.can_ping
-        (_, echotime) = packet[:2]
+        echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
             l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
@@ -926,8 +926,8 @@ class XpraClient(XpraClientBase):
         self.jpegquality = q
         self.send(["jpeg-quality", self.jpegquality])
 
-    def send_refresh(self, id):
-        self.send(["buffer-refresh", id, True, 95])
+    def send_refresh(self, wid):
+        self.send(["buffer-refresh", wid, True, 95])
         self._refresh_requested = True
 
     def send_refresh_all(self):
@@ -935,12 +935,13 @@ class XpraClient(XpraClientBase):
         self.send_refresh(-1)
 
     def _process_hello(self, packet):
-        (_, capabilities) = packet
+        capabilities = packet[1]
         self.server_capabilities = capabilities
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
         import glib
         glib.set_application_name(self.session_name)
+        self.keyboard_as_properties = capabilities.get("keyboard_as_properties", False)
         self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
         self._raw_keycodes_full = capabilities.get("raw_keycodes_full", False)
         self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
@@ -1022,10 +1023,10 @@ class XpraClient(XpraClientBase):
         self.send(["desktop_size", root_w, root_h])
 
     def _process_new_common(self, packet, override_redirect):
-        (id, x, y, w, h, metadata) = packet[1:7]
-        window = ClientWindow(self, id, x, y, w, h, metadata, override_redirect)
-        self._id_to_window[id] = window
-        self._window_to_id[window] = id
+        (wid, x, y, w, h, metadata) = packet[1:7]
+        window = ClientWindow(self, wid, x, y, w, h, metadata, override_redirect)
+        self._id_to_window[wid] = window
+        self._window_to_id[window] = wid
         window.show_all()
 
     def _process_new_window(self, packet):
@@ -1035,13 +1036,13 @@ class XpraClient(XpraClientBase):
         self._process_new_common(packet, True)
 
     def _process_draw(self, packet):
-        (id, x, y, width, height, coding, data) = packet[1:8]
+        (wid, x, y, width, height, coding, data) = packet[1:8]
         packet_sequence, rowstride = None, -1
         if len(packet)>=9:
             packet_sequence = packet[8]
         if len(packet)>=10:
             rowstride = int(packet[9])
-        window = self._id_to_window.get(id)
+        window = self._id_to_window.get(wid)
         if not window:
             return      #window is already gone!
         window.draw(x, y, width, height, coding, data, rowstride)
@@ -1055,9 +1056,6 @@ class XpraClient(XpraClientBase):
         if len(new_cursor)>0:
             (_, _, w, h, xhot, yhot, serial, pixels) = new_cursor
             log.debug("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
-            import array
-            bytes = array.array('b')
-            bytes.fromstring(pixels)
             pixbuf = gtk.gdk.pixbuf_new_from_data(pixels, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
             x = max(0, min(xhot, w-1))
             y = max(0, min(yhot, h-1))
@@ -1074,11 +1072,11 @@ class XpraClient(XpraClientBase):
     def _process_bell(self, packet):
         if not self.bell_enabled:
             return
-        (_, id, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet
+        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
         gdkwindow = None
-        if id!=0:
+        if wid!=0:
             try:
-                gdkwindow = self._id_to_window[id].window
+                gdkwindow = self._id_to_window[wid].window
             except:
                 pass
         if gdkwindow is None:
@@ -1089,31 +1087,31 @@ class XpraClient(XpraClientBase):
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
             return
-        (_, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout) = packet
+        (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout) = packet[1:9]
         log("_process_notify_show(%s)", packet)
-        self._client_extras.show_notify(dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
+        self._client_extras.show_notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
 
     def _process_notify_close(self, packet):
         if not self.notifications_enabled:
             return
-        (_, id) = packet
-        log("_process_notify_close(%s)", id)
-        self._client_extras.close_notify(id)
+        nid = packet[1]
+        log("_process_notify_close(%s)", nid)
+        self._client_extras.close_notify(nid)
 
     def _process_window_metadata(self, packet):
-        (_, id, metadata) = packet
-        window = self._id_to_window[id]
+        (wid, metadata) = packet[1:3]
+        window = self._id_to_window[wid]
         window.update_metadata(metadata)
 
     def _process_configure_override_redirect(self, packet):
-        (_, id, x, y, w, h) = packet
-        window = self._id_to_window[id]
+        (wid, x, y, w, h) = packet[1:6]
+        window = self._id_to_window[wid]
         window.move_resize(x, y, w, h)
 
     def _process_lost_window(self, packet):
-        (_, id) = packet
-        window = self._id_to_window[id]
-        del self._id_to_window[id]
+        wid = packet[1]
+        window = self._id_to_window[wid]
+        del self._id_to_window[wid]
         del self._window_to_id[window]
         if window._refresh_timer:
             gobject.source_remove(window._refresh_timer)

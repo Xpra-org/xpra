@@ -68,7 +68,7 @@ from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
 
-def _get_rgb_rawdata(id, pixmap, x, y, width, height, encoding, sequence, options):
+def _get_rgb_rawdata(wid, pixmap, x, y, width, height, encoding, sequence, options):
     pixmap_w, pixmap_h = pixmap.get_size()
     # Just in case we somehow end up with damage larger than the pixmap,
     # we don't want to start requesting random chunks of memory (this
@@ -86,7 +86,7 @@ def _get_rgb_rawdata(id, pixmap, x, y, width, height, encoding, sequence, option
     pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), x, y, 0, 0, width, height)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
-    return (id, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
+    return (wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
 
 
 class DesktopManager(gtk.Widget):
@@ -249,16 +249,16 @@ class ServerSource(object):
         self._ordinary_packets.append(packet)
         self._protocol.source_has_more()
 
-    def cancel_damage(self, id):
+    def cancel_damage(self, wid):
         #if delayed, we can just drop it now
-        if id in self._damage_delayed:
-            log("cancel_damage: %s, removed batched region", id)
-            del self._damage_delayed[id]
+        if wid in self._damage_delayed:
+            log("cancel_damage: %s, removed batched region", wid)
+            del self._damage_delayed[wid]
         #for those being processed in separate threads, drop by sequence:
-        log("cancel_damage: %s, dropping all damage up to and including sequence=%s", id, self._sequence)
-        self._damage_cancelled[id] = self._sequence
+        log("cancel_damage: %s, dropping all damage up to and including sequence=%s", wid, self._sequence)
+        self._damage_cancelled[wid] = self._sequence
 
-    def damage(self, id, window, x, y, w, h, options=None):
+    def damage(self, wid, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
             * send it now (if not congested or BATCH_EVENTS is off)
             * add it to an existing delayed region
@@ -274,28 +274,28 @@ class ServerSource(object):
         """
         def damage_now(reason):
             self._sequence += 1
-            log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", id, x, y, w, h, reason, self._sequence)
+            log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", wid, x, y, w, h, reason, self._sequence)
             region = gtk.gdk.Region()
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-            item = id, window, region, self._sequence, options
+            item = wid, window, region, self._sequence, options
             self._damage_request_queue.put(item)
         if not ServerSource.BATCH_EVENTS:
             return damage_now("batching disabled")
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(id, deque(maxlen=ServerSource.MAX_EVENTS))
+        last_events = self._damage_last_events.setdefault(wid, deque(maxlen=ServerSource.MAX_EVENTS))
         last_events.append((now, w*h))
 
         if options and options.get("batching", True) is False:
             damage_now("batching option is off")
             return
 
-        delayed = self._damage_delayed.get(id)
+        delayed = self._damage_delayed.get(wid)
         if delayed:
             (_, _, region, _, _) = delayed
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-            log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", id, x, y, w, h, delayed)
+            log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
 
         def update_batch_delay(reason, factor=1, delta=0):
@@ -332,32 +332,32 @@ class ServerSource(object):
                     if pixel_count>=ServerSource.MAX_PIXELS:
                         break
                 if pixel_count>=ServerSource.MAX_PIXELS:
-                    log("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", id, x, y, w, h, pixel_count, (now-last_time))
+                    log("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", wid, x, y, w, h, pixel_count, (now-last_time))
                 else:
                     if len(last_events)<ServerSource.MAX_EVENTS:
                         return damage_now("recent event list is too small, not batching")
                     when,_ = last_events[0]
                     if now-when>ServerSource.TIME_UNIT:
                         return damage_now("%s damage events took %s seconds, not batching" % (ServerSource.MAX_EVENTS, (now-when)))
-                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", id, x, y, w, h, ServerSource.MAX_EVENTS, (now-when))
+                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", wid, x, y, w, h, ServerSource.MAX_EVENTS, (now-when))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._sequence += 1
-        self._damage_delayed[id] = (id, window, region, self._sequence, options)
+        self._damage_delayed[wid] = (wid, window, region, self._sequence, options)
         def send_delayed():
             """ move the delayed rectangles to the expired list """
-            log("send_delayed for %s", id)
-            delayed = self._damage_delayed.get(id)
+            log("send_delayed for %s", wid)
+            delayed = self._damage_delayed.get(wid)
             if delayed:
-                del self._damage_delayed[id]
+                del self._damage_delayed[wid]
                 self._damage_request_queue.put(delayed)
                 log("moving region %s to expired list", delayed)
             else:
-                log("window %s already removed from delayed list?", id)
+                log("window %s already removed from delayed list?", wid)
             return False
-        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", id, x, y, w, h, self._sequence, self.batch_delay)
+        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", wid, x, y, w, h, self._sequence, self.batch_delay)
         gobject.timeout_add(self.batch_delay, send_delayed)
 
     def damage_to_data(self):
@@ -371,9 +371,9 @@ class ServerSource(object):
             damage_request = self._damage_request_queue.get(True)
             if damage_request is None:
                 return              #empty marker
-            id, window, damage, sequence, options = damage_request
+            wid, window, damage, sequence, options = damage_request
             log("damage_to_data: processing sequence=%s", sequence)
-            if self._damage_cancelled.get(id, 0)>=sequence:
+            if self._damage_cancelled.get(wid, 0)>=sequence:
                 log("damage_to_data: dropping request with sequence=%s", sequence)
                 continue
             regions = []
@@ -404,10 +404,10 @@ class ServerSource(object):
             except Exception, e:
                 log.error("damage_to_data: error processing region %s: %s", damage, e)
                 continue
-            gobject.idle_add(self._process_damage_regions, id, window, ww, wh, regions, sequence, options)
+            gobject.idle_add(self._process_damage_regions, wid, window, ww, wh, regions, sequence, options)
 
-    def _process_damage_regions(self, id, window, ww, wh, regions, sequence, options):
-        if self._damage_cancelled.get(id, 0)>=sequence:
+    def _process_damage_regions(self, wid, window, ww, wh, regions, sequence, options):
+        if self._damage_cancelled.get(wid, 0)>=sequence:
             log("process_damage_regions: dropping damage request with sequence=%s", sequence)
             return
         # It's important to acknowledge changes *before* we extract them,
@@ -416,7 +416,7 @@ class ServerSource(object):
         window.acknowledge_changes()
         pixmap = window.get_property("client-contents")
         if pixmap is None:
-            log.error("wtf, pixmap is None for window %s, id=%s", window, id)
+            log.error("wtf, pixmap is None for window %s, wid=%s", window, wid)
             return
         log("process_damage_regions: pixmap size=%s, window size=%s", pixmap.get_size(), (ww, wh))
         for region in regions:
@@ -424,7 +424,7 @@ class ServerSource(object):
             if full_window:
                 log("process_damage_regions: sending full window: %s", pixmap.get_size())
                 w, h = pixmap.get_size()
-            data = _get_rgb_rawdata(id, pixmap, x, y, w, h, self._encoding, sequence, options)
+            data = _get_rgb_rawdata(wid, pixmap, x, y, w, h, self._encoding, sequence, options)
             if data:
                 log("process_damage_regions: adding pixel data %s to queue, queue size=%s", data[:6], self._damage_data_queue.qsize())
                 self._damage_data_queue.put(data)
@@ -446,11 +446,11 @@ class ServerSource(object):
                 log.error("error processing damage data: %s", e)
 
     def make_data_packet(self, item):
-        id, x, y, w, h, coding, data, rowstride, sequence, options = item
-        if sequence>=0 and self._damage_cancelled.get(id, 0)>=sequence:
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", id, sequence)
+        wid, x, y, w, h, coding, data, rowstride, sequence, options = item
+        if sequence>=0 and self._damage_cancelled.get(wid, 0)>=sequence:
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
-        log("make_data_packet: damage data: %s", (id, x, y, w, h, coding))
+        log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         #remove rowstride padding but only if we can't send the rowstride value to client
         #removing the padding takes a lot of cpu/memory bandwidth for little benefit
         #not worth it, especially on large buffers
@@ -486,11 +486,11 @@ class ServerSource(object):
             buf.close()
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and sequence>=0 and self._damage_cancelled.get(id, 0)>=sequence:
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", id, sequence)
+        if coding!="mmap" and sequence>=0 and self._damage_cancelled.get(wid, 0)>=sequence:
+            log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #actual network packet:
-        packet = ["draw", id, x, y, w, h, coding, data]
+        packet = ["draw", wid, x, y, w, h, coding, data]
         if self._send_damage_sequence:
             packet.append(self._damage_packet_sequence)
             self._damage_packet_sequence += 1
@@ -624,6 +624,7 @@ class XpraServer(gobject.GObject):
                 self._add_new_or_window(window)
 
         ## These may get set by the client:
+        self.keyboard_as_properties = False
         self.xkbmap_layout = None
         self.xkbmap_variant = None
         self.xkbmap_print = None
@@ -828,24 +829,24 @@ class XpraServer(gobject.GObject):
         log("_bell_signaled(%s,%r)", wm, event)
         if not self.send_bell:
             return
-        id = 0
+        wid = 0
         if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
             try:
-                id = self._window_to_id[event.window_model]
+                wid = self._window_to_id[event.window_model]
             except:
                 pass
-        log("_bell_signaled(%s,%r) id=%s", wm, event, id)
-        self._send(["bell", id, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
+        log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
+        self._send(["bell", wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
 
-    def notify_callback(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
-        log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout, self.send_notifications)
+    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+        log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, self.send_notifications)
         if self.send_notifications:
-            self._send(["notify_show", dbus_id, int(id), str(app_name), int(replaces_id), str(app_icon), str(summary), str(body), long(expire_timeout)])
+            self._send(["notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), long(expire_timeout)])
 
-    def notify_close_callback(self, id):
-        log("notify_close_callback(%s)", id)
+    def notify_close_callback(self, nid):
+        log("notify_close_callback(%s)", nid)
         if self.send_notifications:
-            self._send(["notify_close", int(id)])
+            self._send(["notify_close", int(nid)])
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window
@@ -853,10 +854,10 @@ class XpraServer(gobject.GObject):
             self._add_new_or_window(raw_window)
 
     def _add_new_window_common(self, window):
-        id = self._max_window_id
+        wid = self._max_window_id
         self._max_window_id += 1
-        self._window_to_id[window] = id
-        self._id_to_window[id] = window
+        self._window_to_id[window] = wid
+        self._id_to_window[wid] = window
         window.connect("client-contents-changed", self._contents_changed)
         window.connect("unmanaged", self._lost_window)
 
@@ -882,8 +883,8 @@ class XpraServer(gobject.GObject):
 
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
-        id = self._window_to_id[window]
-        self._send(["configure-override-redirect", id, x, y, w, h])
+        wid = self._window_to_id[window]
+        self._send(["configure-override-redirect", wid, x, y, w, h])
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
@@ -972,11 +973,11 @@ class XpraServer(gobject.GObject):
             return {}
         elif propname == "window-type":
             window_types = window.get_property("window-type")
-            log.info("window_types=%s", window_types)
+            log.debug("window_types=%s", window_types)
             wts = []
             for window_type in window_types:
                 wts.append(str(window_type))
-            log.info("window_types=%s", wts)
+            log.debug("window_types=%s", wts)
             return {"window-type" : wts}
         raise Exception("unhandled property name: %s" % propname)
 
@@ -1129,15 +1130,15 @@ class XpraServer(gobject.GObject):
         #(there should not be any - but we want to be certain)
         unpress_all_keys(gtk.gdk.display_get_default())
 
-    def _focus(self, id, modifiers):
-        log.debug("_focus(%s,%s) has_focus=%s", id, modifiers, self._has_focus)
-        if self._has_focus != id:
-            if id == 0:
+    def _focus(self, wid, modifiers):
+        log.debug("_focus(%s,%s) has_focus=%s", wid, modifiers, self._has_focus)
+        if self._has_focus != wid:
+            if wid == 0:
                 self._clear_keys_pressed()
                 # FIXME: kind of a hack:
                 self._wm.get_property("toplevel").reset_x_focus()
             else:
-                window = self._id_to_window[id]
+                window = self._id_to_window[wid]
                 #no idea why we can't call this straight away!
                 #but with win32 clients, it would often fail!???
                 def give_focus():
@@ -1146,7 +1147,7 @@ class XpraServer(gobject.GObject):
                 gobject.idle_add(give_focus)
                 if modifiers is not None:
                     self._make_keymask_match(modifiers, self.xkbmap_mod_pointermissing)
-            self._has_focus = id
+            self._has_focus = wid
 
     def _move_pointer(self, pos):
         (x, y) = pos
@@ -1160,44 +1161,44 @@ class XpraServer(gobject.GObject):
 
     def _damage(self, window, x, y, width, height, options=None):
         if self._protocol is not None and self._protocol.source is not None:
-            id = self._window_to_id[window]
-            self._protocol.source.damage(id, window, x, y, width, height, options)
+            wid = self._window_to_id[window]
+            self._protocol.source.damage(wid, window, x, y, width, height, options)
 
     def _cancel_damage(self, window):
         if self._protocol is not None and self._protocol.source is not None:
-            id = self._window_to_id[window]
-            self._protocol.source.cancel_damage(id)
+            wid = self._window_to_id[window]
+            self._protocol.source.cancel_damage(wid)
 
     def _send_new_window_packet(self, window):
-        id = self._window_to_id[window]
+        wid = self._window_to_id[window]
         (x, y, w, h) = self._desktop_manager.window_geometry(window)
         metadata = {}
         for propname in self._all_metadata:
             metadata.update(self._make_metadata(window, propname))
-        self._send(["new-window", id, x, y, w, h, metadata])
+        self._send(["new-window", wid, x, y, w, h, metadata])
 
     def _send_new_or_window_packet(self, window):
-        id = self._window_to_id[window]
+        wid = self._window_to_id[window]
         (x, y, w, h) = window.get_property("geometry")
         metadata = {}
         for propname in ["transient-for", "window-type"]:
             metadata.update(self._make_metadata(window, propname))
-        self._send(["new-override-redirect", id, x, y, w, h, metadata])
+        self._send(["new-override-redirect", wid, x, y, w, h, metadata])
         self._damage(window, 0, 0, w, h)
 
     def _update_metadata(self, window, pspec):
-        id = self._window_to_id[window]
+        wid = self._window_to_id[window]
         metadata = self._make_metadata(window, pspec.name)
-        self._send(["window-metadata", id, metadata])
+        self._send(["window-metadata", wid, metadata])
 
     def _lost_window(self, window, wm_exiting):
-        id = self._window_to_id[window]
-        self._send(["lost-window", id])
+        wid = self._window_to_id[window]
+        self._send(["lost-window", wid])
         self._cancel_damage(window)
         del self._window_to_id[window]
-        del self._id_to_window[id]
-        if self._server_source and id in self._server_source._damage_last_events:
-            del self._server_source._damage_last_events[id]
+        del self._id_to_window[wid]
+        if self._server_source and wid in self._server_source._damage_last_events:
+            del self._server_source._damage_last_events[wid]
 
     def _contents_changed(self, window, event):
         if (isinstance(window, OverrideRedirectWindowModel)
@@ -1255,7 +1256,7 @@ class XpraServer(gobject.GObject):
         return w,h
 
     def _process_desktop_size(self, proto, packet):
-        (_, width, height) = packet
+        (width, height) = packet[1:3]
         log.debug("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
 
@@ -1282,7 +1283,7 @@ class XpraServer(gobject.GObject):
         log.info("encoding set to %s, client supports %s, server supports %s", encoding, self.encodings, ENCODINGS)
 
     def _process_encoding(self, proto, packet):
-        (_, encoding) = packet
+        encoding = packet[1]
         self._set_encoding(encoding)
 
     def _send_password_challenge(self, proto):
@@ -1300,8 +1301,8 @@ class XpraServer(gobject.GObject):
     def _verify_password(self, proto, client_hash):
         passwordFile = open(self.password_file, "rU")
         password  = passwordFile.read()
-        hash = hmac.HMAC(password, self.salt)
-        if client_hash != hash.hexdigest():
+        password_hash = hmac.HMAC(password, self.salt)
+        if client_hash != password_hash.hexdigest():
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
                 self.send_disconnect(proto, "invalid password")
@@ -1341,6 +1342,7 @@ class XpraServer(gobject.GObject):
         if self._protocol is not None:
             self.disconnect("new valid connection received")
         self.reset_statistics()
+        self.keyboard_as_properties = capabilities.get("keyboard_as_properties", False)
         self.send_damage_sequence = capabilities.get("damage_sequence", False)
         self.send_rowstride = self.send_damage_sequence and capabilities.get("rowstride", False)
         #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
@@ -1392,17 +1394,10 @@ class XpraServer(gobject.GObject):
             self.key_repeat_interval = -1
             #but do set a default repeat rate:
             set_key_repeat_rate(500, 30)
+        #parse keyboard related options:
         self.xkbmap_layout = capabilities.get("xkbmap_layout")
         self.xkbmap_variant = capabilities.get("xkbmap_variant")
-        self.xkbmap_print = capabilities.get("keymap")
-        self.xkbmap_query = capabilities.get("xkbmap_query")
-        self.xmodmap_data = capabilities.get("xmodmap_data")
-        self.xkbmap_mod_clear = capabilities.get("xkbmap_mod_clear")
-        self.xkbmap_mod_add = capabilities.get("xkbmap_mod_add")
-        self.xkbmap_mod_meanings = capabilities.get("xkbmap_mod_meanings")
-        self.xkbmap_mod_managed = capabilities.get("xkbmap_mod_managed", [])
-        self.xkbmap_mod_pointermissing = capabilities.get("xkbmap_mod_pointermissing")
-        self.xkbmap_keycodes = capabilities.get("xkbmap_keycodes", [])
+        self.assign_keymap_options(capabilities)
 
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
@@ -1424,8 +1419,8 @@ class XpraServer(gobject.GObject):
         # that the earliest override-redirect windows will be on the bottom,
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
-        for id in sorted(self._id_to_window.iterkeys()):
-            window = self._id_to_window[id]
+        for wid in sorted(self._id_to_window.iterkeys()):
+            window = self._id_to_window[wid]
             if isinstance(window, OverrideRedirectWindowModel):
                 self._send_new_or_window_packet(window)
             else:
@@ -1443,6 +1438,7 @@ class XpraServer(gobject.GObject):
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["platform"] = sys.platform
+        capabilities["keyboard_as_properties"] = True
         capabilities["raw_keycodes_feature"] = True
         capabilities["raw_keycodes_full"] = True
         capabilities["focus_modifiers_feature"] = True
@@ -1475,7 +1471,7 @@ class XpraServer(gobject.GObject):
             self._send(["ping", long(1000*time.time())])
 
     def _process_ping_echo(self, proto, packet):
-        (_, echoedtime, l1, l2, l3, sl) = packet[:6]
+        (echoedtime, l1, l2, l3, sl) = packet[1:6]
         diff = long(1000*time.time()-echoedtime)
         self.client_latency.append(diff)
         self.client_load = (l1, l2, l3)
@@ -1484,7 +1480,7 @@ class XpraServer(gobject.GObject):
 
     def _process_ping(self, proto, packet):
         assert self.can_ping
-        (_, echotime) = packet[:2]
+        echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
             l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
@@ -1580,7 +1576,7 @@ class XpraServer(gobject.GObject):
         self.disconnect("on client request")
 
     def _process_clipboard_enabled_status(self, proto, packet):
-        (_, clipboard_enabled) = packet
+        clipboard_enabled = packet[1]
         if self._clipboard_helper:
             self.clipboard_enabled = clipboard_enabled
             log.debug("toggled clipboard to %s", self.clipboard_enabled)
@@ -1588,7 +1584,7 @@ class XpraServer(gobject.GObject):
             log.warn("client toggled clipboard-enabled but we do not support clipboard at all! ignoring it")
 
     def _process_server_settings(self, proto, packet):
-        (_, settings) = packet
+        settings = packet[1]
         old_settings = dict(self._settings)
         self._settings.update(settings)
         for k, v in settings.iteritems():
@@ -1609,30 +1605,30 @@ class XpraServer(gobject.GObject):
                         root_set("PULSE_SERVER")
 
     def _process_map_window(self, proto, packet):
-        (_, id, x, y, width, height) = packet
-        window = self._id_to_window[id]
+        (wid, x, y, width, height) = packet[1:6]
+        window = self._id_to_window[wid]
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
 
     def _process_unmap_window(self, proto, packet):
-        (_, id) = packet
-        window = self._id_to_window[id]
+        wid = packet[1]
+        window = self._id_to_window[wid]
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(window)
         self._desktop_manager.hide_window(window)
 
     def _process_move_window(self, proto, packet):
-        (_, id, x, y) = packet
-        window = self._id_to_window[id]
+        (wid, x, y) = packet[1:4]
+        window = self._id_to_window[wid]
         assert not isinstance(window, OverrideRedirectWindowModel)
         (_, _, w, h) = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_resize_window(self, proto, packet):
-        (_, id, w, h) = packet
-        window = self._id_to_window[id]
+        (wid, w, h) = packet[1:4]
+        window = self._id_to_window[wid]
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(window)
         (x, y, _, _) = self._desktop_manager.window_geometry(window)
@@ -1644,29 +1640,46 @@ class XpraServer(gobject.GObject):
             self._damage(window, 0, 0, w, h)
 
     def _process_focus(self, proto, packet):
-        if len(packet)==3:
-            (_, id, modifiers) = packet
+        wid = packet[1]
+        if len(packet)>=3:
+            modifiers = packet[2]
         else:
             modifiers = None
-            (_, id) = packet
-        self._focus(id, modifiers)
+        self._focus(wid, modifiers)
 
     def _process_layout(self, proto, packet):
-        (_, layout, variant) = packet
+        (layout, variant) = packet[1:3]
         if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant:
             self.xkbmap_layout = layout
             self.xkbmap_variant = variant
             self.set_keymap()
 
+    def assign_keymap_options(self, props):
+        """ used by both process_hello and process_keymap
+            to set the keyboard attributes """
+        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+            setattr(self, x, props.get(x))
+        #special case: this used to be sent as "keymap" prior to 0.0.7.35:
+        if self.xkbmap_print is None and "keymap" in props:
+            self.xkbmap_print = props.get("keymap")
+
     def _process_keymap(self, proto, packet):
-        self.xkbmap_print, self.xkbmap_query = packet[1:3]
-        self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings = None, None, None
-        self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = None, None, None
-        self.xmodmap_data, modifiers = None, []
-        if len(packet)>=5:
-            self.xmodmap_data, modifiers = packet[3:5]
-        if len(packet)>=11:
-            self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = packet[5:11]
+        if self.keyboard_as_properties:
+            props = packet[1]
+            self.assign_keymap_options(props)
+            modifiers = props.get("modifiers")
+        else:
+            #old method: positional parameters:
+            self.xkbmap_print, self.xkbmap_query = packet[1:3]
+            self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings = None, None, None
+            self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = None, None, None
+            self.xmodmap_data, modifiers = None, []
+            if len(packet)>=5:
+                self.xmodmap_data, modifiers = packet[3:5]
+            if len(packet)>=11:
+                self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = packet[5:11]
         self._make_keymask_match([])
         self.set_keymap()
         self._make_keymask_match(modifiers)
@@ -1691,29 +1704,30 @@ class XpraServer(gobject.GObject):
         return kc
 
     def _process_key_action(self, proto, packet):
-        (id, keyname, pressed, modifiers) = packet[1:5]
+        (wid, keyname, pressed, modifiers) = packet[1:5]
         keyval, keycode = None, 0
         if len(packet)>=8:
             (keyval, _, client_keycode) = packet[5:8]
             keycode = self.keycode_translation.get(client_keycode, client_keycode)
         if len(packet)>=10:
             #currently unused:
-            group, is_modifier = packet[8:10]
-        self._focus(id, None)
+            #group, is_modifier = packet[8:10]
+            pass
+        self._focus(wid, None)
         self._make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         #negative keycodes are used for key events without a real keypress/unpress
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
         if keycode>=0:
-            self._handle_key(id, pressed, keyname, keyval, keycode, modifiers)
+            self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
 
-    def _handle_key(self, id, pressed, name, keyval, src_keycode, modifiers):
+    def _handle_key(self, wid, pressed, name, keyval, src_keycode, modifiers):
         """
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", id, pressed, name, keyval, src_keycode, modifiers)
-        if pressed and (id is not None) and (id not in self._id_to_window):
-            log("window %s is gone, ignoring key press", id)
+        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", wid, pressed, name, keyval, src_keycode, modifiers)
+        if pressed and (wid is not None) and (wid not in self._id_to_window):
+            log("window %s is gone, ignoring key press", wid)
             return
         if src_keycode:
             keycode = src_keycode
@@ -1749,9 +1763,9 @@ class XpraServer(gobject.GObject):
             else:
                 log.debug("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
         if self.keyboard_sync and keycode>0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(id, pressed, name, keyval, src_keycode, modifiers, self.key_repeat_delay)
+            self._key_repeat(wid, pressed, name, keyval, src_keycode, modifiers, self.key_repeat_delay)
 
-    def _key_repeat(self, id, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
+    def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
         """ Schedules/cancels the key repeat timeouts """
         if keycode==0:
             key = keyname
@@ -1767,7 +1781,7 @@ class XpraServer(gobject.GObject):
             def _key_repeat_timeout(when):
                 now = time.time()
                 log.debug("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
-                self._handle_key(id, False, keyname, keyval, keycode, modifiers)
+                self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
             now = time.time()
             self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
@@ -1779,7 +1793,7 @@ class XpraServer(gobject.GObject):
                 log.info("key repeat data is too small (client is too old), disabling keyboard sync")
                 self.keyboard_sync = False
             return
-        (id, keyname, keyval, client_keycode, modifiers) = packet[1:6]
+        (wid, keyname, keyval, client_keycode, modifiers) = packet[1:6]
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
@@ -1798,12 +1812,12 @@ class XpraServer(gobject.GObject):
                 log.debug("key %s/%s, had timed out, re-pressing it", keycode, keyname)
                 self.keys_pressed[keycode] = keyname
                 xtest_fake_key(gtk.gdk.display_get_default(), keycode, True)
-        self._key_repeat(id, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
+        self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
 
     def _process_button_action(self, proto, packet):
-        (_, id, button, pressed, pointer, modifiers) = packet
+        (wid, button, pressed, pointer, modifiers) = packet[1:6]
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
-        self._desktop_manager.raise_window(self._id_to_window[id])
+        self._desktop_manager.raise_window(self._id_to_window[wid])
         self._move_pointer(pointer)
         try:
             trap.call_unsynced(xtest_fake_button,
@@ -1815,17 +1829,17 @@ class XpraServer(gobject.GObject):
                      button)
 
     def _process_pointer_position(self, proto, packet):
-        (_, id, pointer, modifiers) = packet
+        (wid, pointer, modifiers) = packet[1:4]
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
-        if id in self._id_to_window:
-            self._desktop_manager.raise_window(self._id_to_window[id])
+        if wid in self._id_to_window:
+            self._desktop_manager.raise_window(self._id_to_window[wid])
             self._move_pointer(pointer)
         else:
-            log("_process_pointer_position() invalid window id: %s", id)
+            log("_process_pointer_position() invalid window id: %s", wid)
 
     def _process_close_window(self, proto, packet):
-        (_, id) = packet
-        window = self._id_to_window[id]
+        wid = packet[1]
+        window = self._id_to_window[wid]
         window.request_close()
 
     def _process_shutdown_server(self, proto, packet):
@@ -1837,19 +1851,19 @@ class XpraServer(gobject.GObject):
         self.quit(False)
 
     def _process_damage_sequence(self, proto, packet):
-        (_, packet_sequence) = packet
+        packet_sequence = packet[1]
         log("received sequence: %s", packet_sequence)
         self._server_source.last_client_packet_sequence = packet_sequence
 
     def _process_buffer_refresh(self, proto, packet):
-        [id, _, jpeg_qual] = packet[1:4]
+        [wid, _, jpeg_qual] = packet[1:4]
         opts = {}
         if self.encoding=="jpeg":
             opts["jpegquality"] = jpeg_qual
-        if id==-1:
+        if wid==-1:
             windows = self._id_to_window.values()
-        elif id in self._id_to_window:
-            windows = [self._id_to_window[id]]
+        elif wid in self._id_to_window:
+            windows = [self._id_to_window[wid]]
         else:
             return
         log.debug("Requested refresh for windows: %s", windows)
@@ -1865,7 +1879,7 @@ class XpraServer(gobject.GObject):
             self._damage(window, 0, 0, w, h, opts)
 
     def _process_jpeg_quality(self, proto, packet):
-        (_, quality) = packet
+        quality = packet[1]
         log.debug("Setting JPEG quality to ", quality)
         self._protocol.jpegquality = quality
 
@@ -1885,7 +1899,7 @@ class XpraServer(gobject.GObject):
         sys.stdout.flush()
 
     def _process_gibberish(self, proto, packet):
-        (_, data) = packet
+        data = packet[1]
         log.info("Received uninterpretable nonsense: %s", repr(data))
 
     _packet_handlers = {
