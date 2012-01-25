@@ -60,13 +60,14 @@ class ClientSource(object):
                  or self._mouse_position is not None)
         return packet, has_more
 
+
 class XpraClientBase(gobject.GObject):
     """Base class for Xpra clients.
         Provides the glue code for:
         * sending packets via Protocol
         * handling packets received via _process_packet
     """
-    
+
     __gsignals__ = {
         "handshake-complete": n_arg_signal(0),
         "received-gibberish": n_arg_signal(1),
@@ -77,10 +78,11 @@ class XpraClientBase(gobject.GObject):
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.jpegquality = opts.jpegquality
+        self._protocol = None
         self.init_packet_handlers()
-    
+
     def ready(self, conn):
-        self.init_packet_handlers()
+        log.debug("ready(%s)", conn)
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
 
@@ -90,28 +92,28 @@ class XpraClientBase(gobject.GObject):
             "disconnect": self._process_disconnect,
             "hello": self._process_hello,
             "set_deflate": self._process_set_deflate,
-            # "clipboard-*" packets are handled by a special case below.
             Protocol.CONNECTION_LOST: self._process_connection_lost,
             Protocol.GIBBERISH: self._process_gibberish,
             }
 
     def send_hello(self, challenge_response=None):
         hello = self.make_hello(challenge_response)
+        log.debug("send_hello(%s) packet=%s", challenge_response, hello)
         self.send(["hello", hello])
 
     def make_hello(self, challenge_response=None):
-        capabilities_request = {"__prerelease_version": xpra.__version__}
-        capabilities_request["version"] = xpra.__version__
+        capabilities = {"__prerelease_version": xpra.__version__}
+        capabilities["version"] = xpra.__version__
         if challenge_response:
-            capabilities_request["challenge_response"] = challenge_response
-        capabilities_request["dynamic_compression"] = True
-        capabilities_request["packet_size"] = True
+            capabilities["challenge_response"] = challenge_response
+        capabilities["dynamic_compression"] = True
+        capabilities["packet_size"] = True
         if self.encoding:
-            capabilities_request["encoding"] = self.encoding
-        capabilities_request["encodings"] = ENCODINGS
+            capabilities["encoding"] = self.encoding
+        capabilities["encodings"] = ENCODINGS
         if self.jpegquality:
-            capabilities_request["jpeg"] = self.jpegquality
-        return capabilities_request
+            capabilities["jpeg"] = self.jpegquality
+        return capabilities
 
     def send(self, packet):
         self._protocol.source.queue_ordinary_packet(packet)
@@ -171,21 +173,15 @@ class XpraClientBase(gobject.GObject):
 gobject.type_register(XpraClientBase)
 
 
-class ScreenshotXpraClient(XpraClientBase):
-    """ This client does one thing only:
-        it sends the hello packet with a screenshot request
-        and exits when the resulting image is received (or timedout)
+class GLibXpraClient(XpraClientBase):
+    """
+        Utility superclass for glib clients
     """
 
-    def __init__(self, conn, opts, screenshot_filename):
+    def __init__(self, conn, opts):
         XpraClientBase.__init__(self, opts)
-        self.screenshot_filename = screenshot_filename
         self.ready(conn)
         self.send_hello()
-        def screenshot_timeout(*args):
-            log.error("timeout: did not receive the screenshot")
-            self.quit()
-        gobject.timeout_add(10*1000, screenshot_timeout)
 
     def run(self):
         glib.threads_init()
@@ -195,6 +191,21 @@ class ScreenshotXpraClient(XpraClientBase):
 
     def quit(self, *args):
         self.glib_mainloop.quit()
+
+
+class ScreenshotXpraClient(GLibXpraClient):
+    """ This client does one thing only:
+        it sends the hello packet with a screenshot request
+        and exits when the resulting image is received (or timedout)
+    """
+
+    def __init__(self, conn, opts, screenshot_filename):
+        self.screenshot_filename = screenshot_filename
+        def screenshot_timeout(*args):
+            log.error("timeout: did not receive the screenshot")
+            self.quit()
+        gobject.timeout_add(10*1000, screenshot_timeout)
+        GLibXpraClient.__init__(self, conn, opts)
 
     def _process_screenshot(self, packet):
         (w, h, encoding, _, img_data) = packet[1:6]
@@ -210,6 +221,35 @@ class ScreenshotXpraClient(XpraClientBase):
         self._packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
-        capabilities_request = XpraClientBase.make_hello(self, challenge_response)
-        capabilities_request["screenshot_request"] = True
-        return capabilities_request
+        capabilities = XpraClientBase.make_hello(self, challenge_response)
+        capabilities["screenshot_request"] = True
+        return capabilities
+
+
+class VersionXpraClient(GLibXpraClient):
+    """ This client does one thing only:
+        it queries the server for version information and prints it out
+    """
+
+    def __init__(self, conn, opts):
+        def version_timeout(*args):
+            log.error("timeout: did not receive the version")
+            self.quit()
+        gobject.timeout_add(10*1000, version_timeout)
+        GLibXpraClient.__init__(self, conn, opts)
+
+    def _process_hello(self, packet):
+        log.debug("process_hello: %s", packet)
+        props = packet[1]
+        log.info("%s" % props.get("version"))
+        self.quit()
+
+    def init_packet_handlers(self):
+        XpraClientBase.init_packet_handlers(self)
+        self._packet_handlers["hello"] = self._process_hello
+
+    def make_hello(self, challenge_response=None):
+        capabilities = XpraClientBase.make_hello(self, challenge_response)
+        log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
+        capabilities["version_request"] = True
+        return capabilities

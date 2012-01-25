@@ -1294,7 +1294,7 @@ class XpraServer(gobject.GObject):
 
     def send_disconnect(self, proto, reason):
         def force_disconnect(*args):
-            proto.close()            
+            proto.close()
         proto._add_packet_to_queue(["disconnect", reason])
         gobject.timeout_add(1000, force_disconnect)
 
@@ -1314,8 +1314,18 @@ class XpraServer(gobject.GObject):
         return True
 
     def _process_hello(self, proto, packet):
-        (_, capabilities) = packet
+        capabilities = packet[1]
+        log.debug("process_hello: capabilities=%s", capabilities)
         log.info("Handshake complete; enabling connection")
+        if capabilities.get("version_request", False):
+            capabilities = {"start_time" : long(self.start_time),
+                            "platform" : sys.platform,
+                            "version" : xpra.__version__}
+            packet = ["hello", capabilities]
+            proto._add_packet_to_queue(packet)
+            gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+            return
+
         remote_version = capabilities.get("__prerelease_version") or capabilities.get("version")
         if not is_compatible_with(remote_version):
             proto.close()
@@ -1329,7 +1339,7 @@ class XpraServer(gobject.GObject):
             del capabilities["challenge_response"]
             if not self._verify_password(proto, client_hash):
                 return
-        
+
         if capabilities.get("screenshot_request", False):
             #this is a screenshot request, handle it and disconnect
             packet = self.make_screenshot_packet()
@@ -1499,7 +1509,7 @@ class XpraServer(gobject.GObject):
     def send_screenshot(self):
         packet = self.make_screenshot_packet()
         self._send(packet)
-        
+
     def make_screenshot_packet(self):
         log.debug("grabbing screenshot")
         regions = []
@@ -1657,7 +1667,7 @@ class XpraServer(gobject.GObject):
     def assign_keymap_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
-        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data", 
+        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
                   "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
             setattr(self, x, props.get(x))
