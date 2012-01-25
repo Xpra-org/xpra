@@ -162,8 +162,8 @@ class Protocol(object):
                 i += 1
         elif type(packet)==dict:
             for k,v in packet.items():
-                self.do_verify_packet(new_tree("key for value='%s'" % v), k)
-                self.do_verify_packet(new_tree("value for key='%s'" % k), v)
+                self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
+                self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
     def _flush_one_packet_into_buffer(self):
         if not self.source:
