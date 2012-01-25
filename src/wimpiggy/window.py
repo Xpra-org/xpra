@@ -517,10 +517,12 @@ class WindowModel(BaseWindowModel):
             raise Unmanageable, e
         self._setup_done = True
 
-    def prop_get(self, key, type):
+    def prop_get(self, key, type, ignore_errors=False):
         # Utility wrapper for prop_get on the client_window
         # also allows us to ignore property errors during setup_client
-        return prop_get(self.client_window, key, type, ignore_errors=not self._setup_done)
+        if not self._setup_done:
+            ignore_errors = True
+        return prop_get(self.client_window, key, type, ignore_errors=ignore_errors)
 
     def do_wimpiggy_xkb_event(self, event):
         log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)
@@ -732,8 +734,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_icon_title_change(self):
-        wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1")
-        net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8")
+        wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
+        net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         if net_wm_icon_name is not None:
             self._internal_set_property("icon-title", net_wm_icon_name)
         else:
