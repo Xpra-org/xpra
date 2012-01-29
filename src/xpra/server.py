@@ -48,7 +48,8 @@ from wimpiggy.lowlevel import (get_rectangle_from_region,   #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                has_randr, get_screen_sizes, #@UnresolvedImport
                                set_screen_size,             #@UnresolvedImport
-                               get_screen_size)             #@UnresolvedImport
+                               get_screen_size,             #@UnresolvedImport
+                               init_x11_filter)             #@UnresolvedImport
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
@@ -572,6 +573,7 @@ class XpraServer(gobject.GObject):
 
     def __init__(self, clobber, sockets, session_name, password_file, pulseaudio, clipboard, randr, encoding, mmap):
         gobject.GObject.__init__(self)
+        init_x11_filter()
 
         self.start_time = time.time()
 

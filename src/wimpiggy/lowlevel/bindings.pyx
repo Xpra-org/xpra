@@ -1896,25 +1896,30 @@ def _route_event(event, signal, parent_signal):
         else:
             log("  received event on a parent window but have no parent signal")
 
-XKBNotify = get_XKB_event_base()
-CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
-_x_event_signals = {
-    MapRequest: (None, "child-map-request-event"),
-    ConfigureRequest: (None, "child-configure-request-event"),
-    FocusIn: ("wimpiggy-focus-in-event", None),
-    FocusOut: ("wimpiggy-focus-out-event", None),
-    ClientMessage: ("wimpiggy-client-message-event", None),
-    MapNotify: ("wimpiggy-map-event", "wimpiggy-child-map-event"),
-    UnmapNotify: ("wimpiggy-unmap-event", "wimpiggy-child-unmap-event"),
-    DestroyNotify: ("wimpiggy-destroy-event", None),
-    ConfigureNotify: ("wimpiggy-configure-event", None),
-    ReparentNotify: ("wimpiggy-reparent-event", None),
-    PropertyNotify: ("wimpiggy-property-notify-event", None),
-    KeyPress: ("wimpiggy-key-press-event", None),
-    CursorNotify: ("wimpiggy-cursor-event", None),
-    XKBNotify: ("wimpiggy-xkb-event", None),
-    "XDamageNotify": ("wimpiggy-damage-event", None),
-    }
+CursorNotify = 0
+XKBNotify = 0
+_x_event_signals = {}
+def init_x11_events():
+    global _x_event_signals, XKBNotify, CursorNotify
+    XKBNotify = get_XKB_event_base()
+    CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
+    _x_event_signals = {
+        MapRequest: (None, "child-map-request-event"),
+        ConfigureRequest: (None, "child-configure-request-event"),
+        FocusIn: ("wimpiggy-focus-in-event", None),
+        FocusOut: ("wimpiggy-focus-out-event", None),
+        ClientMessage: ("wimpiggy-client-message-event", None),
+        MapNotify: ("wimpiggy-map-event", "wimpiggy-child-map-event"),
+        UnmapNotify: ("wimpiggy-unmap-event", "wimpiggy-child-unmap-event"),
+        DestroyNotify: ("wimpiggy-destroy-event", None),
+        ConfigureNotify: ("wimpiggy-configure-event", None),
+        ReparentNotify: ("wimpiggy-reparent-event", None),
+        PropertyNotify: ("wimpiggy-property-notify-event", None),
+        KeyPress: ("wimpiggy-key-press-event", None),
+        CursorNotify: ("wimpiggy-cursor-event", None),
+        XKBNotify: ("wimpiggy-xkb-event", None),
+        "XDamageNotify": ("wimpiggy-damage-event", None),
+        }
 
 def _gw(display, xwin):
     return trap.call_synced(get_pywindow, display, xwin)
@@ -2092,4 +2097,6 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         log.warn("Unhandled exception in x_event_filter:", exc_info=True)
     return GDK_FILTER_CONTINUE
 
-gdk_window_add_filter(<cGdkWindow*>0, x_event_filter, <void*>0)
+def init_x11_filter():
+    init_x11_events()
+    gdk_window_add_filter(<cGdkWindow*>0, x_event_filter, <void*>0)
