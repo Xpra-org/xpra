@@ -274,6 +274,10 @@ class ClientExtrasBase(object):
         row = add_row(row, gtk.Label("Session Connected"), self.session_connected_label)
         self.windows_managed_label = gtk.Label()
         row = add_row(row, gtk.Label("Windows Managed"), self.windows_managed_label)
+        self.regions_sizes_label = gtk.Label()
+        row = add_row(row, gtk.Label("Pixels/region (min/avg/max)"), self.regions_sizes_label)
+        self.regions_per_second_label = gtk.Label()
+        row = add_row(row, gtk.Label("Regions/s"), self.regions_per_second_label)
         self.pixels_per_second_label = gtk.Label()
         row = add_row(row, gtk.Label("Pixels/s"), self.pixels_per_second_label)
 
@@ -318,10 +322,14 @@ class ClientExtrasBase(object):
                 else:
                     real += 1
             self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
+            regions_sizes = "n/a"
+            regions = "n/a"
             pixels = "n/a"
             if len(self.client.pixel_counter)>0:
                 now = time.time()
                 def pixelstr(v):
+                    if v<0:
+                        return  "n/a"
                     if v>1000*1000*1000:
                         return "%sG" % (long(v/1000/1000/100)/10.0)
                     elif v>1000*1000:
@@ -330,9 +338,16 @@ class ClientExtrasBase(object):
                         return "%sK" % (long(v/100)/10.0)
                     else:
                         return str(v)
+                def fpsstr(v):
+                    if v<0:
+                        return  "n/a"
+                    return "%s" % (long(v*100)/100.0)
                 def average(seconds):
                     total = 0
                     total_n = 0
+                    mins = None
+                    maxs = 0
+                    avgs = 0
                     mint = now-seconds      #ignore records older than N seconds
                     startt = now            #when we actually start counting from
                     for (t, count) in self.client.pixel_counter:
@@ -340,17 +355,31 @@ class ClientExtrasBase(object):
                             total += count
                             total_n += 1
                             startt = min(t, startt)
+                            if mins:
+                                mins = min(mins,count)
+                            else:
+                                mins = count
+                            maxs = max(maxs, count)
+                            avgs += count
                     if total==0 or startt==now:
-                        return  0
-                    return long(total/(now-startt)/total_n)
-                def pixavg(seconds):
-                    avg = average(seconds)
-                    return  pixelstr(avg)
-                p20 = pixavg(20)
-                if p20!="n/a":
-                    p1 = pixavg(1)
-                    pixels = "%s  (%s)" % (p1, p20)
+                        return  None
+                    avgs = avgs/total_n
+                    elapsed = now-startt
+                    return long(total/elapsed), total_n/elapsed, mins, avgs, maxs
+                p20 = average(20)
+                if p20:
+                    avg20,fps20,mins,avgs,maxs = p20
+                    p1 = average(1)
+                    if p1:
+                        avg1,fps1 = average(1)[:2]
+                    else:
+                        avg1,fps1 = -1, -1
+                    pixels = "%s  (%s)" % (pixelstr(avg1), pixelstr(avg20))
+                    regions = "%s  (%s)" % (fpsstr(fps1), fpsstr(fps20))
+                    regions_sizes = "%s  %s  %s" % (pixelstr(mins), pixelstr(avgs), pixelstr(maxs))
 
+            self.regions_sizes_label.set_text(regions_sizes)
+            self.regions_per_second_label.set_text(regions)
             self.pixels_per_second_label.set_text(pixels)
             return True
         gobject.timeout_add(1000, populate_table)
