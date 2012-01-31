@@ -46,7 +46,7 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
     cython_version = [int(part) for part in cython_version_string.split(".")]
     # This was when the 'for 0 < i < 10:' syntax as added, bump upwards as
     # necessary:
-    NEEDED_CYTHON = (0, 9, 7)
+    NEEDED_CYTHON = (0, 14, 0)
     if tuple(cython_version) < NEEDED_CYTHON:
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
                  "You have version %s\n"
