@@ -169,7 +169,7 @@ class ClientExtras(ClientExtrasBase):
             self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
             self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
             self.has_dbusnotify = True
-            log.info("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
+            log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
         except Exception, e:
             log.error("cannot import dbus.glib notification wrapper: %s", e)
         return self.has_dbusnotify
@@ -180,7 +180,7 @@ class ClientExtras(ClientExtrasBase):
             import pynotify
             pynotify.init("Xpra")
             self.has_pynotify = True
-            log.info("using pynotify: %s", pynotify)
+            log("using pynotify: %s", pynotify)
         except ImportError, e:
             log.error("cannot import pynotify wrapper: %s", e)
         return self.has_pynotify
