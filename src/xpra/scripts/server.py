@@ -197,10 +197,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # daemonize:
     starting_dir = os.getcwd()
 
+    clobber = upgrading or opts.use_display
     # Daemonize:
     if opts.daemon:
         try:
-            logpath = dotxpra.server_socket_path(display_name, upgrading) + ".log"
+            logpath = dotxpra.server_socket_path(display_name, clobber) + ".log"
         except ServerSockInUse:
             parser.error("You already have an xpra server running at %s\n"
                          "  (did you want 'xpra upgrade'?)"
@@ -245,7 +246,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
 
-    if not upgrading and not opts.use_display:
+    if not clobber:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY",
                                     os.path.expanduser("~/.Xauthority"))
@@ -281,40 +282,49 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         default_display.close()
     manager.set_default_display(display)
 
-    if not opts.use_display:
-        if upgrading:
-            xvfb_pid = get_pid()
-        else:
-            xvfb_pid = xvfb.pid
+    if clobber:
+        xvfb_pid = get_pid()
+    else:
+        xvfb_pid = xvfb.pid
 
-        def kill_xvfb():
-            # Close our display(s) first, so the server dying won't kill us.
-            for display in gtk.gdk.display_manager_get().list_displays():
-                display.close()
-            if xvfb_pid is not None:
-                os.kill(xvfb_pid, signal.SIGTERM)
-        _cleanups.append(kill_xvfb)
-
+    def kill_xvfb():
+        # Close our display(s) first, so the server dying won't kill us.
+        for display in gtk.gdk.display_manager_get().list_displays():
+            display.close()
         if xvfb_pid is not None:
-            save_pid(xvfb_pid)
+            os.kill(xvfb_pid, signal.SIGTERM)
+    _cleanups.append(kill_xvfb)
+
+    if xvfb_pid is not None:
+        save_pid(xvfb_pid)
 
     sockets = []
-    sockpath = dotxpra.server_socket_path(display_name, upgrading)
+    sockpath = dotxpra.server_socket_path(display_name, clobber)
+    #print("creating server socket %s" % sockpath)
     sockets.append(create_unix_domain_socket(sockpath))
-    if opts.bind_tcp:
-        sockets.append(create_tcp_socket(parser, opts.bind_tcp))
-
-    # This import is delayed because the module depends on gtk:
-    import xpra.server
-    app = xpra.server.XpraServer(upgrading, sockets, opts.session_name,
-                                 opts.password_file, opts.pulseaudio, opts.clipboard, opts.randr, opts.encoding, opts.mmap)
-    def cleanup_socket(self):
-        print("removing socket")
+    def cleanup_socket():
+        print("removing socket %s" % sockpath)
         try:
             os.unlink(sockpath)
         except:
             pass
     _cleanups.append(cleanup_socket)
+    tcp_socket = None
+    if opts.bind_tcp:
+        tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
+        sockets.append(tcp_socket)
+    def cleanup_tcp_socket():
+        if tcp_socket:
+            print("closing tcp socket")
+            try:
+                tcp_socket.close()
+            except:
+                pass
+    _cleanups.append(cleanup_tcp_socket)
+
+    # This import is delayed because the module depends on gtk:
+    import xpra.server
+    app = xpra.server.XpraServer(clobber, sockets, opts)
 
     child_reaper = ChildReaper(app, opts.exit_with_children)
     # Always register the child reaper, because even if exit_with_children is
@@ -341,5 +351,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     _cleanups.append(app.cleanup)
     if app.run():
+        print("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
+        # and don't delete the new socket (not ours)
         _cleanups.remove(kill_xvfb)
+        _cleanups.remove(cleanup_socket)

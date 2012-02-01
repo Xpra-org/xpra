@@ -571,7 +571,7 @@ class XpraServer(gobject.GObject):
         "wimpiggy-cursor-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, session_name, password_file, pulseaudio, clipboard, randr, encoding, mmap):
+    def __init__(self, clobber, sockets, opts):
         gobject.GObject.__init__(self)
         init_x11_filter()
 
@@ -593,11 +593,11 @@ class XpraServer(gobject.GObject):
         self._potential_protocols = []
         self._server_source = None
 
-        self.supports_mmap = mmap
-        self.encoding = encoding or "rgb24"
+        self.supports_mmap = opts.mmap
+        self.encoding = opts.encoding or "rgb24"
         assert self.encoding in ENCODINGS
         self.png_window_icons = False
-        self.session_name = session_name
+        self.session_name = opts.session_name
         import glib
         glib.set_application_name(self.session_name or "Xpra")
 
@@ -666,8 +666,8 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
 
         ### Clipboard handling:
-        self.clipboard_enabled = clipboard
-        if clipboard:
+        self.clipboard_enabled = opts.clipboard
+        if self.clipboard_enabled:
             def send_clipboard(packet):
                 if self.clipboard_enabled:
                     self._send(packet)
@@ -683,18 +683,18 @@ class XpraServer(gobject.GObject):
         self._has_focus = 0
         self._upgrading = False
 
-        self.password_file = password_file
+        self.password_file = opts.password_file
         self.salt = None
 
-        self.randr = randr and has_randr()
+        self.randr = opts.randr and has_randr()
         if self.randr and len(get_screen_sizes())<=1:
             #disable randr when we are dealing with a Xvfb
             #with only one resolution available
             #since we don't support adding them on the fly yet
             self.randr = False
-        log.info("randr enabled: %s", self.randr)
+        log("randr enabled: %s", self.randr)
 
-        self.pulseaudio = pulseaudio
+        self.pulseaudio = opts.pulseaudio
 
         try:
             from xpra.dbus_notifications_forwarder import register
