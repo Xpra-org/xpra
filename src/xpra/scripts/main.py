@@ -319,8 +319,9 @@ def connect_or_fail(display_desc):
             sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
-            if child.poll()!=0:
-                error_message = "cannot %s using %s: the SSH process has terminated!" % (action, display_desc["full_ssh"])
+            e = child.poll()
+            if e is not None:
+                error_message = "cannot %s using %s: the SSH process has terminated with exit code=%s" % (action, display_desc["full_ssh"], e)
                 print(error_message)
                 from wimpiggy.util import gtk_main_quit_really
                 gtk_main_quit_really()
