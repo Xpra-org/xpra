@@ -1,6 +1,14 @@
-v0.0.7.35 (2012-01-23)
+v0.0.7.35 (2012-02-01)
 ======================
-	-- ability to take screenshots
+	-- ssh password input fix
+	-- osx dock_menu fixed
+	-- ability to take screenshots ("xpra screenshot")
+	-- report server version ("xpra version")
+	-- slave windows (drop down menus, etc) now move with their parent window
+	-- show more session statistics: damage regions per second
+	-- posix clients no longer interfere with the GTK/X11 main loop
+	-- ignore missing properties when they are changed, and report correct source of the problem
+	-- code style cleanups and improvements
 
 
 v0.0.7.34 (2012-01-19)

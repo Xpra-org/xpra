@@ -1,5 +1,14 @@
 xpra (0.0.7.35-1) UNRELEASED; urgency=low
-  * ability to take screenshots
+  * ssh password input fix
+  * ability to take screenshots ("xpra screenshot")
+  * report server version ("xpra version")
+  * slave windows (drop down menus, etc) now move with their parent window
+  * show more session statistics: damage regions per second
+  * posix clients no longer interfere with the GTK/X11 main loop
+  * ignore missing properties when they are changed, and report correct source of the problem
+  * code style cleanups and improvements
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 01 Feb 2012 19:03:55 +0700
 
 xpra (0.0.7.34-1) UNRELEASED; urgency=low
   * security: restrict access to run-xpra script (chmod)

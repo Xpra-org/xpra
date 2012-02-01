@@ -45,8 +45,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Jan 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.35-1
-- ability to take screenshots
+* Wed Feb 01 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.35-1
+- ssh password input fix
+- ability to take screenshots ("xpra screenshot")
+- report server version ("xpra version")
+- slave windows (drop down menus, etc) now move with their parent window
+- show more session statistics: damage regions per second
+- posix clients no longer interfere with the GTK/X11 main loop
+- ignore missing properties when they are changed, and report correct source of the problem
+- code style cleanups and improvements
 
 * Thu Jan 19 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.34-1
 - security: restrict access to run-xpra script (chmod)
