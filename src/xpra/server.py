@@ -963,13 +963,13 @@ class XpraServer(gobject.GObject):
         elif propname == "transient-for":
             transient_for = window.get_property("transient-for")
             if transient_for:
-                log.info("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+                log.debug("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
                 #try to find the model for this window:
                 for model in self._desktop_manager._models.keys():
-                    log.info("testing model %s: %s", model, model.client_window.xid)
+                    log.debug("testing model %s: %s", model, model.client_window.xid)
                     if model.client_window.xid==transient_for.xid:
                         wid = self._window_to_id.get(model)
-                        log.info("found match, window id=%s", wid)
+                        log.debug("found match, window id=%s", wid)
                         return {"transient-for" : wid}
                 return {}
             return {}
@@ -1172,21 +1172,22 @@ class XpraServer(gobject.GObject):
             self._protocol.source.cancel_damage(wid)
 
     def _send_new_window_packet(self, window):
-        wid = self._window_to_id[window]
-        (x, y, w, h) = self._desktop_manager.window_geometry(window)
-        metadata = {}
-        for propname in self._all_metadata:
-            metadata.update(self._make_metadata(window, propname))
-        self._send(["new-window", wid, x, y, w, h, metadata])
+        geometry = self._desktop_manager.window_geometry(window)
+        self._do_send_new_window_packet("new-window", window, geometry, self._all_metadata)
 
     def _send_new_or_window_packet(self, window):
-        wid = self._window_to_id[window]
-        (x, y, w, h) = window.get_property("geometry")
-        metadata = {}
-        for propname in ["transient-for", "window-type"]:
-            metadata.update(self._make_metadata(window, propname))
-        self._send(["new-override-redirect", wid, x, y, w, h, metadata])
+        geometry = window.get_property("geometry")
+        properties = ["transient-for", "window-type"]
+        self._do_send_new_window_packet("new-override-redirect", window, geometry, properties)
         self._damage(window, 0, 0, w, h)
+
+    def _do_send_new_window_packet(self, ptype, window, geometry, properties):
+        wid = self._window_to_id[window]
+        (x, y, w, h) = geometry
+        metadata = {}
+        for propname in properties:
+            metadata.update(self._make_metadata(window, propname))
+        self._send([ptype, wid, x, y, w, h, metadata])
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
