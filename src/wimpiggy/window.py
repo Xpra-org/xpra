@@ -722,8 +722,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
     def _handle_title_change(self):
-        wm_name = self.prop_get("WM_NAME", "latin1")
-        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8")
+        wm_name = self.prop_get("WM_NAME", "latin1", ignore_errors=True)
+        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", ignore_errors=True)
         if net_wm_name is not None:
             self._internal_set_property("title", net_wm_name)
         else:
