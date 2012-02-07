@@ -1179,6 +1179,7 @@ class XpraServer(gobject.GObject):
         geometry = window.get_property("geometry")
         properties = ["transient-for", "window-type"]
         self._do_send_new_window_packet("new-override-redirect", window, geometry, properties)
+        (_, _, w, h) = geometry
         self._damage(window, 0, 0, w, h)
 
     def _do_send_new_window_packet(self, ptype, window, geometry, properties):
