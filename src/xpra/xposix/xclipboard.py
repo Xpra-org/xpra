@@ -6,7 +6,10 @@
 import struct
 import gtk
 
-from wimpiggy.lowlevel import (get_xatom, gdk_atom_objects_from_gdk_atom_array) #@UnresolvedImport
+from wimpiggy.lowlevel import (get_xatom,                               #@UnresolvedImport
+                               gdk_atom_objects_from_gdk_atom_array,    #@UnresolvedImport
+                               gdk_atom_array_from_gdk_atoms            #@UnresolvedImport
+                               )
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -21,23 +24,17 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
         ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
 
     def _do_munge_raw_selection_to_wire(self, type, format, data):
-        if format == 32:
-            if type in ("ATOM", "ATOM_PAIR"):
-                # Convert to strings and send that. Bizarrely, the atoms are
-                # not actual X atoms, but an array of GdkAtom's reinterpreted
-                # as a byte buffer.
-                atoms = gdk_atom_objects_from_gdk_atom_array(data)
-                return ("atoms", [str(atom) for atom in atoms])
-            else:
-                sizeof_long = struct.calcsize("@L")
-                format = "@" + "L" * (len(data) // sizeof_long)
-                ints = struct.unpack(format, data)
-                return ("integers", ints)
+        if format == 32 and type in ("ATOM", "ATOM_PAIR"):
+            # Convert to strings and send that. Bizarrely, the atoms are
+            # not actual X atoms, but an array of GdkAtom's reinterpreted
+            # as a byte buffer.
+            atoms = gdk_atom_objects_from_gdk_atom_array(data)
+            return ("atoms", [str(atom) for atom in atoms])
         return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, type, format, data)
 
-    def _munge_wire_selection_to_raw(self, encoding, type, format, data):
+    def _munge_wire_selection_to_raw(self, encoding, datatype, format, data):
         if encoding == "atoms":
-            d = gtk.gdk.display_get_default()
-            ints = [get_xatom(d, a) for a in data]
-            return struct.pack("@" + "L" * len(ints), *ints)
-        return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, type, format, data)
+            gdkatoms = gdk_atom_array_from_gdk_atoms(data)
+            log.debug("gdkatoms(%s)=%s", data, gdkatoms)
+            return struct.pack("=" + "L" * len(gdkatoms), *gdkatoms)
+        return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, format, data)

@@ -41,7 +41,7 @@ class ClipboardProtocolHelperBase(object):
             self.send(["clipboard-token", name])
 
     def _process_clipboard_token(self, packet):
-        (_, selection) = packet
+        selection = packet[1]
         name = self.remote_to_local(selection)
         log.debug("process clipboard token selection=%s, local clipboard name=%s", selection, name)
         if name in self._clipboard_proxies:
@@ -60,7 +60,7 @@ class ClipboardProtocolHelperBase(object):
         return result
 
     def _clipboard_got_contents(self, request_id, type, format, data):
-        log.debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, data, type, format)
+        log.debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data), type, format)
         if request_id in self._clipboard_outstanding_requests:
             loop = self._clipboard_outstanding_requests[request_id]
             loop.done({"type": type, "format": format, "data": data})
@@ -83,11 +83,18 @@ class ClipboardProtocolHelperBase(object):
         """ this method is overriden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
-        if format == 16:
-            sizeof_short = struct.calcsize("@H")
+        if format == 32:
+            sizeof_long = struct.calcsize("=L")
+            assert sizeof_long == 32
+            binfmt = "=" + "L" * (len(data) // sizeof_long)
+            ints = struct.unpack(binfmt, data)
+            return ("integers", ints)
+        elif format == 16:
+            sizeof_short = struct.calcsize("=H")
             assert sizeof_short == 16
-            format = "@" + "H" * (len(data) // sizeof_short)
-            return ("integers", struct.unpack(format, data))
+            binfmt = "=" + "H" * (len(data) // sizeof_short)
+            ints = struct.unpack(binfmt, data)
+            return ("integers", ints)
         elif format == 8:
             return ("bytes", data)
         else:
@@ -106,8 +113,8 @@ class ClipboardProtocolHelperBase(object):
             elif format == 8:
                 format_char = "B"
             else:
-                assert False
-            return struct.pack("@" + format_char * len(data), *data)
+                raise Exception("unknown encoding format: %s" % format)
+            return struct.pack("=" + format_char * len(data), *data)
         else:
             assert False
 
@@ -118,15 +125,16 @@ class ClipboardProtocolHelperBase(object):
         if name in self._clipboard_proxies:
             proxy = self._clipboard_proxies[name]
             def got_contents(type, format, data):
-                if type is not None:
-                    munged = self._munge_raw_selection_to_wire(type, format, data)
-                    (wire_encoding, wire_data) = munged
-                    log("clipboard raw -> wire: %r -> %r", (type, format, data), munged)
-                    if wire_encoding is not None:
-                        self.send(["clipboard-contents", request_id, selection,
-                                   type, format, wire_encoding, wire_data])
-                        return
-                self.send(["clipboard-contents-none", request_id, selection])
+                log.debug("got_contents(%s,%s,%s)", type, format, len(data))
+                if type is None:
+                    self.send(["clipboard-contents-none", request_id, selection])
+                    return
+                munged = self._munge_raw_selection_to_wire(type, format, data)
+                (wire_encoding, wire_data) = munged
+                log("clipboard raw -> wire: %r -> %r", (type, format, data), munged)
+                if wire_encoding is not None:
+                    self.send(["clipboard-contents", request_id, selection,
+                               type, format, wire_encoding, wire_data])
             proxy.get_contents(target, got_contents)
         else:
             self.send(["clipboard-contents-none", request_id, selection])
@@ -242,6 +250,7 @@ class ClipboardProxy(gtk.Invisible):
         target = str(selection_data.target)
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is not None and result["type"] is not None:
+            log.debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s,%s,%s)", selection_data, info, time, result["type"], result["format"], len(result["data"]))
             selection_data.set(result["type"], result["format"], result["data"])
         else:
             log("remote selection fetch timed out")

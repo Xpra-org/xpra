@@ -361,7 +361,7 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
     cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
-    ctypedef void * GdkAtom
+    ctypedef unsigned long GdkAtom
     # FIXME: this should have stricter type checking
     GdkAtom PyGdkAtom_Get(object)
     object PyGdkAtom_New(GdkAtom)
@@ -434,6 +434,16 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     for i in xrange(array_len):
         objects.append(PyGdkAtom_New(array[i]))
     return objects
+
+def gdk_atom_array_from_gdk_atoms(strs_or_xatoms):
+    a = []
+    for str_or_xatom in strs_or_xatoms:
+        gdkatom = gtk.gdk.atom_intern(str_or_xatom)
+        if gdkatom:
+            v = PyGdkAtom_Get(gdkatom)
+            a.append(v)
+    return a
+
 
 # Property handling:
 
