@@ -66,6 +66,7 @@ def main(script_file, cmdline):
                           usage="".join(["\n",
                                          start_str,
                                          "\t%prog attach [DISPLAY]\n",
+                                         "\t%prog detach [DISPLAY]\n",
                                          "\t%prog screenshot filename [DISPLAY]\n",
                                          "\t%prog version [DISPLAY]\n",
                                          stop_str,
