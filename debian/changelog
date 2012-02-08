@@ -1,3 +1,10 @@
+xpra (0.0.7.36-1) UNRELEASED; urgency=low
+  * fix clipboard bug which was causing Java applications to crash
+  * ensure we always properly disconnect previous client when new connection is accepted
+  * avoid warnings with Java applications, focus errors, etc
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Feb 2012 02:41:53 +0700
+
 xpra (0.0.7.35-1) UNRELEASED; urgency=low
   * ssh password input fix
   * ability to take screenshots ("xpra screenshot")

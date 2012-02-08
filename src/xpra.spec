@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.0.7.35
+%define version 0.0.7.36
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -45,6 +45,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Thu Feb 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.36-1
+- fix clipboard bug which was causing Java applications to crash
+- ensure we always properly disconnect previous client when new connection is accepted
+- avoid warnings with Java applications, focus errors, etc
+
 * Wed Feb 01 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.35-1
 - ssh password input fix
 - ability to take screenshots ("xpra screenshot")

@@ -1,3 +1,10 @@
+v0.0.7.36 (2012-02-09)
+======================
+	-- fix clipboard bug which was causing Java applications to crash
+	-- ensure we always properly disconnect previous client when new connection is accepted
+	-- avoid warnings with Java applications, focus errors, etc
+
+
 v0.0.7.35 (2012-02-01)
 ======================
 	-- ssh password input fix
