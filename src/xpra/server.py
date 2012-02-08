@@ -1130,21 +1130,26 @@ class XpraServer(gobject.GObject):
     def _focus(self, wid, modifiers):
         log.debug("_focus(%s,%s) has_focus=%s", wid, modifiers, self._has_focus)
         if self._has_focus != wid:
-            if wid == 0:
+            def reset_focus():
                 self._clear_keys_pressed()
                 # FIXME: kind of a hack:
+                self._has_focus = 0
                 self._wm.get_property("toplevel").reset_x_focus()
-            else:
-                window = self._id_to_window[wid]
-                #no idea why we can't call this straight away!
-                #but with win32 clients, it would often fail!???
-                def give_focus():
-                    window.give_client_focus()
-                    return False
-                gobject.idle_add(give_focus)
-                if modifiers is not None:
-                    self._make_keymask_match(modifiers, self.xkbmap_mod_pointermissing)
-            self._has_focus = wid
+                
+            if wid == 0:
+                return reset_focus()
+            window = self._id_to_window.get(wid)
+            if not window:
+                return reset_focus()
+            #no idea why we can't call this straight away!
+            #but with win32 clients, it would often fail!???
+            def give_focus():
+                self._has_focus = wid
+                window.give_client_focus()
+                return False
+            gobject.idle_add(give_focus)
+            if modifiers is not None:
+                self._make_keymask_match(modifiers, self.xkbmap_mod_pointermissing)
 
     def _move_pointer(self, pos):
         (x, y) = pos
