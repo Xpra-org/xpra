@@ -692,7 +692,7 @@ class WindowModel(BaseWindowModel):
             self._property_handlers[name](self)
 
     def _handle_wm_hints(self):
-        wm_hints = self.prop_get("WM_HINTS", "wm-hints")
+        wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
         if wm_hints is not None:
             # GdkWindow or None
             self._internal_set_property("group-leader", wm_hints.group_leader)
@@ -722,8 +722,8 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
     def _handle_title_change(self):
-        wm_name = self.prop_get("WM_NAME", "latin1", ignore_errors=True)
-        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", ignore_errors=True)
+        wm_name = self.prop_get("WM_NAME", "latin1", True)
+        net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)
         if net_wm_name is not None:
             self._internal_set_property("title", net_wm_name)
         else:
