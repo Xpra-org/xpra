@@ -133,7 +133,7 @@ class XpraClientBase(gobject.GObject):
         raise Exception("override me!")
 
     def _process_disconnect(self, packet):
-        log.error("server requested disconnect: %s" % str(packet))
+        log.error("server requested disconnect: %s", packet[1:])
         self.quit()
         return
 
