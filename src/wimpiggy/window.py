@@ -789,14 +789,21 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))
 
+        def set_class_instance(s):
+            try:
+                parts = class_instance.split("\0")
+                if len(parts)!=3:
+                    return  False
+                (c, i, _) = parts
+                self._internal_set_property("class-instance", (c, i))
+                return  True
+            except ValueError:
+                log.warn("Malformed WM_CLASS: %s, ignoring", class_instance)
+                return  False
         class_instance = self.prop_get("WM_CLASS", "latin1")
         if class_instance:
-            try:
-                (c, i, _) = class_instance.split("\0")
-            except ValueError:
-                log.warn("Malformed WM_CLASS, ignoring")
-            else:
-                self._internal_set_property("class-instance", (c, i))
+            if not set_class_instance(class_instance):
+                set_class_instance(self.prop_get("WM_CLASS", "utf8"))
 
         protocols = self.prop_get("WM_PROTOCOLS", ["atom"])
         if protocols is None:
