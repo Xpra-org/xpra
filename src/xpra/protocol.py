@@ -354,9 +354,29 @@ class Protocol(object):
         self._compressor = zlib.compressobj(level)
         self._decompressor = zlib.decompressobj()
 
+    def flush_then_close(self, last_packet):
+        self._add_packet_to_queue(last_packet)
+        self.terminate_io_threads()
+        #wait for last_packet to be sent:
+        def wait_for_end_of_write(timeout=15):
+            log.debug("wait_for_end_of_write(%s) closed=%s, size=%s", timeout, self._closed, self._write_queue.qsize())
+            if self._closed:
+                """ client has disconnected """
+                return
+            if self._write_queue.empty() or timeout<=0:
+                """ threads have terminated or we timedout """
+                self.close()
+            else:
+                """ check again soon: """
+                gobject.timeout_add(200, wait_for_end_of_write, timeout-1)
+        wait_for_end_of_write()
+
     def close(self):
         if not self._closed:
             self._closed = True
+        self.terminate_io_threads()
+
+    def terminate_io_threads(self):
         #make the threads exit by adding the empty marker:
         self._write_queue.put(None)
         try:

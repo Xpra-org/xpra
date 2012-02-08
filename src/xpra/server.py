@@ -240,11 +240,6 @@ class ServerSource(object):
                 packet = None
         return packet, packet is not None and self._have_more()
 
-    def send_packet_now(self, packet):
-        assert self._protocol
-        self._ordinary_packets.insert(0, packet)
-        self._protocol.source_has_more()
-
     def queue_ordinary_packet(self, packet):
         assert self._protocol
         self._ordinary_packets.append(packet)
@@ -1566,9 +1561,8 @@ class XpraServer(gobject.GObject):
     def disconnect(self, reason):
         if self._protocol:
             log.info("Disconnecting existing client, reason is: %s", reason)
-            # send message asking for disconnection politely:
-            self._protocol.source.send_packet_now(["disconnect", reason])
-            self._protocol.close()
+            # send message asking client to disconnect (politely):
+            self._protocol.flush_then_close(["disconnect", reason])
             #this ensures that from now on we ignore any incoming packets coming
             #from this connection as these could potentially set some keys pressed, etc
             if self._server_source and (self._server_source is self._protocol.source):
