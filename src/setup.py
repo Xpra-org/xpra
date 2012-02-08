@@ -142,9 +142,9 @@ if sys.platform.startswith("win"):
                             }
               }
     data_files=[
-                   ('COPYING'),
-                   ('README.xpra'),
-                   ('website.url'),
+                   ('', ['COPYING']),
+                   ('', ['README.xpra']),
+                   ('', ['website.url']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % DLLs)),
