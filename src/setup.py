@@ -153,7 +153,8 @@ if sys.platform.startswith("win"):
         windows = windows,
         console = console,
         options = options,
-        data_files = data_files
+        data_files = data_files,
+        description = "Screen for X utility, allows you to connect to remote seamless sessions",
     )
 else:
     packages=["wimpiggy", "wimpiggy.lowlevel",
@@ -174,7 +175,8 @@ else:
     extra_options = dict(
         packages = packages,
         scripts = scripts,
-        data_files = data_files
+        data_files = data_files,
+        description = "A window manager library, a window manager, and a 'screen for X' utility",
     )
 
 setup(
@@ -183,7 +185,6 @@ setup(
     author_email="antoine@nagafix.co.uk",
     version=parti.__version__,
     url="http://xpra.org/",
-    description="A window manager library, a window manager, and a 'screen for X' utility",
     long_description=full_desc,
     download_url="http://xpra.org/src/",
     ext_modules=ext_modules,
