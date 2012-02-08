@@ -179,7 +179,7 @@ _prop_types = {
                lambda disp, d: d.decode("latin1"),
                "\0"),
     "atom": (str, "ATOM", 32,
-             lambda disp, a: struct.pack("@I", get_xatom(disp, a)),
+             lambda disp, a: struct.pack("@I", get_xatom(a)),
               _get_atom,
              ""),
     "u32": ((int, long), "CARDINAL", 32,

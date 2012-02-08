@@ -63,7 +63,7 @@ class TestSelection(TestWithSession, MockEventReceiver):
         # 0 = timestamp
         # FIXME: how to check this?
         # 1 = manager atom
-        assert self.event.data[1] == wimpiggy.lowlevel.get_xatom(root2, "WM_S0")
+        assert self.event.data[1] == wimpiggy.lowlevel.get_xatom("WM_S0")
         # 2 = window belonging to manager.  We just check that it really is a
         # window.
         assert wimpiggy.lowlevel.get_pywindow(root2, self.event.data[2]) is not None

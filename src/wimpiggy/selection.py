@@ -87,7 +87,7 @@ class ManagerSelection(gobject.GObject):
         ts_data = self.clipboard.wait_for_contents("TIMESTAMP").data
         ts_num = unpack("@i", ts_data[:4])[0]
         # Calculate the X atom for this selection:
-        selection_xatom = get_xatom(self.clipboard, self.atom)
+        selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
         self._xwindow = myGetSelectionOwner(self.clipboard, self.atom)
 

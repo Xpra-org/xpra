@@ -4,9 +4,8 @@
 # later version. See the file COPYING for details.
 
 import struct
-import gtk
 
-from wimpiggy.lowlevel import (get_xatom,                               #@UnresolvedImport
+from wimpiggy.lowlevel import (
                                gdk_atom_objects_from_gdk_atom_array,    #@UnresolvedImport
                                gdk_atom_array_from_gdk_atoms            #@UnresolvedImport
                                )

@@ -58,10 +58,10 @@ class TestLowlevelMisc(TestLowlevel):
 
     def test_get_xatom_pyatom(self):
         d2 = self.clone_display()
-        asdf1 = l.get_xatom(self.display, "ASDF")
-        asdf2 = l.get_xatom(d2, "ASDF")
-        ghjk1 = l.get_xatom(self.display, "GHJK")
-        ghjk2 = l.get_xatom(d2, "GHJK")
+        asdf1 = l.get_xatom("ASDF")
+        asdf2 = l.get_xatom("ASDF")
+        ghjk1 = l.get_xatom("GHJK")
+        ghjk2 = l.get_xatom("GHJK")
         assert asdf1 == asdf2
         assert ghjk1 == ghjk2
         assert l.get_pyatom(self.display, asdf2) == "ASDF"
@@ -405,8 +405,7 @@ class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
         assert event.window is win
         assert event.message_type == "WM_PROTOCOLS"
         assert event.format == 32
-        assert event.data == (l.get_xatom(win, "WM_TAKE_FOCUS"),
-                              1234, 0, 0, 0)
+        assert event.data == (l.get_xatom("WM_TAKE_FOCUS"), 1234, 0, 0, 0)
 
     def test_send_wm_take_focus_large_time(self):
         self.evs = []
@@ -422,8 +421,7 @@ class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
         assert event.window is win
         assert event.message_type == "WM_PROTOCOLS"
         assert event.format == 32
-        assert event.data == (l.get_xatom(win, "WM_TAKE_FOCUS"),
-                              0xff000000, 0, 0, 0)
+        assert event.data == (l.get_xatom("WM_TAKE_FOCUS"), 0xff000000, 0, 0, 0)
 
 # myGetSelectionOwner gets tested in test_selection.py
 

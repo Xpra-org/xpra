@@ -365,7 +365,7 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
     # FIXME: this should have stricter type checking
     GdkAtom PyGdkAtom_Get(object)
     object PyGdkAtom_New(GdkAtom)
-    Atom gdk_x11_atom_to_xatom_for_display(cGdkDisplay *, GdkAtom)
+    Atom gdk_x11_get_xatom_by_name(char *atom_name)
     GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
 
 # Basic utilities:
@@ -397,17 +397,16 @@ cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
 
 
-def get_xatom(display_source, str_or_xatom):
+def get_xatom(str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
     integer (assumed to already be an X atom)."""
     if isinstance(str_or_xatom, (int, long)):
         return str_or_xatom
     assert isinstance(str_or_xatom, str)
     gdkatom = gtk.gdk.atom_intern(str_or_xatom)
-    return gdk_x11_atom_to_xatom_for_display(
-        get_raw_display_for(display_source),
-        PyGdkAtom_Get(gdkatom),
-        )
+    if not gdkatom:
+        return  0
+    return gdk_x11_get_xatom_by_name(str_or_xatom)
 
 def get_pyatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
@@ -473,8 +472,8 @@ def XChangeProperty(pywindow, property, value):
     data_str = data
     cXChangeProperty(get_xdisplay_for(pywindow),
                      get_xwindow(pywindow),
-                     get_xatom(pywindow, property),
-                     get_xatom(pywindow, type),
+                     get_xatom(property),
+                     get_xatom(type),
                      format,
                      PropModeReplace,
                      <unsigned char *>data_str,
@@ -506,13 +505,13 @@ def XGetWindowProperty(pywindow, property, req_type):
     cdef unsigned long nitems = 0, bytes_after = 0
     cdef unsigned char * prop = <unsigned char*> 0
     cdef Status status
-    xreq_type = get_xatom(pywindow, req_type)
+    xreq_type = get_xatom(req_type)
     # This is the most bloody awful API I have ever seen.  You will probably
     # not be able to understand this code fully without reading
     # XGetWindowProperty's man page at least 3 times, slowly.
     status = cXGetWindowProperty(get_xdisplay_for(pywindow),
                                  get_xwindow(pywindow),
-                                 get_xatom(pywindow, property),
+                                 get_xatom(property),
                                  0,
                                  # This argument has to be divided by 4.  Thus
                                  # speaks the spec.
@@ -555,7 +554,7 @@ def XGetWindowProperty(pywindow, property, req_type):
 def XDeleteProperty(pywindow, property):
     cXDeleteProperty(get_xdisplay_for(pywindow),
                      get_xwindow(pywindow),
-                     get_xatom(pywindow, property))
+                     get_xatom(property))
 
 # Save set handling
 def XAddToSaveSet(pywindow):
@@ -1480,7 +1479,7 @@ def device_bell(pywindow, deviceSpec, bellClass, bellID, percent, name):
     cdef Window window
     display = get_xdisplay_for(pywindow)
     window = get_xwindow(pywindow)
-    name_atom = get_xatom(pywindow, name)
+    name_atom = get_xatom(name)
     return XkbDeviceBell(display, window, deviceSpec, bellClass, bellID,  percent, name_atom)
 
 
@@ -1653,7 +1652,7 @@ def xdamage_acknowledge(display_source, handle):
 
 def myGetSelectionOwner(display_source, pyatom):
     return XGetSelectionOwner(get_xdisplay_for(display_source),
-                              get_xatom(display_source, pyatom))
+                              get_xatom(pyatom))
 
 cdef long cast_to_long(i):
     if i < 0:
@@ -1675,13 +1674,13 @@ def sendClientMessage(target, propagate, event_mask,
     e.type = ClientMessage
     e.xany.display = display
     e.xany.window = w
-    e.xclient.message_type = get_xatom(target, message_type)
+    e.xclient.message_type = get_xatom(message_type)
     e.xclient.format = 32
-    e.xclient.data.l[0] = cast_to_long(get_xatom(target, data0))
-    e.xclient.data.l[1] = cast_to_long(get_xatom(target, data1))
-    e.xclient.data.l[2] = cast_to_long(get_xatom(target, data2))
-    e.xclient.data.l[3] = cast_to_long(get_xatom(target, data3))
-    e.xclient.data.l[4] = cast_to_long(get_xatom(target, data4))
+    e.xclient.data.l[0] = cast_to_long(get_xatom(data0))
+    e.xclient.data.l[1] = cast_to_long(get_xatom(data1))
+    e.xclient.data.l[2] = cast_to_long(get_xatom(data2))
+    e.xclient.data.l[3] = cast_to_long(get_xatom(data3))
+    e.xclient.data.l[4] = cast_to_long(get_xatom(data4))
     cdef Status s
     s = XSendEvent(display, w, propagate, event_mask, &e)
     if s == 0:

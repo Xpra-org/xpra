@@ -179,10 +179,10 @@ class TestProp(TestWithSession):
         self._assert_icon_matches("corrupted3", large)
 
     def test_multiple_conversion(self):
-        x1 = wimpiggy.lowlevel.get_xatom(self.display, "X1")
-        x2 = wimpiggy.lowlevel.get_xatom(self.display, "X2")
-        x3 = wimpiggy.lowlevel.get_xatom(self.display, "X3")
-        x4 = wimpiggy.lowlevel.get_xatom(self.display, "X4")
+        x1 = wimpiggy.lowlevel.get_xatom("X1")
+        x2 = wimpiggy.lowlevel.get_xatom("X2")
+        x3 = wimpiggy.lowlevel.get_xatom("X3")
+        x4 = wimpiggy.lowlevel.get_xatom("X4")
         p.prop_set(self.win, "_MY_MULTIPLE_TEST", "debug-CARDINAL",
                    struct.pack("@IIII", x1, x2, x3, x4))
         out = p.prop_get(self.win, "_MY_MULTIPLE_TEST",

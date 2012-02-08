@@ -66,7 +66,7 @@ class XSettingsWatcher(gobject.GObject):
     def do_wimpiggy_client_message_event(self, event):
         if (event.window is self._root
             and event.message_type == "MANAGER"
-            and event.data[1] == get_xatom(event.window, "_XSETTINGS_S0")):
+            and event.data[1] == get_xatom("_XSETTINGS_S0")):
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
