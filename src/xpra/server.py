@@ -1144,12 +1144,12 @@ class XpraServer(gobject.GObject):
             #no idea why we can't call this straight away!
             #but with win32 clients, it would often fail!???
             def give_focus():
-                self._has_focus = wid
                 window.give_client_focus()
                 return False
             gobject.idle_add(give_focus)
             if modifiers is not None:
                 self._make_keymask_match(modifiers, self.xkbmap_mod_pointermissing)
+            self._has_focus = wid
 
     def _move_pointer(self, pos):
         (x, y) = pos
