@@ -218,7 +218,7 @@ cd parti-all-%{version}
 
 %build
 cd parti-all-%{version}
-./do-rpm-build
+./install.sh
 
 %install
 rm -rf $RPM_BUILD_ROOT

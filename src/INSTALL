@@ -1,0 +1,9 @@
+To install globally (preferred), simply run this script as root:
+./install.sh
+
+To install locally, just run:
+./do-build
+The resulting installation can be found in
+./build
+You will need to adjust your PYTHONPATH to use it.
+PYTHONPATH=./build/lib*:$PYTHONPATH xpra
