@@ -135,6 +135,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.setLongClickable(true);
 		this.setClickable(true);
 		this.setFocusable(true);
+		this.setFocusableInTouchMode(true);
 		this.setOnKeyListener(this);
 		this.setOnFocusChangeListener(this);
 
