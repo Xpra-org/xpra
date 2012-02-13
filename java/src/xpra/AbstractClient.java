@@ -27,6 +27,7 @@ import org.ardverk.coding.BencodingOutputStream;
  */
 public abstract class AbstractClient implements Runnable, Client {
 
+	public	static	final	String[] ENCODINGS = new String[] {"png", "jpeg"};
 	public	static	final	int	RECEIVE_BUFFER_SIZE = 1024*1024*1;	//1MB
 	public	static	final	String	VERSION = "0.0.7.26";
 
@@ -329,6 +330,7 @@ public abstract class AbstractClient implements Runnable, Client {
         dims.add(this.getScreenHeight());
         caps.put("desktop_size", dims);
         if (this.encoding!=null) {
+	        caps.put("encodings", ENCODINGS);
 	        caps.put("encoding", this.encoding);
 	        if (this.encoding.equals("jpeg") && this.jpeg>0)
 	        	caps.put("jpeg", this.jpeg);
