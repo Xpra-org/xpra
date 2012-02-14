@@ -1266,7 +1266,7 @@ class XpraServer(gobject.GObject):
 
     def _set_encoding(self, encoding):
         if encoding:
-            assert encoding in self.encodings
+            assert encoding in self.encodings, "encoding %s is not supported, client supplied list: %s" % (encoding, self.encodings)
             if encoding not in ENCODINGS:
                 log.error("encoding %s is not supported by this server! " \
                          "Will use the first commonly supported encoding instead", encoding)
