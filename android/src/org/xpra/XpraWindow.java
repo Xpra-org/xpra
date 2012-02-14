@@ -224,6 +224,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
 		this.log("onKey("+v+", "+keyCode+", "+event+")");
+		this.client.sendKeyAction(this.id, v, keyCode, event);
 		return false;
 	}
 	@Override
@@ -238,7 +239,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.log("onKeyUp("+keyCode+", "+event+")="+b);
 		return b;
 	}
-	
+
 	protected void key_action(Object event, boolean depressed) {
 		this.log("key_action(" + event + ", " + depressed + ")");
 		char key = '?'; // event.getKeyChar();
