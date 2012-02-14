@@ -27,7 +27,6 @@ import org.gnome.gdk.Keyval;
 import org.gnome.gdk.ModifierType;
 import org.gnome.gdk.Pixbuf;
 import org.gnome.gdk.Rectangle;
-import org.gnome.gdk.WindowState;
 import org.gnome.gdk.WindowTypeHint;
 import org.gnome.gtk.DrawingArea;
 import org.gnome.gtk.Widget;
@@ -361,6 +360,7 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
     }
 
 
+    /*
     public boolean do_expose_event_test(Widget source, EventExpose event) {
     	//this.log("expose event: "+event);
         Rectangle r = event.getArea();
@@ -393,7 +393,7 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 				this.log("expose failed to save backing: "+e);
 			}
         return false;
-    }
+    }*/
 
     protected	Rectangle geometry() {
         int _x = this.getWindow().getOriginX();
