@@ -29,7 +29,7 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	public	static	final	String[] ENCODINGS = new String[] {"png", "jpeg"};
 	public	static	final	int	RECEIVE_BUFFER_SIZE = 1024*1024*1;	//1MB
-	public	static	final	String	VERSION = "0.0.7.26";
+	public	static	final	String	VERSION = "0.0.7.37";
 
 	protected	boolean	ended = false;
 	protected	boolean	exit = false;
@@ -320,6 +320,10 @@ public abstract class AbstractClient implements Runnable, Client {
             this.exit = true;
             return;
         }
+		Map<String,Object> caps = this.make_hello(enc_pass);
+        this.send("hello", caps);
+	}
+	public Map<String,Object>	make_hello(String enc_pass) {
 		Map<String,Object> caps= new LinkedHashMap<String,Object>();
 		caps.put("__prerelease_version", VERSION);
         if (enc_pass!=null)
@@ -336,7 +340,7 @@ public abstract class AbstractClient implements Runnable, Client {
 	        	caps.put("jpeg", this.jpeg);
         }
         caps.put("png_window_icons", true);
-        this.send("hello", caps);
+        return	caps;
 	}
 
     /*protected void	send_jpeg_quality() {
