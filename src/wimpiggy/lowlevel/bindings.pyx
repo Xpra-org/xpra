@@ -757,6 +757,8 @@ cdef _parse_keysym(symbol):
     keysym = XStringToKeysym(symbol)
     if keysym==NoSymbol:
         if symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+            if len(symbol)>1 and symbol[1]=="x":
+                return int(symbol, 16)
             return int(symbol)
         return  None
     return keysym
