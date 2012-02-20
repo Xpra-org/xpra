@@ -9,9 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Keys {
 
-	public static final Map<Integer,String> codeToName = new ConcurrentHashMap<Integer,String>();
-	public static final Map<Character,String> charsToName = new ConcurrentHashMap<Character,String>();
-	public static final Map<Character,String> numpadToName = new ConcurrentHashMap<Character,String>();
+	public static final Map<Integer, String> codeToName = new ConcurrentHashMap<Integer, String>();
+	public static final Map<Character, String> charsToName = new ConcurrentHashMap<Character, String>();
+	public static final Map<Character, String> numpadToName = new ConcurrentHashMap<Character, String>();
 
 	static {
 		codeToName.put(KeyEvent.VK_F1, "F1");
@@ -41,7 +41,7 @@ public class Keys {
 		codeToName.put(KeyEvent.VK_SPACE, "space");
 		codeToName.put(KeyEvent.VK_BACK_SPACE, "BackSpace");
 		codeToName.put(KeyEvent.VK_ENTER, "Return");
-		
+
 		charsToName.put('`', "grave");
 		charsToName.put('¬', "notsign");
 		charsToName.put('!', "exclam");
@@ -74,27 +74,27 @@ public class Keys {
 		charsToName.put(']', "bracketright");
 		charsToName.put('{', "braceleft");
 		charsToName.put('}', "braceright");
-		
+
 		numpadToName.put('/', "KP_Divide");
 		numpadToName.put('*', "KP_Multiply");
 		numpadToName.put('-', "KP_Substract");
 		numpadToName.put('+', "KP_Add");
 		numpadToName.put(' ', "KP_Enter");
 	}
-	
-    protected	static List<String> mask_to_names(int mod) {
-    	List<String> modifiers = new ArrayList<String>(5);
-        if ((mod & InputEvent.META_MASK) != 0)
-        	modifiers.add("meta");
-        if ((mod & InputEvent.CTRL_MASK) != 0)
-        	modifiers.add("control");
-        if ((mod & InputEvent.ALT_MASK) != 0)
-        	modifiers.add("alt");
-        if ((mod & InputEvent.SHIFT_MASK) != 0)
-        	modifiers.add("shift");
-        if ((mod & InputEvent.ALT_GRAPH_MASK) != 0)
-        	modifiers.add("super");
-        //this.log("mask_to_names("+mod+")="+modifiers);
-    	return	modifiers;
-    }
+
+	protected static List<String> mask_to_names(int mod) {
+		List<String> modifiers = new ArrayList<String>(5);
+		if ((mod & InputEvent.META_MASK) != 0)
+			modifiers.add("meta");
+		if ((mod & InputEvent.CTRL_MASK) != 0)
+			modifiers.add("control");
+		if ((mod & InputEvent.ALT_MASK) != 0)
+			modifiers.add("alt");
+		if ((mod & InputEvent.SHIFT_MASK) != 0)
+			modifiers.add("shift");
+		if ((mod & InputEvent.ALT_GRAPH_MASK) != 0)
+			modifiers.add("super");
+		// this.log("mask_to_names("+mod+")="+modifiers);
+		return modifiers;
+	}
 }

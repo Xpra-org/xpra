@@ -7,8 +7,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-
-
 public class ClientTest extends AbstractTest {
 
 	@Test
@@ -17,46 +15,47 @@ public class ClientTest extends AbstractTest {
 		TestClient client = new TestClient("fail!", baos);
 		client.send_hello("ba59e4110119264f4a6eaf3adc075ea2c5408550");
 		byte[] out = baos.toByteArray();
-		this.log("testHello() hello="+new String(out));
+		this.log("testHello() hello=" + new String(out));
 	}
-	
+
 	public void testHMAC() {
 		TestClient client = new TestClient("fail!", new ByteArrayOutputStream());
 		client.password = "71051d81d27745b59c1c56c6e9046c19697e452453e04aa5abbd52c8edc8c232".getBytes();
-		//=5eade98226dfec56fbe92e5b08530264d59c6db2
+		// =5eade98226dfec56fbe92e5b08530264d59c6db2
 		String salt = "99ea464f-7117-4e38-95b3-d3aa80e7b806";
 		String hmac_enc = client.hmac_password(salt);
-		this.log("testHMAC() hmac_enc="+hmac_enc);
+		this.log("testHMAC() hmac_enc=" + hmac_enc);
 	}
-	
+
 	public static void main(String[] args) {
 		run(ClientTest.class);
 	}
-	
-	
+
 	public static class TestClient extends AbstractClient {
 
 		public TestClient(String in, OutputStream os) {
 			super(new ByteArrayInputStream(in.getBytes()), os);
 		}
-		
-		/*public byte[]	getOutput() {
-			return	((ByteArrayOutputStream) this.outputStream).toByteArray();
-		}*/
 
-	    @Override
+		/*
+		 * public byte[] getOutput() { return ((ByteArrayOutputStream)
+		 * this.outputStream).toByteArray(); }
+		 */
+
+		@Override
 		public int getScreenWidth() {
-	    	return	480;
-	    }
-	    @Override
+			return 480;
+		}
+
+		@Override
 		public int getScreenHeight() {
-	    	return	800;
-	    }
-		
+			return 800;
+		}
+
 		@Override
 		protected ClientWindow createWindow(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
 			this.log("createWindow(..)");
-			return	null;
+			return null;
 		}
 
 		@Override

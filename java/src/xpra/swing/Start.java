@@ -7,11 +7,12 @@ import java.io.OutputStream;
 import xpra.AbstractClient;
 
 /**
- * This is just a proof of concept and this client does not work properly at present.
+ * This is just a proof of concept and this client does not work properly at
+ * present.
  * 
  */
 public class Start extends xpra.Start {
-	
+
 	public static void main(String[] args) throws IOException {
 		new Start().run(args);
 	}

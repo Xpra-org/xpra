@@ -30,13 +30,12 @@ public class SwingWindowTest {
 		window.setVisible(true);
 
 		/*
-		Client c = new Client() {
-			@Override
-			public void send(String type, Object... data) {
-				System.out.println("send(" + type + ", " + Arrays.asList(data));
-			}
-		};
-		SwingWindow w = new SwingWindow(c, 1, 20, 60, 640, 480, new HashMap<String, Object>(0), false);
-		*/
+		 * Client c = new Client() {
+		 * 
+		 * @Override public void send(String type, Object... data) {
+		 * System.out.println("send(" + type + ", " + Arrays.asList(data)); } };
+		 * SwingWindow w = new SwingWindow(c, 1, 20, 60, 640, 480, new
+		 * HashMap<String, Object>(0), false);
+		 */
 	}
 }
