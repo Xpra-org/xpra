@@ -144,7 +144,8 @@ public abstract class AbstractClient implements Runnable, Client {
 						if (bytes<missHeader) {
 							//copy what we have to the header:
 							for (int i=0; i<bytes; i++)
-								header[headerSize+i] = buffer[i];
+								header[headerSize+i] = buffer[pos+i];
+							pos += bytes;
 							headerSize += bytes;
 							bytes = 0;
 							this.log("run() only got "+headerSize+" of header, continuing");
@@ -152,9 +153,9 @@ public abstract class AbstractClient implements Runnable, Client {
 						}
 						//copy all the missing bits to the header
 						for (int i=0; i<missHeader; i++)
-							header[headerSize+i] = buffer[i];
+							header[headerSize+i] = buffer[pos+i];
 						headerSize += missHeader;
-						pos = missHeader;
+						pos += missHeader;
 						bytes -= missHeader;
 						this.log("run() got full header: "+new String(header));
 						//we now have a complete header, parse it:
@@ -191,7 +192,7 @@ public abstract class AbstractClient implements Runnable, Client {
 					headerSize = 0;
 					packetSize = 0;
 					//extract the packet:
-					this.log("run() parsing packet, remains "+bytes+" bytes");
+					this.log("run() parsing packet, remains "+bytes+" bytes at "+pos);
 					byte[] packet = this.readBuffer.toByteArray();
 					this.readBuffer = null;
 					this.parsePacket(packet);
