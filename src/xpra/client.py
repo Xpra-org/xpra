@@ -850,7 +850,6 @@ class XpraClient(XpraClientBase):
         if not is_compatible_with(self._remote_version):
             self.quit()
             return
-        self.send_deflate_level()
 
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
         self.server_desktop_size = capabilities.get("desktop_size")
@@ -884,6 +883,10 @@ class XpraClient(XpraClientBase):
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
+            if self.compression_level!=0:
+                log.info("disabling compression")
+                self.compression_level = 0
+        self.send_deflate_level()
         self.server_start_time = capabilities.get("start_time", -1)
         self.server_platform = capabilities.get("platform")
         self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify")
