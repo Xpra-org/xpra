@@ -288,7 +288,10 @@ def set_keycodes(keycodes, preserve_keycodes={}):
         sentries = sorted(entries, key=sort_key)
         for (_, name, _keycode, _, _) in sentries:
             assert _keycode == keycode
-            keysym = parse_keysym(name)
+            try:
+                keysym = parse_keysym(name)
+            except:
+                keysym = None
             if keysym is None:
                 log.error("cannot find keysym for %s", name)
             else:
