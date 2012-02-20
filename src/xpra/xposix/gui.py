@@ -292,14 +292,10 @@ class ClientExtras(ClientExtrasBase):
                 #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                 log.debug("modifier mappings=%s", mod_mappings)
                 meanings = {}
-                clear = []
-                add = []
                 for modifier,keynames in mod_mappings.items():
-                    clear.append("clear %s" % modifier)
-                    add.append("add %s = %s" % (modifier, " ".join(keynames)))
                     for keyname in keynames:
                         meanings[keyname] = modifier
-                return  clear, add, meanings, [], []
+                return  meanings, [], []
         except Exception, e:
             log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
         return self.modifiers_fallback()
@@ -307,25 +303,22 @@ class ClientExtras(ClientExtrasBase):
     def modifiers_fallback(self):
         xmodmap_pm = self.exec_get_keyboard_data(["xmodmap", "-pm"])
         if not xmodmap_pm:
+            log.warn("bindings are not available and 'xmodmap -pm' also failed, expect keyboard mapping problems")
             return ClientExtrasBase.get_keymap_modifiers(self)
         #parse it so we can feed it back to xmodmap (ala "xmodmap -pke")
-        clear = []
-        add = []
         meanings = {}
         for line in xmodmap_pm.splitlines()[1:]:
             if not line:
                 continue
             parts = line.split()
             #ie: ['shift', 'Shift_L', '(0x32),', 'Shift_R', '(0x3e)']
-            clear.append("clear %s" % parts[0])
             if len(parts)>1:
                 nohex = [x for x in parts[1:] if not x.startswith("(")]
-                add.append("add %s = %s" % (parts[0], " ".join(set(nohex))))
                 for x in nohex:
                     #ie: meanings['Shift_L']=shift
                     meanings[x] = parts[0]
-        log.debug("get_keymap_modifiers parsed: clear=%s, add=%s, meanings=%s", clear, add, meanings)
-        return  clear, add, meanings, [], []
+        log.debug("get_keymap_modifiers parsed: meanings=%s", meanings)
+        return  meanings, [], []
 
     def get_keymap_spec(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
@@ -335,8 +328,7 @@ class ClientExtras(ClientExtrasBase):
         if xkbmap_query is None and xkbmap_print is not None:
             log.error("the server will try to guess your keyboard mapping, which works reasonably well in most cases");
             log.error("however, upgrading 'setxkbmap' to a version that supports the '-query' parameter is preferred");
-        xmodmap_data = self.exec_get_keyboard_data(["xmodmap", "-pke"])
-        return xkbmap_print, xkbmap_query, xmodmap_data
+        return xkbmap_print, xkbmap_query
 
     def get_keyboard_repeat(self):
         try:

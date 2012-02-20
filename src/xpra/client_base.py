@@ -102,17 +102,18 @@ class XpraClientBase(gobject.GObject):
         self.send(["hello", hello])
 
     def make_hello(self, challenge_response=None):
-        capabilities = {"__prerelease_version": xpra.__version__}
-        capabilities["version"] = xpra.__version__
+        capabilities = {"version": xpra.__version__}
         if challenge_response:
             capabilities["challenge_response"] = challenge_response
-        capabilities["dynamic_compression"] = True
-        capabilities["packet_size"] = True
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = ENCODINGS
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
+        capabilities["packet_size"] = True
+        #will be removed (only for compatibility with old versions):
+        capabilities["dynamic_compression"] = True
+        capabilities["__prerelease_version"] = xpra.__version__
         return capabilities
 
     def send(self, packet):

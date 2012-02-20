@@ -1057,7 +1057,7 @@ cdef native_xmodmap(display_source, instructions):
                     keycodes[keycode] = keysyms
                     continue
             elif cmd=="clear":
-                #ie: ("clear", "Lock")
+                #ie: ("clear", 1)
                 modifier = line[1]
                 if modifier>=0:
                     xmodmap_clearmodifier(display, modifier)

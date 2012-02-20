@@ -18,10 +18,19 @@ def is_compatible_with(remote_version):
         log("identical remote version: %s", remote_version)
         return True
     if rv[:3]==[0, 0, 7]:
+        if rv[3]<=34:
+            log("remote version %s is too old, sorry", remote_version)
+            return  False
+        if rv[3]<=35:
+            log("remote version %s is outdated, this may work but you should upgrade", remote_version)
+            return  True
         log("local version %s is compatible with remote version 0.0.7.x: %s", local_version, remote_version)
         return True
     if rv[:2]==[0, 1]:
         log("local version %s is compatible with remote version 0.1.x: %s", local_version, remote_version)
+        return True
+    if rv[:2]==[0, 2]:
+        log("local version %s should be compatible with newer remote version 0.2.x: %s", local_version, remote_version)
         return True
     log.error("local version %s is not compatible with remote version %s", local_version, remote_version)
     return False

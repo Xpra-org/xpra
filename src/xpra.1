@@ -29,7 +29,6 @@ xpra \- viewer for remote, persistent X applications
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
 [\fB\-\-no\-mmap\fP]
-[\fB\-\-disable\-mmap\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
@@ -224,9 +223,6 @@ By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and context switches.
-\fB\-\-disable\-mmap\fP
-Deprecated, please use \fB\-\-no\-mmap\fP instead.
-.TP
 \fB\-\-no\-clipboard\fP
 Disables clipboard synchronization.
 If used on the server, no clients will be able to use clipboard

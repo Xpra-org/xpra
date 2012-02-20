@@ -65,33 +65,6 @@ DEFAULT_MODIFIER_NAMES = ["shift", "control", "meta", "super", "hyper", "alt"]
 DEFAULT_MODIFIER_NUISANCE = ["lock", "num", "scroll"]
 DEFAULT_ALL_MODIFIER_NAMES = DEFAULT_MODIFIER_NAMES+DEFAULT_MODIFIER_NUISANCE+["mod1", "mod2", "mod3", "mod4", "mod5"]
 
-XMODMAP_MOD_CLEAR = ["clear Lock", "clear Shift", "clear Control",
-                 "clear Mod1", "clear Mod2", "clear Mod3", "clear Mod4", "clear Mod5"]
-XMODMAP_MOD_ADD = ["add Lock = Caps_Lock",
-                 "add Shift = Shift_L Shift_R",
-                 "add Control = Control_L Control_R",
-                 "add Mod1 = Meta_L Meta_R",
-                 "add Mod2 = Num_Lock",
-                 "add Mod3 = Hyper_L Hyper_R",
-                 "add Mod4 = Super_L Super_R",
-                 "add Mod5 = Alt_L Alt_R"]
-
-XMODMAP_MOD_DEFAULTS = ["keycode any = Shift_L",
-                   "keycode any = Shift_R",
-                   "keycode any = Control_L",
-                   "keycode any = Control_R",
-                   "keycode any = Meta_L",
-                   "keycode any = Meta_R",
-                   "keycode any = Alt_L",
-                   "keycode any = Alt_R",
-                   "keycode any = Hyper_L",
-                   "keycode any = Hyper_R",
-                   "keycode any = Super_L",
-                   "keycode any = Super_R",
-                   "keycode any = Num_Lock",
-                    # Really stupid hack to force backspace to work.
-                   "keycode any = BackSpace"]
-
 DEFAULT_MODIFIER_MEANINGS = {
         "Shift_L"   : "shift",
         "Shift_R"   : "shift",
@@ -110,14 +83,3 @@ DEFAULT_MODIFIER_MEANINGS = {
         "ISO_Level3_Shift"  : "mod5",
         "Mode_switch"       : "mod5",
         }
-
-DEFAULT_KEYNAME_FOR_MOD = {
-            "shift": ["Shift_L", "Shift_R"],
-            "control": ["Control_L", "Control_R"],
-            "meta": ["Meta_L", "Meta_R"],
-            "super": ["Super_L", "Super_R"],
-            "hyper": ["Hyper_L", "Hyper_R"],
-            "alt": ["Alt_L", "Alt_R"],
-            "lock": ["Caps_Lock"],
-            "num": ["Num_Lock"],
-            }

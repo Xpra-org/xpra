@@ -19,7 +19,7 @@ import datetime
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
-from xpra.keys import XMODMAP_MOD_DEFAULTS, XMODMAP_MOD_ADD, XMODMAP_MOD_CLEAR, get_gtk_keymap
+from xpra.keys import get_gtk_keymap
 from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
@@ -137,10 +137,10 @@ class ClientExtrasBase(object):
     def can_notify(self):
         return  False
 
-    def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+    def show_notify(self, dbus_id, nid, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         pass
 
-    def close_notify(self, id):
+    def close_notify(self, nid):
         pass
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
@@ -158,12 +158,11 @@ class ClientExtrasBase(object):
         return  get_gtk_keymap()
 
     def get_keymap_modifiers(self):
-        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, {}, [], []
+        return  {}, [], []
 
     def get_keymap_spec(self):
-        """ xkbmap_print, xkbmap_query, xmodmap """
-        # default map for non xposix clients:
-        return None,None,XMODMAP_MOD_DEFAULTS
+        """ xkbmap_print, xkbmap_query """
+        return None,None
 
     def get_keyboard_repeat(self):
         """ (delay_ms,interval_ms) or None"""
@@ -261,13 +260,12 @@ class ClientExtrasBase(object):
             row = add_row(row, gtk.Label("Server Platform"), gtk.Label(self.client.server_platform))
         self.server_randr_label = gtk.Label()
         row = add_row(row, gtk.Label("Server RandR Support"), self.server_randr_label)
-        if self.client.can_ping:
-            self.server_load_label = gtk.Label()
-            row = add_row(row, gtk.Label("Server Load"), self.server_load_label)
-            self.server_latency_label = gtk.Label()
-            row = add_row(row, gtk.Label("Server Latency"), self.server_latency_label)
-            self.client_latency_label = gtk.Label()
-            row = add_row(row, gtk.Label("Client Latency"), self.client_latency_label)
+        self.server_load_label = gtk.Label()
+        row = add_row(row, gtk.Label("Server Load"), self.server_load_label)
+        self.server_latency_label = gtk.Label()
+        row = add_row(row, gtk.Label("Server Latency"), self.server_latency_label)
+        self.client_latency_label = gtk.Label()
+        row = add_row(row, gtk.Label("Client Latency"), self.client_latency_label)
         self.session_started_label = gtk.Label()
         row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
         self.session_connected_label = gtk.Label()
@@ -301,15 +299,14 @@ class ClientExtrasBase(object):
                 self.server_randr_label.set_text("Yes%s" % size_info)
             else:
                 self.server_randr_label.set_text("No%s" % size_info)
-            if self.client.can_ping:
-                if self.client.server_load:
-                    self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
-                if len(self.client.server_latency)>0:
-                    avg = sum(self.client.server_latency)/len(self.client.server_latency)
-                    self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
-                if len(self.client.client_latency)>0:
-                    avg = sum(self.client.client_latency)/len(self.client.client_latency)
-                    self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
+            if self.client.server_load:
+                self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
+            if len(self.client.server_latency)>0:
+                avg = sum(self.client.server_latency)/len(self.client.server_latency)
+                self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
+            if len(self.client.client_latency)>0:
+                avg = sum(self.client.client_latency)/len(self.client.client_latency)
+                self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             else:
@@ -535,22 +532,38 @@ class ClientExtrasBase(object):
     def make_bellmenuitem(self):
         def bell_toggled(*args):
             self.client.bell_enabled = self.bell_menuitem.get_active()
+            self.client.send_bell_enabled()
             log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
-        def set_bellmenuitem(*args):
-            self.bell_menuitem.set_active(self.client.bell_enabled)
-            self.bell_menuitem.set_sensitive(self.client.server_capabilities.get("bell", False))
-        self.client.connect("handshake-complete", set_bellmenuitem)
+        self.bell_menuitem.set_tooltip_text("Forward system bell")
+        self.bell_menuitem.set_active(self.client.bell_enabled)
         return  self.bell_menuitem
+
+    def make_cursorsmenuitem(self):
+        def cursors_toggled(*args):
+            self.client.cursors_enabled = self.cursors_menuitem.get_active()
+            self.client.send_cursors_enabled()
+            log.debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
+        self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
+        self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
+        self.cursors_menuitem.set_active(self.client.cursors_enabled)
+        return  self.cursors_menuitem
 
     def make_notificationsmenuitem(self):
         def notifications_toggled(*args):
             self.client.notifications_enabled = self.notifications_menuitem.get_active()
+            self.client.send_notify_enabled()
             log.debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         def set_notifications_menuitem(*args):
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
-            self.notifications_menuitem.set_sensitive(self.client.server_capabilities.get("notifications", False))
+            can_notify = self.client.server_capabilities.get("notifications", False)
+            self.notifications_menuitem.set_sensitive(can_notify)
+            if can_notify:
+                self.notifications_menuitem.set_tooltip_text("Forward system notifications")
+            else:
+                self.notifications_menuitem.set_tooltip_text("Cannot forward system notifications: disabled by server")
+            self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
@@ -562,7 +575,12 @@ class ClientExtrasBase(object):
         self.clipboard_menuitem = self.checkitem("Clipboard", clipboard_toggled)
         def set_clipboard_menuitem(*args):
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
-            self.clipboard_menuitem.set_sensitive(self.client.server_capabilities.get("clipboard", True))
+            can_clip = self.client.server_capabilities.get("clipboard", False)
+            self.clipboard_menuitem.set_sensitive(can_clip)
+            if can_clip:
+                self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
+            else:
+                self.clipboard_menuitem.set_tooltip_text("Clipboard synchronization cannot be enabled: disabled by server")
         self.client.connect("handshake-complete", set_clipboard_menuitem)
         return self.clipboard_menuitem
 
@@ -649,9 +667,9 @@ class ClientExtrasBase(object):
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
         def set_selected_layout(*args):
-            if self.client._raw_keycodes_full:
-                #server supports raw keycode and we do too
-                #so no need to let the user select the keymap
+            if self.client.xkbmap_layout or self.client.xkbmap_print or self.client.xkbmap_query:
+                #we have detected a layout
+                #so no need to let the user override it
                 keyboard.hide()
                 return
             layout = self.client.xkbmap_layout
@@ -756,6 +774,7 @@ class ClientExtrasBase(object):
         menu.append(self.make_sessioninfomenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
+        menu.append(self.make_cursorsmenuitem())
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())

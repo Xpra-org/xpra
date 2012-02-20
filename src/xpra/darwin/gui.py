@@ -73,18 +73,23 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.set_menu_bar(self.menu_bar)
             self.quit_menu_item.hide()
 
-            self.macapp.insert_app_menu_item(self.make_aboutmenuitem(), 0)
-            self.macapp.insert_app_menu_item(self.make_sessioninfomenuitem(), 1)
-            self.macapp.insert_app_menu_item(self.make_bellmenuitem(), 2)
-            self.macapp.insert_app_menu_item(self.make_notificationsmenuitem(), 3)
-            self.macapp.insert_app_menu_item(self.make_encodingsmenuitem(), 4)
+            pos = 0
+            def add_item(item):
+                self.macapp.insert_app_menu_item(item, pos)
+                pos += 1
+            add_item(self.make_aboutmenuitem())
+            add_item(self.make_sessioninfomenuitem())
+            add_item(self.make_bellmenuitem())
+            add_item(self.make_cursorsmenuitem())
+            add_item(self.make_notificationsmenuitem())
+            add_item(self.make_encodingsmenuitem())
             if not self.client.readonly:
-                self.macapp.insert_app_menu_item(self.make_layoutsmenuitem(), 5)
-            self.macapp.insert_app_menu_item(self.make_jpegsubmenu(), 6)
-            self.macapp.insert_app_menu_item(self.make_compressionmenu(), 7)
-            self.macapp.insert_app_menu_item(self.make_refreshmenuitem(), 8)
-            self.macapp.insert_app_menu_item(self.make_raisewindowsmenuitem(), 9)
-            self.macapp.insert_app_menu_item(gtk.SeparatorMenuItem(), 10)
+                add_item(self.make_layoutsmenuitem())
+            add_item(self.make_jpegsubmenu())
+            add_item(self.make_compressionmenu())
+            add_item(self.make_refreshmenuitem())
+            add_item(self.make_raisewindowsmenuitem())
+            add_item(gtk.SeparatorMenuItem())
 
             #dock menu
             self.dock_menu = gtk.Menu()

@@ -60,9 +60,8 @@ log = Logger()
 
 import xpra
 from xpra.protocol import Protocol, SocketConnection, dump_packet
-from xpra.keys import mask_to_names, get_gtk_keymap, \
-    DEFAULT_KEYNAME_FOR_MOD, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
-from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_xmodmap_from_text, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes, set_modifiers_from_text
+from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
@@ -186,7 +185,7 @@ class ServerSource(object):
     AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
     MAX_BATCH_DELAY = 1000
 
-    def __init__(self, protocol, encoding, send_damage_sequence, send_rowstride, mmap, mmap_size):
+    def __init__(self, protocol, encoding, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
@@ -194,8 +193,6 @@ class ServerSource(object):
         self._damage_last_events = {}
         self._damage_delayed = {}
         # for managing sequence numbers:
-        self._send_damage_sequence = send_damage_sequence
-        self._send_rowstride = send_rowstride
         self._sequence = 0                      #increase with every Region
         self._damage_packet_sequence = 0        #increase with every packet send
         self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
@@ -447,16 +444,6 @@ class ServerSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
-        #remove rowstride padding but only if we can't send the rowstride value to client
-        #removing the padding takes a lot of cpu/memory bandwidth for little benefit
-        #not worth it, especially on large buffers
-        rowwidth = w * 3
-        if rowwidth!=rowstride and not (self._send_damage_sequence and self._send_rowstride):
-            rows = []
-            for i in xrange(h):
-                rows.append(data[i*rowstride : i*rowstride+rowwidth])
-            data = "".join(rows)
-            rowstride = rowwidth
         #send via mmap?
         if self._mmap and self._mmap_size>0:
             mmap_data = self._mmap_send(data)
@@ -486,12 +473,8 @@ class ServerSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #actual network packet:
-        packet = ["draw", wid, x, y, w, h, coding, data]
-        if self._send_damage_sequence:
-            packet.append(self._damage_packet_sequence)
-            self._damage_packet_sequence += 1
-            if self._send_rowstride:
-                packet.append(rowstride)
+        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
+        self._damage_packet_sequence += 1
         return packet
 
     def _mmap_send(self, data):
@@ -621,14 +604,12 @@ class XpraServer(gobject.GObject):
                 self._add_new_or_window(window)
 
         ## These may get set by the client:
-        self.keyboard_as_properties = False
         self.xkbmap_layout = None
         self.xkbmap_variant = None
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_mod_meanings = {}
         self.xkbmap_mod_managed = None
-        self.xmodmap_data = None
         self.keycode_translation = {}
         self.keymap_changing = False
         self.keyboard_sync = True
@@ -640,7 +621,6 @@ class XpraServer(gobject.GObject):
 
         self.reset_statistics()
 
-        self.send_damage_sequence = False
         self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
@@ -656,7 +636,7 @@ class XpraServer(gobject.GObject):
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
 
-        self._keynames_for_mod = DEFAULT_KEYNAME_FOR_MOD.copy()
+        self._keynames_for_mod = None
         #clear all modifiers
         self._make_keymask_match([])
 
@@ -736,28 +716,20 @@ class XpraServer(gobject.GObject):
 
                 #now set all the keycodes:
                 clean_state()
-                if self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0:
-                    #version 0.0.7.33 and above:
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
-                else:
-                    self.keycode_translation = {}
-                    set_xmodmap_from_text(self.xmodmap_data)
+                assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
+                self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
 
                 #now set the new modifier mappings:
                 clean_state()
                 log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
                 if self.xkbmap_mod_meanings:
-                    #version 0.0.7.33 and above with Unix-like OS:
+                    #Unix-like OS provides modifier meanings:
                     self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
                 elif self.xkbmap_keycodes:
-                    #version 0.0.7.33 and above with non-Unix-like OS:
+                    #non-Unix-like OS provides just keycodes for now:
                     self._keynames_for_mod = set_modifiers_from_keycodes(self.xkbmap_keycodes)
                 else:
-                    #older versions: try our best...
-                    self._keynames_for_mod = set_modifiers_from_text(self.xkbmap_mod_add)
-
-                clean_state()
-                #build keynames_for_mod
+                    log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
                 log.debug("keyname_for_mod=%s", self._keynames_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
@@ -943,7 +915,6 @@ class XpraServer(gobject.GObject):
                     raw_data = output.getvalue()
                     return {"icon": (w, h, "png", str(raw_data)) }
                 else:
-
                     assert surf.get_format() == cairo.FORMAT_ARGB32
                     assert surf.get_stride() == 4 * surf.get_width()
                     return {"icon": (w, h, "premult_argb32", str(surf.get_data())) }
@@ -978,52 +949,6 @@ class XpraServer(gobject.GObject):
             return {"window-type" : wts}
         raise Exception("unhandled property name: %s" % propname)
 
-    def _keycodes(self, keyname):
-        keyval = gtk.gdk.keyval_from_name(keyname)
-        if keyval==0:
-            log.error("no keyval found for %s", keyname)
-            return  []
-        entries = self._keymap.get_entries_for_keyval(keyval)
-        keycodes = []
-        if entries:
-            for _keycode,_group,_level in entries:
-                keycodes.append(_keycode)
-        return  keycodes
-
-    def _keycode(self, keycode, keyval, keyname, group=0, level=0):
-        log.debug("keycode(%s,%s,%s,%s,%s)", keycode, keyval, keyname, group, level)
-        if keycode and self.xkbmap_print is not None:
-            """ versions 0.0.7.24 and above give us the raw keycode on xposix,
-                versions 0.0.7.33 and above give us the raw keycode on all platforms
-                we can only use this if we have applied the same keymap - if the client sent one
-            """
-            return  keycode
-        # fallback code for older versions:
-        kv = keyval
-        if not keyval:
-            kn = keyname
-            if len(kn)>0 and kn[-1]=="\0":
-                kn = kn[:-1]
-            kv = gtk.gdk.keyval_from_name(kn)
-            if not kv:
-                log.error("no keyval found for keyname=%s", kn)
-                return  None
-        entries = self._keymap.get_entries_for_keyval(kv)
-        if not entries:
-            log.error("no keycode found for keyname=%s, keyval=%s", keyname, kv)
-            return None
-        kc = -1
-        if group>=0:
-            for _keycode,_group,_level in entries:
-                if _group!=group:
-                    continue
-                if kc==-1 or _level==level:
-                    kc = _keycode
-        log.debug("keycode(%s,%s,%s,%s,%s) keyval=%s, kc=%s, entries=%s", keycode, keyval, keyname, group, level, kv, kc, entries)
-        if kc>0:
-            return  kc
-        return entries[0][0]    #nasty fallback!
-
     def _make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         """
             Given a list of modifiers that should be set, try to press the right keys
@@ -1044,8 +969,22 @@ class XpraServer(gobject.GObject):
                 so we try to find the matching modifier in the currently pressed keys (keys_pressed)
                 to make sure we unpress the right one.
         """
-        #FIXME: we should probably cache the keycode
-        # and clear the cache in _keys_changed
+        if not self._keynames_for_mod:
+            log.debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
+            return
+
+        def get_keycodes(keyname):
+            keyval = gtk.gdk.keyval_from_name(keyname)
+            if keyval==0:
+                log.error("no keyval found for %s", keyname)
+                return  []
+            entries = self._keymap.get_entries_for_keyval(keyval)
+            keycodes = []
+            if entries:
+                for _keycode,_group,_level in entries:
+                    keycodes.append(_keycode)
+            return  keycodes
+
         def get_current_mask():
             (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
             modifiers = mask_to_names(current_mask, self._modifier_map)
@@ -1079,7 +1018,7 @@ class XpraServer(gobject.GObject):
                             if name==keyname:
                                 log.debug("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
-                    kcs = self._keycodes(keyname)
+                    kcs = get_keycodes(keyname)
                     for kc in kcs:
                         if kc not in keycodes:
                             keycodes.append(kc)
@@ -1135,7 +1074,7 @@ class XpraServer(gobject.GObject):
                 # FIXME: kind of a hack:
                 self._has_focus = 0
                 self._wm.get_property("toplevel").reset_x_focus()
-                
+
             if wid == 0:
                 return reset_focus()
             window = self._id_to_window.get(wid)
@@ -1356,10 +1295,6 @@ class XpraServer(gobject.GObject):
         if self._protocol is not None:
             self.disconnect("new valid connection received")
         self.reset_statistics()
-        self.keyboard_as_properties = capabilities.get("keyboard_as_properties", False)
-        self.send_damage_sequence = capabilities.get("damage_sequence", False)
-        self.send_rowstride = self.send_damage_sequence and capabilities.get("rowstride", False)
-        #if "encodings" not specified, use pre v0.0.7.26 default: rgb24
         self.encodings = capabilities.get("encodings", ["rgb24"])
         self._set_encoding(capabilities.get("encoding", None))
         #mmap:
@@ -1386,13 +1321,9 @@ class XpraServer(gobject.GObject):
             if self.mmap:
                 log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding, self.send_damage_sequence, self.send_rowstride, self.mmap, self.mmap_size)
-        # do screen size calculations/modifications:
-        self.send_hello(capabilities)
-        if "deflate" in capabilities and not capabilities.get("dynamic_compression", False):
-            #"deflate" is the old-style (pre 0.0.7.33): enable straight away:
-            self._protocol.enable_deflate(capabilities["deflate"])
+        self._server_source = ServerSource(self._protocol, self.encoding, self.mmap, self.mmap_size)
         self._protocol._send_size = capabilities.get("packet_size", False)
+        self.send_hello(capabilities)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
         self.keyboard_sync = capabilities.get("keyboard_sync", True)
@@ -1418,12 +1349,11 @@ class XpraServer(gobject.GObject):
         self.set_keymap()
         self.send_cursors = capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
-        self.send_notifications = capabilities.get("notifications", False)
-        self.can_ping = capabilities.get("ping", False)
+        self.send_notifications = self.notifications_forwarder is not None and capabilities.get("notifications", False)
         self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
         log.debug("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
         self._wm.enableCursors(self.send_cursors)
-        self.png_window_icons = capabilities.get("png_window_icons", False) and "png" in ENCODINGS
+        self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
         log.debug("setting modifiers to %s", modifiers)
@@ -1445,44 +1375,42 @@ class XpraServer(gobject.GObject):
 
     def send_hello(self, client_capabilities):
         capabilities = {}
-        capabilities["__prerelease_version"] = xpra.__version__
         capabilities["version"] = xpra.__version__
-        if "deflate" in client_capabilities:
-            capabilities["deflate"] = client_capabilities.get("deflate")
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["platform"] = sys.platform
+        capabilities["clipboard"] = self.clipboard_enabled
+        capabilities["encodings"] = ENCODINGS
+        capabilities["encoding"] = self.encoding
+        capabilities["resize_screen"] = self.randr
+        if "key_repeat" in client_capabilities:
+            capabilities["key_repeat"] = client_capabilities.get("key_repeat")
+        if self.session_name:
+            capabilities["session_name"] = self.session_name
+        if self.mmap_size>0:
+            capabilities["mmap_enabled"] = True
+        capabilities["start_time"] = long(self.start_time)
+        capabilities["toggle_cursors_bell_notify"] = True
+        capabilities["notifications"] = self.notifications_forwarder is not None
+        #this is to keep compatibility with v0.0.7.36 only and will be removed
+        #as these are now always available:
+        capabilities["png_window_icons"] = "png" in ENCODINGS
         capabilities["keyboard_as_properties"] = True
         capabilities["raw_keycodes_feature"] = True
         capabilities["raw_keycodes_full"] = True
         capabilities["focus_modifiers_feature"] = True
         capabilities["dynamic_compression"] = True
         capabilities["packet_size"] = True
+        capabilities["damage_sequence"] = True
+        capabilities["ping"] = True
         capabilities["cursors"] = True
         capabilities["bell"] = True
-        capabilities["notifications"] = True
-        capabilities["clipboard"] = self.clipboard_enabled
-        capabilities["png_window_icons"] = "png" in ENCODINGS
-        capabilities["encodings"] = ENCODINGS
-        capabilities["encoding"] = self.encoding
-        capabilities["resize_screen"] = self.randr
-        if client_capabilities.get("damage_sequence", False):
-            capabilities["damage_sequence"] = True
-        capabilities["ping"] = True
         if "key_repeat" in client_capabilities:
-            capabilities["key_repeat"] = client_capabilities.get("key_repeat")
             capabilities["key_repeat_modifiers"] = True
-        capabilities["modifiers_nuisance"] = True
-        if self.session_name:
-            capabilities["session_name"] = self.session_name
-        if self.mmap_size>0:
-            capabilities["mmap_enabled"] = True
-        capabilities["start_time"] = long(self.start_time)
         self._send(["hello", capabilities])
 
     def send_ping(self):
-        if self.can_ping:
-            self._send(["ping", long(1000*time.time())])
+        self._send(["ping", long(1000*time.time())])
 
     def _process_ping_echo(self, proto, packet):
         (echoedtime, l1, l2, l3, sl) = packet[1:6]
@@ -1493,7 +1421,6 @@ class XpraServer(gobject.GObject):
         log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
 
     def _process_ping(self, proto, packet):
-        assert self.can_ping
         echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
@@ -1555,6 +1482,16 @@ class XpraServer(gobject.GObject):
             buf.close()
             packet = ["screenshot", width, height, "png", rowstride, data]
         return packet
+
+    def _process_set_notify(self, proto, packet):
+        self.send_notifications = bool(packet[1])
+
+    def _process_set_cursors(self, proto, packet):
+        self.send_cursors = bool(packet[1])
+        self._wm.enableCursors(self.send_cursors)
+
+    def _process_set_bell(self, proto, packet):
+        self.send_bell = bool(packet[1])
 
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
@@ -1670,85 +1607,39 @@ class XpraServer(gobject.GObject):
     def assign_keymap_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
-        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
-                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
+        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
             setattr(self, x, props.get(x))
-        #special case: this used to be sent as "keymap" prior to 0.0.7.35:
-        if self.xkbmap_print is None and "keymap" in props:
-            self.xkbmap_print = props.get("keymap")
 
     def _process_keymap(self, proto, packet):
-        if self.keyboard_as_properties:
-            props = packet[1]
-            self.assign_keymap_options(props)
-            modifiers = props.get("modifiers")
-        else:
-            #old method: positional parameters:
-            self.xkbmap_print, self.xkbmap_query = packet[1:3]
-            self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings = None, None, None
-            self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = None, None, None
-            self.xmodmap_data, modifiers = None, []
-            if len(packet)>=5:
-                self.xmodmap_data, modifiers = packet[3:5]
-            if len(packet)>=11:
-                self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes = packet[5:11]
+        props = packet[1]
+        self.assign_keymap_options(props)
+        modifiers = props.get("modifiers")
         self._make_keymask_match([])
         self.set_keymap()
         self._make_keymask_match(modifiers)
 
 
-    def _keycode_from_keyname(self, keyval, keyname, modifiers):
-        """ lookup a keycode based on the keyname and modifiers
-            (keyval may be used if supplied - generally isn't)
-        """
-        level = 0
-        shifted_key = keyname.startswith("Shift_")
-        shift_mod = ("shift" in modifiers) or shifted_key
-        caps_mod = "lock" in modifiers
-        if (shift_mod or caps_mod) and not (shift_mod and caps_mod):    #xor
-            level = 1
-        group = 0
-        #not sure this is right...
-        if "meta" in modifiers:
-            group = 1
-        kc = self._keycode(None, keyval, keyname, group=group, level=level)
-        log.info("keycode_from_name(%s,%s,%s) level=%s, group=%s, keycode=%s", keyval, keyname, modifiers, level, group, kc)
-        return kc
-
     def _process_key_action(self, proto, packet):
-        (wid, keyname, pressed, modifiers) = packet[1:5]
-        keyval, keycode = None, 0
-        if len(packet)>=8:
-            (keyval, _, client_keycode) = packet[5:8]
-            keycode = self.keycode_translation.get(client_keycode, client_keycode)
-        if len(packet)>=10:
-            #currently unused:
-            #group, is_modifier = packet[8:10]
-            pass
+        (wid, keyname, pressed, modifiers, keyval, _, client_keycode) = packet[1:8]
+        keycode = self.keycode_translation.get(client_keycode, client_keycode)
+        #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(wid, None)
         self._make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         #negative keycodes are used for key events without a real keypress/unpress
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
-        if keycode>=0:
+        if keycode>0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
 
-    def _handle_key(self, wid, pressed, name, keyval, src_keycode, modifiers):
+    def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
         """
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", wid, pressed, name, keyval, src_keycode, modifiers)
+        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", wid, pressed, name, keyval, keycode, modifiers)
         if pressed and (wid is not None) and (wid not in self._id_to_window):
             log("window %s is gone, ignoring key press", wid)
             return
-        if src_keycode:
-            keycode = src_keycode
-        else:
-            keycode = self._keycode_from_keyname(keyval, name, modifiers)
-            if not keycode:
-                log.debug("cannot handle key action %s/%s/%s: no keycode found!", name, keyval, keycode)
-                return
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
         def press():
@@ -1776,15 +1667,11 @@ class XpraServer(gobject.GObject):
             else:
                 log.debug("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
         if self.keyboard_sync and keycode>0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(wid, pressed, name, keyval, src_keycode, modifiers, self.key_repeat_delay)
+            self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
     def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
         """ Schedules/cancels the key repeat timeouts """
-        if keycode==0:
-            key = keyname
-        else:
-            key = keycode
-        timer = self.keys_repeat_timers.get(key, None)
+        timer = self.keys_repeat_timers.get(keycode, None)
         if timer:
             log.debug("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
             gobject.source_remove(timer)
@@ -1797,7 +1684,7 @@ class XpraServer(gobject.GObject):
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
             now = time.time()
-            self.keys_repeat_timers[key] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
+            self.keys_repeat_timers[keycode] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
         if len(packet)<6:
@@ -1941,6 +1828,9 @@ class XpraServer(gobject.GObject):
         "ping": _process_ping,
         "ping_echo": _process_ping_echo,
         "set_deflate": _process_set_deflate,
+        "set-cursors": _process_set_cursors,
+        "set-notify": _process_set_notify,
+        "set-bell": _process_set_bell,
         "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,

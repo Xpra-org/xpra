@@ -6,13 +6,12 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
-import time
 import os.path
 from collections import deque
 
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
 from xpra.platform.default_clipboard import ClipboardProtocolHelper
-from xpra.keys import XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, get_gtk_keymap
+from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -34,7 +33,7 @@ class ClientExtras(ClientExtrasBase):
     def can_notify(self):
         return  True
 
-    def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+    def show_notify(self, dbus_id, nid, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         if self.notify:
             self.notify(self.tray.getHWND(), summary, body, expire_timeout)
 
@@ -94,7 +93,7 @@ class ClientExtras(ClientExtrasBase):
             ask the server to manage numlock, and lock can be missing from mouse events
             (or maybe this is virtualbox causing it?)
         """
-        return  XMODMAP_MOD_CLEAR, XMODMAP_MOD_ADD, {}, [], ["lock"]
+        return  {}, [], ["lock"]
 
     def get_layout_spec(self):
         layout = None
@@ -102,12 +101,12 @@ class ClientExtras(ClientExtrasBase):
         variants = None
         try:
             import win32api         #@UnresolvedImport
-            id = win32api.GetKeyboardLayout(0) & 0xffff
-            if id in WIN32_LAYOUTS:
-                code, _, _, _, layout, variants = WIN32_LAYOUTS.get(id)
-                log.debug("found keyboard layout '%s' with variants=%s, code '%s' for id=%s", layout, variants, code, id)
+            kbid = win32api.GetKeyboardLayout(0) & 0xffff
+            if kbid in WIN32_LAYOUTS:
+                code, _, _, _, layout, variants = WIN32_LAYOUTS.get(kbid)
+                log.debug("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%s", layout, variants, code, kbid)
             if not layout:
-                log.debug("unknown keyboard layout for id: %s", id)
+                log.debug("unknown keyboard layout for kbid: %s", kbid)
         except Exception, e:
             log.error("failed to detect keyboard layout: %s", e)
         return layout,variant,variants

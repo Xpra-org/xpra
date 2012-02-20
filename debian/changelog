@@ -1,3 +1,9 @@
+xpra (0.1.0-1) UNRELEASED; urgency=low
+  * remove compatiblity code for older versions
+  * fix for Mac OS X clients sending hexadecimal keysyms
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 20 Feb 2012 17:01:12 +0700
+
 xpra (0.0.7.36-1) UNRELEASED; urgency=low
   * fix clipboard bug which was causing Java applications to crash
   * ensure we always properly disconnect previous client when new connection is accepted

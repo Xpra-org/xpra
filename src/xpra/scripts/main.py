@@ -111,9 +111,6 @@ def main(script_file, cmdline):
     parser.add_option("--no-mmap", action="store_false",
                       dest="mmap", default=True,
                       help="Disable memory mapped transfers for local connections")
-    parser.add_option("--disable-mmap", action="store_false",
-                      dest="mmap", default=True,
-                      help="Disable memory mapped transfers for local connections")
     parser.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")

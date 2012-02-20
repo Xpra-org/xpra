@@ -6,10 +6,9 @@
 import os
 import re
 import subprocess
-import time
 
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import set_xmodmap, parse_keycode, parse_keysym, get_keycodes, parse_modifier, get_minmax_keycodes         #@UnresolvedImport
+from wimpiggy.lowlevel import set_xmodmap, parse_keysym, parse_modifier, get_minmax_keycodes         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -51,23 +50,6 @@ def exec_keymap_command(args, stdin=None):
         log.info("error calling '%s': %s" % (str(args), e))
         return -1
 
-def exec_xmodmap(xmodmap_data):
-    display = os.environ.get("DISPLAY")
-    if not xmodmap_data or len(xmodmap_data)==0:
-        return
-    start = time.time()
-    stdin = xmodmap_data
-    if type(xmodmap_data)==list:
-        stdin = "\n".join(xmodmap_data)
-    if exec_keymap_command(["xmodmap", "-display", display, "-"], stdin)==0:
-        return
-    if time.time()-start>5:
-        log.error("xmodmap timeout.. the keymap has not been applied")
-        return
-    log.error("re-running %s xmodmap lines one at a time to workaround the error..", len(xmodmap_data))
-    for mod in stdin.splitlines():
-        exec_keymap_command(["xmodmap", "-display", display, "-e", mod])
-
 def apply_xmodmap(instructions):
     import gtk.gdk
     try:
@@ -92,6 +74,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
     """
     #First we try to use data from setxkbmap -query
     if xkbmap_query:
+        log.debug("do_set_keymap using xkbmap_query")
         """ The xkbmap_query data will look something like this:
         rules:      evdev
         model:      evdev
@@ -120,6 +103,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         if "options" in settings:
             exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
     elif xkbmap_print:
+        log.debug("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
         try:
             sym_re = re.compile("\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
@@ -133,6 +117,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         except Exception, e:
             log.info("error setting keymap: %s" % e)
     else:
+        log.info("do_set_keymap using 'us' default layout")
         #just set the layout (use 'us' if we don't even have that information!)
         layout = xkbmap_layout or "us"
         set_layout = ["setxkbmap", "-layout", layout]
@@ -145,75 +130,11 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
 
     display = os.environ.get("DISPLAY")
     if xkbmap_print:
+        #there may be a junk header, if so remove it:
+        pos = xkbmap_print.find("xkb_keymap {")
+        if pos>0:
+            xkbmap_print = xkbmap_print[pos:]
         exec_keymap_command(["xkbcomp", "-", display], xkbmap_print)
-
-
-def parse_xmodmap(xmodmap_data):
-    if type(xmodmap_data)==str and xmodmap_data.find("\n"):
-        xmodmap_data = xmodmap_data.splitlines()
-    import pygtk
-    pygtk.require("2.0")
-    import gtk
-    root = gtk.gdk.get_default_root_window()
-    instructions = []
-    for line in xmodmap_data:
-        log("parsing: %s", line)
-        if not line:
-            continue
-        try:
-            parts = line.split()
-            if parts[0]=="keycode" and len(parts)>2 and parts[2]=="=":
-                keycode = parse_keycode(root, parts[1])
-                if len(parts)==3:
-                    #ie: 'keycode 123 ='
-                    continue
-                if keycode==0 and len(parts)==4:
-                    #keycode=0 means "any", ie: 'keycode any = Shift_L'
-                    instructions.append(("keycode", 0, parts[2:3]))
-                    continue
-                elif keycode>0:
-                    #ie: keycode   9 = Escape NoSymbol Escape
-                    keysyms = parts[3:]
-                    instructions.append(("keycode", keycode, keysyms))
-                    continue
-            elif parts[0]=="clear" and len(parts)>=2:
-                #ie: 'clear Lock' 
-                modifier = parse_modifier(parts[1])
-                if modifier<0:
-                    log.error("unknown modifier: %s, ignoring '%s'", parts[1], line)
-                else:
-                    instructions.append(("clear", modifier))
-                continue
-            elif parts[0]=="add" and len(parts)>=3:
-                #ie: 'add Control = Control_L Control_R'
-                modifier = parse_modifier(parts[1])
-                keysyms = parts[3:]
-                if modifier<0:
-                    log.error("unknown modifier: %s, ignoring '%s'", parts[1], line)
-                elif len(keysyms)==0:
-                    log.error("no keysyms! ignoring '%s'", line)
-                else:
-                    instructions.append(("add", modifier, keysyms))
-                continue
-            log.error("parse_xmodmap instruction not recognized: %s (%s parts: %s)", line, len(parts), parts)
-        except Exception, e:
-            log.error("cannot parse %s: %s", line, e)
-    return instructions
-
-
-
-def set_xmodmap_from_text(data):
-    if not data:
-        return
-    instructions = parse_xmodmap(data)
-    log.debug("instructions=%s", instructions)
-    unset = apply_xmodmap(instructions)
-    log.debug("unset=%s", unset)
-    if len(unset)>0:
-        #re-do everything... ouch!
-        exec_xmodmap(data)
-
-
 
 def set_all_keycodes(xkbmap_keycodes, xkbmap_initial_keycodes):
     """
@@ -309,7 +230,10 @@ def set_keycodes(keycodes, preserve_keycodes={}):
 
 
 def clear_modifiers(modifiers):
-    set_xmodmap_from_text([("clear %s" % x) for x in modifiers])
+    instructions = []
+    for i in range(0, 8):
+        instructions.append(("clear", i))
+    apply_xmodmap(instructions)
 
 def set_modifiers_from_meanings(xkbmap_mod_meanings):
     """
@@ -359,65 +283,3 @@ def set_modifiers_from_keycodes(xkbmap_keycodes):
                 keynames.append(keyname)
     log.debug("set_modifiers_from_keycodes(..) found matches: %s", matches)
     return set_modifiers_from_dict(matches)
-
-
-def set_modifiers_from_text(xkbmap_mod_add):
-    """
-        This is the old, backwards compatibility method..
-        We are given some modifiers instructions in plain text,
-        and if missing we use the ones from XMODMAP_MOD_ADD.
-        We parse those and then must ensure all the key names
-        actually exist before trying to change the keymap.
-        We must also ensure that keycodes are only assigned to
-        a single modifier. 
-        This is also used to ensure that the keynames_for_mod
-        dict we return is valid.
-    """
-    import gtk.gdk
-    root = gtk.gdk.get_default_root_window()
-    from xpra.keys import XMODMAP_MOD_ADD, ALL_X11_MODIFIERS
-    instructions = parse_xmodmap(xkbmap_mod_add or XMODMAP_MOD_ADD)
-    log.debug("instructions=%s", instructions)
-    oked = []
-    keycodes_used = {}
-    modifiers = {}
-    for instr in instructions:
-        if not instr or instr[0]!="add":
-            log.error("invalid instruction in modifier text: %s", instr)
-            continue
-        modifier_int = instr[1]
-        modifier = -1
-        for m,v in ALL_X11_MODIFIERS.items():
-            if v==modifier_int:
-                modifier = m
-                break
-        if modifier<0:
-            log.error("unknown modifier int: %s", modifier)
-            continue
-        keysyms_strs = instr[2]
-        keysyms = []
-        for keysym_str in keysyms_strs:
-            keycodes = get_keycodes(root, keysym_str)
-            if len(keycodes)==0:
-                log.debug("keysym '%s' does not have a keycode, ignoring: %s", keysym_str, keysym_str)
-                continue
-            #found some keycodes, so we can use this keysym
-            #after first verifying they aren't used yet:
-            keycodes_free = True
-            for keycode in keycodes:
-                if keycode in keycodes_used:
-                    log.debug("%s as keycode %s is already used by %s, ignoring: %s", keysym_str, keycode, keycodes_used.get(keycode), instr)
-                    keycodes_free = False
-                    break
-            if keycodes_free:
-                for keycode in keycodes:
-                    keycodes_used[keycode] = modifier
-                keysyms.append(keysym_str)
-        if len(keysyms)>0:
-            modifiers[modifier] = keysyms
-            oked.append(("add", modifier_int, keysyms))
-    log.debug("set_modifiers_from_text: %s", oked)
-    unset = apply_xmodmap(oked)
-    log.debug("set_modifiers_from_text failed on: %s", unset)
-    log.debug("set_modifiers_from_text(..)=%s", modifiers)
-    return  modifiers

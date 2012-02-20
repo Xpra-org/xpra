@@ -405,7 +405,6 @@ class XpraClient(XpraClientBase):
 
         self.server_capabilities = {}
 
-        self.can_ping = False
         self.mmap_enabled = False
         self.server_start_time = -1
         self.server_platform = ""
@@ -416,9 +415,10 @@ class XpraClient(XpraClientBase):
         self.server_latency = deque(maxlen=100)
         self.server_load = None
         self.client_latency = deque(maxlen=100)
+        self.toggle_cursors_bell_notify = False
         self.bell_enabled = True
+        self.cursors_enabled = True
         self.notifications_enabled = True
-        self.send_damage_sequence = False
         self.clipboard_enabled = False
         self.mmap = None
         self.mmap_token = None
@@ -472,15 +472,9 @@ class XpraClient(XpraClientBase):
         self.ready(conn)
 
         self.keyboard_sync = opts.keyboard_sync
-        self.key_repeat_modifiers = False
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.keys_pressed = {}
-        self.send_nuisance_modifiers = False
-        self.keyboard_as_properties = False
-        self._raw_keycodes_feature = False
-        self._raw_keycodes_full = False
-        self._focus_modifiers_feature = False
         self._remote_version = None
         self._keymap_changing = False
         self._keymap = gtk.gdk.keymap_get_default()
@@ -644,27 +638,12 @@ class XpraClient(XpraClientBase):
         depressed, keyval, name, keycode, group, is_modifier, modifiers = translated
         if self.key_handled_as_shortcut(window, name, modifiers, depressed):
             return
+        if keycode<=0:
+            log.debug("key_action(%s,%s,%s) translated keycode is %s, ignoring it", event, window, depressed, keycode)
+            return
         log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s", event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode)
         wid = self._window_to_id[window]
-        if not self._raw_keycodes_feature:
-            """ versions before 0.0.7.24 only accept 4 parameters (no keyval, keycode, ...)
-                also used on win32 and osx since those don't have valid keymaps/keycode (yet?)
-            """
-            # Apparently some weird keys (e.g. "media keys") can have no keyval or
-            # no keyval name (I believe that both give us a None here).
-            # Another reason to use the _raw_keycodes_feature wherever possible.
-            if name is None:
-                return
-            self.send(["key-action", wid, name, depressed, modifiers])
-            keyval = ""
-            keycode = 0
-        else:
-            packet = ["key-action", wid, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode)]
-            if self._raw_keycodes_full:
-                #these are currently unused, but worth sending just in case:
-                packet.append(group)
-                packet.append(is_modifier)
-            self.send(packet)
+        self.send(["key-action", wid, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode), group, is_modifier])
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, depressed, name, keyval, keycode)
 
@@ -674,11 +653,7 @@ class XpraClient(XpraClientBase):
             maintain a consistent keyboard state.
         """
         #we keep track of which keys are still pressed in a dict,
-        #the key is either the keycode (if _raw_keycodes_feature) or the key name (otherwise)
         if keycode==0:
-            if not self.key_repeat_modifiers:
-                #we can't handle key-repeat by key name without this feature
-                return
             key = name
         else:
             key = keycode
@@ -696,14 +671,9 @@ class XpraClient(XpraClientBase):
             interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
             log.debug("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", name, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
             def send_key_repeat():
-                if self.key_repeat_modifiers:
-                    #supports extended mode, send the extra data:
-                    (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-                    modifiers = self.mask_to_names(current_mask)
-                    packet = ["key-repeat", wid, name, keyval, keycode, modifiers]
-                else:
-                    packet = ["key-repeat", keycode]
-                self.send_now(packet)
+                (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+                modifiers = self.mask_to_names(current_mask)
+                self.send_now(["key-repeat", wid, name, keyval, keycode, modifiers])
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
@@ -734,9 +704,12 @@ class XpraClient(XpraClientBase):
 
     def query_xkbmap(self):
         self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
-        self.xkbmap_print, self.xkbmap_query, self.xmodmap_data = self._client_extras.get_keymap_spec()
+        self.xkbmap_print, self.xkbmap_query = self._client_extras.get_keymap_spec()
         self.xkbmap_keycodes = self._client_extras.get_gtk_keymap()
-        self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self._client_extras.get_keymap_modifiers()
+        self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self._client_extras.get_keymap_modifiers()
+        log.debug("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
+        log.debug("print=%s, query=%s", self.xkbmap_print, self.xkbmap_query)
+        log.debug("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
         log.debug("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
 
     def _keys_changed(self, *args):
@@ -752,7 +725,6 @@ class XpraClient(XpraClientBase):
         self._modifier_map = self._client_extras.grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
         log.debug("do_keys_changed() modifier_map=%s" % self._modifier_map)
         if sendkeymap:
-            #old clients won't know what to do with it, but that's ok
             if self.xkbmap_layout:
                 self.send_layout()
             self.send_keymap()
@@ -761,30 +733,19 @@ class XpraClient(XpraClientBase):
         self.send(["layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant)])
 
     def send_keymap(self):
-        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        packet = ["keymap-changed"]
-        if self.keyboard_as_properties:
-            props = {"modifiers" : self.mask_to_names(current_mask)}
-            for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
-                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
-                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
-                props[x] = getattr(self, x)
-            packet.append(props)
-        else:
-            for x in [self.xkbmap_print, self.xkbmap_query, self.xmodmap_data, self.mask_to_names(current_mask),
-                  self.xkbmap_mod_clear, self.xkbmap_mod_add, self.xkbmap_mod_meanings,
-                  self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing, self.xkbmap_keycodes]:
-                packet.append(nn(x))
-        self.send(packet)
+        self.send(["keymap-changed", self.get_keymap_properties()])
 
+    def get_keymap_properties(self):
+        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+        props = {"modifiers" : self.mask_to_names(current_mask)}
+        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
+              "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+            props[x] = nn(getattr(self, x))
+        return  props
 
     def send_focus(self, wid):
-        """ with v0.0.7.24 onwards, we want to set the modifier map when we get focus """
-        if self._focus_modifiers_feature:
-            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-            self.send(["focus", wid, self.mask_to_names(current_mask)])
-        else:
-            self.send(["focus", wid])
+        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+        self.send(["focus", wid, self.mask_to_names(current_mask)])
 
     def update_focus(self, wid, gotit):
         log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
@@ -800,13 +761,8 @@ class XpraClient(XpraClientBase):
     def mask_to_names(self, mask):
         mn = mask_to_names(mask, self._modifier_map)
         names = self._client_extras.current_modifiers(mn)
-        if self.send_nuisance_modifiers:
-            log.debug("mask_to_names(%s)=%s", mask, names)
-            return  names
-        #remove nuisance modifiers (lock, num, scroll):
-        no_nuisance = [x for x in names if x not in DEFAULT_MODIFIER_NUISANCE]
-        log.debug("mask_to_names(%s)=%s (raw=%s)", mask, no_nuisance, mn)
-        return no_nuisance
+        log.debug("mask_to_names(%s)=%s", mask, names)
+        return  names
 
     def send_positional(self, packet):
         self._protocol.source.queue_positional_packet(packet)
@@ -816,49 +772,38 @@ class XpraClient(XpraClientBase):
 
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
-        if self.compression_level:
-            capabilities["deflate"] = self.compression_level
-        if self.xkbmap_layout:
-            capabilities["xkbmap_layout"] = self.xkbmap_layout
-            if self.xkbmap_variant:
-                capabilities["xkbmap_variant"] = self.xkbmap_variant
-        for x in ["xkbmap_print", "xkbmap_query", "xmodmap_data",
-                  "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
-                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
-            v = getattr(self, x)
-            if v is not None:
-                capabilities[x] = v
-        #special case: this used to be sent as "keymap" prior to 0.0.7.35:
-        if self.xkbmap_print:
-            capabilities["keymap"] = self.xkbmap_print
-        capabilities["cursors"] = True
-        capabilities["bell"] = True
+        for k,v in self.get_keymap_properties().items():
+            capabilities[k] = v
+        capabilities["xkbmap_layout"] = nn(self.xkbmap_layout)
+        capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
         capabilities["clipboard"] = self.clipboard_enabled
         capabilities["notifications"] = self._client_extras.can_notify()
         (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        modifiers = self.mask_to_names(current_mask)
-        log.debug("sending modifiers=%s" % str(modifiers))
-        capabilities["modifiers"] = modifiers
+        capabilities["modifiers"] = self.mask_to_names(current_mask)
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = [root_w, root_h]
-        capabilities["png_window_icons"] = True
-        capabilities["damage_sequence"] = True
-        capabilities["rowstride"] = True
-        capabilities["ping"] = True
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat
             capabilities["key_repeat"] = (delay_ms,interval_ms)
         capabilities["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
-        capabilities["keyboard_as_properties"] = True
         if self.mmap_file:
             capabilities["mmap_file"] = self.mmap_file
             capabilities["mmap_token"] = self.mmap_token
+        #these should be turned into options:
+        capabilities["cursors"] = True
+        capabilities["bell"] = True
+        #this is to keep compatibility with v0.0.7.36 only
+        #and will be removed shortly
+        capabilities["keyboard_as_properties"] = True
+        capabilities["damage_sequence"] = True
+        capabilities["rowstride"] = True
+        capabilities["ping"] = True
+        capabilities["png_window_icons"] = "png" in ENCODINGS
         return capabilities
 
     def send_ping(self):
-        if self.can_ping:
-            self.send(["ping", long(1000*time.time())])
+        self.send(["ping", long(1000*time.time())])
 
     def _process_ping_echo(self, packet):
         (echoedtime, l1, l2, l3, cl) = packet[1:6]
@@ -870,7 +815,6 @@ class XpraClient(XpraClientBase):
         log("ping echo server load=%s, measured client latency=%s", self.server_load, cl)
 
     def _process_ping(self, packet):
-        assert self.can_ping
         echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
@@ -902,19 +846,11 @@ class XpraClient(XpraClientBase):
             self.session_name = capabilities.get("session_name", "Xpra")
         import glib
         glib.set_application_name(self.session_name)
-        self.keyboard_as_properties = capabilities.get("keyboard_as_properties", False)
-        self._raw_keycodes_feature = capabilities.get("raw_keycodes_feature", False)
-        self._raw_keycodes_full = capabilities.get("raw_keycodes_full", False)
-        self._focus_modifiers_feature = capabilities.get("raw_keycodes_feature", False)
-        self._remote_version = capabilities.get("__prerelease_version") or capabilities.get("version")
+        self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit()
             return
-        if capabilities.get("dynamic_compression", False):
-            self.send_deflate_level()
-        elif "deflate" in capabilities:
-            #"deflate" is the old-style (pre 0.0.7.33): enable straight away:
-            self._protocol.enable_deflate(capabilities["deflate"])
+        self.send_deflate_level()
 
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
         self.server_desktop_size = capabilities.get("desktop_size")
@@ -942,29 +878,37 @@ class XpraClient(XpraClientBase):
         if e and e!=self.encoding:
             log.debug("server is using %s encoding" % e)
             self.encoding = e
-        self.bell_enabled = capabilities.get("bell", False)
         self.notifications_enabled = capabilities.get("notifications", False)
         clipboard_server_support = capabilities.get("clipboard", True)
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
-        self.send_damage_sequence = capabilities.get("damage_sequence", False)
-        self.can_ping = capabilities.get("ping", False)
-        self.send_nuisance_modifiers = capabilities.get("modifiers_nuisance", False)
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
         self.server_start_time = capabilities.get("start_time", -1)
         self.server_platform = capabilities.get("platform")
+        self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify")
 
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
-        self.key_repeat_modifiers = capabilities.get("key_repeat_modifiers", False)
         self.emit("handshake-complete")
         if clipboard_server_support:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
+
+    def send_notify_enabled(self):
+        if self.toggle_cursors_bell_notify:
+            self.send(["set-notify", self.notifications_enabled])
+
+    def send_bell_enabled(self):
+        if self.toggle_cursors_bell_notify:
+            self.send(["set-bell", self.bell_enabled])
+
+    def send_cursors_enabled(self):
+        if self.toggle_cursors_bell_notify:
+            self.send(["set-cursors", self.cursors_enabled])
 
     def send_deflate_level(self):
         self.send(["set_deflate", self.compression_level])
@@ -997,18 +941,13 @@ class XpraClient(XpraClientBase):
         self._process_new_common(packet, True)
 
     def _process_draw(self, packet):
-        (wid, x, y, width, height, coding, data) = packet[1:8]
-        packet_sequence, rowstride = None, -1
-        if len(packet)>=9:
-            packet_sequence = packet[8]
-        if len(packet)>=10:
-            rowstride = int(packet[9])
+        (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
         window = self._id_to_window.get(wid)
         if not window:
             return      #window is already gone!
         window.draw(x, y, width, height, coding, data, rowstride)
         self.pixel_counter.append((time.time(), width*height))
-        if packet_sequence and self.send_damage_sequence:
+        if packet_sequence:
             self.send_now(["damage-sequence", packet_sequence])
 
     def _process_cursor(self, packet):
