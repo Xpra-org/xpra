@@ -1322,7 +1322,6 @@ class XpraServer(gobject.GObject):
                 log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
         self._server_source = ServerSource(self._protocol, self.encoding, self.mmap, self.mmap_size)
-        self._protocol._send_size = capabilities.get("packet_size", False)
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]

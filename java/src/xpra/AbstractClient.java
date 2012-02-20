@@ -1,5 +1,7 @@
 package xpra;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,14 +30,14 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	public static final String[] ENCODINGS = new String[] { "png", "jpeg" };
 	public static final int RECEIVE_BUFFER_SIZE = 1024 * 1024 * 1; // 1MB
-	public static final String VERSION = "0.0.7.37";
+	public static final String VERSION = "0.1.0";
 
 	protected boolean ended = false;
 	protected boolean exit = false;
 	protected Runnable onExit = null;
-	protected BencodingInputStream inputStream = null;
-	protected BencodingOutputStream outputStream = null;
-	protected byte[] buffer = null;
+	protected ByteArrayOutputStream readBuffer = null;
+	protected InputStream inputStream = null;
+	protected OutputStream outputStream = null;
 	protected Map<String, Method> handlers = new HashMap<String, Method>(HANDLERS.length);
 
 	protected String encoding = "png";
@@ -52,7 +54,9 @@ public abstract class AbstractClient implements Runnable, Client {
 			"configure-override-redirect", "lost-window" };
 
 	public AbstractClient(InputStream is, OutputStream os) {
-		this.inputStream = new BencodingInputStream(is, false);
+		this.inputStream = is;
+		this.outputStream = os;
+		this.readBuffer = new ByteArrayOutputStream(1024);
 		this.outputStream = new BencodingOutputStream(os);
 		this.registerHandlers();
 	}
@@ -124,11 +128,74 @@ public abstract class AbstractClient implements Runnable, Client {
 	@Override
 	public void run() {
 		this.send_hello(null);
+		int headerSize = 0;
+		int packetSize = 0;
+		byte[] header = new byte[16];
+		byte[] buffer = new byte[4096];
 		while (!this.exit) {
 			try {
-				List<?> packet = this.inputStream.readList();
-				if (packet != null)
-					this.processPacket(packet);
+				int bytes = this.inputStream.read(buffer);
+				int pos = 0;
+				this.log("run() read "+bytes);
+				while (bytes>0) {
+					if (headerSize<16) {
+						assert packetSize<0;
+						int missHeader = 16-headerSize;		//how much we need for a full header
+						if (bytes<missHeader) {
+							//copy what we have to the header:
+							for (int i=0; i<bytes; i++)
+								header[headerSize+i] = buffer[i];
+							headerSize += bytes;
+							bytes = 0;
+							this.log("run() only got "+headerSize+" of header, continuing");
+							break;			//we need more data
+						}
+						//copy all the missing bits to the header
+						for (int i=0; i<missHeader; i++)
+							header[headerSize+i] = buffer[i];
+						headerSize += missHeader;
+						pos = missHeader;
+						bytes -= missHeader;
+						this.log("run() got full header: "+new String(header));
+						//we now have a complete header, parse it:
+						assert header[0]=='P';
+						assert header[1]=='S';
+						packetSize = 0;
+						for (int i=2; i<16; i++) {
+							int decimal_value = header[i]-'0';
+							assert decimal_value>=0 && decimal_value<10;
+							packetSize *= 10;
+							packetSize += decimal_value;
+						}
+						this.log("run() got packet size="+packetSize+", pos="+pos+", bytes="+bytes);
+						assert packetSize>0;
+						if (bytes==0)
+							break;
+					}
+					if (this.readBuffer==null)
+						this.readBuffer = new ByteArrayOutputStream(packetSize);
+
+					int missBuffer = packetSize-this.readBuffer.size();	//how much we need for a full packet
+					if (bytes<missBuffer) {
+						//not enough bytes for the full packet, just append them:
+						this.readBuffer.write(buffer, pos, bytes);
+						this.log("run() added "+bytes+" bytes starting at "+pos+" to read buffer, now continuing");
+						break;
+					}
+					//we have enough bytes (or more)
+					this.log("run() adding "+missBuffer+" bytes starting at "+pos+" out of "+bytes+" total bytes");
+					this.readBuffer.write(buffer, pos, missBuffer);
+					bytes -= missBuffer;
+					pos += missBuffer;
+					//clear sizes for next packet:
+					headerSize = 0;
+					packetSize = 0;
+					//extract the packet:
+					this.log("run() parsing packet, remains "+bytes+" bytes");
+					byte[] packet = this.readBuffer.toByteArray();
+					this.readBuffer = null;
+					this.parsePacket(packet);
+				}
 			} catch (EOFException e) {
 				this.error("run() ", e);
 				this.exit = true;
@@ -141,6 +208,13 @@ public abstract class AbstractClient implements Runnable, Client {
 		this.cleanup();
 		if (this.onExit != null)
 			this.onExit.run();
+	}
+
+	public void parsePacket(byte[] packetBytes) throws IOException {
+		BencodingInputStream bis = new BencodingInputStream(new ByteArrayInputStream(packetBytes));
+		List<?> packet = bis.readList();
+		if (packet != null)
+			this.processPacket(packet);
 	}
 
 	public void cleanup() {
@@ -263,13 +337,23 @@ public abstract class AbstractClient implements Runnable, Client {
 		packet.add(type);
 		for (Object v : data)
 			packet.add(v);
-		// ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		/*
-		 * if (false) { DeflaterOutputStream dos = new
-		 * DeflaterOutputStream(baos); byte[] bytes = baos.toByteArray(); }
-		 */
+
 		try {
-			this.outputStream.writeCollection(packet);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
+			BencodingOutputStream bos = new BencodingOutputStream(baos);
+			bos.writeCollection(packet);
+			bos.flush();
+			byte[] bytes = baos.toByteArray();
+			byte[] header = new byte[16];
+			header[0] = 'P';
+			header[1] = 'S';
+			int packetSize = bytes.length; 
+			for (int i=15; i>=2; i--) {
+				header[i] = (byte) ('0'+(packetSize % 10));
+				packetSize /= 10;
+			}
+			this.outputStream.write(header);
+			this.outputStream.write(bytes);
 			this.outputStream.flush();
 		} catch (IOException e) {
 			this.connectionBroken(e);
@@ -396,7 +480,7 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	protected void process_hello(Map<String, Object> capabilities) {
 		this.log("process_hello(" + capabilities + ")");
-		this.remote_version = this.cast(capabilities.get("__prerelease_version"), String.class);
+		this.remote_version = this.cast(capabilities.get("version"), String.class);
 		if (!this.version_no_minor(this.remote_version).equals(this.version_no_minor(VERSION))) {
 			log("sorry, I only know how to talk to v" + this.version_no_minor(VERSION) + ".x servers, this one is " + this.remote_version);
 			this.exit = true;

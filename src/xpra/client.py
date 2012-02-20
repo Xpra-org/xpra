@@ -863,7 +863,6 @@ class XpraClient(XpraClientBase):
                          "Please see "
                          "http://xpra.org/trac/ticket/10"
                          % (avail_w, avail_h, root_w, root_h))
-        self._protocol._send_size = capabilities.get("packet_size", False)
         self.server_randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
         if self.server_randr:

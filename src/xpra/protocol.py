@@ -93,7 +93,6 @@ class Protocol(object):
         self.source = None
         self._source_has_more = False
         self._recv_counter = 0
-        self._send_size = False
         self._closed = False
         self._read_buffer = ""
         self._compressor = None
@@ -182,12 +181,11 @@ class Protocol(object):
         self._write_lock.acquire()
         try:
             try:
-                if self._send_size:
-                    if l<=1024:
-                        #send size and data together (low copy overhead):
-                        self._queue_write("PS%014d%s" % (l, data), True)
-                        return
-                    self._queue_write("PS%014d" % l)
+                if l<=1024:
+                    #send size and data together (low copy overhead):
+                    self._queue_write("PS%014d%s" % (l, data), True)
+                    return
+                self._queue_write("PS%014d" % l)
                 self._queue_write(data, True)
             finally:
                 if packet[0]=="set_deflate":
