@@ -20,7 +20,7 @@ import android.widget.Toast;
 public class DragActivity extends Activity implements View.OnLongClickListener, View.OnClickListener {
 
 	// Object that sends out drag-drop events while a view is being moved.
-	private DragController mDragController; 
+	private DragController mDragController;
 	private DragLayer mDragLayer; // The ViewGroup that supports drag-drop.
 
 	public static boolean Debugging = false;
@@ -62,8 +62,10 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 	@Override
 	public boolean onLongClick(View v) {
 		this.trace("onLongClick in view: " + v);
-		// Make sure the drag was started by a long press as opposed to a long click.
-		// (Note: I got this from the Workspace object in the Android Launcher code.
+		// Make sure the drag was started by a long press as opposed to a long
+		// click.
+		// (Note: I got this from the Workspace object in the Android Launcher
+		// code.
 		// I think it is here to ensure that the device is still in touch mode
 		// as we start the drag operation.)
 		if (!v.isInTouchMode()) {

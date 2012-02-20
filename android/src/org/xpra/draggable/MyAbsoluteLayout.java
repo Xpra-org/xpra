@@ -9,7 +9,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *	  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -171,15 +171,15 @@ public class MyAbsoluteLayout extends ViewGroup {
 		 * height and location.
 		 * 
 		 * @param width
-		 *            the width, either {@link #MATCH_PARENT},
-		 *            {@link #WRAP_CONTENT} or a fixed size in pixels
+		 *			the width, either {@link #MATCH_PARENT},
+		 *			{@link #WRAP_CONTENT} or a fixed size in pixels
 		 * @param height
-		 *            the height, either {@link #MATCH_PARENT},
-		 *            {@link #WRAP_CONTENT} or a fixed size in pixels
+		 *			the height, either {@link #MATCH_PARENT},
+		 *			{@link #WRAP_CONTENT} or a fixed size in pixels
 		 * @param x
-		 *            the X location of the child
+		 *			the X location of the child
 		 * @param y
-		 *            the Y location of the child
+		 *			the Y location of the child
 		 */
 		public AbsoluteLayoutParams(int width, int height, int x, int y) {
 			super(width, height);
@@ -200,10 +200,10 @@ public class MyAbsoluteLayout extends ViewGroup {
 		 * </ul>
 		 * 
 		 * @param c
-		 *            the application environment
+		 *			the application environment
 		 * @param attrs
-		 *            the set of attributes from which to extract the layout
-		 *            parameters values
+		 *			the set of attributes from which to extract the layout
+		 *			parameters values
 		 */
 		public AbsoluteLayoutParams(Context c, AttributeSet attrs) {
 			super(c, attrs);
@@ -231,7 +231,7 @@ public class MyAbsoluteLayout extends ViewGroup {
 			return output + "Absolute.LayoutParams={width=" + sizeToString(this.width) + ", height=" + sizeToString(this.height) + " x=" + this.x + " y="
 					+ this.y + "}";
 		}
-		
+
 		@Override
 		public String toString() {
 			return	this.getClass().getSimpleName()+"("+this.x+","+this.y+" - "+this.width+"x"+this.height+")";
@@ -241,7 +241,7 @@ public class MyAbsoluteLayout extends ViewGroup {
 		 * Converts the specified size to a readable String.
 		 * 
 		 * @param size
-		 *            the size to convert
+		 *			the size to convert
 		 * @return a String instance representing the supplied size
 		 * 
 		 * @hide

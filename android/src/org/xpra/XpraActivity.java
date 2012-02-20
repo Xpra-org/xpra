@@ -1,6 +1,5 @@
 package org.xpra;
 
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -26,50 +25,48 @@ import android.view.Window;
 import android.widget.Toast;
 
 public class XpraActivity extends Activity implements View.OnLongClickListener, View.OnClickListener {
-	
-	public static final String	PARAM_HOST = "PARAM_HOST";
-	public static final String	PARAM_PORT = "PARAM_PORT";
-	public static final String	PARAM_PASSWORD = "PARAM_PASSWORD";
+
+	public static final String PARAM_HOST = "PARAM_HOST";
+	public static final String PARAM_PORT = "PARAM_PORT";
+	public static final String PARAM_PASSWORD = "PARAM_PASSWORD";
 
 	// Object that sends out drag-drop events while a view is being moved.
-	protected	DragController mDragController;
-	protected	DragLayer mDragLayer; // The ViewGroup that supports drag-drop.
+	protected DragController mDragController;
+	protected DragLayer mDragLayer; // The ViewGroup that supports drag-drop.
 
-	protected	final Handler handler = new Handler();
-	protected	AndroidXpraClient client = null;
-	protected	String	host = null;
-	protected	int	port = 0;
-	protected	byte[] password = null;
-	
-	protected	String	TAG = this.getClass().getSimpleName();
+	protected final Handler handler = new Handler();
+	protected AndroidXpraClient client = null;
+	protected String host = null;
+	protected int port = 0;
+	protected byte[] password = null;
+
+	protected String TAG = this.getClass().getSimpleName();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		this.setContentView(R.layout.draggable);
-	    this.mDragController = new DragController(this);
+		this.mDragController = new DragController(this);
 		this.setupViews();
-		Log.i(this.TAG, "onCreate("+savedInstanceState+")");
-		
+		Log.i(this.TAG, "onCreate(" + savedInstanceState + ")");
+
 		Intent intent = this.getIntent();
 		Uri uri = intent.getData();
-		if (uri!=null) {
-			Log.e(this.TAG, "onCreate("+savedInstanceState+") parsing uri: "+uri);
+		if (uri != null) {
+			Log.e(this.TAG, "onCreate(" + savedInstanceState + ") parsing uri: " + uri);
 			this.host = uri.getHost();
 			this.port = uri.getPort();
 			String pwd = uri.getQueryParameter("password");
 			try {
-				this.password = pwd==null?null:pwd.getBytes("UTF-8");
+				this.password = pwd == null ? null : pwd.getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				Log.e(this.TAG, "onCreate(" + savedInstanceState + ") failed to parse password as UTF-8");
 			}
-			catch (UnsupportedEncodingException e) {
-				Log.e(this.TAG, "onCreate("+savedInstanceState+") failed to parse password as UTF-8");
-			}
-		}
-		else {
+		} else {
 			Bundle extras = getIntent().getExtras();
-			if (extras==null) {
-				Log.e(this.TAG, "onCreate("+savedInstanceState+") missing extras");
+			if (extras == null) {
+				Log.e(this.TAG, "onCreate(" + savedInstanceState + ") missing extras");
 				this.finish();
 				return;
 			}
@@ -77,18 +74,18 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 			this.port = extras.getInt(PARAM_PORT);
 			this.password = extras.getByteArray(PARAM_PASSWORD);
 		}
-		Log.i(this.TAG, "onCreate("+savedInstanceState+") target: "+this.host+":"+this.port);
-		if (this.host==null || this.host.length()==0 || this.port<=0) {
-			Log.e(this.TAG, "onCreate("+savedInstanceState+") invalid target: "+this.host+":"+this.port);
-			this.toast("Invalid target specified: "+this.host+":"+this.port+", cannot launch Xpra");
+		Log.i(this.TAG, "onCreate(" + savedInstanceState + ") target: " + this.host + ":" + this.port);
+		if (this.host == null || this.host.length() == 0 || this.port <= 0) {
+			Log.e(this.TAG, "onCreate(" + savedInstanceState + ") invalid target: " + this.host + ":" + this.port);
+			this.toast("Invalid target specified: " + this.host + ":" + this.port + ", cannot launch Xpra");
 			this.finish();
 			return;
 		}
 		MemoryInfo info = new MemoryInfo();
 		ActivityManager activityManager = (ActivityManager) this.getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
-		if (activityManager!=null) {
+		if (activityManager != null) {
 			activityManager.getMemoryInfo(info);
-			Log.i(this.TAG, "onCreate("+savedInstanceState+") memory info="+info);
+			Log.i(this.TAG, "onCreate(" + savedInstanceState + ") memory info=" + info);
 		}
 	}
 
@@ -104,18 +101,22 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 				XpraActivity.this.mDragLayer.invalidate();
 			}
 		});
-		//Toast.makeText(getApplicationContext(), "Press and hold to drag a view", Toast.LENGTH_LONG).show();
+		// Toast.makeText(getApplicationContext(),
+		// "Press and hold to drag a view", Toast.LENGTH_LONG).show();
 	}
 
 	@Override
 	public void onClick(View v) {
-		Log.i(this.TAG, "onClick("+v+")");
+		Log.i(this.TAG, "onClick(" + v + ")");
 		v.bringToFront();
 	}
+
 	@Override
 	public boolean onLongClick(View v) {
-		// Make sure the drag was started by a long press as opposed to a long click.
-		// (Note: I got this from the Workspace object in the Android Launcher code.
+		// Make sure the drag was started by a long press as opposed to a long
+		// click.
+		// (Note: I got this from the Workspace object in the Android Launcher
+		// code.
 		// I think it is here to ensure that the device is still in touch mode
 		// as we start the drag operation.)
 		if (!v.isInTouchMode()) {
@@ -124,6 +125,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		}
 		return startDrag(v);
 	}
+
 	/**
 	 * Start dragging a view.
 	 * 
@@ -137,27 +139,25 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		return true;
 	}
 
-
-
 	@Override
-	protected	void onResume() {
+	protected void onResume() {
 		super.onResume();
 		Log.e(this.TAG, "onResume()");
-		if (this.host!=null && this.port>0)
+		if (this.host != null && this.port > 0)
 			this.connect();
 	}
 
-	protected	void connect() {
+	protected void connect() {
 		try {
-			Log.e(this.TAG, "connect() to "+this.host+":"+this.port);
+			Log.e(this.TAG, "connect() to " + this.host + ":" + this.port);
 			SocketAddress sockaddr = new InetSocketAddress(this.host, this.port);
 			Socket sock = new Socket();
-		    int timeout = 5*1000;
-		    sock.connect(sockaddr, timeout);
-		    sock.setKeepAlive(true);
-		    this.client = new AndroidXpraClient(this, sock.getInputStream(), sock.getOutputStream());
-		    this.client.setPassword(this.password);
-		    this.client.setOnExit(new Runnable() {
+			int timeout = 5 * 1000;
+			sock.connect(sockaddr, timeout);
+			sock.setKeepAlive(true);
+			this.client = new AndroidXpraClient(this, sock.getInputStream(), sock.getOutputStream());
+			this.client.setPassword(this.password);
+			this.client.setOnExit(new Runnable() {
 				@Override
 				public void run() {
 					XpraActivity.this.handler.post(new Runnable() {
@@ -168,10 +168,9 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 						}
 					});
 				}
-		    });
-		    new Thread(this.client).start();
-		}
-		catch (IOException e) {
+			});
+			new Thread(this.client).start();
+		} catch (IOException e) {
 			Log.e(this.TAG, "connect()", e);
 			this.finish();
 		}
@@ -180,7 +179,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.e(this.TAG, "onPause() hasEnded="+(this.client==null?null:this.client.hasEnded()));
+		Log.e(this.TAG, "onPause() hasEnded=" + (this.client == null ? null : this.client.hasEnded()));
 		if (!this.client.hasEnded()) {
 			this.client.stop();
 			this.client = null;
@@ -191,21 +190,21 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		this.handler.post(new Runnable() {
 			@Override
 			public void run() {
-	            AbsoluteLayoutParams lp = window.getLayoutParams();
-	            XpraActivity.this.mDragLayer.addView(window, lp);
-	            window.setOnClickListener(XpraActivity.this);
-			}
-		});
-	}
-	public void remove(final XpraWindow window) {
-		this.handler.post(new Runnable() {
-			@Override
-			public void run() {
-	            XpraActivity.this.mDragLayer.removeView(window);
+				AbsoluteLayoutParams lp = window.getLayoutParams();
+				XpraActivity.this.mDragLayer.addView(window, lp);
+				window.setOnClickListener(XpraActivity.this);
 			}
 		});
 	}
 
+	public void remove(final XpraWindow window) {
+		this.handler.post(new Runnable() {
+			@Override
+			public void run() {
+				XpraActivity.this.mDragLayer.removeView(window);
+			}
+		});
+	}
 
 	public void toast(String msg) {
 		Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();

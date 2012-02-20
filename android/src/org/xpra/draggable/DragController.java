@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *	  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -274,12 +274,12 @@ public class DragController {
 	 * <pre>
 	 *  @Override
 	 *  public boolean dispatchKeyEvent(KeyEvent event) {
-	 *      return mDragController.dispatchKeyEvent(this, event)
-	 *              || super.dispatchKeyEvent(event);
+	 *   return mDragController.dispatchKeyEvent(this, event)
+	 * 		  || super.dispatchKeyEvent(event);
 	 * </pre>
 	 */
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		Log.i(TAG, "dispatchKeyEvent("+event+") mDragging="+this.mDragging);
+		Log.i(TAG, "dispatchKeyEvent(" + event + ") mDragging=" + this.mDragging);
 		return this.mDragging;
 	}
 
@@ -309,7 +309,7 @@ public class DragController {
 	 */
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 		final int action = ev.getAction();
-		Log.i(TAG, "onInterceptTouchEvent("+ev+")");
+		Log.i(TAG, "onInterceptTouchEvent(" + ev + ")");
 
 		if (action == MotionEvent.ACTION_DOWN)
 			this.recordScreenSize();
@@ -353,7 +353,7 @@ public class DragController {
 	 * Call this from a drag source view.
 	 */
 	public boolean onTouchEvent(MotionEvent ev) {
-		Log.i(TAG, "onTouchEvent("+ev+") mDragging="+this.mDragging);
+		Log.i(TAG, "onTouchEvent(" + ev + ") mDragging=" + this.mDragging);
 		if (!this.mDragging)
 			return false;
 
@@ -369,7 +369,8 @@ public class DragController {
 			break;
 		case MotionEvent.ACTION_MOVE:
 			// Update the drag view. Don't use the clamped pos here so the
-			// dragging looks like it goes off screen a little, intead of bumping up against the edge.
+			// dragging looks like it goes off screen a little, intead of
+			// bumping up against the edge.
 			this.mDragView.move((int) ev.getRawX(), (int) ev.getRawY());
 			// Drop on someone?
 			final int[] coordinates = this.mCoordinatesTemp;

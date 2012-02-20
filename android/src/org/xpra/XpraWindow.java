@@ -33,7 +33,7 @@ import android.widget.TextView;
 
 public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyListener, OnFocusChangeListener, OnClickListener {
 
-	//protected static Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_8888;
+	// protected static Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_8888;
 	protected static Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_4444;
 
 	protected Handler handler = null;
@@ -53,7 +53,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	protected AbsoluteLayoutParams unMaximizedLayoutParams = null;
 	protected String title = "";
 	protected int id = -1;
-	
+
 	protected int offsetX = 0;
 	protected int offsetY = 20;
 	protected AbsoluteLayoutParams layoutParams = null;
@@ -61,10 +61,11 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	protected boolean override_redirect = false;
 
 	public final String TAG = this.getClass().getSimpleName();
-	
+
 	protected void log(String msg) {
 		Log.i(this.TAG, msg);
 	}
+
 	protected void error(String msg, Throwable t) {
 		Log.e(this.TAG, msg, t);
 	}
@@ -72,13 +73,15 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	public XpraWindow(Context context, AttributeSet attributes) {
 		super(context, attributes);
 	}
-	
-	protected XpraWindow(XpraActivity context, AndroidXpraClient client, int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
+
+	protected XpraWindow(XpraActivity context, AndroidXpraClient client, int id, int x, int y, int w, int h, Map<String, Object> metadata,
+			boolean override_redirect) {
 		super(context);
 		this.init(context, client, id, x, y, w, h, metadata, override_redirect);
 	}
-	
-	protected void	init(XpraActivity context, AndroidXpraClient _client, int _id, int x, int y, int w, int h, Map<String, Object> _metadata, boolean _override_redirect) {
+
+	protected void init(XpraActivity context, AndroidXpraClient _client, int _id, int x, int y, int w, int h, Map<String, Object> _metadata,
+			boolean _override_redirect) {
 		this.activity = context;
 		this.handler = _client.context.handler;
 		this.client = _client;
@@ -91,21 +94,20 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.close = (ImageButton) this.findViewById(R.id.xpra_window_close);
 		this.imageView = (ImageView) this.findViewById(R.id.xpra_window_contents);
 
-		//adjust location so it is always shown:
+		// adjust location so it is always shown:
 		int min_margin = 32;
-		if (x>=(this.client.getScreenWidth()-min_margin))
-			x = this.client.getScreenWidth()-min_margin;
-		if (y>=(this.client.getScreenHeight()-min_margin))
-			y = this.client.getScreenHeight()-min_margin;
+		if (x >= (this.client.getScreenWidth() - min_margin))
+			x = this.client.getScreenWidth() - min_margin;
+		if (y >= (this.client.getScreenHeight() - min_margin))
+			y = this.client.getScreenHeight() - min_margin;
 		if (this.override_redirect) {
 			this.topBar.setVisibility(View.GONE);
 			this.offsetY = 0;
-		}
-		else {
+		} else {
 			this.topBar.setVisibility(View.VISIBLE);
-			this.offsetY = 32;			//TODO: measure bar!
+			this.offsetY = 32; // TODO: measure bar!
 		}
-		this.setLayoutParams(new AbsoluteLayoutParams(w+this.offsetX, h+this.offsetY, x, y));
+		this.setLayoutParams(new AbsoluteLayoutParams(w + this.offsetX, h + this.offsetY, x, y));
 		this.maximise.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -119,12 +121,13 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			}
 		});
 		if (!this.override_redirect) {
-			//register the top bar as the area you can use to drag the whole window:
+			// register the top bar as the area you can use to drag the whole
+			// window:
 			this.topBar.setOnLongClickListener(new OnLongClickListener() {
-					@Override
-					public boolean onLongClick(View v) {
-						return XpraWindow.this.activity.onLongClick(XpraWindow.this);
-					}	
+				@Override
+				public boolean onLongClick(View v) {
+					return XpraWindow.this.activity.onLongClick(XpraWindow.this);
+				}
 			});
 		}
 
@@ -142,15 +145,20 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		// simulate that the window has been mapped (we are the display manager)
 		this.do_map_event();
 		if (!this.override_redirect)
-			this.do_focus_event(true);	//this.client.update_focus(this.id, hasFocus);
+			this.do_focus_event(true); // this.client.update_focus(this.id,
+										// hasFocus);
 	}
+
 	public void do_map_event() {
 		if (!this.override_redirect)
-			this.client.send("map-window", this.id, this.layoutParams.x, this.layoutParams.y, this.layoutParams.width-this.offsetX, this.layoutParams.height-this.offsetY);
+			this.client.send("map-window", this.id, this.layoutParams.x, this.layoutParams.y, this.layoutParams.width - this.offsetX, this.layoutParams.height
+					- this.offsetY);
 	}
+
 	public void do_focus_event(boolean hasFocus) {
 		this.client.update_focus(this.id, hasFocus);
 	}
+
 	@Override
 	public void bringToFront() {
 		super.bringToFront();
@@ -160,38 +168,37 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	@Override
 	public AbsoluteLayoutParams getLayoutParams() {
 		ViewGroup.LayoutParams lp = super.getLayoutParams();
-		this.log("getLayoutParams() super="+lp+", local="+this.layoutParams);
-		return	this.layoutParams;
+		this.log("getLayoutParams() super=" + lp + ", local=" + this.layoutParams);
+		return this.layoutParams;
 	}
+
 	@Override
 	public void setLayoutParams(ViewGroup.LayoutParams layoutParams) {
-		this.log("setLayoutParams("+layoutParams+")");
+		this.log("setLayoutParams(" + layoutParams + ")");
 		super.setLayoutParams(layoutParams);
 		this.layoutParams = (AbsoluteLayoutParams) layoutParams;
 		if (!this.override_redirect)
 			this.send_move();
 	}
 
-	
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName()+"-"+this.id+"-"+this.title;
+		return this.getClass().getSimpleName() + "-" + this.id + "-" + this.title;
 	}
 
-	
 	public void maximize() {
 		log("maximize()");
 		if (this.maximized) {
 			this.setLayoutParams(this.unMaximizedLayoutParams);
-		}
-		else {
+		} else {
 			this.unMaximizedLayoutParams = this.layoutParams;
-			this.setLayoutParams(new AbsoluteLayoutParams(this.client.getScreenWidth(), this.client.getScreenHeight()-20, 0, 20));
+			this.setLayoutParams(new AbsoluteLayoutParams(this.client.getScreenWidth(), this.client.getScreenHeight() - 20, 0, 20));
 		}
 		this.maximized = !this.maximized;
 		this.new_backing(this.layoutParams.width, this.layoutParams.height);
 		this.send_resize();
 	}
+
 	public void close() {
 		this.log("close()");
 		if (this.override_redirect)
@@ -200,18 +207,17 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			this.client.send("close-window", this.id);
 	}
 
-	
 	/*
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		this.setMeasuredDimension(this.w, this.h);
-	}*/
+	 * @Override protected void onMeasure(int widthMeasureSpec, int
+	 * heightMeasureSpec) { this.setMeasuredDimension(this.w, this.h); }
+	 */
 
 	public void send_move() {
 		this.client.send("move-window", this.id, this.layoutParams.x, this.layoutParams.y);
 	}
+
 	public void send_resize() {
-		this.client.send("resize-window", this.id, this.layoutParams.width-this.offsetX, this.layoutParams.height-this.offsetY);
+		this.client.send("resize-window", this.id, this.layoutParams.width - this.offsetX, this.layoutParams.height - this.offsetY);
 	}
 
 	public void do_unmap_event() {
@@ -220,23 +226,24 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			this.client.send("unmap-window", this.id);
 	}
 
-	
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		this.log("onKey("+v+", "+keyCode+", "+event+")");
+		this.log("onKey(" + v + ", " + keyCode + ", " + event + ")");
 		this.client.sendKeyAction(this.id, v, keyCode, event);
 		return false;
 	}
+
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		boolean b = super.onKeyDown(keyCode, event);
-		this.log("onKeyDown("+keyCode+", "+event+")="+b);
+		this.log("onKeyDown(" + keyCode + ", " + event + ")=" + b);
 		return b;
 	}
+
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		boolean b = super.onKeyUp(keyCode, event);
-		this.log("onKeyUp("+keyCode+", "+event+")="+b);
+		this.log("onKeyUp(" + keyCode + ", " + event + ")=" + b);
 		return b;
 	}
 
@@ -260,92 +267,95 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		List<String> modifiers = new ArrayList<String>(); // Keys.mask_to_names(mod);
 		this.client.send("key-action", this.id, ks, boolint(depressed), modifiers, 0, name, 0);
 	}
+
 	protected int boolint(boolean b) {
 		return b ? 1 : 0;
 	}
 
-
-	
 	@Override
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
-		this.log("onClick("+v+")");
+		this.log("onClick(" + v + ")");
 	}
+
 	@Override
 	public void onVisibilityChanged(View changedView, int visibility) {
-		this.log("onVisibilityChanged("+changedView+", "+visibility+")");
+		this.log("onVisibilityChanged(" + changedView + ", " + visibility + ")");
 		super.onVisibilityChanged(changedView, visibility);
 	}
+
 	@Override
 	public void onWindowFocusChanged(boolean hasWindowFocus) {
-		this.log("onWindowFocusChanged("+hasWindowFocus+")");
+		this.log("onWindowFocusChanged(" + hasWindowFocus + ")");
 		super.onWindowFocusChanged(hasWindowFocus);
 	}
+
 	@Override
 	public void onSizeChanged(int _w, int _h, int oldw, int oldh) {
-		this.log("onSizeChanged("+_w+", "+_h+", "+oldw+", "+oldh+")");
+		this.log("onSizeChanged(" + _w + ", " + _h + ", " + oldw + ", " + oldh + ")");
 		super.onSizeChanged(_w, _h, oldw, oldh);
 	}
+
 	@Override
 	public void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect) {
-		this.log("onFocusChange("+gainFocus+", "+direction+", "+previouslyFocusedRect+")");
+		this.log("onFocusChange(" + gainFocus + ", " + direction + ", " + previouslyFocusedRect + ")");
 		super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
 	}
+
 	@Override
 	public void onFocusChange(View v, boolean hasFocus) {
-		this.log("onFocusChange("+v+", "+hasFocus+")");
+		this.log("onFocusChange(" + v + ", " + hasFocus + ")");
 		this.do_focus_event(hasFocus);
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-		this.log("onTouchEvent("+ev+")");
+		this.log("onTouchEvent(" + ev + ")");
 		final int action = ev.getAction();
-		if (action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_CANCEL) {
+		if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
 			DragLayer mDragLayer = this.client.context.mDragLayer;
-			this.log("onTouchEvent("+ev+") rawX="+ev.getRawX()+", rawY="+ev.getRawY()+", dragLeft="+mDragLayer.getLeft()+", dragTop="+mDragLayer.getTop()+", offsetX="+this.offsetX+", offsetY="+this.offsetY);
-			//float ex = ev.getX()+mDragLayer.getLeft()+this.offsetX;
-			//float ey = ev.getY()+mDragLayer.getTop()+this.offsetY;
-			//ex = ev.getRawX()-mDragLayer.getLeft()-this.offsetX;
-			//ey = ev.getRawY()-mDragLayer.getTop()-this.offsetY;
-			float ex = ev.getX()+this.layoutParams.x-this.offsetX;
-			float ey = ev.getY()+this.layoutParams.y-this.offsetY;
-			//float ex = ev.getX();
-			//float ey = ev.getY();
+			this.log("onTouchEvent(" + ev + ") rawX=" + ev.getRawX() + ", rawY=" + ev.getRawY() + ", dragLeft=" + mDragLayer.getLeft() + ", dragTop="
+					+ mDragLayer.getTop() + ", offsetX=" + this.offsetX + ", offsetY=" + this.offsetY);
+			// float ex = ev.getX()+mDragLayer.getLeft()+this.offsetX;
+			// float ey = ev.getY()+mDragLayer.getTop()+this.offsetY;
+			// ex = ev.getRawX()-mDragLayer.getLeft()-this.offsetX;
+			// ey = ev.getRawY()-mDragLayer.getTop()-this.offsetY;
+			float ex = ev.getX() + this.layoutParams.x - this.offsetX;
+			float ey = ev.getY() + this.layoutParams.y - this.offsetY;
+			// float ex = ev.getX();
+			// float ey = ev.getY();
 			Vector<Integer> pointer = new Vector<Integer>(2);
 			pointer.add(new Float(ex).intValue());
 			pointer.add(new Float(ey).intValue());
-			//this.client.send_mouse_position("pointer-position", this.id, pointer, "");
-			int pressed = action==MotionEvent.ACTION_DOWN?1:0;
+			// this.client.send_mouse_position("pointer-position", this.id,
+			// pointer, "");
+			int pressed = action == MotionEvent.ACTION_DOWN ? 1 : 0;
 			this.client.send_positional("button-action", this.id, 1, pressed, pointer, "");
 		}
-		return	super.onTouchEvent(ev);
+		return super.onTouchEvent(ev);
 	}
-
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		this.log("onDraw("+canvas+")");
+		this.log("onDraw(" + canvas + ")");
 		super.onDraw(canvas);
 	}
 
 	public void new_backing(int _w, int _h) {
 		if (this.backing != null) {
 			Bitmap old = this.backing;
-			if (old.getWidth()>=_w && old.getHeight()>=_h) {
-				//we are shrinking the bitmap:
+			if (old.getWidth() >= _w && old.getHeight() >= _h) {
+				// we are shrinking the bitmap:
 				this.backing = Bitmap.createBitmap(old, 0, 0, _w, _h);
-			}
-			else {
+			} else {
 				this.backing = Bitmap.createBitmap(_w, _h, bitmapConfig);
-				//draw the old bitmap onto it:
+				// draw the old bitmap onto it:
 				Canvas canvas = new Canvas(this.backing);
 				canvas.drawBitmap(old, 0.0f, 0.0f, null);
 				this.invalidate();
 			}
 			old.recycle();
-		}
-		else
+		} else
 			this.backing = Bitmap.createBitmap(_w, _h, bitmapConfig);
 		this.log("new_backing(" + _w + ", " + _h + ") backing=" + this.backing);
 		this.imageView.setImageBitmap(this.backing);
@@ -363,22 +373,22 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.title = t;
 		((TextView) this.findViewById(R.id.xpra_window_title)).setText(this.title);
 		Object icon = newMetadata.get("icon");
-		this.log("update_metadata(" + newMetadata + ") icon="+icon+", type="+(icon==null?null:icon.getClass()));
-		if (icon!=null) {
+		this.log("update_metadata(" + newMetadata + ") icon=" + icon + ", type=" + (icon == null ? null : icon.getClass()));
+		if (icon != null) {
 			List<?> iconData = (List<?>) icon;
 			int w = ((BigInteger) iconData.get(0)).intValue();
 			int h = ((BigInteger) iconData.get(1)).intValue();
 			byte[] raw_format = (byte[]) iconData.get(2);
 			String format = new String(raw_format);
-			this.log("update_metadata(" + newMetadata + ") found "+w+"x"+h+" icon in "+format+" format");
+			this.log("update_metadata(" + newMetadata + ") found " + w + "x" + h + " icon in " + format + " format");
 			if (format.equals("png")) {
 				byte[] blob = (byte[]) iconData.get(3);
 				BitmapFactory.Options options = new BitmapFactory.Options();
 				options.inSampleSize = 1;
-				while (w>64 || h>this.offsetY) {
+				while (w > 64 || h > this.offsetY) {
 					options.inSampleSize *= 2;
-					w = w/2;
-					h = h/2;
+					w = w / 2;
+					h = h / 2;
 				}
 				Bitmap bmp = BitmapFactory.decodeByteArray(blob, 0, blob.length, options);
 				this.windowIcon.setImageBitmap(bmp);
@@ -397,10 +407,10 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			int l = img_data.length;
 			try {
 				bitmap = BitmapFactory.decodeByteArray(data, 0, l);
-				//this.log("draw(...) bitmap=" + bitmap);
+				// this.log("draw(...) bitmap=" + bitmap);
 				synchronized (this.backing) {
 					Canvas canvas = new Canvas(this.backing);
-					canvas.drawBitmap(bitmap, null, new Rect(_x, _y, _x+width, _y+height), null);
+					canvas.drawBitmap(bitmap, null, new Rect(_x, _y, _x + width, _y + height), null);
 					bitmap.recycle();
 					bitmap = null;
 					canvas = null;
@@ -410,7 +420,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 					public void run() {
 						int xs = _x + XpraWindow.this.offsetX;
 						int ys = _y + XpraWindow.this.offsetY;
-						invalidate(xs, ys, xs+width, ys+height);
+						invalidate(xs, ys, xs + width, ys + height);
 					}
 				});
 				System.gc();
@@ -433,22 +443,22 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	@Override
 	public void destroy() {
 		this.log("destroy()");
-		if (this.backing!=null) {
+		if (this.backing != null) {
 			this.client.context.remove(this);
 			this.backing.recycle();
 			this.backing = null;
-			/*this.handler.post(new Runnable() {
-				@Override
-				public void run() {
-					invalidate(getLeft(), getTop(), getLeft()+getWidth(), getTop()+getHeight());
-				}
-			});*/
+			/*
+			 * this.handler.post(new Runnable() {
+			 * 
+			 * @Override public void run() { invalidate(getLeft(), getTop(),
+			 * getLeft()+getWidth(), getTop()+getHeight()); } });
+			 */
 		}
 	}
 
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-		this.log("onLayout("+changed+", "+left+", "+top+", "+right+", "+bottom+")");
+		this.log("onLayout(" + changed + ", " + left + ", " + top + ", " + right + ", " + bottom + ")");
 		super.onLayout(changed, left, top, right, bottom);
 	}
 }
