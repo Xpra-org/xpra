@@ -363,6 +363,12 @@ public class AndroidKeyboardUtil {
 		names.put("AT", "at");
 		names.put("MENU", "Super_L");		//"Windows" key
 		names.put("SEARCH", "XF86Search");
+		names.put("MEDIA_REWIND", "");		//no match
+		names.put("MEDIA_PREVIOUS", "XF86AudioPrev");
+		names.put("MEDIA_PLAY_PAUSE", "XF86AudioPlay");
+		names.put("MEDIA_STOP", "XF86AudioStop");
+		names.put("MEDIA_NEXT", "XF86AudioNext");
+		names.put("MEDIA_FAST_FORWARD", "");//no match
 	}
 
 	public static String keyCodeName(int keycode) {
