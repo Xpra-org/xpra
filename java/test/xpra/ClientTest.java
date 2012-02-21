@@ -1,5 +1,6 @@
 package xpra;
 
+import java.awt.Toolkit;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -66,6 +67,22 @@ public class ClientTest extends AbstractTest {
 		@Override
 		public Object getLock() {
 			return this;
+		}
+
+
+		@Override
+		protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+			Toolkit.getDefaultToolkit().beep();
+		}
+
+		@Override
+		protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
+			//Not implemented
+		}
+
+		@Override
+		protected void process_notify_close(int nid) {
+			//Not implemented
 		}
 	}
 }

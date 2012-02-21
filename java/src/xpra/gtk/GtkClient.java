@@ -51,4 +51,14 @@ public class GtkClient extends AbstractClient {
 	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
 		Toolkit.getDefaultToolkit().beep();
 	}
+
+	@Override
+	protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
+		//Not implemented
+	}
+
+	@Override
+	protected void process_notify_close(int nid) {
+		//Not implemented
+	}
 }

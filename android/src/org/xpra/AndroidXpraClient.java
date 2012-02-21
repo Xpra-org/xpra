@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import xpra.AbstractClient;
 import xpra.ClientWindow;
@@ -26,6 +27,7 @@ public class AndroidXpraClient extends AbstractClient {
 	protected XpraActivity context = null;
 	protected LayoutInflater inflater = null;
 	protected KeyCharacterMap keyCharacterMap = null;
+	protected WeakHashMap<Integer,Toast> toasts = new WeakHashMap<Integer,Toast>();
 	protected int keymapId = -1;
 
 	@Override
@@ -40,9 +42,21 @@ public class AndroidXpraClient extends AbstractClient {
 	}
 
 	@Override
+	public void error(String str) {
+		Log.e(this.TAG, str);
+	}
+
+	@Override
 	public void error(String str, Throwable t) {
 		Log.e(this.TAG, str, t);
 	}
+
+	@Override
+	public void warnUser(String message) {
+		this.log(message);
+		Toast.makeText(this.context.getApplicationContext(), message, Toast.LENGTH_LONG).show();
+	}
+	
 	
 	public AndroidXpraClient(XpraActivity context, InputStream is, OutputStream os) {
 		super(is, os);
@@ -172,6 +186,15 @@ public class AndroidXpraClient extends AbstractClient {
 		String text = summary;
 		if (body!=null && body.length()>0)
 			text += "\n\n"+body;
-		Toast.makeText(this.context.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+		Toast toast = Toast.makeText(this.context.getApplicationContext(), text, Toast.LENGTH_SHORT);
+		toast.show();
+		this.toasts.put(nid, toast);
+	}
+
+	@Override
+	protected void process_notify_close(int nid) {
+		Toast toast = this.toasts.get(nid);
+		if (toast!=null)
+			toast.cancel();
 	}
 }

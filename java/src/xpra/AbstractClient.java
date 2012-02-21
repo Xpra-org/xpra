@@ -116,10 +116,18 @@ public abstract class AbstractClient implements Runnable, Client {
 		System.out.println(this.getClass().getSimpleName() + "." + str.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
 	}
 
+	public void error(String str) {
+		this.error(str, null);
+	}
+
 	public void error(String str, Throwable t) {
 		System.out.println(this.getClass().getSimpleName() + "." + str.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
 		if (t != null)
 			t.printStackTrace(System.out);
+	}
+
+	public void warnUser(String message) {
+		this.log(message);
 	}
 
 	protected abstract ClientWindow createWindow(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect);
@@ -404,6 +412,7 @@ public abstract class AbstractClient implements Runnable, Client {
 	public void send_hello(String enc_pass) {
 		if (this.hellosSent++ > 3) {
 			this.log("send_hello(" + enc_pass + ") too many hellos sent: " + this.hellosSent);
+			this.warnUser("Failed to connect");
 			this.exit = true;
 			return;
 		}
@@ -425,7 +434,7 @@ public abstract class AbstractClient implements Runnable, Client {
 		caps.put("notifications", true);
 		caps.put("keyboard_sync", true);
 		caps.put("cursors", false); // not shown!
-		caps.put("bell", true); // uses vibrate
+		caps.put("bell", true); // uses vibrate on Android
 		caps.put("dynamic_compression", false); // not supported
 		if (this.encoding != null) {
 			caps.put("encoding", this.encoding);
@@ -442,7 +451,7 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	protected void process_challenge(String salt) {
 		if (this.password == null || this.password.length == 0) {
-			log("password is required by the server");
+			this.warnUser("This session requires a password");
 			this.exit = true;
 			return;
 		}
@@ -484,19 +493,10 @@ public abstract class AbstractClient implements Runnable, Client {
 	public String version_no_minor(String version) {
 		if (version == null || version.length() == 0)
 			return "";
-		int p = version.lastIndexOf(".");
-		if (p > 0)
-			return version.substring(0, p);
-		return version;
-	}
-
-	public int minor_version_int(String version) {
-		if (version == null || version.length() == 0)
-			return 0;
-		int p = version.lastIndexOf(".");
-		if (p > 0)
-			return Integer.parseInt(version.substring(p + 1));
-		return 0;
+		String[] parts = version.split("\\.");
+		if (parts.length == 1)
+			return parts[0];
+		return parts[0] + "." + parts[1];
 	}
 
 	protected void process_hello(Map<String, Object> capabilities) {
@@ -504,20 +504,21 @@ public abstract class AbstractClient implements Runnable, Client {
 		this.remote_version = this.cast(capabilities.get("version"), String.class);
 		if (!this.version_no_minor(this.remote_version).equals(this.version_no_minor(VERSION))) {
 			log("sorry, I only know how to talk to v" + this.version_no_minor(VERSION) + ".x servers, this one is " + this.remote_version);
+			this.warnUser("The server version is incompatible with this client");
 			this.exit = true;
 			return;
 		}
-		/*
-		 * Vector<Object> desktop_size = (Vector<Object>)
-		 * capabilities.get("desktop_size"); if (desktop_size!=null) { Integer
-		 * avail_w = (Integer) desktop_size.get(0); Integer avail_h = (Integer)
-		 * desktop_size.get(1); /*root_w, root_h =
-		 * gtk.gdk.get_default_root_window().get_size() if (avail_w, avail_h) <
-		 * (root_w, root_h): log.warn("Server's virtual screen is too small -- "
-		 * "(server: %sx%s vs. client: %sx%s)\n"
-		 * "You may see strange behavior.\n" "Please complain to "
-		 * "parti-discuss@partiwm.org" % (avail_w, avail_h, root_w, root_h)) }
-		 */
+		@SuppressWarnings("unchecked")
+		Vector<Object> desktop_size = (Vector<Object>) capabilities.get("desktop_size");
+		if (desktop_size != null) {
+			Integer avail_w = (Integer) desktop_size.get(0);
+			Integer avail_h = (Integer) desktop_size.get(1);
+			if (avail_w < this.getScreenWidth() || avail_h < this.getScreenHeight()) {
+				this.warnUser("The server's virtual screen is too small! You may see strange behaviour");
+			} else if (avail_w > (this.getScreenWidth() * 12 / 10) || (avail_h > (this.getScreenHeight() * 12 / 10))) {
+				this.warnUser("The server's virtual screen is too big! It should be using Xdummy, this client may crash and/or misbehave.");
+			}
+		}
 	}
 
 	protected void process_new_common(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
@@ -558,20 +559,11 @@ public abstract class AbstractClient implements Runnable, Client {
 		}
 	}
 
-	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
-		this.log("process_bell(" + wid + ", " + device + ", " + percent + ", " + pitch + ", " + duration + ", " + bell_class + ", " + bell_id + ", "
-				+ bell_name + ")");
-		// Toolkit.getDefaultToolkit().beep();
-	}
+	protected abstract void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name);
 
-	protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
-		this.log("process_notify_show(" + dbus_id + ", " + nid + ", " + app_name + ", " + replaced_id + ", " + app_icon + ", " + summary + ", " + body + ", "
-				+ expire_timeout + ")");
-	}
+	protected abstract void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout);
 
-	protected void process_notify_close(int nid) {
-		this.log("process_notify_close(" + nid + ")");
-	}
+	protected abstract  void process_notify_close(int nid);
 
 	protected void send_ping() {
 		this.send("ping", System.currentTimeMillis());
