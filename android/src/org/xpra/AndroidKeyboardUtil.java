@@ -317,7 +317,7 @@ public class AndroidKeyboardUtil {
 			x11 = in;
 		return x11;
 	}
-	
+
 	public static Map<String,String> NAME_TO_X11_NAME = new HashMap<String,String>();
 	static {
 		Map<String,String> names = NAME_TO_X11_NAME;
@@ -369,6 +369,9 @@ public class AndroidKeyboardUtil {
 		names.put("MEDIA_STOP", "XF86AudioStop");
 		names.put("MEDIA_NEXT", "XF86AudioNext");
 		names.put("MEDIA_FAST_FORWARD", "");//no match
+		names.put("PLUS", "plus");
+		names.put("PAGE_UP", "Page_Up");
+		names.put("PAGE_DOWN", "Page_Down");
 	}
 
 	public static String keyCodeName(int keycode) {
