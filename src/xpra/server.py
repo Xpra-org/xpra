@@ -183,7 +183,7 @@ class ServerSource(object):
     TIME_UNIT = 1                       #per second
     MIN_BATCH_DELAY = 5
     AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
-    MAX_BATCH_DELAY = 1000
+    MAX_BATCH_DELAY = 5000
 
     def __init__(self, protocol, encoding, mmap, mmap_size):
         self._ordinary_packets = []
