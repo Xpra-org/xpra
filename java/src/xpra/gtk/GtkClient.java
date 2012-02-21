@@ -1,5 +1,6 @@
 package xpra.gtk;
 
+import java.awt.Toolkit;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
@@ -44,5 +45,10 @@ public class GtkClient extends AbstractClient {
 		window.showAll();
 		window.present();
 		return window;
+	}
+
+	@Override
+	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+		Toolkit.getDefaultToolkit().beep();
 	}
 }

@@ -9,12 +9,15 @@ import java.util.Map;
 
 import xpra.AbstractClient;
 import xpra.ClientWindow;
+import android.content.Context;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Toast;
 
 public class AndroidXpraClient extends AbstractClient {
 
@@ -151,5 +154,24 @@ public class AndroidXpraClient extends AbstractClient {
 		this.context.add(window);
 		// this.context.mDragLayer.addView(window);
 		return window;
+	}
+
+	@Override
+	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+		Vibrator v = (Vibrator) this.context.getSystemService(Context.VIBRATOR_SERVICE);
+		int d = Math.min(5000, Math.max(100, duration));
+		this.log("process_bell(" + wid + ", " + device + ", " + percent + ", " + pitch + ", " + duration + ", " + bell_class + ", " + bell_id + ", "
+				+ bell_name + ") using "+v+" for "+d+" ms");
+		v.vibrate(d);
+	}
+
+	@Override
+	protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
+		this.log("process_notify_show(" + dbus_id + ", " + nid + ", " + app_name + ", " + replaced_id + ", " + app_icon + ", " + summary + ", " + body + ", "
+				+ expire_timeout + ")");
+		String text = summary;
+		if (body!=null && body.length()>0)
+			text += "\n\n"+body;
+		Toast.makeText(this.context.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
 	}
 }

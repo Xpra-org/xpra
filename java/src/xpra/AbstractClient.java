@@ -50,8 +50,8 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	protected String remote_version = null;
 
-	public static String[] HANDLERS = { "challenge", "disconnect", "hello", "new-window", "new-override-redirect", "draw", "window-metadata",
-			"configure-override-redirect", "lost-window" };
+	public static String[] HANDLERS = { "challenge", "disconnect", "hello", "new-window", "new-override-redirect", "window-metadata",
+			"configure-override-redirect", "lost-window", "draw", "bell", "notify_show", "notify_close", "ping", "ping_echo" };
 
 	public AbstractClient(InputStream is, OutputStream os) {
 		this.inputStream = is;
@@ -140,63 +140,70 @@ public abstract class AbstractClient implements Runnable, Client {
 			try {
 				int bytes = this.inputStream.read(buffer);
 				int pos = 0;
-				this.debug("run() read "+bytes);
-				while (bytes>0) {
-					if (headerSize<16) {
-						assert packetSize<0;
-						int missHeader = 16-headerSize;		//how much we need for a full header
-						if (bytes<missHeader) {
-							//copy what we have to the header:
-							for (int i=0; i<bytes; i++)
-								header[headerSize+i] = buffer[pos+i];
+				this.debug("run() read " + bytes);
+				while (bytes > 0) {
+					if (headerSize < 16) {
+						assert packetSize < 0;
+						int missHeader = 16 - headerSize; // how much we need
+															// for a full header
+						if (bytes < missHeader) {
+							// copy what we have to the header:
+							for (int i = 0; i < bytes; i++)
+								header[headerSize + i] = buffer[pos + i];
 							pos += bytes;
 							headerSize += bytes;
 							bytes = 0;
-							this.debug("run() only got "+headerSize+" of header, continuing");
-							break;			//we need more data
+							this.debug("run() only got " + headerSize + " of header, continuing");
+							break; // we need more data
 						}
-						//copy all the missing bits to the header
-						for (int i=0; i<missHeader; i++)
-							header[headerSize+i] = buffer[pos+i];
+						// copy all the missing bits to the header
+						for (int i = 0; i < missHeader; i++)
+							header[headerSize + i] = buffer[pos + i];
 						headerSize += missHeader;
 						pos += missHeader;
 						bytes -= missHeader;
-						this.debug("run() got full header: "+new String(header));
-						//we now have a complete header, parse it:
-						assert header[0]=='P';
-						assert header[1]=='S';
+						this.debug("run() got full header: " + new String(header));
+						// we now have a complete header, parse it:
+						assert header[0] == 'P';
+						assert header[1] == 'S';
 						packetSize = 0;
-						for (int i=2; i<16; i++) {
-							int decimal_value = header[i]-'0';
-							assert decimal_value>=0 && decimal_value<10;
+						for (int i = 2; i < 16; i++) {
+							int decimal_value = header[i] - '0';
+							assert decimal_value >= 0 && decimal_value < 10;
 							packetSize *= 10;
 							packetSize += decimal_value;
 						}
-						this.debug("run() got packet size="+packetSize+", pos="+pos+", bytes="+bytes);
-						assert packetSize>0;
-						if (bytes==0)
+						this.debug("run() got packet size=" + packetSize + ", pos=" + pos + ", bytes=" + bytes);
+						assert packetSize > 0;
+						if (bytes == 0)
 							break;
 					}
-					if (readBuffer==null)
+					if (readBuffer == null)
 						readBuffer = new ByteArrayOutputStream(packetSize);
 
-					int missBuffer = packetSize-readBuffer.size();	//how much we need for a full packet
-					if (bytes<missBuffer) {
-						//not enough bytes for the full packet, just append them:
+					int missBuffer = packetSize - readBuffer.size(); // how much
+																		// we
+																		// need
+																		// for a
+																		// full
+																		// packet
+					if (bytes < missBuffer) {
+						// not enough bytes for the full packet, just append
+						// them:
 						readBuffer.write(buffer, pos, bytes);
-						this.debug("run() added "+bytes+" bytes starting at "+pos+" to read buffer, now continuing");
+						this.debug("run() added " + bytes + " bytes starting at " + pos + " to read buffer, now continuing");
 						break;
 					}
-					//we have enough bytes (or more)
-					this.debug("run() adding "+missBuffer+" bytes starting at "+pos+" out of "+bytes+" total bytes");
+					// we have enough bytes (or more)
+					this.debug("run() adding " + missBuffer + " bytes starting at " + pos + " out of " + bytes + " total bytes");
 					readBuffer.write(buffer, pos, missBuffer);
 					bytes -= missBuffer;
 					pos += missBuffer;
-					//clear sizes for next packet:
+					// clear sizes for next packet:
 					headerSize = 0;
 					packetSize = 0;
-					//extract the packet:
-					this.debug("run() parsing packet, remains "+bytes+" bytes at "+pos);
+					// extract the packet:
+					this.debug("run() parsing packet, remains " + bytes + " bytes at " + pos);
 					byte[] packet = readBuffer.toByteArray();
 					readBuffer = null;
 					this.parsePacket(packet);
@@ -220,9 +227,8 @@ public abstract class AbstractClient implements Runnable, Client {
 		try {
 			BencodingInputStream bis = new BencodingInputStream(new ByteArrayInputStream(packetBytes));
 			packet = bis.readList();
-		}
-		catch (IOException e) {
-			this.error("parsePacket("+packetBytes.length+" bytes) trying to continue..", e);
+		} catch (IOException e) {
+			this.error("parsePacket(" + packetBytes.length + " bytes) trying to continue..", e);
 		}
 		if (packet != null)
 			this.processPacket(packet);
@@ -358,9 +364,9 @@ public abstract class AbstractClient implements Runnable, Client {
 			byte[] header = new byte[16];
 			header[0] = 'P';
 			header[1] = 'S';
-			int packetSize = bytes.length; 
-			for (int i=15; i>=2; i--) {
-				header[i] = (byte) ('0'+(packetSize % 10));
+			int packetSize = bytes.length;
+			for (int i = 15; i >= 2; i--) {
+				header[i] = (byte) ('0' + (packetSize % 10));
 				packetSize /= 10;
 			}
 			this.outputStream.write(header);
@@ -407,21 +413,25 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	public Map<String, Object> make_hello(String enc_pass) {
 		Map<String, Object> caps = new LinkedHashMap<String, Object>();
-		caps.put("__prerelease_version", VERSION);
+		caps.put("version", VERSION);
 		if (enc_pass != null)
 			caps.put("challenge_response", enc_pass);
-		// caps.put("deflate", 6);
 		Vector<Integer> dims = new Vector<Integer>(2);
 		dims.add(this.getScreenWidth());
 		dims.add(this.getScreenHeight());
 		caps.put("desktop_size", dims);
+		caps.put("encodings", ENCODINGS);
+		caps.put("clipboard", false); // not supported
+		caps.put("notifications", true);
+		caps.put("keyboard_sync", true);
+		caps.put("cursors", false); // not shown!
+		caps.put("bell", true); // uses vibrate
+		caps.put("dynamic_compression", false); // not supported
 		if (this.encoding != null) {
-			caps.put("encodings", ENCODINGS);
 			caps.put("encoding", this.encoding);
 			if (this.encoding.equals("jpeg") && this.jpeg > 0)
 				caps.put("jpeg", this.jpeg);
 		}
-		caps.put("png_window_icons", true);
 		return caps;
 	}
 
@@ -546,6 +556,45 @@ public abstract class AbstractClient implements Runnable, Client {
 			window.destroy();
 			this.id_to_window.remove(id);
 		}
+	}
+
+	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+		this.log("process_bell(" + wid + ", " + device + ", " + percent + ", " + pitch + ", " + duration + ", " + bell_class + ", " + bell_id + ", "
+				+ bell_name + ")");
+		// Toolkit.getDefaultToolkit().beep();
+	}
+
+	protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
+		this.log("process_notify_show(" + dbus_id + ", " + nid + ", " + app_name + ", " + replaced_id + ", " + app_icon + ", " + summary + ", " + body + ", "
+				+ expire_timeout + ")");
+	}
+
+	protected void process_notify_close(int nid) {
+		this.log("process_notify_close(" + nid + ")");
+	}
+
+	protected void send_ping() {
+		this.send("ping", System.currentTimeMillis());
+	}
+
+	protected void process_ping(long echotime) {
+		// TODO: load average:
+		long l1 = 1;
+		long l2 = 1;
+		long l3 = 1;
+		int serverLatency = -1;
+		// if len(self.server_latency)>0:
+		// sl = self.server_latency[-1]
+		this.send("ping_echo", echotime, l1, l2, l3, serverLatency);
+	}
+
+	protected void process_ping_echo(long echoedtime, long l1, long l2, long l3, int clientLatency) {
+		long diff = System.currentTimeMillis() - echoedtime;
+		// this.server_latency.append(diff)
+		// this.server_load = (l1, l2, l3)
+		// if cl>=0:
+		// self.client_latency.append(cl)
+		log("process_ping_echo(" + echoedtime + ", " + l1 + ", " + l2 + ", " + l3 + ", " + clientLatency + ") server latency=" + diff);
 	}
 
 	protected void process_disconnect(Object o) {

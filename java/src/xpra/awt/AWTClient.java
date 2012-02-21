@@ -41,4 +41,9 @@ public class AWTClient extends AbstractClient {
 	protected AWTWindow createWindow(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
 		return new AWTWindow(this, id, x, y, w, h, metadata, override_redirect);
 	}
+
+	@Override
+	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+		Toolkit.getDefaultToolkit().beep();
+	}
 }
