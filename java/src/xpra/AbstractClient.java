@@ -1,5 +1,6 @@
 package xpra;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -29,13 +30,12 @@ import org.ardverk.coding.BencodingOutputStream;
 public abstract class AbstractClient implements Runnable, Client {
 
 	public static final String[] ENCODINGS = new String[] { "png", "jpeg" };
-	public static final int RECEIVE_BUFFER_SIZE = 1024 * 1024 * 1; // 1MB
 	public static final String VERSION = "0.1.0";
+	public static boolean DEBUG = false;
 
 	protected boolean ended = false;
 	protected boolean exit = false;
 	protected Runnable onExit = null;
-	protected ByteArrayOutputStream readBuffer = null;
 	protected InputStream inputStream = null;
 	protected OutputStream outputStream = null;
 	protected Map<String, Method> handlers = new HashMap<String, Method>(HANDLERS.length);
@@ -55,9 +55,7 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	public AbstractClient(InputStream is, OutputStream os) {
 		this.inputStream = is;
-		this.outputStream = os;
-		this.readBuffer = new ByteArrayOutputStream(1024);
-		this.outputStream = new BencodingOutputStream(os);
+		this.outputStream = new BufferedOutputStream(os);
 		this.registerHandlers();
 	}
 
@@ -109,6 +107,11 @@ public abstract class AbstractClient implements Runnable, Client {
 		return this.ended;
 	}
 
+	public void debug(String str) {
+		if (DEBUG)
+			System.out.println(this.getClass().getSimpleName() + "." + str.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
+	}
+
 	public void log(String str) {
 		System.out.println(this.getClass().getSimpleName() + "." + str.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
 	}
@@ -130,13 +133,14 @@ public abstract class AbstractClient implements Runnable, Client {
 		this.send_hello(null);
 		int headerSize = 0;
 		int packetSize = 0;
+		ByteArrayOutputStream readBuffer = null;
 		byte[] header = new byte[16];
 		byte[] buffer = new byte[4096];
 		while (!this.exit) {
 			try {
 				int bytes = this.inputStream.read(buffer);
 				int pos = 0;
-				this.log("run() read "+bytes);
+				this.debug("run() read "+bytes);
 				while (bytes>0) {
 					if (headerSize<16) {
 						assert packetSize<0;
@@ -148,7 +152,7 @@ public abstract class AbstractClient implements Runnable, Client {
 							pos += bytes;
 							headerSize += bytes;
 							bytes = 0;
-							this.log("run() only got "+headerSize+" of header, continuing");
+							this.debug("run() only got "+headerSize+" of header, continuing");
 							break;			//we need more data
 						}
 						//copy all the missing bits to the header
@@ -157,7 +161,7 @@ public abstract class AbstractClient implements Runnable, Client {
 						headerSize += missHeader;
 						pos += missHeader;
 						bytes -= missHeader;
-						this.log("run() got full header: "+new String(header));
+						this.debug("run() got full header: "+new String(header));
 						//we now have a complete header, parse it:
 						assert header[0]=='P';
 						assert header[1]=='S';
@@ -168,33 +172,33 @@ public abstract class AbstractClient implements Runnable, Client {
 							packetSize *= 10;
 							packetSize += decimal_value;
 						}
-						this.log("run() got packet size="+packetSize+", pos="+pos+", bytes="+bytes);
+						this.debug("run() got packet size="+packetSize+", pos="+pos+", bytes="+bytes);
 						assert packetSize>0;
 						if (bytes==0)
 							break;
 					}
-					if (this.readBuffer==null)
-						this.readBuffer = new ByteArrayOutputStream(packetSize);
+					if (readBuffer==null)
+						readBuffer = new ByteArrayOutputStream(packetSize);
 
-					int missBuffer = packetSize-this.readBuffer.size();	//how much we need for a full packet
+					int missBuffer = packetSize-readBuffer.size();	//how much we need for a full packet
 					if (bytes<missBuffer) {
 						//not enough bytes for the full packet, just append them:
-						this.readBuffer.write(buffer, pos, bytes);
-						this.log("run() added "+bytes+" bytes starting at "+pos+" to read buffer, now continuing");
+						readBuffer.write(buffer, pos, bytes);
+						this.debug("run() added "+bytes+" bytes starting at "+pos+" to read buffer, now continuing");
 						break;
 					}
 					//we have enough bytes (or more)
-					this.log("run() adding "+missBuffer+" bytes starting at "+pos+" out of "+bytes+" total bytes");
-					this.readBuffer.write(buffer, pos, missBuffer);
+					this.debug("run() adding "+missBuffer+" bytes starting at "+pos+" out of "+bytes+" total bytes");
+					readBuffer.write(buffer, pos, missBuffer);
 					bytes -= missBuffer;
 					pos += missBuffer;
 					//clear sizes for next packet:
 					headerSize = 0;
 					packetSize = 0;
 					//extract the packet:
-					this.log("run() parsing packet, remains "+bytes+" bytes at "+pos);
-					byte[] packet = this.readBuffer.toByteArray();
-					this.readBuffer = null;
+					this.debug("run() parsing packet, remains "+bytes+" bytes at "+pos);
+					byte[] packet = readBuffer.toByteArray();
+					readBuffer = null;
 					this.parsePacket(packet);
 				}
 			} catch (EOFException e) {
@@ -211,9 +215,15 @@ public abstract class AbstractClient implements Runnable, Client {
 			this.onExit.run();
 	}
 
-	public void parsePacket(byte[] packetBytes) throws IOException {
-		BencodingInputStream bis = new BencodingInputStream(new ByteArrayInputStream(packetBytes));
-		List<?> packet = bis.readList();
+	public void parsePacket(byte[] packetBytes) {
+		List<?> packet = null;
+		try {
+			BencodingInputStream bis = new BencodingInputStream(new ByteArrayInputStream(packetBytes));
+			packet = bis.readList();
+		}
+		catch (IOException e) {
+			this.error("parsePacket("+packetBytes.length+" bytes) trying to continue..", e);
+		}
 		if (packet != null)
 			this.processPacket(packet);
 	}
@@ -252,16 +262,16 @@ public abstract class AbstractClient implements Runnable, Client {
 	}
 
 	public void processPacket(List<?> dp) {
-		this.log("processPacket(" + dp + ")");
+		this.debug("processPacket(" + dp + ")");
 		if (dp.size() < 1) {
-			log("processPacket(..) decoded data is too small: " + dp);
+			this.log("processPacket(..) decoded data is too small: " + dp);
 			return;
 		}
 		assert dp.size() >= 1;
 		String type = this.cast(dp.get(0), String.class);
 		Method m = this.handlers.get(type);
 		if (m == null) {
-			log("processPacket(..) unhandled packet: " + type);
+			this.log("processPacket(..) unhandled packet: " + type);
 			return;
 		}
 		Class<?>[] paramTypes = m.getParameterTypes();
@@ -277,7 +287,7 @@ public abstract class AbstractClient implements Runnable, Client {
 			infoParams[index] = dump(v);
 			index++;
 		}
-		log("processPacket(..) calling " + m + "(" + Arrays.asList(infoParams) + ")");
+		this.log("processPacket(..) calling " + m + "(" + Arrays.asList(infoParams) + ")");
 		try {
 			synchronized (this.getLock()) {
 				m.invoke(this, params);
