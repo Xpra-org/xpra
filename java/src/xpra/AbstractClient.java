@@ -295,11 +295,11 @@ public abstract class AbstractClient implements Runnable, Client {
 		}
 		this.invokePacketMethod(m, params);
 	}
-	
+
 	public void invokePacketMethod(Method m, Object[] params) {
 		this.doInvokePacketMethod(m, params);
 	}
-	
+
 	public void doInvokePacketMethod(Method m, Object[] params) {
 		this.debug("doInvokePacketMethod(" + m + ", " + params.length + " arguments )");
 		try {
@@ -386,6 +386,11 @@ public abstract class AbstractClient implements Runnable, Client {
 			this.connectionBroken(e);
 		}
 	}
+
+	public void send_screen_size_changed(int w, int h) {
+        this.send("desktop_size", w, h);
+	}
+
 
 	@Override
 	public void send_positional(String type, Object... data) {

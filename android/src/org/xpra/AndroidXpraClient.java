@@ -30,6 +30,8 @@ public class AndroidXpraClient extends AbstractClient {
 	protected KeyCharacterMap keyCharacterMap = null;
 	protected WeakHashMap<Integer,Toast> toasts = new WeakHashMap<Integer,Toast>();
 	protected int keymapId = -1;
+	protected int currentScreenWidth = -1;
+	protected int currentScreenHeight = -1;
 
 	@Override
 	public void debug(String str) {
@@ -57,8 +59,7 @@ public class AndroidXpraClient extends AbstractClient {
 		this.log(message);
 		Toast.makeText(this.context.getApplicationContext(), message, Toast.LENGTH_LONG).show();
 	}
-	
-	
+
 	public AndroidXpraClient(XpraActivity context, InputStream is, OutputStream os) {
 		super(is, os);
 		this.context = context;
@@ -73,7 +74,7 @@ public class AndroidXpraClient extends AbstractClient {
 	public void invokePacketMethod(Method m, Object[] params) {
 		this.context.handler.post(new PacketMethodInvoker(m, params));
 	}
-	
+
 	public class PacketMethodInvoker implements Runnable {
 		private Method method = null;
 		private Object[] params = null;
@@ -116,6 +117,16 @@ public class AndroidXpraClient extends AbstractClient {
 		return this;
 	}
 
+	public void checkOrientation() {
+		int w = this.getScreenWidth();
+		int h = this.getScreenHeight();
+		if (this.currentScreenWidth!=w || this.currentScreenHeight!=h) {
+			this.currentScreenWidth = w;
+			this.currentScreenHeight = h;
+			this.send_screen_size_changed(w, h);
+		}
+	}
+
 	@Override
 	public Map<String, Object> make_hello(String enc_pass) {
 		Map<String, Object> caps = super.make_hello(enc_pass);
@@ -123,6 +134,8 @@ public class AndroidXpraClient extends AbstractClient {
 			this.loadCharacterMap(KeyCharacterMap.BUILT_IN_KEYBOARD); // VIRTUAL_KEYBOARD);
 			this.add_keymap_props(caps);
 		}
+		this.currentScreenWidth = this.getScreenWidth();
+		this.currentScreenHeight = this.getScreenWidth();
 		return caps;
 	}
 

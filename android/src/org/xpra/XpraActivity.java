@@ -15,6 +15,7 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.MemoryInfo;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,6 +42,12 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	protected byte[] password = null;
 
 	protected String TAG = this.getClass().getSimpleName();
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		this.client.checkOrientation();
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
