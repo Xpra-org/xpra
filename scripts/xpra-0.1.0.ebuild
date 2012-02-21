@@ -24,10 +24,10 @@ COMMON_DEPEND="dev-python/pygtk:2
 	x11-libs/libXdamage
 	server? ( x11-libs/libXtst )
 	server? ( x11-base/xorg-server[-minimal] )
+	!server? ( x11-apps/xmodmap )
 	!x11-wm/parti"
 
 RDEPEND="${COMMON_DEPEND}
-	x11-apps/xmodmap
 	parti? ( dev-python/ipython
 		 dev-python/dbus-python )
 	libnotify? ( dev-python/dbus-python )
