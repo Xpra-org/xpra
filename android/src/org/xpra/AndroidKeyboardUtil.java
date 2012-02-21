@@ -349,7 +349,8 @@ public class AndroidKeyboardUtil {
 		names.put("SPACE", "space");
 		names.put("EXPLORER", "XF86MyComputer");
 		names.put("ENVELOPE", "XF86Mail");
-		names.put("DEL", "Delete");
+		names.put("FORWARD_DEL", "Delete");
+		names.put("DEL", "BackSpace");
 		names.put("GRAVE", "grave");
 		names.put("MINUS", "minus");
 		names.put("EQUALS", "equal");
