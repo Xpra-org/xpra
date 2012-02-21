@@ -187,7 +187,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	protected void onPause() {
 		super.onPause();
 		Log.e(this.TAG, "onPause() hasEnded=" + (this.client == null ? null : this.client.hasEnded()));
-		if (!this.client.hasEnded()) {
+		if (this.client!=null && !this.client.hasEnded()) {
 			this.client.stop();
 			this.client = null;
 		}
