@@ -2,6 +2,7 @@ package org.xpra;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +64,29 @@ public class AndroidXpraClient extends AbstractClient {
 		this.context = context;
 		this.inflater = LayoutInflater.from(context);
 	}
+
+	/**
+	 * Override so we can call all packet methods via the main thread
+	 * by posting them to the client's handler.
+	 */
+	@Override
+	public void invokePacketMethod(Method m, Object[] params) {
+		this.context.handler.post(new PacketMethodInvoker(m, params));
+	}
+	
+	public class PacketMethodInvoker implements Runnable {
+		private Method method = null;
+		private Object[] params = null;
+		public PacketMethodInvoker(Method method, Object[] params) {
+			this.method = method;
+			this.params = params;
+		}
+		@Override
+		public void run() {
+			AndroidXpraClient.this.doInvokePacketMethod(this.method, this.params);
+		}
+	}
+
 
 	@Override
 	public int getScreenWidth() {

@@ -152,8 +152,8 @@ public abstract class AbstractClient implements Runnable, Client {
 				while (bytes > 0) {
 					if (headerSize < 16) {
 						assert packetSize < 0;
-						int missHeader = 16 - headerSize; // how much we need
-															// for a full header
+						// how much we need for a full header:
+						int missHeader = 16 - headerSize;
 						if (bytes < missHeader) {
 							// copy what we have to the header:
 							for (int i = 0; i < bytes; i++)
@@ -189,15 +189,10 @@ public abstract class AbstractClient implements Runnable, Client {
 					if (readBuffer == null)
 						readBuffer = new ByteArrayOutputStream(packetSize);
 
-					int missBuffer = packetSize - readBuffer.size(); // how much
-																		// we
-																		// need
-																		// for a
-																		// full
-																		// packet
+					// how much we need for a full packet:
+					int missBuffer = packetSize - readBuffer.size();
 					if (bytes < missBuffer) {
-						// not enough bytes for the full packet, just append
-						// them:
+						// not enough bytes for a full packet, just append them:
 						readBuffer.write(buffer, pos, bytes);
 						this.debug("run() added " + bytes + " bytes starting at " + pos + " to read buffer, now continuing");
 						break;
@@ -290,30 +285,37 @@ public abstract class AbstractClient implements Runnable, Client {
 		}
 		Class<?>[] paramTypes = m.getParameterTypes();
 		assert dp.size() == (paramTypes.length + 1);
-		// log("packetReceived(..) calling "+m+"("+paramTypes+")");
 		Object[] params = new Object[paramTypes.length];
-		Object[] infoParams = new String[paramTypes.length];
 		int index = 0;
 		for (Class<?> paramType : paramTypes) {
 			assert paramType != null;
 			Object v = dp.get(1 + index);
 			params[index] = this.cast(v, paramType);
-			infoParams[index] = dump(v);
 			index++;
 		}
-		this.log("processPacket(..) calling " + m + "(" + Arrays.asList(infoParams) + ")");
+		this.invokePacketMethod(m, params);
+	}
+	
+	public void invokePacketMethod(Method m, Object[] params) {
+		this.doInvokePacketMethod(m, params);
+	}
+	
+	public void doInvokePacketMethod(Method m, Object[] params) {
+		this.debug("doInvokePacketMethod(" + m + ", " + params.length + " arguments )");
 		try {
 			synchronized (this.getLock()) {
 				m.invoke(this, params);
 			}
 		} catch (Exception e) {
-			log("processPacket(" + dp.size() + ") error calling " + m + "(" + Arrays.asList(infoParams) + ")" + e);
+			Class<?>[] paramTypes = m.getParameterTypes();
+			String[] infoParams = new String[paramTypes.length];
+			for (int i=0; i<params.length; i++)
+				infoParams[i] = this.dump(params[i]);
+			this.error("doInvokePacketMethod(" + m + ", " + Arrays.asList(infoParams) + ")", e);
 			Class<?>[] actualParamTypes = new Class<?>[params.length];
-			index = 0;
-			for (Object v : params)
-				actualParamTypes[index++] = (v == null) ? null : v.getClass();
-			log("processPacket(" + dp.size() + ") parameter types: " + Arrays.asList(actualParamTypes));
-			e.printStackTrace(System.out);
+			for (int i=0; i<params.length; i++)
+				actualParamTypes[i] = (params[i] == null) ? null : params[i].getClass();
+			this.log("doInvokePacketMethod(" + m + ", " + params.length + " arguments ) actual parameter types: " + Arrays.asList(actualParamTypes));
 		}
 	}
 
@@ -509,10 +511,10 @@ public abstract class AbstractClient implements Runnable, Client {
 			return;
 		}
 		@SuppressWarnings("unchecked")
-		Vector<Object> desktop_size = (Vector<Object>) capabilities.get("desktop_size");
+		List<Object> desktop_size = (List<Object>) capabilities.get("desktop_size");
 		if (desktop_size != null) {
-			Integer avail_w = (Integer) desktop_size.get(0);
-			Integer avail_h = (Integer) desktop_size.get(1);
+			Integer avail_w = this.cast(desktop_size.get(0), Integer.class);
+			Integer avail_h = this.cast(desktop_size.get(1), Integer.class);
 			if (avail_w < this.getScreenWidth() || avail_h < this.getScreenHeight()) {
 				this.warnUser("The server's virtual screen is too small! You may see strange behaviour");
 			} else if (avail_w > (this.getScreenWidth() * 12 / 10) || (avail_h > (this.getScreenHeight() * 12 / 10))) {
@@ -534,9 +536,11 @@ public abstract class AbstractClient implements Runnable, Client {
 		this.process_new_common(id, x, y, w, h, metadata, true);
 	}
 
-	protected void process_draw(int id, int x, int y, int w, int h, String coding, byte[] data) {
+	protected void process_draw(int id, int x, int y, int w, int h, String coding, byte[] data, int packet_sequence, int rowstride) {
 		ClientWindow window = this.id_to_window.get(id);
 		window.draw(x, y, w, h, coding, data);
+        if (packet_sequence>0)
+            this.send("damage-sequence", packet_sequence);
 	}
 
 	protected void process_window_metadata(int id, Map<String, Object> metadata) {
@@ -561,9 +565,10 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	protected abstract void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name);
 
-	protected abstract void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout);
+	protected abstract void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body,
+			int expire_timeout);
 
-	protected abstract  void process_notify_close(int nid);
+	protected abstract void process_notify_close(int nid);
 
 	protected void send_ping() {
 		this.send("ping", System.currentTimeMillis());
