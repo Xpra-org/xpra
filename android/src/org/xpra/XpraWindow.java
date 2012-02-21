@@ -61,6 +61,12 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	protected boolean override_redirect = false;
 
 	public final String TAG = this.getClass().getSimpleName();
+	public static boolean DEBUG = false;
+
+	protected void debug(String msg) {
+		if (DEBUG)
+			Log.i(this.TAG, msg);
+	}
 
 	protected void log(String msg) {
 		Log.i(this.TAG, msg);
@@ -310,7 +316,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-		this.log("onTouchEvent(" + ev + ")");
+		this.debug("onTouchEvent(" + ev + ")");
 		final int action = ev.getAction();
 		if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
 			DragLayer mDragLayer = this.client.context.mDragLayer;

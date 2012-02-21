@@ -9,6 +9,7 @@ import java.util.Map;
 
 import xpra.AbstractClient;
 import xpra.ClientWindow;
+import android.util.Log;
 import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -17,11 +18,29 @@ import android.view.View;
 
 public class AndroidXpraClient extends AbstractClient {
 
+	public final String TAG = this.getClass().getSimpleName();
+
 	protected XpraActivity context = null;
 	protected LayoutInflater inflater = null;
 	protected KeyCharacterMap keyCharacterMap = null;
 	protected int keymapId = -1;
 
+	@Override
+	public void debug(String str) {
+		if (DEBUG)
+			Log.d(this.TAG, str);
+	}
+
+	@Override
+	public void log(String str) {
+		Log.i(this.TAG, str);
+	}
+
+	@Override
+	public void error(String str, Throwable t) {
+		Log.e(this.TAG, str, t);
+	}
+	
 	public AndroidXpraClient(XpraActivity context, InputStream is, OutputStream os) {
 		super(is, os);
 		this.context = context;
@@ -108,7 +127,7 @@ public class AndroidXpraClient extends AbstractClient {
 	}
 
 	public void sendKeyAction(int wid, View v, int keyCode, KeyEvent event) {
-		this.log("sendKeyAction(" + wid + ", " + v + ", " + keyCode + ", " + event + ")");
+		this.debug("sendKeyAction(" + wid + ", " + v + ", " + keyCode + ", " + event + ")");
 		if (this.keymapId != event.getDeviceId()) {
 			this.log("sendKeyAction(" + wid + ", " + v + ", " + keyCode + ", " + event + ") keymap has changed - updating server");
 			this.loadCharacterMap(event.getDeviceId());
@@ -116,10 +135,10 @@ public class AndroidXpraClient extends AbstractClient {
 		}
 		List<String> modifiers = this.getModifiers(event);
 		int keyval = event.getScanCode();
-		char c = this.keyCharacterMap.getDisplayLabel(keyCode);
-		String keyname = "" + c;
-		this.log("sendKeyAction(" + wid + ", " + v + ", " + keyCode + ", " + event + ") keyname=" + keyname);
-		this.send("key-action", wid, keyname, event.getAction() == KeyEvent.ACTION_DOWN, modifiers, keyval, "", event.getKeyCode());
+		String keyname = AndroidKeyboardUtil.keyCodeName(keyCode);
+		String x11Keyname = AndroidKeyboardUtil.x11KeyName(keyname);
+		this.log("sendKeyAction(" + wid + ", " + v + ", " + keyCode + ", " + event + ") android keyname=" + keyname+", x11Keyname="+x11Keyname);
+		this.send("key-action", wid, x11Keyname, event.getAction() == KeyEvent.ACTION_DOWN, modifiers, keyval, "", event.getKeyCode());
 	}
 
 	@Override
