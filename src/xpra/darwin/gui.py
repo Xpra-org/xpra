@@ -73,10 +73,10 @@ class ClientExtras(ClientExtrasBase):
             self.macapp.set_menu_bar(self.menu_bar)
             self.quit_menu_item.hide()
 
-            pos = 0
+            self._menu_item_pos = 0
             def add_item(item):
-                self.macapp.insert_app_menu_item(item, pos)
-                pos += 1
+                self.macapp.insert_app_menu_item(item, self._menu_item_pos)
+                self._menu_item_pos += 1
             add_item(self.make_aboutmenuitem())
             add_item(self.make_sessioninfomenuitem())
             add_item(self.make_bellmenuitem())
