@@ -22,10 +22,10 @@ package org.xpra.draggable;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Toast;
 
 /**
  * A ViewGroup that coordinates dragging across its dscendants.
@@ -37,6 +37,8 @@ import android.widget.Toast;
  * were done in a separate Workspace class in the Launcher.
  */
 public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarget {
+
+	protected String TAG = this.getClass().getSimpleName();
 
 	DragController mDragController;
 
@@ -84,7 +86,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	 */
 	@Override
 	public void onDropCompleted(View target, boolean success) {
-		toast("DragLayer2.onDropCompleted: " + target.getId() + " Check that the view moved.");
+		Log.d(this.TAG, "onDropCompleted(" + target.getId() + ", "+success+") check that the view moved.");
 	}
 
 	// DropTarget interface implementation
@@ -113,7 +115,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	@Override
 	public void onDrop(DragSource source, int x, int y, int xOffset, int yOffset, DragView dragView, Object dragInfo) {
 		View v = (View) dragInfo;
-		toast("DragLayer2.onDrop accepts view: " + v.getId() + "x, y, xO, yO :" + x + ", " + y + ", " + xOffset + ", " + yOffset);
+		Log.d(this.TAG, "onDrop(..) accepts view: " + v.getId() + "x, y, xO, yO :" + x + ", " + y + ", " + xOffset + ", " + yOffset);
 		int w = v.getWidth();
 		int h = v.getHeight();
 		int left = x - xOffset;
@@ -195,21 +197,4 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	public Rect estimateDropLocation(DragSource source, int x, int y, int xOffset, int yOffset, DragView dragView, Object dragInfo, Rect recycle) {
 		return null;
 	}
-
-	// More methods
-
-	/**
-	 * Show a string on the screen via Toast.
-	 * 
-	 * @param msg
-	 *            String
-	 * @return void
-	 */
-
-	public void toast(String msg) {
-		if (!DragActivity.Debugging)
-			return;
-		Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-	} // end toast
-
-} // end class
+}

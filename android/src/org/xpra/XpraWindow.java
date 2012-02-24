@@ -456,7 +456,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 
 	@Override
 	public void draw(final int _x, final int _y, final int width, final int height, String coding, byte[] img_data) {
-		this.log("draw(" + _x + ", " + _y + ", " + width + ", " + height + ", " + coding + ", " + img_data.length + "bytes )");
+		this.log("draw(" + _x + ", " + _y + ", " + width + ", " + height + ", " + coding + ", [" + img_data.length + " bytes])");
 		Bitmap bitmap = null;
 		byte[] data = img_data;
 		int l = img_data.length;
