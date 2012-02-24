@@ -181,7 +181,7 @@ class Protocol(object):
         self._write_lock.acquire()
         try:
             try:
-                if l<=1024:
+                if l<=8192:
                     #send size and data together (low copy overhead):
                     self._queue_write("PS%014d%s" % (l, data), True)
                     return
