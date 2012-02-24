@@ -12,6 +12,7 @@ import java.util.WeakHashMap;
 import xpra.AbstractClient;
 import xpra.ClientWindow;
 import android.content.Context;
+import android.graphics.Rect;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
@@ -19,6 +20,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.widget.Toast;
 
 public class AndroidXpraClient extends AbstractClient {
@@ -32,6 +34,7 @@ public class AndroidXpraClient extends AbstractClient {
 	protected int keymapId = -1;
 	protected int currentScreenWidth = -1;
 	protected int currentScreenHeight = -1;
+	protected int statusBarHeight = 0;
 
 	@Override
 	public void debug(String str) {
@@ -98,20 +101,30 @@ public class AndroidXpraClient extends AbstractClient {
 	@Override
 	public int getScreenHeight() {
 		Display display = this.context.getWindowManager().getDefaultDisplay();
-		return display.getHeight();
+		return display.getHeight()-this.statusBarHeight;
 	}
 
 	@Override
 	public void run(String[] args) {
-		new Thread(this).start();
+		//first we calculate the statusBarHeight
+		//because we need it first thing in the thread's run() method
+		//for sending the real (usable) screen dimensions,
+		//see getScreenHeight above
+		this.context.mDragLayer.post(new Runnable() {
+	        @Override
+	        public void run() {
+	            Rect rect = new Rect();
+	            AndroidXpraClient client = AndroidXpraClient.this;
+	            Window window = client.context.getWindow();
+	            window.getDecorView().getWindowVisibleDisplayFrame(rect);
+	            client.statusBarHeight = rect.top;
+	            client.log("run() rect="+rect+", statusBarHeight="+AndroidXpraClient.this.statusBarHeight);
+	        	new Thread(client).start();
+	        }
+	    });
 	}
 
-	@Override
-	public void cleanup() {
-		super.cleanup();
-		//
-	}
-
+	
 	@Override
 	public Object getLock() {
 		return this;

@@ -108,8 +108,6 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 				XpraActivity.this.mDragLayer.invalidate();
 			}
 		});
-		// Toast.makeText(getApplicationContext(),
-		// "Press and hold to drag a view", Toast.LENGTH_LONG).show();
 	}
 
 	@Override
@@ -176,7 +174,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 					});
 				}
 			});
-			new Thread(this.client).start();
+			this.client.run(new String[0]);
 		} catch (IOException e) {
 			Log.e(this.TAG, "connect()", e);
 			this.finish();
