@@ -153,10 +153,6 @@ public class AndroidXpraClient extends AbstractClient {
 	public void add_keymap_props(Map<String, Object> props) {
 		props.put("modifiers", new String[0]);
 		props.put("xkbmap_keycodes", AndroidKeyboardUtil.getAllKeycodes());
-		// ["xkbmap_print", "xkbmap_query", "xmodmap_data",
-		// "xkbmap_mod_clear", "xkbmap_mod_add", "xkbmap_mod_meanings",
-		// "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
-		// "xkbmap_keycodes"]:
 	}
 
 	public List<String> getModifiers(KeyEvent event) {

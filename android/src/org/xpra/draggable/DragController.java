@@ -279,7 +279,7 @@ public class DragController {
 	 * </pre>
 	 */
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		Log.i(TAG, "dispatchKeyEvent(" + event + ") mDragging=" + this.mDragging);
+		Log.d(TAG, "dispatchKeyEvent(" + event + ") mDragging=" + this.mDragging);
 		return this.mDragging;
 	}
 
