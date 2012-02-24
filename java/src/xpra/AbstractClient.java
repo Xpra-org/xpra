@@ -326,7 +326,7 @@ public abstract class AbstractClient implements Runnable, Client {
 		Class<?> t = in.getClass();
 		if (t.equals(desiredType) || desiredType.isAssignableFrom(t))
 			return (T) in;
-		if (desiredType.equals(int.class) && t.equals(BigInteger.class))
+		if ((desiredType.equals(int.class) || desiredType.equals(Integer.class)) && t.equals(BigInteger.class))
 			return (T) new Integer(((BigInteger) in).intValue());
 		if (desiredType.equals(String.class) && t.isArray() && t.getComponentType().equals(byte.class))
 			try {
@@ -342,12 +342,12 @@ public abstract class AbstractClient implements Runnable, Client {
 	}
 
 	@Override
-	public void update_focus(int id, boolean gotit) {
-		if (gotit && this.focused != id) {
+	public void update_focus(int id, boolean gotit, boolean forceit) {
+		if (gotit && (forceit || this.focused != id)) {
 			this.send("focus", id);
 			this.focused = id;
 		}
-		if (!gotit && this.focused == id) {
+		if (!gotit && (forceit || this.focused == id)) {
 			this.send("focus", 0);
 			this.focused = -1;
 		}

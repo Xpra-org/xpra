@@ -8,5 +8,5 @@ public interface Client {
 
 	public void send_mouse_position(String type, Object... data);
 
-	public void update_focus(int id, boolean gotit);
+	public void update_focus(int id, boolean gotit, boolean forceit);
 }

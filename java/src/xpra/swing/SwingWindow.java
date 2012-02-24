@@ -557,7 +557,7 @@ public class SwingWindow extends JFrame implements ClientWindow {
 
 	public void do_focus_event(boolean in) {
 		this.log("focus");
-		this.client.update_focus(this.id, in);
+		this.client.update_focus(this.id, in, false);
 	}
 
 	@Override

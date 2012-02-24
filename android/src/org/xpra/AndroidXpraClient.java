@@ -208,7 +208,7 @@ public class AndroidXpraClient extends AbstractClient {
 	}
 
 	@Override
-	protected void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
+	public void process_bell(int wid, int device, int percent, int pitch, int duration, String bell_class, int bell_id, String bell_name) {
 		Vibrator v = (Vibrator) this.context.getSystemService(Context.VIBRATOR_SERVICE);
 		int d = Math.min(5000, Math.max(100, duration));
 		this.log("process_bell(" + wid + ", " + device + ", " + percent + ", " + pitch + ", " + duration + ", " + bell_class + ", " + bell_id + ", "
@@ -217,7 +217,7 @@ public class AndroidXpraClient extends AbstractClient {
 	}
 
 	@Override
-	protected void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
+	public void process_notify_show(int dbus_id, int nid, String app_name, int replaced_id, String app_icon, String summary, String body, int expire_timeout) {
 		this.log("process_notify_show(" + dbus_id + ", " + nid + ", " + app_name + ", " + replaced_id + ", " + app_icon + ", " + summary + ", " + body + ", "
 				+ expire_timeout + ")");
 		String text = summary;
@@ -229,7 +229,7 @@ public class AndroidXpraClient extends AbstractClient {
 	}
 
 	@Override
-	protected void process_notify_close(int nid) {
+	public void process_notify_close(int nid) {
 		Toast toast = this.toasts.get(nid);
 		if (toast!=null)
 			toast.cancel();
