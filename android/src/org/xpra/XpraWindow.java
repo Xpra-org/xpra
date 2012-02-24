@@ -230,16 +230,16 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	public void maximize() {
 		log("maximize()");
 		if (this.maximized) {
-			this.maximized = false;
 			this.setLayoutParams(this.unMaximizedLayoutParams);
+			this.maximized = false;
 		} else {
-			this.maximized = true;
 			this.unMaximizedLayoutParams = this.layoutParams;
 			int x = 0;
 			int y = 0;
 			int w = this.client.getScreenWidth();
 			int h = this.client.getScreenHeight()-this.notificationHeight;
 			this.setLayoutParams(new AbsoluteLayoutParams(w, h, x, y));
+			this.maximized = true;
 		}
 		int w = this.layoutParams.width;
 		int h = this.layoutParams.height;
