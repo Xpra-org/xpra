@@ -19,8 +19,8 @@ We register this class as handling notifications on the session dbus,
 optionally replacing an existing instance if one exists.
 
 The generalized callback signatures are:
- notify_callback(dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
- close_callback(id)
+ notify_callback(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+ close_callback(nid)
 """
 class DBUSNotificationsForwarder(dbus.service.Object):
 
@@ -35,17 +35,17 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, BUS_PATH)
  
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
-    def Notify(self, app_name, replaces_id, app_icon, summary, body, actions, hints, expire_timeout):
-        log("Notify(%s,%s,%s,%s,%s,%s,%s,%s)" % (app_name, replaces_id, app_icon, summary, body, actions, hints, expire_timeout))
-        if replaces_id==0:
+    def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+        log("Notify(%s,%s,%s,%s,%s,%s,%s,%s)" % (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))
+        if replaces_nid==0:
             self.counter += 1
-            id = self.counter
+            nid = self.counter
         else:
-            id = replaces_id
+            nid = replaces_nid
         if self.notify_callback:
-            self.notify_callback(self.dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout)
-        log("Notify returning %s", id)
-        return id
+            self.notify_callback(self.dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+        log("Notify returning %s", nid)
+        return nid
 
     @dbus.service.method(BUS_NAME, out_signature='ssss')
     def GetServerInformation(self):
@@ -59,10 +59,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return DBUSNotificationsForwarder.CAPABILITIES
 
     @dbus.service.method(BUS_NAME, in_signature='u')
-    def CloseNotification(self, id):
-        log("CloseNotification(%s)", id)
+    def CloseNotification(self, nid):
+        log("CloseNotification(%s)", nid)
         if self.close_callback:
-            self.close_callback(id)
+            self.close_callback(nid)
 
 def register(notify_callback=None, close_callback=None, replace=False):
     DBusGMainLoop(set_as_default=True)
