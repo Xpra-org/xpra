@@ -631,7 +631,8 @@ class XpraClient(XpraClientBase):
         keyval = nn(event.keyval)
         keycode = event.hardware_keycode
         group = event.group
-        is_modifier = event.is_modifier
+        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
+        is_modifier = event.hasattr("is_modifier") and event.is_modifier
         translated = self._client_extras.translate_key(depressed, keyval, name, keycode, group, is_modifier, modifiers)
         if translated is None:
             return
