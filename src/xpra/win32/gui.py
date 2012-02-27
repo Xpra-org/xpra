@@ -7,8 +7,8 @@
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
 import os.path
-from collections import deque
 
+from xpra.deque import maxdeque
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
 from xpra.platform.default_clipboard import ClipboardProtocolHelper
 from xpra.keys import get_gtk_keymap
@@ -22,7 +22,7 @@ class ClientExtras(ClientExtrasBase):
         self.setup_menu()
         self.setup_tray(opts.tray_icon)
         self.setup_clipboard_helper(ClipboardProtocolHelper)
-        self._last_key_events = deque(maxlen=5)
+        self._last_key_events = maxdeque(maxlen=5)
         self._dropped_num_lock_press = False
 
     def exit(self):

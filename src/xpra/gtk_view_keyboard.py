@@ -8,7 +8,8 @@ pygtk.require('2.0')
 import gtk
 import pango
 import gobject
-from collections import deque
+
+from xpra.deque import maxdeque
 
 
 modifier_names = {
@@ -62,7 +63,7 @@ class KeyboardStateInfoWindow:
 		self.window.show_all()
 		gobject.timeout_add(100, self.populate_modifiers)
 
-		self.key_events = deque(maxlen=35)
+		self.key_events = maxdeque(maxlen=35)
 		self.window.connect("key-press-event", self.key_press)
 		self.window.connect("key-release-event", self.key_release)
 		self.window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))

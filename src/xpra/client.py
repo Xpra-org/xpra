@@ -11,7 +11,6 @@ import cairo
 import re
 import os
 import time
-from collections import deque
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -20,6 +19,7 @@ from wimpiggy.util import (n_arg_signal,
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
@@ -411,10 +411,10 @@ class XpraClient(XpraClientBase):
         self.server_actual_desktop_size = None
         self.server_desktop_size = None
         self.server_randr = False
-        self.pixel_counter = deque(maxlen=100)
-        self.server_latency = deque(maxlen=100)
+        self.pixel_counter = maxdeque(maxlen=100)
+        self.server_latency = maxdeque(maxlen=100)
         self.server_load = None
-        self.client_latency = deque(maxlen=100)
+        self.client_latency = maxdeque(maxlen=100)
         self.toggle_cursors_bell_notify = False
         self.bell_enabled = True
         self.cursors_enabled = True

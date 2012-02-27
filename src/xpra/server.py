@@ -20,7 +20,6 @@ import hmac
 import uuid
 import StringIO
 import os
-from collections import deque
 import time
 import ctypes
 from threading import Thread
@@ -59,6 +58,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
+from xpra.deque import maxdeque
 from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
@@ -293,7 +293,7 @@ class ServerSource(object):
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(wid, deque(maxlen=self.batch.max_events))
+        last_events = self._damage_last_events.setdefault(wid, maxdeque(maxlen=self.batch.max_events))
         last_events.append((now, w*h))
 
         if options and options.get("batching", True) is False:
@@ -707,7 +707,7 @@ class XpraServer(gobject.GObject):
             self.add_listen_socket(sock)
 
     def reset_statistics(self):
-        self.client_latency = deque(maxlen=100)
+        self.client_latency = maxdeque(maxlen=100)
         self.client_load = None
         self.server_latency = -1
 
