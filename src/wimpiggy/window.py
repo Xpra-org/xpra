@@ -17,7 +17,6 @@ else:
     ImmutableSet = frozenset
 import gobject
 import gtk.gdk
-assert gtk.pygtk_version>=(2,17), "your version of PyGTK is too old"
 import cairo
 import math
 import os
@@ -51,6 +50,10 @@ from wimpiggy.composite import CompositeHelper
 
 from wimpiggy.log import Logger
 log = Logger()
+
+if gtk.pygtk_version<(2,17):
+    log.error("your version of PyGTK is too old - expect some bugs")
+
 
 # Todo:
 #   client focus hints
