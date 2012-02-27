@@ -1122,14 +1122,6 @@ def unmap_with_serial(pywindow):
     return serial
 
 ###################################
-# XMapWindow
-###################################
-
-# This is provided solely as a way to work around GTK+ bug #526635
-def show_unraised_without_extra_stupid_stuff(pywindow):
-    XMapWindow(get_xdisplay_for(pywindow), get_xwindow(pywindow))
-
-###################################
 # XTest
 ###################################
 

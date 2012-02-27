@@ -198,14 +198,6 @@ class TestLowlevelMisc(TestLowlevel):
         gtk.gdk.flush()
         assert l.is_mapped(win)
 
-    def test_show_unraised_without_extra_stupid_stuff(self):
-        win = self.window()
-        gtk.gdk.flush()
-        assert not l.is_mapped(win)
-        l.show_unraised_without_extra_stupid_stuff(win)
-        gtk.gdk.flush()
-        assert l.is_mapped(win)
-
     def test_is_override_redirect(self):
         win = self.window()
         gtk.gdk.flush()

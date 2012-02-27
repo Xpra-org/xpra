@@ -17,6 +17,7 @@ else:
     ImmutableSet = frozenset
 import gobject
 import gtk.gdk
+assert gtk.pygtk_version>=(2,17), "your version of PyGTK is too old"
 import cairo
 import math
 import os
@@ -29,7 +30,6 @@ from wimpiggy.lowlevel import (
                geometry_with_border,                        #@UnresolvedImport
                calc_constrained_size,                       #@UnresolvedImport
                is_mapped,                                   #@UnresolvedImport
-               show_unraised_without_extra_stupid_stuff,    #@UnresolvedImport
                unmap_with_serial,                           #@UnresolvedImport
                XDeleteProperty,                             #@UnresolvedImport
                XAddToSaveSet,                               #@UnresolvedImport
@@ -509,8 +509,7 @@ class WindowModel(BaseWindowModel):
             self.client_window.reparent(self.corral_window, 0, 0)
             client_size = self.client_window.get_geometry()[2:4]
             self.corral_window.resize(*client_size)
-            # We CANNOT use .show_unraised here, because of GTK+ bug #526635:
-            show_unraised_without_extra_stupid_stuff(self.client_window)
+            self.client_window.show_unraised()
         try:
             trap.call(setup_client)
         except XError, e:
@@ -590,9 +589,7 @@ class WindowModel(BaseWindowModel):
             XRemoveFromSaveSet(self.client_window)
             sendConfigureNotify(self.client_window)
             if exiting:
-                # We CANNOT use .show_unraised here, because of GTK+ bug
-                # #526635:
-                show_unraised_without_extra_stupid_stuff(self.client_window)
+                self.client_window.show_unraised()
         trap.swallow(unmanageit)
         self.corral_window.destroy()
         BaseWindowModel.do_unmanaged(self, exiting)
