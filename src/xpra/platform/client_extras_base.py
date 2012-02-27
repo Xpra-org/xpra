@@ -94,7 +94,7 @@ def CheckMenuItem(label):
         def get_label():
             return  label
         cmi.get_label = get_label
-    
+    return cmi
 
 class ClientExtrasBase(object):
 
