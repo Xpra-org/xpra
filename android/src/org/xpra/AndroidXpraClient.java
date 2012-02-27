@@ -215,13 +215,10 @@ public class AndroidXpraClient extends AbstractClient {
 
 	@Override
 	protected ClientWindow createWindow(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
-		// XpraWindow window = new XpraWindow(this.context, this, id, x, y, w,
-		// h, metadata, override_redirect);
 		XpraWindow window = (XpraWindow) this.inflater.inflate(R.layout.xpra_window, null); // this.context.mDragLayer);
 		window.init(this.context, this, id, x, y, w, h, metadata, override_redirect);
 		this.log("createWindow(" + id + ", " + x + ", " + y + ", " + w + ", " + h + ", " + metadata + ", " + override_redirect + ")=" + window);
 		this.context.add(window);
-		// this.context.mDragLayer.addView(window);
 		return window;
 	}
 

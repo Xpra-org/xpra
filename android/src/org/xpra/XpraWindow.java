@@ -118,15 +118,13 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		//And any changes to xpra_window.xml will need to be duplicated here.
 		Resources r = getResources();
 		this.topBarHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, r.getDisplayMetrics());
+		if (this.override_redirect)
+			this.topBarHeight = 0;
 		int wx = x;						//no window border
-		int wy = y;						//no window border
-		if (!this.override_redirect)
-			wy -= this.topBarHeight;	//account for top bar
+		int wy = y-this.topBarHeight;	//no window border
 		//Calculate window dimensions so that the imageView is exactly w,h in size:
 		int ww = w;						//no window borders
-		int wh = h;						//no window borders
-		if (!this.override_redirect)
-			wh += this.topBarHeight;
+		int wh = h+this.topBarHeight;	//no window borders
 		//ensure the window location is within the screen:
 		int min_margin = 32;
 		if (wx >= (this.client.getScreenWidth() - min_margin))
@@ -185,13 +183,9 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			return;
 		//report the location of the imageView (not the XpraWindow):
 		int x = this.layoutParams.x;
-		int y = this.layoutParams.y;
+		int y = this.layoutParams.y+this.topBarHeight;
 		int w = this.layoutParams.width;
-		int h = this.layoutParams.height;
-		if (!this.override_redirect) {
-			y += this.topBarHeight;
-			h -= this.topBarHeight;
-		}
+		int h = this.layoutParams.height-this.topBarHeight;
 		this.client.send("map-window", this.id, x, y, w, h);
 	}
 
@@ -242,9 +236,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			this.maximized = true;
 		}
 		int w = this.layoutParams.width;
-		int h = this.layoutParams.height;
-		if (!this.override_redirect)
-			h -= this.topBarHeight;
+		int h = this.layoutParams.height-this.topBarHeight;
 		this.new_backing(w, h);
 		this.send_resize();
 	}
@@ -266,9 +258,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		if (!this.mapped)
 			return;
 		int x = this.layoutParams.x;
-		int y = this.layoutParams.y;
-		if (!this.override_redirect)
-			y += this.topBarHeight;
+		int y = this.layoutParams.y+this.topBarHeight;
 		this.maximized = false;
 		this.client.send("move-window", this.id, x, y);
 	}
@@ -277,9 +267,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		if (!this.mapped)
 			return;
 		int w = this.layoutParams.width;
-		int h = this.layoutParams.height;
-		if (!this.override_redirect)
-			h -= this.topBarHeight;
+		int h = this.layoutParams.height-this.topBarHeight;
 		this.client.send("resize-window", this.id, w, h);
 	}
 
@@ -397,7 +385,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		super.onDraw(canvas);
 	}
 
-	public void new_backing(int _w, int _h) {
+	public synchronized void new_backing(int _w, int _h) {
 		if (this.backing != null) {
 			Bitmap old = this.backing;
 			if (old.getWidth() >= _w && old.getHeight() >= _h) {
@@ -463,19 +451,22 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		try {
 			bitmap = BitmapFactory.decodeByteArray(data, 0, l);
 			// this.log("draw(...) bitmap=" + bitmap);
-			synchronized (this.backing) {
-				Canvas canvas = new Canvas(this.backing);
-				canvas.drawBitmap(bitmap, null, new Rect(_x, _y, _x + width, _y + height), null);
-				bitmap.recycle();
-				bitmap = null;
-				canvas = null;
-			}
-			this.handler.post(new Runnable() {
-				@Override
-				public void run() {
-					XpraWindow.this.imageView.invalidate(_x, _y, _x + width, _y + height);
+			synchronized (this) {
+				if (this.backing!=null) {
+					Canvas canvas = new Canvas(this.backing);
+					canvas.drawBitmap(bitmap, null, new Rect(_x, _y, _x + width, _y + height), null);
+					bitmap.recycle();
+					bitmap = null;
+					canvas = null;
+					this.handler.post(new Runnable() {
+						@Override
+						public void run() {
+							if (XpraWindow.this.backing!=null)
+								XpraWindow.this.imageView.invalidate(_x, _y, _x + width, _y + height);
+						}
+					});
 				}
-			});
+			}
 			System.gc();
 		} catch (Exception e) {
 			this.error("draw(" + _x + ", " + _y + ", " + width + ", " + height + ", " + coding + ", " + img_data + ")", e);
@@ -485,18 +476,10 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	@Override
 	public void move_resize(int _x, int _y, int _w, int _h) {
 		this.log("move_resize(" + _x + ", " + _y + ", " + _w + ", " + _h + ")");
-		int wx = _x;
-		int wy = _y;
-		int ww = _w;
-		int wh = _h;
-		if (!this.override_redirect) {
-			wy -= this.topBarHeight;
-			wh += this.topBarHeight;
-		}
-		this.layoutParams.x = wx;
-		this.layoutParams.y = wy;
-		this.layoutParams.width = ww;
-		this.layoutParams.height = wh;
+		this.layoutParams.x = _x;
+		this.layoutParams.y = _y-this.topBarHeight;
+		this.layoutParams.width = _w;
+		this.layoutParams.height = _h+this.topBarHeight;
 		this.new_backing(_w, _h);
 		this.activity.mDragLayer.updateViewLayout(this, this.layoutParams);
 	}
@@ -504,10 +487,16 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	@Override
 	public void destroy() {
 		this.log("destroy()");
+		this.client.context.remove(this);
 		if (this.backing != null) {
-			this.client.context.remove(this);
-			this.backing.recycle();
-			this.backing = null;
+			this.handler.post(new Runnable() {
+				@Override
+				public void run() {
+					XpraWindow.this.imageView.setImageDrawable(null);
+					XpraWindow.this.backing.recycle();
+					XpraWindow.this.backing = null;
+				}
+			});
 		}
 	}
 

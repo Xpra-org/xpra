@@ -309,7 +309,7 @@ class ServerSource(object):
 
         def update_batch_delay(reason, factor=1, delta=0):
             self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
-            log.info("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
+            log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
 
         last_delta = self.last_client_delta
         delta = self._damage_packet_sequence-self.last_client_packet_sequence
