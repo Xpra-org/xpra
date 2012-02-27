@@ -79,6 +79,12 @@ def set_checkeditems(submenu, is_match_func):
             if a!=v:
                 x.set_active(v)
 
+def set_tooltip_text(widget, text):
+    if gtk.pygtk_version<(2,12):
+        #not available!
+        return
+    widget.set_tooltip_text(text)
+
 class ClientExtrasBase(object):
 
     def __init__(self, client, opts):
@@ -489,7 +495,7 @@ class ClientExtrasBase(object):
             if hasattr(settings, "set_always_show_image"):
                 settings.set_always_show_image(True)
         if tooltip:
-            menu_item.set_tooltip_text(tooltip)
+            set_tooltip_text(menu_item, tooltip)
         if cb:
             menu_item.connect('activate', cb)
         menu_item.show()
@@ -535,7 +541,7 @@ class ClientExtrasBase(object):
             self.client.send_bell_enabled()
             log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
-        self.bell_menuitem.set_tooltip_text("Forward system bell")
+        set_tooltip_text(self.bell_menuitem, "Forward system bell")
         self.bell_menuitem.set_active(self.client.bell_enabled)
         return  self.bell_menuitem
 
@@ -545,7 +551,7 @@ class ClientExtrasBase(object):
             self.client.send_cursors_enabled()
             log.debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
-        self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
+        set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
         self.cursors_menuitem.set_active(self.client.cursors_enabled)
         return  self.cursors_menuitem
 
@@ -560,10 +566,10 @@ class ClientExtrasBase(object):
             can_notify = self.client.server_capabilities.get("notifications", False)
             self.notifications_menuitem.set_sensitive(can_notify)
             if can_notify:
-                self.notifications_menuitem.set_tooltip_text("Forward system notifications")
+                set_tooltip_text(self.notifications_menuitem, "Forward system notifications")
             else:
-                self.notifications_menuitem.set_tooltip_text("Cannot forward system notifications: disabled by server")
-            self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
+                set_tooltip_text(self.notifications_menuitem, "Cannot forward system notifications: disabled by server")
+            set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
@@ -578,9 +584,9 @@ class ClientExtrasBase(object):
             can_clip = self.client.server_capabilities.get("clipboard", False)
             self.clipboard_menuitem.set_sensitive(can_clip)
             if can_clip:
-                self.clipboard_menuitem.set_tooltip_text("Enable clipboard synchronization")
+                set_tooltip_text(self.clipboard_menuitem, "Enable clipboard synchronization")
             else:
-                self.clipboard_menuitem.set_tooltip_text("Clipboard synchronization cannot be enabled: disabled by server")
+                set_tooltip_text(self.clipboard_menuitem, "Clipboard synchronization cannot be enabled: disabled by server")
         self.client.connect("handshake-complete", set_clipboard_menuitem)
         return self.clipboard_menuitem
 
@@ -593,7 +599,7 @@ class ClientExtrasBase(object):
             if self.client.mmap_enabled:
                 #mmap disables encoding and uses raw rgb24
                 encodings.set_label("Encoding")
-                encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
+                set_tooltip_text(encodings, "memory mapped transfers are in use so picture encoding is disabled")
                 encodings.set_sensitive(False)
             for encoding in ENCODINGS:
                 encoding_item = gtk.CheckMenuItem(encoding)
