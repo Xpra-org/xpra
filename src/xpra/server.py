@@ -436,7 +436,7 @@ class ServerSource(object):
                     self._damage_packet_queue.put(packet)
                     self._protocol.source_has_more()
             except Exception, e:
-                log.error("error processing damage data: %s", e)
+                log.error("error processing damage data: %s", e, exc_info=True)
 
     def make_data_packet(self, item):
         wid, x, y, w, h, coding, data, rowstride, sequence, options = item
@@ -576,8 +576,11 @@ class XpraServer(gobject.GObject):
         assert self.encoding in ENCODINGS
         self.png_window_icons = False
         self.session_name = opts.session_name
-        import glib
-        glib.set_application_name(self.session_name or "Xpra")
+        try:
+            import glib
+            glib.set_application_name(self.session_name or "Xpra")
+        except ImportError, e:
+            log.error("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
         ### Create the WM object
         self._wm = Wm("Xpra", clobber)

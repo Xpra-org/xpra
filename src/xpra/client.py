@@ -844,8 +844,11 @@ class XpraClient(XpraClientBase):
         self.server_capabilities = capabilities
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
-        import glib
-        glib.set_application_name(self.session_name)
+        try:
+            import glib
+            glib.set_application_name(self.session_name)
+        except ImportError, e:
+            log.error("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit()
