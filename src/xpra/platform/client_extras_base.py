@@ -85,6 +85,17 @@ def set_tooltip_text(widget, text):
         return
     widget.set_tooltip_text(text)
 
+def CheckMenuItem(label):
+    """ adds a get_label() method for older versions of gtk which do not have it
+        beware that this label is not mutable!
+    """
+    cmi = gtk.CheckMenuItem(label)
+    if not hasattr(cmi, "get_label"):
+        def get_label():
+            return  label
+        cmi.get_label = get_label
+    
+
 class ClientExtrasBase(object):
 
     def __init__(self, client, opts):
@@ -503,7 +514,7 @@ class ClientExtrasBase(object):
 
     def checkitem(self, title, cb=None):
         """ Utility method for easily creating a CheckMenuItem """
-        check_item = gtk.CheckMenuItem(title)
+        check_item = CheckMenuItem(title)
         if cb:
             check_item.connect("toggled", cb)
         check_item.show()
@@ -602,8 +613,7 @@ class ClientExtrasBase(object):
                 set_tooltip_text(encodings, "memory mapped transfers are in use so picture encoding is disabled")
                 encodings.set_sensitive(False)
             for encoding in ENCODINGS:
-                encoding_item = gtk.CheckMenuItem(encoding)
-                encoding_item.get_label()
+                encoding_item = CheckMenuItem(encoding)
                 def encoding_changed(item):
                     item = ensure_item_selected(self.encodings_submenu, item)
                     enc = item.get_label()
@@ -707,7 +717,7 @@ class ClientExtrasBase(object):
                 log.debug("setting jpeg quality to %s", q)
                 self.client.send_jpeg_quality(q)
         for q in jpeg_options:
-            qi = gtk.CheckMenuItem("%s%%" % q)
+            qi = CheckMenuItem("%s%%" % q)
             qi.set_draw_as_radio(True)
             qi.set_active(q==self.client.jpegquality)
             qi.connect('activate', set_jpeg_quality)
@@ -735,7 +745,7 @@ class ClientExtrasBase(object):
                 self.client.compression_level = c
                 self.client.send_deflate_level()
         for i in range(0, 10):
-            c = gtk.CheckMenuItem(str(compression_options.get(i, i)))
+            c = CheckMenuItem(str(compression_options.get(i, i)))
             c.set_draw_as_radio(True)
             c.set_active(i==self.client.compression_level)
             c.connect('activate', set_compression)
