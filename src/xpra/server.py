@@ -171,21 +171,37 @@ class DesktopManager(gtk.Widget):
 
 gobject.type_register(DesktopManager)
 
+
+class DamageBatchConfig(object):
+    """
+    Encapsulate all the damage batching configuration into one object.
+    """
+    ENABLED = True
+    MAX_EVENTS = 80                     #maximum number of damage events
+    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
+    TIME_UNIT = 1                       #per second
+    MIN_DELAY = 5
+    AVG_DELAY = 100                     #how long to batch updates for (in millis)
+    MAX_DELAY = 5000
+    def ___init___(self):
+        self.enabled = self.ENABLED
+        self.always = False
+        self.max_events = self.MAX_EVENTS
+        self.max_pixels = self.MAX_PIXELS
+        self.time_unit = self.TIME_UNIT
+        self.min_delay = self.MIN_DELAY
+        self.avg_delay = self.AVG_DELAY
+        self.max_delay = self.MAX_DELAY
+        self.delay = self.avg_delay
+
 class ServerSource(object):
     """
     Strategy: if we have ordinary packets to send, send those.
     When we don't, then send window updates (expired ones first).
     The UI thread adds damage requests to a queue - see damage()
     """
-    BATCH_EVENTS = True
-    MAX_EVENTS = 80                     #maximum number of damage events
-    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
-    TIME_UNIT = 1                       #per second
-    MIN_BATCH_DELAY = 5
-    AVG_BATCH_DELAY = 100           #how long to batch updates for (in millis)
-    MAX_BATCH_DELAY = 5000
 
-    def __init__(self, protocol, encoding, mmap, mmap_size):
+    def __init__(self, protocol, batch_config, encoding, mmap, mmap_size):
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding
@@ -197,7 +213,7 @@ class ServerSource(object):
         self._damage_packet_sequence = 0        #increase with every packet send
         self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
         self.last_client_delta = None           #last delta between our damage_packet_sequence and last_client_packet_sequence
-        self.batch_delay = ServerSource.MIN_BATCH_DELAY
+        self.batch = batch_config
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -253,7 +269,7 @@ class ServerSource(object):
 
     def damage(self, wid, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
-            * send it now (if not congested or BATCH_EVENTS is off)
+            * send it now (if not congested or batch.enabled is off)
             * add it to an existing delayed region
             * create a new delayed region if we find the client needs it
             Also takes care of adjusting the batch-delay in case
@@ -272,12 +288,12 @@ class ServerSource(object):
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             item = wid, window, region, self._sequence, options
             self._damage_request_queue.put(item)
-        if not ServerSource.BATCH_EVENTS:
+        if not self.batch.enabled:
             return damage_now("batching disabled")
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(wid, deque(maxlen=ServerSource.MAX_EVENTS))
+        last_events = self._damage_last_events.setdefault(wid, deque(maxlen=self.batch.max_events))
         last_events.append((now, w*h))
 
         if options and options.get("batching", True) is False:
@@ -292,17 +308,19 @@ class ServerSource(object):
             return
 
         def update_batch_delay(reason, factor=1, delta=0):
-            self.batch_delay = max(ServerSource.MIN_BATCH_DELAY, min(ServerSource.MAX_BATCH_DELAY, int(self.batch_delay*factor-delta)))
-            log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch_delay)
+            self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
+            log.info("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
 
         last_delta = self.last_client_delta
         delta = self._damage_packet_sequence-self.last_client_packet_sequence
         self.last_client_delta = delta
         if self._damage_packet_queue.full():
-            update_batch_delay("damage packet queue is full", 1+sqrt(self.batch_delay)/10)
-        elif self.last_client_packet_sequence>=0 and delta>5:
-            if delta>10 or last_delta<delta:
-                update_batch_delay("client %s damage packets behind" % delta, logp2(self._damage_packet_sequence-self.last_client_packet_sequence))
+            update_batch_delay("damage packet queue is full", 1+sqrt(self.batch.delay)/10)
+        elif self.last_client_packet_sequence>=0 and (delta>5 or (last_delta<delta and delta>=3)):
+            if delta<5:
+                update_batch_delay("client %s damage packets behind" % delta, 1.4)
+            elif delta>10 or last_delta<delta:
+                update_batch_delay("client %s damage packets behind" % delta, logp2(delta))
             else:
                 update_batch_delay("client %s damage packets behind" % delta, 1.2)
         elif self._damage_request_queue.qsize()>3:
@@ -311,28 +329,30 @@ class ServerSource(object):
             update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), 0.8+logp2(self._damage_data_queue.qsize()))
         else:
             #if batch delay had been increased, reduce it:
-            if self.batch_delay>ServerSource.MIN_BATCH_DELAY and (self.last_client_packet_sequence<0 or delta<=2):
-                if self.last_client_packet_sequence<0:
+            if self.batch.delay>self.batch.min_delay and (self.last_client_packet_sequence<0 or delta<=2):
+                if last_delta<delta:
+                    pass
+                elif self.last_client_packet_sequence<0:
                     update_batch_delay("no feedback... guessing", 0.8)
-                elif self.batch_delay>ServerSource.AVG_BATCH_DELAY:
-                    update_batch_delay("client up to date", 0.7+(delta*0.1))
+                elif self.batch.delay>self.batch.avg_delay:
+                    update_batch_delay("client up to date - above average delay, delta=%s, last_delta=%s" % (delta, last_delta), 0.7+(delta*0.1))
                 else:
-                    update_batch_delay("client up to date", 1.0, 3-delta)
-            else:
+                    update_batch_delay("client up to date, delta=%s, last_delta=%s" % (delta, last_delta), 1.0, 3-delta)
+            elif not self.batch.always:
                 pixel_count = 0
                 for last_time,pixels in last_events:
                     pixel_count += pixels
-                    if pixel_count>=ServerSource.MAX_PIXELS:
+                    if pixel_count>=self.batch.max_pixels:
                         break
-                if pixel_count>=ServerSource.MAX_PIXELS:
+                if pixel_count>=self.batch.max_pixels:
                     log("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", wid, x, y, w, h, pixel_count, (now-last_time))
                 else:
-                    if len(last_events)<ServerSource.MAX_EVENTS:
+                    if len(last_events)<self.batch.max_events:
                         return damage_now("recent event list is too small, not batching")
                     when,_ = last_events[0]
-                    if now-when>ServerSource.TIME_UNIT:
-                        return damage_now("%s damage events took %s seconds, not batching" % (ServerSource.MAX_EVENTS, (now-when)))
-                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", wid, x, y, w, h, ServerSource.MAX_EVENTS, (now-when))
+                    if now-when>self.batch.time_unit:
+                        return damage_now("%s damage events took %s seconds, not batching" % (self.batch.max_events, (now-when)))
+                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", wid, x, y, w, h, self.batch.max_events, (now-when))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
@@ -350,8 +370,8 @@ class ServerSource(object):
             else:
                 log("window %s already removed from delayed list?", wid)
             return False
-        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", wid, x, y, w, h, self._sequence, self.batch_delay)
-        gobject.timeout_add(self.batch_delay, send_delayed)
+        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", wid, x, y, w, h, self._sequence, self.batch.delay)
+        gobject.timeout_add(self.batch.delay, send_delayed)
 
     def damage_to_data(self):
         """ pick items off the damage_request_queue
@@ -1324,11 +1344,21 @@ class XpraServer(gobject.GObject):
             if self.mmap:
                 log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
         self._protocol = proto
-        self._server_source = ServerSource(self._protocol, self.encoding, self.mmap, self.mmap_size)
+        batch_config = DamageBatchConfig()
+        batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
+        batch_config.always = bool(capabilities.get("batch.always", False))
+        batch_config.max_events = min(1000, max(1, capabilities.get("batch.max_events", DamageBatchConfig.MAX_EVENTS)))
+        batch_config.max_pixels = min(2048*2048*60, max(1, capabilities.get("batch.max_pixels", DamageBatchConfig.MAX_PIXELS)))
+        batch_config.time_unit = min(60, max(1, capabilities.get("batch.time_unit", DamageBatchConfig.TIME_UNIT)))
+        batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
+        batch_config.avg_delay = min(1000, max(1, capabilities.get("batch.avg_delay", DamageBatchConfig.AVG_DELAY)))
+        batch_config.max_delay = min(5000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
+        batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.avg_delay)))
+        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
-        self.keyboard_sync = capabilities.get("keyboard_sync", True)
+        self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat

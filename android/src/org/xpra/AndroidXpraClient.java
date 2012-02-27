@@ -124,7 +124,7 @@ public class AndroidXpraClient extends AbstractClient {
 	    });
 	}
 
-	
+
 	@Override
 	public Object getLock() {
 		return this;
@@ -142,13 +142,22 @@ public class AndroidXpraClient extends AbstractClient {
 
 	@Override
 	public Map<String, Object> make_hello(String enc_pass) {
+		this.currentScreenWidth = this.getScreenWidth();
+		this.currentScreenHeight = this.getScreenWidth();
 		Map<String, Object> caps = super.make_hello(enc_pass);
 		if (this.keyCharacterMap == null) {
 			this.loadCharacterMap(KeyCharacterMap.BUILT_IN_KEYBOARD); // VIRTUAL_KEYBOARD);
 			this.add_keymap_props(caps);
 		}
-		this.currentScreenWidth = this.getScreenWidth();
-		this.currentScreenHeight = this.getScreenWidth();
+		//always batch:
+		caps.put("batch.enabled", true);
+		caps.put("batch.always", true);
+		//don't update too quickly:
+		caps.put("batch.max_events", 25);	//25 updates per second max
+		caps.put("batch.max_pixels", this.currentScreenWidth*this.currentScreenHeight*25);
+		//and never too fast:
+		caps.put("batch.min_delay", 20);	//20ms
+		caps.put("batch.avg_delay", 100);	//100ms
 		return caps;
 	}
 
