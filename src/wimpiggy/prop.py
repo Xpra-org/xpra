@@ -29,17 +29,20 @@ log = Logger()
 def unsupported(*args):
     raise Exception("unsupported")
 
-def _force_length(data, length):
-    if len(data) != length:
-        log.warn("Odd-lengthed prop, wanted %s bytes, got %s: %r"
-                 % (length, len(data), data))
+def _force_length(name, data, length, noerror_length=None):
+    if len(data)==length:
+        return data
+    if len(data)!=noerror_length:
+        log.warn("Odd-lengthed property %s: wanted %s bytes, got %s: %r"
+                 % (name, length, len(data), data))
     # Zero-pad data
     data += "\0" * length
     return data[:length]
 
 class WMSizeHints(object):
     def __init__(self, disp, data):
-        data = _force_length(data, 18 * 4)
+        # pre-ICCCM size is 15
+        data = _force_length("WM_SIZE_HINTS", data, 18*4, noerror_length=15*4)
         (flags,
          pad1, pad2, pad3, pad4,
          min_width, min_height,
@@ -79,7 +82,7 @@ class WMSizeHints(object):
 
 class WMHints(object):
     def __init__(self, disp, data):
-        data = _force_length(data, 9 * 4)
+        data = _force_length("WM_HINTS", data, 9 * 4)
         (flags, input, initial_state,
          icon_pixmap, icon_window, icon_x, icon_y, icon_mask,
          window_group) = struct.unpack("@" + "i" * 9, data)
@@ -106,7 +109,7 @@ class NetWMStrut(object):
         # will be only length 4 instead of 12, but _force_length will zero-pad
         # and _NET_WM_STRUT is *defined* as a _NET_WM_STRUT_PARTIAL where the
         # extra fields are zero... so it all works out.
-        data = _force_length(data, 4 * 12)
+        data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
         (self.left, self.right, self.top, self.bottom,
          self.left_start_y, self.left_end_y,
          self.right_start_y, self.right_end_y,
