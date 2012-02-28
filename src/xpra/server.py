@@ -791,8 +791,12 @@ class XpraServer(gobject.GObject):
     def _new_connection(self, listener, *args):
         log.info("New connection received")
         sock, _ = listener.accept()
-        self._potential_protocols.append(Protocol(SocketConnection(sock),
-                                                  self.process_packet))
+        protocol = Protocol(SocketConnection(sock), self.process_packet)
+        self._potential_protocols.append(protocol)
+        def verify_connection_accepted(protocol):
+            if protocol in self._potential_protocols and protocol!=self._protocol:
+                self.send_disconnect(protocol, "login timeout")
+        gobject.timeout_add(10*1000, verify_connection_accepted, protocol)
         return True
 
     def _keys_changed(self, *args):

@@ -85,6 +85,7 @@ class Protocol(object):
     GIBBERISH = object()
 
     def __init__(self, conn, process_packet_cb):
+        assert conn is not None
         self._conn = conn
         self._process_packet_cb = process_packet_cb
         self._write_queue = Queue()
