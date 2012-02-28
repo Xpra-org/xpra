@@ -464,10 +464,10 @@ class ClientExtrasBase(object):
         filename = os.path.join(self.get_data_dir(), 'COPYING')
         if os.path.exists(filename):
             try:
-                file = open(filename, mode='rb')
-                return file.read()
+                license_file = open(filename, mode='rb')
+                return license_file.read()
             finally:
-                file.close()
+                license_file.close()
         if not self.license_text:
             self.license_text = "GPL version 2"
         return self.license_text
