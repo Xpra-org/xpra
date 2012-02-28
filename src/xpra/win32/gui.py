@@ -72,12 +72,11 @@ class ClientExtras(ClientExtrasBase):
             So we set the keycode to -1 to tell the server to ignore the actual keypress
             Having the "modifiers" set ought to be enough.
         """
-        if self.client._raw_keycodes_full:
-            if keyval==2**24-1 and keyname=="VoidSymbol":
-                keyname = "XCaps_Lock"
-                keycode = -1
-            if keyname=="XNum_Lock":
-                keycode = -1
+        if keyval==2**24-1 and keyname=="VoidSymbol":
+            keyname = "XCaps_Lock"
+            keycode = -1
+        if keyname=="XNum_Lock":
+            keycode = -1
         return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
 
     def get_gtk_keymap(self):
