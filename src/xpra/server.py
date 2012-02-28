@@ -1771,8 +1771,11 @@ class XpraServer(gobject.GObject):
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
-        window = self._id_to_window[wid]
-        window.request_close()
+        window = self._id_to_window.get(wid, None)
+        if window:
+            window.request_close()
+        else:
+            log("cannot close window %s: it is already gone!", wid)
 
     def _process_shutdown_server(self, proto, packet):
         log.info("Shutting down in response to request")
