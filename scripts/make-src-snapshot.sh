@@ -18,7 +18,8 @@ popd
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 
-SVN_REVISION=`svn info src | grep '^Revision: ' | awk -F'Revision: ' '{print $2}'`
+RAW_SVN_VERSION=`svnversion`
+SVN_REVISION=`python -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`
 for module in xpra wimpiggy parti; do
 	file="${DIR}/${module}/__init__.py"
 	echo "adding svn revision ${SVN_REVISION} to ${file}"
