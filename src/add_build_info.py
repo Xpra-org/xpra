@@ -12,7 +12,10 @@ import socket
 import platform
 
 def get_svn_props():
-    props = {}
+    props = {
+                "REVISION" : "unknown",
+                "LOCAL_MODIFICATIONS" : "unknown"
+            }
     #find revision:
     proc = subprocess.Popen("svnversion -n", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
