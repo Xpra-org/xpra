@@ -67,6 +67,7 @@ from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
+MAX_CONCURRENT_CONNECTIONS = 20
 
 def _get_rgb_rawdata(wid, pixmap, x, y, width, height, encoding, sequence, options):
     pixmap_w, pixmap_h = pixmap.get_size()
@@ -790,11 +791,16 @@ class XpraServer(gobject.GObject):
 
     def _new_connection(self, listener, *args):
         log.info("New connection received")
+        if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
+            log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
+            listener.close()
+            return  True
         sock, _ = listener.accept()
         protocol = Protocol(SocketConnection(sock), self.process_packet)
         self._potential_protocols.append(protocol)
         def verify_connection_accepted(protocol):
             if protocol in self._potential_protocols and protocol!=self._protocol:
+                log.error("connection timedout: %s", protocol)
                 self.send_disconnect(protocol, "login timeout")
         gobject.timeout_add(10*1000, verify_connection_accepted, protocol)
         return True
