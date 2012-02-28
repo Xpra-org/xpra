@@ -168,7 +168,7 @@ else:
     data_files=[
                 ("share/man/man1", ["xpra.1", "parti.1"]),
                 ("share/parti", ["README", "README.parti"]),
-                ("share/xpra", ["README.xpra"]),
+                ("share/xpra", ["README.xpra", "COPYING"]),
                 ("share/wimpiggy", ["README.wimpiggy"]),
                 ("share/xpra/icons", glob.glob("icons/*")),
                 ]
