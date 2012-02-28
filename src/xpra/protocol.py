@@ -268,7 +268,6 @@ class Protocol(object):
                 else:
                     self._read_buffer = buf
                 while not self._closed and len(self._read_buffer)>0:
-                    had_deflate = (self._decompressor is not None)
                     try:
                         if current_packet_size<0 and len(self._read_buffer)>0 and self._read_buffer[0]=="P":
                             #spotted packet size header
@@ -314,16 +313,17 @@ class Protocol(object):
                     gobject.idle_add(self._process_packet, packet)
                     unprocessed = self._read_buffer[l:]
                     if packet[0]=="set_deflate":
+                        had_deflate = (self._decompressor is not None)
                         level = packet[1]
                         log("set_deflate packet, changing decompressor to level=%s", level)
                         if level==0:
                             self._decompressor = None
                         else:
                             self._decompressor = zlib.decompressobj()
-                    if not had_deflate and (self._decompressor is not None):
-                        # deflate was just enabled: so decompress the unprocessed
-                        # data
-                        unprocessed = self._decompressor.decompress(unprocessed)
+                        if not had_deflate and (self._decompressor is not None):
+                            # deflate was just enabled: so decompress the unprocessed
+                            # data
+                            unprocessed = self._decompressor.decompress(unprocessed)
                     self._read_buffer = unprocessed
         finally:
             log("read parse thread: ended")
