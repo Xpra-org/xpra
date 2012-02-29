@@ -93,6 +93,8 @@ class Protocol(object):
         # Invariant: if .source is None, then _source_has_more == False
         self.source = None
         self._source_has_more = False
+        #initial value which may get increased by client/server after handshake:
+        self.max_packet_size = 32*1024
         self._recv_counter = 0
         self._closed = False
         self._read_buffer = ""
@@ -221,7 +223,7 @@ class Protocol(object):
                     gobject.idle_add(self._maybe_queue_more_writes)
         finally:
             log("write thread: ended, closing socket")
-            self._conn.close()
+            self.close()
 
     def _read_thread_loop(self):
         try:
@@ -242,16 +244,15 @@ class Protocol(object):
                     break
         finally:
             log("read thread: ended, closing socket")
-            self._conn.close()
+            self.close()
 
     def _call_connection_lost(self, message="", exc_info=False):
         gobject.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
-        if not self._closed:
-            self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
-            self.close()
+        self.close()
+        self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
         return False
 
     def _read_parse_thread_loop(self):
@@ -267,17 +268,23 @@ class Protocol(object):
                     self._read_buffer = self._read_buffer + buf
                 else:
                     self._read_buffer = buf
-                while not self._closed and len(self._read_buffer)>0:
+                bl = len(self._read_buffer)
+                if self.max_packet_size>0 and bl>self.max_packet_size:
+                    return self._call_connection_lost("read buffer too big: %s (maximum is %s), dropping this connection!" % (bl, self.max_packet_size))
+                while not self._closed:
+                    bl = len(self._read_buffer)
+                    if bl<=0:
+                        break
                     try:
-                        if current_packet_size<0 and len(self._read_buffer)>0 and self._read_buffer[0]=="P":
+                        if current_packet_size<0 and bl>0 and self._read_buffer[0]=="P":
                             #spotted packet size header
-                            if len(self._read_buffer)<16:
+                            if bl<16:
                                 break   #incomplete
                             current_packet_size = int(self._read_buffer[2:16])
                             self._read_buffer = self._read_buffer[16:]
 
-                        if current_packet_size>0 and len(self._read_buffer)<current_packet_size:
-                            log.debug("incomplete packet: only %s of %s bytes received", len(self._read_buffer), current_packet_size)
+                        if current_packet_size>0 and bl<current_packet_size:
+                            log.debug("incomplete packet: only %s of %s bytes received", bl, current_packet_size)
                             break
 
                         result = bdecode(self._read_buffer)
@@ -371,8 +378,13 @@ class Protocol(object):
         wait_for_end_of_write()
 
     def close(self):
-        if not self._closed:
-            self._closed = True
+        self._closed = True
+        if self._conn:
+            try:
+                self._conn.close()
+                self._conn = None
+            except:
+                log.error("error closing %s", self._conn, exc_info=True)
         self.terminate_io_threads()
 
     def terminate_io_threads(self):

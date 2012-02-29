@@ -601,7 +601,7 @@ class XpraServer(gobject.GObject):
             import glib
             glib.set_application_name(self.session_name or "Xpra")
         except ImportError, e:
-            log.error("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
+            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
         ### Create the WM object
         self._wm = Wm("Xpra", clobber)
@@ -1561,7 +1561,7 @@ class XpraServer(gobject.GObject):
     def close_mmap(self):
         if self.mmap:
             self.mmap.close()
-        self.mmap = None
+            self.mmap = None
         self.mmap_size = 0
 
     def _process_disconnect(self, proto, packet):
@@ -1613,14 +1613,20 @@ class XpraServer(gobject.GObject):
 
     def _process_move_window(self, proto, packet):
         (wid, x, y) = packet[1:4]
-        window = self._id_to_window[wid]
+        window = self._id_to_window.get(wid, None)
+        if not window:
+            log("cannot move window %s: already removed!", wid)
+            return
         assert not isinstance(window, OverrideRedirectWindowModel)
         (_, _, w, h) = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_resize_window(self, proto, packet):
         (wid, w, h) = packet[1:4]
-        window = self._id_to_window[wid]
+        window = self._id_to_window.get(wid, None)
+        if not window:
+            log("cannot resize window %s: already removed!", wid)
+            return
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(window)
         (x, y, _, _) = self._desktop_manager.window_geometry(window)
@@ -1830,7 +1836,6 @@ class XpraServer(gobject.GObject):
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
-        proto.close()
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         if proto.source and (proto.source is self._server_source):

@@ -849,24 +849,36 @@ class XpraClient(XpraClientBase):
             import glib
             glib.set_application_name(self.session_name)
         except ImportError, e:
-            log.error("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
+            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit()
             return
-
+        #figure out the maximum actual desktop size and use to
+        #calculate the maximum size of a packet (a full screen update packet)
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
+        maxw, maxh = root_w, root_h
+        try:
+            server_w, server_h = self.server_actual_desktop_size
+            maxw = max(root_w, server_w)
+            maxh = max(root_h, server_h)
+        except:
+            pass
+        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
+        #full screen at 32bits times 4 for safety
+        self._protocol.max_packet_size = maxw*maxh*4*4
+        log("set maximum packet size to %s", self._protocol.max_packet_size)
         self.server_desktop_size = capabilities.get("desktop_size")
-        if self.server_desktop_size:
-            avail_w, avail_h = self.server_desktop_size
-            root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-            if (avail_w, avail_h) < (root_w, root_h):
-                log.warn("Server's virtual screen is too small -- "
-                         "(server: %sx%s vs. client: %sx%s)\n"
-                         "You may see strange behavior.\n"
-                         "Please see "
-                         "http://xpra.org/trac/ticket/10"
-                         % (avail_w, avail_h, root_w, root_h))
+        assert self.server_desktop_size
+        avail_w, avail_h = self.server_desktop_size
+        if (avail_w, avail_h) < (root_w, root_h):
+            log.warn("Server's virtual screen is too small -- "
+                     "(server: %sx%s vs. client: %sx%s)\n"
+                     "You may see strange behavior.\n"
+                     "Please see "
+                     "https://xpra.org/trac/ticket/10"
+                     % (avail_w, avail_h, root_w, root_h))
         self.server_randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
         if self.server_randr:

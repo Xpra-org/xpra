@@ -4,35 +4,18 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
+import sys
 
 from wimpiggy.log import Logger
 log = Logger()
 
 from wimpiggy.util import AdHocStruct
-from xpra.client_base import GLibXpraClient
 
-class TestTimeoutClient(GLibXpraClient):
-
-    def __init__(self, conn, opts):
-        GLibXpraClient.__init__(self, conn, opts)
-        def check_connection_timeout(*args):
-            log.error("timeout did not fire: we are still connected!")
-            self.quit()
-        gobject.timeout_add(20*1000, check_connection_timeout)
-
-    def _process_challenge(self, packet):
-        log.info("got challenge - which we shall ignore!")
-
-    def _process_hello(self, packet):
-        log.error("cannot try to DoS this server: it has no password protection!")
-        self.quit()
-
-    def quit(self, *args):
-        log.info("server correctly terminated the connection")
-        GLibXpraClient.quit(self)
-
-def main(args):
+def test_DoS(client_class, args):
+    """ utility method for running DoS tests
+        See: test_DoS_*_client.py
+    """
+    
     assert len(args)==2, "usage: test_DoS_client :DISPLAY"
     import socket
     from xpra.dotxpra import DotXpra
@@ -51,12 +34,8 @@ def main(args):
     sock.connect(target)
     conn = SocketConnection(sock)
     print("socket connection=%s" % conn)
-    app = TestTimeoutClient(conn, opts)
+    app = client_class(conn, opts)
     try:
         app.run()
     finally:
         app.cleanup()
-
-if __name__ == "__main__":
-    import sys
-    main(sys.argv)
