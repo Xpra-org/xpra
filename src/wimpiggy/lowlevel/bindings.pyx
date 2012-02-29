@@ -412,8 +412,12 @@ def get_pyatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
         raise Exception, "weirdly huge purported xatom: %s" % xatom
     cdef cGdkDisplay * disp
+    cdef GdkAtom gdk_atom
     disp = get_raw_display_for(display_source)
-    return str(PyGdkAtom_New(gdk_x11_xatom_to_atom_for_display(disp, xatom)))
+    gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
+    if gdk_atom==0:
+        return  None
+    return str(PyGdkAtom_New(gdk_atom))
 
 def gdk_atom_objects_from_gdk_atom_array(atom_string):
     # gdk_property_get auto-converts ATOM and ATOM_PAIR properties from a
