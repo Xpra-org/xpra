@@ -11,26 +11,22 @@ log = Logger()
 
 from xpra.client_base import GLibXpraClient
 
-class TestTimeoutClient(GLibXpraClient):
+class TestIllegalCommandClient(GLibXpraClient):
     """
-        Use this test against a password protected server.
-        The server should kick us within 10 seconds out as we aren't replying
-        to its challenge request.
+        Sending an illegal command should get us kicked out
     """
 
     def __init__(self, conn, opts):
         GLibXpraClient.__init__(self, conn, opts)
-        def check_connection_timeout(*args):
-            log.error("BUG: timeout did not fire: we are still connected!")
+        def check_kicked_out(*args):
+            log.error("BUG: illegal command did not get us kicked out: we are still connected!")
             self.quit()
-        gobject.timeout_add(20*1000, check_connection_timeout)
+        gobject.timeout_add(5*1000, check_kicked_out)
 
-    def _process_challenge(self, packet):
-        log.info("got challenge - which we shall ignore!")
-
-    def _process_hello(self, packet):
-        log.error("cannot try to DoS this server: it has no password protection!")
-        self.quit()
+    def send_hello(self, challenge_response=None):
+        #we should not be able to do this before hello:
+        for i in xrange(1, 10):
+            self.send(["close-window", i])
 
     def quit(self, *args):
         log.info("server correctly terminated the connection")
@@ -39,4 +35,4 @@ class TestTimeoutClient(GLibXpraClient):
 if __name__ == "__main__":
     import sys
     from xpra.test_DoS_client import test_DoS
-    test_DoS(TestTimeoutClient, sys.argv)
+    test_DoS(TestIllegalCommandClient, sys.argv)

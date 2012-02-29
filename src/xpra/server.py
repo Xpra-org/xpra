@@ -799,7 +799,7 @@ class XpraServer(gobject.GObject):
         protocol = Protocol(SocketConnection(sock), self.process_packet)
         self._potential_protocols.append(protocol)
         def verify_connection_accepted(protocol):
-            if protocol in self._potential_protocols and protocol!=self._protocol:
+            if not protocol._closed and protocol in self._potential_protocols and protocol!=self._protocol:
                 log.error("connection timedout: %s", protocol)
                 self.send_disconnect(protocol, "login timeout")
         gobject.timeout_add(10*1000, verify_connection_accepted, protocol)
@@ -1852,7 +1852,12 @@ class XpraServer(gobject.GObject):
         data = packet[1]
         log.info("Received uninterpretable nonsense: %s", repr(data))
 
-    _packet_handlers = {
+    _default_packet_handlers = {
+        "hello": _process_hello,
+        Protocol.CONNECTION_LOST: _process_connection_lost,
+        Protocol.GIBBERISH: _process_gibberish,
+        }
+    _authenticated_packet_handlers = {
         "hello": _process_hello,
         "server-settings": _process_server_settings,
         "map-window": _process_map_window,
@@ -1889,11 +1894,21 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        if (isinstance(packet_type, str)
-            and packet_type.startswith("clipboard-")):
+        assert isinstance(packet_type, str)
+        if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 self._clipboard_helper.process_clipboard_packet(packet)
+            return
+        if proto is self._protocol:
+            handlers = self._authenticated_packet_handlers
         else:
-            self._packet_handlers[packet_type](self, proto, packet)
+            handlers = self._default_packet_handlers
+        handler = handlers.get(packet_type)
+        if not handler:
+            log.error("unknown or invalid packet type: %s", packet_type)
+            if proto is not self._protocol:
+                proto.close()
+            return
+        handler(self, proto, packet)
 
 gobject.type_register(XpraServer)

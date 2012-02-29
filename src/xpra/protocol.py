@@ -81,8 +81,8 @@ def untilConcludes(f, *a, **kw):
             raise
 
 class Protocol(object):
-    CONNECTION_LOST = object()
-    GIBBERISH = object()
+    CONNECTION_LOST = "connection-lost"
+    GIBBERISH = "gibberish"
 
     def __init__(self, conn, process_packet_cb):
         assert conn is not None

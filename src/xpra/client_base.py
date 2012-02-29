@@ -168,7 +168,11 @@ class XpraClientBase(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        self._packet_handlers[packet_type](packet)
+        handler = self._packet_handlers.get(packet_type)
+        if not handler:
+            log.error("unknown packet type: %s", packet_type)
+            return
+        handler(packet)
 
 gobject.type_register(XpraClientBase)
 
@@ -244,10 +248,6 @@ class VersionXpraClient(GLibXpraClient):
         props = packet[1]
         log.info("%s" % props.get("version"))
         self.quit()
-
-    def init_packet_handlers(self):
-        XpraClientBase.init_packet_handlers(self)
-        self._packet_handlers["hello"] = self._process_hello
 
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)

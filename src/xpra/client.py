@@ -1044,11 +1044,11 @@ class XpraClient(XpraClientBase):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        if (isinstance(packet_type, str)
-            and packet_type.startswith("clipboard-")):
+        assert isinstance(packet_type, str)
+        if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 self._client_extras.process_clipboard_packet(packet)
         else:
-            self._packet_handlers[packet_type](packet)
+            XpraClientBase.process_packet(self, proto, packet)
 
 gobject.type_register(XpraClient)
