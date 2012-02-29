@@ -1275,7 +1275,12 @@ class XpraServer(gobject.GObject):
         gobject.timeout_add(1000, force_disconnect)
 
     def _verify_password(self, proto, client_hash):
-        passwordFile = open(self.password_file, "rU")
+        try:
+            passwordFile = open(self.password_file, "rU")
+        except IOError, e:
+            log.error("cannot open password file %s: %s", self.password_file, e)
+            self.send_disconnect(proto, "invalid password file specified on server")
+            return
         password  = passwordFile.read()
         password_hash = hmac.HMAC(password, self.salt)
         if client_hash != password_hash.hexdigest():

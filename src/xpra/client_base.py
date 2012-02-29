@@ -143,8 +143,13 @@ class XpraClientBase(gobject.GObject):
             self.quit()
             return
         import hmac
-        passwordFile = open(self.password_file, "rU")
-        password = passwordFile.read()
+        try:
+            passwordFile = open(self.password_file, "rU")
+            password = passwordFile.read()
+        except IOError, e:
+            log.error("failed to open password file %s: %s", self.password_file, e)
+            self.quit()
+            return
         salt = packet[1]
         challenge_response = hmac.HMAC(password, salt)
         self.send_hello(challenge_response.hexdigest())
