@@ -51,7 +51,7 @@ class WMSizeHints(object):
          min_aspect_num, min_aspect_denom,
          max_aspect_num, max_aspect_denom,
          base_width, base_height,
-         win_gravity) = struct.unpack("@" + "I" * 18, data)
+         win_gravity) = struct.unpack("=" + "I" * 18, data)
         #print(repr(data))
         #print(struct.unpack("@" + "i" * 18, data))
         # We only extract the pieces we care about:
@@ -85,7 +85,7 @@ class WMHints(object):
         data = _force_length("WM_HINTS", data, 9 * 4)
         (flags, input, initial_state,
          icon_pixmap, icon_window, icon_x, icon_y, icon_mask,
-         window_group) = struct.unpack("@" + "i" * 9, data)
+         window_group) = struct.unpack("=" + "i" * 9, data)
         # NB the last field is missing from at least some ICCCM 2.0's (typo).
         # FIXME: extract icon stuff too
         self.urgency = bool(flags & const["XUrgencyHint"])
@@ -115,14 +115,14 @@ class NetWMStrut(object):
          self.right_start_y, self.right_end_y,
          self.top_start_x, self.top_end_x,
          self.bottom_start_x, self.bottom_stop_x,
-         ) = struct.unpack("@" + "I" * 12, data)
+         ) = struct.unpack("=" + "I" * 12, data)
 
 def _read_image(disp, stream):
     try:
         header = stream.read(2 * 4)
         if not header:
             return None
-        (width, height) = struct.unpack("@II", header)
+        (width, height) = struct.unpack("=II", header)
         bytes = stream.read(width * height * 4)
         if len(bytes) < width * height * 4:
             log.warn("Corrupt _NET_WM_ICON")
@@ -165,7 +165,13 @@ def NetWMIcons(disp, data):
     return icons[-1][1]
 
 def _get_atom(disp, d):
-    return str(get_pyatom(disp, struct.unpack("@I", d)[0]))
+    unpacked = struct.unpack("=I", d)[0]
+    pyatom = get_pyatom(disp, unpacked)
+    if not pyatom:
+        log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
+        return  None
+    return str(pyatom)
+
 
 _prop_types = {
     # Python type, X type Atom, format, serializer, deserializer, list
@@ -182,16 +188,16 @@ _prop_types = {
                lambda disp, d: d.decode("latin1"),
                "\0"),
     "atom": (str, "ATOM", 32,
-             lambda disp, a: struct.pack("@I", get_xatom(a)),
+             lambda disp, a: struct.pack("=I", get_xatom(a)),
               _get_atom,
              ""),
     "u32": ((int, long), "CARDINAL", 32,
-            lambda disp, c: struct.pack("@I", c),
-            lambda disp, d: struct.unpack("@I", d)[0],
+            lambda disp, c: struct.pack("=I", c),
+            lambda disp, d: struct.unpack("=I", d)[0],
             ""),
     "window": (gtk.gdk.Window, "WINDOW", 32,
-               lambda disp, c: struct.pack("@I", get_xwindow(c)),
-               lambda disp, d: get_pywindow(disp, struct.unpack("@I", d)[0]),
+               lambda disp, c: struct.pack("=I", get_xwindow(c)),
+               lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
                ""),
     "wm-size-hints": (WMSizeHints, "WM_SIZE_HINTS", 32,
                       unsupported,
@@ -240,15 +246,15 @@ def _prop_encode_list(disp, type, value):
     (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
     value = list(value)
     serialized = [_prop_encode_scalar(disp, type, v)[2] for v in value]
+    no_none = [x for x in serialized if x is not None]
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
-    return (atom, format, terminator.join(serialized))
+    return (atom, format, terminator.join(no_none))
 
 
 def prop_set(target, key, type, value):
     trap.call_unsynced(XChangeProperty, target, key,
                        _prop_encode(target, type, value))
-
 
 def _prop_decode(disp, type, data):
     if isinstance(type, list):
@@ -268,12 +274,13 @@ def _prop_decode_list(disp, type, data):
         datums = data.split(terminator)
     else:
         datums = []
+        nbytes = format // 8
         while data:
-            datums.append(data[:(format // 8)])
-            data = data[(format // 8):]
+            datums.append(data[:nbytes])
+            data = data[nbytes:]
     props = [_prop_decode_scalar(disp, type, datum) for datum in datums]
-    assert None not in props
-    return props
+    #assert None not in props
+    return [x for x in props if x is not None]
 
 # May return None.
 def prop_get(target, key, type, ignore_errors=False):
@@ -298,8 +305,8 @@ def prop_get(target, key, type, ignore_errors=False):
     try:
         return _prop_decode(target, type, data)
     except:
-        log.warn("Error parsing property %s (type %s); this may be a\n"
-                 + "  misbehaving application, or bug in Wimpiggy\n"
+        log.warn("Error parsing property %s (type %s); this may be a"
+                 + " misbehaving application, or bug in Wimpiggy\n"
                  + "  Data: %r[...?]",
-                 key, type, data[:100])
+                 key, type, data[:160])
         raise
