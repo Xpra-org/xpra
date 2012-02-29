@@ -1603,7 +1603,10 @@ class XpraServer(gobject.GObject):
 
     def _process_map_window(self, proto, packet):
         (wid, x, y, width, height) = packet[1:6]
-        window = self._id_to_window[wid]
+        window = self._id_to_window.get(wid)
+        if not window:
+            log("cannot map window %s: already removed!", wid)
+            return
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
@@ -1611,14 +1614,17 @@ class XpraServer(gobject.GObject):
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
-        window = self._id_to_window[wid]
+        window = self._id_to_window.get(wid)
+        if not window:
+            log("cannot map window %s: already removed!", wid)
+            return
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(window)
         self._desktop_manager.hide_window(window)
 
     def _process_move_window(self, proto, packet):
         (wid, x, y) = packet[1:4]
-        window = self._id_to_window.get(wid, None)
+        window = self._id_to_window.get(wid)
         if not window:
             log("cannot move window %s: already removed!", wid)
             return
@@ -1628,7 +1634,7 @@ class XpraServer(gobject.GObject):
 
     def _process_resize_window(self, proto, packet):
         (wid, w, h) = packet[1:4]
-        window = self._id_to_window.get(wid, None)
+        window = self._id_to_window.get(wid)
         if not window:
             log("cannot resize window %s: already removed!", wid)
             return
