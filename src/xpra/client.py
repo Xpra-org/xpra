@@ -872,7 +872,7 @@ class XpraClient(XpraClientBase):
         self.server_desktop_size = capabilities.get("desktop_size")
         assert self.server_desktop_size
         avail_w, avail_h = self.server_desktop_size
-        if (avail_w, avail_h) < (root_w, root_h):
+        if avail_w<root_w or avail_h<root_h:
             log.warn("Server's virtual screen is too small -- "
                      "(server: %sx%s vs. client: %sx%s)\n"
                      "You may see strange behavior.\n"
