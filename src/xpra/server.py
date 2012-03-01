@@ -662,6 +662,7 @@ class XpraServer(gobject.GObject):
 
         self._keynames_for_mod = None
         #clear all modifiers
+        self.clean_keyboard_state()
         self._make_keymask_match([])
 
         ### Clipboard handling:
@@ -712,21 +713,22 @@ class XpraServer(gobject.GObject):
         self.client_load = None
         self.server_latency = -1
 
+    def clean_keyboard_state(self):
+        try:
+            ungrab_all_keys(gtk.gdk.get_default_root_window())
+        except:
+            log.error("error ungrabbing keys", exc_info=True)
+        try:
+            unpress_all_keys(gtk.gdk.get_default_root_window())
+        except:
+            log.error("error unpressing keys", exc_info=True)
+
     def set_keymap(self):
-        def clean_state():
-            try:
-                ungrab_all_keys(gtk.gdk.get_default_root_window())
-            except:
-                log.error("error ungrabbing keys", exc_info=True)
-            try:
-                unpress_all_keys(gtk.gdk.get_default_root_window())
-            except:
-                log.error("error unpressing keys", exc_info=True)
         try:
             #prevent _keys_changed() from firing:
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
             self.keymap_changing = True
-            clean_state()
+            self.clean_keyboard_state()
             try:
                 do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
                               self.xkbmap_print, self.xkbmap_query)
@@ -734,17 +736,17 @@ class XpraServer(gobject.GObject):
                 log.error("error setting new keymap", exc_info=True)
             try:
                 #first clear all existing modifiers:
-                clean_state()
+                self.clean_keyboard_state()
                 modifiers = ALL_X11_MODIFIERS.keys()  #just clear all of them (set or not)
                 clear_modifiers(modifiers)
 
                 #now set all the keycodes:
-                clean_state()
+                self.clean_keyboard_state()
                 assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
                 self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
 
                 #now set the new modifier mappings:
-                clean_state()
+                self.clean_keyboard_state()
                 log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
                 if self.xkbmap_mod_meanings:
                     #Unix-like OS provides modifier meanings:
