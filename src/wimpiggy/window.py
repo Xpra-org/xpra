@@ -513,8 +513,10 @@ class WindowModel(BaseWindowModel):
             client_size = self.client_window.get_geometry()[2:4]
             self.corral_window.resize(*client_size)
             self.client_window.show_unraised()
+            self.client_window.get_geometry()
         try:
             trap.call(setup_client)
+            trap.call(self.client_window.get_geometry)
         except XError, e:
             raise Unmanageable, e
         self._setup_done = True
@@ -952,10 +954,10 @@ class WindowModel(BaseWindowModel):
                   "_NET_FRAME_EXTENTS",
                   "_NET_WM_ALLOWED_ACTIONS",
                   ]
-        def doit():
+        def delete_properties():
             for prop in remove:
                 XDeleteProperty(self.client_window, prop)
-        trap.swallow(doit)
+        trap.swallow(delete_properties)
 
     ################################
     # Focus handling:
