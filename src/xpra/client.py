@@ -672,8 +672,7 @@ class XpraClient(XpraClientBase):
             interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
             log.debug("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", name, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
             def send_key_repeat():
-                (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-                modifiers = self.mask_to_names(current_mask)
+                modifiers = self.get_current_modifiers()
                 self.send_now(["key-repeat", wid, name, keyval, keycode, modifiers])
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
@@ -737,16 +736,14 @@ class XpraClient(XpraClientBase):
         self.send(["keymap-changed", self.get_keymap_properties()])
 
     def get_keymap_properties(self):
-        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        props = {"modifiers" : self.mask_to_names(current_mask)}
+        props = {"modifiers" : self.get_current_modifiers()}
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
               "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
             props[x] = nn(getattr(self, x))
         return  props
 
     def send_focus(self, wid):
-        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        self.send(["focus", wid, self.mask_to_names(current_mask)])
+        self.send(["focus", wid, self.get_current_modifiers()])
 
     def update_focus(self, wid, gotit):
         log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
@@ -758,6 +755,10 @@ class XpraClient(XpraClientBase):
             self.clear_repeat()
             self.send_focus(0)
             self._focused = None
+
+    def get_current_modifiers(self):
+        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+        return self.mask_to_names(current_mask)
 
     def mask_to_names(self, mask):
         mn = mask_to_names(mask, self._modifier_map)
@@ -779,8 +780,7 @@ class XpraClient(XpraClientBase):
         capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
         capabilities["clipboard"] = self.clipboard_enabled
         capabilities["notifications"] = self._client_extras.can_notify()
-        (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
-        capabilities["modifiers"] = self.mask_to_names(current_mask)
+        capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = [root_w, root_h]
         key_repeat = self._client_extras.get_keyboard_repeat()
