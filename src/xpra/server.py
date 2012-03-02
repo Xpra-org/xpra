@@ -298,8 +298,7 @@ class ServerSource(object):
         last_events.append((now, w*h))
 
         if options and options.get("batching", True) is False:
-            damage_now("batching option is off")
-            return
+            return damage_now("batching option is off")
 
         delayed = self._damage_delayed.get(wid)
         if delayed:
@@ -499,11 +498,12 @@ class ServerSource(object):
         return packet
 
     def _mmap_send(self, data):
+        #This is best explained using diagrams:
         #mmap_area=[&S&E-------------data-------------]
         #The first pair of 4 bytes are occupied by:
         #S=data_start index is only updated by the client and tells us where it has read up to
         #E=data_end index is only updated here and marks where we have written up to (matches current seek)
-        # '-' denotes unused space
+        # '-' denotes unused/available space
         # '+' is for data we have written
         # '*' is for data we have just written in this call
         # E and S show the location pointed to by data_start/data_end
@@ -514,18 +514,18 @@ class ServerSource(object):
         if end<start:
             #we have wrapped around but the client hasn't yet:
             #[++++++++E--------------------S+++++]
-            #so there is one chunk available:
+            #so there is one chunk available (from E to S):
             available = start-end
             chunk = available
         else:
-            #we have not wrapped around yet, or the client has wrapper around too:
+            #we have not wrapped around yet, or the client has wrapped around too:
             #[------------S++++++++++++E---------]
-            #so there are two chunks available:
+            #so there are two chunks available (from E to the end, from the start to S):
             chunk = self._mmap_size-end
             available = chunk+(start-8)
         l = len(data)
         if l>=available:
-            log("mmap area full: we need more than %s but only %s left! ouch!", l, available)
+            log.warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
             return None
         if l<chunk:
             """ data fits in the first chunk """
