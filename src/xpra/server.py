@@ -698,10 +698,11 @@ class XpraServer(gobject.GObject):
 
         try:
             from xpra.dbus_notifications_forwarder import register
-            self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback, replace=True)
-            log.info("using notification forwarder")
+            self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
+            if self.notifications_forwarder:
+                log.info("using notification forwarder: %s", self.notifications_forwarder)
         except Exception, e:
-            log.error("failed to load dbus notifications forwarder: %s", e)
+            log.error("error loading or registering our dbus notifications forwarder: %s", e)
             self.notifications_forwarder = None
 
         ### All right, we're ready to accept customers:
