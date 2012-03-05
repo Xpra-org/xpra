@@ -1344,23 +1344,27 @@ class XpraServer(gobject.GObject):
         log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
         if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
             import mmap
-            f = open(mmap_file, "r+b")
-            self.mmap_size = os.path.getsize(mmap_file)
-            self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
-            mmap_token = capabilities.get("mmap_token")
-            if mmap_token:
-                #verify the token:
-                v = 0
-                for i in range(0,16):
-                    v = v<<8
-                    peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
-                    v += peek.value
-                log.debug("mmap_token=%s, verification=%s", mmap_token, v)
-                if v!=mmap_token:
-                    log.error("WARNING: mmap token verification failed, not using mmap area!")
-                    self.close_mmap()
-            if self.mmap:
-                log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
+            try:
+                f = open(mmap_file, "r+b")
+                self.mmap_size = os.path.getsize(mmap_file)
+                self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
+                mmap_token = capabilities.get("mmap_token")
+                if mmap_token:
+                    #verify the token:
+                    v = 0
+                    for i in range(0,16):
+                        v = v<<8
+                        peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
+                        v += peek.value
+                    log.debug("mmap_token=%s, verification=%s", mmap_token, v)
+                    if v!=mmap_token:
+                        log.error("WARNING: mmap token verification failed, not using mmap area!")
+                        self.close_mmap()
+                if self.mmap:
+                    log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
+            except Exception, e:
+                log.error("cannot use mmap file '%s': %s", mmap_file, e)
+                self.close_mmap()
         self._protocol = proto
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
