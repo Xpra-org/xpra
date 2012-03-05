@@ -1032,12 +1032,13 @@ class XpraClient(XpraClientBase):
 
     def _process_lost_window(self, packet):
         wid = packet[1]
-        window = self._id_to_window[wid]
-        del self._id_to_window[wid]
-        del self._window_to_id[window]
-        if window._refresh_timer:
-            gobject.source_remove(window._refresh_timer)
-        window.destroy()
+        window = self._id_to_window.get(wid)
+        if window:
+            del self._id_to_window[wid]
+            del self._window_to_id[window]
+            if window._refresh_timer:
+                gobject.source_remove(window._refresh_timer)
+            window.destroy()
         if len(self._id_to_window)==0:
             log.debug("last window gone, clearing key repeat")
             self.clear_repeat()
