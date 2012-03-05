@@ -238,7 +238,7 @@ class ClientExtras(ClientExtrasBase):
     def can_notify(self):
         return  self.has_dbusnotify or self.has_pynotify
 
-    def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+    def show_notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, may_retry=True):
         if self.dbus_id==dbus_id:
             log.error("remote dbus instance is the same as our local one, "
                       "cannot forward notification to ourself as this would create a loop")
@@ -247,8 +247,28 @@ class ClientExtras(ClientExtrasBase):
             def cbReply(*args):
                 log("notification reply: %s", args)
                 return False
-            def cbError(*args):
-                log.error("notification error: %s", args)
+            def cbError(dbus_error, *args):
+                try:
+                    import dbus.exceptions
+                    if type(dbus_error)==dbus.exceptions.DBusException:
+                        message = dbus_error.get_dbus_message()
+                        dbus_error_name = dbus_error.get_dbus_name()
+                        if dbus_error_name!="org.freedesktop.DBus.Error.ServiceUnknown":
+                            log.error("unhandled dbus exception: %s, %s", message, dbus_error_name)
+                            return False
+
+                        if not may_retry:
+                            log.error("cannot send notification via dbus, please check that you notification service is operating properly")
+                            return False
+
+                        log.info("trying to re-connect to the notification service")
+                        #try to connect to the notification again (just once):
+                        if self.setup_dbusnotify():
+                            self.show_notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, may_retry=False)
+                        return False
+                except:
+                    pass
+                log.error("notification error: %s", dbus_error)
                 return False
             try:
                 self.dbusnotify.Notify("Xpra", 0, app_icon, summary, body, [], [], expire_timeout,
@@ -268,7 +288,7 @@ class ClientExtras(ClientExtrasBase):
         else:
             log.error("notification cannot be displayed, no backend support!")
 
-    def close_notify(self, id):
+    def close_notify(self, nid):
         pass
 
     def exec_get_keyboard_data(self, cmd):
