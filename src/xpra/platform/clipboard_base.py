@@ -125,16 +125,20 @@ class ClipboardProtocolHelperBase(object):
         if name in self._clipboard_proxies:
             proxy = self._clipboard_proxies[name]
             def got_contents(type, format, data):
-                log.debug("got_contents(%s,%s,%s)", type, format, len(data))
-                if type is None:
+                log.debug("got_contents(%s,%s,%s)", type, format, len(data or []))
+                def no_contents():
                     self.send(["clipboard-contents-none", request_id, selection])
+                if type is None or data is None:
+                    no_contents()
                     return
                 munged = self._munge_raw_selection_to_wire(type, format, data)
                 (wire_encoding, wire_data) = munged
                 log("clipboard raw -> wire: %r -> %r", (type, format, data), munged)
-                if wire_encoding is not None:
-                    self.send(["clipboard-contents", request_id, selection,
-                               type, format, wire_encoding, wire_data])
+                if wire_encoding is None:
+                    no_contents()
+                    return
+                self.send(["clipboard-contents", request_id, selection,
+                           type, format, wire_encoding, wire_data])
             proxy.get_contents(target, got_contents)
         else:
             self.send(["clipboard-contents-none", request_id, selection])
