@@ -60,7 +60,7 @@ class ClipboardProtocolHelperBase(object):
         return result
 
     def _clipboard_got_contents(self, request_id, type, format, data):
-        log.debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data), type, format)
+        log.debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data or []), type, format)
         if request_id in self._clipboard_outstanding_requests:
             loop = self._clipboard_outstanding_requests[request_id]
             loop.done({"type": type, "format": format, "data": data})
