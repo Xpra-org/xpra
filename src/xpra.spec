@@ -45,9 +45,27 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Feb 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
-- remove compatiblity code for older versions
+* Thu Mar 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
+- security: strict filtering of packet handlers until connection authenticated
+- prevent DoS: limit number of concurrent connections attempting login (20)
+- prevent DoS: limit initial packet size (memory exhaustion: 32KB)
+- remove large amount of compatiblity code for older versions
 - fix for Mac OS X clients sending hexadecimal keysyms
+- notifications systems with dbus: re-connect if needed
+- notifications: try not to interfere with existing notification services
+- mmap: check for protected file access and ignore rather than error out (oops)
+- clipboard: handle empty data rather than timing out
+- spurious warnings: remove many harmless stacktraces/error messages
+- detect and discard broken windows with invalid atoms, avoids vfb + xpra crash
+- unpress keys all keys on start (if any)
+- fix screen size check: also check vertical size is sufficient
+- fix for invisible 0 by 0 windows: restore a minimum size
+- toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
+- build/deploy: don't modify file in source tree, generate it at build time only
+- add missing GPL2 license file to show in about dialog
+- Python 2.5: workarounds to restore support
+- turn off compression over local connections (when mmap is enabled)
+- clients can specify maximum refresh rate and screen update batching options
 
 * Thu Feb 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.36-1
 - fix clipboard bug which was causing Java applications to crash
