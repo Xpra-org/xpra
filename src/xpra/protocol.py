@@ -297,7 +297,7 @@ class Protocol(object):
                             # Peek at the data we got, in case we can make sense of it:
                             self._process_packet([Protocol.GIBBERISH, buf])
                             # Then hang up:
-                            return self._connection_lost("gibberish received: %s" % repr_ellipsized(buf))
+                            return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s" % (repr_ellipsized(buf), current_packet_size, bl))
 
                         if current_packet_size>0:
                             #we had the size, so the packet should have been valid!
