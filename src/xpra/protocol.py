@@ -282,35 +282,38 @@ class Protocol(object):
                                 break   #incomplete
                             current_packet_size = int(self._read_buffer[2:16])
                             self._read_buffer = self._read_buffer[16:]
+                            bl = len(self._read_buffer)
 
                         if current_packet_size>0 and bl<current_packet_size:
                             log.debug("incomplete packet: only %s of %s bytes received", bl, current_packet_size)
                             break
 
                         result = bdecode(self._read_buffer)
-                    except ValueError:
+                    except ValueError, e:
                         #could be a partial packet (without size header)
                         #or could be just a broken packet...
-                        def packet_error(buf):
+                        def packet_error(buf, packet_size, data_size, value_error):
                             if self._closed:
                                 return
                             # Peek at the data we got, in case we can make sense of it:
                             self._process_packet([Protocol.GIBBERISH, buf])
                             # Then hang up:
-                            return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s" % (repr_ellipsized(buf), current_packet_size, bl))
+                            return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(buf), packet_size, data_size, value_error))
 
                         if current_packet_size>0:
                             #we had the size, so the packet should have been valid!
-                            packet_error(self._read_buffer)
+                            packet_error(self._read_buffer, current_packet_size, bl, e)
                             return
                         else:
                             #wait a little before deciding
                             #unsized packets are either old clients (don't really care about them)
                             #or hello packets (small-ish)
-                            def check_error_state(old_buffer):
+                            def check_error_state(old_buffer, packet_size, data_size, value_error):
+                                log.info("check_error_state old_buffer=%s, read buffer=%s", old_buffer, self._read_buffer)
                                 if old_buffer==self._read_buffer:
-                                    packet_error(self._read_buffer)
-                            gobject.timeout_add_seconds(1000, check_error_state, self._read_buffer)
+                                    packet_error(self._read_buffer, packet_size, data_size, value_error)
+                            log.info("error parsing packet without a size header: %s, current_packet_size=%s, will check again in 1 second", e, current_packet_size)
+                            gobject.timeout_add(1000, check_error_state, self._read_buffer, current_packet_size, bl, e)
                             break
 
                     current_packet_size = -1

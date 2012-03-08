@@ -11,7 +11,7 @@ log = Logger()
 
 from wimpiggy.util import AdHocStruct
 
-def test_DoS(client_class, args):
+def test_DoS(client_class_constructor, args):
     """ utility method for running DoS tests
         See: test_DoS_*_client.py
     """
@@ -34,8 +34,10 @@ def test_DoS(client_class, args):
     sock.connect(target)
     conn = SocketConnection(sock)
     print("socket connection=%s" % conn)
-    app = client_class(conn, opts)
+    app = client_class_constructor(conn, opts)
     try:
         app.run()
     finally:
         app.cleanup()
+    print("ended")
+    print("")
