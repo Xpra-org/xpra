@@ -31,12 +31,17 @@
 			android:orientation="horizontal"
 			android:background="#BBB">
 
+			<ImageButton android:id="@+id/xpra_window_keyboard"
+			    android:contentDescription="@string/xpra_window_keyboard"
+				android:background="@drawable/keyboard"
+				style="@style/XpraWindowButton" />
+
 			<ImageButton android:id="@+id/xpra_window_maximize"
 			    android:contentDescription="@string/xpra_window_maximize"
 				android:background="@drawable/maximize_window"
 				style="@style/XpraWindowButton" />
 
-			<ImageButton android:id="@+id/xpra_window_close"
+						<ImageButton android:id="@+id/xpra_window_close"
 			    android:contentDescription="@string/xpra_window_close"
 				android:background="@drawable/close_window"
 				style="@style/XpraWindowButton" />

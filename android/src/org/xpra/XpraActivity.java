@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 public class XpraActivity extends Activity implements View.OnLongClickListener, View.OnClickListener {
@@ -35,6 +36,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	protected DragController mDragController;
 	protected DragLayer mDragLayer; // The ViewGroup that supports drag-drop.
 
+	protected XpraWindow softKeyboardOwner = null;
 	protected final Handler handler = new Handler();
 	protected AndroidXpraClient client = null;
 	protected String host = null;
@@ -211,6 +213,26 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 		});
 	}
 
+	public void toggleSoftKeyboard(final XpraWindow window) {
+		Log.i(this.TAG, "toggleSoftKeyboard(" + window + ") softKeyboardOwner="+this.softKeyboardOwner);
+		final InputMethodManager imm = (InputMethodManager) window.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+		window.post(new Runnable() {
+	        @Override
+	        public void run() {
+	        	XpraActivity activity = XpraActivity.this;
+	    		if (activity.softKeyboardOwner!=null) {
+	    			activity.softKeyboardOwner = null;
+	    			imm.hideSoftInputFromWindow(window.getApplicationWindowToken(), 0);
+	    		}
+	    		else {
+	    			activity.softKeyboardOwner = window;
+	    			imm.showSoftInput(window, InputMethodManager.SHOW_FORCED);
+	    			//imm.viewClicked(XpraActivity.this.mDragLayer);
+	    		}
+	        }
+	    });
+	}
+	
 	public void toast(String msg) {
 		Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
 	}

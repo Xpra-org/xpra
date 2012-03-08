@@ -8,4 +8,5 @@
     <string name="xpra_window_maximize">Maximize Button</string>
     <string name="xpra_window_close">Close Button</string>
     <string name="xpra_window_contents">Window Contents</string>
+    <string name="xpra_window_keyboard">Keyboard Button</string>
 </resources>

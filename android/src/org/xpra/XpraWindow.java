@@ -18,6 +18,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.SpannableStringBuilder;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -28,6 +31,9 @@ import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.View.OnKeyListener;
 import android.view.ViewGroup;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -46,6 +52,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 
 	protected RelativeLayout topBar = null;
 	protected ImageView windowIcon = null;
+	protected ImageButton keyboard = null;
 	protected ImageButton maximise = null;
 	protected ImageButton close = null;
 	protected ImageView imageView = null;
@@ -100,6 +107,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.override_redirect = _override_redirect;
 		this.topBar = (RelativeLayout) this.findViewById(R.id.xpra_window_top_bar);
 		this.windowIcon = (ImageView) this.findViewById(R.id.xpra_window_icon);
+		this.keyboard = (ImageButton) this.findViewById(R.id.xpra_window_keyboard);
 		this.maximise = (ImageButton) this.findViewById(R.id.xpra_window_maximize);
 		this.close = (ImageButton) this.findViewById(R.id.xpra_window_close);
 		this.imageView = (ImageView) this.findViewById(R.id.xpra_window_contents);
@@ -137,6 +145,14 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			wy = 0;
 		this.log("init(...) wx="+wx+", wy="+wy+", ww="+ww+", wh="+wh+", top bar height: "+this.topBarHeight+", notificationHeight="+this.notificationHeight);
 		this.setLayoutParams(new AbsoluteLayoutParams(ww, wh, wx, wy));
+		this.keyboard.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				XpraWindow.this.log("onClick() toggling keyboard for "+XpraWindow.this);
+				XpraWindow.this.requestFocus();
+				XpraWindow.this.activity.toggleSoftKeyboard(XpraWindow.this);
+			}
+		});
 		this.maximise.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -173,11 +189,65 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	}
 
 	@Override
+    public boolean onCheckIsTextEditor() {
+        this.log("onCheckIsTextEditor()");
+        return true;
+    }
+
+	@Override
+	public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+		this.log("onCreateInputConnection("+outAttrs+")");
+		BaseInputConnection bic = null;
+		if (true)
+			bic = new XpraInputConnection(this, false);
+		else
+			bic = new BaseInputConnection(this, false);
+		outAttrs.actionLabel = null;
+        outAttrs.inputType = InputType.TYPE_NULL;
+        outAttrs.imeOptions = EditorInfo.IME_ACTION_NEXT;
+        return	bic;
+	}
+
+	public class XpraInputConnection extends BaseInputConnection {
+	    private SpannableStringBuilder _editable;
+
+	    @Override
+		public boolean sendKeyEvent(KeyEvent event) {
+			XpraWindow.this.log("sendKeyEvent("+event+")");
+	    	return super.sendKeyEvent(event);
+	    }
+
+	    public XpraInputConnection(View targetView, boolean fullEditor) {
+	        super(targetView, fullEditor);
+	    }
+
+	    public Editable getEditable() {
+			XpraWindow.this.log("getEditable()");
+	        if (_editable == null) {
+	            _editable = (SpannableStringBuilder) Editable.Factory.getInstance()
+	            .newEditable("Placeholder");
+	        }
+	        return _editable;
+	    }
+
+	    public boolean commitText(CharSequence text, int newCursorPosition) {
+			XpraWindow.this.log("commitText("+text+", "+newCursorPosition+")");
+	        _editable.append(text);
+	        return true;
+	    }
+	}
+
+
+
+
+
+
+	@Override
 	public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		this.log("onMeasure("+widthMeasureSpec+", "+heightMeasureSpec+")");
 	}
-	
+
 	public void do_map_event() {
 		if (this.override_redirect)
 			return;
@@ -222,7 +292,6 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	}
 
 	public void maximize() {
-		log("maximize()");
 		if (this.maximized) {
 			this.setLayoutParams(this.unMaximizedLayoutParams);
 			this.maximized = false;
@@ -277,6 +346,12 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			this.client.send("unmap-window", this.id);
 	}
 
+	@Override
+	public boolean onKeyPreIme (int keyCode, KeyEvent event) {
+		this.log("onKeyPreIme(" + keyCode + ", " + event + ")");
+		return super.onKeyPreIme(keyCode, event);
+	}
+	
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
 		this.log("onKey(" + v + ", " + keyCode + ", " + event + ")");
@@ -493,8 +568,10 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 				@Override
 				public void run() {
 					XpraWindow.this.imageView.setImageDrawable(null);
-					XpraWindow.this.backing.recycle();
-					XpraWindow.this.backing = null;
+					if (XpraWindow.this.backing!=null) {
+						XpraWindow.this.backing.recycle();
+						XpraWindow.this.backing = null;
+					}
 				}
 			});
 		}
