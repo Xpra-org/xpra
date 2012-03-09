@@ -230,12 +230,12 @@ class ClipboardProxy(gtk.Invisible):
         if target == "TIMESTAMP":
             pass
         elif target == "MULTIPLE":
-            targets = []
-            def get_targets():
+            def get_targets(targets):
                 atoms = prop_get(event.window, event.property, ["multiple-conversion"])
                 log("MULTIPLE clipboard atoms: %r", atoms)
                 targets += atoms[::2]
-            trap.swallow(get_targets)
+            targets = []
+            trap.swallow(get_targets, targets)
             log("MULTIPLE clipboard targets: %r", targets)
             for target in targets:
                 self.selection_add_target(self._selection, target, 0)
