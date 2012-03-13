@@ -841,7 +841,7 @@ class XpraServer(gobject.GObject):
             except:
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
-        self._send(["bell", wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name])
+        self._send(["bell", wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or ""])
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, self.send_notifications)
