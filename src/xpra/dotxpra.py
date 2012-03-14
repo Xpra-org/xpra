@@ -15,17 +15,18 @@ class ServerSockInUse(Exception):
     pass
 
 class DotXpra(object):
-    def __init__(self, dir=None):
+    def __init__(self, sockdir=None, confdir=None):
         assert XPRA_LOCAL_SERVERS_SUPPORTED
-        if dir is None:
-            dir = os.path.expanduser("~/.xpra")
-        self._dir = dir
-        if not os.path.exists(self._dir):
-            os.mkdir(dir, 0700)
+        self._confdir = os.path.expanduser(confdir or "~/.xpra")
+        self._sockdir = os.path.expanduser(sockdir or "~/.xpra")
+        if not os.path.exists(self._confdir):
+            os.mkdir(self._confdir, 0700)
+        if not os.path.exists(self._sockdir):
+            os.mkdir(self._sockdir, 0700)
         self._prefix = "%s-" % (socket.gethostname(),)
 
-    def dir(self):
-        return self._dir
+    def confdir(self):
+        return self._confdir
 
     def _normalize_local_display_name(self, local_display_name):
         if not local_display_name.startswith(":"):
@@ -37,9 +38,15 @@ class DotXpra(object):
             assert char in "0123456789"
         return local_display_name
 
-    def socket_path(self, local_display_name):
+    def make_path(self, local_display_name, dirpath ):
         local_display_name = self._normalize_local_display_name(local_display_name)
-        return os.path.join(self._dir, self._prefix + local_display_name[1:])
+        return os.path.join( dirpath , self._prefix + local_display_name[1:])
+
+    def socket_path(self, local_display_name):
+        return self.make_path(local_display_name, self._sockdir)
+
+    def conf_path(self, local_display_name):
+        return self.make_path(local_display_name, self._confdir)
 
     LIVE = "LIVE"
     DEAD = "DEAD"
@@ -74,7 +81,7 @@ class DotXpra(object):
 
     def sockets(self):
         results = []
-        base = os.path.join(self._dir, self._prefix)
+        base = os.path.join(self._sockdir, self._prefix)
         potential_sockets = glob.glob(base + "*")
         for path in potential_sockets:
             if stat.S_ISSOCK(os.stat(path).st_mode):

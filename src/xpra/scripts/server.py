@@ -133,10 +133,16 @@ fi
 """)
     return "".join(script)
 
-def create_unix_domain_socket(sockpath):
+def create_unix_domain_socket(sockpath, mmap_group):
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #bind the socket, using umask to set the correct permissions
+    if mmap_group:
+        orig_umask = os.umask(0117) #660
+    else:
+        orig_umask = os.umask(0177) #600
     listener.bind(sockpath)
+    os.umask(orig_umask)
     return listener
 
 def create_tcp_socket(parser, spec):
@@ -181,7 +187,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     assert mode in ("start", "upgrade")
     upgrading = (mode == "upgrade")
 
-    dotxpra = DotXpra()
+    dotxpra = DotXpra(opts.sockdir)
 
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -191,21 +197,22 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    scriptpath = os.path.join(dotxpra.dir(), "run-xpra")
+    scriptpath = os.path.join(dotxpra.confdir(), "run-xpra")
 
     # Save the starting dir now, because we'll lose track of it when we
     # daemonize:
     starting_dir = os.getcwd()
 
     clobber = upgrading or opts.use_display
+    try:
+        sockpath = dotxpra.server_socket_path(display_name, clobber)
+    except ServerSockInUse:
+        parser.error("You already have an xpra server running at %s\n"
+                     "  (did you want 'xpra upgrade'?)"
+                     % (display_name,))
     # Daemonize:
     if opts.daemon:
-        try:
-            logpath = dotxpra.server_socket_path(display_name, clobber) + ".log"
-        except ServerSockInUse:
-            parser.error("You already have an xpra server running at %s\n"
-                         "  (did you want 'xpra upgrade'?)"
-                         % (display_name,))
+        logpath = dotxpra.conf_path(display_name) + ".log"
         sys.stderr.write("Entering daemon mode; "
                          + "any further errors will be reported to:\n"
                          + ("  %s\n" % logpath))
@@ -299,9 +306,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         save_pid(xvfb_pid)
 
     sockets = []
-    sockpath = dotxpra.server_socket_path(display_name, clobber)
     #print("creating server socket %s" % sockpath)
-    sockets.append(create_unix_domain_socket(sockpath))
+    sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
     def cleanup_socket():
         print("removing socket %s" % sockpath)
         try:

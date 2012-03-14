@@ -27,10 +27,11 @@ log = Logger()
 # (os.read/os.write-style interface) two-way byte stream:
 
 class TwoFileConnection(object):
-    def __init__(self, writeable, readable, abort_test=None):
+    def __init__(self, writeable, readable, abort_test=None, target=None):
         self._writeable = writeable
         self._readable = readable
         self._abort_test = abort_test
+        self.target = target
 
     def may_abort(self, action):
         """ if abort_test is defined, run it """
@@ -49,9 +50,13 @@ class TwoFileConnection(object):
         self._writeable.close()
         self._readable.close()
 
+    def __str__(self):
+        return "TwoFileConnection(%s)" % str(self.target)
+
 class SocketConnection(object):
-    def __init__(self, s):
+    def __init__(self, s, target):
         self._s = s
+        self.target = target
 
     def read(self, n):
         return self._s.recv(n)
@@ -61,7 +66,10 @@ class SocketConnection(object):
 
     def close(self):
         return self._s.close()
-        
+
+    def __str__(self):
+        return "SocketConnection(%s)" % str(self.target)
+
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str) and len(obj) > limit:
         return repr(obj[:limit]) + "..."

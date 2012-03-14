@@ -163,6 +163,12 @@ def main(script_file, cmdline):
     parser.add_option("--ssh", action="store",
                       dest="ssh", default=DEFAULT_SSH_CMD, metavar="CMD",
                       help="How to run ssh (default: '%default')")
+    parser.add_option("--socket-dir", action="store",
+                      dest="sockdir", default="~/.xpra",
+                      help="Directory to place the socket file in (default: '%default')")
+    parser.add_option("--mmap-group", action="store_true",
+                      dest="mmap_group", default=False,
+                      help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
     parser.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=".xpra/run-xpra",
                       metavar="CMD",
@@ -263,6 +269,7 @@ def parse_display_name(parser, opts, display_name):
             "type": "unix-domain",
             "local": True,
             "display": display_name,
+            "sockdir": opts.sockdir,
             }
         return desc
     elif display_name.startswith("tcp:"):
@@ -284,7 +291,7 @@ def pick_display(parser, opts, extra_args):
         if not XPRA_LOCAL_SERVERS_SUPPORTED:
             parser.error("need to specify a display")
         # Pick a default server
-        sockdir = DotXpra()
+        sockdir = DotXpra(opts.sockdir)
         servers = sockdir.sockets()
         live_servers = [display
                         for (state, display) in servers
@@ -305,7 +312,7 @@ def _socket_connect(sock, target):
         sock.connect(target)
     except socket.error, e:
         sys.exit("Connection failed: %s" % (e,))
-    return SocketConnection(sock)
+    return SocketConnection(sock, target)
 
 def connect_or_fail(display_desc):
     if display_desc["type"] == "ssh":
@@ -324,18 +331,18 @@ def connect_or_fail(display_desc):
                 from wimpiggy.util import gtk_main_quit_really
                 gtk_main_quit_really()
                 raise IOError(error_message)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=cmd)
 
     elif XPRA_LOCAL_SERVERS_SUPPORTED and display_desc["type"] == "unix-domain":
-        sockdir = DotXpra()
+        sockdir = DotXpra(display_desc["sockdir"])
         sock = socket.socket(socket.AF_UNIX)
-        return _socket_connect(sock,
-                               sockdir.socket_path(display_desc["display"]))
+        sockfile = sockdir.socket_path(display_desc["display"])
+        return _socket_connect(sock, sockfile)
 
     elif display_desc["type"] == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        return _socket_connect(sock,
-                               (display_desc["host"], display_desc["port"]))
+        tcp_endpoint = (display_desc["host"], display_desc["port"])
+        return _socket_connect(sock, tcp_endpoint)
 
     else:
         assert False, "unsupported display type in connect"
@@ -405,13 +412,12 @@ def run_stop(parser, opts, extra_args):
     while conn.read(4096):
         pass
     if display_desc["local"]:
-        sockdir = DotXpra()
+        sockdir = DotXpra(opts.sockdir)
         for _ in xrange(6):
             final_state = sockdir.server_state(display_desc["display"])
             if final_state is DotXpra.LIVE:
-                time.sleep(0.5)
-            else:
                 break
+            time.sleep(0.5)
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display_desc["display"])
             sys.exit(0)
@@ -423,7 +429,7 @@ def run_stop(parser, opts, extra_args):
             print("Failed to shutdown xpra at %s" % display_desc["display"])
             sys.exit(1)
         else:
-            assert False
+            assert False, "invalid state: %s" % final_state
     else:
         print("Sent shutdown command")
 
@@ -431,7 +437,7 @@ def run_list(parser, opts, extra_args):
     assert "gtk" not in sys.modules
     if extra_args:
         parser.error("too many arguments for mode")
-    sockdir = DotXpra()
+    sockdir = DotXpra(opts.sockdir)
     results = sockdir.sockets()
     if not results:
         sys.stdout.write("No xpra sessions found\n")

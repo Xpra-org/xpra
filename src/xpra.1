@@ -24,6 +24,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
+[\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
@@ -45,20 +46,26 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tray\-icon=filename\fP]
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 [\fB\-\-password\-file=filename\fP]
+[\fB\-\-socket\-dir=DIR\fP]
+[\fB\-\-mmap\-group\fP]
 .HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-socket\-dir=DIR\fP]
 .HP
-\fBxpra\fP \fBlist\fP
+\fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:DISPLAY\fP [...any options accepted by
 \fBxpra start\fP...]
@@ -255,6 +262,15 @@ compressed but also lossless so it can be used instead of
 When specifying this option on the server, it will act as default
 for clients that do not specify which encoding they want to be using.
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
+.TP
+\fB\-\-socket\-dir\fP=\fIDIR\fP
+Location where to write the Xpra socket file. Defaults to ~/.xpra
+
+When using the socket-dir option, it is necessary to specify socket-dir
+on all following commands, for xpra to work with the open sessions.
+
+By specifying a shared directory this can be coupled with the
+mmap-group option to connect Xpra sessions across user accounts.
 
 .SS Options for start, upgrade
 .TP
@@ -418,6 +434,11 @@ This options applies to Mac OS X and Microsoft Windows only
 and it allows the icon shown in the dock/tray to be specified.
 By default it uses a simple default 'xpra' icon if it finds it.
 (on Windows, the icon must be in \fBico\fP format)
+.TP
+\fB\-\-mmap\-group\fP
+Sets the mmap file's gid to match the socket file's gid and sets
+the mmap file's permissions to 660.
+This is necessary to share the mmap file across user accounts.
 
 .SS Options for attach, stop
 .TP

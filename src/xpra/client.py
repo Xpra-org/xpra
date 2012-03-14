@@ -434,18 +434,23 @@ class XpraClient(XpraClientBase):
                 import tempfile
                 import uuid
                 import ctypes
-                from stat import S_IRUSR,S_IWUSR
+                from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
                 mmap_dir = os.getenv("TMPDIR", "/tmp")
                 if not os.path.exists(mmap_dir):
                     raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+                #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures 
+                #that the file is readable and writable only by the creating user ID
                 temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 #keep a reference to it so it does not disappear!
                 self._mmap_temp_file = temp
                 self.mmap_file = temp.name
-                #ensure that the permissions are strict:
-                os.chmod(self.mmap_file, S_IRUSR|S_IWUSR)
-                self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
                 fd = temp.file.fileno()
+                #set the group permissions and gid if the mmap-group option is specified
+                if opts.mmap_group and type(conn.target)==str and os.path.exists(conn.target):
+                    s = os.stat(conn.target)
+                    os.fchown(fd, -1, s.st_gid)
+                    os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
+                self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
                 log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
                 os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
                 assert os.write(fd, '\x00')
