@@ -45,10 +45,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Mar 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
+* Thu Mar 15 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
+- mmap: options to place sockets in /tmp and share mmap area across users via unix groups
 - remove large amount of compatiblity code for older versions
 - fix for Mac OS X clients sending hexadecimal keysyms
 - notifications systems with dbus: re-connect if needed

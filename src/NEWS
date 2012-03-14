@@ -1,8 +1,9 @@
-v0.1.0 (2012-03-08)
+v0.1.0 (2012-03-15)
 ======================
 	-- security: strict filtering of packet handlers until connection authenticated
 	-- prevent DoS: limit number of concurrent connections attempting login (20)
 	-- prevent DoS: limit initial packet size (memory exhaustion: 32KB)
+	-- mmap: options to place sockets in /tmp and share mmap area across users via unix groups
 	-- remove large amount of compatiblity code for older versions
 	-- fix for Mac OS X clients sending hexadecimal keysyms
 	-- notifications systems with dbus: re-connect if needed

@@ -2,6 +2,7 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   * security: strict filtering of packet handlers until connection authenticated
   * prevent DoS: limit number of concurrent connections attempting login (20)
   * prevent DoS: limit initial packet size (memory exhaustion: 32KB)
+  * mmap: options to place sockets in /tmp and share mmap area across users via unix groups
   * remove large amount of compatiblity code for older versions
   * fix for Mac OS X clients sending hexadecimal keysyms
   * notifications systems with dbus: re-connect if needed
@@ -20,7 +21,7 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   *	turn off compression over local connections (when mmap is enabled)
   *	clients can specify maximum refresh rate and screen update batching options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Mar 2012 17:01:12 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 15 Mar 2012 03:44:29 +0700
 
 xpra (0.0.7.36-1) UNRELEASED; urgency=low
   * fix clipboard bug which was causing Java applications to crash
