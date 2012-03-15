@@ -44,14 +44,14 @@ class WMSizeHints(object):
         # pre-ICCCM size is 15
         data = _force_length("WM_SIZE_HINTS", data, 18*4, noerror_length=15*4)
         (flags,
-         pad1, pad2, pad3, pad4,
+         pad1, pad2, pad3, pad4,            #@UnusedVariable
          min_width, min_height,
          max_width, max_height,
          width_inc, height_inc,
          min_aspect_num, min_aspect_denom,
          max_aspect_num, max_aspect_denom,
          base_width, base_height,
-         win_gravity) = struct.unpack("=" + "I" * 18, data)
+         win_gravity) = struct.unpack("=" + "I" * 18, data) #@UnusedVariable
         #print(repr(data))
         #print(struct.unpack("@" + "i" * 18, data))
         # We only extract the pieces we care about:
@@ -83,8 +83,9 @@ class WMSizeHints(object):
 class WMHints(object):
     def __init__(self, disp, data):
         data = _force_length("WM_HINTS", data, 9 * 4)
-        (flags, input, initial_state,
-         icon_pixmap, icon_window, icon_x, icon_y, icon_mask,
+        (flags, _input, initial_state,  #@UnusedVariable
+         icon_pixmap, icon_window,      #@UnusedVariable
+         icon_x, icon_y, icon_mask,     #@UnusedVariable
          window_group) = struct.unpack("=" + "i" * 9, data)
         # NB the last field is missing from at least some ICCCM 2.0's (typo).
         # FIXME: extract icon stuff too
@@ -239,7 +240,7 @@ def _prop_encode(disp, type, value):
 
 def _prop_encode_scalar(disp, type, value):
     (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
-    assert isinstance(value, pytype)
+    assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, format, serialize(disp, value))
 
 def _prop_encode_list(disp, type, value):
