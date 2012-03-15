@@ -438,15 +438,6 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
         objects.append(PyGdkAtom_New(array[i]))
     return objects
 
-def gdk_atom_array_from_gdk_atoms(strs_or_xatoms):
-    a = []
-    for str_or_xatom in strs_or_xatoms:
-        gdkatom = gtk.gdk.atom_intern(str_or_xatom)
-        if gdkatom:
-            v = PyGdkAtom_Get(gdkatom)
-            a.append(v)
-    return a
-
 
 # Property handling:
 

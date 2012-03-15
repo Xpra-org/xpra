@@ -5,10 +5,7 @@
 
 import struct
 
-from wimpiggy.lowlevel import (
-                               gdk_atom_objects_from_gdk_atom_array,    #@UnresolvedImport
-                               gdk_atom_array_from_gdk_atoms            #@UnresolvedImport
-                               )
+from wimpiggy.lowlevel import (get_xatom, gdk_atom_objects_from_gdk_atom_array) #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -33,7 +30,7 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
 
     def _munge_wire_selection_to_raw(self, encoding, datatype, format, data):
         if encoding == "atoms":
-            gdkatoms = gdk_atom_array_from_gdk_atoms(data)
-            log.debug("gdkatoms(%s)=%s", data, gdkatoms)
-            return struct.pack("=" + "L" * len(gdkatoms), *gdkatoms)
+            ints = [get_xatom(a) for a in data]
+            log.debug("wire to raw: atoms(%s)=%s", data, ints)
+            return struct.pack("=" + "L" * len(ints), *ints)
         return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, format, data)
