@@ -5,6 +5,7 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   * mmap: options to place sockets in /tmp and share mmap area across users via unix groups
   * remove large amount of compatiblity code for older versions
   * fix for Mac OS X clients sending hexadecimal keysyms
+  * fix for clipboard sharing and some applications (ie: Qt)
   * notifications systems with dbus: re-connect if needed
   * notifications: try not to interfere with existing notification services
   * mmap: check for protected file access and ignore rather than error out (oops)
@@ -21,7 +22,7 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   *	turn off compression over local connections (when mmap is enabled)
   *	clients can specify maximum refresh rate and screen update batching options
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 15 Mar 2012 03:44:29 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 15 Mar 2012 18:02:25 +0700
 
 xpra (0.0.7.36-1) UNRELEASED; urgency=low
   * fix clipboard bug which was causing Java applications to crash

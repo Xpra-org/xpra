@@ -52,6 +52,7 @@ So basically it's screen for remote X apps.
 - mmap: options to place sockets in /tmp and share mmap area across users via unix groups
 - remove large amount of compatiblity code for older versions
 - fix for Mac OS X clients sending hexadecimal keysyms
+- fix for clipboard sharing and some applications (ie: Qt)
 - notifications systems with dbus: re-connect if needed
 - notifications: try not to interfere with existing notification services
 - mmap: check for protected file access and ignore rather than error out (oops)
