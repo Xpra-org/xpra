@@ -189,10 +189,10 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	}
 
 	@Override
-    public boolean onCheckIsTextEditor() {
-        this.log("onCheckIsTextEditor()");
-        return true;
-    }
+	public boolean onCheckIsTextEditor() {
+		this.log("onCheckIsTextEditor()");
+		return true;
+	}
 
 	@Override
 	public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
@@ -203,38 +203,40 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		else
 			bic = new BaseInputConnection(this, false);
 		outAttrs.actionLabel = null;
-        outAttrs.inputType = InputType.TYPE_NULL;
-        outAttrs.imeOptions = EditorInfo.IME_ACTION_NEXT;
-        return	bic;
+		outAttrs.inputType = InputType.TYPE_NULL;
+		outAttrs.imeOptions = EditorInfo.IME_ACTION_NEXT;
+		return	bic;
 	}
 
 	public class XpraInputConnection extends BaseInputConnection {
-	    private SpannableStringBuilder _editable;
+		private SpannableStringBuilder _editable;
 
-	    @Override
+		@Override
 		public boolean sendKeyEvent(KeyEvent event) {
 			XpraWindow.this.log("sendKeyEvent("+event+")");
-	    	return super.sendKeyEvent(event);
-	    }
+			return super.sendKeyEvent(event);
+		}
 
-	    public XpraInputConnection(View targetView, boolean fullEditor) {
-	        super(targetView, fullEditor);
-	    }
+		public XpraInputConnection(View targetView, boolean fullEditor) {
+			super(targetView, fullEditor);
+		}
 
-	    public Editable getEditable() {
+		@Override
+		public Editable getEditable() {
 			XpraWindow.this.log("getEditable()");
-	        if (_editable == null) {
-	            _editable = (SpannableStringBuilder) Editable.Factory.getInstance()
-	            .newEditable("Placeholder");
-	        }
-	        return _editable;
-	    }
+			if (this._editable == null) {
+				this._editable = (SpannableStringBuilder) Editable.Factory.getInstance()
+				.newEditable("Placeholder");
+			}
+			return this._editable;
+		}
 
-	    public boolean commitText(CharSequence text, int newCursorPosition) {
+		@Override
+		public boolean commitText(CharSequence text, int newCursorPosition) {
 			XpraWindow.this.log("commitText("+text+", "+newCursorPosition+")");
-	        _editable.append(text);
-	        return true;
-	    }
+			this._editable.append(text);
+			return true;
+		}
 	}
 
 
