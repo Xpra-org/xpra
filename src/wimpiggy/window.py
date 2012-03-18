@@ -510,7 +510,12 @@ class WindowModel(BaseWindowModel):
 
             XAddToSaveSet(self.client_window)
             self.client_window.reparent(self.corral_window, 0, 0)
-            client_size = self.client_window.get_geometry()[2:4]
+            w,h = self.client_window.get_geometry()[2:4]
+            hints = self.get_property("size-hints")
+            self._sanitize_size_hints(hints)
+            client_size = calc_constrained_size(w, h, hints)[:2]
+            log("setup_client() resizing windows to %s", client_size)
+            self.client_window.resize(*client_size)
             self.corral_window.resize(*client_size)
             self.client_window.show_unraised()
             self.client_window.get_geometry()
