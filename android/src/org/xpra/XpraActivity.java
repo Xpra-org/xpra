@@ -155,32 +155,38 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	}
 
 	protected void connect() {
-		try {
-			Log.e(this.TAG, "connect() to " + this.host + ":" + this.port);
-			SocketAddress sockaddr = new InetSocketAddress(this.host, this.port);
-			Socket sock = new Socket();
-			int timeout = 5 * 1000;
-			sock.connect(sockaddr, timeout);
-			sock.setKeepAlive(true);
-			this.client = new AndroidXpraClient(this, sock.getInputStream(), sock.getOutputStream());
-			this.client.setPassword(this.password);
-			this.client.setOnExit(new Runnable() {
-				@Override
-				public void run() {
-					XpraActivity.this.handler.post(new Runnable() {
+		Log.e(this.TAG, "connect() to " + this.host + ":" + this.port);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				XpraActivity activity = XpraActivity.this;
+				try {
+					SocketAddress sockaddr = new InetSocketAddress(activity.host, activity.port);
+					Socket sock = new Socket();
+					int timeout = 5 * 1000;
+					sock.connect(sockaddr, timeout);
+					sock.setKeepAlive(true);
+					activity.client = new AndroidXpraClient(activity, sock.getInputStream(), sock.getOutputStream());
+					activity.client.setPassword(activity.password);
+					activity.client.setOnExit(new Runnable() {
 						@Override
 						public void run() {
-							toast("Xpra client disconnected");
-							finish();
+							XpraActivity.this.handler.post(new Runnable() {
+								@Override
+								public void run() {
+									toast("Xpra client disconnected");
+									finish();
+								}
+							});
 						}
 					});
+					activity.client.run(new String[0]);
+				} catch (IOException e) {
+					Log.e(activity.TAG, "connect()", e);
+					activity.finish();
 				}
-			});
-			this.client.run(new String[0]);
-		} catch (IOException e) {
-			Log.e(this.TAG, "connect()", e);
-			this.finish();
-		}
+			}
+		}).start();
 	}
 
 	@Override
