@@ -1,4 +1,4 @@
-v0.1.0 (2012-03-15)
+v0.1.0 (2012-03-21)
 ======================
 	-- security: strict filtering of packet handlers until connection authenticated
 	-- prevent DoS: limit number of concurrent connections attempting login (20)
@@ -16,6 +16,7 @@ v0.1.0 (2012-03-15)
 	-- unpress keys all keys on start (if any)
 	-- fix screen size check: also check vertical size is sufficient
 	-- fix for invisible 0 by 0 windows: restore a minimum size
+	-- fix for window dimensions causing enless resizing or missing window contents
 	-- toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
 	-- build/deploy: don't modify file in source tree, generate it at build time only
 	-- add missing GPL2 license file to show in about dialog

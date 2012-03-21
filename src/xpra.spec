@@ -45,7 +45,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Mar 15 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
+* Wed Mar 21 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
@@ -62,6 +62,7 @@ So basically it's screen for remote X apps.
 - unpress keys all keys on start (if any)
 - fix screen size check: also check vertical size is sufficient
 - fix for invisible 0 by 0 windows: restore a minimum size
+- fix for window dimensions causing enless resizing or missing window contents
 - toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
 - build/deploy: don't modify file in source tree, generate it at build time only
 - add missing GPL2 license file to show in about dialog
