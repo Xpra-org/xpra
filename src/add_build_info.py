@@ -10,6 +10,7 @@ import subprocess, sys
 import getpass
 import socket
 import platform
+import os.path
 
 def get_svn_props():
     props = {
@@ -53,9 +54,11 @@ def get_svn_props():
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
-def append_properties_to_file(props):
-    #append to build_info.py:
-    f = open("./xpra/build_info.py", 'a')
+def save_properties_to_file(props):
+    filename = "./xpra/build_info.py"
+    if os.path.exists(filename):
+        os.unlink(filename)
+    f = open(filename, mode='w')
     for name,value in props.items():
         f.write("%s='%s'\n" % (name,value))
     f.close()
@@ -70,11 +73,7 @@ def main():
             }
     for k,v in get_svn_props().items():
         props[k] = v
-    append_properties_to_file(props)
-
-def append_svn_props():
-    props = get_svn_props()
-    append_properties_to_file(props)
+    save_properties_to_file(props)
 
 if __name__ == "__main__":
     main()
