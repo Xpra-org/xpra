@@ -403,7 +403,8 @@ def run_proxy(parser, opts, extra_args):
 
 def run_stop(parser, opts, extra_args):
     assert "gtk" not in sys.modules
-    magic_string = bencode(["hello", {"__prerelease_version": xpra.__version__}]) + bencode(["shutdown-server"])
+    magic_string = bencode(["hello", {"__prerelease_version": xpra.__version__,
+                                      "version": xpra.__version__}]) + bencode(["shutdown-server"])
 
     display_desc = pick_display(parser, opts, extra_args)
     conn = connect_or_fail(display_desc)
