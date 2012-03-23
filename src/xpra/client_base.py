@@ -279,4 +279,6 @@ class StopXpraClient(GLibXpraClient):
             self.quit()
         gobject.timeout_add(5*1000, stop_timeout)
         GLibXpraClient.__init__(self, conn, opts)
+
+    def _process_hello(self, packet):
         self.send(["shutdown-server"])
