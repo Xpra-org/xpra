@@ -189,6 +189,7 @@ class GLibXpraClient(XpraClientBase):
 
     def __init__(self, conn, opts):
         XpraClientBase.__init__(self, opts)
+        self.exit_code = 0
         self.ready(conn)
         self.send_hello()
 
@@ -198,6 +199,7 @@ class GLibXpraClient(XpraClientBase):
         gobject.threads_init()
         self.glib_mainloop = glib.MainLoop()
         self.glib_mainloop.run()
+        return  self.exit_code
 
     def quit(self, *args):
         self.glib_mainloop.quit()
@@ -212,6 +214,7 @@ class ScreenshotXpraClient(GLibXpraClient):
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
         def screenshot_timeout(*args):
+            self.exit_code = 1
             log.error("timeout: did not receive the screenshot")
             self.quit()
         gobject.timeout_add(10*1000, screenshot_timeout)
@@ -243,6 +246,7 @@ class VersionXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts):
         def version_timeout(*args):
+            self.exit_code = 1
             log.error("timeout: did not receive the version")
             self.quit()
         gobject.timeout_add(10*1000, version_timeout)
@@ -259,3 +263,15 @@ class VersionXpraClient(GLibXpraClient):
         log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
         capabilities["version_request"] = True
         return capabilities
+
+class StopXpraClient(GLibXpraClient):
+    """ stop a server """
+
+    def __init__(self, conn, opts):
+        def stop_timeout(*args):
+            self.exit_code = 1
+            log.error("timeout: server did not disconnect us")
+            self.quit()
+        gobject.timeout_add(5*1000, stop_timeout)
+        GLibXpraClient.__init__(self, conn, opts)
+        self.send(["shutdown-server"])

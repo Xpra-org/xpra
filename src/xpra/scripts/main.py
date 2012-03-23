@@ -403,36 +403,41 @@ def run_proxy(parser, opts, extra_args):
 
 def run_stop(parser, opts, extra_args):
     assert "gtk" not in sys.modules
-    magic_string = bencode(["hello", {"__prerelease_version": xpra.__version__,
-                                      "version": xpra.__version__}]) + bencode(["shutdown-server"])
+    from xpra.client_base import StopXpraClient
+
+    def show_final_state(display):
+        sockdir = DotXpra(opts.sockdir)
+        for _ in xrange(6):
+            final_state = sockdir.server_state(display)
+            if final_state is DotXpra.LIVE:
+                time.sleep(0.5)
+        if final_state is DotXpra.DEAD:
+            print("xpra at %s has exited." % display)
+            return 0
+        elif final_state is DotXpra.UNKNOWN:
+            print("How odd... I'm not sure what's going on with xpra at %s" % display)
+            return 1
+        elif final_state is DotXpra.LIVE:
+            print("Failed to shutdown xpra at %s" % display)
+            return 1
+        else:
+            assert False, "invalid state: %s" % final_state
+            return 1
 
     display_desc = pick_display(parser, opts, extra_args)
     conn = connect_or_fail(display_desc)
-    while magic_string:
-        magic_string = magic_string[conn.write(magic_string):]
-    while conn.read(4096):
-        pass
+    e = 1
+    try:
+        app = StopXpraClient(conn, opts)
+        e = app.run()
+    finally:
+        app.cleanup()
     if display_desc["local"]:
-        sockdir = DotXpra(opts.sockdir)
-        for _ in xrange(6):
-            final_state = sockdir.server_state(display_desc["display"])
-            if final_state is DotXpra.LIVE:
-                break
-            time.sleep(0.5)
-        if final_state is DotXpra.DEAD:
-            print("xpra at %s has exited." % display_desc["display"])
-            sys.exit(0)
-        elif final_state is DotXpra.UNKNOWN:
-            print("How odd... I'm not sure what's going on with xpra at %s"
-                   % display_desc["display"])
-            sys.exit(1)
-        elif final_state is DotXpra.LIVE:
-            print("Failed to shutdown xpra at %s" % display_desc["display"])
-            sys.exit(1)
-        else:
-            assert False, "invalid state: %s" % final_state
+        show_final_state(display_desc["display"])
     else:
         print("Sent shutdown command")
+    sys.exit(e)
+
 
 def run_list(parser, opts, extra_args):
     assert "gtk" not in sys.modules
