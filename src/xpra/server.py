@@ -1565,7 +1565,11 @@ class XpraServer(gobject.GObject):
                 self._server_source.close()
                 self._server_source = None
         #so it is now safe to clear them:
-        self._clear_keys_pressed()
+        #(this may fail during shutdown - which is ok)
+        try:
+            self._clear_keys_pressed()
+        except:
+            pass
         self._focus(0, [])
         log.info("Connection lost")
         self.close_mmap()

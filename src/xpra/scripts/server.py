@@ -25,7 +25,9 @@ def run_cleanups():
         try:
             c()
         except Exception, e:
-            print("error running cleanup %s: %s" % (c, e))
+            print("error running cleanup %s" % c)
+            import traceback
+            traceback.print_exception(*sys.exc_info())
 
 def deadly_signal(signum, frame):
     print("got signal %s, exiting" % signum)
