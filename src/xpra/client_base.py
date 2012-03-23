@@ -201,6 +201,11 @@ class GLibXpraClient(XpraClientBase):
         self.glib_mainloop.run()
         return  self.exit_code
 
+    def make_hello(self, challenge_response=None):
+        capabilities = XpraClientBase.make_hello(self, challenge_response)
+        capabilities["keyboard"] = False
+        return capabilities
+
     def quit(self, *args):
         self.glib_mainloop.quit()
 
@@ -234,7 +239,7 @@ class ScreenshotXpraClient(GLibXpraClient):
         self._packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
-        capabilities = XpraClientBase.make_hello(self, challenge_response)
+        capabilities = GLibXpraClient.make_hello(self, challenge_response)
         capabilities["screenshot_request"] = True
         return capabilities
 
@@ -259,7 +264,7 @@ class VersionXpraClient(GLibXpraClient):
         self.quit()
 
     def make_hello(self, challenge_response=None):
-        capabilities = XpraClientBase.make_hello(self, challenge_response)
+        capabilities = GLibXpraClient.make_hello(self, challenge_response)
         log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
         capabilities["version_request"] = True
         return capabilities

@@ -636,6 +636,7 @@ class XpraServer(gobject.GObject):
         self.xkbmap_mod_managed = None
         self.keycode_translation = {}
         self.keymap_changing = False
+        self.keyboard = True
         self.keyboard_sync = True
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -743,21 +744,24 @@ class XpraServer(gobject.GObject):
 
                 #now set all the keycodes:
                 self.clean_keyboard_state()
-                assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
-                self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
-
-                #now set the new modifier mappings:
-                self.clean_keyboard_state()
-                log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
-                if self.xkbmap_mod_meanings:
-                    #Unix-like OS provides modifier meanings:
-                    self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
-                elif self.xkbmap_keycodes:
-                    #non-Unix-like OS provides just keycodes for now:
-                    self._keynames_for_mod = set_modifiers_from_keycodes(self.xkbmap_keycodes)
-                else:
-                    log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
-                log.debug("keyname_for_mod=%s", self._keynames_for_mod)
+                self.keycode_translation = {}
+                self._keynames_for_mod = None
+                if self.keyboard:
+                    assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
+    
+                    #now set the new modifier mappings:
+                    self.clean_keyboard_state()
+                    log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+                    if self.xkbmap_mod_meanings:
+                        #Unix-like OS provides modifier meanings:
+                        self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
+                    elif self.xkbmap_keycodes:
+                        #non-Unix-like OS provides just keycodes for now:
+                        self._keynames_for_mod = set_modifiers_from_keycodes(self.xkbmap_keycodes)
+                    else:
+                        log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                    log.debug("keyname_for_mod=%s", self._keynames_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
         finally:
@@ -1005,6 +1009,8 @@ class XpraServer(gobject.GObject):
                 so we try to find the matching modifier in the currently pressed keys (keys_pressed)
                 to make sure we unpress the right one.
         """
+        if not self.keyboard:
+            return
         if not self._keynames_for_mod:
             log.debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
@@ -1380,6 +1386,7 @@ class XpraServer(gobject.GObject):
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
             self._protocol.jpegquality = capabilities["jpeg"]
+        self.keyboard = bool(capabilities.get("keyboard", True))
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
         if key_repeat:
@@ -1691,6 +1698,9 @@ class XpraServer(gobject.GObject):
 
 
     def _process_key_action(self, proto, packet):
+        if not self.keyboard:
+            log.info("ignoring key action packet since keyboard is turned off")
+            return
         (wid, keyname, pressed, modifiers, keyval, _, client_keycode) = packet[1:8]
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
@@ -1757,6 +1767,9 @@ class XpraServer(gobject.GObject):
             self.keys_repeat_timers[keycode] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
+        if not self.keyboard:
+            log.info("ignoring key repeat packet since keyboard is turned off")
+            return
         if len(packet)<6:
             #don't bother trying to make it work with old clients
             if self.keyboard_sync:
