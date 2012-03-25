@@ -794,6 +794,11 @@ class XpraServer(gobject.GObject):
         return self._upgrading
 
     def cleanup(self, *args):
+        if self.notifications_forwarder:
+            try:
+                self.notifications_forwarder.release()
+            except Exception, e:
+                log.error("failed to release dbus notification forwarder: %s", e)
         self.disconnect("shutting down")
 
     def _new_connection(self, listener, *args):

@@ -27,6 +27,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     CAPABILITIES = ["body", "icon-static"]
 
     def __init__(self, bus, notify_callback=None, close_callback=None):
+        self.bus = bus
         self.notify_callback = notify_callback
         self.close_callback = close_callback
         self.counter = 0
@@ -63,6 +64,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         log("CloseNotification(%s)", nid)
         if self.close_callback:
             self.close_callback(nid)
+
+    def release(self):
+        self.bus.release_name(BUS_NAME)
+
 
 def register(notify_callback=None, close_callback=None, replace=False):
     DBusGMainLoop(set_as_default=True)
