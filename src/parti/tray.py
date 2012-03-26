@@ -70,7 +70,7 @@ class TraySet(gobject.GObject):
     def __getitem__(self, tag):
         tray = self.get(tag)
         if tray is None:
-            raise KeyError, tag
+            raise KeyError(tag)
         return tag
 
     def get(self, tag):

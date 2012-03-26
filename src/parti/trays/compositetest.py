@@ -3,9 +3,18 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import gtk
 import parti.tray
 from wimpiggy.window import WindowView
+
+if sys.version < '3':
+    import codecs
+    def u(x):
+        return codecs.unicode_escape_decode(x)[0]
+else:
+    def u(x):
+        return x
 
 class CompositeTestTray(parti.tray.Tray, gtk.HPaned):
     def __init__(self, trayset, tag):
@@ -48,4 +57,4 @@ class CompositeTestTray(parti.tray.Tray, gtk.HPaned):
         for view in self.image_notebook.get_children():
             if view.model is window:
                 self.image_notebook.set_tab_label_text(view,
-                                                       u"CLONE: " + title)
+                                                       u("CLONE: ") + title)

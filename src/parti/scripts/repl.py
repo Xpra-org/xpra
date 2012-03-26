@@ -21,11 +21,11 @@ def main(cmdline):
 
     try:
         proxy = parti.bus.get_parti_proxy()
-        print "Using D-Bus to request running Parti spawn a REPL window"
+        print("Using D-Bus to request running Parti spawn a REPL window")
         proxy.SpawnReplWindow()
-        print "Done"
+        print("Done")
     except:
         if "_PARTI_PDB" in os.environ:
             import sys, pdb
-            pdb.post_mortem(sys.exc_traceback)
+            pdb.post_mortem(sys.exc_info()[2])
         raise

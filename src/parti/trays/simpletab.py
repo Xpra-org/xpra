@@ -47,7 +47,7 @@ class SimpleTabTray(parti.tray.Tray, gtk.HPaned):
         elif window in right_children:
             notebook = self.right_notebook
         else:
-            print "Mrr?"
+            print("Mrr?")
             return
         notebook.set_tab_label_text(window,
                                     window.get_property("title"))
