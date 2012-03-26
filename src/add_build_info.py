@@ -23,6 +23,7 @@ def get_svn_props():
     if not out:
         print("could not get version information")
         return  props
+    out = out.decode('utf-8')
     pos = out.find(":")
     if pos>=0:
         out = out[pos+1:]
@@ -33,7 +34,7 @@ def get_svn_props():
     if not rev_str:
         print("could not parse version information from string: %s" % rev_str)
         return  props
-        
+
     rev = int(rev_str)
     props["REVISION"] = rev
     #find number of local files modified:
@@ -43,8 +44,8 @@ def get_svn_props():
     if not out:
         print("could not get status of local files")
         return  props
-    
-    for line in out.splitlines():
+
+    for line in out.decode('utf-8').splitlines():
         if sys.platform.startswith("win") and line.find("\\wcw"):
             """ windows is easily confused, symlinks for example - ignore them """
             continue
