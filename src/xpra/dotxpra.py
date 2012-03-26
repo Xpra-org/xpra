@@ -11,6 +11,8 @@ import stat
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 
+o0700 = 448     #0o700
+
 class ServerSockInUse(Exception):
     pass
 
@@ -20,9 +22,9 @@ class DotXpra(object):
         self._confdir = os.path.expanduser(confdir or "~/.xpra")
         self._sockdir = os.path.expanduser(sockdir or "~/.xpra")
         if not os.path.exists(self._confdir):
-            os.mkdir(self._confdir, 0700)
+            os.mkdir(self._confdir, o0700)
         if not os.path.exists(self._sockdir):
-            os.mkdir(self._sockdir, 0700)
+            os.mkdir(self._sockdir, o0700)
         self._prefix = "%s-" % (socket.gethostname(),)
 
     def confdir(self):
@@ -73,7 +75,7 @@ class DotXpra(object):
         if not clobber:
             state = self.server_state(local_display_name)
             if state is not self.DEAD:
-                raise ServerSockInUse, (state, local_display_name)
+                raise ServerSockInUse((state, local_display_name))
         path = self.socket_path(local_display_name)
         if os.path.exists(path):
             os.unlink(path)

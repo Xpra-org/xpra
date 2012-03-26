@@ -83,7 +83,7 @@ class PyNOTIFYICONDATA:
 	def __setattr__(self, name, value):
 		# avoid wrong field names
 		if not hasattr(self, name):
-			raise NameError, name
+			raise NameError(name)
 		self.__dict__[name] = value
 
 	

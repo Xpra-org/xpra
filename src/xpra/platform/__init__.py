@@ -15,7 +15,7 @@ elif _sys.platform.startswith("darwin"):
 elif _os.name == "posix":
     from xpra.xposix import *
 else:
-    raise OSError, "Unknown OS %s" % (_os.name)
+    raise OSError("Unknown OS %s" % (_os.name))
 
 def add_notray_option(parser, extra_text=""):
     parser.add_option("--no-tray", action="store_true",

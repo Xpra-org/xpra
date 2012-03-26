@@ -31,11 +31,11 @@ def pkgconfig(*packages, **kw):
     if status!=0 and not ('clean' in sys.argv):
         raise Exception("call to pkg-config ('%s') failed" % (cmd,))
     for token in output.split():
-        if flag_map.has_key(token[:2]):
+        if token[:2] in flag_map:
             kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
         else: # throw others to extra_link_args
             kw.setdefault('extra_link_args', []).append(token)
-        for k, v in kw.iteritems(): # remove duplicates
+        for k, v in kw.items(): # remove duplicates
             kw[k] = list(set(v))
     return kw
 

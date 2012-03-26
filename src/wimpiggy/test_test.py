@@ -27,15 +27,15 @@ class TestTest(object):
         class BarError(Exception):
             pass
         def raises_foo():
-            raise FooError, "aiiieee"
+            raise FooError("aiiieee")
         def raises_bar():
-            raise BarError, "arrrggghhh"
+            raise BarError("arrrggghhh")
         def raises_nothing():
             pass
         def wants_args_raises_foo(*args, **kwargs):
             assert args == (1, 2)
             assert kwargs == {"a": 3, "b": 4}
-            raise FooError, "blearrghhh"
+            raise FooError("blearrghhh")
         # No exception:
         assert_raises(FooError, raises_foo)
         try:

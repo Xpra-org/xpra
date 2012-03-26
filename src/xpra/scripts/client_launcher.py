@@ -11,7 +11,10 @@ This is a simple GUI for starting the xpra client.
 
 import sys
 import os.path
-import thread
+try:
+	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
+except:
+	import thread					#@Reimport
 import subprocess
 
 import pygtk

@@ -126,7 +126,7 @@ def test_encoding():
         t(hello, "l5:hellod20:__prerelease_version8:0.0.7.2618:challenge_response40:ba59e4110119264f4a6eaf3adc075ea2c540855012:desktop_sizeli480ei800ee4:jpegi4eee")
 
     def test_large_hello():
-        d = {'start_time': 1325786122L,
+        d = {'start_time': 1325786122,
                 'resize_screen': False, 'bell': True, 'desktop_size': [800, 600], 'modifiers_nuisance': True,
                 'actual_desktop_size': [3840, 2560], 'encodings': ['rgb24', 'jpeg', 'png'],
                 'ping': True, 'damage_sequence': True, 'packet_size': True,

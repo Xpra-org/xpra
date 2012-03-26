@@ -15,7 +15,6 @@ from subprocess import Popen, PIPE
 import signal
 
 import xpra
-from xpra.bencode import bencode
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            DEFAULT_SSH_CMD,
@@ -407,7 +406,7 @@ def run_stop(parser, opts, extra_args):
 
     def show_final_state(display):
         sockdir = DotXpra(opts.sockdir)
-        for _ in xrange(6):
+        for _ in range(6):
             final_state = sockdir.server_state(display)
             if final_state is DotXpra.LIVE:
                 time.sleep(0.5)

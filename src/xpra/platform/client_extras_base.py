@@ -301,7 +301,7 @@ class ClientExtrasBase(object):
                 return False
             self.client.send_ping()
             def settimedeltastr(label, from_time):
-                delta = datetime.timedelta(seconds=(long(time.time())-long(from_time)))
+                delta = datetime.timedelta(seconds=(int(time.time())-int(from_time)))
                 label.set_text(str(delta))
             v = self.client._remote_version or "unknown"
             if self.client.mmap_enabled:
@@ -345,17 +345,17 @@ class ClientExtrasBase(object):
                     if v<0:
                         return  "n/a"
                     if v>1000*1000*1000:
-                        return "%sG" % (long(v/1000/1000/100)/10.0)
+                        return "%sG" % (int(v/1000/1000/100)/10.0)
                     elif v>1000*1000:
-                        return "%sM" % (long(v/1000/100)/10.0)
+                        return "%sM" % (int(v/1000/100)/10.0)
                     elif v>1000:
-                        return "%sK" % (long(v/100)/10.0)
+                        return "%sK" % (int(v/100)/10.0)
                     else:
                         return str(v)
                 def fpsstr(v):
                     if v<0:
                         return  "n/a"
-                    return "%s" % (long(v*100)/100.0)
+                    return "%s" % (int(v*100)/100.0)
                 def average(seconds):
                     total = 0
                     total_n = 0
@@ -379,7 +379,7 @@ class ClientExtrasBase(object):
                         return  None
                     avgs = avgs/total_n
                     elapsed = now-startt
-                    return long(total/elapsed), total_n/elapsed, mins, avgs, maxs
+                    return int(total/elapsed), total_n/elapsed, mins, avgs, maxs
                 p20 = average(20)
                 if p20:
                     avg20,fps20,mins,avgs,maxs = p20

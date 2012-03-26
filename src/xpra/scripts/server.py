@@ -19,12 +19,17 @@ import socket
 from xpra.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
+o0117 = 79
+o0177 = 127
+o0666 = 438
+o0700 = 448
+
 _cleanups = []
 def run_cleanups():
     for c in _cleanups:
         try:
             c()
-        except Exception, e:
+        except:
             print("error running cleanup %s" % c)
             import traceback
             traceback.print_exception(*sys.exc_info())
@@ -140,9 +145,9 @@ def create_unix_domain_socket(sockpath, mmap_group):
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
     if mmap_group:
-        orig_umask = os.umask(0117) #660
+        orig_umask = os.umask(o0117) #660
     else:
-        orig_umask = os.umask(0177) #600
+        orig_umask = os.umask(o0177) #600
     listener.bind(sockpath)
     os.umask(orig_umask)
     return listener
@@ -221,7 +226,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         # Do some work up front, so any errors don't get lost.
         if os.path.exists(logpath):
             os.rename(logpath, logpath + ".old")
-        logfd = os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0666)
+        logfd = os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, o0666)
         assert logfd > 2
         os.chdir("/")
 
@@ -248,7 +253,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # Unix is a little silly sometimes:
     umask = os.umask(0)
     os.umask(umask)
-    os.fchmod(scriptfile.fileno(), 0700 & ~umask)
+    os.fchmod(scriptfile.fileno(), o0700 & ~umask)
     scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir))
     scriptfile.close()
 

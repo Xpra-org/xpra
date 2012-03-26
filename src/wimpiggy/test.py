@@ -23,13 +23,12 @@ def assert_raises(exc_class, f, *args, **kwargs):
     except exc_class:
         pass
     except:
-        (cls, e, tb) = sys.exc_info()
-        raise AssertionError, (("unexpected exception: %s: %s\n"
+        (cls, e, _) = sys.exc_info()
+        raise AssertionError(("unexpected exception: %s: %s\n"
                                + "Original traceback:\n%s")
                                % (cls, e, traceback.format_exc()))
     else:
-        raise AssertionError, \
-              "wanted exception, got normal return (%r)" % (value,)
+        raise AssertionError("wanted exception, got normal return (%r)" % (value,))
 
 
 def assert_emits(f, obj, signal, slot=None):
@@ -54,7 +53,7 @@ def assert_emits(f, obj, signal, slot=None):
     assert backchannel["signal_was_emitted"]
     if backchannel["slot_exc"] is not None:
         exc = backchannel["slot_exc"]
-        raise exc[0], exc[1], exc[2]
+        raise exc[0](exc[1]).with_traceback(exc[2])
 
 def assert_mainloop_emits(obj, signal, slot=None):
     """Runs the mainloop and asserts that 'signal' is emitted.  Optionally,

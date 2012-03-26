@@ -264,7 +264,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             trap.call(setup)
         except XError, e:
-            raise Unmanageable, e
+            raise Unmanageable(e)
 
     def _forward_contents_changed(self, obj, event):
         self.emit("client-contents-changed", event)
@@ -337,13 +337,13 @@ class OverrideRedirectWindowModel(BaseWindowModel):
             # already generated, and our request for that event is too late!
             # So double check now, *after* putting in our request:
             if not is_mapped(self.client_window):
-                raise Unmanageable, "window already unmapped"
+                raise Unmanageable("window already unmapped")
 
             self._read_initial_properties()
         try:
             trap.call(setup)
         except XError, e:
-            raise Unmanageable, e
+            raise Unmanageable(e)
 
     def do_wimpiggy_unmap_event(self, event):
         self.unmanage()
@@ -523,7 +523,7 @@ class WindowModel(BaseWindowModel):
             trap.call(setup_client)
             trap.call(self.client_window.get_geometry)
         except XError, e:
-            raise Unmanageable, e
+            raise Unmanageable(e)
         self._setup_done = True
 
     def prop_get(self, key, type, ignore_errors=False):

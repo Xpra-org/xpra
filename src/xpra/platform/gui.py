@@ -15,4 +15,4 @@ elif _sys.platform.startswith("darwin"):
 elif _os.name == "posix":
     from xpra.xposix.gui import *
 else:
-    raise OSError, "Unknown OS %s" % (_os.name)
+    raise OSError("Unknown OS %s" % (_os.name))

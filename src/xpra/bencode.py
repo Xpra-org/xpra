@@ -9,6 +9,9 @@
 
 # Original version written by Petru Paler
 
+import sys
+if sys.version > '3':
+    long = int              #@ReservedAssignment
 
 def decode_int(x, f):
     f += 1

@@ -9,7 +9,10 @@ Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
 import struct
-from cStringIO import StringIO
+try:
+    from io import StringIO         #@UnresolvedImport @UnusedImport (python3)
+except:
+    from StringIO import StringIO   #@Reimport
 import gtk.gdk
 import cairo
 from wimpiggy.lowlevel import (
@@ -25,6 +28,12 @@ from wimpiggy.lowlevel import (
 from wimpiggy.error import trap, XError
 from wimpiggy.log import Logger
 log = Logger()
+
+import sys
+if sys.version > '3':
+    long = int              #@ReservedAssignment
+    unicode = str           #@ReservedAssignment
+
 
 def unsupported(*args):
     raise Exception("unsupported")

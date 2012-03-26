@@ -13,6 +13,14 @@ import wimpiggy.prop as p
 import wimpiggy.lowlevel
 import wimpiggy.error
 
+if sys.version < '3':
+    import codecs
+    def u(x):
+        return codecs.unicode_escape_decode(x)[0]
+else:
+    def u(x):
+        return x
+
 class TestProp(TestWithSession):
     def setUp(self):
         super(TestProp, self).setUp()
@@ -33,10 +41,10 @@ class TestProp(TestWithSession):
 
     def test_simple_enc_dec_set_get(self):
         gtk.gdk.flush()
-        self.enc("utf8", u"\u1000", "\xe1\x80\x80")
-        self.enc(["utf8"], [u"a", u"\u1000"], "a\x00\xe1\x80\x80")
-        self.enc("latin1", u"\u00c2", "\xc2")
-        self.enc(["latin1"], [u"a", u"\u00c2"], "a\x00\xc2")
+        self.enc("utf8", u("\u1000"), "\xe1\x80\x80")
+        self.enc(["utf8"], [u("a"), u("\u1000")], "a\x00\xe1\x80\x80")
+        self.enc("latin1", u("\u00c2"), "\xc2")
+        self.enc(["latin1"], [u("a"), u("\u00c2")], "a\x00\xc2")
         # These are X predefined atoms with fixed numeric values
         self.enc("atom", "PRIMARY", struct.pack("@I", 1))
         self.enc(["atom"], ["PRIMARY", "SECONDARY"], struct.pack("@II", 1, 2))
@@ -55,10 +63,10 @@ class TestProp(TestWithSession):
         gtk.gdk.flush()
         assert_raises(wimpiggy.error.XError,
                       wimpiggy.error.trap.call,
-                      p.prop_set, self.win2, "ASDF", "utf8", u"")
+                      p.prop_set, self.win2, "ASDF", "utf8", u(""))
 
         assert p.prop_get(self.win2, "ASDF", "utf8") is None
-        p.prop_set(self.win, "ASDF", "utf8", u"")
+        p.prop_set(self.win, "ASDF", "utf8", u(""))
         assert p.prop_get(self.win, "ASDF", "latin1") is None
 
     def test_strut(self):

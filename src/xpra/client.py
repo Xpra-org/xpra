@@ -11,6 +11,7 @@ import cairo
 import re
 import os
 import time
+import sys
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -26,6 +27,13 @@ from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
+if sys.version < '3':
+    import codecs
+    def u(x):
+        return codecs.unicode_escape_decode(x)[0]
+else:
+    def u(x):
+        return x
 def nn(x):
     if x is None:
         return  ""
@@ -82,15 +90,15 @@ class ClientWindow(gtk.Window):
         title = self._client.title
         if title.find("@")>=0:
             #perform metadata variable substitutions:
-            default_values = {"title" : u"<untitled window>",
-                              "client-machine" : u"<unknown machine>"}
+            default_values = {"title" : u("<untitled window>"),
+                              "client-machine" : u("<unknown machine>")}
             def metadata_replace(match):
                 atvar = match.group(0)          #ie: '@title@'
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
-                default_value = default_values.get(var, u"<unknown %s>" % var)
+                default_value = default_values.get(var, u("<unknown %s>") % var)
                 return self._metadata.get(var, default_value).decode("utf-8")
             title = re.sub("@[\w\-]*@", metadata_replace, title)
-        self.set_title(u"%s" % title)
+        self.set_title(u(title))
 
         if "size-constraints" in self._metadata:
             size_metadata = self._metadata["size-constraints"]
@@ -808,11 +816,11 @@ class XpraClient(XpraClientBase):
         return capabilities
 
     def send_ping(self):
-        self.send(["ping", long(1000*time.time())])
+        self.send(["ping", int(1000*time.time())])
 
     def _process_ping_echo(self, packet):
         (echoedtime, l1, l2, l3, cl) = packet[1:6]
-        diff = long(1000*time.time()-echoedtime)
+        diff = int(1000*time.time()-echoedtime)
         self.server_latency.append(diff)
         self.server_load = (l1, l2, l3)
         if cl>=0:
@@ -823,7 +831,7 @@ class XpraClient(XpraClientBase):
         echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
-            l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
+            l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
         except:
             l1,l2,l3 = 0,0,0
         sl = -1

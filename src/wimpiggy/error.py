@@ -85,7 +85,7 @@ class _ErrorManager(object):
             if error in _exc_for_error:
                 raise _exc_for_error[error](error)
             else:
-                raise XError, error
+                raise XError(error)
 
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once
@@ -102,7 +102,7 @@ class _ErrorManager(object):
                 self._exit(need_sync)
             except XError:
                 log("XError detected while already in unwind; discarding")
-            raise exc_type, exc_value, exc_traceback
+            raise exc_type(exc_value).with_traceback(exc_traceback)
         self._exit(need_sync)
         return value
 

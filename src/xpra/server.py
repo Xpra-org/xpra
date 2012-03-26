@@ -18,12 +18,18 @@ import cairo
 import sys
 import hmac
 import uuid
-import StringIO
+try:
+    from io import StringIO         #@UnresolvedImport @UnusedImport (python3)
+except:
+    from StringIO import StringIO   #@Reimport
 import os
 import time
 import ctypes
 from threading import Thread
-import Queue
+try:
+    from queue import Queue, Empty  #@UnresolvedImport @UnusedImport (python3)
+except:
+    from Queue import Queue, Empty  #@Reimport
 from math import log as mathlog
 from math import sqrt
 def logp2(x):
@@ -219,9 +225,9 @@ class ServerSource(object):
         self._mmap = mmap
         self._mmap_size = mmap_size
         protocol.source = self
-        self._damage_request_queue = Queue.Queue()
-        self._damage_data_queue = Queue.Queue()
-        self._damage_packet_queue = Queue.Queue(2)
+        self._damage_request_queue = Queue()
+        self._damage_data_queue = Queue()
+        self._damage_packet_queue = Queue(2)
 
         self._closed = False
 
@@ -250,7 +256,7 @@ class ServerSource(object):
         else:
             try:
                 packet = self._damage_packet_queue.get(False)
-            except Queue.Empty:
+            except Empty:
                 packet = None
         return packet, packet is not None and self._have_more()
 
@@ -474,7 +480,7 @@ class ServerSource(object):
         if coding in ["jpeg", "png"]:
             import Image
             im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
-            buf = StringIO.StringIO()
+            buf = StringIO()
             if self._encoding=="jpeg":
                 q = self._protocol.jpegquality
                 if options and "jpegquality" in options:
@@ -855,7 +861,7 @@ class XpraServer(gobject.GObject):
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, self.send_notifications)
         if self.send_notifications:
-            self._send(["notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), long(expire_timeout)])
+            self._send(["notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout)])
 
     def notify_close_callback(self, nid):
         log("notify_close_callback(%s)", nid)
@@ -955,7 +961,7 @@ class XpraServer(gobject.GObject):
                             h = MAX_SIZE
                         log("scaling window icon down to %sx%s", w, h)
                         img = img.resize((w,h), Image.ANTIALIAS)
-                    output = StringIO.StringIO()
+                    output = StringIO()
                     img.save(output, 'PNG')
                     raw_data = output.getvalue()
                     return {"icon": (w, h, "png", str(raw_data)) }
@@ -1313,7 +1319,7 @@ class XpraServer(gobject.GObject):
         log.debug("process_hello: capabilities=%s", capabilities)
         log.info("Handshake complete; enabling connection")
         if capabilities.get("version_request", False):
-            capabilities = {"start_time" : long(self.start_time),
+            capabilities = {"start_time" : int(self.start_time),
                             "platform" : sys.platform,
                             "version" : xpra.__version__}
             packet = ["hello", capabilities]
@@ -1429,7 +1435,7 @@ class XpraServer(gobject.GObject):
         # that the earliest override-redirect windows will be on the bottom,
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
-        for wid in sorted(self._id_to_window.iterkeys()):
+        for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             if isinstance(window, OverrideRedirectWindowModel):
                 self._send_new_or_window_packet(window)
@@ -1455,7 +1461,7 @@ class XpraServer(gobject.GObject):
             capabilities["session_name"] = self.session_name
         if self.mmap_size>0:
             capabilities["mmap_enabled"] = True
-        capabilities["start_time"] = long(self.start_time)
+        capabilities["start_time"] = int(self.start_time)
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["notifications"] = self.notifications_forwarder is not None
         #this is to keep compatibility with v0.0.7.36 only and will be removed
@@ -1476,11 +1482,11 @@ class XpraServer(gobject.GObject):
         self._send(["hello", capabilities])
 
     def send_ping(self):
-        self._send(["ping", long(1000*time.time())])
+        self._send(["ping", int(1000*time.time())])
 
     def _process_ping_echo(self, proto, packet):
         (echoedtime, l1, l2, l3, sl) = packet[1:6]
-        diff = long(1000*time.time()-echoedtime)
+        diff = int(1000*time.time()-echoedtime)
         self.client_latency.append(diff)
         self.client_load = (l1, l2, l3)
         self.server_latency = sl
@@ -1490,7 +1496,7 @@ class XpraServer(gobject.GObject):
         echotime = packet[1]
         try:
             (fl1, fl2, fl3) = os.getloadavg()
-            l1,l2,l3 = long(fl1*1000), long(fl2*1000), long(fl3*1000)
+            l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
         except:
             l1,l2,l3 = 0,0,0
         cl = -1
@@ -1542,7 +1548,7 @@ class XpraServer(gobject.GObject):
                 tx = x-minx
                 ty = y-miny
                 image.paste(window_image, (tx, ty))
-            buf = StringIO.StringIO()
+            buf = StringIO()
             image.save(buf, "png")
             data = buf.getvalue()
             buf.close()
@@ -1607,7 +1613,7 @@ class XpraServer(gobject.GObject):
         settings = packet[1]
         old_settings = dict(self._settings)
         self._settings.update(settings)
-        for k, v in settings.iteritems():
+        for k, v in settings.items():
             if k not in old_settings or v != old_settings[k]:
                 def root_set(p):
                     prop_set(gtk.gdk.get_default_root_window(),

@@ -15,7 +15,10 @@ import socket # for socket.error
 import zlib
 import errno
 
-from Queue import Queue
+try:
+    from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
+except:
+    from Queue import Queue     #@Reimport
 from threading import Thread, Lock
 
 from xpra.bencode import bencode, bdecode

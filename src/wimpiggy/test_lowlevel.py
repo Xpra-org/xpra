@@ -639,7 +639,7 @@ class TestGeometryConstraints(object):
                    + "and it's trivial and I'm ignoring it for now. "
                    + "(see http://bugzilla.gnome.org/show_bug.cgi?id=492961)")
         else:
-            raise AssertionError, "Dude look at this, gtk+ fixed bug#492961"
+            raise AssertionError("Dude look at this, gtk+ fixed bug#492961")
         # FIXME: this is wrong (see above), but it is what it actually
         # returns, and is not so bad as all that:
         t(150, 100, hints(base_size=(3, 4), resize_inc=(10, 10),
