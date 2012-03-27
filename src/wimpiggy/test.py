@@ -53,7 +53,7 @@ def assert_emits(f, obj, signal, slot=None):
     assert backchannel["signal_was_emitted"]
     if backchannel["slot_exc"] is not None:
         exc = backchannel["slot_exc"]
-        raise exc[0](exc[1]).with_traceback(exc[2])
+        raise exc[0](exc[1:])
 
 def assert_mainloop_emits(obj, signal, slot=None):
     """Runs the mainloop and asserts that 'signal' is emitted.  Optionally,

@@ -102,7 +102,7 @@ class _ErrorManager(object):
                 self._exit(need_sync)
             except XError:
                 log("XError detected while already in unwind; discarding")
-            raise exc_type(exc_value).with_traceback(exc_traceback)
+            raise exc_type(exc_value, exc_traceback)
         self._exit(need_sync)
         return value
 
