@@ -29,6 +29,7 @@ def decode_int(x, f):
 
 def decode_string(x, f):
     colon = x.index(':', f)
+    assert colon>=0
     try:
         n = int(x[f:colon])
     except (OverflowError, ValueError):
@@ -50,7 +51,7 @@ def decode_dict(x, f):
     lastkey = None
     while x[f] != 'e':
         k, f = decode_string(x, f)
-        if lastkey >= k:
+        if lastkey is not None and lastkey >= k:
             raise ValueError
         lastkey = k
         r[k], f = decode_func[x[f]](x, f)
@@ -62,16 +63,18 @@ decode_func['d'] = decode_dict
 decode_func['i'] = decode_int
 for c in '0123456789':
     decode_func[c] = decode_string
+#now as byte values:
+for k,v in dict(decode_func).items():
+    decode_func[ord(k)] = lambda x,f : v(str(x), f)
 
 def bdecode(x):
     try:
         r, l = decode_func[x[0]](x, 0)
     except (IndexError, KeyError):
+        import traceback
+        traceback.print_exc()
         raise ValueError
     return r, l
-
-from types import (StringType, IntType, LongType, DictType, ListType,
-                   TupleType, BooleanType)
 
 def encode_int(x, r):
     # Explicit cast, because bool.__str__ is annoying.
@@ -88,21 +91,33 @@ def encode_list(x, r):
 
 def encode_dict(x,r):
     r.append('d')
-    ilist = x.items()
+    ilist = list(x.items())
     ilist.sort()
     for k, v in ilist:
         r.extend((str(len(k)), ':', k))
         encode_func[type(v)](v, r)
     r.append('e')
 
+
 encode_func = {}
-encode_func[IntType] = encode_int
-encode_func[LongType] = encode_int
-encode_func[StringType] = encode_string
-encode_func[ListType] = encode_list
-encode_func[TupleType] = encode_list
-encode_func[DictType] = encode_dict
-encode_func[BooleanType] = encode_int
+if sys.version < '3':
+    from types import (StringTypes, IntType, LongType, DictType, ListType,
+                       TupleType, BooleanType)
+    encode_func[IntType] = encode_int
+    encode_func[LongType] = encode_int
+    for x in StringTypes:
+        encode_func[x] = encode_string
+    encode_func[ListType] = encode_list
+    encode_func[TupleType] = encode_list
+    encode_func[DictType] = encode_dict
+    encode_func[BooleanType] = encode_int
+else:
+    encode_func[int] = encode_int
+    encode_func[str] = encode_string
+    encode_func[list] = encode_list
+    encode_func[tuple] = encode_list
+    encode_func[dict] = encode_dict
+    encode_func[bool] = encode_int
 
 def bencode(x):
     r = []
