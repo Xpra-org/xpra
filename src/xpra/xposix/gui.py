@@ -8,13 +8,9 @@
 
 import sys
 import os
-
-try:
-    from gi.repository import Gtk as gtk, Gdk as gdk    #@UnresolvedImport @UnusedImport (python3)
-except:
-    import pygtk
-    pygtk.require("2.0")
-    import gtk.gdk                                      #@Reimport
+from wimpiggy.gobject_compat import import_gtk, import_gdk
+gtk = import_gtk()
+gdk = import_gdk()
 _display = gdk.get_display()
 assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
@@ -83,7 +79,7 @@ class ClientExtras(ClientExtrasBase):
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)
             if filename:
-                pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+                pixbuf = gdk.pixbuf_new_from_file(filename)
                 self.tray_widget.set_from_pixbuf(pixbuf)
             def hide_tray(*args):
                 self.tray_widget.set_visible(False)
@@ -232,8 +228,7 @@ class ClientExtras(ClientExtrasBase):
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if not self.has_x11_bell:
-            import gtk.gdk
-            gtk.gdk.beep()
+            gdk.beep()
             return
         from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
         device_bell(window, device, bell_class, bell_id, percent, bell_name)
@@ -301,7 +296,7 @@ class ClientExtras(ClientExtrasBase):
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
             (out,_) = process.communicate(None)
             if process.returncode==0:
-                return out
+                return out.decode('utf-8')
             log.error("'%s' failed with exit code %s", cmd, process.returncode)
         except Exception, e:
             log.error("error running '%s': %s", cmd, e)

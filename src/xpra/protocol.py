@@ -8,10 +8,8 @@
 
 # but it works on win32, for whatever that's worth.
 
-try:
-    from gi.repository import GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
-except:
-    import gobject                                  #@Reimport
+from wimpiggy.gobject_compat import import_gobject
+gobject = import_gobject()
 gobject.threads_init()
 import os
 import socket # for socket.error

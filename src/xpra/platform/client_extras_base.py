@@ -9,14 +9,9 @@
 
 import sys
 import os.path
-try:
-    from gi.repository import Gtk as gtk, GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
-    gtk.pygtk_version = (0,0)
-except:
-    import pygtk
-    pygtk.require("2.0")
-    import gtk                                                  #@Reimport
-    import gobject                                              #@Reimport
+from wimpiggy.gobject_compat import import_gtk, import_gobject
+gtk = import_gtk()
+gobject = import_gobject()
 import webbrowser
 import time
 import datetime
@@ -84,7 +79,7 @@ def set_checkeditems(submenu, is_match_func):
                 x.set_active(v)
 
 def set_tooltip_text(widget, text):
-    if gtk.pygtk_version<(2,12):
+    if hasattr(gtk, "pygtk_version") and gtk.pygtk_version<(2,12):
         #not available!
         return
     widget.set_tooltip_text(text)

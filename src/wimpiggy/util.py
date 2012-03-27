@@ -5,10 +5,8 @@
 
 import traceback
 import sys
-try:
-    from gi.repository import GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
-except:
-    import gobject                                  #@Reimport
+from wimpiggy.gobject_compat import import_gobject
+gobject = import_gobject()
 
 class AutoPropGObjectMixin(object):
     """Mixin for automagic property support in GObjects.
@@ -93,10 +91,8 @@ def gtk_main_quit_really():
         # the X server (and this process may block, may cause us to later be
         # killed if the X server goes away, etc.), and we don't want to impose
         # that on every user of wimpiggy.util.
-        try:
-            from gi.repository import Gtk as gtk    #@UnresolvedImport @UnusedImport (python3)
-        except:
-            import gtk                              #@Reimport
+        from gobject_compat import import_gtk
+        gtk = import_gtk()
         gtk.main_quit()
         # So long as there are more nested main loops, re-register ourselves
         # to be called again:
