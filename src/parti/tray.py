@@ -92,7 +92,7 @@ class TraySet(gobject.GObject):
         for i in range(len(self.trays)):
             if self.trays[i] == tag:
                 return i
-        raise KeyError, tag
+        raise KeyError(tag)
 
     def __len__(self):
         return len(self.trays)
