@@ -9,10 +9,13 @@
 import sys
 import os
 
-import pygtk
-pygtk.require("2.0")
-import gtk
-_display = gtk.gdk.get_display()
+try:
+    from gi.repository import Gtk as gtk, Gdk as gdk    #@UnresolvedImport @UnusedImport (python3)
+except:
+    import pygtk
+    pygtk.require("2.0")
+    import gtk.gdk                                      #@Reimport
+_display = gdk.get_display()
 assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
 from xpra.platform.client_extras_base import ClientExtrasBase

@@ -9,10 +9,14 @@
 
 import sys
 import os.path
-import pygtk
-pygtk.require("2.0")
-import gtk
-import gobject
+try:
+    from gi.repository import Gtk as gtk, GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
+    gtk.pygtk_version = (0,0)
+except:
+    import pygtk
+    pygtk.require("2.0")
+    import gtk                                                  #@Reimport
+    import gobject                                              #@Reimport
 import webbrowser
 import time
 import datetime
@@ -663,7 +667,7 @@ class ClientExtrasBase(object):
                 self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
         else:
             #show all options to choose from:
-            sorted_keys = X11_LAYOUTS.keys()
+            sorted_keys = list(X11_LAYOUTS.keys())
             sorted_keys.sort(key=keysort)
             for key in sorted_keys:
                 country,language = key

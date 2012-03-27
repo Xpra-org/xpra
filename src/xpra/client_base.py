@@ -4,7 +4,10 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gobject
+try:
+    from gi.repository import GObject as gobject    #@UnresolvedImport @UnusedImport (python3)
+except:
+    import gobject                                  #@Reimport
 
 from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
