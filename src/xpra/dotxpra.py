@@ -9,8 +9,6 @@ import socket
 import errno
 import stat
 
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
-
 o0700 = 448     #0o700
 
 class ServerSockInUse(Exception):
@@ -18,7 +16,6 @@ class ServerSockInUse(Exception):
 
 class DotXpra(object):
     def __init__(self, sockdir=None, confdir=None):
-        assert XPRA_LOCAL_SERVERS_SUPPORTED
         self._confdir = os.path.expanduser(confdir or "~/.xpra")
         self._sockdir = os.path.expanduser(sockdir or "~/.xpra")
         if not os.path.exists(self._confdir):
