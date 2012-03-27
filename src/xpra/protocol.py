@@ -108,7 +108,6 @@ class Protocol(object):
         self.max_packet_size = 32*1024
         self._recv_counter = 0
         self._closed = False
-        self._read_buffer = ""
         self._compressor = None
         self._decompressor = None
         self._write_thread = Thread(target=self._write_thread_loop)
@@ -268,6 +267,7 @@ class Protocol(object):
 
     def _read_parse_thread_loop(self):
         try:
+            read_buffer = None
             current_packet_size = -1
             while not self._closed:
                 buf = self._read_queue.get()
@@ -275,32 +275,36 @@ class Protocol(object):
                     return self._call_connection_lost("empty marker in read queue")
                 if self._decompressor is not None:
                     buf = self._decompressor.decompress(buf)
-                if self._read_buffer:
-                    self._read_buffer = self._read_buffer + buf
+                if read_buffer:
+                    read_buffer = read_buffer + buf
                 else:
-                    self._read_buffer = buf
-                bl = len(self._read_buffer)
+                    read_buffer = buf
+                bl = len(read_buffer)
                 if self.max_packet_size>0 and bl>self.max_packet_size:
                     return self._call_connection_lost("read buffer too big: %s (maximum is %s), dropping this connection!" % (bl, self.max_packet_size))
                 while not self._closed:
-                    bl = len(self._read_buffer)
+                    bl = len(read_buffer)
                     if bl<=0:
                         break
                     try:
-                        if current_packet_size<0 and bl>0 and self._read_buffer[0]=="P":
+                        if current_packet_size<0 and bl>0 and read_buffer[0]=="P":
                             #spotted packet size header
                             if bl<16:
                                 break   #incomplete
-                            current_packet_size = int(self._read_buffer[2:16])
-                            self._read_buffer = self._read_buffer[16:]
-                            bl = len(self._read_buffer)
+                            current_packet_size = int(read_buffer[2:16])
+                            read_buffer = read_buffer[16:]
+                            bl = len(read_buffer)
 
                         if current_packet_size>0 and bl<current_packet_size:
                             log.debug("incomplete packet: only %s of %s bytes received", bl, current_packet_size)
                             break
 
-                        result = bdecode(self._read_buffer)
+                        result = bdecode(read_buffer)
                     except ValueError, e:
+                        import traceback
+                        traceback.print_exc()
+                        log.error("value error reading packet: %s", e)
+                        
                         #could be a partial packet (without size header)
                         #or could be just a broken packet...
                         def packet_error(buf, packet_size, data_size, value_error):
@@ -313,18 +317,18 @@ class Protocol(object):
 
                         if current_packet_size>0:
                             #we had the size, so the packet should have been valid!
-                            packet_error(self._read_buffer, current_packet_size, bl, e)
+                            packet_error(read_buffer, current_packet_size, bl, e)
                             return
                         else:
                             #wait a little before deciding
                             #unsized packets are either old clients (don't really care about them)
                             #or hello packets (small-ish)
                             def check_error_state(old_buffer, packet_size, data_size, value_error):
-                                log.info("check_error_state old_buffer=%s, read buffer=%s", old_buffer, self._read_buffer)
-                                if old_buffer==self._read_buffer:
-                                    packet_error(self._read_buffer, packet_size, data_size, value_error)
+                                log.info("check_error_state old_buffer=%s, read buffer=%s", old_buffer, read_buffer)
+                                if old_buffer==read_buffer:
+                                    packet_error(read_buffer, packet_size, data_size, value_error)
                             log.info("error parsing packet without a size header: %s, current_packet_size=%s, will check again in 1 second", e, current_packet_size)
-                            gobject.timeout_add(1000, check_error_state, self._read_buffer, current_packet_size, bl, e)
+                            gobject.timeout_add(1000, check_error_state, read_buffer, current_packet_size, bl, e)
                             break
 
                     current_packet_size = -1
@@ -332,7 +336,7 @@ class Protocol(object):
                         break
                     packet, l = result
                     gobject.idle_add(self._process_packet, packet)
-                    unprocessed = self._read_buffer[l:]
+                    unprocessed = read_buffer[l:]
                     if packet[0]=="set_deflate":
                         had_deflate = (self._decompressor is not None)
                         level = packet[1]
@@ -345,7 +349,7 @@ class Protocol(object):
                             # deflate was just enabled: so decompress the unprocessed
                             # data
                             unprocessed = self._decompressor.decompress(unprocessed)
-                    self._read_buffer = unprocessed
+                    read_buffer = unprocessed
         finally:
             log("read parse thread: ended")
 
