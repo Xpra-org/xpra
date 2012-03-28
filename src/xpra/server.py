@@ -19,9 +19,9 @@ import sys
 import hmac
 import uuid
 try:
-    from io import StringIO         #@UnresolvedImport @UnusedImport (python3)
+    from StringIO import StringIO   #@UnusedImport
 except:
-    from StringIO import StringIO   #@Reimport
+    from io import StringIO         #@UnresolvedImport @Reimport (python3)
 import os
 import time
 import ctypes
