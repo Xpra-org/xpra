@@ -22,16 +22,33 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            add_client_options)
 from xpra.protocol import TwoFileConnection, SocketConnection
 
-ENCODINGS = ["rgb24"]
-DEFAULT_ENCODING = ENCODINGS[0]
+from wimpiggy.gobject_compat import import_gobject, is_gtk3
+import_gobject()
 try:
     import Image
     assert Image
-    ENCODINGS.append("jpeg")
-    ENCODINGS.append("png")
-    DEFAULT_ENCODING = "png"
+    _has_PIL = True
 except:
-    pass
+    _has_PIL = False
+ENCODINGS = []
+if is_gtk3():
+    """ with gtk3, we get png via cairo out of the box
+        but we need PIL for the others:
+    """
+    ENCODINGS.append("png")
+    if _has_PIL:
+        ENCODINGS.append("jpeg")
+        ENCODINGS.append("rgb24")
+else:
+    """ with gtk2, we get rgb24 via gdk pixbuf out of the box
+        but we need PIL for the others:
+    """
+    if _has_PIL:
+        ENCODINGS.append("png")
+        ENCODINGS.append("jpeg")
+    ENCODINGS.append("rgb24")
+DEFAULT_ENCODING = ENCODINGS[0]
+
 
 
 def nox():
@@ -187,7 +204,7 @@ def main(script_file, cmdline):
     if not args:
         parser.error("need a mode")
     if options.encoding and options.encoding not in ENCODINGS:
-        parser.error("illegal encoding")
+        parser.error("encoding %s is not supported, try: %s" % (options.encoding, ", ".join(ENCODINGS)))
 
     def toggle_logging(level):
         if not options.debug:

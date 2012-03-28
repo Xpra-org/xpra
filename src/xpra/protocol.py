@@ -11,6 +11,7 @@
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
+import sys
 import os
 import socket # for socket.error
 import zlib
@@ -188,6 +189,8 @@ class Protocol(object):
     def _add_packet_to_queue(self, packet):
         try:
             data = bencode(packet)
+            if sys.version>='3':
+                data = data.encode("latin1")
         except KeyError or TypeError, e:
             import traceback
             traceback.print_exc()
@@ -197,7 +200,7 @@ class Protocol(object):
         self._write_lock.acquire()
         try:
             try:
-                if l<=8192:
+                if l<=8192 and sys.version<'3':
                     #send size and data together (low copy overhead):
                     self._queue_write(("PS%014d" % l).encode('latin1')+data, True)
                     return
@@ -302,7 +305,10 @@ class Protocol(object):
                             log.debug("incomplete packet: only %s of %s bytes received", bl, current_packet_size)
                             break
 
-                        result = bdecode(read_buffer)
+                        if sys.version>='3':
+                            result = bdecode(read_buffer.decode("latin1"))
+                        else:
+                            result = bdecode(read_buffer)
                     except ValueError, e:
                         import traceback
                         traceback.print_exc()

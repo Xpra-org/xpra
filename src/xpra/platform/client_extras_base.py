@@ -539,7 +539,10 @@ class ClientExtrasBase(object):
 
     def show_menu(self, button, time):
         self.close_menu()
-        self.menu.popup(None, None, None, button, time, None)
+        if is_gtk3():
+            self.menu.popup(None, None, None, None, button, time)
+        else:
+            self.menu.popup(None, None, None, button, time, None)
         self.menu_shown = True
 
     def make_aboutmenuitem(self):
