@@ -370,11 +370,11 @@ def run_client(parser, opts, extra_args, mode):
         from xpra.client import XpraClient
         app = XpraClient(conn, opts)
     def got_gibberish_msg(obj, data):
-        if "assword" in data:
+        if str(data).find("assword")>0:
             sys.stdout.write("Your ssh program appears to be asking for a password.\n"
                              + GOT_PASSWORD_PROMPT_SUGGESTION)
             sys.stdout.flush()
-        if "login" in data:
+        if str(data).find("login")>=0:
             sys.stdout.write("Your ssh program appears to be asking for a username.\n"
                              "Perhaps try using something like 'ssh:USER@host:display'?\n")
             sys.stdout.flush()
