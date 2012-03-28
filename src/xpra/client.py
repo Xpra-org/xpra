@@ -222,7 +222,6 @@ class ClientWindow(gtk.Window):
                 data = arraytype.from_buffer(self._client.mmap, offset)
                 self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
                 data_start.value = offset+length
-                self._backing.draw_rgb_image(gc, x, y, width, height, gtk.gdk.RGB_DITHER_NONE, data, rowstride)
             else:
                 #re-construct the buffer from discontiguous chunks:
                 log("drawing from discontiguous area: %s", img_data)
