@@ -314,6 +314,8 @@ class ClientExtras(ClientExtrasBase):
                     for keyname in keynames:
                         meanings[keyname] = modifier
                 return  meanings, [], []
+        except ImportError, e:
+            log.error("failed to use native get_modifier_mappings: %s", e)
         except Exception, e:
             log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
         return self.modifiers_fallback()
