@@ -289,8 +289,6 @@ def parse_display_name(parser, opts, display_name):
 
 def pick_display(parser, opts, extra_args):
     if len(extra_args) == 0:
-        if not XPRA_LOCAL_SERVERS_SUPPORTED:
-            parser.error("need to specify a display")
         # Pick a default server
         sockdir = DotXpra(opts.sockdir)
         servers = sockdir.sockets()
@@ -334,7 +332,7 @@ def connect_or_fail(display_desc):
                 raise IOError(error_message)
         return TwoFileConnection(child.stdin, child.stdout, abort_test, target=cmd)
 
-    elif XPRA_LOCAL_SERVERS_SUPPORTED and display_desc["type"] == "unix-domain":
+    elif display_desc["type"] == "unix-domain":
         sockdir = DotXpra(display_desc["sockdir"])
         sock = socket.socket(socket.AF_UNIX)
         sockfile = sockdir.socket_path(display_desc["display"])
