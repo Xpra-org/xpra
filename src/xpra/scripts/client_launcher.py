@@ -167,7 +167,7 @@ class ApplicationWindow:
 		opts.password_file = None
 		opts.title_suffix = None
 		opts.title = "@title@ on @client-machine@"
-		opts.encoding = "rgb24"
+		opts.encoding = "png"
 		opts.jpegquality = 80
 		opts.max_bandwidth = 0.0
 		opts.auto_refresh_delay = 0.0

@@ -70,7 +70,7 @@ from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, 
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.main import ENCODINGS, DEFAULT_ENCODING
 from xpra.version_util import is_compatible_with
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -599,7 +599,7 @@ class XpraServer(gobject.GObject):
         self._server_source = None
 
         self.supports_mmap = opts.mmap
-        self.encoding = opts.encoding or "rgb24"
+        self.encoding = opts.encoding or DEFAULT_ENCODING
         assert self.encoding in ENCODINGS
         self.png_window_icons = False
         self.session_name = opts.session_name
@@ -646,7 +646,7 @@ class XpraServer(gobject.GObject):
         self.keyboard_sync = True
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.encodings = ["rgb24"]
+        self.encodings = []
         self.mmap = None
         self.mmap_size = 0
 
@@ -1353,7 +1353,7 @@ class XpraServer(gobject.GObject):
         if self._protocol is not None:
             self.disconnect("new valid connection received")
         self.reset_statistics()
-        self.encodings = capabilities.get("encodings", ["rgb24"])
+        self.encodings = capabilities.get("encodings", [])
         self._set_encoding(capabilities.get("encoding", None))
         #mmap:
         self.close_mmap()

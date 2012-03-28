@@ -23,11 +23,13 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
 from xpra.protocol import TwoFileConnection, SocketConnection
 
 ENCODINGS = ["rgb24"]
+DEFAULT_ENCODING = ENCODINGS[0]
 try:
     import Image
     assert Image
     ENCODINGS.append("jpeg")
     ENCODINGS.append("png")
+    DEFAULT_ENCODING = "png"
 except:
     pass
 
@@ -131,7 +133,7 @@ def main(script_file, cmdline):
     parser.add_option("--encoding", action="store",
                       metavar="ENCODING",
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use: %s. Default: rgb24" % (", ".join(ENCODINGS)))
+                      help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), DEFAULT_ENCODING))
     if "jpeg" in ENCODINGS:
         parser.add_option("--jpeg-quality", action="store",
                           metavar="LEVEL",
