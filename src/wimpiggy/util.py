@@ -91,7 +91,7 @@ def gtk_main_quit_really():
         # the X server (and this process may block, may cause us to later be
         # killed if the X server goes away, etc.), and we don't want to impose
         # that on every user of wimpiggy.util.
-        from gobject_compat import import_gtk
+        from wimpiggy.gobject_compat import import_gtk
         gtk = import_gtk()
         gtk.main_quit()
         # So long as there are more nested main loops, re-register ourselves
