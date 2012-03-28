@@ -9,7 +9,7 @@
 
 import sys
 import os.path
-from wimpiggy.gobject_compat import import_gtk, import_gobject
+from wimpiggy.gobject_compat import import_gtk, import_gobject, is_gtk3
 gtk = import_gtk()
 gobject = import_gobject()
 import webbrowser
@@ -111,7 +111,10 @@ class ClientExtrasBase(object):
             window_icon = self.get_icon_filename("xpra.png")
         if window_icon and os.path.exists(window_icon):
             try:
-                gtk.window_set_default_icon_from_file(window_icon)
+                if is_gtk3():
+                    gtk.Window.set_default_icon_from_file(window_icon)
+                else:
+                    gtk.window_set_default_icon_from_file(window_icon)
                 log.debug("set default window icon to %s", window_icon)
             except Exception, e:
                 log.error("failed to set window icon %s: %s, continuing", window_icon, e)
