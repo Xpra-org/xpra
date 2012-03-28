@@ -189,6 +189,8 @@ class Protocol(object):
         try:
             data = bencode(packet)
         except KeyError or TypeError, e:
+            import traceback
+            traceback.print_exc()
             self.verify_packet(packet)
             raise e
         l = len(data)
@@ -197,9 +199,9 @@ class Protocol(object):
             try:
                 if l<=8192:
                     #send size and data together (low copy overhead):
-                    self._queue_write("PS%014d%s" % (l, data), True)
+                    self._queue_write(("PS%014d" % l).encode('latin1')+data, True)
                     return
-                self._queue_write("PS%014d" % l)
+                self._queue_write(("PS%014d" % l).encode('latin1'))
                 self._queue_write(data, True)
             finally:
                 if packet[0]=="set_deflate":
@@ -288,7 +290,7 @@ class Protocol(object):
                     if bl<=0:
                         break
                     try:
-                        if current_packet_size<0 and bl>0 and read_buffer[0]=="P":
+                        if current_packet_size<0 and bl>0 and read_buffer[0] in ["P", ord("P")]:
                             #spotted packet size header
                             if bl<16:
                                 break   #incomplete
