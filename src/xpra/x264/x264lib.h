@@ -9,10 +9,10 @@ struct x264lib_ctx *init_encoder(int width, int height);
 struct x264lib_ctx *init_decoder(int width, int height);
 
 /** Cleanup encoding context. Must be freed after calling this function. */
-int clean_encoder(struct x264lib_ctx *);
+void clean_encoder(struct x264lib_ctx *);
 
 /** Cleanup decoding context. Must be freed after calling this function. */
-int clean_decoder(struct x264lib_ctx *);
+void clean_decoder(struct x264lib_ctx *);
 
 /** Compress an image using the given context. 
  @param in: Input buffer, format is packed RGB24.

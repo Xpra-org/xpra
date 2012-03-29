@@ -46,7 +46,7 @@ struct x264lib_ctx *init_encoder(int width, int height)
 	return ctx;
 }
 
-int clean_encoder(struct x264lib_ctx *ctx)
+void clean_encoder(struct x264lib_ctx *ctx)
 {
 	sws_freeContext(ctx->rgb2yuv);
 }
@@ -79,7 +79,7 @@ struct x264lib_ctx *init_decoder(int width, int height)
 	return ctx;
 }
 
-int clean_decoder(struct x264lib_ctx *ctx)
+void clean_decoder(struct x264lib_ctx *ctx)
 {
     avcodec_close(ctx->codec_ctx);
     av_free(ctx->codec_ctx);

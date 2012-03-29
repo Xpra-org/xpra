@@ -18,7 +18,7 @@ ctypedef unsigned char uint8_t
 ctypedef void x264lib_ctx
 cdef extern from "x264lib.h":
     x264lib_ctx* init_decoder(int width, int height)
-    int clean_decoder(x264lib_ctx *context)
+    void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t **out, int *outsize, int *outstride)
 
 
@@ -37,11 +37,9 @@ cdef class Decoder:
         self.clean()
 
     def clean(self):
-        i = -1
         if self.context!=NULL:
-            i = clean_decoder(self.context)
+            clean_decoder(self.context)
             self.context = NULL
-        return i
 
     def init(self, width, height):
         self.context = init_decoder(width, height)
