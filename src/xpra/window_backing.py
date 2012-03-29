@@ -28,6 +28,16 @@ class Backing(object):
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = None
+        self._on_close = []
+
+    def close(self):
+        for cb in self._on_close:
+            try:
+                log("calling %s", cb)
+                cb()
+            except:
+                log.error("error on close callback %s", cb, exc_info=True)
+        self._on_close = []
 
     def jpegimage(self, img_data, width, height):
         import Image
@@ -60,17 +70,19 @@ class Backing(object):
         log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
         from xpra.x264.decoder import DECODERS, Decoder     #@UnresolvedImport
         decoder = DECODERS.get(self.wid)
-        def close_decoder():
-            decoder.clean()
-            del DECODERS[self.wid]
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
-            close_decoder()
-            decoder = None
+            decoder.clean()
+            decoder.init(width, height)
         if decoder is None:
             decoder = Decoder()
             decoder.init(width, height)
             DECODERS[self.wid] = decoder
+            def close_decoder():
+                log("closing x264 decoder for window %s" % self.wid)
+                decoder.clean()
+                del DECODERS[self.wid]
+            self._on_close.append(close_decoder)
         #log("paint_x264: %sx%s img_data=%s, len=%s, first 10 bytes: %s", width, height, type(img_data), len(img_data), [ord(c) for c in img_data[:10]])
         err, outstride, data = decoder.decompress_image(img_data)
         if err!=0:
@@ -118,6 +130,10 @@ class CairoBacking(Backing):
             cr.rectangle(0, 0, w, h)
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
+
+    def close(self):
+        Backing.close(self)
+        self._backing.finish()
 
     def paint_png(self, img_data, x, y, width, height):
         try:
@@ -295,5 +311,9 @@ class PixmapBacking(Backing):
 
 def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
     if is_gtk3() or PREFER_CAIRO:
-        return  CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
-    return PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+        b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+    else:
+        b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+    if old_backing:
+        old_backing.close()
+    return b

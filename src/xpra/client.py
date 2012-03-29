@@ -335,6 +335,7 @@ class ClientWindow(gtk.Window):
     def destroy(self):
         self._unfocus()
         gtk.Window.destroy(self)
+        self._backing.close()
 
     def _unfocus(self):
         if self._client._focused==self._id:
