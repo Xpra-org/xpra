@@ -230,6 +230,7 @@ class ServerSource(object):
         self._damage_packet_queue = Queue(2)
 
         self._closed = False
+        self._on_close = []
 
         def start_daemon_thread(target, name):
             t = Thread(target=target)
@@ -244,6 +245,13 @@ class ServerSource(object):
         self._closed = True
         self._damage_request_queue.put(None, block=False)
         self._damage_data_queue.put(None, block=False)
+        for cb in self._on_close:
+            try:
+                log.info("calling %s", cb)
+                cb()
+            except:
+                log.error("error on close callback %s", cb, exc_info=True)
+        self._on_close = []
 
     def _have_more(self):
         return not self._closed and bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
@@ -411,7 +419,7 @@ class ServerSource(object):
                         (x, y, w, h) = get_rectangle_from_region(damage)
                         pixel_count += w*h
                         #favor full screen updates over many regions:
-                        if pixel_count+4096*len(regions)>=full_pixels*9/10:
+                        if pixel_count+4096*len(regions)>=full_pixels*9/10 or self._encoding=="x264":
                             regions = [(0, 0, ww, wh, True)]
                             break
                         regions.append((x, y, w, h, False))
@@ -478,6 +486,7 @@ class ServerSource(object):
                 data = mmap_data
         #encode to jpeg/png:
         if coding in ["jpeg", "png"]:
+            assert coding in ENCODINGS
             import Image
             im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
             buf = StringIO()
@@ -493,6 +502,32 @@ class ServerSource(object):
                 im.save(buf, self._encoding.upper())
             data = buf.getvalue()
             buf.close()
+        elif coding=="x264":
+            assert coding in ENCODINGS
+            assert x==0 and y==0
+            #x264 needs sizes divisible by 2:
+            width = w & 0xFFFE
+            height = h & 0xFFFE
+            from xpra.x264.encoder import ENCODERS, Encoder     #@UnresolvedImport
+            encoder = ENCODERS.get(wid)
+            def close_encoder():
+                encoder.clean()
+                del ENCODERS[wid]
+            if encoder and (encoder.get_width()!=width or encoder.get_height()!=height):
+                log("x264: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (width, height))
+                close_encoder()
+                encoder = None
+            if encoder is None:
+                encoder = Encoder()
+                encoder.init(width, height)
+                ENCODERS[wid] = encoder
+                self._on_close.append(close_encoder)
+            err, size, data = encoder.compress_image(data, rowstride)
+            if err!=0:
+                log.error("x264: ouch, compression error %s", err)
+                return None
+            log("x264: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", w, h, size, type(data), [ord(c) for c in data[:10]])
+            w,h = width, height
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and sequence>=0 and self._damage_cancelled.get(wid, 0)>=sequence:

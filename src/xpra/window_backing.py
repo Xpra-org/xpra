@@ -29,7 +29,8 @@ Instead we have to use PIL to convert via a PNG!
 This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(object):
-    def __init__(self, w, h, old_backing, mmap_enabled, mmap):
+    def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
+        self.wid = wid
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
@@ -165,7 +166,8 @@ Works much better than gtk3!
 """
 class PixmapBacking(object):
 
-    def __init__(self, w, h, old_backing, mmap_enabled, mmap):
+    def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
+        self.wid = wid
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
@@ -188,8 +190,54 @@ class PixmapBacking(object):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
+        assert "rgb24" in ENCODINGS
         gc = self._backing.new_gc()
+        self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+
+    def paint_x264(self, img_data, x, y, width, height, rowstride):
+        assert "x264" in ENCODINGS
+        assert x==0 and y==0
+        log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
+        from xpra.x264.decoder import DECODERS, Decoder     #@UnresolvedImport
+        decoder = DECODERS.get(self.wid)
+        def close_decoder():
+            decoder.clean()
+            del DECODERS[self.wid]
+        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
+            log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
+            close_decoder()
+            decoder = None
+        if decoder is None:
+            decoder = Decoder()
+            decoder.init(width, height)
+            DECODERS[self.wid] = decoder
+        #log("paint_x264: %sx%s img_data=%s, len=%s, first 10 bytes: %s", width, height, type(img_data), len(img_data), [ord(c) for c in img_data[:10]])
+        err, outstride, data = decoder.decompress_image(img_data)
+        if err!=0:
+            log.error("x264: ouch, decompression error %s", err)
+            return
+        log("paint_x264: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
+        try:
+            log("paint_x264: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
+            self.paint_rgb24(data, x, y, width, height, outstride)
+        finally:
+            decoder.free_image()
+
+    def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride):
+        assert coding in ENCODINGS
+        loader = gdk.PixbufLoader(coding)
+        loader.write(img_data, len(img_data))
+        loader.close()
+        pixbuf = loader.get_pixbuf()
+        if not pixbuf:
+            log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
+            return
+        gc = self._backing.new_gc()
+        self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
+        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s)", x, y, width, height, coding, len(img_data), rowstride)
         if coding == "mmap":
             """ see _mmap_send() in server.py for details """
             assert self.mmap_enabled
@@ -199,7 +247,7 @@ class PixmapBacking(object):
                 offset, length = img_data[0]
                 arraytype = ctypes.c_char * length
                 data = arraytype.from_buffer(self.mmap, offset)
-                self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, data, rowstride)
+                self.paint_rgb24(data, x, y, width, height, rowstride)
                 data_start.value = offset+length
             else:
                 #re-construct the buffer from discontiguous chunks:
@@ -209,24 +257,17 @@ class PixmapBacking(object):
                     self.mmap.seek(offset)
                     data += self.mmap.read(length)
                     data_start.value = offset+length
-                self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, data, rowstride)
+                self.paint_rgb24(data, x, y, width, height, rowstride)
         elif coding == "rgb24":
-            assert coding in ENCODINGS
             if rowstride>0:
                 assert len(img_data) == rowstride * height
             else:
                 assert len(img_data) == width * 3 * height
-            self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+            self.paint_rgb24(img_data, x, y, width, height, rowstride)
+        elif coding == "x264":
+            self.paint_x264(img_data, x, y, width, height, rowstride)
         else:
-            assert coding in ENCODINGS
-            loader = gdk.PixbufLoader(coding)
-            loader.write(img_data, len(img_data))
-            loader.close()
-            pixbuf = loader.get_pixbuf()
-            if not pixbuf:
-                log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-            else:
-                self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+            self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
 
     def cairo_draw(self, context, x, y):
         try:
@@ -238,7 +279,7 @@ class PixmapBacking(object):
             log.error("cairo_draw(%s)", context, exc_info=True)
 
 
-def new_backing(w, h, old_backing, mmap_enabled, mmap):
+def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
     if is_gtk3() or PREFER_CAIRO:
-        return  CairoBacking(w, h, old_backing, mmap_enabled, mmap)
-    return PixmapBacking(w, h, old_backing, mmap_enabled, mmap)
+        return  CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+    return PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)

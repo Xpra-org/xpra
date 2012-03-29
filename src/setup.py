@@ -64,6 +64,14 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                 ["xpra/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ),
+      Extension("xpra.x264.encoder",
+                ["xpra/x264/encoder.pyx", "xpra/x264/x264lib.c"],
+                **pkgconfig("x264", "libswscale", "libavcodec")
+                ),
+      Extension("xpra.x264.decoder",
+                ["xpra/x264/decoder.pyx", "xpra/x264/x264lib.c"],
+                **pkgconfig("x264", "libswscale", "libavcodec")
+                ),
       ]
 
     cmdclass = {'build_ext': build_ext}
@@ -161,6 +169,7 @@ else:
               "parti", "parti.trays", "parti.addons", "parti.scripts",
               "xpra", "xpra.scripts", "xpra.platform",
               "xpra.xposix", "xpra.win32", "xpra.darwin",
+              "xpra.x264"
               ]
     scripts=["scripts/parti", "scripts/parti-repl",
              "scripts/xpra",

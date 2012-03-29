@@ -181,7 +181,7 @@ class ClientWindow(gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def new_backing(self, w, h):
-        self._backing = new_backing(w, h, self._backing, self._client.supports_mmap, self._client.mmap)
+        self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
 
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
