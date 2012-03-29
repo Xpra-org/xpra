@@ -159,7 +159,10 @@ class CairoBacking(object):
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
 
-
+"""
+This is the gtk2 version.
+Works much better than gtk3!
+"""
 class PixmapBacking(object):
 
     def __init__(self, w, h, old_backing, mmap_enabled, mmap):
