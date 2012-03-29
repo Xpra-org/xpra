@@ -404,8 +404,13 @@ class ServerSource(object):
                 log("damage_to_data: dropping request with sequence=%s", sequence)
                 continue
             regions = []
+            coding = self._encoding
+            is_or = isinstance(window, OverrideRedirectWindowModel)
             try:
-                if (isinstance(window, OverrideRedirectWindowModel)):
+                if is_or:
+                    #don't do x264 for OR windows:
+                    if coding=="x264":
+                        coding = "rgb24"
                     (_, _, ww, wh) = window.get_property("geometry")
                 else:
                     ww, wh = window.get_property("actual-size")
@@ -419,6 +424,7 @@ class ServerSource(object):
                         (x, y, w, h) = get_rectangle_from_region(damage)
                         pixel_count += w*h
                         #favor full screen updates over many regions:
+                        #x264 needs full screen updates all the time
                         if pixel_count+4096*len(regions)>=full_pixels*9/10 or self._encoding=="x264":
                             regions = [(0, 0, ww, wh, True)]
                             break
@@ -431,9 +437,9 @@ class ServerSource(object):
             except Exception, e:
                 log.error("damage_to_data: error processing region %s: %s", damage, e)
                 continue
-            gobject.idle_add(self._process_damage_regions, wid, window, ww, wh, regions, sequence, options)
+            gobject.idle_add(self._process_damage_regions, wid, window, ww, wh, regions, coding, sequence, options)
 
-    def _process_damage_regions(self, wid, window, ww, wh, regions, sequence, options):
+    def _process_damage_regions(self, wid, window, ww, wh, regions, coding, sequence, options):
         if self._damage_cancelled.get(wid, 0)>=sequence:
             log("process_damage_regions: dropping damage request with sequence=%s", sequence)
             return
@@ -451,7 +457,7 @@ class ServerSource(object):
             if full_window:
                 log("process_damage_regions: sending full window: %s", pixmap.get_size())
                 w, h = pixmap.get_size()
-            data = _get_rgb_rawdata(wid, pixmap, x, y, w, h, self._encoding, sequence, options)
+            data = _get_rgb_rawdata(wid, pixmap, x, y, w, h, coding, sequence, options)
             if data:
                 log("process_damage_regions: adding pixel data %s to queue, queue size=%s", data[:6], self._damage_data_queue.qsize())
                 self._damage_data_queue.put(data)
