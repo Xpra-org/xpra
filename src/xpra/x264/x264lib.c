@@ -37,6 +37,7 @@ struct x264lib_ctx *init_encoder(int width, int height)
 	param.i_width = width;
 	param.i_height = height;
 	param.i_csp = X264_CSP_I420;
+	param.i_log_level = 0;
 	x264_param_apply_profile(&param, "baseline");
 	ctx->encoder = x264_encoder_open(&param);
 	ctx->width = width;
