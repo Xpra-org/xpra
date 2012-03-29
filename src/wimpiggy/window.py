@@ -852,9 +852,13 @@ class WindowModel(BaseWindowModel):
         for mutable in ["WM_HINTS", "WM_NORMAL_HINTS",
                         "WM_NAME", "_NET_WM_NAME",
                         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
-                        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL",
-                        "_NET_WM_ICON"]:
+                        "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
             self._handle_property_change(mutable)
+        for mutable in ["_NET_WM_ICON"]:
+            try:
+                self._handle_property_change(mutable)
+            except:
+                log.error("error reading initial property %s", mutable, exc_info=True)
 
     ################################
     # Property setting
