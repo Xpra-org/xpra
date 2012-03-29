@@ -247,7 +247,7 @@ class ServerSource(object):
         self._damage_data_queue.put(None, block=False)
         for cb in self._on_close:
             try:
-                log.info("calling %s", cb)
+                log("calling %s", cb)
                 cb()
             except:
                 log.error("error on close callback %s", cb, exc_info=True)
@@ -516,17 +516,17 @@ class ServerSource(object):
             height = h & 0xFFFE
             from xpra.x264.encoder import ENCODERS, Encoder     #@UnresolvedImport
             encoder = ENCODERS.get(wid)
-            def close_encoder():
-                encoder.clean()
-                del ENCODERS[wid]
             if encoder and (encoder.get_width()!=width or encoder.get_height()!=height):
                 log("x264: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (width, height))
-                close_encoder()
-                encoder = None
+                encoder.clean()
+                encoder.init(width, height)
             if encoder is None:
                 encoder = Encoder()
                 encoder.init(width, height)
                 ENCODERS[wid] = encoder
+                def close_encoder():
+                    encoder.clean()
+                    del ENCODERS[wid]
                 self._on_close.append(close_encoder)
             err, size, data = encoder.compress_image(data, rowstride)
             if err!=0:
