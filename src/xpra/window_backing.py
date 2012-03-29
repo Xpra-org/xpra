@@ -19,6 +19,72 @@ from xpra.scripts.main import ENCODINGS
 PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
 
 """
+Generic superclass for Backing code,
+see CairoBacking and PixmapBacking for implementations
+"""
+class Backing(object):
+    def __init__(self, wid, mmap_enabled, mmap):
+        self.wid = wid
+        self.mmap_enabled = mmap_enabled
+        self.mmap = mmap
+        self._backing = None
+
+    def jpegimage(self, img_data, width, height):
+        import Image
+        try:
+            from io import BytesIO          #@Reimport
+            data = bytearray(img_data)
+            buf = BytesIO(data)
+        except:
+            from StringIO import StringIO   #@Reimport
+            buf = StringIO(img_data)
+        return Image.open(buf)
+        #return Image.fromstring("RGB", (width, height), img_data, 'jpeg', 'RGB')
+
+    def rgb24image(self, img_data, width, height, rowstride):
+        import Image
+        if rowstride>0:
+            assert len(img_data) == rowstride * height
+        else:
+            assert len(img_data) == width * 3 * height
+        return Image.fromstring("RGB", (width, height), img_data, 'raw', 'RGB', rowstride, 1)
+
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
+        raise Exception("override me!")
+    def paint_png(self, img_data, x, y, width, height):
+        raise Exception("override me!")
+
+    def paint_x264(self, img_data, x, y, width, height, rowstride):
+        assert "x264" in ENCODINGS
+        assert x==0 and y==0
+        log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
+        from xpra.x264.decoder import DECODERS, Decoder     #@UnresolvedImport
+        decoder = DECODERS.get(self.wid)
+        def close_decoder():
+            decoder.clean()
+            del DECODERS[self.wid]
+        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
+            log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
+            close_decoder()
+            decoder = None
+        if decoder is None:
+            decoder = Decoder()
+            decoder.init(width, height)
+            DECODERS[self.wid] = decoder
+        #log("paint_x264: %sx%s img_data=%s, len=%s, first 10 bytes: %s", width, height, type(img_data), len(img_data), [ord(c) for c in img_data[:10]])
+        err, outstride, data = decoder.decompress_image(img_data)
+        if err!=0:
+            log.error("x264: ouch, decompression error %s", err)
+            return
+        log("paint_x264: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
+        try:
+            log("paint_x264: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
+            self.paint_rgb24(data, x, y, width, height, outstride)
+        finally:
+            decoder.free_image()
+
+
+"""
 An area we draw onto with cairo
 This must be used with gtk3 since gtk3 no longer supports gdk pixmaps
 
@@ -28,11 +94,9 @@ but this is disabled in most cases, or does not accept our rowstride, so we cann
 Instead we have to use PIL to convert via a PNG!
 This is a complete waste of CPU! Please complain to pycairo.
 """
-class CairoBacking(object):
+class CairoBacking(Backing):
     def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        self.wid = wid
-        self.mmap_enabled = mmap_enabled
-        self.mmap = mmap
+        Backing.__init__(self, wid, mmap_enabled, mmap)
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
         if old_backing is not None and old_backing._backing is not None:
@@ -55,27 +119,7 @@ class CairoBacking(object):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def jpegimage(self, img_data, width, height):
-        import Image
-        try:
-            from io import BytesIO          #@Reimport
-            data = bytearray(img_data)
-            buf = BytesIO(data)
-        except:
-            from StringIO import StringIO   #@Reimport
-            buf = StringIO(img_data)
-        return Image.open(buf)
-        #return Image.fromstring("RGB", (width, height), img_data, 'jpeg', 'RGB')
-
-    def rgb24image(self, img_data, width, height, rowstride):
-        import Image
-        if rowstride>0:
-            assert len(img_data) == rowstride * height
-        else:
-            assert len(img_data) == width * 3 * height
-        return Image.fromstring("RGB", (width, height), img_data, 'raw', 'RGB', rowstride, 1)
-
-    def paint_png(self, img_data, width, height):
+    def paint_png(self, img_data, x, y, width, height):
         try:
             from io import BytesIO          #@Reimport
             import sys
@@ -103,13 +147,13 @@ class CairoBacking(object):
         pil_image.save(buf, format="PNG")
         png_data = buf.getvalue()
         buf.close()
-        self.cairo_paint_png(png_data, width, height)
+        self.cairo_paint_png(png_data, 0, 0, width, height)
 
-    def paint_rgb24(self, img_data, width, height, rowstride):
-        log.info("cairo_paint_rgb24(..,%s,%s,%s)" % (width, height, rowstride))
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
+        log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s)" % (x, y, width, height, rowstride))
         gc = cairo.Context(self._backing)
         if rowstride==0:
-            rowstride = width
+            rowstride = width*3
         surf = cairo.ImageSurface.create_for_data(img_data, cairo.FORMAT_RGB24, width, height, rowstride)
         gc.set_source_surface(surf)
         gc.paint()
@@ -148,7 +192,7 @@ class CairoBacking(object):
             self.paint_pil_image(image, width, height)
         elif coding == "png":
             assert coding in ENCODINGS
-            self.paint_png(img_data, width, height)
+            self.paint_png(img_data, x, y, width, height)
         else:
             raise Exception("invalid picture encoding: %s" % coding)
 
@@ -160,16 +204,15 @@ class CairoBacking(object):
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
 
+
 """
 This is the gtk2 version.
 Works much better than gtk3!
 """
-class PixmapBacking(object):
+class PixmapBacking(Backing):
 
     def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        self.wid = wid
-        self.mmap_enabled = mmap_enabled
-        self.mmap = mmap
+        Backing.__init__(self, wid, mmap_enabled, mmap)
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
         if old_backing is not None and old_backing._backing is not None:
@@ -194,35 +237,6 @@ class PixmapBacking(object):
         assert "rgb24" in ENCODINGS
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
-
-    def paint_x264(self, img_data, x, y, width, height, rowstride):
-        assert "x264" in ENCODINGS
-        assert x==0 and y==0
-        log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
-        from xpra.x264.decoder import DECODERS, Decoder     #@UnresolvedImport
-        decoder = DECODERS.get(self.wid)
-        def close_decoder():
-            decoder.clean()
-            del DECODERS[self.wid]
-        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
-            log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
-            close_decoder()
-            decoder = None
-        if decoder is None:
-            decoder = Decoder()
-            decoder.init(width, height)
-            DECODERS[self.wid] = decoder
-        #log("paint_x264: %sx%s img_data=%s, len=%s, first 10 bytes: %s", width, height, type(img_data), len(img_data), [ord(c) for c in img_data[:10]])
-        err, outstride, data = decoder.decompress_image(img_data)
-        if err!=0:
-            log.error("x264: ouch, decompression error %s", err)
-            return
-        log("paint_x264: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
-        try:
-            log("paint_x264: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
-            self.paint_rgb24(data, x, y, width, height, outstride)
-        finally:
-            decoder.free_image()
 
     def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride):
         assert coding in ENCODINGS
