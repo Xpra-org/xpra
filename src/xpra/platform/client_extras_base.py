@@ -9,8 +9,9 @@
 
 import sys
 import os.path
-from wimpiggy.gobject_compat import import_gtk, import_gobject, is_gtk3
+from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
+gdk = import_gdk()
 gobject = import_gobject()
 import webbrowser
 import time
@@ -163,8 +164,7 @@ class ClientExtrasBase(object):
         pass
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        import gtk.gdk
-        gtk.gdk.beep()
+        gdk.beep()
 
     def get_layout_spec(self):
         """ layout, variant, variants"""
@@ -253,7 +253,10 @@ class ClientExtrasBase(object):
             pixbuf = self.get_pixbuf("xpra.png")
         if pixbuf:
             window.set_icon(pixbuf)
-        window.set_position(gtk.WIN_POS_CENTER)
+        if is_gtk3():
+            window.set_position(gtk.WindowPosition.CENTER)
+        else:
+            window.set_position(gtk.WIN_POS_CENTER)
 
         # Contents box
         vbox = gtk.VBox(False, 0)
@@ -273,6 +276,14 @@ class ClientExtrasBase(object):
 
         # now add some rows with info:
         row = 0
+        if is_gtk3():
+            row = add_row(row, gtk.Label("PyGobject version"), gtk.Label(gobject._version))
+            row = add_row(row, gtk.Label("GTK version"), gtk.Label(gtk._version))
+            row = add_row(row, gtk.Label("GDK version"), gtk.Label(gdk._version))
+        else:
+            row = add_row(row, gtk.Label("PyGTK version"), gtk.Label(".".join([str(x) for x in gtk.pygtk_version])))
+            row = add_row(row, gtk.Label("GTK version"), gtk.Label(".".join([str(x) for x in gtk.gtk_version])))
+
         self.server_version_label = gtk.Label()
         row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
         if self.client.server_platform:
@@ -321,10 +332,10 @@ class ClientExtrasBase(object):
             if self.client.server_load:
                 self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
             if len(self.client.server_latency)>0:
-                avg = sum(self.client.server_latency)/len(self.client.server_latency)
+                avg = int(10*sum(self.client.server_latency)/len(self.client.server_latency))/10
                 self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
             if len(self.client.client_latency)>0:
-                avg = sum(self.client.client_latency)/len(self.client.client_latency)
+                avg = int(10*sum(self.client.client_latency)/len(self.client.client_latency))/10
                 self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
@@ -402,7 +413,8 @@ class ClientExtrasBase(object):
 
         window.set_border_width(15)
         window.add(vbox)
-        window.set_geometry_hints(vbox)
+        if not is_gtk3():
+            window.set_geometry_hints(vbox)
         def window_deleted(*args):
             self.session_info_window = None
         window.connect('delete_event', window_deleted)
@@ -420,9 +432,11 @@ class ClientExtrasBase(object):
             log.error("closing session info", exc_info=True)
 
     def add_close_accel(self, window, callback):
+        if is_gtk3():
+            return      #TODO: implement accel for gtk3
         # key accelerators
         accel_group = gtk.AccelGroup()
-        accel_group.connect_group(ord('w'), gtk.gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+        accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
         window.add_accel_group(accel_group)
         accel_group = gtk.AccelGroup()
         escape_key, modifier = gtk.accelerator_parse('Escape')
@@ -477,7 +491,7 @@ class ClientExtrasBase(object):
     def get_pixbuf(self, icon_name):
         try:
             icon_filename = self.get_icon_filename(icon_name)
-            return  gtk.gdk.pixbuf_new_from_file(icon_filename)
+            return  gdk.pixbuf_new_from_file(icon_filename)
         except:
             return  None
 
@@ -487,7 +501,7 @@ class ClientExtrasBase(object):
             if not pixbuf:
                 return  None
             if size:
-                pixbuf = pixbuf.scale_simple(size, size, gtk.gdk.INTERP_BILINEAR)
+                pixbuf = pixbuf.scale_simple(size, size, gdk.INTERP_BILINEAR)
             return  gtk.image_new_from_pixbuf(pixbuf)
         except:
             return  None
