@@ -1176,6 +1176,7 @@ cdef _ensure_extension_support(display_source, major, minor, extension,
             cminor = minor
             if (query_version)(get_xdisplay_for(display), &cmajor, &cminor):
                 # See X.org bug #14511:
+                log("found X11 extension %s with version %s.%s", extension, major, minor)
                 if major == cmajor and minor <= cminor:
                     display.set_data(key, True)
                 else:
@@ -1212,6 +1213,14 @@ def _ensure_XComposite_support(display_source):
     _ensure_extension_support(display_source, 0, 2, "Composite",
                               XCompositeQueryExtension,
                               XCompositeQueryVersion)
+
+def displayHasXComposite(display_source):
+    try:
+        _ensure_XComposite_support(display_source)
+        return  True
+    except Exception, e:
+        log.error("%s", e)
+    return False
 
 def xcomposite_redirect_window(window):
     _ensure_XComposite_support(window)
