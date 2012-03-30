@@ -312,6 +312,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_pid is not None:
         save_pid(xvfb_pid)
 
+    from xpra.server import can_run_server, XpraServer
+    if not can_run_server():
+        return
+
     sockets = []
     #print("creating server socket %s" % sockpath)
     sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
@@ -336,8 +340,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     _cleanups.append(cleanup_tcp_socket)
 
     # This import is delayed because the module depends on gtk:
-    import xpra.server
-    app = xpra.server.XpraServer(clobber, sockets, opts)
+    app = XpraServer(clobber, sockets, opts)
 
     child_reaper = ChildReaper(app, opts.exit_with_children)
     # Always register the child reaper, because even if exit_with_children is
