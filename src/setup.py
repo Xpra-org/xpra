@@ -24,7 +24,7 @@ if sys.platform.startswith("win"):
         return {}
 else:
     # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-    def pkgconfig(*packages, **kw):
+    def pkgconfig(*packages, **ekw):
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
@@ -34,6 +34,9 @@ else:
         status = proc.wait()
         if status!=0 and not ('clean' in sys.argv):
             raise Exception("call to pkg-config ('%s') failed" % (cmd,))
+        kw = dict(ekw)
+        if sys.version>='3':
+            output = output.decode('utf-8')
         for token in output.split():
             if token[:2] in flag_map:
                 kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
@@ -41,6 +44,7 @@ else:
                 kw.setdefault('extra_link_args', []).append(token)
             for k, v in kw.items(): # remove duplicates
                 kw[k] = list(set(v))
+        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
         return kw
 
 
