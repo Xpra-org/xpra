@@ -409,9 +409,6 @@ class ServerSource(object):
             is_or = isinstance(window, OverrideRedirectWindowModel)
             try:
                 if is_or:
-                    #don't do x264 for OR windows:
-                    if coding=="x264":
-                        coding = "rgb24"
                     (_, _, ww, wh) = window.get_property("geometry")
                 else:
                     ww, wh = window.get_property("actual-size")
