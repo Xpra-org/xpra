@@ -19,6 +19,13 @@ from xpra.platform.client_extras_base import ClientExtrasBase
 from wimpiggy.log import Logger
 log = Logger()
 
+try:
+    settings = gtk.Settings.get_default()
+    settings.set_property('gtk-button-images', 1)
+    settings.set_property('gtk-menu-images', 1)
+except Exception, e:
+    log.error("could not setup gtk.StatusIcon: %s", e, exc_info=True)
+
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
@@ -90,8 +97,11 @@ class ClientExtras(ClientExtrasBase):
             def show_tray(*args):
                 log.debug("showing tray")
                 #session_name will get set during handshake
-                self.tray_widget.set_tooltip(self.client.session_name)
                 self.tray_widget.set_visible(True)
+                if hasattr(self.tray_widget, "set_tooltip_text"):
+                    self.tray_widget.set_tooltip_text(self.client.session_name)
+                else:
+                    self.tray_widget.set_tooltip(self.client.session_name)
             self.client.connect("handshake-complete", show_tray)
             return True
         except Exception, e:

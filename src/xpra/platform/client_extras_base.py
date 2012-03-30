@@ -495,8 +495,13 @@ class ClientExtrasBase(object):
     def get_pixbuf(self, icon_name):
         try:
             icon_filename = self.get_icon_filename(icon_name)
-            return  gdk.pixbuf_new_from_file(icon_filename)
+            if is_gtk3():
+                from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
+                return Pixbuf.new_from_file(icon_filename)
+            else:
+                return  gdk.pixbuf_new_from_file(icon_filename)
         except:
+            log.error("get_image(%s)", icon_name, exc_info=True)
             return  None
 
     def get_image(self, icon_name, size=None):
@@ -505,9 +510,17 @@ class ClientExtrasBase(object):
             if not pixbuf:
                 return  None
             if size:
-                pixbuf = pixbuf.scale_simple(size, size, gdk.INTERP_BILINEAR)
+                if is_gtk3():
+                    from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
+                    interp = InterpType.BILINEAR
+                else:
+                    interp = gdk.INTERP_BILINEAR
+                pixbuf = pixbuf.scale_simple(size, size, interp)
+            if is_gtk3():
+                return  gtk.Image.new_from_pixbuf(pixbuf)
             return  gtk.image_new_from_pixbuf(pixbuf)
         except:
+            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
             return  None
 
 
@@ -523,8 +536,8 @@ class ClientExtrasBase(object):
             #override gtk defaults: we *want* icons:
             settings = menu_item.get_settings()
             settings.set_property('gtk-menu-images', True)
-            if hasattr(settings, "set_always_show_image"):
-                settings.set_always_show_image(True)
+            if hasattr(menu_item, "set_always_show_image"):
+                menu_item.set_always_show_image(True)
         if tooltip:
             set_tooltip_text(menu_item, tooltip)
         if cb:
