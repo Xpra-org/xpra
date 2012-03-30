@@ -12,26 +12,66 @@ gtk = import_gtk()
 gdk = import_gdk()
 if is_gtk3():
     def get_modifiers_mask():
-        return []
+        return gdk.get_default_root_window().get_pointer()[-1]
     def get_root_size():
         return gdk.get_default_root_window().get_geometry()[2:]
     def init_window(win, wintype):
+        #TODO: no idea how to do this with gtk3
+        #maybe not even possible..
         gtk.Window.__init__(win)
     def get_window_geometry(gtkwindow):
         x, y = gtkwindow.get_position()
         w, h = gtkwindow.get_size()
         return (x, y, w, h)
     def set_geometry_hints(window, hints):
-        pass
-    def is_flag_set(window, flag):
-        return  True
+        """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
+        wh = gdk.WindowHints
+        name_to_hint = {"maximum-size"  : wh.MAX_SIZE,
+                        "max_width"     : wh.MAX_SIZE,
+                        "max_height"    : wh.MAX_SIZE,
+                        "minimum-size"  : wh.MIN_SIZE,
+                        "min_width"     : wh.MIN_SIZE,
+                        "min_height"    : wh.MIN_SIZE,
+                        "base-size"     : wh.BASE_SIZE,
+                        "base_width"    : wh.BASE_SIZE,
+                        "base_height"   : wh.BASE_SIZE,
+                        "increment"     : wh.RESIZE_INC,
+                        "width_inc"     : wh.RESIZE_INC,
+                        "height_inc"    : wh.RESIZE_INC,
+                        "minimum-aspect"    : wh.ASPECT,
+                        "min_aspect_ratio"  : wh.ASPECT,
+                        "maximum-aspect"    : wh.ASPECT,
+                        "max_aspect_ratio"  : wh.ASPECT,
+                        }
+        #these fields can be copied directly to the gdk.Geometry as ints:
+        INT_FIELDS= ["min_width",    "min_height",
+                        "max_width",    "max_height",
+                        "base_width",   "base_height",
+                        "width_inc",    "height_inc"]
+        ASPECT_FIELDS = {
+                        "minimum-aspect"    : "min_aspect",
+                        "min_aspect_ratio"  : "min_aspect",
+                        "maximum-aspect"    : "max_aspect",
+                        "max_aspect_ratio"  : "max_aspect",
+                         }
+        geom = gdk.Geometry()
+        mask = 0
+        for k,v in hints:
+            if k in INT_FIELDS:
+                setattr(geom, k, int(v))
+                mask |= int(name_to_hint.get(k, 0))
+            elif k in ASPECT_FIELDS:
+                field = ASPECT_FIELDS.get(k)
+                setattr(geom, field, float(v))
+                mask |= int(name_to_hint.get(k, 0))
+        hints = gdk.WindowHints(mask)
+        window.set_geometry_hints(None, geom, hints)
+
     def set_windows_cursor(gtkwindows, new_cursor):
         pass
         #window.override_cursor(cursor, None)
     def queue_draw(window, x, y, width, height):
         window.queue_draw_area(x, y, width, height)
-    MAPPED = 0
-    REALIZED = 0
     WINDOW_POPUP = gtk.WindowType.POPUP
     WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
     WINDOW_EVENT_MASK = 0
@@ -40,8 +80,7 @@ if is_gtk3():
     SCROLL_MAP = {}
 else:
     def get_modifiers_mask():
-        (_, _, current_mask) = gdk.get_default_root_window().get_pointer()
-        return current_mask
+        return  gdk.get_default_root_window().get_pointer()[-1]
     def get_root_size():
         return gdk.get_default_root_window().get_size()
     def init_window(gtkwindow, wintype):
@@ -53,8 +92,6 @@ else:
         return (x, y, w, h)
     def set_geometry_hints(gtkwindow, hints):
         gtkwindow.set_geometry_hints(None, **hints)
-    def is_flag_set(gtkwindow, flag):
-        return  gtkwindow.flags() & flag
     def set_windows_cursor(gtkwindows, new_cursor):
         cursor = None
         if len(new_cursor)>0:
@@ -75,8 +112,6 @@ else:
 
     def queue_draw(gtkwindow, x, y, width, height):
         gtkwindow.get_window().invalidate_rect(gdk.Rectangle(x, y, width, height), False)
-    MAPPED = gtk.MAPPED
-    REALIZED = gtk.REALIZED
     WINDOW_POPUP = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
     WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK
@@ -218,7 +253,13 @@ class ClientWindow(gtk.Window):
                     hints[h] = size_metadata[a][0] * 1.0 / size_metadata[a][1]
             set_geometry_hints(self, hints)
 
-        if not is_flag_set(self, REALIZED):
+        if hasattr(self, "get_realized"):
+            #pygtk 2.22 and above have this method:
+            realized = self.get_realized()
+        else:
+            #older versions:
+            realized = self.flags() & gtk.REALIZED
+        if not realized:
             self.set_wmclass(*self._metadata.get("class-instance",
                                                  ("xpra", "Xpra")))
 
@@ -284,13 +325,13 @@ class ClientWindow(gtk.Window):
     """ gtk3 """
     def do_draw(self, context):
         log.debug("do_draw(%s)", context)
-        if is_flag_set(self, MAPPED):
+        if self.get_mapped():
             self._backing.cairo_draw(context, 0, 0)
 
     """ gtk2 """
     def do_expose_event(self, event):
         log.debug("do_expose_event(%s) area=%s", event, event.area)
-        if not is_flag_set(self, MAPPED):
+        if not (self.flags() & gtk.MAPPED):
             return
         x,y,_,_ = event.area
         context = self.window.cairo_create()
@@ -463,7 +504,7 @@ class XpraClient(XpraClientBase):
                 mmap_dir = os.getenv("TMPDIR", "/tmp")
                 if not os.path.exists(mmap_dir):
                     raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-                #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures 
+                #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
                 #that the file is readable and writable only by the creating user ID
                 temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 #keep a reference to it so it does not disappear!
