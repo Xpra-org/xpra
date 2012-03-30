@@ -79,8 +79,11 @@ class ClientExtras(ClientExtrasBase):
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)
             if filename:
-                pixbuf = gdk.pixbuf_new_from_file(filename)
-                self.tray_widget.set_from_pixbuf(pixbuf)
+                if hasattr(self.tray_widget, "set_from_file"):
+                    self.tray_widget.set_from_file(filename)
+                else:
+                    pixbuf = gdk.pixbuf_new_from_file(filename)
+                    self.tray_widget.set_from_pixbuf(pixbuf)
             def hide_tray(*args):
                 self.tray_widget.set_visible(False)
             self.hide_tray = hide_tray
