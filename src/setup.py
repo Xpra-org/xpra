@@ -19,29 +19,34 @@ from distutils.core import setup
 from distutils.extension import Extension
 import subprocess, sys, traceback
 
-# Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-def pkgconfig(*packages, **kw):
-    flag_map = {'-I': 'include_dirs',
-                '-L': 'library_dirs',
-                '-l': 'libraries'}
-    cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (output, _) = proc.communicate()
-    status = proc.wait()
-    if status!=0 and not ('clean' in sys.argv):
-        raise Exception("call to pkg-config ('%s') failed" % (cmd,))
-    for token in output.split():
-        if token[:2] in flag_map:
-            kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-        else: # throw others to extra_link_args
-            kw.setdefault('extra_link_args', []).append(token)
-        for k, v in kw.items(): # remove duplicates
-            kw[k] = list(set(v))
-    return kw
+if sys.platform.startswith("win"):
+    def pkgconfig(*args):
+        return {}
+else:
+    # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
+    def pkgconfig(*packages, **kw):
+        flag_map = {'-I': 'include_dirs',
+                    '-L': 'library_dirs',
+                    '-l': 'libraries'}
+        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, _) = proc.communicate()
+        status = proc.wait()
+        if status!=0 and not ('clean' in sys.argv):
+            raise Exception("call to pkg-config ('%s') failed" % (cmd,))
+        for token in output.split():
+            if token[:2] in flag_map:
+                kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
+            else: # throw others to extra_link_args
+                kw.setdefault('extra_link_args', []).append(token)
+            for k, v in kw.items(): # remove duplicates
+                kw[k] = list(set(v))
+        return kw
 
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
-if XPRA_LOCAL_SERVERS_SUPPORTED:
-    from Cython.Distutils import build_ext
+
+ext_modules = []
+cmdclass = {}
+def cython_version_check():
     from Cython.Compiler.Version import version as cython_version_string
     cython_version = [int(part) for part in cython_version_string.split(".")]
     # This was when the 'for 0 < i < 10:' syntax as added, bump upwards as
@@ -53,31 +58,34 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                  "Please upgrade to Cython %s or better"
                  % (cython_version_string,
                     ".".join([str(part) for part in NEEDED_CYTHON])))
-
-    ext_modules = [
-      Extension("wimpiggy.lowlevel.bindings",
+def cython_add(extension):
+    global ext_modules, cmdclass
+    cython_version_check()
+    from Cython.Distutils import build_ext
+    ext_modules.append(extension)
+    cmdclass = {'build_ext': build_ext}
+    
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+if XPRA_LOCAL_SERVERS_SUPPORTED:
+    cython_add(Extension("wimpiggy.lowlevel.bindings",
                 ["wimpiggy/lowlevel/bindings.pyx"],
                 **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",
                             "xtst", "xfixes", "xcomposite", "xdamage", "xrandr")
-                ),
-      Extension("xpra.wait_for_x_server",
+                ))
+    cython_add(Extension("xpra.wait_for_x_server",
                 ["xpra/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
-                ),
-      Extension("xpra.x264.encoder",
+                ))
+x264_ENABLED = True
+if x264_ENABLED:
+    cython_add(Extension("xpra.x264.encoder",
                 ["xpra/x264/encoder.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
-                ),
-      Extension("xpra.x264.decoder",
+                ))
+    cython_add(Extension("xpra.x264.decoder",
                 ["xpra/x264/decoder.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
-                ),
-      ]
-
-    cmdclass = {'build_ext': build_ext}
-else:
-    ext_modules = []
-    cmdclass = {}
+                ))
 
 import wimpiggy
 import parti
@@ -110,7 +118,8 @@ full_desc = """This package contains several sub-projects:
 
 extra_options = {}
 if sys.platform.startswith("win"):
-    # These files cannot be re-distributed legally :(
+    # The Microsoft C library DLLs:
+    # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
     # 6fda4c0ef8715eead5b8cec66512d3c8  Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
     # 4a8bc195abdc93f0db5dab7f5093c52f  Microsoft.VC90.CRT/msvcm90.dll
@@ -124,7 +133,12 @@ if sys.platform.startswith("win"):
     # 371226b8346f29011137c7aa9e93f2f6  Microsoft.VC90.MFC/mfcm90u.dll
     #
     # This is where I keep them, you will obviously need to change this value:
-    DLLs="Z:\\"
+    C_DLLs="Z:\\"
+    # The x264 DLLs which you can grab from here:
+    # http://ffmpeg.zeranoe.com/builds/
+    # This is where I keep them, you will obviously need to change this value:
+    x264_DLLs="Z:\ffmpeg-win32-shared"
+    
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
     windows = [
@@ -153,9 +167,11 @@ if sys.platform.startswith("win"):
                    ('', ['COPYING']),
                    ('', ['README.xpra']),
                    ('', ['website.url']),
+                   ('', ['xpra/x264/win32/x264lib.dll']),
                    ('icons', glob.glob('icons\\*.*')),
-                   ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % DLLs)),
-                   ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % DLLs)),
+                   ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
+                   ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
+                   ('', glob.glob('%s\\bin\\*.dll' % x264_DLLs)),
                ]
     extra_options = dict(
         windows = windows,
