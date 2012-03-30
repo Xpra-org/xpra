@@ -192,12 +192,13 @@ class ClientExtrasBase(object):
             self.about_dialog.present()
             return
         dialog = gtk.AboutDialog()
-        def on_website_hook(dialog, web, *args):
-            webbrowser.open("http://xpra.org/")
-        def on_email_hook(dialog, mail, *args):
-            webbrowser.open("mailto://"+mail)
-        gtk.about_dialog_set_url_hook(on_website_hook)
-        gtk.about_dialog_set_email_hook(on_email_hook)
+        if not is_gtk3():
+            def on_website_hook(dialog, web, *args):
+                webbrowser.open("http://xpra.org/")
+            def on_email_hook(dialog, mail, *args):
+                webbrowser.open("mailto://"+mail)
+            gtk.about_dialog_set_url_hook(on_website_hook)
+            gtk.about_dialog_set_email_hook(on_email_hook)
         dialog.set_name("Xpra")
         from xpra import __version__
         dialog.set_version(__version__)
@@ -480,7 +481,10 @@ class ClientExtrasBase(object):
         filename = os.path.join(self.get_data_dir(), 'COPYING')
         if os.path.exists(filename):
             try:
-                license_file = open(filename, mode='rb')
+                if sys.version < '3':
+                    license_file = open(filename, mode='rb')
+                else:
+                    license_file = open(filename, mode='r', encoding='ascii')
                 return license_file.read()
             finally:
                 license_file.close()
