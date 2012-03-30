@@ -38,9 +38,7 @@ if is_gtk3():
                         "increment"     : wh.RESIZE_INC,
                         "width_inc"     : wh.RESIZE_INC,
                         "height_inc"    : wh.RESIZE_INC,
-                        "minimum-aspect"    : wh.ASPECT,
                         "min_aspect_ratio"  : wh.ASPECT,
-                        "maximum-aspect"    : wh.ASPECT,
                         "max_aspect_ratio"  : wh.ASPECT,
                         }
         #these fields can be copied directly to the gdk.Geometry as ints:
@@ -49,9 +47,7 @@ if is_gtk3():
                         "base_width",   "base_height",
                         "width_inc",    "height_inc"]
         ASPECT_FIELDS = {
-                        "minimum-aspect"    : "min_aspect",
                         "min_aspect_ratio"  : "min_aspect",
-                        "maximum-aspect"    : "max_aspect",
                         "max_aspect_ratio"  : "max_aspect",
                          }
         geom = gdk.Geometry()
