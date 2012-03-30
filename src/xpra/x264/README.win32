@@ -1,0 +1,7 @@
+Microsoft Visual Studio .sln and .vcproj files are in the win32/ subdirectory.
+
+To build x264lib for Win32 you need to:
+
+- install ffmpeg-dev files, from http://ffmpeg.zeranoe.com/builds/ (http://ffmpeg.zeranoe.com/builds/win32/dev/ffmpeg-git-4082198-win32-dev.7z)
+- edit the paths in the .vcproj to match the place where you have installed ffmpeg (include and lib directories)
+- edit the paths in the .vcproj to make sure that win32/ is an include directory, as it is needed for stdint.h and inttypes.h

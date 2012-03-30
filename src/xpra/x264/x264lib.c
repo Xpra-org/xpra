@@ -1,14 +1,28 @@
 /* Copyright (C) 2012 Serviware, Arthur Huillet <arthur dot huillet AT free dot fr>
    */
-#include <stdint.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifndef _WIN32
+#include <stdint.h>
+#include <unistd.h>
+#else
+#include "stdint.h"
+#include "inttypes.h"
+#endif
+
+#ifndef _WIN32
 #include <x264.h>
+#else
+typedef void x264_t;
+#define inline __inline
+#endif
+
 #include <libswscale/swscale.h>
 #include <libavcodec/avcodec.h>
 #include "x264lib.h"
@@ -28,6 +42,7 @@ struct x264lib_ctx {
 	int height;
 };
 
+#ifndef _WIN32
 struct x264lib_ctx *init_encoder(int width, int height)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
@@ -46,6 +61,12 @@ struct x264lib_ctx *init_encoder(int width, int height)
 
 	return ctx;
 }
+#else
+struct x264lib_ctx *init_encoder(int width, int height)
+{
+	return NULL;
+}
+#endif
 
 void clean_encoder(struct x264lib_ctx *ctx)
 {
@@ -87,6 +108,7 @@ void clean_decoder(struct x264lib_ctx *ctx)
 	sws_freeContext(ctx->yuv2rgb);
 }
 
+#ifndef _WIN32
 int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8_t **out, int *outsz)
 {
 	if (!ctx->encoder || !ctx->rgb2yuv)
@@ -113,19 +135,28 @@ int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8
 		x264_picture_clean(&pic_in);
 		return 2;
 	}
-
+  
 	x264_picture_clean(&pic_in);
 	return 0;
 }
+#else
+int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8_t **out, int *outsz)
+{
+	return 1;
+}
+#endif
 
 int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
 {
+    int got_picture;
+	int len;
+    AVFrame *picture;
+    AVPacket avpkt;
+	AVPicture pic;
+
 	if (!ctx->yuv2rgb)
 		return 1;
 
-    int got_picture, len;
-    AVFrame *picture;
-    AVPacket avpkt;
     av_init_packet(&avpkt);
 
 	if (!ctx->codec_ctx || !ctx->codec)
@@ -145,7 +176,6 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **o
 		return 2;
 	}
 
-	AVPicture pic;
 	avpicture_fill(&pic, malloc(ctx->height * ctx->width * 3), PIX_FMT_RGB24, ctx->width, ctx->height);
 
 	/* Colorspace conversion (I420 -> RGB) */
