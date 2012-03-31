@@ -29,14 +29,17 @@ ENCODERS = {}
 DECODERS = {}
 
 
-cdef class Decoder:
+""" common superclass for Decoder and Encoder """
+cdef class xcoder:
     cdef x264lib_ctx *context
-    cdef uint8_t *last_image
     cdef int width
     cdef int height
 
-    def __cinit__(self):
-        pass
+    def init(self, width, height):
+        self.init_context(width, height)
+        assert self.context, "failed to initialize context"
+        self.width = width
+        self.height = height
 
     def __dealloc__(self):
         self.clean()
@@ -46,18 +49,22 @@ cdef class Decoder:
             clean_decoder(self.context)
             self.context = NULL
 
-    def init(self, width, height):
-        self.context = init_decoder(width, height)
-        assert self.context
-        self.width = width
-        self.height = height
-    
     def get_width(self):
         return self.width
 
     def get_height(self):
         return self.height
 
+    def init_context(self, width, height):
+        self.context = NULL
+
+
+cdef class Decoder(xcoder):
+    cdef uint8_t *last_image
+
+    def init_context(self, width, height):
+        self.context = init_decoder(width, height)
+    
     def decompress_image(self, input):
         cdef uint8_t *dout
         cdef int outsize
@@ -80,35 +87,11 @@ cdef class Decoder:
         self.last_image = NULL
 
 
-cdef class Encoder:
-    cdef x264lib_ctx *context
-    cdef int width
-    cdef int height
+cdef class Encoder(xcoder):
 
-    def __cinit__(self):
-        self.width = 0
-        self.height = 0
-
-    def __dealloc__(self):
-        self.clean()
-
-    def clean(self):
-        if self.context!=NULL:
-            clean_encoder(self.context)
-            self.context = NULL
-
-    def init(self, width, height):
+    def init_context(self, width, height):
         self.context = init_encoder(width, height)
-        assert self.context
-        self.width = width
-        self.height = height
     
-    def get_width(self):
-        return self.width
-
-    def get_height(self):
-        return self.height
-
     def compress_image(self, input, rowstride):
         cdef uint8_t *cout
         cdef int coutsz
