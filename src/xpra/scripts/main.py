@@ -50,10 +50,7 @@ else:
 #we need rgb24 for x264 (as well as the cython bindings and libraries):
 if "rgb24" in ENCODINGS:
     try:
-        #at this point we don't know if we are client or server
-        #but that's ok as both bindings have the same requirements, so test both
-        from xpra.x264.encoder import Encoder     #@UnusedImport @UnresolvedImport
-        from xpra.x264.decoder import Decoder     #@UnusedImport @UnresolvedImport
+        from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
         ENCODINGS.append("x264")
     except Exception, e:
         print("cannot load x264: %s" % e)

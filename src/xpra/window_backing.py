@@ -68,7 +68,7 @@ class Backing(object):
         assert "x264" in ENCODINGS
         assert x==0 and y==0
         log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
-        from xpra.x264.decoder import DECODERS, Decoder     #@UnresolvedImport
+        from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
         decoder = DECODERS.get(self.wid)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))

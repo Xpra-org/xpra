@@ -19,6 +19,13 @@ from distutils.core import setup
 from distutils.extension import Extension
 import subprocess, sys, traceback
 
+
+packages=["wimpiggy", "wimpiggy.lowlevel",
+          "parti", "parti.trays", "parti.addons", "parti.scripts",
+          "xpra", "xpra.scripts", "xpra.platform",
+          "xpra.xposix", "xpra.win32", "xpra.darwin",
+          ]
+
 if sys.platform.startswith("win"):
     def pkgconfig(*args):
         return {}
@@ -82,12 +89,9 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                 ))
 x264_ENABLED = True
 if x264_ENABLED:
-    cython_add(Extension("xpra.x264.encoder",
-                ["xpra/x264/encoder.pyx", "xpra/x264/x264lib.c"],
-                **pkgconfig("x264", "libswscale", "libavcodec")
-                ))
-    cython_add(Extension("xpra.x264.decoder",
-                ["xpra/x264/decoder.pyx", "xpra/x264/x264lib.c"],
+    packages.append("xpra.x264")
+    cython_add(Extension("xpra.x264.codec",
+                ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ))
 
@@ -185,12 +189,6 @@ if sys.platform.startswith("win"):
         description = "Screen for X utility, allows you to connect to remote seamless sessions",
     )
 else:
-    packages=["wimpiggy", "wimpiggy.lowlevel",
-              "parti", "parti.trays", "parti.addons", "parti.scripts",
-              "xpra", "xpra.scripts", "xpra.platform",
-              "xpra.xposix", "xpra.win32", "xpra.darwin",
-              "xpra.x264"
-              ]
     scripts=["scripts/parti", "scripts/parti-repl",
              "scripts/xpra",
              ]

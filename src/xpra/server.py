@@ -512,7 +512,7 @@ class ServerSource(object):
             #x264 needs sizes divisible by 2:
             width = w & 0xFFFE
             height = h & 0xFFFE
-            from xpra.x264.encoder import ENCODERS, Encoder     #@UnresolvedImport
+            from xpra.x264.codec import ENCODERS, Encoder     #@UnresolvedImport
             encoder = ENCODERS.get(wid)
             if encoder and (encoder.get_width()!=width or encoder.get_height()!=height):
                 log("x264: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (width, height))
