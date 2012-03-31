@@ -19,13 +19,6 @@ from xpra.platform.client_extras_base import ClientExtrasBase
 from wimpiggy.log import Logger
 log = Logger()
 
-try:
-    settings = gtk.Settings.get_default()
-    settings.set_property('gtk-button-images', 1)
-    settings.set_property('gtk-menu-images', 1)
-except Exception, e:
-    log.error("could not setup gtk.StatusIcon: %s", e, exc_info=True)
-
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
