@@ -44,11 +44,6 @@ cdef class xcoder:
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):
-        if self.context!=NULL:
-            clean_decoder(self.context)
-            self.context = NULL
-
     def get_width(self):
         return self.width
 
@@ -65,6 +60,11 @@ cdef class Decoder(xcoder):
     def init_context(self, width, height):
         self.context = init_decoder(width, height)
     
+    def clean(self):
+        if self.context!=NULL:
+            clean_decoder(self.context)
+            self.context = NULL
+
     def decompress_image(self, input):
         cdef uint8_t *dout
         cdef int outsize
@@ -92,6 +92,11 @@ cdef class Encoder(xcoder):
     def init_context(self, width, height):
         self.context = init_encoder(width, height)
     
+    def clean(self):
+        if self.context!=NULL:
+            clean_encoder(self.context)
+            self.context = NULL
+
     def compress_image(self, input, rowstride):
         cdef uint8_t *cout
         cdef int coutsz
