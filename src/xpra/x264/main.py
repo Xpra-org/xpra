@@ -7,16 +7,27 @@
 w = 800
 h = 600
 
+import xpra
+import os.path
 f = None
+data = None
 try:
-    f = open("x264test.rgb", mode='rb')
-    data = f.read()
+    for filename in [os.path.join(os.path.dirname(xpra.__file__), "xpra", "x264", "x264test.rgb"),
+                     os.path.join(os.getcwd(), "xpra", "x264", "x264test.rgb"),
+                     os.path.join(os.getcwd(), "x264test.rgb")]:
+        if os.path.exists(filename):
+            f = open(filename, mode='rb')
+            data = f.read()
+            break
+        else:
+            print("%s not found" % filename)
 finally:
     if f:
         f.close()
+assert data, "x264test.rgb not found!"
 
 def main():
-    from xpra.x264.encoder import Encoder
+    from xpra.x264.codec import Encoder     #@UnresolvedImport
     encoder = Encoder()
     print("encoder.init(%s,%s)" % (w, h))
     encoder.init(w, h)
@@ -30,7 +41,7 @@ def main():
         i = encoder.clean()
         print("encoder.clean()=%s" % i)
 
-    from xpra.x264.decoder import Decoder
+    from xpra.x264.codec import Decoder     #@UnresolvedImport
     decoder = Decoder()
     print("decoder.init(%s,%s)" % (w, h))
     decoder.init(w, h)

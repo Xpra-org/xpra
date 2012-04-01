@@ -19,86 +19,17 @@ from distutils.core import setup
 from distutils.extension import Extension
 import subprocess, sys, traceback
 
-
-packages=["wimpiggy", "wimpiggy.lowlevel",
-          "parti", "parti.trays", "parti.addons", "parti.scripts",
-          "xpra", "xpra.scripts", "xpra.platform",
-          "xpra.xposix", "xpra.win32", "xpra.darwin",
-          ]
-
-if sys.platform.startswith("win"):
-    def pkgconfig(*args):
-        return {}
-else:
-    # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-    def pkgconfig(*packages, **ekw):
-        flag_map = {'-I': 'include_dirs',
-                    '-L': 'library_dirs',
-                    '-l': 'libraries'}
-        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (output, _) = proc.communicate()
-        status = proc.wait()
-        if status!=0 and not ('clean' in sys.argv):
-            raise Exception("call to pkg-config ('%s') failed" % (cmd,))
-        kw = dict(ekw)
-        if sys.version>='3':
-            output = output.decode('utf-8')
-        for token in output.split():
-            if token[:2] in flag_map:
-                kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-            else: # throw others to extra_link_args
-                kw.setdefault('extra_link_args', []).append(token)
-            for k, v in kw.items(): # remove duplicates
-                kw[k] = list(set(v))
-        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
-        return kw
-
-
-ext_modules = []
-cmdclass = {}
-def cython_version_check():
-    from Cython.Compiler.Version import version as cython_version_string
-    cython_version = [int(part) for part in cython_version_string.split(".")]
-    # This was when the 'for 0 < i < 10:' syntax as added, bump upwards as
-    # necessary:
-    NEEDED_CYTHON = (0, 14, 0)
-    if tuple(cython_version) < NEEDED_CYTHON:
-        sys.exit("ERROR: Your version of Cython is too old to build this package\n"
-                 "You have version %s\n"
-                 "Please upgrade to Cython %s or better"
-                 % (cython_version_string,
-                    ".".join([str(part) for part in NEEDED_CYTHON])))
-def cython_add(extension):
-    global ext_modules, cmdclass
-    cython_version_check()
-    from Cython.Distutils import build_ext
-    ext_modules.append(extension)
-    cmdclass = {'build_ext': build_ext}
-    
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
-if XPRA_LOCAL_SERVERS_SUPPORTED:
-    cython_add(Extension("wimpiggy.lowlevel.bindings",
-                ["wimpiggy/lowlevel/bindings.pyx"],
-                **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",
-                            "xtst", "xfixes", "xcomposite", "xdamage", "xrandr")
-                ))
-    cython_add(Extension("xpra.wait_for_x_server",
-                ["xpra/wait_for_x_server.pyx"],
-                **pkgconfig("x11")
-                ))
-x264_ENABLED = True
-if x264_ENABLED:
-    packages.append("xpra.x264")
-    cython_add(Extension("xpra.x264.codec",
-                ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
-                **pkgconfig("x264", "libswscale", "libavcodec")
-                ))
-
 import wimpiggy
 import parti
 import xpra
 assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
+
+
+packages = ["wimpiggy", "wimpiggy.lowlevel",
+          "parti", "parti.trays", "parti.addons", "parti.scripts",
+          "xpra", "xpra.scripts", "xpra.platform",
+          "xpra.xposix", "xpra.win32", "xpra.darwin",
+          ]
 
 # Add build info to build_info.py file:
 import add_build_info
@@ -145,15 +76,20 @@ if sys.platform.startswith("win"):
     # The x264 DLLs which you can grab from here:
     # http://ffmpeg.zeranoe.com/builds/
     # This is where I keep them, you will obviously need to change this value:
-    x264_DLLs="Z:\ffmpeg-win32-shared"
-    
+    x264_PATH="Z:\\ffmpeg-win32-shared"
+
+    def pkgconfig(*args):
+        return {'include_dirs': ["xpra/x264/win32", "%s/include" % x264_PATH],
+                'library_dirs': ["xpra/x264/win32", "%s/lib" % x264_PATH],
+                'libraries': ["x264lib", "swscale", "avcodec", "avutil"]}
+
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
     windows = [
                     {'script': 'win32/xpra_silent.py',                  'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra",},
                     {'script': 'xpra/gtk_view_keyboard.py',             'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra-Launcher",
-                  },
+                    {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra-Launcher",},
+                    {'script': 'xpra/x264/main.py',                     'icon_resources': [(1, "xpra.ico")],            "dest_base": "x264-Test",},
               ]
     console = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra_cmd",}
@@ -166,7 +102,7 @@ if sys.platform.startswith("win"):
     options = {
                     'py2exe': {
                                'unbuffered': True,
-                               'packages':'encodings',
+                               'packages': packages,
                                'includes': includes,
                                'dll_excludes': 'w9xpopen.exe'
                             }
@@ -176,11 +112,16 @@ if sys.platform.startswith("win"):
                    ('', ['README.xpra']),
                    ('', ['website.url']),
                    ('', ['xpra/x264/win32/x264lib.dll']),
+                   ('', ['xpra/x264/x264test.rgb']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ('', glob.glob('%s\\bin\\*.dll' % x264_DLLs)),
+                   ('', glob.glob('%s\\bin\\*.dll' % x264_PATH)),
                ]
+
+    import os
+    os.environ['PATH'] = '%s\\bin\\' % x264_PATH + ';' + os.environ['PATH']
+    sys.path.append('%s\\bin\\' % x264_PATH)
     extra_options = dict(
         windows = windows,
         console = console,
@@ -189,6 +130,30 @@ if sys.platform.startswith("win"):
         description = "Screen for X utility, allows you to connect to remote seamless sessions",
     )
 else:
+    # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
+    def pkgconfig(*packages, **ekw):
+        flag_map = {'-I': 'include_dirs',
+                    '-L': 'library_dirs',
+                    '-l': 'libraries'}
+        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, _) = proc.communicate()
+        status = proc.wait()
+        if status!=0 and not ('clean' in sys.argv):
+            raise Exception("call to pkg-config ('%s') failed" % (cmd,))
+        kw = dict(ekw)
+        if sys.version>='3':
+            output = output.decode('utf-8')
+        for token in output.split():
+            if token[:2] in flag_map:
+                kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
+            else: # throw others to extra_link_args
+                kw.setdefault('extra_link_args', []).append(token)
+            for k, v in kw.items(): # remove duplicates
+                kw[k] = list(set(v))
+        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
+        return kw
+
     scripts=["scripts/parti", "scripts/parti-repl",
              "scripts/xpra",
              ]
@@ -205,6 +170,51 @@ else:
         data_files = data_files,
         description = "A window manager library, a window manager, and a 'screen for X' utility",
     )
+
+
+
+ext_modules = []
+cmdclass = {}
+def cython_version_check():
+    from Cython.Compiler.Version import version as cython_version_string
+    cython_version = [int(part) for part in cython_version_string.split(".")]
+    # This was when the 'for 0 < i < 10:' syntax as added, bump upwards as
+    # necessary:
+    NEEDED_CYTHON = (0, 14, 0)
+    if tuple(cython_version) < NEEDED_CYTHON:
+        sys.exit("ERROR: Your version of Cython is too old to build this package\n"
+                 "You have version %s\n"
+                 "Please upgrade to Cython %s or better"
+                 % (cython_version_string,
+                    ".".join([str(part) for part in NEEDED_CYTHON])))
+def cython_add(extension):
+    global ext_modules, cmdclass
+    cython_version_check()
+    from Cython.Distutils import build_ext
+    ext_modules.append(extension)
+    cmdclass = {'build_ext': build_ext}
+
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+if XPRA_LOCAL_SERVERS_SUPPORTED:
+    cython_add(Extension("wimpiggy.lowlevel.bindings",
+                ["wimpiggy/lowlevel/bindings.pyx"],
+                **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",
+                            "xtst", "xfixes", "xcomposite", "xdamage", "xrandr")
+                ))
+    cython_add(Extension("xpra.wait_for_x_server",
+                ["xpra/wait_for_x_server.pyx"],
+                **pkgconfig("x11")
+                ))
+x264_ENABLED = True
+if x264_ENABLED:
+    packages.append("xpra.x264")
+    cython_add(Extension("xpra.x264.codec",
+                ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
+                **pkgconfig("x264", "libswscale", "libavcodec")
+                ))
+
+
+
 
 setup(
     name="parti-all",
