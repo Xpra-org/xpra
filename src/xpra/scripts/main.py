@@ -54,6 +54,11 @@ if "rgb24" in ENCODINGS:
         ENCODINGS.append("x264")
     except Exception, e:
         print("cannot load x264: %s" % e)
+    try:
+        from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
+        ENCODINGS.append("vpx")
+    except Exception, e:
+        print("cannot load vpx: %s" % e)
 DEFAULT_ENCODING = ENCODINGS[0]
 
 

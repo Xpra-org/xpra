@@ -423,7 +423,7 @@ class ServerSource(object):
                         pixel_count += w*h
                         #favor full screen updates over many regions:
                         #x264 needs full screen updates all the time
-                        if pixel_count+4096*len(regions)>=full_pixels*9/10 or self._encoding=="x264":
+                        if pixel_count+4096*len(regions)>=full_pixels*9/10 or self._encoding in ["x264", "vpx"]:
                             regions = [(0, 0, ww, wh, True)]
                             break
                         regions.append((x, y, w, h, False))
@@ -510,28 +510,18 @@ class ServerSource(object):
             assert coding in ENCODINGS
             assert x==0 and y==0
             #x264 needs sizes divisible by 2:
-            width = w & 0xFFFE
-            height = h & 0xFFFE
-            from xpra.x264.codec import ENCODERS, Encoder     #@UnresolvedImport
-            encoder = ENCODERS.get(wid)
-            if encoder and (encoder.get_width()!=width or encoder.get_height()!=height):
-                log("x264: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (width, height))
-                encoder.clean()
-                encoder.init(width, height)
-            if encoder is None:
-                encoder = Encoder()
-                encoder.init(width, height)
-                ENCODERS[wid] = encoder
-                def close_encoder():
-                    encoder.clean()
-                    del ENCODERS[wid]
-                self._on_close.append(close_encoder)
-            err, size, data = encoder.compress_image(data, rowstride)
-            if err!=0:
-                log.error("x264: ouch, compression error %s", err)
-                return None
-            log("x264: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", w, h, size, type(data), [ord(c) for c in data[:10]])
-            w,h = width, height
+            w = w & 0xFFFE
+            h = h & 0xFFFE
+            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder     #@UnresolvedImport
+            data = self.video_encode(x264_encoders, x264Encoder, wid, x, y, w, h, coding, data, rowstride)
+        elif coding=="vpx":
+            assert coding in ENCODINGS
+            assert x==0 and y==0
+            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder     #@UnresolvedImport @Reimport
+            data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
+        else:
+            assert coding=="rgb24"
+
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and sequence>=0 and self._damage_cancelled.get(wid, 0)>=sequence:
@@ -541,6 +531,33 @@ class ServerSource(object):
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
         self._damage_packet_sequence += 1
         return packet
+
+    def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
+        assert coding in ENCODINGS
+        assert x==0 and y==0
+        encoder = encoders.get(wid)
+        if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
+            log("vpx: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (w, h))
+            encoder.clean()
+            encoder.init(w, h)
+        if encoder is None:
+            log.info("vpx: new encoder")
+            encoder = factory()
+            encoder.init(w, h)
+            encoders[wid] = encoder
+            def close_encoder():
+                encoder.clean()
+                del encoders[wid]
+            self._on_close.append(close_encoder)
+        log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
+        err, size, data = encoder.compress_image(data, rowstride)
+        if err!=0:
+            log.error("%s: ouch, compression error %s", coding, err)
+            return None
+        log("%s: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", coding, w, h, size, type(data), [ord(c) for c in data[:10]])
+        return data
+
+
 
     def _mmap_send(self, data):
         #This is best explained using diagrams:

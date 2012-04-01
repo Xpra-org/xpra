@@ -66,31 +66,41 @@ class Backing(object):
 
     def paint_x264(self, img_data, x, y, width, height, rowstride):
         assert "x264" in ENCODINGS
-        assert x==0 and y==0
-        log("paint_x264(%s bytes, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride)
         from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-        decoder = DECODERS.get(self.wid)
+        self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
+
+    def paint_vpx(self, img_data, x, y, width, height, rowstride):
+        assert "vpx" in ENCODINGS
+        from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport
+        self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
+
+    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
+        assert x==0 and y==0
+        log("paint_with_video_decoder(%s, %s, %s, %s bytes, %s, %s, %s, %s, %s)", decoders, factory, coding, len(img_data), x, y, width, height, rowstride)
+        decoder = decoders.get(self.wid)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
-            log("paint_x264: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
+            log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
             decoder.clean()
             decoder.init(width, height)
         if decoder is None:
-            decoder = Decoder()
+            decoder = factory()
             decoder.init(width, height)
-            DECODERS[self.wid] = decoder
+            decoders[self.wid] = decoder
             def close_decoder():
-                log("closing x264 decoder for window %s" % self.wid)
+                log("closing %s decoder for window %s", coding, self.wid)
                 decoder.clean()
-                del DECODERS[self.wid]
+                del decoders[self.wid]
             self._on_close.append(close_decoder)
-        #log("paint_x264: %sx%s img_data=%s, len=%s, first 10 bytes: %s", width, height, type(img_data), len(img_data), [ord(c) for c in img_data[:10]])
         err, outstride, data = decoder.decompress_image(img_data)
         if err!=0:
-            log.error("x264: ouch, decompression error %s", err)
+            log.error("paint_with_video_decoder: ouch, decompression error %s", err)
             return
-        log("paint_x264: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
+        if not data:
+            log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
+            return
+        log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
         try:
-            log("paint_x264: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
+            log("paint_with_video_decoder: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
             self.paint_rgb24(data, x, y, width, height, outstride)
         finally:
             decoder.free_image()
@@ -296,6 +306,8 @@ class PixmapBacking(Backing):
             self.paint_rgb24(img_data, x, y, width, height, rowstride)
         elif coding == "x264":
             self.paint_x264(img_data, x, y, width, height, rowstride)
+        elif coding == "vpx":
+            self.paint_vpx(img_data, x, y, width, height, rowstride)
         else:
             self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
 

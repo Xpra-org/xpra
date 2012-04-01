@@ -89,7 +89,6 @@ if sys.platform.startswith("win"):
                     {'script': 'win32/xpra_silent.py',                  'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra",},
                     {'script': 'xpra/gtk_view_keyboard.py',             'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
                     {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra-Launcher",},
-                    {'script': 'xpra/x264/main.py',                     'icon_resources': [(1, "xpra.ico")],            "dest_base": "x264-Test",},
               ]
     console = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra_cmd",}
@@ -212,6 +211,16 @@ if x264_ENABLED:
                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ))
+vpx_ENABLED = True
+if vpx_ENABLED:
+    packages.append("xpra.vpx")
+    cython_add(Extension("xpra.vpx.codec",
+                ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
+                **pkgconfig("vpx", "libswscale", "libavcodec")
+                ))
+
+
+
 
 
 
