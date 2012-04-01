@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="e:\xpra\src\xpra\x264\win32;&quot;C:\ffmpeg-git-4082198-win32-dev\include&quot;"
+				AdditionalIncludeDirectories="e:\xpra\src\xpra\x264\win32;&quot;Z:\ffmpeg-win32-shared\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;X264LIB_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
