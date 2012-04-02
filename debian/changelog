@@ -1,7 +1,7 @@
 xpra (0.2.0-1) UNRELEASED; urgency=low
- * x264 and vpx video encoding support
- * gtk3 and python 3 partial support (client only)
- * detect missing X11 server extensions and exit with error
+  * x264 and vpx video encoding support
+  * gtk3 and python 3 partial support (client only)
+  * detect missing X11 server extensions and exit with error
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Apr 2012 14:24:38 +0700
 
