@@ -1,3 +1,5 @@
 xpra/xpra.wait_for_x_server.c
 wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.c
 wimpiggy/lowlevel/constants.pxi
+xpra/x264/codec.c
+xpra/vpx/codec.c
