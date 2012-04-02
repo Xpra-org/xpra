@@ -16,7 +16,7 @@ SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="jpeg libnotify parti png server x264 ssh"
+IUSE="jpeg libnotify parti png server x264 vpx ssh"
 
 COMMON_DEPEND="dev-python/pygtk:2
 	x11-libs/libX11
@@ -33,6 +33,8 @@ RDEPEND="${COMMON_DEPEND}
 	libnotify? ( dev-python/dbus-python )
 	jpeg? ( dev-python/imaging )
 	png? ( dev-python/imaging )
+	x264? ( media-libs/x264 )
+	vpx? ( media-libs/libvpx )
 	ssh? ( net-misc/openssh )
 	server? ( x11-base/xorg-server[xvfb] )"
 DEPEND="${COMMON_DEPEND}
@@ -45,6 +47,9 @@ src_prepare() {
 	fi
 	if ! use x264; then
 		epatch disable-x264.patch
+	fi
+	if ! use vpx; then
+		epatch disable-vpx.patch
 	fi
 
 	$(PYTHON -2) make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi || die

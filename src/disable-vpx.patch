@@ -1,0 +1,13 @@
+Index: setup.py
+===================================================================
+--- setup.py	(revision 677)
++++ setup.py	(working copy)
+@@ -211,7 +211,7 @@
+                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
+                 **pkgconfig("x264", "libswscale", "libavcodec")
+                 ))
+-vpx_ENABLED = True
++vpx_ENABLED = False
+ if vpx_ENABLED:
+     packages.append("xpra.vpx")
+     cython_add(Extension("xpra.vpx.codec",

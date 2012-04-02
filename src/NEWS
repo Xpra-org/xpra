@@ -1,3 +1,10 @@
+v0.2.0 (2012-04-02)
+======================
+	-- x264 and vpx video encoding support
+	-- gtk3 and python 3 partial support (client only)
+	-- detect missing X11 server extensions and exit with error
+
+
 v0.1.0 (2012-03-21)
 ======================
 	-- security: strict filtering of packet handlers until connection authenticated
