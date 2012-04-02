@@ -2,6 +2,8 @@ include COPYING NEWS README* *.1
 include do-* run-* try-parti
 include wimpiggy/lowlevel/constants.pxi
 include install.sh
+include xpra/x264/*.h
+include xpra/vpx/*.h
 recursive-include working-notes *
 global-include *.py *.txt
 global-exclude *~ #*
