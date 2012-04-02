@@ -138,7 +138,7 @@ else:
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (output, _) = proc.communicate()
         status = proc.wait()
-        if status!=0 and not ('clean' in sys.argv):
+        if status!=0 and not ('clean' in sys.argv or 'sdist' in sys.argv):
             raise Exception("call to pkg-config ('%s') failed" % (cmd,))
         kw = dict(ekw)
         if sys.version>='3':
