@@ -1,13 +1,13 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 661)
+--- setup.py	(revision 677)
 +++ setup.py	(working copy)
-@@ -76,7 +76,7 @@
+@@ -204,7 +204,7 @@
                  ["xpra/wait_for_x_server.pyx"],
                  **pkgconfig("x11")
                  ))
 -x264_ENABLED = True
 +x264_ENABLED = False
  if x264_ENABLED:
-     cython_add(Extension("xpra.x264.encoder",
-                 ["xpra/x264/encoder.pyx", "xpra/x264/x264lib.c"],
+     packages.append("xpra.x264")
+     cython_add(Extension("xpra.x264.codec",
