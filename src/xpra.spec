@@ -26,6 +26,10 @@
 %define no_x264 1
 %define no_vpx 1
 %endif
+%if 0%{no_video}
+%define no_x264 1
+%define no_vpx 1
+%endif
 
 
 Summary: Xpra gives you "persistent remote applications" for X.
