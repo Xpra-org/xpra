@@ -520,7 +520,7 @@ class ServerSource(object):
             from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder     #@UnresolvedImport @Reimport
             data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
         else:
-            assert coding=="rgb24"
+            assert coding in ["rgb24", "mmap"]
 
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
