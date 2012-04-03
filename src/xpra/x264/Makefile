@@ -16,6 +16,7 @@ all: x264lib.so testlib
 
 x264lib.so: x264lib.o
 	$(CC) -shared -Wl,-soname,x264lib.so -o $@ $(LDFLAGS) $< -l x264 -lswscale -lavcodec
+#static link: $(CC) -shared -Wl,-soname,x264lib.so -o $@ $(LDFLAGS) $< -Wl,-Bstatic -Wl,-Bsymbolic -lx264 -lswscale -lavcodec -Wl,-Bdynamic
 
 x264lib.o: x264lib.c x264lib.h
 	$(CC) $(CFLAGS) x264lib.c -c -o $@
