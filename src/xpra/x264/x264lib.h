@@ -1,6 +1,8 @@
 #ifdef _WIN32
 #include "stdint.h"
 #include "inttypes.h"
+#else
+#include "stdint.h"
 #endif
 
 /** Opaque structure - "context". You must have a context to encode images of a given size */
