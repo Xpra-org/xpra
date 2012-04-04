@@ -21,7 +21,7 @@ import uuid
 try:
     from StringIO import StringIO   #@UnusedImport
 except:
-    from io import StringIO         #@UnresolvedImport @Reimport (python3)
+    from io import StringIO         #@UnresolvedImport @Reimport
 import os
 import time
 import ctypes
@@ -422,7 +422,7 @@ class ServerSource(object):
                         (x, y, w, h) = get_rectangle_from_region(damage)
                         pixel_count += w*h
                         #favor full screen updates over many regions:
-                        #x264 needs full screen updates all the time
+                        #x264 and vpx need full screen updates all the time
                         if pixel_count+4096*len(regions)>=full_pixels*9/10 or self._encoding in ["x264", "vpx"]:
                             regions = [(0, 0, ww, wh, True)]
                             break

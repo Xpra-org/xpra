@@ -10,9 +10,9 @@ conventions, and if you need more (un)marshalling smarts, add them here."""
 
 import struct
 try:
-    from io import StringIO         #@UnresolvedImport @UnusedImport (python3)
+    from StringIO import StringIO   #@UnresolvedImport @UnusedImport
 except:
-    from StringIO import StringIO   #@Reimport
+    from io import StringIO         #@Reimport
 import gtk.gdk
 import cairo
 from wimpiggy.lowlevel import (
