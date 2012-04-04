@@ -10,25 +10,13 @@
 
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %define requires_extra , libvpx, libx264
-%if 0%{?el6}
-%define no_x264 1
-%define no_vpx 1
-%endif
 %if 0%{?el5}
 %define requires_extra , python-uuid
 %define include_egg 0
-%define no_x264 1
-%define no_vpx 1
 %endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
-%define requires_extra , libx264
-%define no_x264 1
-%define no_vpx 1
-%endif
-%if 0%{no_video}
-%define no_x264 1
-%define no_vpx 1
+%define requires_extra
 %endif
 
 
@@ -53,6 +41,8 @@ BuildRequires: python, setuptool
 Patch0: disable-posix-server.patch
 Patch1: disable-x264.patch
 Patch2: disable-vpx.patch
+Patch3: use-static-x264lib.patch
+Patch4: use-static-vpxlib.patch
 
 
 %description
@@ -262,11 +252,13 @@ cd parti-all-%{version}
 %if %{defined generic_rpm}
 %patch0 -p0
 %endif
-%if %{defined no_x264}
+%if 0%{?no_video}
 %patch1 -p0
-%endif
-%if %{defined no_vpx}
 %patch2 -p0
+%endif
+%if 0%{?static_video_libs}
+%patch3 -p0
+%patch4 -p0
 %endif
 
 %build
