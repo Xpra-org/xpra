@@ -38,6 +38,8 @@ log = Logger()
 class XError(Exception):
     pass
 
+#useful for debugging X11 errors that get swallowed:
+LOG_ALL_X_ERRORS = False
 
 xerror_to_name = None
 def XErrorToName(xerror):
@@ -97,6 +99,8 @@ class _ErrorManager(object):
             self._enter()
             value = fun(*args, **kwargs)
         except:
+            if LOG_ALL_X_ERRORS:
+                log.error("_call(%s,%s,%s,%s)", need_sync, fun, args, kwargs, exc_info=True)
             exc_type, exc_value, exc_traceback = sys.exc_info()
             try:
                 self._exit(need_sync)
