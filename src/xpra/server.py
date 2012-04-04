@@ -541,7 +541,7 @@ class ServerSource(object):
             encoder.clean()
             encoder.init(w, h)
         if encoder is None:
-            log.info("vpx: new encoder")
+            log("vpx: new encoder")
             encoder = factory()
             encoder.init(w, h)
             encoders[wid] = encoder
