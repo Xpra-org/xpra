@@ -55,7 +55,9 @@ from wimpiggy.lowlevel import (displayHasXComposite,       #@UnresolvedImport
                                has_randr, get_screen_sizes, #@UnresolvedImport
                                set_screen_size,             #@UnresolvedImport
                                get_screen_size,             #@UnresolvedImport
-                               init_x11_filter)             #@UnresolvedImport
+                               init_x11_filter,             #@UnresolvedImport
+                               get_xatom                    #@UnresolvedImport
+                               )
 from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
@@ -643,6 +645,7 @@ class XpraServer(gobject.GObject):
     def __init__(self, clobber, sockets, opts):
         gobject.GObject.__init__(self)
         init_x11_filter()
+        self.init_x11_atoms()
 
         self.start_time = time.time()
 
@@ -779,6 +782,28 @@ class XpraServer(gobject.GObject):
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
+
+    def init_x11_atoms(self):
+        #some applications (like openoffice), do not work properly
+        #if some x11 atoms aren't defined, so we define them in advance:
+        for atom_name in ["_NET_WM_WINDOW_TYPE",
+                          "_NET_WM_WINDOW_TYPE_NORMAL",
+                          "_NET_WM_WINDOW_TYPE_DESKTOP",
+                          "_NET_WM_WINDOW_TYPE_DOCK",
+                          "_NET_WM_WINDOW_TYPE_TOOLBAR",
+                          "_NET_WM_WINDOW_TYPE_MENU",
+                          "_NET_WM_WINDOW_TYPE_UTILITY",
+                          "_NET_WM_WINDOW_TYPE_SPLASH",
+                          "_NET_WM_WINDOW_TYPE_DIALOG",
+                          "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+                          "_NET_WM_WINDOW_TYPE_POPUP_MENU",
+                          "_NET_WM_WINDOW_TYPE_TOOLTIP",
+                          "_NET_WM_WINDOW_TYPE_NOTIFICATION",
+                          "_NET_WM_WINDOW_TYPE_COMBO",
+                          "_NET_WM_WINDOW_TYPE_DND",
+                          "_NET_WM_WINDOW_TYPE_NORMAL"
+                          ]:
+            get_xatom(atom_name)
 
     def reset_statistics(self):
         self.client_latency = maxdeque(maxlen=100)
