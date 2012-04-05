@@ -438,6 +438,16 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
         objects.append(PyGdkAtom_New(array[i]))
     return objects
 
+def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):
+    cdef GdkAtom c_gdk_atom
+    cdef unsigned long gdk_atom_value
+    atom_array = []
+    for atom_object in gdk_atom_objects:
+        c_gdk_atom = PyGdkAtom_Get(atom_object)
+        gdk_atom_value = <unsigned long> c_gdk_atom
+        atom_array.append(gdk_atom_value)
+    return atom_array
+
 
 # Property handling:
 
