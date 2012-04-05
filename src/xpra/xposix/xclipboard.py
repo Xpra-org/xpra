@@ -20,14 +20,18 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
     def __init__(self, send_packet_cb):
         ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
 
-    def _do_munge_raw_selection_to_wire(self, type, format, data):
+    def _do_munge_raw_selection_to_wire(self, target, ype, format, data):
         if format == 32 and type in ("ATOM", "ATOM_PAIR"):
             # Convert to strings and send that. Bizarrely, the atoms are
             # not actual X atoms, but an array of GdkAtom's reinterpreted
             # as a byte buffer.
             atoms = gdk_atom_objects_from_gdk_atom_array(data)
-            return ("atoms", [str(atom) for atom in atoms])
-        return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, type, format, data)
+            atom_names = [str(atom) for atom in atoms]
+            if target=="TARGET":
+                atom_names.remove("SAVE_TARGETS")
+                atom_names.remove("COMPOUND_TEXT")
+            return ("atoms", atom_names)
+        return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, type, format, data)
 
     def _munge_wire_selection_to_raw(self, encoding, datatype, format, data):
         if encoding == "atoms":

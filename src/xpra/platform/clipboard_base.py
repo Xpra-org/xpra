@@ -74,27 +74,27 @@ class ClipboardProtocolHelperBase(object):
         debug("send clipboard token: %s", selection)
         self.send(["clipboard-token", self.local_to_remote(selection)])
 
-    def _munge_raw_selection_to_wire(self, type, format, data):
+    def _munge_raw_selection_to_wire(self, target, type, format, data):
         # Some types just cannot be marshalled:
         if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
             debug("skipping clipboard data of type: %s, format=%s, len(data)=%s", type, format, len(data))
             return (None, None)
-        return self._do_munge_raw_selection_to_wire(type, format, data)
+        return self._do_munge_raw_selection_to_wire(target, type, format, data)
 
-    def _do_munge_raw_selection_to_wire(self, type, format, data):
+    def _do_munge_raw_selection_to_wire(self, target, type, format, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
         if format == 32:
-            sizeof_long = struct.calcsize("=L")
-            assert sizeof_long == 32
-            binfmt = "=" + "L" * (len(data) // sizeof_long)
+            sizeof_long = struct.calcsize("=I")
+            assert sizeof_long == 4, "struct.calcsize('=I)=%s" % sizeof_long
+            binfmt = "=" + "I" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
             return ("integers", ints)
         elif format == 16:
             sizeof_short = struct.calcsize("=H")
-            assert sizeof_short == 16
+            assert sizeof_short == 2
             binfmt = "=" + "H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
             return ("integers", ints)
@@ -134,7 +134,7 @@ class ClipboardProtocolHelperBase(object):
                 if type is None or data is None:
                     no_contents()
                     return
-                munged = self._munge_raw_selection_to_wire(type, format, data)
+                munged = self._munge_raw_selection_to_wire(target, type, format, data)
                 (wire_encoding, wire_data) = munged
                 log("clipboard raw -> wire: %r -> %r", (type, format, data), munged)
                 if wire_encoding is None:
