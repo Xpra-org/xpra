@@ -117,7 +117,7 @@ def main(script_file, cmdline):
                           dest="use_display", default=False,
                           help="Use an existing display rather than starting one with xvfb")
         parser.add_option("--xvfb", action="store",
-                          dest="xvfb", default="Xvfb +extension Composite -screen 0 3840x2560x24+32 -noreset -auth $XAUTHORITY", metavar="CMD",
+                          dest="xvfb", default="Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
         parser.add_option("--no-randr", action="store_false",
                           dest="randr", default=True,

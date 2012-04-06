@@ -303,7 +303,7 @@ clients on. By default, this is 'Xvfb'. If your Xvfb is installed in a
 funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
 executable. The default value used is:
-\fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-auth $XAUTHORITY\fP
+\fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-nolisten tcp \-noreset  \-auth $XAUTHORITY\fP
 .TP
 \fB\-\-no\-randr\fP
 Disables X11 randr support. The X11 randr extensions allows the virtual
