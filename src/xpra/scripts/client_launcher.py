@@ -147,7 +147,7 @@ class ApplicationWindow:
 		hbox.set_spacing(20)
 		self.password_entry = gtk.Entry(max=128)
 		self.password_entry.set_width_chars(30)
-		self.password_entry.set_text()
+		self.password_entry.set_text("")
 		self.password_entry.set_visibility(False)
 		hbox.pack_start(gtk.Label("Password: "))
 		hbox.pack_start(self.password_entry)
