@@ -110,8 +110,6 @@ if sys.platform.startswith("win"):
                    ('', ['COPYING']),
                    ('', ['README.xpra']),
                    ('', ['website.url']),
-                   ('', ['xpra/x264/win32/x264lib.dll']),
-                   ('', ['xpra/x264/x264test.rgb']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
