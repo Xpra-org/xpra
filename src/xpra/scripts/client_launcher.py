@@ -239,6 +239,8 @@ class ApplicationWindow:
 		self.info.set_text("Launching: %s" % cmd)
 		self.window.hide()
 		thread.start_new_thread(self.start_xpra_process, (cmd,))
+		import time
+		time.sleep(40)
 		
 	def start_xpra_process(self, cmd):
 		try:
