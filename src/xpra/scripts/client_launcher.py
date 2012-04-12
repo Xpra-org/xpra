@@ -142,6 +142,17 @@ class ApplicationWindow:
 		hbox.pack_start(self.port_entry)
 		vbox.pack_start(hbox)
 		
+		# Password
+		hbox = gtk.HBox(False, 0)
+		hbox.set_spacing(20)
+		self.password_entry = gtk.Entry(max=128)
+		self.password_entry.set_width_chars(30)
+		self.password_entry.set_text()
+		self.password_entry.set_visibility(False)
+		hbox.pack_start(gtk.Label("Password: "))
+		hbox.pack_start(self.password_entry)
+		vbox.pack_start(hbox)
+		
 		# Info Label
 		self.info = gtk.Label()
 		self.info.set_line_wrap(True)
@@ -266,6 +277,9 @@ class ApplicationWindow:
 		xpra_opts.encoding = self.encoding_combo.get_active_text()
 		xpra_opts.jpegquality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.jpeg_combo.get_active_text())
 		xpra_opts.mode = self.mode_combo.get_active_text()
+		password = self.password_entry.get_text()
+		if len(password) > 0:
+		    xpra_opts.password_file = create_password_file(password)
 	
 	def do_connect(self):
 		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
