@@ -11,6 +11,8 @@ This is a simple GUI for starting the xpra client.
 
 import sys
 import os.path
+import tempfile
+
 try:
 	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
 except:
@@ -73,6 +75,7 @@ xpra_opts.host = "127.0.0.1"
 xpra_opts.port = 16010
 xpra_opts.mode = "tcp"
 xpra_opts.autoconnect = False
+xpra_opts.password_file = False
 
 class ApplicationWindow:
 
@@ -182,7 +185,7 @@ class ApplicationWindow:
 		opts = AdHocStruct()
 		opts.clipboard = True
 		opts.pulseaudio = True
-		opts.password_file = None
+		opts.password_file = xpra_opts.password_file
 		opts.title_suffix = None
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
@@ -240,6 +243,8 @@ class ApplicationWindow:
 		print("jpeg=%s" % xpra_opts.jpegquality)
 		args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
 		args.append("--encoding=%s" % xpra_opts.encoding)
+		if xpra_opts.password_file:
+			args.append("--password-file=%s" % xpra_opts.password_file)
 		process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, creationflags=SUBPROCESS_CREATION_FLAGS)
 		(out,err) = process.communicate()
 		print("do_start_xpra_process(%s) command terminated" % str(cmd))
@@ -276,6 +281,13 @@ class ApplicationWindow:
 	def destroy(self, *args):
 		gtk.main_quit()
 
+def create_password_file(password):
+	pass_file = tempfile.NamedTemporaryFile(delete = False)
+	pass_file.write("%s\n" % password)
+	xpra_opts.password_file=pass_file.name
+	pass_file.close()
+	return pass_file.name
+
 def update_options_from_file(filename):
 	propFile = open(filename, "rU")
 	propDict = dict()
@@ -310,6 +322,9 @@ def update_options_from_file(filename):
 	val = propDict.get("autoconnect")
 	if val:
 		xpra_opts.autoconnect = val
+	val = propDict.get("password")
+	if val:
+		xpra_opts.password_file = create_password_file(val)
 
 def main():
 	if len(sys.argv) == 2:
@@ -319,6 +334,8 @@ def main():
 		app.do_connect()
 	else:
 	   	gtk.main()
+	if xpra_opts.password_file:
+		os.unlink(xpra_opts.password_file)
 	sys.exit(0)
 
 if __name__ == "__main__":
