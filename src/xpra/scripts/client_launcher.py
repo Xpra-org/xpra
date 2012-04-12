@@ -50,19 +50,29 @@ if sys.platform.startswith("win"):
 		sys.stderr = sys.stdout
 
 
-LOSSLESS = "lossless (best)"
 LOSSY_5 = "lowest quality"
 LOSSY_20 = "low quality"
 LOSSY_50 = "average quality"
 LOSSY_90 = "best lossy quality"
 
-XPRA_COMPRESSION_OPTIONS = [LOSSLESS, LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
-XPRA_COMPRESSION_OPTIONS_DICT = {LOSSLESS : None,
-						LOSSY_5 : 5,
+XPRA_ENCODING_OPTIONS = [ "jpeg", "x264", "png", "rgb24", "vpx" ]
+
+XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
+XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 						LOSSY_20 : 20,
 						LOSSY_50 : 50,
 						LOSSY_90 : 90
 						}
+
+# Default connection options
+from wimpiggy.util import AdHocStruct
+xpra_opts = AdHocStruct()
+xpra_opts.encoding = "jpeg"
+xpra_opts.jpegquality = 90
+xpra_opts.host = "127.0.0.1"
+xpra_opts.port = 16010
+xpra_opts.mode = "tcp"
+xpra_opts.autoconnect = False
 
 class ApplicationWindow:
 
@@ -91,6 +101,18 @@ class ApplicationWindow:
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
 		
+		# Encoding:
+		hbox = gtk.HBox(False, 20)
+		hbox.set_spacing(20)
+		hbox.pack_start(gtk.Label("Encoding: "))
+		self.encoding_combo = gtk.combo_box_new_text()
+		self.encoding_combo.get_model().clear()
+		for option in XPRA_ENCODING_OPTIONS:
+			self.encoding_combo.append_text(option)
+		self.encoding_combo.set_active(XPRA_ENCODING_OPTIONS.index(xpra_opts.encoding))
+		hbox.pack_start(self.encoding_combo)
+		vbox.pack_start(hbox)
+		
 		# JPEG:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
@@ -108,16 +130,10 @@ class ApplicationWindow:
 		hbox.set_spacing(5)
 		self.host_entry = gtk.Entry(max=128)
 		self.host_entry.set_width_chars(40)
-		if len(sys.argv)>1:
-			self.host_entry.set_text(sys.argv[1])
-		else:
-			self.host_entry.set_text("127.0.0.1")
+		self.host_entry.set_text(xpra_opts.host)
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
-		if len(sys.argv)>2:
-			self.port_entry.set_text(sys.argv[2])
-		else:
-			self.port_entry.set_text("16010")
+		self.port_entry.set_text(str(xpra_opts.port))
 		hbox.pack_start(self.host_entry)
 		hbox.pack_start(gtk.Label(":"))
 		hbox.pack_start(self.port_entry)
@@ -139,8 +155,8 @@ class ApplicationWindow:
 	
 	def connect_tcp(self):
 		self.info.set_text("Connecting.")
-		host = self.host_entry.get_text()
-		port = self.port_entry.get_text()
+		host = xpra_opts.host
+		port = xpra_opts.port
 		self.info.set_text("Connecting..")
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -148,18 +164,20 @@ class ApplicationWindow:
 			sock.connect((host, int(port)))
 		except Exception, e:
 			self.info.set_text("Socket error: %s" % e)
+			print("error %s" % e)
 			return
 		self.info.set_text("Connection established")
 		try:
 			from xpra.protocol import SocketConnection
 			global socket_wrapper
-			socket_wrapper = SocketConnection(sock)
+			socket_wrapper = SocketConnection(sock, "xprahost")
 		except Exception, e:
 			self.info.set_text("Xpra Client error: %s" % e)
+			print("Xpra Client error: %s" % e)
 			return
 		self.window.hide()
 		# launch Xpra client in the same gtk.main():
-		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable, AdHocStruct
+		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 		gtk_main_quit_on_fatal_exceptions_enable()
 		opts = AdHocStruct()
 		opts.clipboard = True
@@ -167,8 +185,8 @@ class ApplicationWindow:
 		opts.password_file = None
 		opts.title_suffix = None
 		opts.title = "@title@ on @client-machine@"
-		opts.encoding = "png"
-		opts.jpegquality = 80
+		opts.encoding = xpra_opts.encoding
+		opts.jpegquality = xpra_opts.jpegquality
 		opts.max_bandwidth = 0.0
 		opts.auto_refresh_delay = 0.0
 		opts.key_shortcuts = []
@@ -178,6 +196,12 @@ class ApplicationWindow:
 		opts.remote_xpra = ".xpra/run-xpra"
 		opts.debug = None
 		opts.dock_icon = None
+		opts.tray_icon = None
+		opts.window_icon = None
+		opts.readonly = False
+		opts.session_name = "Xpra session"
+		opts.mmap = True
+		opts.keyboard_sync = True
 		
 		import logging
 		logging.root.setLevel(logging.INFO)
@@ -211,17 +235,11 @@ class ApplicationWindow:
 
 	def do_start_xpra_process(self, cmd):
 		#ret = os.system(" ".join(args))
-		mode = self.mode_combo.get_active_text()
-		host = self.host_entry.get_text()
-		port = self.port_entry.get_text()
-		jpeg = self.jpeg_combo.get_active_text()
-		uri = "%s:%s:%s" % (mode, host, port)
+		uri = "%s:%s:%s" % (xpra_opts.mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
-		print("jpeg=%s" % jpeg)
-		if jpeg:
-			jpeg_v = XPRA_COMPRESSION_OPTIONS_DICT.get(jpeg)
-			if jpeg_v:
-				args.append("--jpeg-quality=%s" % jpeg_v)
+		print("jpeg=%s" % xpra_opts.jpegquality)
+		args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
+		args.append("--encoding=%s" % xpra_opts.encoding)
 		process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, creationflags=SUBPROCESS_CREATION_FLAGS)
 		(out,err) = process.communicate()
 		print("do_start_xpra_process(%s) command terminated" % str(cmd))
@@ -237,20 +255,71 @@ class ApplicationWindow:
 			self.window.show_all()
 		gobject.idle_add(show_result, out, err)
 
-	def connect_clicked(self, *args):
-		mode = self.mode_combo.get_active_text()
-		if mode=="tcp" and not sys.platform.startswith("win"):
+	def update_options_from_gui(self):
+		xpra_opts.host = self.host_entry.get_text()
+		xpra_opts.port = self.port_entry.get_text()
+		xpra_opts.encoding = self.encoding_combo.get_active_text()
+		xpra_opts.jpegquality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.jpeg_combo.get_active_text())
+		xpra_opts.mode = self.mode_combo.get_active_text()
+	
+	def do_connect(self):
+		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
 			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
 			self.connect_tcp()
 		else:
 			self.launch_xpra()
+		
+	def connect_clicked(self, *args):
+		self.update_options_from_gui()
+		self.do_connect()
 
 	def destroy(self, *args):
 		gtk.main_quit()
 
+def update_options_from_file(filename):
+	propFile = open(filename, "rU")
+	propDict = dict()
+	for propLine in propFile:
+		propDef= propLine.strip()
+		if len(propDef) == 0:
+			continue
+		if propDef[0] in ( '!', '#' ):
+			continue
+		punctuation = [ propDef.find(c) for c in ':= ' ] + [ len(propDef) ]
+		found = min( [ pos for pos in punctuation if pos != -1 ] )
+		name= propDef[:found].rstrip()
+		value= propDef[found:].lstrip(":= ").rstrip()
+		propDict[name] = value
+	propFile.close()
+
+	val = propDict.get("host")
+	if val:
+		xpra_opts.host = val
+	val = propDict.get("port")
+	if val:
+		xpra_opts.port = val
+	val = propDict.get("encoding")
+	if val:
+		xpra_opts.encoding = val
+	val = propDict.get("jpegquality")
+	if val:
+		xpra_opts.jpegquality = val
+	val = propDict.get("mode")
+	if val:
+		xpra_opts.mode = val
+	val = propDict.get("autoconnect")
+	if val:
+		xpra_opts.autoconnect = val
+
 def main():
-	ApplicationWindow()
-	gtk.main()
+	if len(sys.argv) == 2:
+		update_options_from_file(sys.argv[1])
+	app = ApplicationWindow()
+	if xpra_opts.autoconnect == "True":
+		app.do_connect()
+	else:
+	   	gtk.main()
+	sys.exit(0)
 
 if __name__ == "__main__":
 	main()
