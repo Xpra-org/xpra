@@ -13,6 +13,8 @@ AllowUNCPath=false
 VersionInfoVersion=0.1.0
 VersionInfoCompany=devloop
 VersionInfoDescription=screen for X
+WizardImageFile=win32\xpra.bmp
+LicenseFile=COPYING
 
 [Dirs]
 Name: {app}; Flags: uninsalwaysuninstall;
