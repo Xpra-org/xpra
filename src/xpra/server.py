@@ -539,11 +539,11 @@ class ServerSource(object):
         assert x==0 and y==0
         encoder = encoders.get(wid)
         if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
-            log("vpx: window dimensions have changed from %s to %s", (encoder.get_width(), encoder.get_height()), (w, h))
+            log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
             encoder.clean()
             encoder.init(w, h)
         if encoder is None:
-            log("vpx: new encoder")
+            log("%s: new encoder" % coding)
             encoder = factory()
             encoder.init(w, h)
             encoders[wid] = encoder
