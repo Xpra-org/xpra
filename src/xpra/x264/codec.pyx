@@ -23,6 +23,7 @@ cdef extern from "x264lib.h":
     x264lib_ctx* init_decoder(int width, int height)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t **out, int *outsize, int *outstride)
+    void change_encoding_speed(x264lib_ctx *context, int increase)
 
 
 ENCODERS = {}
@@ -109,3 +110,9 @@ cdef class Encoder(xcoder):
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
         return  i, coutsz, coutv
+
+    def increase_encoding_speed(self):
+        change_encoding_speed(self.context, 1)
+    
+    def decrease_encoding_speed(self):
+        change_encoding_speed(self.context, -1)

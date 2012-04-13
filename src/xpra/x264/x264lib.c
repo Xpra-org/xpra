@@ -31,10 +31,11 @@ struct x264lib_ctx {
 	// Encoding
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
+	int encoding_preset;
 
 	// Decoding
 	AVCodec *codec;
-    AVCodecContext *codec_ctx;
+	AVCodecContext *codec_ctx;
 	struct SwsContext *yuv2rgb;
 
 	// Both
@@ -46,8 +47,9 @@ struct x264lib_ctx {
 struct x264lib_ctx *init_encoder(int width, int height)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
+	ctx->encoding_preset = 2;
 	x264_param_t param;
-	x264_param_default_preset(&param, "veryfast", "zerolatency");
+	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
 	param.i_threads = 1;
 	param.i_width = width;
 	param.i_height = height;
@@ -80,31 +82,31 @@ struct x264lib_ctx *init_decoder(int width, int height)
 	ctx->height = height;
 	ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, PIX_FMT_YUV420P, ctx->width, ctx->height, PIX_FMT_RGB24, SWS_POINT | SWS_ACCURATE_RND, NULL, NULL, NULL);
 
-    avcodec_register_all();
+	avcodec_register_all();
 
-    ctx->codec = avcodec_find_decoder(CODEC_ID_H264);
-    if (!ctx->codec) {
-        fprintf(stderr, "codec not found\n");
+	ctx->codec = avcodec_find_decoder(CODEC_ID_H264);
+	if (!ctx->codec) {
+	    fprintf(stderr, "codec not found\n");
 		free(ctx);
-        return NULL;
-    }
+	    return NULL;
+	}
 	ctx->codec_ctx = avcodec_alloc_context3(ctx->codec);
 	ctx->codec_ctx->width = ctx->width;
 	ctx->codec_ctx->height = ctx->height;
 	ctx->codec_ctx->pix_fmt = PIX_FMT_YUV420P;
 	if (avcodec_open(ctx->codec_ctx, ctx->codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
+	    fprintf(stderr, "could not open codec\n");
 		free(ctx);
-        return NULL;
-    }
+	    return NULL;
+	}
 
 	return ctx;
 }
 
 void clean_decoder(struct x264lib_ctx *ctx)
 {
-    avcodec_close(ctx->codec_ctx);
-    av_free(ctx->codec_ctx);
+	avcodec_close(ctx->codec_ctx);
+	av_free(ctx->codec_ctx);
 	sws_freeContext(ctx->yuv2rgb);
 }
 
@@ -148,21 +150,21 @@ int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8
 
 int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
 {
-    int got_picture;
+	int got_picture;
 	int len;
-    AVFrame *picture;
-    AVPacket avpkt;
+	AVFrame *picture;
+	AVPacket avpkt;
 	AVPicture pic;
 
 	if (!ctx->yuv2rgb)
 		return 1;
 
-    av_init_packet(&avpkt);
+	av_init_packet(&avpkt);
 
 	if (!ctx->codec_ctx || !ctx->codec)
 		return 1;
 
-    picture = avcodec_alloc_frame();
+	picture = avcodec_alloc_frame();
 
 	avpkt.data = in;
 	avpkt.size = size;
@@ -180,7 +182,7 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **o
 
 	/* Colorspace conversion (I420 -> RGB) */
 	sws_scale(ctx->yuv2rgb, picture->data, picture->linesize, 0, ctx->height, pic.data, pic.linesize);
-    
+	
 	av_free(picture);
 
 	/* Output (must be freed!) */
@@ -190,4 +192,23 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **o
 
 	//printf("After decoding, got %p, size %d, stride %d, size %d\n", pic.data[0], pic.linesize[0] * ctx->height, pic.linesize[0], pic.linesize[0]*ctx->height);
 	return 0;
+}
+
+/**
+ * Change the speed of encoding (x264 preset).
+ * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
+ */
+void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
+{
+	x264_param_t param;
+	x264_encoder_parameters(ctx->encoder, &param);
+	ctx->encoding_preset -= increase;
+	if (ctx->encoding_preset < 0)
+	    ctx->encoding_preset = 0;
+	if (ctx->encoding_preset > 5)
+	    ctx->encoding_preset = 5;
+	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
+	//printf("Setting encoding preset %s %d\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset);
+	x264_param_apply_profile(&param, "baseline");
+	x264_encoder_reconfig(ctx->encoder, &param);
 }
