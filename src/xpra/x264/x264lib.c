@@ -198,6 +198,7 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **o
  * Change the speed of encoding (x264 preset).
  * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
  */
+#ifndef _WIN32
 void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 {
 	x264_param_t param;
@@ -212,3 +213,9 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 	x264_param_apply_profile(&param, "baseline");
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
+#else
+void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
+{
+    ;
+}
+#endif
