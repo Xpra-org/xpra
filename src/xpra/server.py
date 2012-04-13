@@ -537,6 +537,7 @@ class ServerSource(object):
     def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
         assert coding in ENCODINGS
         assert x==0 and y==0
+        time_before = time.clock()
         encoder = encoders.get(wid)
         if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
             log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
@@ -553,6 +554,16 @@ class ServerSource(object):
             self._on_close.append(close_encoder)
         log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
         err, size, data = encoder.compress_image(data, rowstride)
+        time_after = time.clock()
+        encoding_latency = 1000 * (time_after - time_before)
+        # Do not allow encoding latency to go higher than 50ms
+        if encoding_latency > 50:
+            log.warn("Encoding took %d milliseconds, speeding up encoding" % (encoding_latency))
+            encoder.increase_encoding_speed()
+        elif encoding_latency < 5:
+            log.debug("Encoding took %d milliseconds, using more costly encoding params" % (encoding_latency))
+            encoder.decrease_encoding_speed()
+
         if err!=0:
             log.error("%s: ouch, compression error %s", coding, err)
             return None
