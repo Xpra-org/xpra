@@ -152,7 +152,7 @@ else:
         return kw
 
     scripts=["scripts/parti", "scripts/parti-repl",
-             "scripts/xpra",
+             "scripts/xpra", "scripts/xpra_launcher",
              ]
     data_files=[
                 ("share/man/man1", ["xpra.1", "parti.1"]),
