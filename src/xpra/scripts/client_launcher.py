@@ -91,7 +91,7 @@ class ApplicationWindow:
 		label = gtk.Label("Connect to xpra server")
 		label.modify_font(pango.FontDescription("sans 13"))
 		vbox.pack_start(label)
-		
+
 		# Mode:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
@@ -103,7 +103,7 @@ class ApplicationWindow:
 		self.mode_combo.set_active(0)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
-		
+
 		# Encoding:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
@@ -115,7 +115,7 @@ class ApplicationWindow:
 		self.encoding_combo.set_active(XPRA_ENCODING_OPTIONS.index(xpra_opts.encoding))
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
-		
+
 		# JPEG:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
@@ -128,7 +128,7 @@ class ApplicationWindow:
 		hbox.pack_start(self.jpeg_combo)
 		vbox.pack_start(hbox)
 
-		# Host:Port		
+		# Host:Port
 		hbox = gtk.HBox(False, 0)
 		hbox.set_spacing(5)
 		self.host_entry = gtk.Entry(max=128)
@@ -141,7 +141,7 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label(":"))
 		hbox.pack_start(self.port_entry)
 		vbox.pack_start(hbox)
-		
+
 		# Password
 		hbox = gtk.HBox(False, 0)
 		hbox.set_spacing(20)
@@ -152,13 +152,13 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Password: "))
 		hbox.pack_start(self.password_entry)
 		vbox.pack_start(hbox)
-		
+
 		# Info Label
 		self.info = gtk.Label()
 		self.info.set_line_wrap(True)
 		self.info.set_size_request(360, -1)
 		vbox.pack_start(self.info)
-		
+
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked, None)
@@ -166,7 +166,7 @@ class ApplicationWindow:
 
 		self.window.add(vbox)
 		self.window.show_all()
-	
+
 	def connect_tcp(self):
 		self.info.set_text("Connecting.")
 		host = xpra_opts.host
@@ -216,7 +216,7 @@ class ApplicationWindow:
 		opts.session_name = "Xpra session"
 		opts.mmap = True
 		opts.keyboard_sync = True
-		
+
 		import logging
 		logging.root.setLevel(logging.INFO)
 		logging.root.addHandler(logging.StreamHandler(sys.stderr))
@@ -241,7 +241,7 @@ class ApplicationWindow:
 		thread.start_new_thread(self.start_xpra_process, (cmd,))
 		import time
 		time.sleep(40)
-		
+
 	def start_xpra_process(self, cmd):
 		try:
 			self.do_start_xpra_process(cmd)
@@ -282,14 +282,14 @@ class ApplicationWindow:
 		password = self.password_entry.get_text()
 		if len(password) > 0:
 			xpra_opts.password_file = create_password_file(password)
-	
+
 	def do_connect(self):
 		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
 			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
 			self.connect_tcp()
 		else:
 			self.launch_xpra()
-		
+
 	def connect_clicked(self, *args):
 		self.update_options_from_gui()
 		self.do_connect()
