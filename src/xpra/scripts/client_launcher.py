@@ -281,7 +281,7 @@ class ApplicationWindow:
 		xpra_opts.mode = self.mode_combo.get_active_text()
 		password = self.password_entry.get_text()
 		if len(password) > 0:
-		    xpra_opts.password_file = create_password_file(password)
+			xpra_opts.password_file = create_password_file(password)
 	
 	def do_connect(self):
 		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
