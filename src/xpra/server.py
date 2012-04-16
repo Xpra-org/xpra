@@ -544,7 +544,7 @@ class ServerSource(object):
             encoder.clean()
             encoder.init(w, h)
         if encoder is None:
-            log("%s: new encoder" % coding)
+            log("%s: new encoder", coding)
             encoder = factory()
             encoder.init(w, h)
             encoders[wid] = encoder
@@ -558,10 +558,10 @@ class ServerSource(object):
         encoding_latency = 1000 * (time_after - time_before)
         # Do not allow encoding latency to go higher than 50ms
         if encoding_latency > 50:
-            log.warn("Encoding took %d milliseconds, speeding up encoding" % (encoding_latency))
+            log("%s encoding took %d milliseconds, speeding up encoding", coding, encoding_latency)
             encoder.increase_encoding_speed()
         elif encoding_latency < 5:
-            log.debug("Encoding took %d milliseconds, using more costly encoding params" % (encoding_latency))
+            log("%s encoding took %d milliseconds, using more costly encoding params", coding, encoding_latency)
             encoder.decrease_encoding_speed()
 
         if err!=0:
