@@ -50,6 +50,14 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
     return keycodes
 
 
+def main():
+    gtk_keymap = get_gtk_keymap()
+    print("gtk_keymap:\n%s" % ("\n".join([str(x) for x in gtk_keymap])))
+
+if __name__ == "__main__":
+    main()
+
+
 
 DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
 
