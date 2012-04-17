@@ -52,7 +52,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
 
 def main():
     gtk_keymap = get_gtk_keymap()
-    print("gtk_keymap:\n%s" % ("\n".join([str(x) for x in gtk_keymap])))
+    print("gtk_keymap: (keyval, name, keycode, group, level)\n%s" % ("\n".join([str(x) for x in gtk_keymap])))
 
 if __name__ == "__main__":
     main()
