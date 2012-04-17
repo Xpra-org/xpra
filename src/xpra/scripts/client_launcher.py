@@ -349,7 +349,7 @@ def main():
 	if xpra_opts.autoconnect == "True":
 		app.do_connect()
 	else:
-	   	gtk.main()
+		gtk.main()
 	if xpra_opts.password_file:
 		os.unlink(xpra_opts.password_file)
 	sys.exit(0)
