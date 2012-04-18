@@ -320,24 +320,10 @@ def update_options_from_file(filename):
 		propDict[name] = value
 	propFile.close()
 
-	val = propDict.get("host")
-	if val:
-		xpra_opts.host = val
-	val = propDict.get("port")
-	if val:
-		xpra_opts.port = val
-	val = propDict.get("encoding")
-	if val:
-		xpra_opts.encoding = val
-	val = propDict.get("jpegquality")
-	if val:
-		xpra_opts.jpegquality = val
-	val = propDict.get("mode")
-	if val:
-		xpra_opts.mode = val
-	val = propDict.get("autoconnect")
-	if val:
-		xpra_opts.autoconnect = val
+	for prop in ["host", "port", "encoding", "jpegquality", "mode", "autoconnect"]:
+		val = propDict.get(prop)
+		if val:
+			setattr(xpra_opts, prop, val)
 	val = propDict.get("password")
 	if val:
 		xpra_opts.password_file = create_password_file(val)
