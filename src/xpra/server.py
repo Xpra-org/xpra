@@ -554,19 +554,18 @@ class ServerSource(object):
             self._on_close.append(close_encoder)
         log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
         err, size, data = encoder.compress_image(data, rowstride)
-        time_after = time.clock()
-        encoding_latency = 1000 * (time_after - time_before)
-        # Do not allow encoding latency to go higher than 50ms
-        if encoding_latency > 50:
-            log("%s encoding took %d milliseconds, speeding up encoding", coding, encoding_latency)
-            encoder.increase_encoding_speed()
-        elif encoding_latency < 5:
-            log("%s encoding took %d milliseconds, using more costly encoding params", coding, encoding_latency)
-            encoder.decrease_encoding_speed()
-
         if err!=0:
             log.error("%s: ouch, compression error %s", coding, err)
             return None
+        #time_after = time.clock()
+        #encoding_latency = 1000 * (time_after - time_before)
+        # Do not allow encoding latency to go higher than 50ms
+        #if encoding_latency > 50:
+        #    log("%s encoding took %d milliseconds, speeding up encoding", coding, encoding_latency)
+        #    encoder.increase_encoding_speed()
+        #elif encoding_latency < 5:
+        #    log("%s encoding took %d milliseconds, using more costly encoding params", coding, encoding_latency)
+        #    encoder.decrease_encoding_speed()
         log("%s: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", coding, w, h, size, type(data), [ord(c) for c in data[:10]])
         return data
 
