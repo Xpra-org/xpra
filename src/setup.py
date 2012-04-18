@@ -203,20 +203,29 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                 **pkgconfig("x11")
                 ))
 x264_ENABLED = True
+vpx_ENABLED = True
+filtered_args = []
+for arg in sys.argv:
+    if arg == "--without-x264":
+        x264_ENABLED = False
+    elif arg == "--without-vpx":
+        vpx_ENABLED = False
+    else:
+        filtered_args.append(arg)
+sys.argv = filtered_args
+
 if x264_ENABLED:
     packages.append("xpra.x264")
     cython_add(Extension("xpra.x264.codec",
                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ))
-vpx_ENABLED = True
 if vpx_ENABLED:
     packages.append("xpra.vpx")
     cython_add(Extension("xpra.vpx.codec",
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
                 **pkgconfig("vpx", "libswscale", "libavcodec")
                 ))
-
 
 
 
