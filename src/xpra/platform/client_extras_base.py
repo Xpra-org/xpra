@@ -470,9 +470,9 @@ class ClientExtrasBase(object):
 
     def get_icon_filename(self, icon_name):
         filename = os.path.join(self.get_data_dir(), 'icons', icon_name)
-        log.debug("get_icon_filename(%s)=%s, exists=%s" % (icon_name, filename, os.path.exists(filename)))
         if os.path.exists(filename):
             return  filename
+        log.error("get_icon_filename(%s) %s does not exists!" % (icon_name, filename))
         return  None
 
     def get_license_text(self):
@@ -495,14 +495,15 @@ class ClientExtrasBase(object):
     def get_pixbuf(self, icon_name):
         try:
             icon_filename = self.get_icon_filename(icon_name)
-            if is_gtk3():
-                from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
-                return Pixbuf.new_from_file(icon_filename)
-            else:
-                return  gdk.pixbuf_new_from_file(icon_filename)
+            if icon_filename:
+                if is_gtk3():
+                    from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
+                    return Pixbuf.new_from_file(icon_filename)
+                else:
+                    return  gdk.pixbuf_new_from_file(icon_filename)
         except:
             log.error("get_image(%s)", icon_name, exc_info=True)
-            return  None
+        return  None
 
     def get_image(self, icon_name, size=None):
         try:
