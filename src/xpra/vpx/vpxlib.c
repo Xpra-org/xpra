@@ -15,6 +15,7 @@
 #else
 #include "stdint.h"
 #include "inttypes.h"
+#define inline __inline
 #endif
 
 #define VPX_CODEC_DISABLE_COMPAT 1
@@ -47,12 +48,13 @@ static void codec_error(vpx_codec_ctx_t *ctx, const char *s) {
 struct vpx_context *init_encoder(int width, int height)
 {
 	vpx_codec_enc_cfg_t  cfg;
+	struct vpx_context *ctx;
 	if (vpx_codec_enc_config_default(enc_interface, &cfg, 0))
 		return	NULL;
 	cfg.rc_target_bitrate = width * height * cfg.rc_target_bitrate / cfg.g_w / cfg.g_h;
 	cfg.g_w = width;
 	cfg.g_h = height;
-	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
+	ctx = malloc(sizeof(struct vpx_context));
 	if (vpx_codec_enc_init(&ctx->codec, enc_interface, &cfg, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_enc_init");
 		free(ctx);
@@ -132,6 +134,11 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **o
 	int frame_sz = size;
 	vpx_codec_iter_t  iter = NULL;
 	uint8_t* frame = in;
+	int outstrides[4];
+	uint8_t* outs[4];
+	int stride = 0;
+	int i = 0;
+
 	if (vpx_codec_decode(&ctx->codec, frame, frame_sz, NULL, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_decode");
 		return -1;
@@ -141,15 +148,11 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **o
 		codec_error(&ctx->codec, "vpx_codec_get_frame");
 		return -1;
 	}
-	int stride = 0;
-	int i = 0;
 	for (i=0; i<4; i++)
 		stride += img->stride[i];
 	*outsize = stride * img->h;
 
 	*out = malloc(*outsize);
-	int outstrides[4];
-	uint8_t* outs[4];
 	for (i=0; i<4; i++) {
 		outstrides[i] = img->w*3;
 		outs[i] = *out;
