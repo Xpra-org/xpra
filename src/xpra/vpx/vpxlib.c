@@ -1,4 +1,5 @@
 /* Copyright (C) 2012 Antoine Martin <antoine@devloop.org.uk>
+   Copyright (C) 2012 Serviware, Arthur Huillet <arthur dot huillet AT free dot fr>
    */
 
 #include <stdio.h>
@@ -28,6 +29,13 @@
 #define IVF_FILE_HDR_SZ  (32)
 #include <libswscale/swscale.h>
 
+struct vpx_context {
+	vpx_codec_ctx_t codec;
+	struct SwsContext *rgb2yuv;
+	struct SwsContext *yuv2rgb;
+} vpx_context;
+
+
 static void codec_error(vpx_codec_ctx_t *ctx, const char *s) {
     printf("%s: %s\n", s, vpx_codec_error(ctx));
     return;
@@ -36,7 +44,7 @@ static void codec_error(vpx_codec_ctx_t *ctx, const char *s) {
     //    printf("    %s\n", detail);
 }
 
-vpx_context *init_encoder(int width, int height)
+struct vpx_context *init_encoder(int width, int height)
 {
 	vpx_codec_enc_cfg_t  cfg;
 	if (vpx_codec_enc_config_default(enc_interface, &cfg, 0))
@@ -44,7 +52,7 @@ vpx_context *init_encoder(int width, int height)
 	cfg.rc_target_bitrate = width * height * cfg.rc_target_bitrate / cfg.g_w / cfg.g_h;
 	cfg.g_w = width;
 	cfg.g_h = height;
-	vpx_context *ctx = malloc(sizeof(vpx_context));
+	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
 	if (vpx_codec_enc_init(&ctx->codec, enc_interface, &cfg, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_enc_init");
 		free(ctx);
@@ -54,15 +62,15 @@ vpx_context *init_encoder(int width, int height)
 	return ctx;
 }
 
-void clean_encoder(vpx_context *ctx)
+void clean_encoder(struct vpx_context *ctx)
 {
 	vpx_codec_destroy(&ctx->codec);
 	free(ctx);
 }
 
-vpx_context *init_decoder(int width, int height)
+struct vpx_context *init_decoder(int width, int height)
 {
-	vpx_context *ctx = malloc(sizeof(vpx_context));
+	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
 	int              flags = 0;
 	//printf("Using %s\n", vpx_codec_iface_name(dec_interface));
 	int i = vpx_codec_dec_init(&ctx->codec, dec_interface, NULL, flags);
@@ -76,13 +84,13 @@ vpx_context *init_decoder(int width, int height)
 	return	ctx;
 }
 
-void clean_decoder(vpx_context *ctx)
+void clean_decoder(struct vpx_context *ctx)
 {
 	vpx_codec_destroy(&ctx->codec);
 	free(ctx);
 }
 
-int compress_image(vpx_context *ctx, uint8_t *in, int w, int h, int stride, uint8_t **out, int *outsz)
+int compress_image(struct vpx_context *ctx, uint8_t *in, int w, int h, int stride, uint8_t **out, int *outsz)
 {
 	vpx_image_t image;
 	const vpx_codec_cx_pkt_t *pkt;
@@ -118,7 +126,7 @@ int compress_image(vpx_context *ctx, uint8_t *in, int w, int h, int stride, uint
 	return 0;
 }
 
-int decompress_image(vpx_context *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
+int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
 {
 	vpx_image_t      *img;
 	int frame_sz = size;
