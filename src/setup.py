@@ -76,12 +76,26 @@ if sys.platform.startswith("win"):
     # The x264 DLLs which you can grab from here:
     # http://ffmpeg.zeranoe.com/builds/
     # This is where I keep them, you will obviously need to change this value:
-    x264_PATH="Z:\\ffmpeg-win32-shared"
+    ffmpeg_path="Z:\\ffmpeg-win32-shared"
+    ffmpeg_include_dir = "%s/include" % ffmpeg_path
+    ffmpeg_lib_dir = "%s/lib" % ffmpeg_path
+    # Same for vpx:
+    # http://code.google.com/p/webm/downloads/list
+    vpx_PATH="Z:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.0.0"
+    vpx_include_dir = "%s/include" % vpx_PATH
+    vpx_lib_dir = "%s/lib/Win32" % vpx_PATH
 
     def pkgconfig(*args):
-        return {'include_dirs': ["xpra/x264/win32", "%s/include" % x264_PATH],
-                'library_dirs': ["xpra/x264/win32", "%s/lib" % x264_PATH],
-                'libraries': ["x264lib", "swscale", "avcodec", "avutil"]}
+        if args[0]=="x264":
+            return {'include_dirs': ["xpra/x264/win32", ffmpeg_include_dir],
+                    'library_dirs': ["xpra/x264/win32", ffmpeg_lib_dir],
+                    'libraries':    ["x264lib", "swscale", "avcodec", "avutil"]}
+        elif args[0]=="vpx":
+            return {'include_dirs': ["xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir],
+                    'library_dirs': ["xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir],
+                    'libraries':    ["vpxmt", "vpxmtd", "swscale", "avcodec", "avutil"]}
+        else:
+            raise Exception("unknown package config: %s" % str(args))
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
@@ -113,12 +127,12 @@ if sys.platform.startswith("win"):
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ('', glob.glob('%s\\bin\\*.dll' % x264_PATH)),
+                   ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
                ]
 
     import os
-    os.environ['PATH'] = '%s\\bin\\' % x264_PATH + ';' + os.environ['PATH']
-    sys.path.append('%s\\bin\\' % x264_PATH)
+    os.environ['PATH'] = '%s\\bin\\' % ffmpeg_path + ';' + os.environ['PATH']
+    sys.path.append('%s\\bin\\' % ffmpeg_path)
     extra_options = dict(
         windows = windows,
         console = console,
