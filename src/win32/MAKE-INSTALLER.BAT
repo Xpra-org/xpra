@@ -24,9 +24,10 @@ ECHO ****** Clearing build directory
 RMDIR /S /Q %BUILD_DIR% dist Output
 DEL Xpra_Setup.exe
 
-ECHO ****** Hack for x264:
+ECHO ****** Hack for x264/vpx:
 ECHO ****** use a pre-built .pyd file since the py2exe build otherwise forgets it
 COPY xpra\x264\win32\codec.pyd xpra\x264\
+COPY xpra\vpx\win32\codec.pyd xpra\x264\
 
 ECHO ****** py2exe
 %PYTHON_EXE% -OO setup.py py2exe > py2exe-xpra.log
