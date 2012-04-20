@@ -16,7 +16,7 @@
 %endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
-%define requires_extra
+%define requires_extra ""
 %endif
 
 
@@ -52,10 +52,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Apr 02 2012 Antoine Martin <antoine@nagafix.co.uk> 0.2.0-1
+* Fri Apr 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.2.0-1
 - x264 and vpx video encoding support
-- gtk3 and python 3 partial support (client only)
+- gtk3 and python 3 partial support (client only - no keyboard support)
 - detect missing X11 server extensions and exit with error
+- X11 vfb servers no longer listens on a TCP port
+- clipboard fixes for Qt/KDE applications
+- option for clients not to supply any keyboard mapping data (the server will no longer complain)
+- show more system version information in session information dialog
+- hide window decorations for openoffice splash screen (workaround)
 
 * Wed Mar 21 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
 - security: strict filtering of packet handlers until connection authenticated
@@ -287,6 +292,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/parti
 %{_bindir}/parti-repl
 %{_bindir}/xpra
+%{_bindir}/xpra_launcher
 %{python_sitelib}/xpra
 %{python_sitelib}/parti
 %{python_sitelib}/wimpiggy

@@ -47,7 +47,7 @@ else:
         ENCODINGS.append("png")
         ENCODINGS.append("jpeg")
     ENCODINGS.append("rgb24")
-#we need rgb24 for x264 (as well as the cython bindings and libraries):
+#we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
 if "rgb24" in ENCODINGS:
     try:
         from xpra.x264 import codec     #@UnusedImport @UnresolvedImport

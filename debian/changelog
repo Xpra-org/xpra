@@ -1,9 +1,14 @@
 xpra (0.2.0-1) UNRELEASED; urgency=low
   * x264 and vpx video encoding support
-  * gtk3 and python 3 partial support (client only)
+  * gtk3 and python 3 partial support (client only - no keyboard support)
   * detect missing X11 server extensions and exit with error
+  * X11 server no longer listens on a TCP port
+  * clipboard fixes for Qt/KDE applications
+  * option for clients not to supply any keyboard mapping data (the server will no longer complain)
+  * show more system version information in session information dialog
+  * hide window decorations for openoffice splash screen (workaround)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Apr 2012 14:24:38 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 20 Apr 2012 14:19:47 +0700
 
 xpra (0.1.0-1) UNRELEASED; urgency=low
   * security: strict filtering of packet handlers until connection authenticated
