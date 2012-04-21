@@ -1,8 +1,8 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 736)
+--- setup.py	(revision 747)
 +++ setup.py	(working copy)
-@@ -235,6 +235,10 @@
+@@ -244,6 +244,10 @@
                  **pkgconfig("x264", "libswscale", "libavcodec")
                  ))
  if vpx_ENABLED:

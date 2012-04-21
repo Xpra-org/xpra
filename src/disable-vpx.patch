@@ -1,13 +1,13 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 677)
+--- setup.py	(revision 747)
 +++ setup.py	(working copy)
-@@ -211,7 +211,7 @@
-                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
-                 **pkgconfig("x264", "libswscale", "libavcodec")
-                 ))
+@@ -226,7 +226,7 @@
+ 
+ 
+ 
 -vpx_ENABLED = True
 +vpx_ENABLED = False
- if vpx_ENABLED:
-     packages.append("xpra.vpx")
-     cython_add(Extension("xpra.vpx.codec",
+ filtered_args = []
+ for arg in sys.argv:
+     if arg == "--without-x264":
