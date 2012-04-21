@@ -1,10 +1,10 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 700)
+--- setup.py	(revision 736)
 +++ setup.py	(working copy)
-@@ -206,6 +206,10 @@
-                 ))
- x264_ENABLED = True
+@@ -229,6 +229,10 @@
+ sys.argv = filtered_args
+ 
  if x264_ENABLED:
 +    def pkgconfig(*args):
 +        return {'include_dirs': ["/usr/local/include"],

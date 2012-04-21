@@ -1,10 +1,10 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 700)
+--- setup.py	(revision 736)
 +++ setup.py	(working copy)
-@@ -213,6 +213,10 @@
+@@ -235,6 +235,10 @@
+                 **pkgconfig("x264", "libswscale", "libavcodec")
                  ))
- vpx_ENABLED = True
  if vpx_ENABLED:
 +    def pkgconfig(*args):
 +        return {'include_dirs': ["/usr/local/include"],
