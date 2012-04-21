@@ -16,7 +16,7 @@
 %endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
-%define requires_extra ""
+%define requires_extra %{nil}
 %endif
 
 
