@@ -77,20 +77,29 @@ if sys.platform.startswith("win"):
     # http://ffmpeg.zeranoe.com/builds/
     # This is where I keep them, you will obviously need to change this value:
     ffmpeg_path="Z:\\ffmpeg-win32-shared"
-    ffmpeg_include_dir = "%s/include" % ffmpeg_path
-    ffmpeg_lib_dir = "%s/lib" % ffmpeg_path
+    ffmpeg_include_dir = "%s\\include" % ffmpeg_path
+    ffmpeg_lib_dir = "%s\\lib" % ffmpeg_path
+    ffmpeg_bin_dir = "%s\\bin" % ffmpeg_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
     vpx_PATH="Z:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.0.0"
-    vpx_include_dir = "%s/include" % vpx_PATH
-    vpx_lib_dir = "%s/lib/Win32" % vpx_PATH
+    vpx_include_dir = "%s\\include" % vpx_PATH
+    vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
 
     def pkgconfig(*args):
+        def add_to_PATH(bindir):
+            import os
+            if os.environ['PATH'].find(bindir)<0:
+                os.environ['PATH'] = bindir + ';' + os.environ['PATH']
+            if bindir not in sys.path:
+                sys.path.append(bindir)
         if args[0]=="x264":
+            add_to_PATH(ffmpeg_bin_dir)
             return {'include_dirs': ["xpra/x264/win32", ffmpeg_include_dir],
                     'library_dirs': ["xpra/x264/win32", ffmpeg_lib_dir],
                     'libraries':    ["x264lib", "swscale", "avcodec", "avutil"]}
         elif args[0]=="vpx":
+            add_to_PATH(ffmpeg_bin_dir)
             return {'include_dirs': ["xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir],
                     'library_dirs': ["xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir],
                     'libraries':    ["vpxmt", "vpxmtd", "swscale", "avcodec", "avutil"]}
@@ -130,9 +139,6 @@ if sys.platform.startswith("win"):
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
                ]
 
-    import os
-    os.environ['PATH'] = '%s\\bin\\' % ffmpeg_path + ';' + os.environ['PATH']
-    sys.path.append('%s\\bin\\' % ffmpeg_path)
     extra_options = dict(
         windows = windows,
         console = console,
