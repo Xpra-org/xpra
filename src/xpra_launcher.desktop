@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Xpra Launcher
-Comment=Connect to a Xpra session
+Comment=Connect to an Xpra session
 TryExec=xpra_launcher
 Exec=xpra_launcher
 Icon=xpra

@@ -4,6 +4,7 @@ include wimpiggy/lowlevel/constants.pxi
 include install.sh
 include xpra/x264/*.h
 include xpra/vpx/*.h
+include xpra_launcher.desktop
 recursive-include working-notes *
 global-include *.py *.txt
 global-exclude *~ #*
