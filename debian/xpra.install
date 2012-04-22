@@ -2,3 +2,5 @@ usr/lib/*/*/xpra usr/lib/xpra/
 usr/share/man/man1/xpra.1
 usr/bin/xpra
 usr/share/xpra
+usr/share/applications/xpra_launcher.desktop
+usr/share/icons/xpra.png

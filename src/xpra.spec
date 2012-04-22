@@ -304,7 +304,8 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/wimpiggy
 /usr/share/man/man1/xpra.*
 /usr/share/man/man1/parti.*
-
+/usr/share/applications/xpra_launcher.desktop
+/usr/share/icons/xpra.png
 
 ###
 ### eof
