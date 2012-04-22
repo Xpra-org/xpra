@@ -1,8 +1,8 @@
 Index: setup.py
 ===================================================================
---- setup.py	(revision 747)
+--- setup.py	(revision 754)
 +++ setup.py	(working copy)
-@@ -222,7 +222,7 @@
+@@ -224,7 +224,7 @@
                  ["xpra/wait_for_x_server.pyx"],
                  **pkgconfig("x11")
                  ))
