@@ -258,15 +258,15 @@ rm -rf $RPM_BUILD_DIR/parti-all-%{version}
 zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
 cd parti-all-%{version}
 %if %{defined generic_rpm}
-%patch0 -p0
+%patch0 -p1
 %endif
 %if 0%{?no_video}
-%patch1 -p0
-%patch2 -p0
+%patch1 -p1
+%patch2 -p1
 %endif
 %if 0%{?static_video_libs}
-%patch3 -p0
-%patch4 -p0
+%patch3 -p1
+%patch4 -p1
 %endif
 
 %build

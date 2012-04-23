@@ -2,8 +2,8 @@ Description: Disable x264 encoding support.
  Author: Antoine Martin <antoine@nagafix.co.uk>
  Forwarded: not-needed
  
---- setup.py	(revision 754)
-+++ setup.py	(working copy)
+--- a/setup.py	(revision 754)
++++ b/setup.py	(working copy)
 @@ -224,7 +224,7 @@
                  ["xpra/wait_for_x_server.pyx"],
                  **pkgconfig("x11")
