@@ -100,7 +100,10 @@ class ApplicationWindow:
 		self.mode_combo.get_model().clear()
 		for option in ["tcp", "ssh"]:
 			self.mode_combo.append_text(option)
-		self.mode_combo.set_active(0)
+		if xpra_opts.mode == "tcp":
+			self.mode_combo.set_active(0)
+		else:
+			self.mode_combo.set_active(1)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
 
@@ -124,7 +127,7 @@ class ApplicationWindow:
 		self.jpeg_combo.get_model().clear()
 		for option in XPRA_COMPRESSION_OPTIONS:
 			self.jpeg_combo.append_text(option)
-		self.jpeg_combo.set_active(0)
+		self.jpeg_combo.set_active(2)
 		hbox.pack_start(self.jpeg_combo)
 		vbox.pack_start(hbox)
 
@@ -253,11 +256,12 @@ class ApplicationWindow:
 		#ret = os.system(" ".join(args))
 		uri = "%s:%s:%s" % (xpra_opts.mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
-		print("jpeg=%s" % xpra_opts.jpegquality)
+#print("jpeg=%s" % xpra_opts.jpegquality)
 		args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
 		args.append("--encoding=%s" % xpra_opts.encoding)
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
+		print("Running %s" % args)
 		process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, creationflags=SUBPROCESS_CREATION_FLAGS)
 		(out,err) = process.communicate()
 		print("do_start_xpra_process(%s) command terminated" % str(cmd))
