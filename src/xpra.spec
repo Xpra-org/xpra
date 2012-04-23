@@ -14,6 +14,9 @@
 %define requires_extra , python-uuid
 %define include_egg 0
 %endif
+%if 0%{?static_video_libs}
+%define requires_extra %{nil}
+%endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
 %define requires_extra %{nil}
