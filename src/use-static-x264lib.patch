@@ -1,5 +1,7 @@
-Index: setup.py
-===================================================================
+Description: Build x264 codec as a static library.
+ Author: Arthur Huillet <ahuillet@serviware.com>
+ Forwarded: not-needed
+ 
 --- setup.py	(revision 747)
 +++ setup.py	(working copy)
 @@ -238,6 +238,10 @@

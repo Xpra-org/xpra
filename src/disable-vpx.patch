@@ -1,5 +1,7 @@
-Index: setup.py
-===================================================================
+Description: Disable vpx encoding support.
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
 --- setup.py	(revision 754)
 +++ setup.py	(working copy)
 @@ -228,7 +228,7 @@

@@ -1,3 +1,7 @@
+Description: For building the client only.
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
 --- xpra/xposix/__init__.py	2011-06-01 23:33:40.538800840 +0700
 +++ xpra/xposix/__init__.py	2011-06-09 17:54:14.550290554 +0700
 @@ -5,7 +5,7 @@
