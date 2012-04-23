@@ -285,7 +285,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
-    wait_for_x_server(display_name, 3) # 3s timeout
+    try:
+        wait_for_x_server(display_name, 3) # 3s timeout
+    except Exception, e:
+        sys.stderr.write("%s\n" % e)
+        return
     # Now we can safely load gtk and connect:
     assert "gtk" not in sys.modules
     import gtk
@@ -328,8 +332,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     _cleanups.append(cleanup_socket)
     tcp_socket = None
     if opts.bind_tcp:
-        tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
-        sockets.append(tcp_socket)
+        try:
+            tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
+            sockets.append(tcp_socket)
+        except Exception, e:
+            print("cannot start - failed to create tcp socket: %s" % e)
+            return
     def cleanup_tcp_socket():
         if tcp_socket:
             print("closing tcp socket")
