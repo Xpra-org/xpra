@@ -196,8 +196,16 @@ class GLibXpraClient(XpraClientBase):
 
     def run(self):
         import glib
-        glib.threads_init()
-        gobject.threads_init()
+        try:
+            glib.threads_init()
+        except AttributeError:
+            #old versions of glib may not have this method
+            pass
+        try:
+            gobject.threads_init()
+        except AttributeError:
+            #old versions of gobject may not have this method
+            pass
         self.glib_mainloop = glib.MainLoop()
         self.glib_mainloop.run()
         return  self.exit_code
