@@ -253,7 +253,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # Unix is a little silly sometimes:
     umask = os.umask(0)
     os.umask(umask)
-    os.fchmod(scriptfile.fileno(), o0700 & ~umask)
+    if hasattr(os, "fchmod"):
+        os.fchmod(scriptfile.fileno(), o0700 & ~umask)
+    else:
+        os.chmod(scriptpath, o0700 & ~umask)
     scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir))
     scriptfile.close()
 
