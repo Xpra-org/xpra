@@ -98,9 +98,12 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Mode: "))
 		self.mode_combo = gtk.combo_box_new_text()
 		self.mode_combo.get_model().clear()
-		for option in ["tcp", "ssh"]:
-			self.mode_combo.append_text(option)
-		if xpra_opts.mode == "tcp":
+		self.mode_combo.append_text("tcp")
+		if not sys.platform.startswith("win"):
+			#when we fix the build on win32 to include putty
+			#this can be enabled again:
+			self.mode_combo.append_text("ssh")
+		if xpra_opts.mode == "tcp" or sys.platform.startswith("win"):
 			self.mode_combo.set_active(0)
 		else:
 			self.mode_combo.set_active(1)
