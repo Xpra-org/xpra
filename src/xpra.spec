@@ -10,12 +10,12 @@
 
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %define requires_extra , libvpx, libx264
+%if 0%{?static_video_libs}
+%define requires_extra %{nil}
+%endif
 %if 0%{?el5}
 %define requires_extra , python-uuid
 %define include_egg 0
-%endif
-%if 0%{?static_video_libs}
-%define requires_extra %{nil}
 %endif
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
