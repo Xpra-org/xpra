@@ -14,7 +14,7 @@
 %define requires_extra %{nil}
 %endif
 %if 0%{?el5}
-%define requires_extra , python-uuid
+%define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
 %endif
 %if %is_suse
