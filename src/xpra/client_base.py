@@ -111,9 +111,6 @@ class XpraClientBase(gobject.GObject):
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
         capabilities["packet_size"] = True
-        #will be removed (only for compatibility with old versions):
-        capabilities["dynamic_compression"] = True
-        capabilities["__prerelease_version"] = xpra.__version__
         return capabilities
 
     def send(self, packet):

@@ -866,12 +866,6 @@ class XpraClient(XpraClientBase):
         #these should be turned into options:
         capabilities["cursors"] = True
         capabilities["bell"] = True
-        #this is to keep compatibility with v0.0.7.36 only
-        #and will be removed shortly
-        capabilities["keyboard_as_properties"] = True
-        capabilities["damage_sequence"] = True
-        capabilities["rowstride"] = True
-        capabilities["ping"] = True
         capabilities["png_window_icons"] = "png" in ENCODINGS
         return capabilities
 

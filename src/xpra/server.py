@@ -1563,19 +1563,7 @@ class XpraServer(gobject.GObject):
         capabilities["start_time"] = int(self.start_time)
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["notifications"] = self.notifications_forwarder is not None
-        #this is to keep compatibility with v0.0.7.36 only and will be removed
-        #as these are now always available:
         capabilities["png_window_icons"] = "png" in ENCODINGS
-        capabilities["keyboard_as_properties"] = True
-        capabilities["raw_keycodes_feature"] = True
-        capabilities["raw_keycodes_full"] = True
-        capabilities["focus_modifiers_feature"] = True
-        capabilities["dynamic_compression"] = True
-        capabilities["packet_size"] = True
-        capabilities["damage_sequence"] = True
-        capabilities["ping"] = True
-        capabilities["cursors"] = True
-        capabilities["bell"] = True
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
         self._send(["hello", capabilities])
