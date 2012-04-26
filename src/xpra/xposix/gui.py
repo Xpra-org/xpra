@@ -236,8 +236,13 @@ class ClientExtras(ClientExtrasBase):
         if not self.has_x11_bell:
             gdk.beep()
             return
-        from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
-        device_bell(window, device, bell_class, bell_id, percent, bell_name)
+        from wimpiggy.error import trap, XError
+        try:
+            from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
+            trap.call_unsynced(device_bell, window, device, bell_class, bell_id, percent, bell_name)
+        except XError, e:
+            log.error("error using device_bell: %s, will fallback to gdk beep from now on", e)
+            self.has_x11_bell = False
 
     def can_notify(self):
         return  self.has_dbusnotify or self.has_pynotify
