@@ -197,6 +197,9 @@ class ClientWindow(gtk.Window):
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
+        # tell KDE/oxygen not to intercept clicks
+        # see: https://bugs.kde.org/show_bug.cgi?id=274485
+        self.set_data("_kde_no_window_grab", 1)
 
         self.update_metadata(metadata)
 
