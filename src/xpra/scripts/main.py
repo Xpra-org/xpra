@@ -275,18 +275,20 @@ def main(script_file, cmdline):
         parser.error("invalid mode '%s'" % mode)
 
 def parse_display_name(parser, opts, display_name):
-    if display_name.startswith("ssh:"):
+    if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
+        separator = display_name[3] # ":" or "/"
         desc = {
             "type": "ssh",
             "local": False
             }
-        sshspec = display_name[len("ssh:"):]
-        if ":" in sshspec:
-            (desc["host"], desc["display"]) = sshspec.split(":", 1)
+        parts = display_name.split(separator)
+        if len(parts)>2:
+            desc["host"] = separator.join(parts[1:-1])
+            desc["display"] = parts[-1]
             desc["display"] = ":" + desc["display"]
             desc["display_as_args"] = [desc["display"]]
         else:
-            desc["host"] = sshspec
+            desc["host"] = parts[1]
             desc["display"] = None
             desc["display_as_args"] = []
         desc["ssh"] = opts.ssh.split()
@@ -302,14 +304,15 @@ def parse_display_name(parser, opts, display_name):
             "sockdir": opts.sockdir,
             }
         return desc
-    elif display_name.startswith("tcp:"):
+    elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
+        separator = display_name[3] # ":" or "/"
         desc = {
             "type": "tcp",
             "local": False,
             }
-        host_spec = display_name[4:]
-        (desc["host"], port_str) = host_spec.split(":", 1)
-        desc["port"] = int(port_str)
+        parts = display_name.split(separator)
+        desc["port"] = int(parts[-1])
+        desc["host"] = separator.join(parts[1:-1])
         if desc["host"] == "":
             desc["host"] = "127.0.0.1"
         return desc
