@@ -36,3 +36,9 @@ int compress_image(struct x264lib_ctx *, const uint8_t *in, int stride, uint8_t 
  @param outstride: Output stride.
 */
 int decompress_image(struct x264lib_ctx *, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride);
+
+/**
+ * Change the speed of encoding (x264 preset).
+ * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
+ */
+void change_encoding_speed(struct x264lib_ctx *ctx, int increase);
