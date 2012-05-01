@@ -115,15 +115,17 @@ class Protocol(object):
         self._write_thread = Thread(target=self._write_thread_loop)
         self._write_thread.name = "write_loop"
         self._write_thread.daemon = True
-        self._write_thread.start()
         self._write_lock = Lock()
         self._read_thread = Thread(target=self._read_thread_loop)
         self._read_thread.name = "read_loop"
         self._read_thread.daemon = True
-        self._read_thread.start()
         self._read_parser_thread = Thread(target=self._read_parse_thread_loop)
         self._read_parser_thread.name = "read_parse_loop"
         self._read_parser_thread.deamon = True
+
+    def start(self):
+        self._write_thread.start()
+        self._read_thread.start()
         self._read_parser_thread.start()
         self._maybe_queue_more_writes()
 
@@ -268,7 +270,6 @@ class Protocol(object):
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
         self.close()
-        self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
         return False
 
     def _read_parse_thread_loop(self):
@@ -405,7 +406,10 @@ class Protocol(object):
         wait_for_end_of_write()
 
     def close(self):
+        if self._closed:
+            return
         self._closed = True
+        self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
         if self._conn:
             try:
                 self._conn.close()

@@ -915,6 +915,7 @@ class XpraServer(gobject.GObject):
         sock, address = listener.accept()
         protocol = Protocol(SocketConnection(sock, address), self.process_packet)
         self._potential_protocols.append(protocol)
+        protocol.start()
         def verify_connection_accepted(protocol):
             if not protocol._closed and protocol in self._potential_protocols and protocol!=self._protocol:
                 log.error("connection timedout: %s", protocol)
