@@ -314,32 +314,12 @@ class Protocol(object):
                         import traceback
                         traceback.print_exc()
                         log.error("value error reading packet: %s", e)
-                        
-                        #could be a partial packet (without size header)
-                        #or could be just a broken packet...
-                        def packet_error(buf, packet_size, data_size, value_error):
-                            if self._closed:
-                                return
-                            # Peek at the data we got, in case we can make sense of it:
-                            self._process_packet([Protocol.GIBBERISH, buf])
-                            # Then hang up:
-                            return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(buf), packet_size, data_size, value_error))
-
-                        if current_packet_size>0:
-                            #we had the size, so the packet should have been valid!
-                            packet_error(read_buffer, current_packet_size, bl, e)
+                        if self._closed:
                             return
-                        else:
-                            #wait a little before deciding
-                            #unsized packets are either old clients (don't really care about them)
-                            #or hello packets (small-ish)
-                            def check_error_state(old_buffer, packet_size, data_size, value_error):
-                                log.info("check_error_state old_buffer=%s, read buffer=%s", old_buffer, read_buffer)
-                                if old_buffer==read_buffer:
-                                    packet_error(read_buffer, packet_size, data_size, value_error)
-                            log.info("error parsing packet without a size header: %s, current_packet_size=%s, will check again in 1 second", e, current_packet_size)
-                            gobject.timeout_add(1000, check_error_state, read_buffer, current_packet_size, bl, e)
-                            break
+                        # Peek at the data we got, in case we can make sense of it:
+                        self._process_packet([Protocol.GIBBERISH, buf])
+                        # Then hang up:
+                        return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(read_buffer), current_packet_size, bl, e))
 
                     current_packet_size = -1
                     if result is None or self._closed:
