@@ -286,6 +286,13 @@ class ServerSource(object):
         log("cancel_damage: %s, dropping all damage up to and including sequence=%s", wid, self._sequence)
         self._damage_cancelled[wid] = self._sequence
 
+    def remove_window(self, wid):
+        self.cancel_damage(wid)
+        if wid in self._damage_last_events:
+            del self._damage_last_events[wid]
+        if wid in self.client_decode_time:
+            del self.client_decode_time[wid]
+
     def damage(self, wid, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
             * send it now (if not congested or batch.enabled is off)
@@ -1271,9 +1278,8 @@ class XpraServer(gobject.GObject):
             wid = self._window_to_id[window]
             self._protocol.source.damage(wid, window, x, y, width, height, options)
 
-    def _cancel_damage(self, window):
+    def _cancel_damage(self, wid):
         if self._protocol is not None and self._protocol.source is not None:
-            wid = self._window_to_id[window]
             self._protocol.source.cancel_damage(wid)
 
     def _send_new_window_packet(self, window):
@@ -1303,11 +1309,11 @@ class XpraServer(gobject.GObject):
     def _lost_window(self, window, wm_exiting):
         wid = self._window_to_id[window]
         self._send(["lost-window", wid])
-        self._cancel_damage(window)
+        self._cancel_damage(wid)
         del self._window_to_id[window]
         del self._id_to_window[wid]
-        if self._server_source and wid in self._server_source._damage_last_events:
-            del self._server_source._damage_last_events[wid]
+        if self._server_source:
+            self._server_source.remove_window(wid)
 
     def _contents_changed(self, window, event):
         if (isinstance(window, OverrideRedirectWindowModel)
@@ -1749,7 +1755,7 @@ class XpraServer(gobject.GObject):
             log("cannot map window %s: already removed!", wid)
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
-        self._cancel_damage(window)
+        self._cancel_damage(wid)
         self._desktop_manager.hide_window(window)
 
     def _process_move_window(self, proto, packet):
@@ -1769,7 +1775,7 @@ class XpraServer(gobject.GObject):
             log("cannot resize window %s: already removed!", wid)
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
-        self._cancel_damage(window)
+        self._cancel_damage(wid)
         (x, y, _, _) = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
         (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
