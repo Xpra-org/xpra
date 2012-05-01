@@ -1036,10 +1036,12 @@ class XpraClient(XpraClientBase):
         window = self._id_to_window.get(wid)
         if not window:
             return      #window is already gone!
+        start = time.time()
         window.draw_region(x, y, width, height, coding, data, rowstride)
-        self.pixel_counter.append((time.time(), width*height))
+        end = time.time()
+        self.pixel_counter.append((end, width*height))
         if packet_sequence:
-            self.send_now(["damage-sequence", packet_sequence])
+            self.send_now(["damage-sequence", packet_sequence, wid, width, height, int(end*1000*1000-start*1000*1000)])
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet

@@ -218,6 +218,7 @@ class ServerSource(object):
         self._damage_cancelled = {}
         self._damage_last_events = {}
         self._damage_delayed = {}
+        self.client_decode_time = {}
         # for managing sequence numbers:
         self._sequence = 0                      #increase with every Region
         self._damage_packet_sequence = 0        #increase with every packet send
@@ -327,6 +328,18 @@ class ServerSource(object):
         def update_batch_delay(reason, factor=1, delta=0):
             self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
             log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
+
+        client_pixels_per_second = None
+        decode_time_list = self.client_decode_time.get(wid)
+        if decode_time_list:
+            total_pixels = 0
+            total_time = 0
+            for pixels, decode_time in decode_time_list:
+                total_pixels += pixels
+                total_time += decode_time
+            if total_time>0:
+                client_pixels_per_second = int(total_pixels *1000*1000 / total_time)
+                log("client is processing window %s at %s pixels/s", wid, client_pixels_per_second)
 
         last_delta = self.last_client_delta
         delta = self._damage_packet_sequence-self.last_client_packet_sequence
@@ -1938,6 +1951,11 @@ class XpraServer(gobject.GObject):
     def _process_damage_sequence(self, proto, packet):
         packet_sequence = packet[1]
         log("received sequence: %s", packet_sequence)
+        if len(packet)>=6:
+            wid, width, height, decode_time = packet[2:6]
+            log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
+            client_decode_list = self._server_source.client_decode_time.setdefault(wid, maxdeque(maxlen=20))
+            client_decode_list.append((width*height, decode_time))
         self._server_source.last_client_packet_sequence = packet_sequence
 
     def _process_buffer_refresh(self, proto, packet):
