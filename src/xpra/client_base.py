@@ -85,6 +85,7 @@ class XpraClientBase(gobject.GObject):
         log.debug("ready(%s)", conn)
         self._protocol = Protocol(conn, self.process_packet)
         ClientSource(self._protocol)
+        self._protocol.start()
 
     def init_packet_handlers(self):
         self._packet_handlers = {
