@@ -76,7 +76,6 @@ class Backing(object):
 
     def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
         assert x==0 and y==0
-        log("paint_with_video_decoder(%s, %s, %s, %s bytes, %s, %s, %s, %s, %s)", decoders, factory, coding, len(img_data), x, y, width, height, rowstride)
         decoder = decoders.get(self.wid)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
@@ -100,7 +99,6 @@ class Backing(object):
             return
         log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
         try:
-            log("paint_with_video_decoder: will now call paint_rgb24(%s bytes, %s, %s, %s, %s, %s)", len(data), x, y, width, height, outstride)
             self.paint_rgb24(data, x, y, width, height, outstride)
         finally:
             decoder.free_image()
