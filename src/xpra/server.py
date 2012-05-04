@@ -516,7 +516,7 @@ class ServerSource(object):
             import Image
             im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
             buf = StringIO()
-            if self._encoding=="jpeg":
+            if coding=="jpeg":
                 q = 50
                 if options:
                     q = options.get("jpegquality", 50)
@@ -524,7 +524,7 @@ class ServerSource(object):
                 log.debug("sending with jpeg quality %s", q)
                 im.save(buf, "JPEG", quality=q)
             else:
-                log.debug("sending as %s", self._encoding)
+                log.debug("sending as %s", coding)
                 im.save(buf, self._encoding.upper())
             data = buf.getvalue()
             buf.close()
