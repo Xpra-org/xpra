@@ -300,9 +300,9 @@ class ServerSource(object):
             * create a new delayed region if we find the client needs it
             Also takes care of adjusting the batch-delay in case
             of congestion.
-            The options dict is currently used for carrying a different
-            "jpegquality" from the default global one, it could also
-            be used for other purposes. Be aware though that when multiple
+            The options dict is currently used for carrying the
+            "jpegquality" value, it could also be used for other purposes.
+            Be aware though that when multiple
             damage requests are delayed and bundled together,
             the options may get quashed! So, specify a "batching"=False
             option to ensure no batching will occur for this request.
@@ -517,9 +517,9 @@ class ServerSource(object):
             im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
             buf = StringIO()
             if self._encoding=="jpeg":
-                q = self._protocol.jpegquality
-                if options and "jpegquality" in options:
-                    q = options.get("jpegquality")
+                q = 50
+                if options:
+                    q = options.get("jpegquality", 50)
                 q = min(99, max(1, q))
                 log.debug("sending with jpeg quality %s", q)
                 im.save(buf, "JPEG", quality=q)
@@ -694,6 +694,7 @@ class XpraServer(gobject.GObject):
         self._protocol = None
         self._potential_protocols = []
         self._server_source = None
+        self.default_damage_options = {}
 
         self.supports_mmap = opts.mmap
         self.encoding = opts.encoding or DEFAULT_ENCODING
@@ -1276,6 +1277,8 @@ class XpraServer(gobject.GObject):
     def _damage(self, window, x, y, width, height, options=None):
         if self._protocol is not None and self._protocol.source is not None:
             wid = self._window_to_id[window]
+            if options is None:
+                options = self.default_damage_options
             self._protocol.source.damage(wid, window, x, y, width, height, options)
 
     def _cancel_damage(self, wid):
@@ -1516,7 +1519,7 @@ class XpraServer(gobject.GObject):
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
-            self._protocol.jpegquality = capabilities["jpeg"]
+            self.default_damage_options["jpegquality"] = capabilities["jpeg"]
         self.keyboard = bool(capabilities.get("keyboard", True))
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
@@ -1968,7 +1971,7 @@ class XpraServer(gobject.GObject):
 
     def _process_buffer_refresh(self, proto, packet):
         [wid, _, jpeg_qual] = packet[1:4]
-        opts = {}
+        opts = self.default_damage_options.copy()
         if self.encoding=="jpeg":
             opts["jpegquality"] = jpeg_qual
         if wid==-1:
@@ -1992,7 +1995,7 @@ class XpraServer(gobject.GObject):
     def _process_jpeg_quality(self, proto, packet):
         quality = packet[1]
         log.debug("Setting JPEG quality to ", quality)
-        self._protocol.jpegquality = quality
+        self.default_damage_options["jpegquality"] = quality
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
