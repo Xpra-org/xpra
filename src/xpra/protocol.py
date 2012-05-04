@@ -267,7 +267,10 @@ class Protocol(object):
                 level = packet[1]
                 log("set_deflate packet, changing compressor from %s to level=%s", self._compression_level, level)
                 if self._compression_level!=level or self._compressor is None:
-                    self._compressor = zlib.compressobj(level)
+                    if level>0:
+                        self._compressor = zlib.compressobj(level)
+                    else:
+                        self._compressor = None
             self._write_lock.release()
 
     def _write_thread_loop(self):
