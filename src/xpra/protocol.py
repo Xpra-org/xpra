@@ -16,6 +16,7 @@ import os
 import socket # for socket.error
 import zlib
 import errno
+import struct
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -108,10 +109,12 @@ class Protocol(object):
         self._source_has_more = False
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
+        self.raw_packets = False
         self._recv_counter = 0
         self._closed = False
         self._compressor = None
-        self._decompressor = None
+        self._decompressor = zlib.decompressobj()
+        self._compression_level = 0
         self._write_thread = Thread(target=self._write_thread_loop)
         self._write_thread.name = "write_loop"
         self._write_thread.daemon = True
@@ -140,9 +143,13 @@ class Protocol(object):
         return False
 
     def _queue_write(self, data, flush=False):
+        """
+            This method should be called with _write_lock held
+        """
         if len(data)==0:
             return
-        if self._compressor is None:
+        if self.raw_packets or self._compressor is None:
+            #raw packets are compressed individually, without the header
             self._write_queue.put(data)
             return
         c = self._compressor.compress(data)
@@ -188,35 +195,79 @@ class Protocol(object):
         if packet is not None:
             self._add_packet_to_queue(packet)
 
-    def _add_packet_to_queue(self, packet):
+    def encode(self, packet):
+        """
+        Given a packet (tuple or list of items), converts it for the wire.
+        This method returns all the binary packets to send, as an array of:
+        (index, may_compress, binary_data)
+        There may be more than one if the raw_packets feature is enabled.
+        The index, if positive indicates the item to populate in the packet
+        whose index is zero.
+        ie: ["blah", [large binary data], "hello", 200]
+        may get converted to:
+        [
+            (1, False, [large binary data]),
+            (0, True, bencoded(["blah", '', "hello", 200]))
+        ]
+        """
+        packets = []
+        if self.raw_packets:
+            for i in range(len(packet)):
+                item = packet[i]
+                if type(item)==str and len(item)>=4096:
+                    #add new binary packet with large item:
+                    if sys.version>='3':
+                        item = item.encode("latin1")
+                    packets.append((i, False, item))
+                    #replace this item with an empty string placeholder:
+                    packet[i] = ''
+        #now the main packet (or what is left of it):
         try:
-            data = bencode(packet)
-            if sys.version>='3':
-                data = data.encode("latin1")
+            main_packet = bencode(packet)
         except KeyError or TypeError, e:
             import traceback
             traceback.print_exc()
             self.verify_packet(packet)
             raise e
-        l = len(data)
-        self._write_lock.acquire()
+        if sys.version>='3':
+            main_packet = main_packet.encode("latin1")
+        packets.append((0, True, main_packet))
+        return packets
+
+    def _add_packet_to_queue(self, packet):
+        packets = self.encode(packet)
+        if not self.raw_packets:
+            assert len(packets)==1
         try:
-            try:
-                if l<=8192 and sys.version<'3':
-                    #send size and data together (low copy overhead):
-                    self._queue_write(("PS%014d" % l).encode('latin1')+data, True)
-                    return
-                self._queue_write(("PS%014d" % l).encode('latin1'))
-                self._queue_write(data, True)
-            finally:
-                if packet[0]=="set_deflate":
-                    level = packet[1]
-                    log("set_deflate packet, changing compressor to level=%s", level)
-                    if level==0:
-                        self._compressor = None
+            self._write_lock.acquire()
+            for index,compress,data in packets:
+                if self.raw_packets:
+                    if compress and self._compression_level>0:
+                        level = self._compression_level
+                        if self._compressor is None:
+                            self._compressor = zlib.compressobj(level)
+                        data = self._compressor.compress(data)+self._compressor.flush(zlib.Z_SYNC_FLUSH)
                     else:
-                        self._compressor = zlib.compressobj(level)
+                        level = 0
+                    l = len(data)
+                    #'p' + protocol-version + compression_level + packet_index + packet_size
+                    header = struct.pack('!cBBBL', "P", 0, level, index, l)
+                else:
+                    assert index==0
+                    l = len(data)
+                    header = ("PS%014d" % l).encode('latin1')
+                if l<4096 and sys.version<'3':
+                    #send size and data together (low copy overhead):
+                    self._queue_write(header+data, True)
+                else:
+                    self._queue_write(header)
+                    self._queue_write(data, True)
         finally:
+            if packet[0]=="set_deflate":
+                level = packet[1]
+                log("set_deflate packet, changing compressor from %s to level=%s", self._compression_level, level)
+                if self._compression_level!=level or self._compressor is None:
+                    self._compressor = zlib.compressobj(level)
             self._write_lock.release()
 
     def _write_thread_loop(self):
@@ -254,7 +305,7 @@ class Protocol(object):
                 except TypeError:
                     assert self._closed
                     return
-                log("read thread: got data %s", repr_ellipsized(buf))
+                log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
                 self._recv_counter += len(buf)
                 self._read_queue.put(buf)
                 if not buf:
@@ -273,14 +324,32 @@ class Protocol(object):
         return False
 
     def _read_parse_thread_loop(self):
+        """
+            Process the individual network packets placed in _read_queue.
+            We concatenate them, then decompress them (old protocol only),
+            then try to parse them.
+            Either the old (16 bytes) header, or the new (8 bytes) header with extra attributes.
+            We extract the individual packet from the potentially large buffer,
+            saving the rest of the buffer for later, and optionally decompress this data
+            (new protocol only) and re-construct the one python-object-packet
+            from potentially multiple packets (see raw_packets and packet_index - new protocol only).
+            The actual processing of the packet is done in the main thread via gobject.idle_add
+            The "set_deflate" are a special case (old protocol) that we trap here in order
+            to ensure we enable compression synchronously within the thread.
+            (this due for removal when we drop old protocol support)
+        """
         try:
             read_buffer = None
             current_packet_size = -1
+            packet_index = 0
+            compression_level = False
+            raw_packets = {}
             while not self._closed:
                 buf = self._read_queue.get()
                 if not buf:
                     return self._call_connection_lost("empty marker in read queue")
-                if self._decompressor is not None:
+                #this is the old/unconditional compression code (to be removed):
+                if not self.raw_packets and self._compression_level>0:
                     buf = self._decompressor.decompress(buf)
                 if read_buffer:
                     read_buffer = read_buffer + buf
@@ -293,23 +362,52 @@ class Protocol(object):
                     bl = len(read_buffer)
                     if bl<=0:
                         break
-                    try:
-                        if current_packet_size<0 and bl>0 and read_buffer[0] in ["P", ord("P")]:
-                            #spotted packet size header
+                    if current_packet_size<0:
+                        assert read_buffer[0] in ["P", ord("P")], "invalid packet header"
+                        if read_buffer[1] in ["S", ord("S")]:
+                            #old packet format: "PS%02d%012d" - 16 bytes
                             if bl<16:
-                                break   #incomplete
+                                continue
                             current_packet_size = int(read_buffer[2:16])
+                            packet_index = 0
+                            compression_level = 0
                             read_buffer = read_buffer[16:]
-                            bl = len(read_buffer)
-
-                        if current_packet_size>0 and bl<current_packet_size:
-                            log.debug("incomplete packet: only %s of %s bytes received", bl, current_packet_size)
-                            break
-
-                        if sys.version>='3':
-                            result = bdecode(read_buffer.decode("latin1"))
                         else:
-                            result = bdecode(read_buffer)
+                            #new packet format: struct.pack('cBBBL', ...) - 8 bytes
+                            if bl<8:
+                                continue
+                            try:
+                                (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
+                            except Exception, e:
+                                raise Exception("invalid packet format: %s", e)
+                            read_buffer = read_buffer[8:]
+                        bl = len(read_buffer)
+
+                    if current_packet_size>0 and bl<current_packet_size:
+                        # incomplete packet
+                        break
+
+                    #chop this packet from the buffer:
+                    if len(read_buffer)==current_packet_size:
+                        raw_string = read_buffer
+                        read_buffer = ''
+                    else:
+                        raw_string = read_buffer[:current_packet_size]
+                        read_buffer = read_buffer[current_packet_size:]
+                    if compression_level>0:
+                        raw_string = self._decompressor.decompress(raw_string)
+                    if sys.version>='3':
+                        raw_string = raw_string.decode("latin1")
+
+                    if packet_index>0:
+                        #raw packet, store it and continue:
+                        raw_packets[packet_index] = raw_string
+                        current_packet_size = -1
+                        packet_index = 0
+                        continue
+                    try:
+                        #final packet (packet_index==0), decode it:
+                        result = bdecode(raw_string)
                     except ValueError, e:
                         import traceback
                         traceback.print_exc()
@@ -319,27 +417,30 @@ class Protocol(object):
                         # Peek at the data we got, in case we can make sense of it:
                         self._process_packet([Protocol.GIBBERISH, buf])
                         # Then hang up:
-                        return self._connection_lost("gibberish received: %s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(read_buffer), current_packet_size, bl, e))
+                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(read_buffer), packet_index, current_packet_size, bl, e))
 
                     current_packet_size = -1
                     if result is None or self._closed:
                         break
                     packet, l = result
+                    #add any raw packets back into it:
+                    if raw_packets:
+                        for index,raw_data in raw_packets.items():
+                            #replace placeholder with the raw_data packet data:
+                            packet[index] = raw_data
+                        raw_packets = {}
                     gobject.idle_add(self._process_packet, packet)
-                    unprocessed = read_buffer[l:]
+                    assert l==len(raw_string)
                     if packet[0]=="set_deflate":
-                        had_deflate = (self._decompressor is not None)
                         level = packet[1]
-                        log("set_deflate packet, changing decompressor to level=%s", level)
-                        if level==0:
-                            self._decompressor = None
-                        else:
-                            self._decompressor = zlib.decompressobj()
-                        if not had_deflate and (self._decompressor is not None):
-                            # deflate was just enabled: so decompress the unprocessed
-                            # data
-                            unprocessed = self._decompressor.decompress(unprocessed)
-                    read_buffer = unprocessed
+                        if level!=self._compression_level:
+                            log("set_deflate packet, changing compressor to level=%s", level)
+                            previous_level = self._compression_level
+                            self._compression_level = level
+                            if level>0:
+                                if previous_level==0 and not self.raw_packets:
+                                    # deflate was just enabled: so decompress the unprocessed data:
+                                    read_buffer = self._decompressor.decompress(read_buffer)
         finally:
             log("read parse thread: ended")
 
@@ -357,16 +458,6 @@ class Protocol(object):
                      exc_info=True)
             # Ignore and continue, maybe things will work out anyway
         return False
-
-
-    def enable_deflate(self, level):
-        assert self._compressor is None and self._decompressor is None
-        # Flush everything out of the source
-        while self._source_has_more:
-            self._flush_one_packet_into_buffer()
-        # Now enable compression
-        self._compressor = zlib.compressobj(level)
-        self._decompressor = zlib.decompressobj()
 
     def flush_then_close(self, last_packet):
         self._add_packet_to_queue(last_packet)

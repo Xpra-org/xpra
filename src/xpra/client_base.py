@@ -111,7 +111,7 @@ class XpraClientBase(gobject.GObject):
         capabilities["encodings"] = ENCODINGS
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
-        capabilities["packet_size"] = True
+        capabilities["raw_packets"] = True
         return capabilities
 
     def send(self, packet):

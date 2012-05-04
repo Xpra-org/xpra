@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.2.0
+%define version 0.3.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
@@ -55,6 +55,13 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Fri May 04 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
+- zero-copy network code, per packet compression
+- fix race causing DoS in threaded network protocol setup
+- fix small per-window memory leak
+- IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+- remove compatibility code for versions older than 0.1
+
 * Fri Apr 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.2.0-1
 - x264 and vpx video encoding support
 - gtk3 and python 3 partial support (client only - no keyboard support)

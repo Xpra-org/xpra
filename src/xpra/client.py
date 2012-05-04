@@ -937,6 +937,7 @@ class XpraClient(XpraClientBase):
         assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
         #full screen at 32bits times 4 for safety
         self._protocol.max_packet_size = maxw*maxh*4*4
+        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         log("set maximum packet size to %s", self._protocol.max_packet_size)
         self.server_desktop_size = capabilities.get("desktop_size")
         assert self.server_desktop_size

@@ -1,3 +1,13 @@
+xpra (0.3.0-1) UNRELEASED; urgency=low
+  * zero-copy network code, per packet compression
+  * fix race causing DoS in threaded network protocol setup
+  * fix small per-window memory leak
+  * IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+  * remove compatibility code for versions older than 0.1
+  * zero-copy network code
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 04 May 2012 15:04:22 +0700
+
 xpra (0.2.0-1) UNRELEASED; urgency=low
   * x264 and vpx video encoding support
   * gtk3 and python 3 partial support (client only - no keyboard support)

@@ -1,3 +1,12 @@
+v0.3.0 (2012-05-04)
+======================
+	-- zero-copy network code, per packet compression
+	-- fix race causing DoS in threaded network protocol setup
+	-- fix small per-window memory leak
+	-- IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+	-- remove compatibility code for versions older than 0.1
+
+
 v0.2.0 (2012-04-20)
 ======================
 	-- x264 and vpx video encoding support

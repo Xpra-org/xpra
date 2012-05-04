@@ -1502,6 +1502,7 @@ class XpraServer(gobject.GObject):
                 log.error("cannot use mmap file '%s': %s", mmap_file, e)
                 self.close_mmap()
         self._protocol = proto
+        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
         batch_config.always = bool(capabilities.get("batch.always", False))
@@ -1586,6 +1587,7 @@ class XpraServer(gobject.GObject):
         capabilities["png_window_icons"] = "png" in ENCODINGS
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
+        capabilities["raw_packets"] = True
         self._send(["hello", capabilities])
 
     def send_ping(self):
