@@ -102,7 +102,7 @@ def sh_quotemeta(s):
         quoted_chars.append(char)
     return "\"%s\"" % ("".join(quoted_chars),)
 
-def xpra_runner_shell_script(xpra_file, starting_dir):
+def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     script = []
     script.append("#!/bin/sh\n")
     for var, value in os.environ.items():
@@ -112,6 +112,9 @@ def xpra_runner_shell_script(xpra_file, starting_dir):
         # TODO: use a whitelist
         if var in ["XDG_SESSION_COOKIE", "LS_COLORS"]:
             continue
+        #XPRA_SOCKET_DIR is a special case, it is handled below
+        if var=="XPRA_SOCKET_DIR":
+            continue
         # :-separated envvars that people might change while their server is
         # going:
         if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
@@ -120,6 +123,12 @@ def xpra_runner_shell_script(xpra_file, starting_dir):
         else:
             script.append("%s=%s; export %s\n"
                           % (var, sh_quotemeta(value), var))
+    #XPRA_SOCKET_DIR is a special case, we want to honour it
+    #when it is specified, but the client may override it:
+    if socket_dir:
+        script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then\n');
+        script.append('    XPRA_SOCKET_DIR=%s; export XPRA_SOCKET_DIR\n' % sh_quotemeta(socket_dir))
+        script.append('fi\n');
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
     script.append("cd %s\n" % sh_quotemeta(starting_dir))
@@ -194,7 +203,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     assert mode in ("start", "upgrade")
     upgrading = (mode == "upgrade")
 
-    dotxpra = DotXpra(opts.sockdir)
+    from xpra.scripts.main import get_default_socket_dir
+    dotxpra = DotXpra(opts.sockdir or get_default_socket_dir())
 
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -257,7 +267,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         os.fchmod(scriptfile.fileno(), o0700 & ~umask)
     else:
         os.chmod(scriptpath, o0700 & ~umask)
-    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir))
+    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.sockdir))
     scriptfile.close()
 
     # Do this after writing out the shell script:

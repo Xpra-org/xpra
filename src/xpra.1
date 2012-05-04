@@ -264,10 +264,14 @@ for clients that do not specify which encoding they want to be using.
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
 .TP
 \fB\-\-socket\-dir\fP=\fIDIR\fP
-Location where to write the Xpra socket file. Defaults to ~/.xpra
+Location where to write and look for the Xpra socket files.
+Defaults to "~/.xpra". It may also be specified using the
+XPRA_SOCKET_DIR environment variable.
 
-When using the socket-dir option, it is necessary to specify socket-dir
-on all following commands, for xpra to work with the open sessions.
+When using the socket-dir option, it is generally necessary to specify
+socket-dir on all following commands, for xpra to work with the
+open sessions. Mixing different socket-dir options is not
+recommended.
 
 By specifying a shared directory this can be coupled with the
 mmap-group option to connect Xpra sessions across user accounts.

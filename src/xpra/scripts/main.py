@@ -194,8 +194,8 @@ def main(script_file, cmdline):
                       dest="ssh", default=DEFAULT_SSH_CMD, metavar="CMD",
                       help="How to run ssh (default: '%default')")
     parser.add_option("--socket-dir", action="store",
-                      dest="sockdir", default="~/.xpra",
-                      help="Directory to place the socket file in (default: '%default')")
+                      dest="sockdir", default=None,
+                      help="Directory to place/look for the socket files in (default: $XPRA_SOCKET_DIR or '~/.xpra')")
     parser.add_option("--mmap-group", action="store_true",
                       dest="mmap_group", default=False,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
@@ -274,6 +274,9 @@ def main(script_file, cmdline):
     else:
         parser.error("invalid mode '%s'" % mode)
 
+def get_default_socket_dir():
+    return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
+
 def parse_display_name(parser, opts, display_name):
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
@@ -293,7 +296,11 @@ def parse_display_name(parser, opts, display_name):
             desc["display_as_args"] = []
         desc["ssh"] = opts.ssh.split()
         desc["full_ssh"] = desc["ssh"] + ["-T", desc["host"]]
-        desc["remote_xpra"] = opts.remote_xpra.split()
+        remote_xpra = opts.remote_xpra.split()
+        if opts.sockdir:
+            #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
+            remote_xpra.insert(0, "XPRA_SOCKET_DIR=%s" % opts.sockdir)
+        desc["remote_xpra"] = remote_xpra
         desc["full_remote_xpra"] = desc["full_ssh"] + desc["remote_xpra"]
         return desc
     elif display_name.startswith(":"):
@@ -301,7 +308,7 @@ def parse_display_name(parser, opts, display_name):
             "type": "unix-domain",
             "local": True,
             "display": display_name,
-            "sockdir": opts.sockdir,
+            "sockdir": opts.sockdir or get_default_socket_dir(),
             }
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
@@ -322,7 +329,7 @@ def parse_display_name(parser, opts, display_name):
 def pick_display(parser, opts, extra_args):
     if len(extra_args) == 0:
         # Pick a default server
-        sockdir = DotXpra(opts.sockdir)
+        sockdir = DotXpra(opts.sockdir or get_default_socket_dir())
         servers = sockdir.sockets()
         live_servers = [display
                         for (state, display) in servers
