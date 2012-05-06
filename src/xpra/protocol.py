@@ -367,10 +367,12 @@ class Protocol(object):
                         break
                     if current_packet_size<0:
                         assert read_buffer[0] in ["P", ord("P")], "invalid packet header"
+                        if bl<2:
+                            break
                         if read_buffer[1] in ["S", ord("S")]:
                             #old packet format: "PS%02d%012d" - 16 bytes
                             if bl<16:
-                                continue
+                                break
                             current_packet_size = int(read_buffer[2:16])
                             packet_index = 0
                             compression_level = 0
@@ -378,7 +380,7 @@ class Protocol(object):
                         else:
                             #new packet format: struct.pack('cBBBL', ...) - 8 bytes
                             if bl<8:
-                                continue
+                                break
                             try:
                                 (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
                             except Exception, e:
