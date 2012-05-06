@@ -777,8 +777,12 @@ class XpraClient(XpraClientBase):
         self.keys_pressed = {}
 
     def query_xkbmap(self):
-        self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
-        self.xkbmap_print, self.xkbmap_query = self._client_extras.get_keymap_spec()
+        if self.readonly:
+            self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = "", "", []
+            self.xkbmap_print, self.xkbmap_query = "", ""
+        else:
+            self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
+            self.xkbmap_print, self.xkbmap_query = self._client_extras.get_keymap_spec()
         self.xkbmap_keycodes = self._client_extras.get_gtk_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self._client_extras.get_keymap_modifiers()
         log.debug("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
@@ -851,8 +855,12 @@ class XpraClient(XpraClientBase):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
         for k,v in self.get_keymap_properties().items():
             capabilities[k] = v
-        capabilities["xkbmap_layout"] = nn(self.xkbmap_layout)
-        capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
+        if self.readonly:
+            #don't bother sending keyboard info, as it won't be used
+            capabilities["keyboard"] = False
+        else:
+            capabilities["xkbmap_layout"] = nn(self.xkbmap_layout)
+            capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
         capabilities["clipboard"] = self.clipboard_enabled
         capabilities["notifications"] = self._client_extras.can_notify()
         capabilities["modifiers"] = self.get_current_modifiers()
