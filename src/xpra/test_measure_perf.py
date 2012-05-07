@@ -87,7 +87,7 @@ def try_to_stop(process):
 
 def getoutput(cmd):
     try:
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except Exception, e:
         print("error running %s: %s" % (cmd, e))
         raise e
@@ -96,6 +96,41 @@ def getoutput(cmd):
     if code!=0:
         raise Exception("command '%s' returned error code %s" % (cmd, code))
     return out
+
+def getoutput_lines(cmd, pattern, setup_info):
+    out = getoutput(cmd)
+    lines = []
+    for line in out.splitlines():
+        if line.find(pattern)>=0:
+            lines.append(line)
+    return  lines
+def getoutput_line(cmd, pattern, setup_info):
+    lines = getoutput_lines(cmd, pattern, setup_info)
+    assert len(lines)==1, "expected 1 line matching '%s' from %s but found %s" % (pattern, cmd, len(lines))
+    return  lines[0]
+
+def get_cpu_info():
+    lines = getoutput_lines(["cat", "/proc/cpuinfo"], "model name", "cannot find cpu info")
+    assert len(lines)>0, "coult not find 'model name' in '/proc/cpuinfo'"
+    cpu0 = lines[0]
+    for x in lines[1:]:
+        if x!=cpu0:
+            return " - ".join(lines)
+    cpu_name = cpu0.split(":")[1].replace("Processor", "").strip()
+    cpu_info = "%sx %s" % (len(lines), cpu_name)
+    print("CPU_INFO=%s" % cpu_info)
+    return  cpu_info
+
+XORG_VERSION = getoutput_line(["Xorg", "-version"], "X.Org X Server", "Cannot detect Xorg server version")
+print("XORG_VERSION=%s" % XORG_VERSION)
+CPU_INFO = get_cpu_info()
+
+
+def clean_sys_state():
+    #clear the caches
+    cmd = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
+    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    assert process.wait()==0, "failed to run %s" % str(cmd)
 
 def zero_iptables():
     cmds = [['iptables', '-Z', 'INPUT'], ['iptables', '-Z', 'OUTPUT']]
@@ -138,16 +173,15 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))/1024)
     return [user_pct, sys_pct, nthreads, vsize, rss]
 
-def getoutput_line(chain, pattern, setup_info):
+def getiptables_line(chain, pattern, setup_info):
     cmd = ["iptables", "-vnL", chain]
-    out = getoutput(cmd)
-    for line in out.splitlines():
-        if line.find(pattern)>0:
-            return  line
-    raise Exception("no line found matching %s, make sure you have a rule like: %s" % (pattern, setup_info))
+    line = getoutput_line(cmd, pattern, setup_info)
+    if not line:
+        raise Exception("no line found matching %s, make sure you have a rule like: %s" % (pattern, setup_info))
+    return line
 
 def parse_ipt(chain, pattern, setup_info):
-    line = getoutput_line(chain, pattern, setup_info)
+    line = getiptables_line(chain, pattern, setup_info)
     parts = line.split()
     assert len(parts)>2
     def parse_num(part):
@@ -215,6 +249,7 @@ def with_server(start_server_command, stop_server_command, name_cmd):
     for name, (compression, test_command, client_cmd) in name_cmd.items():
         test_command_process = None
         try:
+            clean_sys_state()
             #start the server:
             if START_SERVER:
                 print("starting server: %s" % str(start_server_command))
@@ -235,7 +270,7 @@ def with_server(start_server_command, stop_server_command, name_cmd):
             assert code is None, "test command %s failed to start" % test_command
 
             #run the client test
-            results[name] = [compression]+measure_client(server_pid, name, client_cmd)
+            results[name] = [CPU_INFO, XORG_VERSION, compression]+measure_client(server_pid, name, client_cmd)
         except Exception, e:
             errors += 1
             print("error during client command run for %s: %s" % (name, e))
@@ -341,7 +376,7 @@ def main():
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["compression",
+    headers = ["CPU info", "Xorg version", "compression",
                "packets in", "packets in volume", "packets out", "packets out volume",
                "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (KB)",
                "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (KB)",
