@@ -20,26 +20,70 @@ XORG_CONFIG="%s/xorg.conf" % HOME
 XORG_LOG = "%s/Xorg.%s.log" % (HOME, DISPLAY_NO)
 START_SERVER = True         #if False, you are responsible for starting it
                             #and the data will not be available
+TEST_XPRA = True
+TEST_VNC = True
+
+GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
+GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
+X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
+XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
+XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
+ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
+                        ["rss-glx-hufo_tunnel", "rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes", "rss-glx-drempels",
+                         "xjack", "xmatrix"]
+                          ]
+SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
+                        ["rss-glx-hufo_tunnel", "eruption", "memscroller", "xmatrix"]
+                          ]
+X11_TEST_COMMANDS = []
+for x in [GLX_SPHERES, X11_PERF, GLX_GEARS, XTERM_TEST] + SOME_XSCREENSAVER_TESTS:
+    if not os.path.exists(x[0]):
+        print("WARNING: cannot find %s - removed from tests")
+    else:
+        X11_TEST_COMMANDS.append(x)
+        
 
 #but these should be ok:
 SETTLE_TIME = 5             #how long to wait before we start measuring
-MEASURE_TIME = 10           #run for N seconds
+MEASURE_TIME = 20           #run for N seconds
 SERVER_SETTLE_TIME = 5      #how long we wait for the server to start
 TEST_COMMAND_SETTLE_TIME = 5    #how long we wait after starting the test command
-XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
-GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
-X11_PERF = ["x11perf", "-all"]
+
 XVNC_BIN = "/usr/bin/Xvnc"
+XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
+                   "+extension", "GLX",
+                   "--SecurityTypes=None",
+                   "--SendCutText=0", "--AcceptCutText=0", "--AcceptPointerEvents=0", "--AcceptKeyEvents=0",
+                   "-screen", "0", "1240x900x24",
+                   ":%s" % DISPLAY_NO]
+XVNC_SERVER_STOP_COMMAND = None     #stopped via kill
 VNCVIEWER_BIN = "/usr/bin/vncviewer"
-VNC_SERVER_COMMAND = "%s -geometry 1024x768 -rfbport=%s -SecurityTypes=None :%s" % (XVNC_BIN, PORT, DISPLAY_NO)
-VNC_CLIENT_COMMAND = [VNCVIEWER_BIN, "%s::%s" % (IP, PORT)]
+VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
+VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
+VNC_ZLIB_OPTIONS = [-1, 9]
+VNC_COMPRESSION_OPTIONS = [0, 3, 8, 9]
+VNC_COMPRESSION_OPTIONS = [0, 3]
+VNC_JPEG_OPTIONS = [-1, 0, 8]
+VNC_JPEG_OPTIONS = [-1, 4]
+
+
+
 XPRA_BIN = "/usr/bin/xpra"
 XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT,
                        "start", ":%s" % DISPLAY_NO,
                        "--xvfb=Xorg -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_LOG, XORG_CONFIG)]
 XPRA_SERVER_STOP_COMMAND = [XPRA_BIN, "stop", ":%s" % DISPLAY_NO]
-XPRA_TEST_COMMAND = GLX_SPHERES
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 
+
+
+def try_to_stop(process):
+    if not process:
+        return
+    try:
+        process.kill()
+    except Exception, e:
+        print("could not stop process %s: %s" % (process, e))
 
 def getoutput(cmd):
     try:
@@ -90,8 +134,8 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     user_pct = int(1000 * (new_utime - old_utime) / time_total_diff)/10.0
     sys_pct = int(1000 * (new_stime - old_stime) / time_total_diff)/10.0
     nthreads = int((int(old_pid_stat[19])+int(new_pid_stat[19]))/2)
-    vsize = max(int(old_pid_stat[22]), int(new_pid_stat[22]))
-    rss = max(int(old_pid_stat[23]), int(new_pid_stat[23]))
+    vsize = int(max(int(old_pid_stat[22]), int(new_pid_stat[22]))/1024/1024)
+    rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))/1024)
     return [user_pct, sys_pct, nthreads, vsize, rss]
 
 def getoutput_line(chain, pattern, setup_info):
@@ -147,7 +191,10 @@ def measure_client(server_pid, name, cmd):
     ni,isize = get_input_count()
     no,osize = get_output_count()
     #stop the process
-    client_process.kill()
+    try_to_stop(client_process)
+    time.sleep(1)
+    code = client_process.poll()
+    assert code is not None, "failed to stop client!"    
     #now collect the data
     client_process_data = compute_stat(new_time_total-old_time_total, old_pid_stat, new_pid_stat)
     if server_pid>0:
@@ -158,11 +205,11 @@ def measure_client(server_pid, name, cmd):
     print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
     return [ni, isize, no, osize]+client_process_data+server_process_data
 
-
-
-def with_server(start_server_command, stop_server_command, test_command, name_cmd):
+def with_server(start_server_command, stop_server_command, name_cmd):
     server_process = None
     test_command_process = None
+    env = os.environ.copy()
+    env["DISPLAY"] = ":%s" % DISPLAY_NO
     try:
         #start the server:
         if START_SERVER:
@@ -175,20 +222,19 @@ def with_server(start_server_command, stop_server_command, test_command, name_cm
             assert code is None, "server failed to start, return code is %s, please ensure that you can run the server command line above and that a server does not already exist on that port or DISPLAY" % code
         else:
             server_pid = 0
-        #start the test command:
-        print("starting test command: %s" % str(test_command))
-        env = os.environ.copy()
-        env["DISPLAY"] = ":%s" % DISPLAY_NO
-        test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        time.sleep(TEST_COMMAND_SETTLE_TIME)
-        code = test_command_process.poll()
-        assert code is None
 
         errors = 0
         results = {}
-        for name, (compression, cmd) in name_cmd.items():
+        for name, (compression, test_command, client_cmd) in name_cmd.items():
+            test_command_process = None
             try:
-                results[name] = [compression]+measure_client(server_pid, name, cmd)
+                #start the test command:
+                print("starting test command: %s" % str(test_command))
+                test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+                time.sleep(TEST_COMMAND_SETTLE_TIME)
+                code = test_command_process.poll()
+                assert code is None, "test command %s failed to start" % test_command
+                results[name] = [compression]+measure_client(server_pid, name, client_cmd)
             except Exception, e:
                 errors += 1
                 print("error during client command run for %s: %s" % (name, e))
@@ -197,60 +243,113 @@ def with_server(start_server_command, stop_server_command, test_command, name_cm
                 if errors>3:
                     print("too many errors, aborting tests")
                     break
+            finally:
+                print("stopping test command: %s" % test_command_process)
+                try_to_stop(test_command_process)
+
     finally:
         print("")
         print("cleaning up")
-        def try_to_stop(process):
-            if not process:
-                return
-            try:
-                process.kill()
-            except Exception, e:
-                print("could not stop process %s: %s" % (process, e))
-        if stop_server_command and START_SERVER:
-            print("stopping server with: %s" % (stop_server_command))
-            stop_process = subprocess.Popen(stop_server_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stop_process.wait()
-
-        try_to_stop(test_command_process)
         if START_SERVER:
+            if stop_server_command:
+                print("stopping server with: %s" % (stop_server_command))
+                stop_process = subprocess.Popen(stop_server_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stop_process.wait()
             try_to_stop(server_process)
     return results
             
 
 def test_xpra():
+    print("")
+    print("*********************************************************")
+    print("                Xpra tests")
+    print("")
     name_cmd = {}
-    for encoding in XPRA_TEST_ENCODINGS:
-        QUALITY = [-1]
-        if encoding=="jpeg":
-            QUALITY = [40, 80, 90]
-        for jpeg_q in QUALITY:
-            for compression in [0, 3, 9]:
-                cmd = [XPRA_BIN, "attach", "tcp:%s:%s" % (IP, PORT),
-                       "-z", str(compression), "--readonly"]
-                if encoding=="jpeg":
-                    cmd.append("--jpeg-quality=%s" % jpeg_q)
-                    name = "%s-%s" % (encoding, jpeg_q)
-                else:
-                    name = encoding
-                if encoding!="mmap":
-                    cmd.append("--no-mmap")
-                    cmd.append("--encoding=%s" % encoding)
-                name_cmd["%s (%s)" % (name, compression)] = (compression, cmd)
-    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, XPRA_TEST_COMMAND, name_cmd)
+    for x11_test_command in X11_TEST_COMMANDS:
+        for encoding in XPRA_TEST_ENCODINGS:
+            QUALITY = [-1]
+            if encoding=="jpeg":
+                QUALITY = [40, 80, 90]
+            for jpeg_q in QUALITY:
+                for compression in [0, 3, 9]:
+                    cmd = [XPRA_BIN,
+                           "attach", "tcp:%s:%s" % (IP, PORT),
+                           "-z", str(compression), "--readonly"]
+                    if encoding=="jpeg":
+                        cmd.append("--jpeg-quality=%s" % jpeg_q)
+                        name = "%s-%s" % (encoding, jpeg_q)
+                    else:
+                        name = encoding
+                    if encoding!="mmap":
+                        cmd.append("--no-mmap")
+                        cmd.append("--encoding=%s" % encoding)
+                    command_name = x11_test_command[0].split("/")[-1]
+                    name_cmd["%s (%s - %s)" % (name, command_name, compression)] = (compression, x11_test_command, cmd)
+    print("going to run %s tests: %s" % (len(name_cmd), name_cmd.keys()))
+    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, name_cmd)
+
+def test_vnc():
+    print("")
+    print("*********************************************************")
+    print("                VNC tests")
+    print("")
+    name_cmd = {}
+    for x11_test_command in X11_TEST_COMMANDS:
+        for encoding in VNC_ENCODINGS:
+            for zlib in VNC_ZLIB_OPTIONS:
+                for compression in VNC_COMPRESSION_OPTIONS:
+                    jpeg_quality = [8]
+                    if encoding=="Tight":
+                        jpeg_quality = VNC_JPEG_OPTIONS
+                    for jpegq in jpeg_quality:
+                        cmd = [VNCVIEWER_BIN, "%s::%s" % (IP, PORT),
+                               "--ViewOnly",
+                               "--ZlibLevel=%s" % str(zlib),
+                               "--CompressLevel=%s" % str(compression),
+                               ]
+                        if encoding=="auto":
+                            cmd.append("--AutoSelect=1")
+                        else:
+                            cmd.append("--AutoSelect=0")
+                            cmd.append("--PreferredEncoding=%s" % encoding)
+                        if jpegq<0:
+                            cmd.append("--NoJPEG=1")
+                            jpegtxt = "nojpeg"
+                        else:
+                            cmd.append("--NoJPEG=0")
+                            cmd.append("--QualityLevel=%s" % jpegq)
+                            jpegtxt = "jpeg=%s" % jpegq
+                        #make a descriptive title:
+                        if zlib==-1:
+                            zlibtxt = "nozlib"
+                        else:
+                            zlibtxt = "zlib=%s" % zlib
+                        command_name = x11_test_command[0].split("/")[-1]
+                        name = "vnc (%s - %s - %s - compression=%s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt)
+                        name_cmd[name] = (compression, x11_test_command, cmd)
+    print("going to run %s tests: %s" % (len(name_cmd), name_cmd.keys()))
+    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMAND, name_cmd)
 
 def main():
-    xpra_results = test_xpra()
-    #vnc_results = ...
+    #before doing anything, check that the firewall is setup correctly:
+    get_input_count()
+    get_output_count()
+
+    xpra_results = {}
+    if TEST_XPRA:
+        xpra_results = test_xpra()
+    vnc_results = {}
+    if TEST_VNC:
+        vnc_results = test_vnc()
     print("")
     print("results:")
     headers = ["compression",
                "packets in", "packets in volume", "packets out", "packets out volume",
-               "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize", "client rss",
-               "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize", "server rss",
+               "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (KB)",
+               "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (KB)",
                ]
     print("encoding (compression): %s" % (", ".join(headers)))
-    for name, data in xpra_results.items():
+    for name, data in xpra_results.items()+vnc_results.items():
         print "%s: %s" % (name, data)
     #self.client.send_ping()
 
