@@ -98,6 +98,7 @@ def main(script_file, cmdline):
                                          "\t%prog attach [DISPLAY]\n",
                                          "\t%prog detach [DISPLAY]\n",
                                          "\t%prog screenshot filename [DISPLAY]\n",
+                                         "\t%prog info [DISPLAY]\n",
                                          "\t%prog version [DISPLAY]\n",
                                          stop_str,
                                          list_str,
@@ -261,7 +262,7 @@ def main(script_file, cmdline):
         nox()
         from xpra.scripts.server import run_server
         run_server(parser, options, mode, script_file, args)
-    elif mode in ("attach", "detach", "screenshot", "version"):
+    elif mode in ("attach", "detach", "screenshot", "version", "info"):
         run_client(parser, options, args, mode)
     elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
@@ -402,6 +403,9 @@ def run_client(parser, opts, extra_args, mode):
     if mode=="screenshot":
         from xpra.client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(conn, opts, screenshot_filename)
+    elif mode=="info":
+        from xpra.client_base import InfoXpraClient
+        app = InfoXpraClient(conn, opts)
     elif mode=="version":
         from xpra.client_base import VersionXpraClient
         app = VersionXpraClient(conn, opts)

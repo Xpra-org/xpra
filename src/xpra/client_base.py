@@ -251,6 +251,34 @@ class ScreenshotXpraClient(GLibXpraClient):
         return capabilities
 
 
+class InfoXpraClient(GLibXpraClient):
+    """ This client does one thing only:
+        it queries the server with an 'info' request
+    """
+
+    def __init__(self, conn, opts):
+        def info_timeout(*args):
+            self.exit_code = 1
+            log.error("timeout: did not receive the info")
+            self.quit()
+        gobject.timeout_add(10*1000, info_timeout)
+        GLibXpraClient.__init__(self, conn, opts)
+
+    def _process_hello(self, packet):
+        log.debug("process_hello: %s", packet)
+        props = packet[1]
+        if props:
+            for k,v in props.items():
+                log.info("%s=%s", k, v)
+        self.quit()
+
+    def make_hello(self, challenge_response=None):
+        capabilities = GLibXpraClient.make_hello(self, challenge_response)
+        log.debug("make_hello(%s) adding info_request to %s", challenge_response, capabilities)
+        capabilities["info_request"] = True
+        return capabilities
+
+
 class VersionXpraClient(GLibXpraClient):
     """ This client does one thing only:
         it queries the server for version information and prints it out
@@ -275,6 +303,7 @@ class VersionXpraClient(GLibXpraClient):
         log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
         capabilities["version_request"] = True
         return capabilities
+
 
 class StopXpraClient(GLibXpraClient):
     """ stop a server """

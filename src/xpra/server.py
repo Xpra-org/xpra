@@ -557,7 +557,7 @@ class ServerSource(object):
     def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
         assert coding in ENCODINGS
         assert x==0 and y==0
-        time_before = time.clock()
+        #time_before = time.clock()
         encoder = encoders.get(wid)
         if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
             log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
@@ -586,7 +586,7 @@ class ServerSource(object):
         #elif encoding_latency < 5:
         #    log("%s encoding took %d milliseconds, using more costly encoding params", coding, encoding_latency)
         #    encoder.decrease_encoding_speed()
-        log("%s: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", coding, w, h, size, type(data), [ord(c) for c in data[:10]])
+        #log("%s: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", coding, w, h, size, type(data), [ord(c) for c in data[:10]])
         return data
 
 
@@ -1440,11 +1440,22 @@ class XpraServer(gobject.GObject):
         capabilities = packet[1]
         log.debug("process_hello: capabilities=%s", capabilities)
         log.info("Handshake complete; enabling connection")
-        if capabilities.get("version_request", False):
-            capabilities = {"start_time" : int(self.start_time),
-                            "platform" : sys.platform,
-                            "version" : xpra.__version__}
-            packet = ["hello", capabilities]
+        if capabilities.get("version_request", False) or capabilities.get("info_request", False):
+            response = {"version" : xpra.__version__}
+            if capabilities.get("info_request", False):
+                response["start_time"] = int(self.start_time)
+                response["platform"] = sys.platform
+                response["windows"] = len(self._id_to_window)
+                if self._protocol:
+                    source = self._protocol.source
+                    if source and not source._closed:
+                        response["encoding"] = source._encoding
+                        response["batch_delay"] = len(source.batch.delay)
+                        response["damage_packet_queue_size"] = len(source._damage_packet_queue)
+                        response["damage_request_queue_size"] = len(source._damage_request_queue)
+                        response["damage_data_queue_size"] = len(source._damage_data_queue)
+
+            packet = ["hello", response]
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return

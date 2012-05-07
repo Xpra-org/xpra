@@ -65,6 +65,10 @@ xpra \- viewer for remote, persistent X applications
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 [\fB\-\-socket\-dir=DIR\fP]
 .HP
+\fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
+[\fB\-\-socket\-dir=DIR\fP]
+.HP
 \fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:DISPLAY\fP [...any options accepted by
@@ -180,6 +184,9 @@ Takes a screenshot and saves it to the filename specified.
 Note: screenshots can only be taken when a client is attached.
 .SS xpra version
 Queries the server version and prints it out.
+Note: older servers may not support this feature.
+.SS xpra info
+Queries the server for version, status and statistics.
 Note: older servers may not support this feature.
 .SS xpra stop
 This command attachs to a running xpra server, and requests that it
