@@ -176,7 +176,8 @@ class ClientExtras(ClientExtrasBase):
             self.has_dbusnotify = True
             log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
         except Exception, e:
-            log.error("cannot import dbus.glib notification wrapper: %s", e)
+            log("cannot import dbus.glib notification wrapper: %s", e)
+            log.error("failed to locate the dbus notification service")
         return self.has_dbusnotify
 
     def setup_pynotify(self):
