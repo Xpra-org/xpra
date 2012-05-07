@@ -38,7 +38,7 @@ SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
 X11_TEST_COMMANDS = []
 for x in [GLX_SPHERES, X11_PERF, GLX_GEARS, XTERM_TEST] + SOME_XSCREENSAVER_TESTS:
     if not os.path.exists(x[0]):
-        print("WARNING: cannot find %s - removed from tests")
+        print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
         
