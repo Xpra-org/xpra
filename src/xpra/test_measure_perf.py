@@ -210,52 +210,50 @@ def with_server(start_server_command, stop_server_command, name_cmd):
     test_command_process = None
     env = os.environ.copy()
     env["DISPLAY"] = ":%s" % DISPLAY_NO
-    try:
-        #start the server:
-        if START_SERVER:
-            print("starting server: %s" % str(start_server_command))
-            server_process = subprocess.Popen(start_server_command, stdin=None)
-            #give it time to settle down:
-            time.sleep(SERVER_SETTLE_TIME)
-            server_pid = server_process.pid
-            code = server_process.poll()
-            assert code is None, "server failed to start, return code is %s, please ensure that you can run the server command line above and that a server does not already exist on that port or DISPLAY" % code
-        else:
-            server_pid = 0
+    errors = 0
+    results = {}
+    for name, (compression, test_command, client_cmd) in name_cmd.items():
+        test_command_process = None
+        try:
+            #start the server:
+            if START_SERVER:
+                print("starting server: %s" % str(start_server_command))
+                server_process = subprocess.Popen(start_server_command, stdin=None)
+                #give it time to settle down:
+                time.sleep(SERVER_SETTLE_TIME)
+                server_pid = server_process.pid
+                code = server_process.poll()
+                assert code is None, "server failed to start, return code is %s, please ensure that you can run the server command line above and that a server does not already exist on that port or DISPLAY" % code
+            else:
+                server_pid = 0
 
-        errors = 0
-        results = {}
-        for name, (compression, test_command, client_cmd) in name_cmd.items():
-            test_command_process = None
-            try:
-                #start the test command:
-                print("starting test command: %s" % str(test_command))
-                test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-                time.sleep(TEST_COMMAND_SETTLE_TIME)
-                code = test_command_process.poll()
-                assert code is None, "test command %s failed to start" % test_command
-                results[name] = [compression]+measure_client(server_pid, name, client_cmd)
-            except Exception, e:
-                errors += 1
-                print("error during client command run for %s: %s" % (name, e))
-                import traceback
-                traceback.print_stack()
-                if errors>3:
-                    print("too many errors, aborting tests")
-                    break
-            finally:
-                print("stopping test command: %s" % test_command_process)
-                try_to_stop(test_command_process)
+            #start the test command:
+            print("starting test command: %s" % str(test_command))
+            test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            time.sleep(TEST_COMMAND_SETTLE_TIME)
+            code = test_command_process.poll()
+            assert code is None, "test command %s failed to start" % test_command
 
-    finally:
-        print("")
-        print("cleaning up")
-        if START_SERVER:
-            if stop_server_command:
-                print("stopping server with: %s" % (stop_server_command))
-                stop_process = subprocess.Popen(stop_server_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stop_process.wait()
-            try_to_stop(server_process)
+            #run the client test
+            results[name] = [compression]+measure_client(server_pid, name, client_cmd)
+        except Exception, e:
+            errors += 1
+            print("error during client command run for %s: %s" % (name, e))
+            import traceback
+            traceback.print_stack()
+            if errors>3:
+                print("too many errors, aborting tests")
+                break
+        finally:
+            print("cleaning up")
+            print("stopping test command: %s" % test_command_process)
+            try_to_stop(test_command_process)
+            if START_SERVER:
+                if stop_server_command:
+                    print("stopping server with: %s" % (stop_server_command))
+                    stop_process = subprocess.Popen(stop_server_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    stop_process.wait()
+                try_to_stop(server_process)
     return results
             
 
