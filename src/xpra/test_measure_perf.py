@@ -270,7 +270,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     return [ni, isize, no, osize, fps, pps, dps, ipc, opc]+client_process_data+server_process_data
 
 def with_server(start_server_command, stop_server_command, in_tests, get_stats_cb=None):
-    tests = in_tests[LIMIT_TESTS:]
+    tests = in_tests[-LIMIT_TESTS:]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
 
@@ -310,7 +310,7 @@ def with_server(start_server_command, stop_server_command, in_tests, get_stats_c
             errors += 1
             print("error during client command run for %s: %s" % (name, e))
             import traceback
-            traceback.print_stack()
+            traceback.print_exc()
             if errors>3:
                 print("too many errors, aborting tests")
                 break
@@ -357,13 +357,14 @@ def xpra_get_stats(last_record=None):
     last_input_packetcount = 0
     last_output_packetcount = 0
     if last_record:
-        last_input_packetcount, last_output_packetcount = last_record[-2:]
+        last_input_packetcount = last_record[-2] or 0
+        last_output_packetcount = last_record[-1] or 0
     return [
             d.get("regions_per_second", ""),
             d.get("pixels_per_second", ""),
             d.get("pixels_decoded_per_second", ""),
-            d.get("input_packetcount", 0)-last_input_packetcount,
-            d.get("output_packetcount", 0)-last_output_packetcount,
+            int(d.get("input_packetcount", 0))-last_input_packetcount,
+            int(d.get("output_packetcount", 0))-last_output_packetcount,
            ]
 
 def test_xpra():
