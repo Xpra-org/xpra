@@ -27,7 +27,7 @@ TRICKLE_SHAPING_OPTIONS = [(1000, 1000, 20), (100, 100, 40), (0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
-GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
+#GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
@@ -36,10 +36,10 @@ ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
                          "xjack", "xmatrix"]
                           ]
 SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
-                        ["rss-glx-hufo_tunnel", "eruption", "memscroller", "xmatrix"]
+                        ["rss-glx-hufo_tunnel", "memscroller"]
                           ]
 X11_TEST_COMMANDS = []
-for x in [GLX_SPHERES, X11_PERF, GLX_GEARS, XTERM_TEST] + SOME_XSCREENSAVER_TESTS:
+for x in [GLX_SPHERES, X11_PERF, XTERM_TEST] + SOME_XSCREENSAVER_TESTS:
     if not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
@@ -78,6 +78,10 @@ XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % 
 XPRA_SERVER_STOP_COMMAND = [XPRA_BIN, "stop", ":%s" % DISPLAY_NO]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+XPRA_JPEG_OPTIONS = [40, 90]
+XPRA_JPEG_OPTIONS = [40, 80, 90]
+XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
+XPRA_COMPRESSION_OPTIONS = [0, 3]
 
 
 check = [TRICKLE_BIN]
@@ -357,9 +361,9 @@ def test_xpra():
             for encoding in XPRA_TEST_ENCODINGS:
                 QUALITY = [-1]
                 if encoding=="jpeg":
-                    QUALITY = [40, 80, 90]
+                    QUALITY = XPRA_JPEG_OPTIONS
                 for jpeg_q in QUALITY:
-                    for compression in [0, 3, 9]:
+                    for compression in XPRA_COMPRESSION_OPTIONS:
                         cmd = trickle_command(down, up, latency)
                         cmd += [XPRA_BIN,
                                "attach", "tcp:%s:%s" % (IP, PORT),
