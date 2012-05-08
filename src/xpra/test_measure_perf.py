@@ -147,7 +147,7 @@ def get_cpu_info():
 XORG_VERSION = getoutput_line(["Xorg", "-version"], "X.Org X Server", "Cannot detect Xorg server version")
 print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO = get_cpu_info()
-
+PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
 
 def clean_sys_state():
     #clear the caches
@@ -193,7 +193,7 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     sys_pct = int(1000 * (new_stime - old_stime) / time_total_diff)/10.0
     nthreads = int((int(old_pid_stat[19])+int(new_pid_stat[19]))/2)
     vsize = int(max(int(old_pid_stat[22]), int(new_pid_stat[22]))/1024/1024)
-    rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))/1024)
+    rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))/1024/1024)*PAGE_SIZE
     return [user_pct, sys_pct, nthreads, vsize, rss]
 
 def getiptables_line(chain, pattern, setup_info):
@@ -380,7 +380,8 @@ def test_xpra():
                 if encoding=="jpeg":
                     QUALITY = XPRA_JPEG_OPTIONS
                 for jpeg_q in QUALITY:
-                    for compression in XPRA_COMPRESSION_OPTIONS:
+                    comp_options = XPRA_COMPRESSION_OPTIONS
+                    for compression in comp_options:
                         cmd = trickle_command(down, up, latency)
                         cmd += [XPRA_BIN,
                                "attach", "tcp:%s:%s" % (IP, PORT),
@@ -458,8 +459,8 @@ def main():
                "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in", "packets in volume", "packets out", "packets out volume",
                "Regions/s", "Pixels/s", "Decoding Pixels/s", "application packets in", "application packets out",
-               "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (KB)",
-               "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (KB)",
+               "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
+               "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
                ]
     print(", ".join(headers))
     for result in xpra_results+vnc_results:
