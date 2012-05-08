@@ -562,8 +562,9 @@ class XpraClient(XpraClientBase):
 
         self._focused = None
         def compute_receive_bandwidth(delay):
-            bw = (self._protocol._recv_counter / 1024) * 1000/ delay;
-            self._protocol._recv_counter = 0;
+            bytecount = self._protocol.input_bytecount
+            bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay;
+            self.last_input_bytecount = bytecount;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
             q = self.jpegquality
             if bw > self.max_bandwidth:
@@ -574,6 +575,7 @@ class XpraClient(XpraClientBase):
             self.send_jpeg_quality(q)
             return True
         if (self.max_bandwidth):
+            self.last_input_bytecount = 0
             gobject.timeout_add(2000, compute_receive_bandwidth, 2000);
 
     def init_packet_handlers(self):

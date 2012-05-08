@@ -1450,6 +1450,11 @@ class XpraServer(gobject.GObject):
         info["damage_packet_queue_size"] = source._damage_packet_queue.qsize()
         info["damage_request_queue_size"] = source._damage_request_queue.qsize()
         info["damage_data_queue_size"] = source._damage_data_queue.qsize()
+        info["input_bytecount"] = self._protocol.input_bytecount
+        info["input_packetcount"] = self._protocol.input_packetcount
+        info["output_bytecount"] = self._protocol.output_bytecount
+        info["output_packetcount"] = self._protocol.output_packetcount
+
         #client pixels per second:
         now = time.time()
         time_limit = now-30             #ignore old records (30s)

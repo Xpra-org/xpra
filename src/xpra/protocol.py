@@ -107,10 +107,14 @@ class Protocol(object):
         # Invariant: if .source is None, then _source_has_more == False
         self.source = None
         self._source_has_more = False
+        #counters:
+        self.input_bytecount = 0
+        self.input_packetcount = 0
+        self.output_bytecount = 0
+        self.output_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
         self.raw_packets = False
-        self._recv_counter = 0
         self._closed = False
         self._compressor = None
         self._decompressor = zlib.decompressobj()
@@ -284,7 +288,10 @@ class Protocol(object):
                 try:
                     while buf and not self._closed:
                         written = untilConcludes(self._conn.write, buf)
-                        buf = buf[written:]
+                        if written:
+                            buf = buf[written:]
+                            self.output_packetcount += 1
+                            self.output_bytecount += written
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
@@ -309,7 +316,8 @@ class Protocol(object):
                     assert self._closed
                     return
                 log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-                self._recv_counter += len(buf)
+                self.input_packetcount += 1
+                self.input_bytecount += len(buf)
                 self._read_queue.put(buf)
                 if not buf:
                     log("read thread: eof")
