@@ -341,7 +341,7 @@ class ServerSource(object):
         if decode_time_list:
             total_pixels = 0
             total_time = 0
-            for pixels, decode_time in decode_time_list:
+            for _, pixels, decode_time in decode_time_list:
                 total_pixels += pixels
                 total_time += decode_time
             if total_time>0:
@@ -1436,25 +1436,108 @@ class XpraServer(gobject.GObject):
         sys.stdout.flush()
         return True
 
+    def get_info(self):
+        info = {"version" : xpra.__version__}
+        info["start_time"] = int(self.start_time)
+        info["platform"] = sys.platform
+        info["windows"] = len(self._id_to_window)
+        if self._protocol is None or self._protocol.source is None or self._protocol.source._closed:
+            return  info
+        self.send_ping()
+        source = self._protocol.source
+        info["encoding"] = source._encoding
+        info["batch_delay"] = source.batch.delay
+        info["damage_packet_queue_size"] = source._damage_packet_queue.qsize()
+        info["damage_request_queue_size"] = source._damage_request_queue.qsize()
+        info["damage_data_queue_size"] = source._damage_data_queue.qsize()
+        #client pixels per second:
+        now = time.time()
+        time_limit = now-30             #ignore old records (30s)
+        #pixels per second: decode time and overall
+        total_pixels = 0                #total number of pixels processed
+        total_time = 0                  #total decoding time
+        latest_start_time = 0           #the highest time any of the queues starts from
+        for wid in self._id_to_window.keys():
+            decode_time_list = source.client_decode_time.get(wid)
+            if not decode_time_list:
+                continue
+            window_pixels = 0           #pixel count
+            window_time = 0             #decoding time
+            window_start_time = 0
+            for when, pixels, decode_time in decode_time_list:
+                if when<time_limit:
+                    continue
+                if window_start_time==0:
+                    window_start_time = when
+                    latest_start_time = max(latest_start_time, when)
+                log.info("pixels=%s in %s", pixels, decode_time)
+                window_pixels += pixels
+                window_time += decode_time
+            log.info("wid=%s, window_time=%s, window_pixels=%s", wid, window_time, window_pixels)
+            log.info("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
+            total_time += window_time
+            total_pixels += window_pixels
+        log.info("total_time=%s, total_pixels=%s", total_time, total_pixels)
+        if total_time>0:
+            pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
+            info["pixels_decoded_per_second"] = pixels_decoded_per_second
+            log.info("pixels_decoded_per_second=%s", pixels_decoded_per_second)
+
+        if window_start_time:
+            elapsed = now-window_start_time
+            #count all pixels newer than this time
+            total_pixels = 0
+            for wid in self._id_to_window.keys():
+                decode_time_list = source.client_decode_time.get(wid)
+                if not decode_time_list:
+                    continue
+                for when, pixels, _ in decode_time_list:
+                    if when>=window_start_time:
+                        total_pixels += pixels
+            pixels_per_second = int(total_pixels/elapsed)
+            info["pixels_per_second"] = pixels_per_second
+            log.info("pixels_per_second=%s", pixels_per_second)
+            
+        #damage regions per second:
+        total_pixels = 0            #pixels processed
+        regions_count = 0           #weighted value: sum of (regions count * number of pixels / elapsed time)
+        for wid in self._id_to_window.keys():
+            last_events = source._damage_last_events.get(wid)
+            if not last_events:
+                continue
+            start_when = 0
+            window_regions = 0      #regions for this window
+            window_pixels = 0       #pixel count
+            for when, pixels in last_events:
+                if when<time_limit:
+                    continue
+                window_regions += 1
+                if start_when==0:
+                    start_when = when
+                log.info("wid=%s, pixels=%s", wid, pixels)
+                window_pixels += pixels
+                total_pixels += pixels
+            log.info("wid=%s, window_pixels=%s", wid, window_pixels)
+            if start_when>0:
+                log.info("wid=%s, window_pixels=%s, regions=%s, elapsed=%s", wid, window_pixels, window_regions, now-start_when)
+                log.info("wid=%s, regions_per_second=%s", wid, (window_regions/(now-start_when)))
+                regions_count += window_pixels*window_regions/(now-start_when)
+        log.info("regions_count=%s, total_pixels=%s", regions_count, total_pixels)
+        if regions_count:
+            regions_per_second = int(regions_count/total_pixels)
+            info["regions_per_second"] = regions_per_second
+            log.info("regions_per_second=%s", regions_per_second)
+        return info
+
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         log.debug("process_hello: capabilities=%s", capabilities)
         log.info("Handshake complete; enabling connection")
         if capabilities.get("version_request", False) or capabilities.get("info_request", False):
-            response = {"version" : xpra.__version__}
             if capabilities.get("info_request", False):
-                response["start_time"] = int(self.start_time)
-                response["platform"] = sys.platform
-                response["windows"] = len(self._id_to_window)
-                if self._protocol:
-                    source = self._protocol.source
-                    if source and not source._closed:
-                        response["encoding"] = source._encoding
-                        response["batch_delay"] = len(source.batch.delay)
-                        response["damage_packet_queue_size"] = len(source._damage_packet_queue)
-                        response["damage_request_queue_size"] = len(source._damage_request_queue)
-                        response["damage_data_queue_size"] = len(source._damage_data_queue)
-
+                response = self.get_info()
+            else:
+                response = {"version" : xpra.__version__}
             packet = ["hello", response]
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
@@ -1977,7 +2060,7 @@ class XpraServer(gobject.GObject):
             wid, width, height, decode_time = packet[2:6]
             log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
             client_decode_list = self._server_source.client_decode_time.setdefault(wid, maxdeque(maxlen=20))
-            client_decode_list.append((width*height, decode_time))
+            client_decode_list.append((time.time(), width*height, decode_time))
         self._server_source.last_client_packet_sequence = packet_sequence
 
     def _process_buffer_refresh(self, proto, packet):
