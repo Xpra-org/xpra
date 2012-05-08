@@ -94,6 +94,10 @@ def untilConcludes(f, *a, **kw):
                 continue
             raise
 
+class RGB24(object):
+    def __init__(self, pixels):
+        self.pixels = pixels
+
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
@@ -226,6 +230,11 @@ class Protocol(object):
                         item = item.encode("latin1")
                     packets.append((i, False, item))
                     #replace this item with an empty string placeholder:
+                    packet[i] = ''
+                elif type(item)==RGB24:
+                    #this is binary, but we *DO* want to compress it since it isn't compressed already!
+                    log("unwrapping %s bytes of rgb24 data", len(item.pixels))
+                    packets.append((i, True, item.pixels))
                     packet[i] = ''
         #now the main packet (or what is left of it):
         try:

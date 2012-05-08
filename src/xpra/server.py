@@ -68,7 +68,7 @@ log = Logger()
 
 import xpra
 from xpra.deque import maxdeque
-from xpra.protocol import Protocol, SocketConnection, dump_packet
+from xpra.protocol import Protocol, SocketConnection, dump_packet, RGB24
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
@@ -187,22 +187,15 @@ class DamageBatchConfig(object):
     Encapsulate all the damage batching configuration into one object.
     """
     ENABLED = True
-    MAX_EVENTS = 80                     #maximum number of damage events
-    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
-    AVG_DELAY = 100                     #how long to batch updates for (in millis)
     MAX_DELAY = 15000
     def ___init___(self):
         self.enabled = self.ENABLED
         self.always = False
-        self.max_events = self.MAX_EVENTS
-        self.max_pixels = self.MAX_PIXELS
-        self.time_unit = self.TIME_UNIT
         self.min_delay = self.MIN_DELAY
-        self.avg_delay = self.AVG_DELAY
         self.max_delay = self.MAX_DELAY
-        self.delay = self.avg_delay
+        self.delay = self.MIN_DELAY
 
 class ServerSource(object):
     """
@@ -232,7 +225,7 @@ class ServerSource(object):
         protocol.source = self
         self._damage_request_queue = Queue()
         self._damage_data_queue = Queue()
-        self._damage_packet_queue = Queue(2)
+        self._damage_packet_queue = Queue(9)
 
         self._closed = False
         self._on_close = []
@@ -320,7 +313,7 @@ class ServerSource(object):
 
         #record this damage event in the damage_last_events queue:
         now = time.time()
-        last_events = self._damage_last_events.setdefault(wid, maxdeque(maxlen=self.batch.max_events))
+        last_events = self._damage_last_events.setdefault(wid, maxdeque(100))
         last_events.append((now, w*h))
 
         if options and options.get("batching", True) is False:
@@ -335,74 +328,41 @@ class ServerSource(object):
 
         def update_batch_delay(reason, factor=1, delta=0):
             self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
-            log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
-
-        client_pixels_per_second = None
-        decode_time_list = self.client_decode_time.get(wid)
-        if decode_time_list:
-            total_pixels = 0
-            total_time = 0
-            for _, pixels, decode_time in decode_time_list:
-                total_pixels += pixels
-                total_time += decode_time
-            if total_time>0:
-                client_pixels_per_second = int(total_pixels *1000*1000 / total_time)
-                log("client is processing window %s at %s pixels/s", wid, client_pixels_per_second)
+            log.info("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
 
         last_delta = self.last_client_delta
         delta = self._damage_packet_sequence-self.last_client_packet_sequence
         self.last_client_delta = delta
         if self._damage_packet_queue.full():
             update_batch_delay("damage packet queue is full", 1+sqrt(self.batch.delay)/10)
-        elif self._damage_request_queue.qsize()>3:
+        elif self._damage_request_queue.qsize()>8:
             update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), 0.8+logp2(self._damage_request_queue.qsize()))
-        elif self._damage_data_queue.qsize()>3:
+        elif self._damage_data_queue.qsize()>8:
             update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), 0.8+logp2(self._damage_data_queue.qsize()))
-        elif self.last_client_packet_sequence>=0 and (delta>5 or (last_delta<delta and delta>=3)):
+        elif last_delta>0:
             #figure out how many pixels behind it is rather than just the number of packets
             unprocessed = list(self._damage_packet_sizes)[-delta:]
+            last_unprocessed = list(self._damage_packet_sizes)[-last_delta:]
             pixels_behind = sum(unprocessed)
+            last_pixels_behind = sum(last_unprocessed)
             low_limit, high_limit = 8*1024, 32*1024
             if self._mmap and self._mmap_size>0:
                 low_limit, high_limit = 1024*1024, 8*1024*1024
-            log("client %s packets behind, %s : %s pixels, low=%s, high=%s", delta, unprocessed, pixels_behind, low_limit, high_limit)
-            if pixels_behind<low_limit:
-                update_batch_delay("client only %s pixels behind" % pixels_behind, 0.8)
-            elif pixels_behind>high_limit:
-                update_batch_delay("client %s pixels behind" % pixels_behind, 1.4)
+            log.info("client %s packets behind, %s pixels (previously %s, %s pixels), low=%s, high=%s", delta, pixels_behind, last_delta, last_pixels_behind, low_limit, high_limit)
+            if pixels_behind<=last_pixels_behind:
+                #things are getting better:
+                update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10*pixels_behind/last_pixels_behind/2)/10.0)
             else:
-                if delta<5:
-                    update_batch_delay("client %s damage packets behind" % delta, 1.4)
-                elif delta>10 or last_delta<delta:
-                    update_batch_delay("client %s damage packets behind" % delta, logp2(delta))
+                #things are getting worse:
+                if pixels_behind<=low_limit:
+                    update_batch_delay("client is only %s pixels behind" % pixels_behind, 1.0, -2)
+                elif pixels_behind>=high_limit:
+                    update_batch_delay("client is %s pixels behind!" % pixels_behind, 1.0 + logp2(high_limit/pixels_behind))
                 else:
-                    update_batch_delay("client %s damage packets behind" % delta, 1.2)
-        else:
-            #if batch delay had been increased, reduce it:
-            if self.batch.delay>self.batch.min_delay and (self.last_client_packet_sequence<0 or delta<=2):
-                if last_delta<delta:
-                    pass
-                elif self.last_client_packet_sequence<0:
-                    update_batch_delay("no feedback... guessing", 0.8)
-                elif self.batch.delay>self.batch.avg_delay:
-                    update_batch_delay("client up to date - above average delay, delta=%s, last_delta=%s" % (delta, last_delta), 0.7+(delta*0.1))
-                else:
-                    update_batch_delay("client up to date, delta=%s, last_delta=%s" % (delta, last_delta), 1.0, 3-delta)
-            elif not self.batch.always:
-                pixel_count = 0
-                for last_time,pixels in last_events:
-                    pixel_count += pixels
-                    if pixel_count>=self.batch.max_pixels:
-                        break
-                if pixel_count>=self.batch.max_pixels:
-                    log("damage(%s, %s, %s, %s, %s) pixel storm: %s pixels in %s, batching", wid, x, y, w, h, pixel_count, (now-last_time))
-                else:
-                    if len(last_events)<self.batch.max_events:
-                        return damage_now("recent event list is too small, not batching")
-                    when,_ = last_events[0]
-                    if now-when>self.batch.time_unit:
-                        return damage_now("%s damage events took %s seconds, not batching" % (self.batch.max_events, (now-when)))
-                    log("damage(%s, %s, %s, %s, %s) fast damage events: %s events in %s seconds, batching", wid, x, y, w, h, self.batch.max_events, (now-when))
+                    update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(2.0, logp2(pixels_behind/last_pixels_behind)))
+
+        if not self.batch.always and self.batch.delay<=self.batch.min_delay:
+            return damage_now("delay is at the minimum threshold")
 
         #create a new delayed region:
         region = gtk.gdk.Region()
@@ -559,6 +519,8 @@ class ServerSource(object):
             data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
         else:
             assert coding in ["rgb24", "mmap"]
+            if coding=="rgb24":
+                data = RGB24(data)
 
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
@@ -1627,13 +1589,9 @@ class XpraServer(gobject.GObject):
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
         batch_config.always = bool(capabilities.get("batch.always", False))
-        batch_config.max_events = min(1000, max(1, capabilities.get("batch.max_events", DamageBatchConfig.MAX_EVENTS)))
-        batch_config.max_pixels = min(2048*2048*60, max(1, capabilities.get("batch.max_pixels", DamageBatchConfig.MAX_PIXELS)))
-        batch_config.time_unit = min(60, max(1, capabilities.get("batch.time_unit", DamageBatchConfig.TIME_UNIT)))
         batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
-        batch_config.avg_delay = min(1000, max(1, capabilities.get("batch.avg_delay", DamageBatchConfig.AVG_DELAY)))
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
-        batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.avg_delay)))
+        batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.min_delay)))
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
