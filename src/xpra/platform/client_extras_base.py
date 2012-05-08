@@ -399,7 +399,7 @@ class ClientExtrasBase(object):
                     avg20,fps20,mins,avgs,maxs = p20
                     p1 = average(1)
                     if p1:
-                        avg1,fps1 = average(1)[:2]
+                        avg1,fps1 = p1[:2]
                     else:
                         avg1,fps1 = -1, -1
                     pixels = "%s  (%s)" % (pixelstr(avg1), pixelstr(avg20))
