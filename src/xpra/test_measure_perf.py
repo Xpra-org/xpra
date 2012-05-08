@@ -23,6 +23,9 @@ START_SERVER = True         #if False, you are responsible for starting it
 TEST_XPRA = True
 TEST_VNC = True
 
+LIMIT_TESTS = 99999
+LIMIT_TESTS = 2
+
 TRICKLE_SHAPING_OPTIONS = [(1000, 1000, 20), (100, 100, 40), (0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
@@ -48,7 +51,7 @@ for x in [GLX_SPHERES, X11_PERF, XTERM_TEST] + SOME_XSCREENSAVER_TESTS:
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 20           #run for N seconds
+MEASURE_TIME = 40           #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
@@ -219,7 +222,7 @@ def get_output_count():
     setup = "iptables -I OUTPUT -p tcp --sport %s -j ACCEPT" % PORT
     return  parse_ipt("OUTPUT", "tcp spt:%s" % PORT, setup)
 
-def measure_client(server_pid, name, cmd, get_fps_cb=None):
+def measure_client(server_pid, name, cmd, get_stats_cb=None):
     print("")
     print("starting %s: %s" % (name, cmd))
     client_process = subprocess.Popen(cmd)
@@ -228,6 +231,8 @@ def measure_client(server_pid, name, cmd, get_fps_cb=None):
     code = client_process.poll()
     assert code is None, "client failed to start, return code is %s" % code
     #clear counters
+    if get_stats_cb:
+        initial_stats = get_stats_cb()
     zero_iptables()
     old_time_total = update_proc_stat()
     old_pid_stat = update_pidstat(client_process.pid)
@@ -244,11 +249,11 @@ def measure_client(server_pid, name, cmd, get_fps_cb=None):
         new_server_pid_stat = update_pidstat(server_pid)
     ni,isize = get_input_count()
     no,osize = get_output_count()
-    fps, pps, dps = "", "", ""
-    if get_fps_cb:
-        v = get_fps_cb()
+    fps, pps, dps, ipc, opc = "", "", "", "", ""
+    if get_stats_cb and initial_stats:
+        v = get_stats_cb(initial_stats)
         if v:
-            fps, pps, dps = v
+            fps, pps, dps, ipc, opc  = v
     #stop the process
     try_to_stop(client_process)
     time.sleep(1)
@@ -262,9 +267,10 @@ def measure_client(server_pid, name, cmd, get_fps_cb=None):
         server_process_data = []
     print("process_data (client/server): %s / %s" % (client_process_data, server_process_data))
     print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
-    return [ni, isize, no, osize, fps, pps, dps]+client_process_data+server_process_data
+    return [ni, isize, no, osize, fps, pps, dps, ipc, opc]+client_process_data+server_process_data
 
-def with_server(start_server_command, stop_server_command, tests, get_fps_cb=None):
+def with_server(start_server_command, stop_server_command, in_tests, get_stats_cb=None):
+    tests = in_tests[LIMIT_TESTS:]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
 
@@ -274,7 +280,7 @@ def with_server(start_server_command, stop_server_command, tests, get_fps_cb=Non
     env["DISPLAY"] = ":%s" % DISPLAY_NO
     errors = 0
     results = []
-    for name, compression, (down,up,latency), test_command, client_cmd in tests:
+    for name, tech_name, encoding, compression, (down,up,latency), test_command, client_cmd in tests:
         test_command_process = None
         try:
             clean_sys_state()
@@ -298,7 +304,7 @@ def with_server(start_server_command, stop_server_command, tests, get_fps_cb=Non
             assert code is None, "test command %s failed to start" % test_command
 
             #run the client test
-            result = [name, CPU_INFO, XORG_VERSION, compression, down, up, latency]+measure_client(server_pid, name, client_cmd, get_fps_cb)
+            result = [name, tech_name, encoding, MEASURE_TIME, CPU_INFO, XORG_VERSION, compression, down, up, latency]+measure_client(server_pid, name, client_cmd, get_stats_cb)
             results.append(result)
         except Exception, e:
             errors += 1
@@ -339,7 +345,7 @@ def trickle_str(down, up, latency):
     s = "/".join(str(x) for x in [down,up,latency])
     return "throttled:%s" % s
 
-def xpra_get_fps():
+def xpra_get_stats(last_record=None):
     out = getoutput(XPRA_INFO_COMMAND)
     if not out:
         return  None
@@ -348,7 +354,17 @@ def xpra_get_fps():
         parts = line.split("=")
         if len(parts)==2:
             d[parts[0]] = parts[1]
-    return d.get("regions_per_second", ""), d.get("pixels_per_second", ""), d.get("pixels_decoded_per_second", "")
+    last_input_packetcount = 0
+    last_output_packetcount = 0
+    if last_record:
+        last_input_packetcount, last_output_packetcount = last_record[-2:]
+    return [
+            d.get("regions_per_second", ""),
+            d.get("pixels_per_second", ""),
+            d.get("pixels_decoded_per_second", ""),
+            d.get("input_packetcount", 0)-last_input_packetcount,
+            d.get("output_packetcount", 0)-last_output_packetcount,
+           ]
 
 def test_xpra():
     print("")
@@ -377,8 +393,9 @@ def test_xpra():
                             cmd.append("--no-mmap")
                             cmd.append("--encoding=%s" % encoding)
                         command_name = x11_test_command[0].split("/")[-1]
-                        tests.append(("%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency)), compression, (down,up,latency), x11_test_command, cmd))
-    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, tests, xpra_get_fps)
+                        test_name = "%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency))
+                        tests.append((test_name, "xpra", encoding, compression, (down,up,latency), x11_test_command, cmd))
+    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, tests, xpra_get_stats)
 
 def test_vnc():
     print("")
@@ -419,8 +436,8 @@ def test_vnc():
                             else:
                                 zlibtxt = "zlib=%s" % zlib
                             command_name = x11_test_command[0].split("/")[-1]
-                            name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
-                            tests.append((name, compression, (down,up,latency), x11_test_command, cmd))
+                            test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
+                            tests.append((test_name, "vnc", encoding, compression, (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMAND, tests, None)
 
 def main():
@@ -436,9 +453,10 @@ def main():
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["Test Name", "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+    headers = ["Test Name", "Remoting Tech", "Encoding", "Sample Duration",
+               "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in", "packets in volume", "packets out", "packets out volume",
-               "Regions/s", "Pixels/s", "Decoding Pixels/s",
+               "Regions/s", "Pixels/s", "Decoding Pixels/s", "application packets in", "application packets out",
                "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (KB)",
                "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (KB)",
                ]

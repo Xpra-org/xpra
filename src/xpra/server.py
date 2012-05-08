@@ -1490,8 +1490,8 @@ class XpraServer(gobject.GObject):
             info["pixels_decoded_per_second"] = pixels_decoded_per_second
             log("pixels_decoded_per_second=%s", pixels_decoded_per_second)
 
-        if window_start_time:
-            elapsed = now-window_start_time
+        if latest_start_time:
+            elapsed = now-latest_start_time
             #count all pixels newer than this time
             total_pixels = 0
             for wid in self._id_to_window.keys():
@@ -1499,7 +1499,7 @@ class XpraServer(gobject.GObject):
                 if not decode_time_list:
                     continue
                 for when, pixels, _ in decode_time_list:
-                    if when>=window_start_time:
+                    if when>=latest_start_time:
                         total_pixels += pixels
             pixels_per_second = int(total_pixels/elapsed)
             info["pixels_per_second"] = pixels_per_second
