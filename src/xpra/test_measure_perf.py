@@ -23,6 +23,9 @@ START_SERVER = True         #if False, you are responsible for starting it
 TEST_XPRA = True
 TEST_VNC = True
 
+TRICKLE_SHAPING_OPTIONS = [(1000, 1000, 20), (100, 100, 40), (0, 0, 0)]
+
+TRICKLE_BIN = "/usr/bin/trickle"
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
@@ -41,13 +44,13 @@ for x in [GLX_SPHERES, X11_PERF, GLX_GEARS, XTERM_TEST] + SOME_XSCREENSAVER_TEST
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
-        
+
 
 #but these should be ok:
-SETTLE_TIME = 5             #how long to wait before we start measuring
+SETTLE_TIME = 3             #how long to wait before we start measuring
 MEASURE_TIME = 20           #run for N seconds
-SERVER_SETTLE_TIME = 5      #how long we wait for the server to start
-TEST_COMMAND_SETTLE_TIME = 5    #how long we wait after starting the test command
+SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
+TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
 XVNC_BIN = "/usr/bin/Xvnc"
 XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
@@ -73,9 +76,19 @@ XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % 
                        "start", ":%s" % DISPLAY_NO,
                        "--xvfb=Xorg -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_LOG, XORG_CONFIG)]
 XPRA_SERVER_STOP_COMMAND = [XPRA_BIN, "stop", ":%s" % DISPLAY_NO]
+XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 
 
+check = [TRICKLE_BIN]
+if TEST_XPRA:
+    check.append(XPRA_BIN)
+if TEST_VNC:
+    check.append(XVNC_BIN)
+    check.append(VNCVIEWER_BIN)
+for x in check:
+    if not os.path.exists(x):
+        raise Exception("cannot run tests: %s is missing!" % x)
 
 def try_to_stop(process):
     if not process:
@@ -116,8 +129,11 @@ def get_cpu_info():
     for x in lines[1:]:
         if x!=cpu0:
             return " - ".join(lines)
-    cpu_name = cpu0.split(":")[1].replace("Processor", "").strip()
-    cpu_info = "%sx %s" % (len(lines), cpu_name)
+    cpu_name = cpu0.split(":")[1]
+    for o,r in [("Processor", ""), ("(R)", ""), ("(TM)", ""), ("(tm)", ""), ("  ", " ")]:
+        while cpu_name.find(o)>=0:
+            cpu_name = cpu_name.replace(o, r)
+    cpu_info = "%sx %s" % (len(lines), cpu_name.strip())
     print("CPU_INFO=%s" % cpu_info)
     return  cpu_info
 
@@ -199,7 +215,7 @@ def get_output_count():
     setup = "iptables -I OUTPUT -p tcp --sport %s -j ACCEPT" % PORT
     return  parse_ipt("OUTPUT", "tcp spt:%s" % PORT, setup)
 
-def measure_client(server_pid, name, cmd):
+def measure_client(server_pid, name, cmd, get_fps_cb=None):
     print("")
     print("starting %s: %s" % (name, cmd))
     client_process = subprocess.Popen(cmd)
@@ -216,7 +232,7 @@ def measure_client(server_pid, name, cmd):
     #we start measuring
     time.sleep(MEASURE_TIME)
     code = client_process.poll()
-    assert code is None, "client crashed, return code is %s" % code    
+    assert code is None, "client crashed, return code is %s" % code
     #stop the counters
     new_time_total = update_proc_stat()
     new_pid_stat = update_pidstat(client_process.pid)
@@ -224,11 +240,16 @@ def measure_client(server_pid, name, cmd):
         new_server_pid_stat = update_pidstat(server_pid)
     ni,isize = get_input_count()
     no,osize = get_output_count()
+    fps, pps, dps = "", "", ""
+    if get_fps_cb:
+        v = get_fps_cb()
+        if v:
+            fps, pps, dps = v
     #stop the process
     try_to_stop(client_process)
     time.sleep(1)
     code = client_process.poll()
-    assert code is not None, "failed to stop client!"    
+    assert code is not None, "failed to stop client!"
     #now collect the data
     client_process_data = compute_stat(new_time_total-old_time_total, old_pid_stat, new_pid_stat)
     if server_pid>0:
@@ -237,16 +258,19 @@ def measure_client(server_pid, name, cmd):
         server_process_data = []
     print("process_data (client/server): %s / %s" % (client_process_data, server_process_data))
     print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
-    return [ni, isize, no, osize]+client_process_data+server_process_data
+    return [ni, isize, no, osize, fps, pps, dps]+client_process_data+server_process_data
 
-def with_server(start_server_command, stop_server_command, name_cmd):
+def with_server(start_server_command, stop_server_command, tests, get_fps_cb=None):
+    print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
+    print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
+
     server_process = None
     test_command_process = None
     env = os.environ.copy()
     env["DISPLAY"] = ":%s" % DISPLAY_NO
     errors = 0
-    results = {}
-    for name, (compression, test_command, client_cmd) in name_cmd.items():
+    results = []
+    for name, compression, (down,up,latency), test_command, client_cmd in tests:
         test_command_process = None
         try:
             clean_sys_state()
@@ -270,7 +294,8 @@ def with_server(start_server_command, stop_server_command, name_cmd):
             assert code is None, "test command %s failed to start" % test_command
 
             #run the client test
-            results[name] = [CPU_INFO, XORG_VERSION, compression]+measure_client(server_pid, name, client_cmd)
+            result = [name, CPU_INFO, XORG_VERSION, compression, down, up, latency]+measure_client(server_pid, name, client_cmd, get_fps_cb)
+            results.append(result)
         except Exception, e:
             errors += 1
             print("error during client command run for %s: %s" % (name, e))
@@ -290,101 +315,132 @@ def with_server(start_server_command, stop_server_command, name_cmd):
                     stop_process.wait()
                 try_to_stop(server_process)
     return results
-            
+
+
+def trickle_command(down, up, latency):
+    if down<=0 and up<=0 and latency<=0:
+        return  []
+    cmd = [TRICKLE_BIN, "-s"]
+    if down>0:
+        cmd += ["-d", str(down)]
+    if up>0:
+        cmd += ["-u", str(up)]
+    if latency>0:
+        cmd += ["-L", str(latency)]
+    return cmd
+
+def trickle_str(down, up, latency):
+    if down<=0 and up<=0 and latency<=0:
+        return  "unthrottled"
+    s = "/".join(str(x) for x in [down,up,latency])
+    return "throttled:%s" % s
+
+def xpra_get_fps():
+    out = getoutput(XPRA_INFO_COMMAND)
+    if not out:
+        return  None
+    d = {}
+    for line in out.splitlines():
+        parts = line.split("=")
+        if len(parts)==2:
+            d[parts[0]] = parts[1]
+    return d.get("regions_per_second", ""), d.get("pixels_per_second", ""), d.get("pixels_decoded_per_second", "")
 
 def test_xpra():
     print("")
     print("*********************************************************")
     print("                Xpra tests")
     print("")
-    name_cmd = {}
-    for x11_test_command in X11_TEST_COMMANDS:
-        for encoding in XPRA_TEST_ENCODINGS:
-            QUALITY = [-1]
-            if encoding=="jpeg":
-                QUALITY = [40, 80, 90]
-            for jpeg_q in QUALITY:
-                for compression in [0, 3, 9]:
-                    cmd = [XPRA_BIN,
-                           "attach", "tcp:%s:%s" % (IP, PORT),
-                           "-z", str(compression), "--readonly"]
-                    if encoding=="jpeg":
-                        cmd.append("--jpeg-quality=%s" % jpeg_q)
-                        name = "%s-%s" % (encoding, jpeg_q)
-                    else:
-                        name = encoding
-                    if encoding!="mmap":
-                        cmd.append("--no-mmap")
-                        cmd.append("--encoding=%s" % encoding)
-                    command_name = x11_test_command[0].split("/")[-1]
-                    name_cmd["%s (%s - %s)" % (name, command_name, compression)] = (compression, x11_test_command, cmd)
-    print("going to run %s tests: %s" % (len(name_cmd), name_cmd.keys()))
-    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, name_cmd)
+    tests = []
+    for down,up,latency in TRICKLE_SHAPING_OPTIONS:
+        for x11_test_command in X11_TEST_COMMANDS:
+            for encoding in XPRA_TEST_ENCODINGS:
+                QUALITY = [-1]
+                if encoding=="jpeg":
+                    QUALITY = [40, 80, 90]
+                for jpeg_q in QUALITY:
+                    for compression in [0, 3, 9]:
+                        cmd = trickle_command(down, up, latency)
+                        cmd += [XPRA_BIN,
+                               "attach", "tcp:%s:%s" % (IP, PORT),
+                               "-z", str(compression), "--readonly"]
+                        if encoding=="jpeg":
+                            cmd.append("--jpeg-quality=%s" % jpeg_q)
+                            name = "%s-%s" % (encoding, jpeg_q)
+                        else:
+                            name = encoding
+                        if encoding!="mmap":
+                            cmd.append("--no-mmap")
+                            cmd.append("--encoding=%s" % encoding)
+                        command_name = x11_test_command[0].split("/")[-1]
+                        tests.append(("%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency)), compression, (down,up,latency), x11_test_command, cmd))
+    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, tests, xpra_get_fps)
 
 def test_vnc():
     print("")
     print("*********************************************************")
     print("                VNC tests")
     print("")
-    name_cmd = {}
-    for x11_test_command in X11_TEST_COMMANDS:
-        for encoding in VNC_ENCODINGS:
-            for zlib in VNC_ZLIB_OPTIONS:
-                for compression in VNC_COMPRESSION_OPTIONS:
-                    jpeg_quality = [8]
-                    if encoding=="Tight":
-                        jpeg_quality = VNC_JPEG_OPTIONS
-                    for jpegq in jpeg_quality:
-                        cmd = [VNCVIEWER_BIN, "%s::%s" % (IP, PORT),
-                               "--ViewOnly",
-                               "--ZlibLevel=%s" % str(zlib),
-                               "--CompressLevel=%s" % str(compression),
-                               ]
-                        if encoding=="auto":
-                            cmd.append("--AutoSelect=1")
-                        else:
-                            cmd.append("--AutoSelect=0")
-                            cmd.append("--PreferredEncoding=%s" % encoding)
-                        if jpegq<0:
-                            cmd.append("--NoJPEG=1")
-                            jpegtxt = "nojpeg"
-                        else:
-                            cmd.append("--NoJPEG=0")
-                            cmd.append("--QualityLevel=%s" % jpegq)
-                            jpegtxt = "jpeg=%s" % jpegq
-                        #make a descriptive title:
-                        if zlib==-1:
-                            zlibtxt = "nozlib"
-                        else:
-                            zlibtxt = "zlib=%s" % zlib
-                        command_name = x11_test_command[0].split("/")[-1]
-                        name = "vnc (%s - %s - %s - compression=%s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt)
-                        name_cmd[name] = (compression, x11_test_command, cmd)
-    print("going to run %s tests: %s" % (len(name_cmd), name_cmd.keys()))
-    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMAND, name_cmd)
+    tests = []
+    for down,up,latency in TRICKLE_SHAPING_OPTIONS:
+        for x11_test_command in X11_TEST_COMMANDS:
+            for encoding in VNC_ENCODINGS:
+                for zlib in VNC_ZLIB_OPTIONS:
+                    for compression in VNC_COMPRESSION_OPTIONS:
+                        jpeg_quality = [8]
+                        if encoding=="Tight":
+                            jpeg_quality = VNC_JPEG_OPTIONS
+                        for jpegq in jpeg_quality:
+                            cmd = trickle_command(down, up, latency)
+                            cmd += [VNCVIEWER_BIN, "%s::%s" % (IP, PORT),
+                                   "--ViewOnly",
+                                   "--ZlibLevel=%s" % str(zlib),
+                                   "--CompressLevel=%s" % str(compression),
+                                   ]
+                            if encoding=="auto":
+                                cmd.append("--AutoSelect=1")
+                            else:
+                                cmd.append("--AutoSelect=0")
+                                cmd.append("--PreferredEncoding=%s" % encoding)
+                            if jpegq<0:
+                                cmd.append("--NoJPEG=1")
+                                jpegtxt = "nojpeg"
+                            else:
+                                cmd.append("--NoJPEG=0")
+                                cmd.append("--QualityLevel=%s" % jpegq)
+                                jpegtxt = "jpeg=%s" % jpegq
+                            #make a descriptive title:
+                            if zlib==-1:
+                                zlibtxt = "nozlib"
+                            else:
+                                zlibtxt = "zlib=%s" % zlib
+                            command_name = x11_test_command[0].split("/")[-1]
+                            name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
+                            tests.append((name, compression, (down,up,latency), x11_test_command, cmd))
+    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMAND, tests, None)
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
     get_input_count()
     get_output_count()
 
-    xpra_results = {}
+    xpra_results = []
     if TEST_XPRA:
         xpra_results = test_xpra()
-    vnc_results = {}
+    vnc_results = []
     if TEST_VNC:
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["CPU info", "Xorg version", "compression",
+    headers = ["Test Name", "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in", "packets in volume", "packets out", "packets out volume",
+               "Regions/s", "Pixels/s", "Decoding Pixels/s",
                "client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (KB)",
                "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (KB)",
                ]
-    print("encoding (compression): %s" % (", ".join(headers)))
-    for name, data in xpra_results.items()+vnc_results.items():
-        print "%s: %s" % (name, data)
-    #self.client.send_ping()
+    print(", ".join(headers))
+    for result in xpra_results+vnc_results:
+        print ", ".join([str(x) for x in result])
 
 if __name__ == "__main__":
     main()
