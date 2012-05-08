@@ -110,8 +110,10 @@ class Protocol(object):
         #counters:
         self.input_bytecount = 0
         self.input_packetcount = 0
+        self.input_raw_packetcount = 0
         self.output_bytecount = 0
         self.output_packetcount = 0
+        self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
         self.raw_packets = False
@@ -275,6 +277,7 @@ class Protocol(object):
                         self._compressor = zlib.compressobj(level)
                     else:
                         self._compressor = None
+            self.output_packetcount += 1
             self._write_lock.release()
 
     def _write_thread_loop(self):
@@ -290,7 +293,7 @@ class Protocol(object):
                         written = untilConcludes(self._conn.write, buf)
                         if written:
                             buf = buf[written:]
-                            self.output_packetcount += 1
+                            self.output_raw_packetcount += 1
                             self.output_bytecount += written
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
@@ -316,12 +319,12 @@ class Protocol(object):
                     assert self._closed
                     return
                 log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-                self.input_packetcount += 1
-                self.input_bytecount += len(buf)
                 self._read_queue.put(buf)
                 if not buf:
                     log("read thread: eof")
                     break
+                self.input_raw_packetcount += 1
+                self.input_bytecount += len(buf)
         finally:
             log("read thread: ended, closing socket")
             self.close()
@@ -464,6 +467,7 @@ class Protocol(object):
             return
         try:
             self._process_packet_cb(self, decoded)
+            self.input_packetcount += 1
         except KeyboardInterrupt:
             raise
         except:
