@@ -31,9 +31,10 @@ try:
 except:
     from Queue import Queue, Empty  #@Reimport
 from math import log as mathlog
-from math import sqrt
 def logp2(x):
-    return mathlog(1+x, 2)
+    return mathlog(1+max(1, x), 2)
+def logp10(x):
+    return mathlog(9+max(1, x), 10)
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
@@ -190,12 +191,13 @@ class DamageBatchConfig(object):
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
     MAX_DELAY = 15000
-    def ___init___(self):
+    def __init__(self):
         self.enabled = self.ENABLED
         self.always = False
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
         self.delay = self.MIN_DELAY
+        self.last_delays = maxdeque(100)
 
 class ServerSource(object):
     """
@@ -225,7 +227,7 @@ class ServerSource(object):
         protocol.source = self
         self._damage_request_queue = Queue()
         self._damage_data_queue = Queue()
-        self._damage_packet_queue = Queue(9)
+        self._damage_packet_queue = Queue(3)
 
         self._closed = False
         self._on_close = []
@@ -308,6 +310,7 @@ class ServerSource(object):
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             item = wid, window, region, self._sequence, options
             self._damage_request_queue.put(item)
+            self.batch.last_delays.append(0)
         if not self.batch.enabled:
             return damage_now("batching disabled")
 
@@ -326,41 +329,7 @@ class ServerSource(object):
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
 
-        def update_batch_delay(reason, factor=1, delta=0):
-            self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
-            log.info("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
-
-        last_delta = self.last_client_delta
-        delta = self._damage_packet_sequence-self.last_client_packet_sequence
-        self.last_client_delta = delta
-        if self._damage_packet_queue.full():
-            update_batch_delay("damage packet queue is full", 1+sqrt(self.batch.delay)/10)
-        elif self._damage_request_queue.qsize()>8:
-            update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), 0.8+logp2(self._damage_request_queue.qsize()))
-        elif self._damage_data_queue.qsize()>8:
-            update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), 0.8+logp2(self._damage_data_queue.qsize()))
-        elif last_delta>0:
-            #figure out how many pixels behind it is rather than just the number of packets
-            unprocessed = list(self._damage_packet_sizes)[-delta:]
-            last_unprocessed = list(self._damage_packet_sizes)[-last_delta:]
-            pixels_behind = sum(unprocessed)
-            last_pixels_behind = sum(last_unprocessed)
-            low_limit, high_limit = 8*1024, 32*1024
-            if self._mmap and self._mmap_size>0:
-                low_limit, high_limit = 1024*1024, 8*1024*1024
-            log.info("client %s packets behind, %s pixels (previously %s, %s pixels), low=%s, high=%s", delta, pixels_behind, last_delta, last_pixels_behind, low_limit, high_limit)
-            if pixels_behind<=last_pixels_behind:
-                #things are getting better:
-                update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10*pixels_behind/last_pixels_behind/2)/10.0)
-            else:
-                #things are getting worse:
-                if pixels_behind<=low_limit:
-                    update_batch_delay("client is only %s pixels behind" % pixels_behind, 1.0, -2)
-                elif pixels_behind>=high_limit:
-                    update_batch_delay("client is %s pixels behind!" % pixels_behind, 1.0 + logp2(high_limit/pixels_behind))
-                else:
-                    update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(2.0, logp2(pixels_behind/last_pixels_behind)))
-
+        self.calculate_batch_delay()
         if not self.batch.always and self.batch.delay<=self.batch.min_delay:
             return damage_now("delay is at the minimum threshold")
 
@@ -381,7 +350,49 @@ class ServerSource(object):
                 log("window %s already removed from delayed list?", wid)
             return False
         log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", wid, x, y, w, h, self._sequence, self.batch.delay)
+        self.batch.last_delays.append(self.batch.delay)
         gobject.timeout_add(self.batch.delay, send_delayed)
+
+    def calculate_batch_delay(self):
+        def update_batch_delay(reason, factor=1, delta=0):
+            self.batch.delay = max(self.batch.min_delay, min(self.batch.max_delay, int(self.batch.delay*factor-delta)))
+            log("update_batch_delay: %s, factor=%s, delta=%s, new batch delay=%s", reason, factor, delta, self.batch.delay)
+
+        last_delta = self.last_client_delta
+        delta = self._damage_packet_sequence-self.last_client_packet_sequence
+        self.last_client_delta = delta
+        if self._damage_packet_queue.full():
+            #packets ready for sending by network layer
+            return update_batch_delay("damage packet queue is full", 1.5)
+
+        if self._damage_request_queue.qsize()>4:
+            #processes damage requests and places them on the damage_data_queue
+            return update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), logp10(self._damage_request_queue.qsize()-3))
+
+        if self._damage_data_queue.qsize()>12:
+            #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
+            return update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), logp10(self._damage_data_queue.qsize()-11))
+
+        if not last_delta:
+            return
+        #figure out how many pixels behind we are, rather than just the number of packets
+        unprocessed = list(self._damage_packet_sizes)[-delta:]
+        last_unprocessed = list(self._damage_packet_sizes)[-last_delta:]
+        pixels_behind = sum(unprocessed)
+        last_pixels_behind = sum(last_unprocessed)
+        low_limit, high_limit = 8*1024, 32*1024
+        if self._mmap and self._mmap_size>0:
+            low_limit, high_limit = 1024*1024, 8*1024*1024
+        if pixels_behind<=last_pixels_behind:
+            #things are getting better:
+            return update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10.0*pixels_behind/(1+last_pixels_behind)/2)/10.0)
+        #things are getting worse:
+        if pixels_behind<=low_limit:
+            return update_batch_delay("client is only %s pixels behind" % pixels_behind, 1.0, -2)
+        elif pixels_behind>=high_limit:
+            return update_batch_delay("client is %s pixels behind!" % pixels_behind, min(2.0, logp2(1.0*high_limit/pixels_behind)))
+        else:
+            return update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(2.0, logp2(1.0*pixels_behind/last_pixels_behind)))
 
     def damage_to_data(self):
         """ pick items off the damage_request_queue
