@@ -875,7 +875,7 @@ class XpraServer(gobject.GObject):
                 if self.keyboard:
                     assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
                     self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
-    
+
                     #now set the new modifier mappings:
                     self.clean_keyboard_state()
                     log.debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
@@ -1470,18 +1470,18 @@ class XpraServer(gobject.GObject):
                 if window_start_time==0:
                     window_start_time = when
                     latest_start_time = max(latest_start_time, when)
-                log.info("pixels=%s in %s", pixels, decode_time)
+                log("wid=%s, pixels=%s in %s", wid, pixels, decode_time)
                 window_pixels += pixels
                 window_time += decode_time
-            log.info("wid=%s, window_time=%s, window_pixels=%s", wid, window_time, window_pixels)
-            log.info("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
+            log("wid=%s, window_time=%s, window_pixels=%s", wid, window_time, window_pixels)
+            log("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
             total_time += window_time
             total_pixels += window_pixels
-        log.info("total_time=%s, total_pixels=%s", total_time, total_pixels)
+        log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
             info["pixels_decoded_per_second"] = pixels_decoded_per_second
-            log.info("pixels_decoded_per_second=%s", pixels_decoded_per_second)
+            log("pixels_decoded_per_second=%s", pixels_decoded_per_second)
 
         if window_start_time:
             elapsed = now-window_start_time
@@ -1496,8 +1496,8 @@ class XpraServer(gobject.GObject):
                         total_pixels += pixels
             pixels_per_second = int(total_pixels/elapsed)
             info["pixels_per_second"] = pixels_per_second
-            log.info("pixels_per_second=%s", pixels_per_second)
-            
+            log("pixels_per_second=%s", pixels_per_second)
+
         #damage regions per second:
         total_pixels = 0            #pixels processed
         regions_count = 0           #weighted value: sum of (regions count * number of pixels / elapsed time)
@@ -1514,19 +1514,19 @@ class XpraServer(gobject.GObject):
                 window_regions += 1
                 if start_when==0:
                     start_when = when
-                log.info("wid=%s, pixels=%s", wid, pixels)
+                log("wid=%s, pixels=%s", wid, pixels)
                 window_pixels += pixels
                 total_pixels += pixels
-            log.info("wid=%s, window_pixels=%s", wid, window_pixels)
+            log("wid=%s, window_pixels=%s", wid, window_pixels)
             if start_when>0:
-                log.info("wid=%s, window_pixels=%s, regions=%s, elapsed=%s", wid, window_pixels, window_regions, now-start_when)
-                log.info("wid=%s, regions_per_second=%s", wid, (window_regions/(now-start_when)))
+                log("wid=%s, window_pixels=%s, regions=%s, elapsed=%s", wid, window_pixels, window_regions, now-start_when)
+                log("wid=%s, regions_per_second=%s", wid, (window_regions/(now-start_when)))
                 regions_count += window_pixels*window_regions/(now-start_when)
-        log.info("regions_count=%s, total_pixels=%s", regions_count, total_pixels)
+        log("regions_count=%s, total_pixels=%s", regions_count, total_pixels)
         if regions_count:
             regions_per_second = int(regions_count/total_pixels)
             info["regions_per_second"] = regions_per_second
-            log.info("regions_per_second=%s", regions_per_second)
+            log("regions_per_second=%s", regions_per_second)
         return info
 
     def _process_hello(self, proto, packet):
