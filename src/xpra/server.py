@@ -192,7 +192,7 @@ class DamageBatchConfig(object):
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
     AVG_DELAY = 100                     #how long to batch updates for (in millis)
-    MAX_DELAY = 5000
+    MAX_DELAY = 15000
     def ___init___(self):
         self.enabled = self.ENABLED
         self.always = False
@@ -222,6 +222,7 @@ class ServerSource(object):
         # for managing sequence numbers:
         self._sequence = 0                      #increase with every Region
         self._damage_packet_sequence = 0        #increase with every packet send
+        self._damage_packet_sizes = maxdeque(100)
         self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
         self.last_client_delta = None           #last delta between our damage_packet_sequence and last_client_packet_sequence
         self.batch = batch_config
@@ -353,17 +354,29 @@ class ServerSource(object):
         self.last_client_delta = delta
         if self._damage_packet_queue.full():
             update_batch_delay("damage packet queue is full", 1+sqrt(self.batch.delay)/10)
-        elif self.last_client_packet_sequence>=0 and (delta>5 or (last_delta<delta and delta>=3)):
-            if delta<5:
-                update_batch_delay("client %s damage packets behind" % delta, 1.4)
-            elif delta>10 or last_delta<delta:
-                update_batch_delay("client %s damage packets behind" % delta, logp2(delta))
-            else:
-                update_batch_delay("client %s damage packets behind" % delta, 1.2)
         elif self._damage_request_queue.qsize()>3:
             update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), 0.8+logp2(self._damage_request_queue.qsize()))
         elif self._damage_data_queue.qsize()>3:
             update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), 0.8+logp2(self._damage_data_queue.qsize()))
+        elif self.last_client_packet_sequence>=0 and (delta>5 or (last_delta<delta and delta>=3)):
+            #figure out how many pixels behind it is rather than just the number of packets
+            unprocessed = list(self._damage_packet_sizes)[-delta:]
+            pixels_behind = sum(unprocessed)
+            low_limit, high_limit = 8*1024, 32*1024
+            if self._mmap and self._mmap_size>0:
+                low_limit, high_limit = 1024*1024, 8*1024*1024
+            log("client %s packets behind, %s : %s pixels, low=%s, high=%s", delta, unprocessed, pixels_behind, low_limit, high_limit)
+            if pixels_behind<low_limit:
+                update_batch_delay("client only %s pixels behind" % pixels_behind, 0.8)
+            elif pixels_behind>high_limit:
+                update_batch_delay("client %s pixels behind" % pixels_behind, 1.4)
+            else:
+                if delta<5:
+                    update_batch_delay("client %s damage packets behind" % delta, 1.4)
+                elif delta>10 or last_delta<delta:
+                    update_batch_delay("client %s damage packets behind" % delta, logp2(delta))
+                else:
+                    update_batch_delay("client %s damage packets behind" % delta, 1.2)
         else:
             #if batch delay had been increased, reduce it:
             if self.batch.delay>self.batch.min_delay and (self.last_client_packet_sequence<0 or delta<=2):
@@ -506,7 +519,10 @@ class ServerSource(object):
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         #send via mmap?
         if self._mmap and self._mmap_size>0:
+            now = time.time()
             mmap_data = self._mmap_send(data)
+            end = time.time()
+            log("%s MBytes/s - %s bytes written to mmap in %sms", int(len(data)/(end-now)/1024/1024), len(data), int(1000*1000*(end-now))/1000.0)
             if mmap_data is not None:
                 coding = "mmap"
                 data = mmap_data
@@ -552,6 +568,7 @@ class ServerSource(object):
         #actual network packet:
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
         self._damage_packet_sequence += 1
+        self._damage_packet_sizes.append(w*h)
         return packet
 
     def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
@@ -1615,7 +1632,7 @@ class XpraServer(gobject.GObject):
         batch_config.time_unit = min(60, max(1, capabilities.get("batch.time_unit", DamageBatchConfig.TIME_UNIT)))
         batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         batch_config.avg_delay = min(1000, max(1, capabilities.get("batch.avg_delay", DamageBatchConfig.AVG_DELAY)))
-        batch_config.max_delay = min(5000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
+        batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.avg_delay)))
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
