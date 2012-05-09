@@ -25,7 +25,7 @@ except:
 import os
 import time
 import ctypes
-from threading import Thread
+from threading import Thread, Lock
 try:
     from queue import Queue, Empty  #@UnresolvedImport @UnusedImport (python3)
 except:
@@ -239,7 +239,8 @@ class ServerSource(object):
         self._damage_packet_queue = Queue()
 
         self._closed = False
-        self._on_close = []
+        self._video_encoder_cleanup = {}
+        self._video_encoder_lock = Lock()
 
         def start_daemon_thread(target, name):
             t = Thread(target=target)
@@ -254,13 +255,20 @@ class ServerSource(object):
         self._closed = True
         self._damage_request_queue.put(None, block=False)
         self._damage_data_queue.put(None, block=False)
-        for cb in self._on_close:
-            try:
-                log("calling %s", cb)
-                cb()
-            except:
-                log.error("error on close callback %s", cb, exc_info=True)
-        self._on_close = []
+        self.video_encoder_cleanup()
+
+    def video_encoder_cleanup(self):
+        try:
+            self._video_encoder_lock.acquire()
+            for wid,cb in self._video_encoder_cleanup.items():
+                try:
+                    log("calling %s for wid=%s", cb, wid)
+                    cb()
+                except:
+                    log.error("error on close callback %s", cb, exc_info=True)
+            self._video_encoder_cleanup = {}
+        finally:
+            self._video_encoder_lock.release()
 
     def _have_more(self):
         return not self._closed and bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
@@ -283,6 +291,7 @@ class ServerSource(object):
         self._protocol.source_has_more()
 
     def set_new_encoding(self, encoding, window_ids):
+        self.video_encoder_cleanup()
         if window_ids:
             for wid in window_ids:
                 batch = self.get_batch_config(wid, False)
@@ -316,6 +325,14 @@ class ServerSource(object):
     def remove_window(self, wid):
         self.cancel_damage(wid)
         self.clear_stats(wid)
+        try:
+            self._video_encoder_lock.acquire()
+            encoder_cleanup = self._video_encoder_cleanup.get(wid)
+            if encoder_cleanup:
+                encoder_cleanup()
+                del self._video_encoder_cleanup[wid]
+        finally:
+            self._video_encoder_lock.release()
 
     def get_batch_config(self, wid, create=True):
         batch = self.batch_configs.get(wid)
@@ -412,15 +429,12 @@ class ServerSource(object):
             if self._damage_packet_queue.qsize()>3:
                 #packets ready for sending by network layer
                 update_batch_delay("damage packet queue overflow: %s" % self._damage_packet_queue.qsize(), logp2(self._damage_packet_queue.qsize()-2))
-
             if self._damage_request_queue.qsize()>3:
                 #processes damage requests and places them on the damage_data_queue
                 update_batch_delay("damage request queue overflow: %s" % self._damage_request_queue.qsize(), logp10(self._damage_request_queue.qsize()-2))
-
             if self._damage_data_queue.qsize()>3:
                 #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
                 update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), logp10(self._damage_data_queue.qsize()-2))
-
         if not last_delta:
             return
         #figure out how many pixels behind we are, rather than just the number of packets
@@ -454,7 +468,6 @@ class ServerSource(object):
             return update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10.0*pixels_behind/(1+last_pixels_behind)/2)/10.0)
         if packets_due>last_packets_due:
             return update_batch_delay("client is %s packets behind, up from %s" % (packets_due, last_packets_due), logp10(1.0*packets_due/(1+last_packets_due)))
-
         return update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(2.0, logp2(1.0*pixels_behind/last_pixels_behind)))
 
     def damage_to_data(self):
@@ -620,38 +633,37 @@ class ServerSource(object):
         assert coding in ENCODINGS
         assert x==0 and y==0
         #time_before = time.clock()
-        encoder = encoders.get(wid)
-        if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
-            log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
-            encoder.clean()
-            encoder.init(w, h)
-        if encoder is None:
-            log("%s: new encoder", coding)
-            encoder = factory()
-            encoder.init(w, h)
-            encoders[wid] = encoder
-            def close_encoder():
+        try:
+            self._video_encoder_lock.acquire()
+            encoder = encoders.get(wid)
+            if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
+                log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
                 encoder.clean()
-                del encoders[wid]
-            self._on_close.append(close_encoder)
-        log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
-        err, size, data = encoder.compress_image(data, rowstride)
-        if err!=0:
-            log.error("%s: ouch, compression error %s", coding, err)
-            return None
-        #time_after = time.clock()
-        #encoding_latency = 1000 * (time_after - time_before)
-        # Do not allow encoding latency to go higher than 50ms
-        #if encoding_latency > 50:
-        #    log("%s encoding took %d milliseconds, speeding up encoding", coding, encoding_latency)
-        #    encoder.increase_encoding_speed()
-        #elif encoding_latency < 5:
-        #    log("%s encoding took %d milliseconds, using more costly encoding params", coding, encoding_latency)
-        #    encoder.decrease_encoding_speed()
-        #log("%s: compressed data(%sx%s) = %s, type=%s, first 10 bytes: %s", coding, w, h, size, type(data), [ord(c) for c in data[:10]])
-        return data
-
-
+                encoder.init(w, h)
+            if encoder is None:
+                #we could have an old encoder if we were using a different encoding
+                #if so, clean it up:
+                old_encoder_cb = self._video_encoder_cleanup.get(wid)
+                if old_encoder_cb:
+                    old_encoder_cb()
+                    del self._video_encoder_cleanup[wid]
+                log("%s: new encoder", coding)
+                encoder = factory()
+                encoder.init(w, h)
+                encoders[wid] = encoder
+                def close_encoder():
+                    log("close_encoder: %s for wid=%s" % (coding, wid))
+                    encoder.clean()
+                    del encoders[wid]
+                self._video_encoder_cleanup[wid] = close_encoder
+            log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
+            err, size, data = encoder.compress_image(data, rowstride)
+            if err!=0:
+                log.error("%s: ouch, compression error %s", coding, err)
+                return None
+            return data
+        finally:
+            self._video_encoder_lock.release()
 
     def _mmap_send(self, data):
         #This is best explained using diagrams:
