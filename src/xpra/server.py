@@ -316,6 +316,11 @@ class ServerSource(object):
         #for those being processed in separate threads, drop by sequence:
         log("cancel_damage: %s, dropping all damage up to and including sequence=%s", wid, self._sequence)
         self._damage_cancelled[wid] = self._sequence
+        #clear it eventually - it should be used within mere seconds
+        def clear_cancel(sequence):
+            if self._damage_cancelled.get(wid, 0)==sequence:
+                del self._damage_cancelled[wid]
+        gobject.timeout_add(30*1000, clear_cancel, self._sequence)
 
     def clear_stats(self, wid):
         for d in [self._damage_last_events, self.client_decode_time, self.batch_configs]:
