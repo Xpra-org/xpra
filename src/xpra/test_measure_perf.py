@@ -62,7 +62,7 @@ XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
                    "--SendCutText=0", "--AcceptCutText=0", "--AcceptPointerEvents=0", "--AcceptKeyEvents=0",
                    "-screen", "0", "1240x900x24",
                    ":%s" % DISPLAY_NO]
-XVNC_SERVER_STOP_COMMANDS = []     #stopped via kill
+XVNC_SERVER_STOP_COMMANDS = [["killall Xvnc"]]     #stopped via kill - beware, this will kill *all* Xvnc sessions!
 VNCVIEWER_BIN = "/usr/bin/vncviewer"
 VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
 VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
@@ -307,7 +307,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
             assert code is None, "test command %s failed to start" % test_command
 
             #run the client test
-            result = [name, tech_name, encoding, MEASURE_TIME, CPU_INFO, XORG_VERSION, compression, down, up, latency]+measure_client(server_pid, name, client_cmd, get_stats_cb)
+            result = [name, tech_name, encoding, test_command, MEASURE_TIME, CPU_INFO, XORG_VERSION, compression, down, up, latency]+measure_client(server_pid, name, client_cmd, get_stats_cb)
             results.append(result)
         except Exception, e:
             errors += 1
@@ -458,7 +458,7 @@ def main():
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["Test Name", "Remoting Tech", "Encoding", "Sample Duration",
+    headers = ["Test Name", "Remoting Tech", "Encoding", "Test Command", "Sample Duration",
                "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in", "packets in volume", "packets out", "packets out volume",
                "Regions/s", "Pixels/s", "Decoding Pixels/s", "application packets in", "application packets out",
