@@ -1530,11 +1530,8 @@ class XpraServer(gobject.GObject):
         capabilities = packet[1]
         log.debug("process_hello: capabilities=%s", capabilities)
         log.info("Handshake complete; enabling connection")
-        if capabilities.get("version_request", False) or capabilities.get("info_request", False):
-            if capabilities.get("info_request", False):
-                response = self.get_info()
-            else:
-                response = {"version" : xpra.__version__}
+        if capabilities.get("version_request", False):
+            response = {"version" : xpra.__version__}
             packet = ["hello", response]
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
@@ -1559,6 +1556,11 @@ class XpraServer(gobject.GObject):
             packet = self.make_screenshot_packet()
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+            return
+        if capabilities.get("info_request", False):
+            packet = ["hello", self.get_info()]
+            proto._add_packet_to_queue(packet)
+            gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
             return
 
         # Okay, things are okay, so let's boot out any existing connection and
