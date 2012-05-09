@@ -188,7 +188,7 @@ class GLibXpraClient(XpraClientBase):
 
     def __init__(self, conn, opts):
         XpraClientBase.__init__(self, opts)
-        self.exit_code = 0
+        self.exit_code = 1
         self.ready(conn)
         self.send_hello()
 
@@ -216,6 +216,9 @@ class GLibXpraClient(XpraClientBase):
     def quit(self, *args):
         self.glib_mainloop.quit()
 
+    def _process_connection_lost(self, packet):
+        log("Connection lost")
+        self.quit()
 
 class ScreenshotXpraClient(GLibXpraClient):
     """ This client does one thing only:
@@ -239,6 +242,7 @@ class ScreenshotXpraClient(GLibXpraClient):
         f.write(img_data)
         f.close()
         log.info("screenshot %sx%s saved to: %s", w, h, self.screenshot_filename)
+        self.exit_code = 0
         self.quit()
 
     def init_packet_handlers(self):
@@ -270,6 +274,7 @@ class InfoXpraClient(GLibXpraClient):
         if props:
             for k,v in props.items():
                 log.info("%s=%s", k, v)
+        self.exit_code = 0
         self.quit()
 
     def make_hello(self, challenge_response=None):
@@ -296,6 +301,7 @@ class VersionXpraClient(GLibXpraClient):
         log.debug("process_hello: %s", packet)
         props = packet[1]
         log.info("%s" % props.get("version"))
+        self.exit_code = 0
         self.quit()
 
     def make_hello(self, challenge_response=None):
@@ -318,3 +324,4 @@ class StopXpraClient(GLibXpraClient):
 
     def _process_hello(self, packet):
         self.send(["shutdown-server"])
+        self.exit_code = 0
