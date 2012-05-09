@@ -979,16 +979,12 @@ class XpraClient(XpraClientBase):
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
-            if self.compression_level!=0:
-                log.info("disabling compression")
-                self.compression_level = 0
+        #the server will have a handle on the mmap file by now, safe to delete:
+        self.clean_mmap()
         self.send_deflate_level()
         self.server_start_time = capabilities.get("start_time", -1)
         self.server_platform = capabilities.get("platform")
         self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify")
-
-        #the server will have a handle on the mmap file by now, safe to delete:
-        self.clean_mmap()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
