@@ -601,6 +601,7 @@ class XpraClient(XpraClientBase):
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
+        return  self.exit_code
 
     def quit(self, *args):
         gtk_main_quit_really()

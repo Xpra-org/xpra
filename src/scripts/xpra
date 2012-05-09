@@ -3,4 +3,4 @@
 import sys
 import xpra.scripts.main
 
-xpra.scripts.main.main(__file__, sys.argv)
+sys.exit(xpra.scripts.main.main(__file__, sys.argv))

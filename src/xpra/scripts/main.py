@@ -261,19 +261,20 @@ def main(script_file, cmdline):
     if mode in ("start", "upgrade") and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         from xpra.scripts.server import run_server
-        run_server(parser, options, mode, script_file, args)
+        return run_server(parser, options, mode, script_file, args)
     elif mode in ("attach", "detach", "screenshot", "version", "info"):
-        run_client(parser, options, args, mode)
+        return run_client(parser, options, args, mode)
     elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
-        run_stop(parser, options, args)
+        return run_stop(parser, options, args)
     elif mode == "list" and XPRA_LOCAL_SERVERS_SUPPORTED:
-        run_list(parser, options, args)
+        return run_list(parser, options, args)
     elif mode == "_proxy" and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
-        run_proxy(parser, options, args)
+        return run_proxy(parser, options, args)
     else:
         parser.error("invalid mode '%s'" % mode)
+        return 1
 
 def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
@@ -432,7 +433,7 @@ def run_client(parser, opts, extra_args, mode):
     app.connect("handshake-complete", handshake_complete)
     signal.signal(signal.SIGINT, app.quit)
     try:
-        app.run()
+        return app.run()
     finally:
         app.cleanup()
 
@@ -442,6 +443,7 @@ def run_proxy(parser, opts, extra_args):
     server_conn = connect_or_fail(pick_display(parser, opts, extra_args))
     app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin), server_conn)
     app.run()
+    return  0
 
 def run_stop(parser, opts, extra_args):
     assert "gtk" not in sys.modules
@@ -478,7 +480,7 @@ def run_stop(parser, opts, extra_args):
         show_final_state(display_desc["display"])
     else:
         print("Sent shutdown command")
-    sys.exit(e)
+    return  e
 
 
 def run_list(parser, opts, extra_args):
@@ -489,18 +491,22 @@ def run_list(parser, opts, extra_args):
     results = sockdir.sockets()
     if not results:
         sys.stdout.write("No xpra sessions found\n")
-    else:
-        sys.stdout.write("Found the following xpra sessions:\n")
-        for state, display in results:
-            sys.stdout.write("\t%s session at %s" % (state, display))
-            if state is DotXpra.DEAD:
-                try:
-                    os.unlink(sockdir.socket_path(display))
-                except OSError:
-                    pass
-                else:
-                    sys.stdout.write(" (cleaned up)")
-            sys.stdout.write("\n")
+        return  1
+    sys.stdout.write("Found the following xpra sessions:\n")
+    for state, display in results:
+        sys.stdout.write("\t%s session at %s" % (state, display))
+        if state is DotXpra.DEAD:
+            try:
+                os.unlink(sockdir.socket_path(display))
+            except OSError:
+                pass
+            else:
+                sys.stdout.write(" (cleaned up)")
+        sys.stdout.write("\n")
+    return 0
 
 if __name__ == "__main__":
-    main("xpra.exe", sys.argv)
+    code = main("xpra.exe", sys.argv)
+    if not code:
+        code = 0
+    sys.exit(code)

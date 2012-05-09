@@ -194,7 +194,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     if opts.exit_with_children and not opts.children:
         print("--exit-with-children specified without any children to spawn; exiting immediately")
-        return
+        return  1
 
     atexit.register(run_cleanups)
     signal.signal(signal.SIGINT, deadly_signal)
@@ -285,7 +285,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                                      executable=xvfb_executable)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
-            return
+            return  1
         raw_cookie = os.urandom(16)
         baked_cookie = raw_cookie.encode("hex")
         try:
@@ -302,7 +302,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         wait_for_x_server(display_name, 3) # 3s timeout
     except Exception, e:
         sys.stderr.write("%s\n" % e)
-        return
+        return  1
     # Now we can safely load gtk and connect:
     assert "gtk" not in sys.modules
     import gtk
@@ -331,7 +331,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     from xpra.server import can_run_server, XpraServer
     if not can_run_server():
-        return
+        return  1
 
     sockets = []
     #print("creating server socket %s" % sockpath)
@@ -350,7 +350,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             sockets.append(tcp_socket)
         except Exception, e:
             print("cannot start - failed to create tcp socket: %s" % e)
-            return
+            return  1
     def cleanup_tcp_socket():
         if tcp_socket:
             print("closing tcp socket")
@@ -393,3 +393,4 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         # and don't delete the new socket (not ours)
         _cleanups.remove(kill_xvfb)
         _cleanups.remove(cleanup_socket)
+    return  0

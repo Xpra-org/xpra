@@ -75,6 +75,7 @@ class XpraClientBase(gobject.GObject):
 
     def __init__(self, opts):
         gobject.GObject.__init__(self)
+        self.exit_code = 1
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.jpegquality = opts.jpegquality
@@ -139,6 +140,7 @@ class XpraClientBase(gobject.GObject):
     def _process_challenge(self, packet):
         if not self.password_file:
             log.error("password is required by the server")
+            self.exit_code = 2
             self.quit()
             return
         import hmac
@@ -147,6 +149,7 @@ class XpraClientBase(gobject.GObject):
             password = passwordFile.read()
         except IOError, e:
             log.error("failed to open password file %s: %s", self.password_file, e)
+            self.exit_code = 3
             self.quit()
             return
         salt = packet[1]
@@ -188,7 +191,6 @@ class GLibXpraClient(XpraClientBase):
 
     def __init__(self, conn, opts):
         XpraClientBase.__init__(self, opts)
-        self.exit_code = 1
         self.ready(conn)
         self.send_hello()
 
