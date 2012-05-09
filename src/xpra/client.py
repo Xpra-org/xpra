@@ -563,7 +563,7 @@ class XpraClient(XpraClientBase):
         self._focused = None
         def compute_receive_bandwidth(delay):
             bytecount = self._protocol.input_bytecount
-            bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay;
+            bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay
             self.last_input_bytecount = bytecount;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
             q = self.jpegquality
@@ -576,7 +576,9 @@ class XpraClient(XpraClientBase):
             return True
         if (self.max_bandwidth):
             self.last_input_bytecount = 0
-            gobject.timeout_add(2000, compute_receive_bandwidth, 2000);
+            gobject.timeout_add(2000, compute_receive_bandwidth, 2000)
+        if opts.send_pings:
+            gobject.timeout_add(1000, self.send_ping)
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
@@ -885,6 +887,7 @@ class XpraClient(XpraClientBase):
 
     def send_ping(self):
         self.send(["ping", int(1000*time.time())])
+        return True
 
     def _process_ping_echo(self, packet):
         (echoedtime, l1, l2, l3, cl) = packet[1:6]

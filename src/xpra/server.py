@@ -925,8 +925,8 @@ class XpraServer(gobject.GObject):
 
     def reset_statistics(self):
         self.client_latency = maxdeque(maxlen=100)
+        self.server_latency = maxdeque(maxlen=100)
         self.client_load = None
-        self.server_latency = -1
 
     def clean_keyboard_state(self):
         try:
@@ -1547,6 +1547,14 @@ class XpraServer(gobject.GObject):
         info["output_bytecount"] = self._protocol.output_bytecount
         info["output_packetcount"] = self._protocol.output_packetcount
         info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
+        if len(self.server_latency)>0:
+            info["min_server_latency"] = min(self.server_latency)
+            info["max_server_latency"] = max(self.server_latency)
+            info["avg_server_latency"] = sum(self.server_latency)/len(self.server_latency)
+        if len(self.client_latency)>0:
+            info["min_client_latency"] = min(self.client_latency)
+            info["max_client_latency"] = max(self.client_latency)
+            info["avg_client_latency"] = sum(self.client_latency)/len(self.client_latency)
 
         #client pixels per second:
         now = time.time()
@@ -1794,7 +1802,7 @@ class XpraServer(gobject.GObject):
         diff = int(1000*time.time()-echoedtime)
         self.client_latency.append(diff)
         self.client_load = (l1, l2, l3)
-        self.server_latency = sl
+        self.server_latency.append(sl)
         log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
 
     def _process_ping(self, proto, packet):

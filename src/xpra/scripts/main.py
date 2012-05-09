@@ -127,6 +127,9 @@ def main(script_file, cmdline):
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
+    parser.add_option("--enable-pings", action="store_true",
+                      dest="send_pings", default=False,
+                      help="Send ping packets every second to gather latency statistics")
     parser.add_option("--no-clipboard", action="store_false",
                       dest="clipboard", default=True,
                       help="Disable clipboard support")
