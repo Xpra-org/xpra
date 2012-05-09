@@ -1046,12 +1046,19 @@ class XpraClient(XpraClientBase):
     def _process_draw(self, packet):
         (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
         window = self._id_to_window.get(wid)
-        if not window:
-            return      #window is already gone!
-        start = time.time()
-        window.draw_region(x, y, width, height, coding, data, rowstride)
-        end = time.time()
-        self.pixel_counter.append((end, width*height))
+        if window:
+            start = time.time()
+            window.draw_region(x, y, width, height, coding, data, rowstride)
+            end = time.time()
+            self.pixel_counter.append((end, width*height))
+        else:
+            #window is gone
+            if coding=="mmap":
+                #we need to ack the data to free the space!
+                assert self.mmap_enabled
+                data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
+                offset, length = data[-1]
+                data_start.value = offset+length
         if packet_sequence:
             self.send_now(["damage-sequence", packet_sequence, wid, width, height, int(end*1000*1000-start*1000*1000)])
 

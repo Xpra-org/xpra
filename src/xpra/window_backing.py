@@ -183,30 +183,33 @@ class CairoBacking(Backing):
         gc.paint()
         surf.finish()
 
+    def paint_mmap(self, img_data, x, y, width, height, rowstride):
+        """ see _mmap_send() in server.py for details """
+        assert "rgb24" in ENCODINGS
+        assert self.mmap_enabled
+        data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
+        if len(img_data)==1:
+            #construct an array directly from the mmap zone:
+            offset, length = img_data[0]
+            arraytype = ctypes.c_char * length
+            data = arraytype.from_buffer(self.mmap, offset)
+            image = self.rgb24image(data, width, height, rowstride)
+            data_start.value = offset+length
+        else:
+            #re-construct the buffer from discontiguous chunks:
+            log("drawing from discontiguous area: %s", img_data)
+            data = ""
+            for offset, length in img_data:
+                self.mmap.seek(offset)
+                data += self.mmap.read(length)
+                data_start.value = offset+length
+            image = self.rgb24image(data, width, height, rowstride)
+        self.paint_pil_image(image, width, height)
+
     def draw_region(self, x, y, width, height, coding, img_data, rowstride):
         log.debug("draw_region(%s,%s,%s,%s,%s,..,%s)", x, y, width, height, coding, rowstride)
         if coding == "mmap":
-            """ see _mmap_send() in server.py for details """
-            assert "rgb24" in ENCODINGS
-            assert self.mmap_enabled
-            data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
-            if len(img_data)==1:
-                #construct an array directly from the mmap zone:
-                offset, length = img_data[0]
-                arraytype = ctypes.c_char * length
-                data = arraytype.from_buffer(self.mmap, offset)
-                image = self.rgb24image(data, width, height, rowstride)
-                data_start.value = offset+length
-            else:
-                #re-construct the buffer from discontiguous chunks:
-                log("drawing from discontiguous area: %s", img_data)
-                data = ""
-                for offset, length in img_data:
-                    self.mmap.seek(offset)
-                    data += self.mmap.read(length)
-                    data_start.value = offset+length
-                image = self.rgb24image(data, width, height, rowstride)
-            self.paint_pil_image(image, width, height)
+            self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding in ["rgb24", "jpeg"]:
             assert coding in ENCODINGS
             if coding=="rgb24":
@@ -274,28 +277,31 @@ class PixmapBacking(Backing):
         gc = self._backing.new_gc()
         self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
 
+    def paint_mmap(self, img_data, x, y, width, height, rowstride):
+        """ see _mmap_send() in server.py for details """
+        assert self.mmap_enabled
+        data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
+        if len(img_data)==1:
+            #construct an array directly from the mmap zone:
+            offset, length = img_data[0]
+            arraytype = ctypes.c_char * length
+            data = arraytype.from_buffer(self.mmap, offset)
+            self.paint_rgb24(data, x, y, width, height, rowstride)
+            data_start.value = offset+length
+        else:
+            #re-construct the buffer from discontiguous chunks:
+            log("drawing from discontiguous area: %s", img_data)
+            data = ""
+            for offset, length in img_data:
+                self.mmap.seek(offset)
+                data += self.mmap.read(length)
+                data_start.value = offset+length
+            self.paint_rgb24(data, x, y, width, height, rowstride)
+
     def draw_region(self, x, y, width, height, coding, img_data, rowstride):
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s)", x, y, width, height, coding, len(img_data), rowstride)
         if coding == "mmap":
-            """ see _mmap_send() in server.py for details """
-            assert self.mmap_enabled
-            data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
-            if len(img_data)==1:
-                #construct an array directly from the mmap zone:
-                offset, length = img_data[0]
-                arraytype = ctypes.c_char * length
-                data = arraytype.from_buffer(self.mmap, offset)
-                self.paint_rgb24(data, x, y, width, height, rowstride)
-                data_start.value = offset+length
-            else:
-                #re-construct the buffer from discontiguous chunks:
-                log("drawing from discontiguous area: %s", img_data)
-                data = ""
-                for offset, length in img_data:
-                    self.mmap.seek(offset)
-                    data += self.mmap.read(length)
-                    data_start.value = offset+length
-                self.paint_rgb24(data, x, y, width, height, rowstride)
+            self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding == "rgb24":
             if rowstride>0:
                 assert len(img_data) == rowstride * height

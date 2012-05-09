@@ -291,7 +291,7 @@ class ServerSource(object):
                 self.clear_stats(wid)
                 batch.encoding = encoding
         else:
-            for batch in self.batch_configs.values():
+            for wid, batch in self.batch_configs.items():
                 if batch.encoding==encoding:
                     continue
                 self.clear_stats(wid)
@@ -454,7 +454,7 @@ class ServerSource(object):
             return update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10.0*pixels_behind/(1+last_pixels_behind)/2)/10.0)
         if packets_due>last_packets_due:
             return update_batch_delay("client is %s packets behind, up from %s" % (packets_due, last_packets_due), logp10(1.0*packets_due/(1+last_packets_due)))
-            
+
         return update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(2.0, logp2(1.0*pixels_behind/last_pixels_behind)))
 
     def damage_to_data(self):
@@ -591,17 +591,19 @@ class ServerSource(object):
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
-            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder     #@UnresolvedImport
+            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
             data = self.video_encode(x264_encoders, x264Encoder, wid, x, y, w, h, coding, data, rowstride)
         elif coding=="vpx":
             assert coding in ENCODINGS
             assert x==0 and y==0
-            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder     #@UnresolvedImport @Reimport
+            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
             data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
+        elif coding=="rgb24":
+            data = RGB24(data)
+        elif coding=="mmap":
+            pass
         else:
-            assert coding in ["rgb24", "mmap"], "invalid encoding: %s" % coding
-            if coding=="rgb24":
-                data = RGB24(data)
+            raise Exception("invalid encoding: %s" % coding)
 
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
