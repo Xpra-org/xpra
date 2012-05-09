@@ -199,6 +199,7 @@ class DamageBatchConfig(object):
         self.delay = self.MIN_DELAY
         self.last_delays = maxdeque(100)
         self.last_updated = 0
+        self.encoding = None
 
     def clone(self):
         c = DamageBatchConfig()
@@ -281,6 +282,23 @@ class ServerSource(object):
         self._ordinary_packets.append(packet)
         self._protocol.source_has_more()
 
+    def set_new_encoding(self, encoding, window_ids):
+        if window_ids:
+            for wid in window_ids:
+                batch = self.get_batch_config(wid, False)
+                if batch and batch.encoding==encoding:
+                    continue
+                self.clear_stats(wid)
+                batch.encoding = encoding
+        else:
+            for batch in self.batch_configs.values():
+                if batch.encoding==encoding:
+                    continue
+                self.clear_stats(wid)
+                batch.encoding = encoding
+        if not window_ids or self._encoding is None:
+            self._encoding = encoding
+
     def cancel_damage(self, wid):
         #if delayed, we can just drop it now
         if wid in self._damage_delayed:
@@ -290,11 +308,27 @@ class ServerSource(object):
         log("cancel_damage: %s, dropping all damage up to and including sequence=%s", wid, self._sequence)
         self._damage_cancelled[wid] = self._sequence
 
-    def remove_window(self, wid):
-        self.cancel_damage(wid)
+    def clear_stats(self, wid):
         for d in [self._damage_last_events, self.client_decode_time, self.batch_configs]:
             if wid in d:
                 del d[wid]
+
+    def remove_window(self, wid):
+        self.cancel_damage(wid)
+        self.clear_stats(wid)
+
+    def get_batch_config(self, wid, create=True):
+        batch = self.batch_configs.get(wid)
+        if not batch and create:
+            batch = self.default_batch_config.clone()
+            self.batch_configs[wid] = batch
+        return batch
+
+    def get_encoding(self, wid):
+        batch = self.get_batch_config(wid, False)
+        if batch:
+            return batch.encoding or self._encoding
+        return self._encoding
 
     def damage(self, wid, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
@@ -310,10 +344,7 @@ class ServerSource(object):
             the options may get quashed! So, specify a "batching"=False
             option to ensure no batching will occur for this request.
         """
-        batch = self.batch_configs.get(wid)
-        if not batch:
-            batch = self.default_batch_config.clone()
-            self.batch_configs[wid] = batch
+        batch = self.get_batch_config(wid)
         def damage_now(reason):
             self._sequence += 1
             log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", wid, x, y, w, h, reason, self._sequence)
@@ -443,7 +474,7 @@ class ServerSource(object):
                 log("damage_to_data: dropping request with sequence=%s", sequence)
                 continue
             regions = []
-            coding = self._encoding
+            coding = self.get_encoding(wid)
             is_or = isinstance(window, OverrideRedirectWindowModel)
             try:
                 if is_or:
@@ -467,7 +498,7 @@ class ServerSource(object):
                         pixel_count += w*h
                         #favor full screen updates over many regions:
                         #x264 and vpx need full screen updates all the time
-                        if pixel_count+packet_cost*len(regions)>=pixels_threshold or self._encoding in ["x264", "vpx"]:
+                        if pixel_count+packet_cost*len(regions)>=pixels_threshold or coding in ["x264", "vpx"]:
                             regions = [(0, 0, ww, wh, True)]
                             break
                         regions.append((x, y, w, h, False))
@@ -568,7 +599,7 @@ class ServerSource(object):
             from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder     #@UnresolvedImport @Reimport
             data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
         else:
-            assert coding in ["rgb24", "mmap"]
+            assert coding in ["rgb24", "mmap"], "invalid encoding: %s" % coding
             if coding=="rgb24":
                 data = RGB24(data)
 
@@ -1407,7 +1438,7 @@ class XpraServer(gobject.GObject):
         log.debug("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
 
-    def _set_encoding(self, encoding):
+    def _set_encoding(self, encoding, wids):
         if encoding:
             assert encoding in self.encodings, "encoding %s is not supported, client supplied list: %s" % (encoding, self.encodings)
             if encoding not in ENCODINGS:
@@ -1426,12 +1457,17 @@ class XpraServer(gobject.GObject):
             encoding = common[0]
         self.encoding = encoding
         if self._server_source is not None:
-            self._server_source._encoding = encoding
+            self._server_source.set_new_encoding(encoding, wids)
         log.info("encoding set to %s, client supports %s, server supports %s", encoding, self.encodings, ENCODINGS)
 
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
-        self._set_encoding(encoding)
+        if len(packet)>=3:
+            wids = packet[2]
+            wids = [wid for wid in wids if wid in self._id_to_window.keys()]
+        else:
+            wids = None
+        self._set_encoding(encoding, wids)
 
     def _send_password_challenge(self, proto):
         self.salt = "%s" % uuid.uuid4()
@@ -1607,7 +1643,7 @@ class XpraServer(gobject.GObject):
             self.disconnect("new valid connection received")
         self.reset_statistics()
         self.encodings = capabilities.get("encodings", [])
-        self._set_encoding(capabilities.get("encoding", None))
+        self._set_encoding(capabilities.get("encoding", None), None)
         #mmap:
         self.close_mmap()
         mmap_file = capabilities.get("mmap_file")
@@ -1643,6 +1679,7 @@ class XpraServer(gobject.GObject):
         batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.min_delay)))
+        batch_config.encoding = self.encoding
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
         if "jpeg" in capabilities:
