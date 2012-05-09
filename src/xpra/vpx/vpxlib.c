@@ -118,13 +118,17 @@ int compress_image(struct vpx_context *ctx, uint8_t *in, int w, int h, int strid
 	i = vpx_codec_encode(&ctx->codec, &image, frame_cnt, 1, flags, VPX_DL_REALTIME);
 	if (i) {
 		codec_error(&ctx->codec, "vpx_codec_encode");
+		vpx_img_free(&image);
 		return i;
 	}
 	pkt = vpx_codec_get_cx_data(&ctx->codec, &iter);
-	if (pkt->kind!=VPX_CODEC_CX_FRAME_PKT)
+	if (pkt->kind!=VPX_CODEC_CX_FRAME_PKT) {
+		vpx_img_free(&image);
 		return 1;
+	}
 	*out = pkt->data.frame.buf;
 	*outsz = pkt->data.frame.sz;
+	vpx_img_free(&image);
 	return 0;
 }
 
