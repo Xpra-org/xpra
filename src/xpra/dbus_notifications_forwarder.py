@@ -68,6 +68,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def release(self):
         self.bus.release_name(BUS_NAME)
 
+    def __str__(self):
+        return  "DBUSNotificationsForwarder(%s)" % BUS_NAME
 
 def register(notify_callback=None, close_callback=None, replace=False):
     DBusGMainLoop(set_as_default=True)
