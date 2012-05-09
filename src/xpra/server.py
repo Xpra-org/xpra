@@ -189,11 +189,17 @@ class DamageBatchConfig(object):
     """
     ENABLED = True
     ALWAYS = False
+    MAX_EVENTS = 80                     #maximum number of damage events
+    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
+    TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
     MAX_DELAY = 15000
     def __init__(self):
         self.enabled = self.ENABLED
         self.always = self.ALWAYS
+        self.max_events = self.MAX_EVENTS
+        self.max_pixels = self.MAX_PIXELS
+        self.time_unit = self.TIME_UNIT
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
         self.delay = self.MIN_DELAY
@@ -375,14 +381,13 @@ class ServerSource(object):
             item = wid, window, region, self._sequence, options
             self._damage_request_queue.put(item)
             batch.last_delays.append(0)
-        if not batch.enabled:
-            return damage_now("batching disabled")
-
         #record this damage event in the damage_last_events queue:
         now = time.time()
         last_events = self._damage_last_events.setdefault(wid, maxdeque(100))
         last_events.append((now, w*h))
 
+        if not batch.enabled:
+            return damage_now("batching disabled")
         if options and options.get("batching", True) is False:
             return damage_now("batching option is off")
 
@@ -394,7 +399,10 @@ class ServerSource(object):
             return
 
         self.calculate_batch_delay(wid, batch)
-        if not batch.always and batch.delay<=batch.min_delay:
+        event_min_time = now-batch.time_unit
+        all_pixels = [pixels for event_time,pixels in last_events if event_time>event_min_time]
+        beyond_limit = len(all_pixels)>batch.max_events or sum(all_pixels)>batch.max_pixels
+        if not beyond_limit and not batch.always and batch.delay<=batch.min_delay:
             return damage_now("delay is at the minimum threshold")
 
         #create a new delayed region:
