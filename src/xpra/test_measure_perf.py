@@ -23,10 +23,10 @@ START_SERVER = True         #if False, you are responsible for starting it
 TEST_XPRA = True
 TEST_VNC = True
 
-LIMIT_TESTS = 99999
 LIMIT_TESTS = 2
+LIMIT_TESTS = 99999
 
-TRICKLE_SHAPING_OPTIONS = [(1000, 1000, 20), (100, 100, 40), (0, 0, 0)]
+TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
@@ -62,7 +62,7 @@ XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
                    "--SendCutText=0", "--AcceptCutText=0", "--AcceptPointerEvents=0", "--AcceptKeyEvents=0",
                    "-screen", "0", "1240x900x24",
                    ":%s" % DISPLAY_NO]
-XVNC_SERVER_STOP_COMMAND = None     #stopped via kill
+XVNC_SERVER_STOP_COMMANDS = []     #stopped via kill
 VNCVIEWER_BIN = "/usr/bin/vncviewer"
 VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
 VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
@@ -78,7 +78,10 @@ XPRA_BIN = "/usr/bin/xpra"
 XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT,
                        "start", ":%s" % DISPLAY_NO,
                        "--xvfb=Xorg -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_LOG, XORG_CONFIG)]
-XPRA_SERVER_STOP_COMMAND = [XPRA_BIN, "stop", ":%s" % DISPLAY_NO]
+XPRA_SERVER_STOP_COMMANDS = [
+                             [XPRA_BIN, "stop", ":%s" % DISPLAY_NO],
+                             ["killall", "Xorg-for-Xpra-:%s" % DISPLAY_NO]
+                             ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_JPEG_OPTIONS = [40, 90]
@@ -193,7 +196,7 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     sys_pct = int(1000 * (new_stime - old_stime) / time_total_diff)/10.0
     nthreads = int((int(old_pid_stat[19])+int(new_pid_stat[19]))/2)
     vsize = int(max(int(old_pid_stat[22]), int(new_pid_stat[22]))/1024/1024)
-    rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))/1024/1024)*PAGE_SIZE
+    rss = int(max(int(old_pid_stat[23]), int(new_pid_stat[23]))*PAGE_SIZE/1024/1024)
     return [user_pct, sys_pct, nthreads, vsize, rss]
 
 def getiptables_line(chain, pattern, setup_info):
@@ -269,7 +272,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
     return [ni, isize, no, osize, fps, pps, dps, ipc, opc]+client_process_data+server_process_data
 
-def with_server(start_server_command, stop_server_command, in_tests, get_stats_cb=None):
+def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb=None):
     tests = in_tests[-LIMIT_TESTS:]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
@@ -319,9 +322,9 @@ def with_server(start_server_command, stop_server_command, in_tests, get_stats_c
             print("stopping test command: %s" % test_command_process)
             try_to_stop(test_command_process)
             if START_SERVER:
-                if stop_server_command:
-                    print("stopping server with: %s" % (stop_server_command))
-                    stop_process = subprocess.Popen(stop_server_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                for s in stop_server_commands:
+                    print("stopping server with: %s" % (s))
+                    stop_process = subprocess.Popen(s, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     stop_process.wait()
                 try_to_stop(server_process)
     return results
@@ -397,7 +400,7 @@ def test_xpra():
                         command_name = x11_test_command[0].split("/")[-1]
                         test_name = "%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency))
                         tests.append((test_name, "xpra", encoding, compression, (down,up,latency), x11_test_command, cmd))
-    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMAND, tests, xpra_get_stats)
+    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 def test_vnc():
     print("")
@@ -440,7 +443,7 @@ def test_vnc():
                             command_name = x11_test_command[0].split("/")[-1]
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
                             tests.append((test_name, "vnc", encoding, compression, (down,up,latency), x11_test_command, cmd))
-    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMAND, tests, None)
+    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, None)
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
