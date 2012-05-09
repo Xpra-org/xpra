@@ -1563,7 +1563,7 @@ class XpraServer(gobject.GObject):
             window_time = 0             #decoding time
             window_start_time = 0
             for when, pixels, decode_time in decode_time_list:
-                if when<time_limit:
+                if when<time_limit or decode_time<=0:
                     continue
                 if window_start_time==0:
                     window_start_time = when
@@ -1589,7 +1589,9 @@ class XpraServer(gobject.GObject):
                 decode_time_list = source.client_decode_time.get(wid)
                 if not decode_time_list:
                     continue
-                for when, pixels, _ in decode_time_list:
+                for when, pixels, decode_time in decode_time_list:
+                    if decode_time<=0:
+                        continue
                     if when>=latest_start_time:
                         total_pixels += pixels
             pixels_per_second = int(total_pixels/elapsed)

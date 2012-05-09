@@ -1047,7 +1047,9 @@ class XpraClient(XpraClientBase):
             window.draw_region(x, y, width, height, coding, data, rowstride)
             end = time.time()
             self.pixel_counter.append((end, width*height))
+            decode_time = int(end*1000*1000-start*1000*1000)
         else:
+            decode_time = 0
             #window is gone
             if coding=="mmap":
                 #we need to ack the data to free the space!
@@ -1056,7 +1058,7 @@ class XpraClient(XpraClientBase):
                 offset, length = data[-1]
                 data_start.value = offset+length
         if packet_sequence:
-            self.send_now(["damage-sequence", packet_sequence, wid, width, height, int(end*1000*1000-start*1000*1000)])
+            self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet
