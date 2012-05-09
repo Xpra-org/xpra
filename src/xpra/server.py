@@ -512,7 +512,7 @@ class ServerSource(object):
                 im.save(buf, "JPEG", quality=q)
             else:
                 log.debug("sending as %s", coding)
-                im.save(buf, self._encoding.upper())
+                im.save(buf, coding.upper())
             data = buf.getvalue()
             buf.close()
         elif coding=="x264":
