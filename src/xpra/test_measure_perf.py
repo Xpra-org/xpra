@@ -23,7 +23,7 @@ START_SERVER = True         #if False, you are responsible for starting it
 TEST_XPRA = True
 TEST_VNC = True
 
-LIMIT_TESTS = 8
+LIMIT_TESTS = 2
 LIMIT_TESTS = 99999
 
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
@@ -224,7 +224,7 @@ def parse_ipt(chain, pattern, setup_info):
         U = 1024
         m = {"K":U, "M":U**2, "G":U**3}.get(part[-1], 1)
         num = "".join([x for x in part if x in "0123456789"])
-        return int(num)*m
+        return int(num)*m/MEASURE_TIME
     return parse_num(parts[0]), parse_num(parts[1])
 
 def get_input_count():
@@ -515,7 +515,7 @@ def main():
     print("results:")
     headers = ["Test Name", "Remoting Tech", "Encoding", "Test Command", "Sample Duration",
                "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
-               "packets in", "packets in volume", "packets out", "packets out volume"]
+               "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_xpra_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
                "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
