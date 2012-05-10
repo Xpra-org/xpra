@@ -36,7 +36,8 @@ XORG_BIN = "/usr/bin/Xorg"
 #GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
-GTKPERF_TEST = "/usr/while true; do gtkperf -a; done"
+GTKPERF_TEST = "while true; do gtkperf -a; done"
+TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
 ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
                         ["rss-glx-hufo_tunnel", "rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes", "rss-glx-drempels",
@@ -51,7 +52,7 @@ for x in [GLX_SPHERES, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_T
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
-
+X11_TEST_COMMANDS = [GTKPERF_TEST]
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
@@ -412,6 +413,9 @@ def trickle_str(down, up, latency):
     return "throttled:%s" % s
 
 def get_command_name(command_arg):
+    name = TEST_NAMES.get(command_arg)
+    if name:
+        return  name
     if type(command_arg)==list:
         c = command_arg[0]              #["/usr/bin/xterm", "blah"] -> "/usr/bin/xterm"
     else:
