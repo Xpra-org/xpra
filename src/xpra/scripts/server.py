@@ -168,6 +168,7 @@ def create_tcp_socket(parser, spec):
     if host == "":
         host = "127.0.0.1"
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listener.bind((host, int(port)))
     return listener
 
