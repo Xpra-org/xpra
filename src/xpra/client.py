@@ -810,7 +810,7 @@ class XpraClient(XpraClientBase):
         except:
             self._modifier_map = {}
         log.debug("do_keys_changed() modifier_map=%s" % self._modifier_map)
-        if sendkeymap:
+        if sendkeymap and not self.readonly:
             if self.xkbmap_layout:
                 self.send_layout()
             self.send_keymap()
