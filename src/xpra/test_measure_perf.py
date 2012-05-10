@@ -52,11 +52,10 @@ for x in [GLX_SPHERES, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_T
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
-X11_TEST_COMMANDS = [GTKPERF_TEST]
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 40           #run for N seconds
+MEASURE_TIME = 120           #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
@@ -413,9 +412,12 @@ def trickle_str(down, up, latency):
     return "throttled:%s" % s
 
 def get_command_name(command_arg):
-    name = TEST_NAMES.get(command_arg)
-    if name:
-        return  name
+    try:
+        name = TEST_NAMES.get(command_arg)
+        if name:
+            return  name
+    except:
+        pass
     if type(command_arg)==list:
         c = command_arg[0]              #["/usr/bin/xterm", "blah"] -> "/usr/bin/xterm"
     else:
