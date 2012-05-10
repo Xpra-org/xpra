@@ -55,11 +55,20 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Fri May 04 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
+* Thu May 10 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
-- fix small per-window memory leak
+- fix vpx encoder memory leak
+- fix small per-window memory leak in server
+- per-window update batching auto-tuning, which is fairer
+- windows update batching now takes into account the number of pixels rather than just the number of regions to update
+- support --socket-dir option over ssh
 - IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+- all commands now return a non-zero exit code in case of failure
+- new "xpra info" command to report server statistics
+- prettify some of the logging and error messages
+- avoid doing most of the keyboard setup code when clients are in read-only mode
+- automated regression and performance tests
 - remove compatibility code for versions older than 0.1
 
 * Fri Apr 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.2.0-1
