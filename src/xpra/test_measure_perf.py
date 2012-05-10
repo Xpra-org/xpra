@@ -30,6 +30,8 @@ TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
+TCBENCH = "/opt/VirtualGL/bin/tcbench"
+TCBENCH_LOG = "./tcbench.log"
 #GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
@@ -227,15 +229,15 @@ def parse_ipt(chain, pattern, setup_info):
         return int(num)*m/MEASURE_TIME
     return parse_num(parts[0]), parse_num(parts[1])
 
-def get_input_count():
+def get_iptables_INPUT_count():
     setup = "iptables -I INPUT -p tcp --dport %s -j ACCEPT" % PORT
     return  parse_ipt("INPUT", "tcp dpt:%s" % PORT, setup)
 
-def get_output_count():
+def get_iptables_OUTPUT_count():
     setup = "iptables -I OUTPUT -p tcp --sport %s -j ACCEPT" % PORT
     return  parse_ipt("OUTPUT", "tcp spt:%s" % PORT, setup)
 
-def measure_client(server_pid, name, cmd, get_stats_cb=None):
+def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
     client_process = subprocess.Popen(cmd)
     #give it time to settle down:
@@ -243,8 +245,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     code = client_process.poll()
     assert code is None, "client failed to start, return code is %s" % code
     #clear counters
-    if get_stats_cb:
-        initial_stats = get_stats_cb()
+    initial_stats = get_stats_cb()
     zero_iptables()
     old_time_total = update_proc_stat()
     old_pid_stat = update_pidstat(client_process.pid)
@@ -259,12 +260,9 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     new_pid_stat = update_pidstat(client_process.pid)
     if server_pid>0:
         new_server_pid_stat = update_pidstat(server_pid)
-    ni,isize = get_input_count()
-    no,osize = get_output_count()
-    if get_stats_cb and initial_stats:
-        stats = get_stats_cb(initial_stats)
-    else:
-        stats = get_empty_stats()
+    ni,isize = get_iptables_INPUT_count()
+    no,osize = get_iptables_OUTPUT_count()
+    stats = get_stats_cb(initial_stats)
     #stop the process
     try_to_stop(client_process)
     time.sleep(1)
@@ -281,7 +279,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
     return [ni, isize, no, osize] + stats + client_process_data + server_process_data
 
-def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb=None):
+def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[-LIMIT_TESTS:]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
@@ -410,19 +408,6 @@ def xpra_get_stats(last_record=None):
             d.get("max_server_latency", ""),
             d.get("avg_server_latency", ""),
            ]
-def get_empty_stats():
-    return  ["", "", "",
-             "", "",
-             "", "", "",
-             "", "", ""
-             ]
-
-def get_xpra_stats_headers():
-    return  ["Regions/s", "Pixels/s", "Decoding Pixels/s",
-             "application packets in", "application packets out",
-             "Min Client Latency", "Max Client Latency", "Avg Client Latency",
-             "Min Server Latency", "Max Server Latency", "Avg Server Latency",
-             ]
 
 def test_xpra():
     print("")
@@ -456,6 +441,94 @@ def test_xpra():
                         test_name = "%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency))
                         tests.append((test_name, "xpra", encoding, compression, (down,up,latency), x11_test_command, cmd))
     return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
+
+
+def get_x11_client_window_info(*app_name_strings):
+    wininfo = getoutput(["xwininfo", "-root", "-tree"])
+    for line in wininfo.splitlines():
+        if not line:
+            continue
+        found = True
+        for x in app_name_strings:
+            if not line.find(x)>=0:
+                found = False
+                break
+        if not found:
+            continue
+        parts = line.split()
+        if not parts[0].startswith("0x"):
+            continue
+        #found a window which matches the name we are looking for!
+        wid = parts[0]
+        x, y, w, h = 0, 0, 0, 0
+        dims = parts[-2]        #ie: 400x300+20+10
+        dp = dims.split("+")    #["400x300", "20", "10"]
+        if len(dp)==3:
+            d = dp[0]           #"400x300"
+            x = int(dp[1])      #20
+            y = int(dp[2])      #10
+            wh = d.split("x")   #["400", "300"]
+            if len(wh)==2:
+                w = int(wh[0])  #400
+                h = int(wh[1])  #300
+        print("Found window for '%s': %s - %sx%s" % (app_name_strings, wid, w, h))
+        return  wid, x, y, w, h
+    return  None
+
+def get_vnc_stats(last_record=None):
+    #print("get_vnc_stats(%s)" % last_record)
+    if last_record==None:
+        #this is the initial call,
+        #start the thread to watch the output of tcbench:
+        info = get_x11_client_window_info("TigerVNC: x11", "Vncviewer")
+        if not info:
+            return  ""
+        print("info for TigerVNC: %s" % str(info))
+        wid, x, y, w, h = info
+        if not wid:
+            return  ""
+        command = [TCBENCH, "-wh%s" % wid]
+        if w>0 and h>0:
+            command.append("-x%s" % int(w/2))
+            command.append("-y%s" % int(h/2))
+        if os.path.exists(TCBENCH_LOG):
+            os.unlink(TCBENCH_LOG)
+        tcbench_log  = open(TCBENCH_LOG, 'w')
+        try:
+            print("tcbench starting: %s, logging to %s" % (command, TCBENCH_LOG))
+            return  subprocess.Popen(command, stdin=None, stdout=tcbench_log, stderr=tcbench_log)
+        except Exception, e:
+            import traceback
+            traceback.print_exc()
+            print("error running %s: %s" % (command, e))
+        return  ""  #we failed...
+    regions_s = ""
+    if last_record!="":
+        #found the process watcher,
+        #parse the tcbench output and look for frames/sec:
+        assert type(last_record)==subprocess.Popen
+        process = last_record
+        #print("get_vnc_stats(%s) process.poll()=%s" % (last_record, process.poll()))
+        if process.poll() is None:
+            try_to_stop(process)
+            time.sleep(1)
+            try_to_kill(process)
+        else:
+            f = open(TCBENCH_LOG, mode='rb')
+            out = f.read()
+            f.close()
+            #print("get_vnc_stats(%s) tcbench output=%s" % (last_record, out))
+            for line in out.splitlines():
+                if not line.find("Frames/sec:")>=0:
+                    continue
+                parts = line.split()
+                regions_s = parts[-1]
+                print("Frames/sec=%s" % regions_s)
+    return  ["", regions_s, "",
+             "", "",
+             "", "", "",
+             "", "", ""
+             ]
 
 def test_vnc():
     print("")
@@ -498,12 +571,21 @@ def test_vnc():
                             command_name = get_command_name(x11_test_command)
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
                             tests.append((test_name, "vnc", encoding, compression, (down,up,latency), x11_test_command, cmd))
-    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, None)
+    return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
+
+
+def get_stats_headers():
+    #the stats that are returned by get_xpra_stats or get_vnc_stats
+    return  ["Regions/s", "Pixels/s", "Decoding Pixels/s",
+             "Application packets in", "Application packets out",
+             "Min Client Latency", "Max Client Latency", "Avg Client Latency",
+             "Min Server Latency", "Max Server Latency", "Avg Server Latency",
+             ]
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
-    get_input_count()
-    get_output_count()
+    get_iptables_INPUT_count()
+    get_iptables_OUTPUT_count()
 
     xpra_results = []
     if TEST_XPRA:
@@ -516,7 +598,7 @@ def main():
     headers = ["Test Name", "Remoting Tech", "Encoding", "Test Command", "Sample Duration",
                "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
-    headers += get_xpra_stats_headers()
+    headers += get_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
                "server user cpu_pct", "server system cpu pct", "server number of threads", "server vsize (MB)", "server rss (MB)",
                ]
