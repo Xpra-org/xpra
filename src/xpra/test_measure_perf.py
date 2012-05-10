@@ -102,7 +102,14 @@ for x in check:
         raise Exception("cannot run tests: %s is missing!" % x)
 
 def try_to_stop(process):
-    if not process:
+    if not process or process.poll() is not None:
+        return
+    try:
+        process.terminate()
+    except Exception, e:
+        print("could not stop process %s: %s" % (process, e))
+def try_to_kill(process):
+    if not process or process.poll() is not None:
         return
     try:
         process.kill()
@@ -261,6 +268,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb=None):
     #stop the process
     try_to_stop(client_process)
     time.sleep(1)
+    try_to_kill(client_process)
     code = client_process.poll()
     assert code is not None, "failed to stop client!"
     #now collect the data
@@ -328,8 +336,11 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
             if test_command_process:
                 print("stopping '%s' with pid=%s" % (test_command, test_command_process.pid))
                 try_to_stop(test_command_process)
+                time.sleep(0.5)
+                try_to_kill(test_command_process)
             if START_SERVER:
                 try_to_stop(server_process)
+                time.sleep(0.5)
                 for s in stop_server_commands:
                     print("stopping server with: %s" % (s))
                     try:
@@ -337,6 +348,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                         stop_process.wait()
                     except Exception, e:
                         print("error: %s" % e)
+                try_to_kill(server_process)
             time.sleep(1)
     return results
 
