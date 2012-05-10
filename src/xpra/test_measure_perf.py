@@ -32,10 +32,11 @@ TRICKLE_BIN = "/usr/bin/trickle"
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
+XORG_BIN = "/usr/bin/Xorg"
 #GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
-GTKPERF_TEST = "while true; do gtkperf -a; done"
+GTKPERF_TEST = "/usr/while true; do gtkperf -a; done"
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
 ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
                         ["rss-glx-hufo_tunnel", "rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes", "rss-glx-drempels",
@@ -46,7 +47,7 @@ SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
                           ]
 X11_TEST_COMMANDS = []
 for x in [GLX_SPHERES, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS:
-    if not os.path.exists(x[0]):
+    if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
@@ -80,7 +81,7 @@ VNC_JPEG_OPTIONS = [-1, 4]
 XPRA_BIN = "/usr/bin/xpra"
 XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT,
                        "start", ":%s" % DISPLAY_NO,
-                       "--xvfb=Xorg -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_LOG, XORG_CONFIG)]
+                       "--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG)]
 XPRA_SERVER_STOP_COMMANDS = [
                              [XPRA_BIN, "stop", ":%s" % DISPLAY_NO],
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
@@ -130,13 +131,17 @@ def getoutput(cmd):
         raise Exception("command '%s' returned error code %s" % (cmd, code))
     return out
 
-def getoutput_lines(cmd, pattern, setup_info):
-    out = getoutput(cmd)
+def find_matching_lines(out, pattern):
     lines = []
     for line in out.splitlines():
         if line.find(pattern)>=0:
             lines.append(line)
     return  lines
+
+def getoutput_lines(cmd, pattern, setup_info):
+    out = getoutput(cmd)
+    return  find_matching_lines(out, pattern)
+
 def getoutput_line(cmd, pattern, setup_info):
     lines = getoutput_lines(cmd, pattern, setup_info)
     assert len(lines)==1, "expected 1 line matching '%s' from %s but found %s" % (pattern, cmd, len(lines))
@@ -158,10 +163,41 @@ def get_cpu_info():
     print("CPU_INFO=%s" % cpu_info)
     return  cpu_info, n
 
-XORG_VERSION = getoutput_line(["Xorg", "-version"], "X.Org X Server", "Cannot detect Xorg server version")
+XORG_VERSION = getoutput_line([XORG_BIN, "-version"], "X.Org X Server", "Cannot detect Xorg server version")
 print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO, N_CPUS = get_cpu_info()
 PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
+PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
+
+
+#detect Xvnc version:
+XVNC_VERSION = ""
+VNCVIEWER_VERSION = ""
+DETECT_XVNC_VERSION_CMD = [XVNC_BIN, "--help"]
+DETECT_VNCVIEWER_VERSION_CMD = [VNCVIEWER_BIN, "--help"]
+def get_stderr(command):
+    try:
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        _,err = process.communicate()
+        return err
+    except Exception, e:
+        print("error running %s: %s" % (DETECT_XVNC_VERSION_CMD, e))
+
+err = get_stderr(DETECT_XVNC_VERSION_CMD)
+if err:
+    v_lines = find_matching_lines(err, "Xvnc TigerVNC")
+    if len(v_lines)==1:
+        XVNC_VERSION = " ".join(v_lines[0].split()[:3])
+print ("XVNC_VERSION=%s" % XVNC_VERSION)
+err = get_stderr(DETECT_VNCVIEWER_VERSION_CMD)
+if err:
+    v_lines = find_matching_lines(err, "TigerVNC Viewer for X version")
+    if len(v_lines)==1:
+        VNCVIEWER_VERSION = "TigerVNC Viewer %s" % (v_lines[0].split()[5])
+print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
+
+XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
+print ("XPRA_VERSION=%s" % XPRA_VERSION)
 
 def clean_sys_state():
     #clear the caches
@@ -291,7 +327,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
     errors = 0
     results = []
     count = 0
-    for name, tech_name, encoding, compression, (down,up,latency), test_command, client_cmd in tests:
+    for name, tech_name, server_version, client_version, encoding, compression, (down,up,latency), test_command, client_cmd in tests:
         try:
             print("**************************************************************")
             count += 1
@@ -320,7 +356,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
     
                 #run the client test
-                result = [name, tech_name, encoding, get_command_name(test_command), MEASURE_TIME, CPU_INFO, XORG_VERSION, compression, down, up, latency]
+                result = [name, tech_name, server_version, client_version]
+                result += [encoding, get_command_name(test_command)]
+                result += [MEASURE_TIME, CPU_INFO, PLATFORM, XORG_VERSION, compression, down, up, latency]
                 result += measure_client(server_pid, name, client_cmd, get_stats_cb)
                 results.append(result)
             except Exception, e:
@@ -439,7 +477,7 @@ def test_xpra():
                             cmd.append("--encoding=%s" % encoding)
                         command_name = get_command_name(x11_test_command)
                         test_name = "%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency))
-                        tests.append((test_name, "xpra", encoding, compression, (down,up,latency), x11_test_command, cmd))
+                        tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, (down,up,latency), x11_test_command, cmd))
     return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
@@ -484,10 +522,10 @@ def get_vnc_stats(last_record=None):
         if not info:
             return  ""
         print("info for TigerVNC: %s" % str(info))
-        wid, x, y, w, h = info
+        wid, _, _, w, h = info
         if not wid:
             return  ""
-        command = [TCBENCH, "-wh%s" % wid]
+        command = [TCBENCH, "-wh%s" % wid, "-t%s" % (MEASURE_TIME-5)]
         if w>0 and h>0:
             command.append("-x%s" % int(w/2))
             command.append("-y%s" % int(h/2))
@@ -570,7 +608,7 @@ def test_vnc():
                                 zlibtxt = "zlib=%s" % zlib
                             command_name = get_command_name(x11_test_command)
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
-                            tests.append((test_name, "vnc", encoding, compression, (down,up,latency), x11_test_command, cmd))
+                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, encoding, compression, (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 
 
@@ -595,8 +633,9 @@ def main():
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["Test Name", "Remoting Tech", "Encoding", "Test Command", "Sample Duration",
-               "CPU info", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+    headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version",
+               "Encoding", "Test Command", "Sample Duration",
+               "CPU info", "Platform", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
