@@ -568,7 +568,7 @@ def get_vnc_stats(last_record=None):
                 parts = line.split()
                 regions_s = parts[-1]
                 print("Frames/sec=%s" % regions_s)
-    return  ["", regions_s, "",
+    return  [regions_s, "", "",
              "", "",
              "", "", "",
              "", "", ""
