@@ -239,6 +239,7 @@ class ServerSource(object):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
+        self._mmap_bytes_sent = 0
         protocol.source = self
         self._damage_request_queue = Queue()
         self._damage_data_queue = Queue()
@@ -591,6 +592,7 @@ class ServerSource(object):
             end = time.time()
             log("%s MBytes/s - %s bytes written to mmap in %sms", int(len(data)/(end-now)/1024/1024), len(data), int(1000*1000*(end-now))/1000.0)
             if mmap_data is not None:
+                self._mmap_bytes_sent += len(data)
                 coding = "mmap"
                 data = mmap_data
         #encode to jpeg/png:
@@ -1545,16 +1547,27 @@ class XpraServer(gobject.GObject):
         info["input_packetcount"] = self._protocol.input_packetcount
         info["input_raw_packetcount"] = self._protocol.input_raw_packetcount
         info["output_bytecount"] = self._protocol.output_bytecount
+        info["output_mmap_bytecount"] = source._mmap_bytes_sent
         info["output_packetcount"] = self._protocol.output_packetcount
         info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         if len(self.server_latency)>0:
-            info["min_server_latency"] = min(self.server_latency)
-            info["max_server_latency"] = max(self.server_latency)
-            info["avg_server_latency"] = sum(self.server_latency)/len(self.server_latency)
+            info["min_server_latency"] = int(min(self.server_latency))
+            info["max_server_latency"] = int(max(self.server_latency))
+            info["avg_server_latency"] = int(sum(self.server_latency)/len(self.server_latency))
         if len(self.client_latency)>0:
-            info["min_client_latency"] = min(self.client_latency)
-            info["max_client_latency"] = max(self.client_latency)
-            info["avg_client_latency"] = sum(self.client_latency)/len(self.client_latency)
+            info["min_client_latency"] = int(min(self.client_latency))
+            info["max_client_latency"] = int(max(self.client_latency))
+            info["avg_client_latency"] = int(sum(self.client_latency)/len(self.client_latency))
+        batch_delays = []
+        for wid in self._id_to_window.keys():
+            batch = source.get_batch_config(wid)
+            if batch:
+                for d in batch.last_delays:
+                    batch_delays.append(d)
+        if len(batch_delays)>0:
+            info["min_batch_delay"] = int(max(batch_delays))
+            info["max_batch_delay"] = int(max(batch_delays))
+            info["avg_batch_delay"] = int(sum(batch_delays)/len(batch_delays))
 
         #client pixels per second:
         now = time.time()

@@ -55,7 +55,7 @@ for x in [GLX_SPHERES, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_T
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 120           #run for N seconds
+MEASURE_TIME = 60           #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
@@ -69,6 +69,7 @@ XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
 XVNC_SERVER_STOP_COMMANDS = [["killall Xvnc"]]     #stopped via kill - beware, this will kill *all* Xvnc sessions!
 VNCVIEWER_BIN = "/usr/bin/vncviewer"
 VNC_ENCODINGS = ["Tight", "ZRLE", "hextile", "raw", "auto"]
+VNC_ENCODINGS = ["auto"]
 VNC_ZLIB_OPTIONS = [-1, 3, 6, 9]
 VNC_ZLIB_OPTIONS = [-1, 9]
 VNC_COMPRESSION_OPTIONS = [0, 3, 8, 9]
@@ -87,11 +88,14 @@ XPRA_SERVER_STOP_COMMANDS = [
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
-XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
-XPRA_JPEG_OPTIONS = [40, 90]
+#XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
 XPRA_JPEG_OPTIONS = [40, 80, 90]
+XPRA_JPEG_OPTIONS = [40, 90]
+XPRA_JPEG_OPTIONS = [80]
 XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
 XPRA_COMPRESSION_OPTIONS = [0, 3]
+XPRA_COMPRESSION_OPTIONS = [3]
 
 
 check = [TRICKLE_BIN]
@@ -104,20 +108,27 @@ for x in check:
     if not os.path.exists(x):
         raise Exception("cannot run tests: %s is missing!" % x)
 
-def try_to_stop(process):
-    if not process or process.poll() is not None:
-        return
-    try:
-        process.terminate()
-    except Exception, e:
-        print("could not stop process %s: %s" % (process, e))
-def try_to_kill(process):
-    if not process or process.poll() is not None:
-        return
-    try:
-        process.kill()
-    except Exception, e:
-        print("could not stop process %s: %s" % (process, e))
+def is_process_alive(process, grace=0):
+    i = 0
+    while i<grace:
+        if not process or process.poll() is not None:
+            return  False
+        time.sleep(1)
+        i += 1
+    return process and process.poll() is None
+
+def try_to_stop(process, grace=0):
+    if is_process_alive(process, grace):
+        try:
+            process.terminate()
+        except Exception, e:
+            print("could not stop process %s: %s" % (process, e))
+def try_to_kill(process, grace=0):
+    if is_process_alive(process, grace):
+        try:
+            process.kill()
+        except Exception, e:
+            print("could not stop process %s: %s" % (process, e))
 
 def getoutput(cmd):
     try:
@@ -168,6 +179,7 @@ print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO, N_CPUS = get_cpu_info()
 PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
 PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
+OPENGL_INFO = getoutput_line(["glxinfo"], "OpenGL renderer string", "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
 
 
 #detect Xvnc version:
@@ -275,45 +287,47 @@ def get_iptables_OUTPUT_count():
 
 def measure_client(server_pid, name, cmd, get_stats_cb):
     print("starting client: %s" % cmd)
-    client_process = subprocess.Popen(cmd)
-    #give it time to settle down:
-    time.sleep(SETTLE_TIME)
-    code = client_process.poll()
-    assert code is None, "client failed to start, return code is %s" % code
-    #clear counters
-    initial_stats = get_stats_cb()
-    zero_iptables()
-    old_time_total = update_proc_stat()
-    old_pid_stat = update_pidstat(client_process.pid)
-    if server_pid>0:
-        old_server_pid_stat = update_pidstat(server_pid)
-    #we start measuring
-    time.sleep(MEASURE_TIME)
-    code = client_process.poll()
-    assert code is None, "client crashed, return code is %s" % code
-    #stop the counters
-    new_time_total = update_proc_stat()
-    new_pid_stat = update_pidstat(client_process.pid)
-    if server_pid>0:
-        new_server_pid_stat = update_pidstat(server_pid)
-    ni,isize = get_iptables_INPUT_count()
-    no,osize = get_iptables_OUTPUT_count()
-    stats = get_stats_cb(initial_stats)
-    #stop the process
-    try_to_stop(client_process)
-    time.sleep(1)
-    try_to_kill(client_process)
-    code = client_process.poll()
-    assert code is not None, "failed to stop client!"
-    #now collect the data
-    client_process_data = compute_stat(new_time_total-old_time_total, old_pid_stat, new_pid_stat)
-    if server_pid>0:
-        server_process_data = compute_stat(new_time_total-old_time_total, old_server_pid_stat, new_server_pid_stat)
-    else:
-        server_process_data = []
-    print("process_data (client/server): %s / %s" % (client_process_data, server_process_data))
-    print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
-    return [ni, isize, no, osize] + stats + client_process_data + server_process_data
+    try:
+        client_process = subprocess.Popen(cmd)
+        #give it time to settle down:
+        time.sleep(SETTLE_TIME)
+        code = client_process.poll()
+        assert code is None, "client failed to start, return code is %s" % code
+        #clear counters
+        initial_stats = get_stats_cb()
+        zero_iptables()
+        old_time_total = update_proc_stat()
+        old_pid_stat = update_pidstat(client_process.pid)
+        if server_pid>0:
+            old_server_pid_stat = update_pidstat(server_pid)
+        #we start measuring
+        time.sleep(MEASURE_TIME)
+        code = client_process.poll()
+        assert code is None, "client crashed, return code is %s" % code
+        #stop the counters
+        new_time_total = update_proc_stat()
+        new_pid_stat = update_pidstat(client_process.pid)
+        if server_pid>0:
+            new_server_pid_stat = update_pidstat(server_pid)
+        ni,isize = get_iptables_INPUT_count()
+        no,osize = get_iptables_OUTPUT_count()
+        stats = get_stats_cb(initial_stats)
+        #now collect the data
+        client_process_data = compute_stat(new_time_total-old_time_total, old_pid_stat, new_pid_stat)
+        if server_pid>0:
+            server_process_data = compute_stat(new_time_total-old_time_total, old_server_pid_stat, new_server_pid_stat)
+        else:
+            server_process_data = []
+        print("process_data (client/server): %s / %s" % (client_process_data, server_process_data))
+        print("input/output on tcp port %s: %s / %s packets, %s / %s KBytes" % (PORT, ni, no, isize, osize))
+        return [ni, isize, no, osize] + stats + client_process_data + server_process_data
+    finally:
+        #stop the process
+        if client_process and client_process.poll() is None:
+            try_to_stop(client_process)
+            try_to_kill(client_process, 5)
+            code = client_process.poll()
+            assert code is not None, "failed to stop client!"
 
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[-LIMIT_TESTS:]
@@ -354,11 +368,12 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 time.sleep(TEST_COMMAND_SETTLE_TIME)
                 code = test_command_process.poll()
                 assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
-    
+
                 #run the client test
                 result = [name, tech_name, server_version, client_version]
                 result += [encoding, get_command_name(test_command)]
-                result += [MEASURE_TIME, CPU_INFO, PLATFORM, XORG_VERSION, compression, down, up, latency]
+                result += [MEASURE_TIME, CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
+                result += [compression, down, up, latency]
                 result += measure_client(server_pid, name, client_cmd, get_stats_cb)
                 results.append(result)
             except Exception, e:
@@ -373,11 +388,10 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 if test_command_process:
                     print("stopping '%s' with pid=%s" % (test_command, test_command_process.pid))
                     try_to_stop(test_command_process)
-                    time.sleep(0.5)
-                    try_to_kill(test_command_process)
+                    try_to_kill(test_command_process, 2)
                 if START_SERVER:
                     try_to_stop(server_process)
-                    time.sleep(0.5)
+                    time.sleep(2)
                     for s in stop_server_commands:
                         print("stopping server with: %s" % (s))
                         try:
@@ -385,7 +399,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             stop_process.wait()
                         except Exception, e:
                             print("error: %s" % e)
-                    try_to_kill(server_process)
+                    try_to_kill(server_process, 5)
                 time.sleep(1)
         except KeyboardInterrupt, e:
             print("caught %s: stopping this series of tests" % e)
@@ -436,15 +450,25 @@ def xpra_get_stats(last_record=None):
             d[parts[0]] = parts[1]
     last_input_packetcount = 0
     last_output_packetcount = 0
+    last_mmap_bytes = 0
+    last_input_bytecount = 0
+    last_output_bytecount = 0
     if last_record:
-        last_input_packetcount = last_record[3] or 0
-        last_output_packetcount = last_record[4] or 0
+        last_input_packetcount = last_record[4]
+        last_input_bytecount = last_record[5]
+        last_output_packetcount = last_record[6]
+        last_output_bytecount = last_record[7]
+        last_mmap_bytes = last_record[8]
     return [
             d.get("regions_per_second", ""),
             d.get("pixels_per_second", ""),
             d.get("pixels_decoded_per_second", ""),
+            d.get("avg_batch_delay", ""),
             int(d.get("input_packetcount", 0))-last_input_packetcount,
+            (int(d.get("input_bytecount", 0))-last_input_bytecount)/MEASURE_TIME,
             int(d.get("output_packetcount", 0))-last_output_packetcount,
+            (int(d.get("output_bytecount", 0))-last_output_bytecount)/MEASURE_TIME,
+            (int(d.get("output_mmap_bytecount", 0))-last_mmap_bytes)/MEASURE_TIME,
             d.get("min_client_latency", ""),
             d.get("max_client_latency", ""),
             d.get("avg_client_latency", ""),
@@ -555,8 +579,7 @@ def get_vnc_stats(last_record=None):
         #print("get_vnc_stats(%s) process.poll()=%s" % (last_record, process.poll()))
         if process.poll() is None:
             try_to_stop(process)
-            time.sleep(1)
-            try_to_kill(process)
+            try_to_kill(process, 2)
         else:
             f = open(TCBENCH_LOG, mode='rb')
             out = f.read()
@@ -568,8 +591,8 @@ def get_vnc_stats(last_record=None):
                 parts = line.split()
                 regions_s = parts[-1]
                 print("Frames/sec=%s" % regions_s)
-    return  [regions_s, "", "",
-             "", "",
+    return  [regions_s, "", "", "",
+             "", "", "", "", "",
              "", "", "",
              "", "", ""
              ]
@@ -620,8 +643,8 @@ def test_vnc():
 
 def get_stats_headers():
     #the stats that are returned by get_xpra_stats or get_vnc_stats
-    return  ["Regions/s", "Pixels/s", "Decoding Pixels/s",
-             "Application packets in", "Application packets out",
+    return  ["Regions/s", "Pixels/s", "Decoding Pixels/s", "Average Batch Delay",
+             "Application packets in", "Application bytes in/s", "Application packets out", "Application bytes out/s", "mmap bytes/s",
              "Min Client Latency", "Max Client Latency", "Avg Client Latency",
              "Min Server Latency", "Max Server Latency", "Avg Server Latency",
              ]
@@ -641,7 +664,8 @@ def main():
     print("results:")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version",
                "Encoding", "Test Command", "Sample Duration",
-               "CPU info", "Platform", "Xorg version", "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+               "CPU info", "Platform", "Xorg version", "OpenGL",
+               "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
