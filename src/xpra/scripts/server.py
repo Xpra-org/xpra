@@ -26,7 +26,10 @@ o0700 = 448
 
 _cleanups = []
 def run_cleanups():
-    for c in _cleanups:
+    global _cleanups
+    cleanups = _cleanups
+    _cleanups = []
+    for c in cleanups:
         try:
             c()
         except:
