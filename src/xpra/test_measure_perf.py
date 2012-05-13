@@ -29,33 +29,33 @@ LIMIT_TESTS = 99999
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
-GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
 XORG_BIN = "/usr/bin/Xorg"
-#GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
+
+GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
+GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
 GTKPERF_TEST = "while true; do gtkperf -a; done"
-TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
 ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
-                        ["rss-glx-hufo_tunnel", "rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes", "rss-glx-drempels",
-                         "xjack", "xmatrix"]
-                          ]
+                            ["rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes"]
+                         ]
 SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
-                        ["rss-glx-hufo_tunnel", "memscroller"]
+                            ["rss-glx-hufo_tunnel", "memscroller", "xjack", "xmatrix"]
                           ]
 X11_TEST_COMMANDS = []
-for x in [GLX_SPHERES, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS:
+for x in [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + ALL_XSCREENSAVER_TESTS:
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
         X11_TEST_COMMANDS.append(x)
+TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 60           #run for N seconds
+MEASURE_TIME = 120           #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
