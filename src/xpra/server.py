@@ -1593,9 +1593,12 @@ class XpraServer(gobject.GObject):
                 window_pixels += pixels
                 window_time += decode_time
             log("wid=%s, window_time=%s, window_pixels=%s", wid, window_time, window_pixels)
-            log("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
-            total_time += window_time
-            total_pixels += window_pixels
+            if window_time>0:
+                #zero time means we dropped the data without processing it,
+                #so don't count it (or try to divide by zero!)
+                log("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
+                total_time += window_time
+                total_pixels += window_pixels
         log("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
