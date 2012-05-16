@@ -3,32 +3,23 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.bencode import IncrBDecode, bencode
-
-    
-def process(input):
-    bd = IncrBDecode()
-    bd.add(input)
-    return  bd.process()
+from xpra.bencode import bencode, bdecode
 
 def test_decoding():
-    
+
     def t(str, value, remainder):
         print(str)
         # Test "one-shot":
-        assert process(str) == (value, remainder)
+        rv, rr = bdecode(str)
+        assert rv == value, "expected value %s but got %s" % (rv, value)
+        rrstr = str[rr:]
+        assert rrstr == remainder, "expected remainder value %s but got %s" % (remainder, rrstr)
         # With gibberish added:
-        assert process(str + "asdf") == (value, remainder + "asdf")
-        # Byte at a time:
-        decoder = IncrBDecode()
-        for i, c in enumerate(str):
-            decoder.add(c)
-            retval = decoder.process()
-            if retval is not None:
-                print(retval)
-                assert retval == (value, "")
-                assert str[i + 1:] == remainder
-                break
+        g_str = str + "asdf"
+        rv, rr = bdecode(g_str)
+        assert rv == value, "expected value %s but got %s" % (rv, value)
+        rrstr = g_str[rr:]
+        assert rrstr.endswith("asdf")
 
     t("i12345e", 12345, "")
     t("i-12345e", -12345, "")
@@ -48,16 +39,7 @@ def test_decoding():
     def te(str, exc):
         print(str)
         try:
-            process(str)
-        except exc:
-            pass
-        else:
-            assert False, "didn't raise exception"
-        try:
-            decoder = IncrBDecode()
-            for c in str:
-                decoder.add(c)
-                decoder.process()
+            bdecode(str)
         except exc:
             pass
         else:
@@ -92,7 +74,7 @@ def test_encoding():
         print("bencode(%s)=%s" % (v, be))
         if encstr:
             assert be==encstr
-        restored = process(be)
+        restored = bdecode(be)
         print("decode(%s)=%s" % (be, restored))
         list = restored[0]
         if len(list)!=len(v):
@@ -110,7 +92,7 @@ def test_encoding():
             if rv!=ov:
                 print("value for %s does not match: %s vs %s" % (ok, ov, rv))
                 return list
-                
+
         return list
 
     def test_hello():
