@@ -13,7 +13,7 @@ log = Logger()
 HOME = os.path.expanduser("~/")
 
 #You will probably need to change those:
-IP = "192.168.42.100"       #this is your IP
+IP = "127.0.0.1"       #this is your IP
 PORT = 10000                #the port to test on
 DISPLAY_NO = 10             #the test DISPLAY no to use
 XORG_CONFIG="%s/xorg.conf" % HOME
@@ -130,9 +130,9 @@ def try_to_kill(process, grace=0):
         except Exception, e:
             print("could not stop process %s: %s" % (process, e))
 
-def getoutput(cmd):
+def getoutput(cmd, env=None):
     try:
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
     except Exception, e:
         print("error running %s: %s" % (cmd, e))
         raise e
@@ -372,7 +372,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 #run the client test
                 result = [name, tech_name, server_version, client_version]
                 result += [encoding, get_command_name(test_command)]
-                result += [MEASURE_TIME, CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
+                result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
                 result += [compression, down, up, latency]
                 result += measure_client(server_pid, name, client_cmd, get_stats_cb)
                 results.append(result)
@@ -511,8 +511,11 @@ def test_xpra():
     return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
-def get_x11_client_window_info(*app_name_strings):
-    wininfo = getoutput(["xwininfo", "-root", "-tree"])
+def get_x11_client_window_info(display, *app_name_strings):
+    env = os.environ.copy()
+    if display:
+        env["DISPLAY"] = display
+    wininfo = getoutput(["xwininfo", "-root", "-tree"], env)
     for line in wininfo.splitlines():
         if not line:
             continue
@@ -547,14 +550,21 @@ def get_vnc_stats(last_record=None):
     #print("get_vnc_stats(%s)" % last_record)
     if last_record==None:
         #this is the initial call,
-        #start the thread to watch the output of tcbench:
-        info = get_x11_client_window_info("TigerVNC: x11", "Vncviewer")
+        #start the thread to watch the output of tcbench
+        #we first need to figure out the dimensions of the client window
+        #within the Xvnc server, the use those dimensions to tell tcbench
+        #where to look in the vncviewer client window
+        test_window_info = get_x11_client_window_info(":%s" % DISPLAY_NO)
+        print("info for client test window: %s" % str(test_window_info))
+        info = get_x11_client_window_info(None, "TigerVNC: x11", "Vncviewer")
         if not info:
             return  ""
         print("info for TigerVNC: %s" % str(info))
         wid, _, _, w, h = info
         if not wid:
             return  ""
+        if test_window_info:
+            _, _, _, w, h = test_window_info
         command = [TCBENCH, "-wh%s" % wid, "-t%s" % (MEASURE_TIME-5)]
         if w>0 and h>0:
             command.append("-x%s" % int(w/2))
@@ -663,7 +673,7 @@ def main():
     print("")
     print("results:")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version",
-               "Encoding", "Test Command", "Sample Duration",
+               "Encoding", "Test Command", "Sample Duration", "Sample Time",
                "CPU info", "Platform", "Xorg version", "OpenGL",
                "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
