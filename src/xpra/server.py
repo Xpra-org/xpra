@@ -1532,13 +1532,24 @@ class XpraServer(gobject.GObject):
 
     def get_info(self):
         info = {"version" : xpra.__version__}
+        info["session_name"] = self.session_name or ""
+        info["clipboard"] = self.clipboard_enabled
+        info["password_file"] = self.password_file or ""
+        info["randr"] = self.randr
+        info["pulseaudio"] = self.pulseaudio
         info["start_time"] = int(self.start_time)
+        info["encodings"] = ",".join(ENCODINGS)
         info["platform"] = sys.platform
         info["windows"] = len(self._id_to_window)
         if self._protocol is None or self._protocol.source is None or self._protocol.source._closed:
             return  info
         self.send_ping()
         source = self._protocol.source
+        info["client_encodings"] = ",".join(self.encodings)
+        info["keyboard_sync"] = self.keyboard_sync
+        info["keyboard"] = self.keyboard
+        info["key_repeat_delay"] = self.key_repeat_delay
+        info["key_repeat_interval"] = self.key_repeat_interval
         info["encoding"] = source._encoding
         info["damage_packet_queue_size"] = source._damage_packet_queue.qsize()
         info["damage_request_queue_size"] = source._damage_request_queue.qsize()
