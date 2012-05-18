@@ -181,6 +181,12 @@ PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r
 PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
 OPENGL_INFO = getoutput_line(["glxinfo"], "OpenGL renderer string", "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
 
+import pygtk
+pygtk.require("2.0")
+import gtk                                      #@UnusedImport
+from gtk import gdk                             #@UnusedImport
+SCREEN_SIZE = gdk.get_default_root_window().get_size()
+print("screen size=%s" % str(SCREEN_SIZE))
 
 #detect Xvnc version:
 XVNC_VERSION = ""
@@ -373,6 +379,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 result = [name, tech_name, server_version, client_version]
                 result += [encoding, get_command_name(test_command)]
                 result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
+                result += ["%sx%s" % gdk.get_default_root_window().get_size()]
                 result += [compression, down, up, latency]
                 result += measure_client(server_pid, name, client_cmd, get_stats_cb)
                 results.append(result)
@@ -454,19 +461,21 @@ def xpra_get_stats(last_record=None):
     last_input_bytecount = 0
     last_output_bytecount = 0
     if last_record:
-        last_input_packetcount = last_record[4]
-        last_input_bytecount = last_record[5]
-        last_output_packetcount = last_record[6]
-        last_output_bytecount = last_record[7]
-        last_mmap_bytes = last_record[8]
+        index = 5
+        last_input_packetcount = last_record[index]
+        last_input_bytecount = last_record[index+1]
+        last_output_packetcount = last_record[index+2]
+        last_output_bytecount = last_record[index+3]
+        last_mmap_bytes = last_record[index+4]
     return [
             d.get("regions_per_second", ""),
             d.get("pixels_per_second", ""),
+            d.get("pixels_encoded_per_second", ""),
             d.get("pixels_decoded_per_second", ""),
             d.get("avg_batch_delay", ""),
-            int(d.get("input_packetcount", 0))-last_input_packetcount,
+            int(d.get("input_packetcount", 0))-last_input_packetcount/MEASURE_TIME,
             (int(d.get("input_bytecount", 0))-last_input_bytecount)/MEASURE_TIME,
-            int(d.get("output_packetcount", 0))-last_output_packetcount,
+            int(d.get("output_packetcount", 0))-last_output_packetcount/MEASURE_TIME,
             (int(d.get("output_bytecount", 0))-last_output_bytecount)/MEASURE_TIME,
             (int(d.get("output_mmap_bytecount", 0))-last_mmap_bytes)/MEASURE_TIME,
             d.get("min_client_latency", ""),
@@ -602,7 +611,7 @@ def get_vnc_stats(last_record=None):
                 regions_s = parts[-1]
                 print("Frames/sec=%s" % regions_s)
     return  [regions_s, "", "", "",
-             "", "", "", "", "",
+             "", "", "", "", "", "",
              "", "", "",
              "", "", ""
              ]
@@ -653,10 +662,10 @@ def test_vnc():
 
 def get_stats_headers():
     #the stats that are returned by get_xpra_stats or get_vnc_stats
-    return  ["Regions/s", "Pixels/s", "Decoding Pixels/s", "Average Batch Delay",
-             "Application packets in", "Application bytes in/s", "Application packets out", "Application bytes out/s", "mmap bytes/s",
-             "Min Client Latency", "Max Client Latency", "Avg Client Latency",
-             "Min Server Latency", "Max Server Latency", "Avg Server Latency",
+    return  ["Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s", "Average Batch Delay",
+             "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
+             "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
+             "Min Server Latency (ms)", "Max Server Latency (ms)", "Avg Server Latency (ms)",
              ]
 
 def main():
@@ -673,8 +682,8 @@ def main():
     print("")
     print("results:")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version",
-               "Encoding", "Test Command", "Sample Duration", "Sample Time",
-               "CPU info", "Platform", "Xorg version", "OpenGL",
+               "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
+               "CPU info", "Platform", "Xorg version", "OpenGL", "Screen Size",
                "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
