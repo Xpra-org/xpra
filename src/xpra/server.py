@@ -453,9 +453,9 @@ class ServerSource(object):
             return
         #figure out how many pixels behind we are, rather than just the number of packets
         all_unprocessed = list(self._damage_packet_sizes)[-delta:]
-        unprocessed = [pixels for (uwid,pixels) in all_unprocessed if uwid==wid]
+        unprocessed = [pixels for (uwid,pixels,_) in all_unprocessed if uwid==wid]
         all_last_unprocessed = list(self._damage_packet_sizes)[-last_delta:]
-        last_unprocessed = [pixels for (uwid,pixels) in all_last_unprocessed if uwid==wid]
+        last_unprocessed = [pixels for (uwid,pixels,_) in all_last_unprocessed if uwid==wid]
 
         packets_due = len(unprocessed)
         last_packets_due = len(last_unprocessed)
@@ -585,12 +585,12 @@ class ServerSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
+        start = time.time()
         #send via mmap?
         if self._mmap and self._mmap_size>0 and len(data)>256:
-            now = time.time()
             mmap_data = self._mmap_send(data)
             end = time.time()
-            log("%s MBytes/s - %s bytes written to mmap in %sms", int(len(data)/(end-now)/1024/1024), len(data), int(1000*1000*(end-now))/1000.0)
+            log("%s MBytes/s - %s bytes written to mmap in %sms", int(len(data)/(end-start)/1024/1024), len(data), int(1000*1000*(end-start))/1000.0)
             if mmap_data is not None:
                 self._mmap_bytes_sent += len(data)
                 coding = "mmap"
@@ -640,8 +640,9 @@ class ServerSource(object):
             return  None
         #actual network packet:
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
+        end = time.time()
         self._damage_packet_sequence += 1
-        self._damage_packet_sizes.append((wid, w*h))
+        self._damage_packet_sizes.append((wid, w*h, end-start))
         return packet
 
     def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
@@ -1632,6 +1633,15 @@ class XpraServer(gobject.GObject):
             pixels_per_second = int(total_pixels/elapsed)
             info["pixels_per_second"] = pixels_per_second
             log("pixels_per_second=%s", pixels_per_second)
+        if len(source._damage_packet_sizes)>0:
+            total_pixels = 0
+            total_time = 0
+            for _, pixels, elapsed in list(source._damage_packet_sizes):
+                total_pixels += pixels
+                total_time += elapsed
+            pixels_encoded_per_second = int(total_pixels / total_time)
+            info["pixels_encoded_per_second"] = pixels_encoded_per_second
+            log("pixels_encoded_per_second=%s", pixels_encoded_per_second)
 
         #damage regions per second:
         total_pixels = 0            #pixels processed
