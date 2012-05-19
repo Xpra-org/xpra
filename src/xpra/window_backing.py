@@ -90,15 +90,15 @@ class Backing(object):
                 decoder.clean()
                 del decoders[self.wid]
             self._on_close.append(close_decoder)
-        err, outstride, data = decoder.decompress_image(img_data)
-        if err!=0:
-            log.error("paint_with_video_decoder: ouch, decompression error %s", err)
-            return
-        if not data:
-            log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
-            return
-        log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
         try:
+            err, outstride, data = decoder.decompress_image(img_data)
+            if err!=0:
+                log.error("paint_with_video_decoder: ouch, decompression error %s", err)
+                return
+            if not data:
+                log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
+                return
+            log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
             self.paint_rgb24(data, x, y, width, height, outstride)
         finally:
             decoder.free_image()
