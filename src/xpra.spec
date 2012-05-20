@@ -55,10 +55,11 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu May 10 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
+* Thu May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
+- fix vpx/x264 decoding: recover from frame failures
 - fix small per-window memory leak in server
 - per-window update batching auto-tuning, which is fairer
 - windows update batching now takes into account the number of pixels rather than just the number of regions to update

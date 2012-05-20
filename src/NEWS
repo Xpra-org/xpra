@@ -1,8 +1,9 @@
-v0.3.0 (2012-05-10)
+v0.3.0 (2012-05-20)
 ======================
 	-- zero-copy network code, per packet compression
 	-- fix race causing DoS in threaded network protocol setup
 	-- fix vpx encoder memory leak
+	-- fix vpx/x264 decoding: recover from frame failures
 	-- fix small per-window memory leak in server
 	-- per-window update batching auto-tuning, which is fairer
 	-- windows update batching now takes into account the number of pixels rather than just the number of regions to update

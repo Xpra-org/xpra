@@ -2,6 +2,7 @@ xpra (0.3.0-1) UNRELEASED; urgency=low
   * zero-copy network code, per packet compression
   * fix race causing DoS in threaded network protocol setup
   * fix vpx encoder memory leak
+  * fix vpx/x264 decoding: recover from frame failures
   * fix small per-window memory leak in server
   * per-window update batching auto-tuning, which is fairer
   * windows update batching now takes into account the number of pixels rather than just the number of regions to update
@@ -14,7 +15,7 @@ xpra (0.3.0-1) UNRELEASED; urgency=low
   * automated regression and performance tests
   * remove compatibility code for versions older than 0.1
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 10 May 2012 21:17:54 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 20 May 2012 15:00:42 +0200
 
 xpra (0.2.0-1) UNRELEASED; urgency=low
   * x264 and vpx video encoding support
