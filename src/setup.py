@@ -77,6 +77,8 @@ if sys.platform.startswith("win"):
     C_DLLs="E:\\"
     # The x264 DLLs which you can grab from here:
     # http://ffmpeg.zeranoe.com/builds/
+    # beware that some builds work, others crash.. here is one that is known to work ok:
+    # ffmpeg-git-4082198-win32-dev
     # This is where I keep them, you will obviously need to change this value:
     ffmpeg_path="E:\\ffmpeg-win32-shared"
     ffmpeg_include_dir = "%s\\include" % ffmpeg_path
