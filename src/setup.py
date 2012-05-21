@@ -60,6 +60,8 @@ if sys.platform.startswith("win"):
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
+    # (you can find them in various packages, including Visual Studio 2008,
+    # pywin32, etc...)
     # 6fda4c0ef8715eead5b8cec66512d3c8  Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
     # 4a8bc195abdc93f0db5dab7f5093c52f  Microsoft.VC90.CRT/msvcm90.dll
     # 6de5c66e434a9c1729575763d891c6c2  Microsoft.VC90.CRT/msvcp90.dll
@@ -72,17 +74,17 @@ if sys.platform.startswith("win"):
     # 371226b8346f29011137c7aa9e93f2f6  Microsoft.VC90.MFC/mfcm90u.dll
     #
     # This is where I keep them, you will obviously need to change this value:
-    C_DLLs="Z:\\"
+    C_DLLs="E:\\"
     # The x264 DLLs which you can grab from here:
     # http://ffmpeg.zeranoe.com/builds/
     # This is where I keep them, you will obviously need to change this value:
-    ffmpeg_path="Z:\\ffmpeg-win32-shared"
+    ffmpeg_path="E:\\ffmpeg-win32-shared"
     ffmpeg_include_dir = "%s\\include" % ffmpeg_path
     ffmpeg_lib_dir = "%s\\lib" % ffmpeg_path
     ffmpeg_bin_dir = "%s\\bin" % ffmpeg_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
-    vpx_PATH="Z:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.0.0"
+    vpx_PATH="E:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
 
