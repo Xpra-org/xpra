@@ -276,7 +276,7 @@ def set_modifiers_from_keycodes(xkbmap_keycodes):
     pref = DEFAULT_MODIFIER_MEANINGS
     #{keycode : (keyval, name, keycode, group, level)}
     matches = {}
-    log.info("set_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
+    log.debug("set_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
     for entry in xkbmap_keycodes:
         _, keyname, _, _, _ = entry
         modifier = pref.get(keyname)
