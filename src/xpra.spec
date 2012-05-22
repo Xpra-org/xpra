@@ -5,6 +5,9 @@
 
 %define version 0.3.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%if 0%{?build_no} == 0
+%define build_no 0
+%endif
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
 
@@ -291,7 +294,9 @@ cd parti-all-%{version}
 
 %build
 cd parti-all-%{version}
-./install.sh
+rm -rf build install
+python make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi
+CFLAGS=-O0 python setup.py build
 
 %install
 rm -rf $RPM_BUILD_ROOT
