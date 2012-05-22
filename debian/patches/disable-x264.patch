@@ -1,14 +1,15 @@
-Description: Disable x264 video support
-Author: Antoine Martin <antoine@nagafix.co.uk>
-Forwarded: not-needed
---- a/setup.py	(revision 677)
+Description: Disable x264 encoding support.
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
+--- a/setup.py	(revision 756)
 +++ b/setup.py	(working copy)
-@@ -204,7 +204,7 @@
+@@ -224,7 +224,7 @@
                  ["xpra/wait_for_x_server.pyx"],
                  **pkgconfig("x11")
                  ))
 -x264_ENABLED = True
 +x264_ENABLED = False
- if x264_ENABLED:
-     packages.append("xpra.x264")
-     cython_add(Extension("xpra.x264.codec",
+ 
+ 
+ 
