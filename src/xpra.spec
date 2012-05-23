@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.3.0
+%define version 0.3.1
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -61,7 +61,12 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
+* Wed May 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.1-1
+- log remote IP or socket address
+- more graceful disconnection of invalid clients
+- updates to man page and xpra command help page
+
+* Sun May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
