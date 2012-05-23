@@ -1531,7 +1531,7 @@ class XpraServer(gobject.GObject):
         sys.stdout.flush()
         return True
 
-    def get_info(self):
+    def get_info(self, proto):
         info = {"version" : xpra.__version__}
         info["session_name"] = self.session_name or ""
         info["clipboard"] = self.clipboard_enabled
@@ -1542,10 +1542,13 @@ class XpraServer(gobject.GObject):
         info["encodings"] = ",".join(ENCODINGS)
         info["platform"] = sys.platform
         info["windows"] = len(self._id_to_window)
+        info["potential_clients"] = len([p for p in self._potential_protocols if (p is not proto and p is not self._protocol)])
         if self._protocol is None or self._protocol.source is None or self._protocol.source._closed:
+            info["clients"] = 0
             return  info
         self.send_ping()
         source = self._protocol.source
+        info["clients"] = 1
         info["client_encodings"] = ",".join(self.encodings)
         info["keyboard_sync"] = self.keyboard_sync
         info["keyboard"] = self.keyboard
@@ -1706,7 +1709,7 @@ class XpraServer(gobject.GObject):
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
             return
         if capabilities.get("info_request", False):
-            packet = ["hello", self.get_info()]
+            packet = ["hello", self.get_info(proto)]
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
             return
