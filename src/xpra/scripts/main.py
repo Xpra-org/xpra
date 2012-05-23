@@ -9,7 +9,7 @@ import sys
 import os
 import socket
 import time
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 import logging
 from subprocess import Popen, PIPE
 import signal
@@ -105,90 +105,71 @@ def main(script_file, cmdline):
                                          upgrade_str,
                                          note_str]))
     if XPRA_LOCAL_SERVERS_SUPPORTED:
-        parser.add_option("--start-child", action="append",
+        group = OptionGroup(parser, "Server Options",
+                    "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
+        group.add_option("--start-child", action="append",
                           dest="children", metavar="CMD",
                           help="program to spawn in new server (may be repeated)")
-        parser.add_option("--exit-with-children", action="store_true",
+        group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=False,
                           help="Terminate server when --start-child command(s) exit")
-        parser.add_option("--no-daemon", action="store_false",
+        group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")
-        parser.add_option("--use-display", action="store_true",
+        group.add_option("--use-display", action="store_true",
                           dest="use_display", default=False,
                           help="Use an existing display rather than starting one with xvfb")
-        parser.add_option("--xvfb", action="store",
+        group.add_option("--xvfb", action="store",
                           dest="xvfb", default="Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
-        parser.add_option("--no-randr", action="store_false",
+        group.add_option("--no-randr", action="store_false",
                           dest="randr", default=True,
                           help="Disables X11 randr support, xrandr allows the virtual display to be resized to match the client's dimensions (if supported by Xvfb)")
-        parser.add_option("--bind-tcp", action="store",
+        group.add_option("--bind-tcp", action="store",
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
-    parser.add_option("--enable-pings", action="store_true",
-                      dest="send_pings", default=False,
-                      help="Send ping packets every second to gather latency statistics")
-    parser.add_option("--no-clipboard", action="store_false",
+        parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Server Controlled Features",
+                "These options can be used to turn off certain features, "
+                "they can be specified on the client or on the server, "
+                "but the client cannot enable them if they are disabled on the server.")
+    group.add_option("--no-clipboard", action="store_false",
                       dest="clipboard", default=True,
                       help="Disable clipboard support")
-    parser.add_option("--no-pulseaudio", action="store_false",
+    group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=True,
                       help="Disable pulseaudio support via X11 root window properties")
-    parser.add_option("--no-keyboard-sync", action="store_false",
-                      dest="keyboard_sync", default=True,
-                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
-    # let the platform specific code add its own options:
-    # adds "--no-tray" for platforms that support it
-    add_client_options(parser)
-    parser.add_option("--no-mmap", action="store_false",
+    group.add_option("--no-mmap", action="store_false",
                       dest="mmap", default=True,
                       help="Disable memory mapped transfers for local connections")
-    parser.add_option("--password-file", action="store",
-                      dest="password_file", default=None,
-                      help="The file containing the password required to connect (useful to secure TCP mode)")
-    parser.add_option("--session-name", action="store",
-                      dest="session_name", default=None,
-                      help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
-    parser.add_option("--title-suffix", action="store",
-                      dest="title_suffix", default=None,
-                      help="Text which is appended to the window's title (deprecated - use --title instead)")
-    parser.add_option("--title", action="store",
-                      dest="title", default="@title@ on @client-machine@",
-                      help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
-    parser.add_option("--window-icon", action="store",
-                          dest="window_icon", default=None,
-                          help="Path to the default image which will be used for all windows (the application may override this)")
-    parser.add_option("--tray-icon", action="store",
-                          dest="tray_icon", default=None,
-                          help="Path to the image which will be used as icon for the system-tray or dock")
-    parser.add_option("--encoding", action="store",
+    group.add_option("--readonly", action="store_true",
+                      dest="readonly", default=False,
+                      help="Ignore all keyboard input and mouse events from the clients")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
+                "These options are used by the client to specify the desired picture and network data compression.")
+    group.add_option("--encoding", action="store",
                       metavar="ENCODING",
                       dest="encoding", type="str",
                       help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), DEFAULT_ENCODING))
     if "jpeg" in ENCODINGS:
-        parser.add_option("--jpeg-quality", action="store",
+        group.add_option("--jpeg-quality", action="store",
                           metavar="LEVEL",
                           dest="jpegquality", type="int", default="80",
                           help="Use jpeg compression with given quality (1-100). Default: 80")
-        parser.add_option("-b", "--max-bandwidth", action="store",
+        group.add_option("-b", "--max-bandwidth", action="store",
                           dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
-    parser.add_option("--auto-refresh-delay", action="store",
+    group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=0.0,
                       metavar="DELAY",
                       help="Idle delay in seconds before doing automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
-    parser.add_option("--key-shortcut", action="append",
-                      dest="key_shortcuts", type="str", default=[],
-                      help="Define key shortcuts that will trigger specific actions."
-                      + " Defaults to Meta+Shift+F4:quit if no shortcuts are defined.")
-    parser.add_option("--readonly", action="store_true",
-                      dest="readonly", default=False,
-                      help="Ignore all keyboard input and mouse events from client")
-    parser.add_option("-z", "--compress", action="store",
+    group.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",
                       help="How hard to work on compressing data."
@@ -196,22 +177,64 @@ def main(script_file, cmdline):
                       + " the default value should be adequate."
                       + " 0 to disable compression,"
                       + " 9 for maximal (slowest) compression. Default: %default.")
-    parser.add_option("--ssh", action="store",
-                      dest="ssh", default=DEFAULT_SSH_CMD, metavar="CMD",
-                      help="How to run ssh (default: '%default')")
-    parser.add_option("--socket-dir", action="store",
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Client Features Options",
+                "These options control client features that affect the appearance or the keyboard.")
+    group.add_option("--session-name", action="store",
+                      dest="session_name", default=None,
+                      help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
+    group.add_option("--title", action="store",
+                      dest="title", default="@title@ on @client-machine@",
+                      help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
+    group.add_option("--window-icon", action="store",
+                          dest="window_icon", default=None,
+                          help="Path to the default image which will be used for all windows (the application may override this)")
+    # let the platform specific code add its own options:
+    # adds "--no-tray" for platforms that support it
+    add_client_options(group)
+    group.add_option("--tray-icon", action="store",
+                          dest="tray_icon", default=None,
+                          help="Path to the image which will be used as icon for the system-tray or dock")
+    group.add_option("--key-shortcut", action="append",
+                      dest="key_shortcuts", type="str", default=[],
+                      help="Define key shortcuts that will trigger specific actions."
+                      + " Defaults to 'Meta+Shift+F4:quit' if no shortcuts are defined.")
+    group.add_option("--no-keyboard-sync", action="store_false",
+                      dest="keyboard_sync", default=True,
+                      help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Advanced Options",
+                "These options apply to both client and server. Please refer to the man page for details.")
+    group.add_option("--password-file", action="store",
+                      dest="password_file", default=None,
+                      help="The file containing the password required to connect (useful to secure TCP mode)")
+    group.add_option("--socket-dir", action="store",
                       dest="sockdir", default=None,
                       help="Directory to place/look for the socket files in (default: $XPRA_SOCKET_DIR or '~/.xpra')")
-    parser.add_option("--mmap-group", action="store_true",
+    group.add_option("-d", "--debug", action="store",
+                      dest="debug", default=None, metavar="FILTER1,FILTER2,...",
+                      help="List of categories to enable debugging for (or \"all\")")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Advanced Client Options",
+                "Please refer to the man page for details.")
+    group.add_option("--ssh", action="store",
+                      dest="ssh", default=DEFAULT_SSH_CMD, metavar="CMD",
+                      help="How to run ssh (default: '%default')")
+    group.add_option("--mmap-group", action="store_true",
                       dest="mmap_group", default=False,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
-    parser.add_option("--remote-xpra", action="store",
+    group.add_option("--enable-pings", action="store_true",
+                      dest="send_pings", default=False,
+                      help="Send ping packets every second to gather latency statistics")
+    group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=".xpra/run-xpra",
                       metavar="CMD",
                       help="How to run xpra on the remote host (default: '%default')")
-    parser.add_option("-d", "--debug", action="store",
-                      dest="debug", default=None, metavar="FILTER1,FILTER2,...",
-                      help="List of categories to enable debugging for (or \"all\")")
+    parser.add_option_group(group)
+
     (options, args) = parser.parse_args(cmdline[1:])
     if "jpeg" not in ENCODINGS:
         #ensure the default values are set even though
@@ -403,8 +426,6 @@ def run_client(parser, opts, extra_args, mode):
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.jpegquality < 0 or opts.jpegquality > 100:
         parser.error("Jpeg quality must be between 0 and 100 inclusive.")
-    if opts.title_suffix is not None and opts.title!="@title@ on @client-machine@":
-        parser.error("use --title or --title-suffix but not both!")
 
     if mode=="screenshot":
         from xpra.client_base import ScreenshotXpraClient

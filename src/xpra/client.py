@@ -456,10 +456,7 @@ class XpraClient(XpraClientBase):
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
-        title = opts.title
-        if opts.title_suffix is not None:
-            title = "@title@ %s" % opts.title_suffix
-        self.title = title
+        self.title = opts.title
         self.readonly = opts.readonly
         self.session_name = opts.session_name
         self.compression_level = opts.compression_level

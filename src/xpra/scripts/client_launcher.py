@@ -203,7 +203,6 @@ class ApplicationWindow:
 		opts.clipboard = True
 		opts.pulseaudio = True
 		opts.password_file = xpra_opts.password_file
-		opts.title_suffix = None
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
 		opts.jpegquality = xpra_opts.jpegquality
