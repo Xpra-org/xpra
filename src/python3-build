@@ -8,5 +8,5 @@ pushd py3
 patch -p0 < ../disable-posix-server.patch
 2to3 --no-diffs -x all -f except -w -n .
 python3 make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi
-CFLAGS=-O0 python3 setup.py install
+CFLAGS=-O2 python3 setup.py install
 popd
