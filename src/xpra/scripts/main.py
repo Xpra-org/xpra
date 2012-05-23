@@ -192,6 +192,8 @@ def main(script_file, cmdline):
                       dest="compression_level", type="int", default=3,
                       metavar="LEVEL",
                       help="How hard to work on compressing data."
+                      + " You generally do not need to use this option,"
+                      + " the default value should be adequate."
                       + " 0 to disable compression,"
                       + " 9 for maximal (slowest) compression. Default: %default.")
     parser.add_option("--ssh", action="store",

@@ -261,15 +261,25 @@ Setting this value on the server provides a default value which
 may be overridden on the client.
 .TP
 \fB\-\-encoding\fP=\fIENCODING\fP
-This specifies the image encoding to use, there are 3 options:
-\fBjpeg\fP, \fBpng\fP and \fBrgb24\fP.
-The default is \fBrgb24\fP. \fBjpeg\fP can be useful for graphical
-applications (see \fB\-\-jpeg\-quality\fP below). \fBpng\fP is
-compressed but also lossless so it can be used instead of
-\fBrgb24\fP (which is inefficent without the \fB\-\-compress\fP option).
+This specifies the image encoding to use,
+there are a number of encodings supported:
+\fBjpeg\fP, \fBpng\fP, \fBrgb24\fP, \fBvpx\fP and \fBx264\fP
+(some may not be available in your environment).
+The default is generally \fBpng\fP, if available.
+\fBpng\fP is compressed and lossless, it is more efficient than
+\fBrgb24\fP (rather inefficient, it is compressed with zlib,
+see the \fB\-\-compress\fP option).
+\fBjpeg\fP can be useful for graphical applications
+(see \fB\-\-jpeg\-quality\fP below).
+\fBvpx\fP and \fBx264\fP are both lossy and are
+very efficient with graphics or high framerate applications,
+\fBx264\fP is also very usable with text.
+
 When specifying this option on the server, it will act as default
-for clients that do not specify which encoding they want to be using.
+for clients that do not specify which encoding they want to use.
+
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
+\fBvpx\fP and \fBx264\fP require their respective shared libraries.
 .TP
 \fB\-\-socket\-dir\fP=\fIDIR\fP
 Location where to write and look for the Xpra socket files.
@@ -355,9 +365,12 @@ the network, but use more CPU power. Valid options are between 0
 (meaning no compression) and 9, inclusive. Higher levels take
 progressively more CPU while giving diminishing returns in terms of
 actual compression achieved; the default is 3, which gives a
-reasonable trade-off in general. Over local 100Mbs+ networks the CPU
-can easily become the bottleneck on xpra's speed, and \fB\-z0\fP is
-therefore recommended.
+reasonable trade-off in general.
+You generally do not need to use this option,
+the default value should be adequate in almost all cases.
+
+This compression is not used on pixel data (except
+when using the \fBrgb24\fP encoding).
 .TP
 \fB\-\-jpeg\-quality\fP=\fIVALUE\fP
 This option sets the JPEG compression quality of pixel data sent by
