@@ -199,6 +199,9 @@ class ClientExtrasBase(object):
                 webbrowser.open("mailto://"+mail)
             gtk.about_dialog_set_url_hook(on_website_hook)
             gtk.about_dialog_set_email_hook(on_email_hook)
+            xpra_icon = self.get_pixbuf("xpra.png")
+            if xpra_icon:
+                dialog.set_icon(xpra_icon)
         dialog.set_name("Xpra")
         from xpra import __version__
         dialog.set_version(__version__)
@@ -247,11 +250,9 @@ class ClientExtrasBase(object):
         window.set_destroy_with_parent(True)
         window.set_resizable(True)
         window.set_decorated(True)
-        pixbuf = None
-        if self.tray_icon:
-            pixbuf = self.get_pixbuf(self.tray_icon)
+        pixbuf = self.get_pixbuf("statistics.png")
         if not pixbuf:
-            pixbuf = self.get_pixbuf("xpra.png")
+            pixbuf = self.get_pixbuf(self.tray_icon)
         if pixbuf:
             window.set_icon(pixbuf)
         if is_gtk3():
