@@ -373,7 +373,9 @@ class Protocol(object):
             while not self._closed:
                 buf = self._read_queue.get()
                 if not buf:
-                    return self._call_connection_lost("empty marker in read queue")
+                    log("read thread: empty marker, exiting")
+                    gobject.idle_add(self.close)
+                    return
                 #this is the old/unconditional compression code (to be removed):
                 if not self.raw_packets and self._compression_level>0:
                     buf = self._decompressor.decompress(buf)
