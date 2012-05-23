@@ -136,6 +136,9 @@ class Protocol(object):
         self._read_parser_thread.name = "read_parse_loop"
         self._read_parser_thread.deamon = True
 
+    def __str__(self):
+        return "Protocol(%s)" % self._conn
+
     def start(self):
         self._write_thread.start()
         self._read_thread.start()
