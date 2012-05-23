@@ -386,7 +386,8 @@ class Protocol(object):
                     if bl<=0:
                         break
                     if current_packet_size<0:
-                        assert read_buffer[0] in ["P", ord("P")], "invalid packet header"
+                        if read_buffer[0] not in ["P", ord("P")]:
+                            return self._call_connection_lost("invalid packet header, not an xpra client?")
                         if bl<2:
                             break
                         if read_buffer[1] in ["S", ord("S")]:
