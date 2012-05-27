@@ -24,6 +24,7 @@
 #include "vpx/vpx_decoder.h"
 #include "vpx/vp8dx.h"
 #include "vpxlib.h"
+#include "vpx/vpx_image.h"
 #define enc_interface (vpx_codec_vp8_cx())
 #define dec_interface (vpx_codec_vp8_dx())
 #define fourcc    0x30385056
@@ -34,6 +35,8 @@ struct vpx_context {
 	vpx_codec_ctx_t codec;
 	struct SwsContext *rgb2yuv;
 	struct SwsContext *yuv2rgb;
+	int width;
+	int height;
 } vpx_context;
 
 
@@ -60,6 +63,8 @@ struct vpx_context *init_encoder(int width, int height)
 		free(ctx);
 		return NULL;
 	}
+	ctx->width = width;
+	ctx->height = height;
 	ctx->rgb2yuv = sws_getContext(width, height, PIX_FMT_RGB24, width, height, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 	return ctx;
 }
@@ -82,6 +87,8 @@ struct vpx_context *init_decoder(int width, int height)
 		free(ctx);
 		return NULL;
 	}
+	ctx->width = width;
+	ctx->height = height;
 	ctx->yuv2rgb = sws_getContext(width, height, PIX_FMT_YUV420P, width, height, PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 	return	ctx;
 }
@@ -92,43 +99,48 @@ void clean_decoder(struct vpx_context *ctx)
 	free(ctx);
 }
 
-int compress_image(struct vpx_context *ctx, uint8_t *in, int w, int h, int stride, uint8_t **out, int *outsz)
+vpx_image_t* csc_image(struct vpx_context *ctx, const uint8_t *in, int stride)
 {
-	vpx_image_t image;
+	vpx_image_t *image = malloc(sizeof(vpx_image_t));
+	if (!vpx_img_alloc(image, VPX_IMG_FMT_I420, ctx->width, ctx->height, 1)) {
+		printf("Failed to allocate image %dx%d", ctx->width, ctx->height);
+		return NULL;
+	}
+	/* Colorspace conversion (RGB -> I420) */
+	sws_scale(ctx->rgb2yuv, &in, &stride, 0, ctx->height, image->planes, image->stride);
+	image->w = ctx->width;
+	image->h = ctx->height;
+	image->d_w = ctx->width;
+	image->d_h = ctx->height;
+	return image;
+}
+
+int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, int *outsz)
+{
 	const vpx_codec_cx_pkt_t *pkt;
 	vpx_codec_iter_t iter = NULL;
 	int frame_cnt = 0;
 	int flags = 0;
 	int i = 0;
-	if (!vpx_img_alloc(&image, VPX_IMG_FMT_I420, w, h, 1)) {
-		printf("Failed to allocate image %dx%d", w, h);
-		return -1;
-	}
-	image.w = w;
-	image.h = h;
-	image.d_w = w;
-	image.d_h = h;
-	image.x_chroma_shift = 0;
-	image.y_chroma_shift = 0;
-	image.bps = 8;
 
-	/* Colorspace conversion (RGB -> I420) */
-	sws_scale(ctx->rgb2yuv, &in, &stride, 0, h, image.planes, image.stride);
 	/* Encoding */
-	i = vpx_codec_encode(&ctx->codec, &image, frame_cnt, 1, flags, VPX_DL_REALTIME);
+	image->x_chroma_shift = 0;
+	image->y_chroma_shift = 0;
+	image->bps = 8;
+	i = vpx_codec_encode(&ctx->codec, image, frame_cnt, 1, flags, VPX_DL_REALTIME);
 	if (i) {
 		codec_error(&ctx->codec, "vpx_codec_encode");
-		vpx_img_free(&image);
+		vpx_img_free(image);
 		return i;
 	}
 	pkt = vpx_codec_get_cx_data(&ctx->codec, &iter);
 	if (pkt->kind!=VPX_CODEC_CX_FRAME_PKT) {
-		vpx_img_free(&image);
+		vpx_img_free(image);
 		return 1;
 	}
 	*out = pkt->data.frame.buf;
 	*outsz = pkt->data.frame.sz;
-	vpx_img_free(&image);
+	vpx_img_free(image);
 	return 0;
 }
 

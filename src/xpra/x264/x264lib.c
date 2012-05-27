@@ -111,38 +111,57 @@ void clean_decoder(struct x264lib_ctx *ctx)
 }
 
 #ifndef _WIN32
-int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8_t **out, int *outsz)
+x264_picture_t* csc_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
 {
 	if (!ctx->encoder || !ctx->rgb2yuv)
-		return 1;
+		return NULL;
 
-	x264_picture_t pic_in, pic_out;
-	x264_picture_alloc(&pic_in, X264_CSP_I420, ctx->width, ctx->height);
+	x264_picture_t *pic_in = malloc(sizeof(x264_picture_t));
+	x264_picture_alloc(pic_in, X264_CSP_I420, ctx->width, ctx->height);
 
 	/* Colorspace conversion (RGB -> I420) */
-	sws_scale(ctx->rgb2yuv, &in, &stride, 0, ctx->height, pic_in.img.plane, pic_in.img.i_stride);
+	sws_scale(ctx->rgb2yuv, &in, &stride, 0, ctx->height, pic_in->img.plane, pic_in->img.i_stride);
+	return pic_in;
+}
+
+void free_csc_image(x264_picture_t *image)
+{
+	x264_picture_clean(image);
+	free(image);
+}
+
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
+{
+	if (!ctx->encoder || !ctx->rgb2yuv) {
+		free_csc_image(pic_in);
+		return 1;
+	}
+	x264_picture_t pic_out;
 
 	/* Encoding */
-	pic_in.i_pts = 1;
+	pic_in->i_pts = 1;
 
 	x264_nal_t* nals;
 	int i_nals;
-	int frame_size = x264_encoder_encode(ctx->encoder, &nals, &i_nals, &pic_in, &pic_out);
-	if (frame_size >= 0) {
-		/* Do not free that! */
-		*out = nals[0].p_payload;
-		*outsz = frame_size;
-	} else {
-		fprintf(stderr, "Problem\n");
-		x264_picture_clean(&pic_in);
+	int frame_size = x264_encoder_encode(ctx->encoder, &nals, &i_nals, pic_in, &pic_out);
+	if (frame_size < 0) {
+		fprintf(stderr, "Problem during x264_encoder_encode: frame_size is invalid!\n");
+		free_csc_image(pic_in);
+		*out = NULL;
+		*outsz = 0;
 		return 2;
 	}
-  
-	x264_picture_clean(&pic_in);
+	/* Do not clean that! */
+	*out = nals[0].p_payload;
+	*outsz = frame_size;
+	free_csc_image(pic_in);
 	return 0;
 }
 #else
-int compress_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride, uint8_t **out, int *outsz)
+x264_picture_t* csc_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride) {
+	return	NULL;
+}
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
 {
 	return 1;
 }

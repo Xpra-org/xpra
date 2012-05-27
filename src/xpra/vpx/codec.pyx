@@ -8,16 +8,17 @@ from libc.stdlib cimport free
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
+    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
 ctypedef void vpx_codec_ctx_t
+ctypedef void vpx_image_t
 cdef extern from "vpxlib.h":
     vpx_codec_ctx_t* init_encoder(int width, int height)
     void clean_encoder(vpx_codec_ctx_t *context)
-    int compress_image(vpx_codec_ctx_t *ctx, uint8_t *input, int w, int h, int stride, uint8_t **out, int *outsz)
+    vpx_image_t* csc_image(vpx_codec_ctx_t *ctx, uint8_t *input, int stride)
+    int compress_image(vpx_codec_ctx_t *ctx, vpx_image_t *image, uint8_t **out, int *outsz) nogil
+
     vpx_codec_ctx_t* init_decoder(int width, int height)
     void clean_decoder(vpx_codec_ctx_t *context)
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t **out, int *outsize, int *outstride)
@@ -96,20 +97,26 @@ cdef class Encoder(xcoder):
             self.context = NULL
 
     def compress_image(self, input, rowstride):
+        cdef vpx_image_t *pic_in = NULL
         cdef uint8_t *cout
         cdef int coutsz
         cdef uint8_t *buf = <uint8_t *> 0
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
+        #colourspace conversion with gil held:
         PyObject_AsReadBuffer(input, <void **>&buf, &buf_len)
-        i = compress_image(self.context, buf, self.width, self.height, rowstride, &cout, &coutsz)
+        pic_in = csc_image(self.context, buf, rowstride)
+        assert pic_in!=NULL, "colourspace conversion failed"
+        #actual compression (no gil):
+        with nogil:
+            i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
         return  i, coutsz, coutv
-    
+
     def increase_encoding_speed(self):
         return
-    
+
     def decrease_encoding_speed(self):
         return

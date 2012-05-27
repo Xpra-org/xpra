@@ -10,16 +10,17 @@ from libc.stdlib cimport free
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
+    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
 ctypedef void x264lib_ctx
+ctypedef void x264_picture_t
 cdef extern from "x264lib.h":
     x264lib_ctx* init_encoder(int width, int height)
     void clean_encoder(x264lib_ctx *context)
-    int compress_image(x264lib_ctx *context, uint8_t *input, int stride, uint8_t **out, int *outsz)
+    x264_picture_t* csc_image(x264lib_ctx *ctx, uint8_t *input, int stride)
+    int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz) nogil
+
     x264lib_ctx* init_decoder(int width, int height)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t **out, int *outsize, int *outstride)
@@ -60,7 +61,7 @@ cdef class Decoder(xcoder):
 
     def init_context(self, width, height):
         self.context = init_decoder(width, height)
-    
+
     def clean(self):
         if self.context!=NULL:
             clean_decoder(self.context)
@@ -92,20 +93,26 @@ cdef class Encoder(xcoder):
 
     def init_context(self, width, height):
         self.context = init_encoder(width, height)
-    
+
     def clean(self):
         if self.context!=NULL:
             clean_encoder(self.context)
             self.context = NULL
 
     def compress_image(self, input, rowstride):
+        cdef x264_picture_t *pic_in = NULL
         cdef uint8_t *cout
         cdef int coutsz
         cdef uint8_t *buf = <uint8_t *> 0
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
+        #colourspace conversion with gil held:
         PyObject_AsReadBuffer(input, <void **>&buf, &buf_len)
-        i = compress_image(self.context, buf, rowstride, &cout, &coutsz)
+        pic_in = csc_image(self.context, buf, rowstride)
+        assert pic_in!=NULL, "colourspace conversion failed"
+        #actual compression (no gil):
+        with nogil:
+            i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
@@ -113,6 +120,6 @@ cdef class Encoder(xcoder):
 
     def increase_encoding_speed(self):
         change_encoding_speed(self.context, 1)
-    
+
     def decrease_encoding_speed(self):
         change_encoding_speed(self.context, -1)
