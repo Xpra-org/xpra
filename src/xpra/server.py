@@ -1019,11 +1019,11 @@ class XpraServer(gobject.GObject):
         self.disconnect("shutting down")
 
     def _new_connection(self, listener, *args):
+        sock, address = listener.accept()
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
-            listener.close()
+            sock.close()
             return  True
-        sock, address = listener.accept()
         log.info("New connection received: %s", sock.getsockname())
         protocol = Protocol(SocketConnection(sock, address), self.process_packet)
         self._potential_protocols.append(protocol)
