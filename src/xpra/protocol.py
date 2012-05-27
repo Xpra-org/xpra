@@ -512,7 +512,7 @@ class Protocol(object):
         if self._closed:
             return
         self._closed = True
-        self._process_packet_cb(self, [Protocol.CONNECTION_LOST])
+        gobject.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         if self._conn:
             try:
                 self._conn.close()
