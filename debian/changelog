@@ -1,9 +1,23 @@
+xpra (0.4.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 May 2012 18:05:46 +0100
+
 xpra (0.3.1-1) UNRELEASED; urgency=low
+  * fix DoS in network connections setup code
+  * fix for non-ascii characters in source file
+  * log remote IP or socket address
+  * more graceful disconnection of invalid clients
+  * updates to the man page and xpra command help page
+  * support running the automated tests against older versions
+  * "xpra info" to report the number of clients connected
+  * compile cython extensions with -O2
+  * use xpra's own icon for its own windows (about and info dialogs)
   * log remote IP or socket address
   * more graceful disconnection of invalid clients
   * updates to man page and xpra command help page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 23 May 2012 12:57:46 +0200
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 May 2012 18:05:45 +0100
 
 xpra (0.3.0-1) UNRELEASED; urgency=low
   * zero-copy network code, per packet compression

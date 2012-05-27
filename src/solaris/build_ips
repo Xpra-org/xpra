@@ -25,7 +25,7 @@ REPODIR=/tmp/Xpra.repo.$$
 MYPUBLISHER=
 CSET=`svn info ../src |awk '/^Revision: / {print $2}'`
 # change the REV depending on what the latest is
-REV=0.2.0
+REV=0.4.0
 
 # update the manifest...
 ${SED} -e"s,@REV@,$REV,g" -e"s,@CSET@,$CSET,g" < manifest.base > Xpra.manifest.$CSET

@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.3.1
+%define version 0.4.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -61,10 +61,19 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed May 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.1-1
+- TODO
+
 * Wed May 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.1-1
+- fix DoS in network connections setup code
+- fix for non-ascii characters in source file
 - log remote IP or socket address
 - more graceful disconnection of invalid clients
-- updates to man page and xpra command help page
+- updates to the man page and xpra command help page
+- support running the automated tests against older versions
+- "xpra info" to report the number of clients connected
+- compile cython extensions with -O2
+- use xpra's own icon for its own windows (about and info dialogs)
 
 * Sun May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
 - zero-copy network code, per packet compression
