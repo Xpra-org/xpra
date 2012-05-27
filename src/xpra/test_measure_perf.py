@@ -27,6 +27,7 @@ LIMIT_TESTS = 2
 LIMIT_TESTS = 99999
 
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 
 TRICKLE_BIN = "/usr/bin/trickle"
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
@@ -43,10 +44,10 @@ ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
                             ["rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes"]
                          ]
 SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
-                            ["rss-glx-hufo_tunnel", "memscroller", "xjack", "xmatrix"]
+                            ["memscroller", "eruption", "xmatrix"]
                           ]
 X11_TEST_COMMANDS = []
-for x in [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + ALL_XSCREENSAVER_TESTS:
+for x in [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS:
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
@@ -90,6 +91,7 @@ XPRA_SERVER_STOP_COMMANDS = [
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
 #XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
+XPRA_TEST_ENCODINGS = ["x264"]
 XPRA_JPEG_OPTIONS = [40, 80, 90]
 XPRA_JPEG_OPTIONS = [40, 90]
 XPRA_JPEG_OPTIONS = [80]
@@ -215,7 +217,8 @@ if err:
 print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
 
 XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
-print ("XPRA_VERSION=%s" % XPRA_VERSION)
+XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
+print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 
 def clean_sys_state():
     #clear the caches
@@ -446,10 +449,19 @@ def get_command_name(command_arg):
     assert type(c)==str
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
+def no_stats(last_record=None):
+    return  ["", "", "", "",
+             "", "", "", "", "", "",
+             "", "", "",
+             "", "", ""
+             ]
+
 def xpra_get_stats(last_record=None):
+    if XPRA_VERSION_NO<[0, 3]:
+        return  no_stats(last_record)
     out = getoutput(XPRA_INFO_COMMAND)
     if not out:
-        return  None
+        return  no_stats(last_record)
     d = {}
     for line in out.splitlines():
         parts = line.split("=")
@@ -504,8 +516,9 @@ def test_xpra():
                         cmd = trickle_command(down, up, latency)
                         cmd += [XPRA_BIN,
                                "attach", "tcp:%s:%s" % (IP, PORT),
-                               "--enable-pings",
                                "-z", str(compression), "--readonly"]
+                        if XPRA_VERSION_NO>=[0, 3]:
+                            cmd.append("--enable-pings")
                         if encoding=="jpeg":
                             cmd.append("--jpeg-quality=%s" % jpeg_q)
                             name = "%s-%s" % (encoding, jpeg_q)
@@ -567,11 +580,11 @@ def get_vnc_stats(last_record=None):
         print("info for client test window: %s" % str(test_window_info))
         info = get_x11_client_window_info(None, "TigerVNC: x11", "Vncviewer")
         if not info:
-            return  ""
+            return  no_stats(last_record)
         print("info for TigerVNC: %s" % str(info))
         wid, _, _, w, h = info
         if not wid:
-            return  ""
+            return  no_stats(last_record)
         if test_window_info:
             _, _, _, w, h = test_window_info
         command = [TCBENCH, "-wh%s" % wid, "-t%s" % (MEASURE_TIME-5)]
@@ -588,7 +601,7 @@ def get_vnc_stats(last_record=None):
             import traceback
             traceback.print_exc()
             print("error running %s: %s" % (command, e))
-        return  ""  #we failed...
+        return  no_stats(last_record)           #we failed...
     regions_s = ""
     if last_record!="":
         #found the process watcher,
