@@ -1,3 +1,4 @@
+# coding=utf8 
 # This file is part of Parti.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
