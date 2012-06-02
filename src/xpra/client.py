@@ -220,7 +220,7 @@ class ClientWindow(gtk.Window):
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
 
-        title = self._client.title
+        title = u(self._client.title)
         if title.find("@")>=0:
             #perform metadata variable substitutions:
             default_values = {"title" : u("<untitled window>"),
@@ -229,9 +229,10 @@ class ClientWindow(gtk.Window):
                 atvar = match.group(0)          #ie: '@title@'
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
                 default_value = default_values.get(var, u("<unknown %s>") % var)
-                return self._metadata.get(var, default_value)
+                value = self._metadata.get(var, default_value)
+                return value.decode("utf-8")
             title = re.sub("@[\w\-]*@", metadata_replace, title)
-        self.set_title(u(title))
+        self.set_title(title)
 
         if "size-constraints" in self._metadata:
             size_metadata = self._metadata["size-constraints"]
@@ -958,7 +959,7 @@ class XpraClient(XpraClientBase):
                      "(server: %sx%s vs. client: %sx%s)\n"
                      "You may see strange behavior.\n"
                      "Please see "
-                     "https://xpra.org/trac/ticket/10"
+                     "https://www.xpra.org/trac/ticket/10"
                      % (avail_w, avail_h, root_w, root_h))
         self.server_randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
