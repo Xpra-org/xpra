@@ -540,6 +540,7 @@ class ServerSource(object):
                 log.error("damage_to_data: error processing region %s: %s", damage, e)
                 continue
             gobject.idle_add(self._process_damage_regions, wid, window, ww, wh, regions, coding, sequence, options)
+            time.sleep(0)
 
     def _process_damage_regions(self, wid, window, ww, wh, regions, coding, sequence, options):
         if self._damage_cancelled.get(wid, 0)>=sequence:
