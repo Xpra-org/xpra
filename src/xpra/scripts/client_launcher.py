@@ -221,6 +221,7 @@ class ApplicationWindow:
 		opts.session_name = "Xpra session"
 		opts.mmap = True
 		opts.keyboard_sync = True
+		opts.send_pings = False
 
 		import logging
 		logging.root.setLevel(logging.INFO)
