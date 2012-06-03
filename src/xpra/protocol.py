@@ -155,7 +155,7 @@ class Protocol(object):
             self._flush_one_packet_into_buffer()
         return False
 
-    def _queue_write(self, data, flush=False):
+    def _queue_write(self, data, cb=None, flush=False):
         """
             This method should be called with _write_lock held
         """
@@ -163,16 +163,16 @@ class Protocol(object):
             return
         if self.raw_packets or self._compressor is None:
             #raw packets are compressed individually, without the header
-            self._write_queue.put(data)
+            self._write_queue.put((data, cb))
             return
         c = self._compressor.compress(data)
         if c:
-            self._write_queue.put(c)
+            self._write_queue.put((c, None))
         if not flush:
             return
         c = self._compressor.flush(zlib.Z_SYNC_FLUSH)
         if c:
-            self._write_queue.put(c)
+            self._write_queue.put((c, cb))
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -204,9 +204,9 @@ class Protocol(object):
     def _flush_one_packet_into_buffer(self):
         if not self.source:
             return
-        packet, self._source_has_more = self.source.next_packet()
+        packet, cb, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            self._add_packet_to_queue(packet)
+            self._add_packet_to_queue(packet, cb)
 
     def encode(self, packet):
         """
@@ -252,7 +252,7 @@ class Protocol(object):
         packets.append((0, True, main_packet))
         return packets
 
-    def _add_packet_to_queue(self, packet):
+    def _add_packet_to_queue(self, packet, cb=None):
         packets = self.encode(packet)
         if not self.raw_packets:
             assert len(packets)==1
@@ -274,12 +274,16 @@ class Protocol(object):
                     assert index==0
                     l = len(data)
                     header = ("PS%014d" % l).encode('latin1')
+                #fire the callback when the last packet (index==0) makes it out:
+                pcb = None
+                if index==0:
+                    pcb = cb
                 if l<4096 and sys.version<'3':
                     #send size and data together (low copy overhead):
-                    self._queue_write(header+data, True)
+                    self._queue_write(header+data, pcb, True)
                 else:
                     self._queue_write(header)
-                    self._queue_write(data, True)
+                    self._queue_write(data, pcb, True)
         finally:
             if packet[0]=="set_deflate":
                 level = packet[1]
@@ -295,11 +299,12 @@ class Protocol(object):
     def _write_thread_loop(self):
         try:
             while True:
-                buf = self._write_queue.get()
+                item = self._write_queue.get()
                 # Used to signal that we should exit:
-                if buf is None:
+                if item is None:
                     log("write thread: empty marker, exiting")
                     break
+                buf, cb = item
                 try:
                     while buf and not self._closed:
                         written = untilConcludes(self._conn.write, buf)
@@ -307,6 +312,8 @@ class Protocol(object):
                             buf = buf[written:]
                             self.output_raw_packetcount += 1
                             self.output_bytecount += written
+                    if cb:
+                        cb()
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
