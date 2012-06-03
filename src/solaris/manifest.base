@@ -239,6 +239,7 @@ dir  path=usr/share/man owner=root group=bin mode=755
 dir  path=usr/share/man/man1 owner=root group=bin mode=755
 file path=usr/share/man/man1/parti.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra.1 owner=root group=bin mode=644
+file path=usr/share/man/man1/xpra_launcher.1 owner=root group=bin mode=644
 dir  path=usr/share/parti owner=root group=root mode=755
 file path=usr/share/parti/README owner=root group=bin mode=644
 file path=usr/share/parti/README.parti owner=root group=bin mode=644
