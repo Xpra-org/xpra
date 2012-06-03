@@ -2073,7 +2073,7 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         #negative keycodes are used for key events without a real keypress/unpress
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
-        if keycode>0:
+        if keycode>=0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
 
     def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
@@ -2081,7 +2081,6 @@ class XpraServer(gobject.GObject):
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        log.debug("handle_key(%s,%s,%s,%s,%s,%s)", wid, pressed, name, keyval, keycode, modifiers)
         if pressed and (wid is not None) and (wid not in self._id_to_window):
             log("window %s is gone, ignoring key press", wid)
             return

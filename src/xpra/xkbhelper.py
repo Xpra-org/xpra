@@ -156,7 +156,7 @@ def set_all_keycodes(xkbmap_keycodes, xkbmap_initial_keycodes):
     # {keycode : (keyval, name, keycode, group, level)}
     # since the instructions are generated per keycode in set_keycodes()
     keycodes = {}
-    log.debug("set_all_keycodes_preserve(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
+    log.debug("set_all_keycodes(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
     for entry in xkbmap_keycodes:
         _, _, keycode, _, _ = entry
         entries = keycodes.setdefault(keycode, [])
@@ -191,7 +191,7 @@ def set_keycodes(keycodes, preserve_keycodes={}):
                     server_keycode = preserve_keycodes.get(name)
                     if server_keycode!=keycode:
                         log.debug("set_keycodes key %s(%s) mapped to keycode=%s", keycode, entries, server_keycode)
-        if server_keycode==0 or server_keycode in used or server_keycode<kcmin or server_keycode>kcmax:
+        if server_keycode<0 or server_keycode in used or server_keycode<kcmin or server_keycode>kcmax:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]
                 free_keycodes = free_keycodes[1:]
@@ -199,7 +199,7 @@ def set_keycodes(keycodes, preserve_keycodes={}):
             else:
                 log.error("set_keycodes: no free keycodes!, cannot translate %s: %s", keycode, entries)
                 continue
-        if server_keycode!=keycode and keycode!=0:
+        if server_keycode!=keycode and keycode>=0:
             trans[keycode] = server_keycode
         used.append(server_keycode)
         keysyms = []
@@ -223,7 +223,7 @@ def set_keycodes(keycodes, preserve_keycodes={}):
         if len(keysyms)>0:
             instructions.append(("keycode", server_keycode, keysyms))
     if missing_keysyms:
-        log.error("cannot find the X11 keysym for the following key names: %s", missing_keysyms)
+        log.error("cannot find the X11 keysym for the following key names: %s", set(missing_keysyms))
     log.debug("instructions=%s", instructions)
     unset = apply_xmodmap(instructions)
     log.debug("unset=%s", unset)

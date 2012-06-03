@@ -46,7 +46,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
     #TODO: do this server-side to ensure all modifiers can be set
     if add_if_missing:
         for name in add_if_missing:
-            keycodes.append((0, name, 0, 0, 0))
+            keycodes.append((0, name, -1, 0, 0))
     return keycodes
 
 

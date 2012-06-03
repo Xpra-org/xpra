@@ -702,7 +702,7 @@ class XpraClient(XpraClientBase):
     def handle_key_action(self, event, window, depressed):
         if self.readonly:
             return
-        log.debug("handle_key_action(%s,%s,%s)" % (event, window, depressed))
+        log.debug("handle_key_action(%s,%s,%s)", event, window, depressed)
         modifiers = self.mask_to_names(event.state)
         name = gdk.keyval_name(event.keyval)
         keyval = nn(event.keyval)
@@ -716,7 +716,7 @@ class XpraClient(XpraClientBase):
         depressed, keyval, name, keycode, group, is_modifier, modifiers = translated
         if self.key_handled_as_shortcut(window, name, modifiers, depressed):
             return
-        if keycode<=0:
+        if keycode<0:
             log.debug("key_action(%s,%s,%s) translated keycode is %s, ignoring it", event, window, depressed, keycode)
             return
         log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s", event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode)
