@@ -355,18 +355,26 @@ class ClientWindow(gtk.Window):
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
-            if (x, y) != self._pos:
-                ox, oy = self._pos
-                dx, dy = x-ox, y-oy
-                self._pos = (x, y)
-                self._client.send(["move-window", self._id, x, y])
+            ox, oy = self._pos
+            dx, dy = x-ox, y-oy
+            self._pos = (x, y)
+            if self._client.window_configure:
+                #if we support configure-window, send that first
+                self._client.send(["configure-window", self._id, x, y, w, h])
+            if dx!=0 or dy!=0:
+                #window has moved
+                if not self._client.window_configure:
+                    #if we don't handle the move via configure:
+                    self._client.send(["move-window", self._id, x, y])
+                #move any OR window with their parent:
                 for window in self._override_redirect_windows:
                     x, y = window.get_position()
                     window.move(x+dx, y+dy)
             if (w, h) != self._size:
                 self._size = (w, h)
-                self._client.send(["resize-window", self._id, w, h])
                 self.new_backing(w, h)
+                if not self._client.window_configure:
+                    self._client.send(["resize-window", self._id, w, h])
 
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
@@ -484,6 +492,7 @@ class XpraClient(XpraClientBase):
         self.cursors_enabled = True
         self.notifications_enabled = True
         self.clipboard_enabled = False
+        self.window_configure = False
         self.mmap = None
         self.mmap_token = None
         self.mmap_file = None
@@ -974,6 +983,7 @@ class XpraClient(XpraClientBase):
         if e and e!=self.encoding:
             log.debug("server is using %s encoding" % e)
             self.encoding = e
+        self.window_configure = capabilities.get("window_configure", False)
         self.notifications_enabled = capabilities.get("notifications", False)
         clipboard_server_support = capabilities.get("clipboard", True)
         self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()

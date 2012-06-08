@@ -1844,6 +1844,7 @@ class XpraServer(gobject.GObject):
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
+        capabilities["window_configure"] = True
         self._send(["hello", capabilities])
 
     def send_ping(self):
@@ -2015,6 +2016,18 @@ class XpraServer(gobject.GObject):
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(wid)
         self._desktop_manager.hide_window(window)
+
+    def _process_configure_window(self, proto, packet):
+        (wid, x, y, w, h) = packet[1:6]
+        window = self._id_to_window.get(wid)
+        if not window:
+            log("cannot map window %s: already removed!", wid)
+            return
+        assert not isinstance(window, OverrideRedirectWindowModel)
+        (_, _, oww, owh) = self._desktop_manager.window_geometry(window)
+        self._desktop_manager.configure_window(window, x, y, w, h)
+        if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
+            self._damage(window, 0, 0, w, h)
 
     def _process_move_window(self, proto, packet):
         (wid, x, y) = packet[1:4]
@@ -2278,6 +2291,7 @@ class XpraServer(gobject.GObject):
         "server-settings": _process_server_settings,
         "map-window": _process_map_window,
         "unmap-window": _process_unmap_window,
+        "configure-window": _process_configure_window,
         "move-window": _process_move_window,
         "resize-window": _process_resize_window,
         "focus": _process_focus,
