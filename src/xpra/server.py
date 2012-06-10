@@ -2189,7 +2189,11 @@ class XpraServer(gobject.GObject):
     def _process_button_action(self, proto, packet):
         (wid, button, pressed, pointer, modifiers) = packet[1:6]
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
-        self._desktop_manager.raise_window(self._id_to_window[wid])
+        window = self._id_to_window.get(wid)
+        if not window:
+            log("_process_button_action() invalid window id: %s", wid)
+            return
+        self._desktop_manager.raise_window(window)
         self._move_pointer(pointer)
         try:
             trap.call_unsynced(xtest_fake_button,
@@ -2203,11 +2207,12 @@ class XpraServer(gobject.GObject):
     def _process_pointer_position(self, proto, packet):
         (wid, pointer, modifiers) = packet[1:4]
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
-        if wid in self._id_to_window:
-            self._desktop_manager.raise_window(self._id_to_window[wid])
-            self._move_pointer(pointer)
-        else:
+        window = self._id_to_window.get(wid)
+        if not window:
             log("_process_pointer_position() invalid window id: %s", wid)
+            return
+        self._desktop_manager.raise_window(window)
+        self._move_pointer(pointer)
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
