@@ -219,20 +219,25 @@ class ClientExtrasBase(object):
         if pixbuf:
             dialog.set_logo(pixbuf)
         dialog.set_program_name("Xpra")
-        comments = ''
-        try:
-            from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
-            comments += "Built on %s by %s. %s" % (BUILT_ON, BUILT_BY, BUILD_DATE)
-            if LOCAL_MODIFICATIONS==0:
-                comments += "\n(svn revision %s)" % REVISION
-            else:
-                comments += "\n(svn revision %s with %s local changes)" % (REVISION, LOCAL_MODIFICATIONS)
-        except Exception, e:
-            log.error("could not find the build information: %s", e)
-        dialog.set_comments(comments)
+        dialog.set_comments("\n".join(self.get_build_info()))
         dialog.connect("response", self.close_about)
         self.about_dialog = dialog
         dialog.show()
+
+    def get_build_info(self):
+        info = []
+        try:
+            from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
+            info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
+            if BUILD_DATE:
+                info.append(BUILD_DATE)
+            if LOCAL_MODIFICATIONS==0:
+                info.append("revision %s" % REVISION)
+            else:
+                info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
+        except Exception, e:
+            log.error("could not find the build information: %s", e)
+        return info
 
     def close_about(self, *args):
         try:
@@ -280,6 +285,11 @@ class ClientExtrasBase(object):
 
         # now add some rows with info:
         row = 0
+        from xpra.__init__ import __version__
+        row = add_row(row, gtk.Label("Xpra version"), gtk.Label(__version__))
+        row = add_row(row, gtk.Label("Xpra build"), gtk.Label("\n".join(self.get_build_info())))
+        self.server_version_label = gtk.Label()
+        row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
         if is_gtk3():
             row = add_row(row, gtk.Label("PyGobject version"), gtk.Label(gobject._version))
             row = add_row(row, gtk.Label("GTK version"), gtk.Label(gtk._version))
@@ -288,8 +298,6 @@ class ClientExtrasBase(object):
             row = add_row(row, gtk.Label("PyGTK version"), gtk.Label(".".join([str(x) for x in gtk.pygtk_version])))
             row = add_row(row, gtk.Label("GTK version"), gtk.Label(".".join([str(x) for x in gtk.gtk_version])))
 
-        self.server_version_label = gtk.Label()
-        row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
         if self.client.server_platform:
             row = add_row(row, gtk.Label("Server Platform"), gtk.Label(self.client.server_platform))
         self.server_randr_label = gtk.Label()
@@ -671,6 +679,41 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_encodingsmenuitem)
         return encodings
 
+    def make_jpegsubmenu(self):
+        self.jpeg_quality = self.menuitem("JPEG Quality", "slider.png", "Change JPEG quality setting", None)
+        self.jpeg_submenu = gtk.Menu()
+        self.jpeg_quality.set_submenu(self.jpeg_submenu)
+        self.popup_menu_workaround(self.jpeg_submenu)
+        jpeg_options = [10, 50, 80, 95]
+        if self.client.jpegquality>0 and self.client.jpegquality not in jpeg_options:
+            """ add the current value to the list of options """
+            i = 0
+            for x in jpeg_options:
+                if self.client.jpegquality<x:
+                    jpeg_options.insert(i, self.client.jpegquality)
+                    break
+                i += 1
+        def set_jpeg_quality(item):
+            item = ensure_item_selected(self.jpeg_submenu, item)
+            q = int(item.get_label().replace("%", ""))
+            if q!=self.client.jpegquality:
+                log.debug("setting jpeg quality to %s", q)
+                self.client.send_jpeg_quality(q)
+        for q in jpeg_options:
+            qi = CheckMenuItem("%s%%" % q)
+            qi.set_draw_as_radio(True)
+            qi.set_active(q==self.client.jpegquality)
+            qi.connect('activate', set_jpeg_quality)
+            self.jpeg_submenu.append(qi)
+        self.jpeg_submenu.show_all()
+        self.client.connect("handshake-complete", self.set_jpegmenu)
+        return self.jpeg_quality
+
+    def set_jpegmenu(self, *args):
+        if self.jpeg_quality:
+            self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
+            self.updated_menus()
+
     def make_layoutsmenuitem(self):
         keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)
         self.layout_submenu = gtk.Menu()
@@ -735,41 +778,6 @@ class ClientExtrasBase(object):
             set_checkeditems(self.layout_submenu, is_match)
         self.client.connect("handshake-complete", set_selected_layout)
         return keyboard
-
-    def make_jpegsubmenu(self):
-        self.jpeg_quality = self.menuitem("JPEG Quality", "slider.png", "Change JPEG quality setting", None)
-        self.jpeg_submenu = gtk.Menu()
-        self.jpeg_quality.set_submenu(self.jpeg_submenu)
-        self.popup_menu_workaround(self.jpeg_submenu)
-        jpeg_options = [10, 50, 80, 95]
-        if self.client.jpegquality>0 and self.client.jpegquality not in jpeg_options:
-            """ add the current value to the list of options """
-            i = 0
-            for x in jpeg_options:
-                if self.client.jpegquality<x:
-                    jpeg_options.insert(i, self.client.jpegquality)
-                    break
-                i += 1
-        def set_jpeg_quality(item):
-            item = ensure_item_selected(self.jpeg_submenu, item)
-            q = int(item.get_label().replace("%", ""))
-            if q!=self.client.jpegquality:
-                log.debug("setting jpeg quality to %s", q)
-                self.client.send_jpeg_quality(q)
-        for q in jpeg_options:
-            qi = CheckMenuItem("%s%%" % q)
-            qi.set_draw_as_radio(True)
-            qi.set_active(q==self.client.jpegquality)
-            qi.connect('activate', set_jpeg_quality)
-            self.jpeg_submenu.append(qi)
-        self.jpeg_submenu.show_all()
-        self.client.connect("handshake-complete", self.set_jpegmenu)
-        return self.jpeg_quality
-
-    def set_jpegmenu(self, *args):
-        if self.jpeg_quality:
-            self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
-            self.updated_menus()
 
     def make_compressionmenu(self):
         self.compression = self.menuitem("Compression", "compressed.png", "Network packet compression", None)
