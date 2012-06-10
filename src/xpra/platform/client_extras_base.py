@@ -282,44 +282,58 @@ class ClientExtrasBase(object):
             w_al.add(widget)
             table.attach(w_al, 1, 2, row, row + 1, xpadding=10)
             return row + 1
+        def label(text="", tooltip=None):
+            l = gtk.Label(text)
+            if tooltip:
+                l.set_tooltip_text(tooltip)
+            return l
+        def new_row(row, row_label_text, value_label, tooltip_text=None):
+            row_label = label(row_label_text, tooltip_text)
+            if tooltip_text:
+                value_label.set_tooltip_text(tooltip_text)
+            return add_row(row, row_label, value_label)
 
         # now add some rows with info:
         row = 0
         from xpra.__init__ import __version__
-        row = add_row(row, gtk.Label("Xpra version"), gtk.Label(__version__))
-        row = add_row(row, gtk.Label("Xpra build"), gtk.Label("\n".join(self.get_build_info())))
-        self.server_version_label = gtk.Label()
-        row = add_row(row, gtk.Label("Server Version"), self.server_version_label)
+        row = new_row(row, "Xpra version", label(__version__))
+        row = new_row(row, "Xpra build", label("\n".join(self.get_build_info())))
+        self.server_version_label = label()
+        row = new_row(row, "Server Version", self.server_version_label)
         if is_gtk3():
-            row = add_row(row, gtk.Label("PyGobject version"), gtk.Label(gobject._version))
-            row = add_row(row, gtk.Label("GTK version"), gtk.Label(gtk._version))
-            row = add_row(row, gtk.Label("GDK version"), gtk.Label(gdk._version))
+            row = new_row(row, "PyGobject version", label(gobject._version))
+            row = new_row(row, "GTK version", label(gtk._version))
+            row = new_row(row, "GDK version", label(gdk._version))
         else:
-            row = add_row(row, gtk.Label("PyGTK version"), gtk.Label(".".join([str(x) for x in gtk.pygtk_version])))
-            row = add_row(row, gtk.Label("GTK version"), gtk.Label(".".join([str(x) for x in gtk.gtk_version])))
+            row = new_row(row, "PyGTK version", label(".".join([str(x) for x in gtk.pygtk_version])))
+            row = new_row(row, "GTK version", label(".".join([str(x) for x in gtk.gtk_version])))
 
         if self.client.server_platform:
-            row = add_row(row, gtk.Label("Server Platform"), gtk.Label(self.client.server_platform))
-        self.server_randr_label = gtk.Label()
-        row = add_row(row, gtk.Label("Server RandR Support"), self.server_randr_label)
-        self.server_load_label = gtk.Label()
-        row = add_row(row, gtk.Label("Server Load"), self.server_load_label)
-        self.server_latency_label = gtk.Label()
-        row = add_row(row, gtk.Label("Server Latency"), self.server_latency_label)
-        self.client_latency_label = gtk.Label()
-        row = add_row(row, gtk.Label("Client Latency"), self.client_latency_label)
-        self.session_started_label = gtk.Label()
-        row = add_row(row, gtk.Label("Session Started"), self.session_started_label)
-        self.session_connected_label = gtk.Label()
-        row = add_row(row, gtk.Label("Session Connected"), self.session_connected_label)
-        self.windows_managed_label = gtk.Label()
-        row = add_row(row, gtk.Label("Windows Managed"), self.windows_managed_label)
-        self.regions_sizes_label = gtk.Label()
-        row = add_row(row, gtk.Label("Pixels/region (min/avg/max)"), self.regions_sizes_label)
-        self.regions_per_second_label = gtk.Label()
-        row = add_row(row, gtk.Label("Regions/s"), self.regions_per_second_label)
-        self.pixels_per_second_label = gtk.Label()
-        row = add_row(row, gtk.Label("Pixels/s"), self.pixels_per_second_label)
+            row = new_row(row, "Server Platform", label(self.client.server_platform))
+        self.server_randr_label = label()
+        row = new_row(row, "Server RandR Support", self.server_randr_label)
+        self.server_load_label = label()
+        row = new_row(row, "Server Load", self.server_load_label, "Average over 1, 5 and 15 minutes")
+        self.server_latency_label = label()
+        row = new_row(row, "Server Latency", self.server_latency_label, "last value and average")
+        self.client_latency_label = label()
+        row = new_row(row, "Client Latency", self.client_latency_label, "last value and average")
+        self.session_started_label = label()
+        row = new_row(row, "Session Started", self.session_started_label)
+        self.session_connected_label = label()
+        row = new_row(row, "Session Connected", self.session_connected_label)
+        self.windows_managed_label = label()
+        row = new_row(row, "Windows Managed", self.windows_managed_label,
+                      "The number of windows forwarded, some may just be temporary widgets (usually transient ones)")
+        self.regions_sizes_label = label()
+        row = new_row(row, "Pixels/region", self.regions_sizes_label,
+                      "The number of pixels updated at a time: min/avg/max")
+        self.regions_per_second_label = label()
+        row = new_row(row, "Regions/s", self.regions_per_second_label,
+                      "The number of screen updates per second")
+        self.pixels_per_second_label = label()
+        row = new_row(row, "Pixels/s", self.pixels_per_second_label,
+                      "The number of pixels updated per second")
 
         def populate_table(*args):
             if not self.session_info_window:
