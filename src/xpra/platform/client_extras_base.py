@@ -24,6 +24,8 @@ from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
 
+#compression is fine with default value (3), no need to clutter the UI
+SHOW_COMPRESSION_MENU = False
 
 #utility method to ensure there is always only one CheckMenuItem
 #selected in a submenu:
@@ -841,7 +843,8 @@ class ClientExtrasBase(object):
         else:
             self.jpeg_quality = None
             self.jpeg_submenu = None
-        menu.append(self.make_compressionmenu())
+        if SHOW_COMPRESSION_MENU:
+            menu.append(self.make_compressionmenu())
         if not self.client.readonly:
             menu.append(self.make_layoutsmenuitem())
         menu.append(self.make_refreshmenuitem())
