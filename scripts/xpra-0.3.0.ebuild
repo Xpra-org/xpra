@@ -24,6 +24,7 @@ COMMON_DEPEND="dev-python/pygtk:2
 	x11-libs/libX11
 	x11-libs/libXcomposite
 	x11-libs/libXdamage
+	x11-apps/setxkbmap
 	server? ( x11-libs/libXtst )
 	server? ( x11-base/xorg-server[-minimal] )
 	!server? ( x11-apps/xmodmap )
