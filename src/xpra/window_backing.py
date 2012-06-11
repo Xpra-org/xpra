@@ -647,7 +647,7 @@ def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
     if is_gtk3() or PREFER_CAIRO:
         b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
     else:
-        b = GLPixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+        b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
     if old_backing:
         old_backing.close()
     return b
