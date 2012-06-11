@@ -416,7 +416,7 @@ class GLPixmapBacking(PixmapBacking):
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
         glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data);
 
-        vtxarrays=0
+        vtxarrays=1
         if vtxarrays == 1:
             texcoords = [ [ 0, 0 ],    
                           [ 0, height],
@@ -426,7 +426,7 @@ class GLPixmapBacking(PixmapBacking):
 
             glVertexPointeri(vtxcoords)
             glTexCoordPointeri(texcoords)
-            glDrawArrays(GL_QUADS, 0, 10);
+            glDrawArrays(GL_QUADS, 0, 4);
         else:
             glBegin(GL_QUADS);
             glTexCoord2i(0, 0);
