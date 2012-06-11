@@ -8,6 +8,9 @@ from wimpiggy.gobject_compat import import_gobject, import_gdk, is_gtk3
 gobject = import_gobject()
 gdk = import_gdk()
 
+import gtk
+import gtk.gtkgl
+
 import cairo
 import ctypes
 
@@ -15,6 +18,8 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.scripts.main import ENCODINGS
+from OpenGL.GL import *
+from OpenGL.GLU import *
 
 PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
 
@@ -324,12 +329,158 @@ class PixmapBacking(Backing):
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
 
+"""
+This is the gtk2 + OpenGL version.
+"""
+class GLPixmapBacking(PixmapBacking):
 
+    def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
+        Backing.__init__(self, wid, mmap_enabled, mmap)
+        display_mode = (gtk.gdkgl.MODE_RGB    |
+                        gtk.gdkgl.MODE_SINGLE)
+# We use single buffer because double doesn't work, figure out why
+        try:
+            self.glconfig = gtk.gdkgl.Config(mode=display_mode)
+        except gtk.gdkgl.NoMatches:
+            raise SystemExit
+        self._backing = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), w, h))
+        log.info("Creating GL pixmap size %d %d " % (w, h))
+        self.gldrawable = self._backing.set_gl_capability(self.glconfig)
+        log.info("drawable ok")
+        # Then create an indirect OpenGL rendering context.
+        self.glcontext = gtk.gdkgl.Context(self.gldrawable,
+                                               direct=True)
+        log.info("context ok")
+        if not self.glcontext:
+            raise SystemExit, "** Cannot create OpenGL rendering context!"
+        print "OpenGL rendering context is created."
+        self.texture = None
+        
+        # OpenGL begin
+        if not self.gldrawable.gl_begin(self.glcontext):
+            return False
+        glViewport(0, 0, w, h)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0.0, w, h, 0.0, -1.0, 1.0);
+        glMatrixMode(GL_MODELVIEW)
+        glDisable(GL_TEXTURE_2D);
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        self.gldrawable.gl_end()
+
+        cr = self._backing.cairo_create()
+        if old_backing is not None and old_backing._backing is not None:
+            # Really we should respect bit-gravity here but... meh.
+            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_source_pixmap(old_backing._backing, 0, 0)
+            cr.paint()
+            old_w, old_h = old_backing._backing.get_size()
+            cr.move_to(old_w, 0)
+            cr.line_to(w, 0)
+            cr.line_to(w, h)
+            cr.line_to(0, h)
+            cr.line_to(0, old_h)
+            cr.line_to(old_w, old_h)
+            cr.close_path()
+        else:
+            cr.rectangle(0, 0, w, h)
+        cr.set_source_rgb(1, 1, 1)
+        cr.fill()
+
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
+#        assert rowstride == width*3
+        log.info("stride %d width *3 %d" % (rowstride, width *3))
+        import time
+        before=time.time()
+        
+        # OpenGL begin
+        if not self.gldrawable.gl_begin(self.glcontext):
+            log.error("OUCH")
+            return False
+       
+        # Upload texture
+        if not self.texture:
+            self.texture = glGenTextures(1)    
+
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.texture)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data);
+
+        vtxarrays=0
+        if vtxarrays == 1:
+            texcoords = [ [ 0, 0 ],    
+                          [ 0, height],
+                          [ width, height],
+                          [ width, 0] ]
+            vtxcoords = texcoords
+
+            glVertexPointeri(vtxcoords)
+            glTexCoordPointeri(texcoords)
+            glDrawArrays(GL_QUADS, 0, 10);
+        else:
+            glBegin(GL_QUADS);
+            glTexCoord2i(0, 0);
+            glVertex2i(0, 0);
+
+            glTexCoord2i(0, height);
+            glVertex2i(0, height);
+
+            glTexCoord2i(width, height);
+            glVertex2i(width, height);
+
+            glTexCoord2i(width, 0);
+            glVertex2i(width, 0);
+            glEnd()
+
+        # OpenGL end
+#self.gldrawable.swap_buffers()
+#       self.gldrawable.swap_buffers()
+        glFinish()
+        self.gldrawable.gl_end()
+        end=time.time()
+#        log.info("Took %f ms" % (end - before))
+
+#        self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+
+    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
+        assert x==0 and y==0
+        decoder = decoders.get(self.wid)
+        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
+            log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
+            decoder.clean()
+            decoder.init(width, height)
+        if decoder is None:
+            decoder = factory()
+            decoder.init(width, height)
+            decoders[self.wid] = decoder
+            def close_decoder():
+                log("closing %s decoder for window %s", coding, self.wid)
+                decoder.clean()
+                del decoders[self.wid]
+            self._on_close.append(close_decoder)
+        try:
+            err, outstride, data = decoder.decompress_image_to_rgb(img_data)
+            if err!=0:
+                log.error("paint_with_video_decoder: ouch, decompression error %s", err)
+                return
+            if not data:
+                log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
+                return
+            log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
+            self.paint_rgb24(data, x, y, width, height, outstride)
+        finally:
+            decoder.free_image()
+
+		
 def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
     if is_gtk3() or PREFER_CAIRO:
         b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
     else:
-        b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+        b = GLPixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
     if old_backing:
         old_backing.close()
     return b
