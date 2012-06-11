@@ -27,6 +27,7 @@ typedef void x264_t;
 #include <libavcodec/avcodec.h>
 #include "x264lib.h"
 
+
 struct x264lib_ctx {
 	// Encoding
 	x264_t *encoder;
@@ -63,17 +64,24 @@ struct x264lib_ctx *init_encoder(int width, int height)
 
 	return ctx;
 }
+
+void clean_encoder(struct x264lib_ctx *ctx)
+{
+	sws_freeContext(ctx->rgb2yuv);
+	x264_encoder_close(ctx->encoder);
+}
+
 #else
 struct x264lib_ctx *init_encoder(int width, int height)
 {
 	return NULL;
 }
-#endif
 
 void clean_encoder(struct x264lib_ctx *ctx)
 {
-	sws_freeContext(ctx->rgb2yuv);
+	return;
 }
+#endif
 
 struct x264lib_ctx *init_decoder(int width, int height)
 {
@@ -86,18 +94,18 @@ struct x264lib_ctx *init_decoder(int width, int height)
 
 	ctx->codec = avcodec_find_decoder(CODEC_ID_H264);
 	if (!ctx->codec) {
-	    fprintf(stderr, "codec not found\n");
+		fprintf(stderr, "codec not found\n");
 		free(ctx);
-	    return NULL;
+		return NULL;
 	}
 	ctx->codec_ctx = avcodec_alloc_context3(ctx->codec);
 	ctx->codec_ctx->width = ctx->width;
 	ctx->codec_ctx->height = ctx->height;
 	ctx->codec_ctx->pix_fmt = PIX_FMT_YUV420P;
 	if (avcodec_open(ctx->codec_ctx, ctx->codec) < 0) {
-	    fprintf(stderr, "could not open codec\n");
+		fprintf(stderr, "could not open codec\n");
 		free(ctx);
-	    return NULL;
+		return NULL;
 	}
 
 	return ctx;
@@ -111,7 +119,7 @@ void clean_decoder(struct x264lib_ctx *ctx)
 }
 
 #ifndef _WIN32
-x264_picture_t* csc_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
+x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
 {
 	if (!ctx->encoder || !ctx->rgb2yuv)
 		return NULL;
@@ -124,7 +132,7 @@ x264_picture_t* csc_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride
 	return pic_in;
 }
 
-void free_csc_image(x264_picture_t *image)
+static void free_csc_image(x264_picture_t *image)
 {
 	x264_picture_clean(image);
 	free(image);
@@ -134,6 +142,8 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 {
 	if (!ctx->encoder || !ctx->rgb2yuv) {
 		free_csc_image(pic_in);
+		*out = NULL;
+		*outsz = 0;
 		return 1;
 	}
 	x264_picture_t pic_out;
@@ -167,49 +177,53 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 }
 #endif
 
-int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
+int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
+{
+	AVPicture pic;
+	
+	if (!ctx->yuv2rgb)
+		return 1;
+	
+	avpicture_fill(&pic, malloc(ctx->height * ctx->width * 3), PIX_FMT_RGB24, ctx->width, ctx->height);
+
+	sws_scale(ctx->yuv2rgb, in, stride, 0, ctx->height, pic.data, pic.linesize);
+	
+	/* Output (must be freed!) */
+	*out = pic.data[0];
+	*outsz = pic.linesize[0] * ctx->height;
+	*outstride = pic.linesize[0];
+
+	return 0;
+}
+
+int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 {
 	int got_picture;
 	int len;
-	AVFrame *picture;
+	AVFrame picture;
 	AVPacket avpkt;
-	AVPicture pic;
-
-	if (!ctx->yuv2rgb)
-		return 1;
 
 	av_init_packet(&avpkt);
 
 	if (!ctx->codec_ctx || !ctx->codec)
 		return 1;
 
-	picture = avcodec_alloc_frame();
+	avcodec_get_frame_defaults(&picture);
 
 	avpkt.data = in;
 	avpkt.size = size;
 	
-	len = avcodec_decode_video2(ctx->codec_ctx, picture, &got_picture, &avpkt);
+	len = avcodec_decode_video2(ctx->codec_ctx, &picture, &got_picture, &avpkt);
 	if (len < 0) {
 		fprintf(stderr, "Error while decoding frame\n");
-		*out = NULL;
-		*outsize = 0;
-		*outstride = 0;
+		memset(out, 0, sizeof(*out));
 		return 2;
 	}
 
-	avpicture_fill(&pic, malloc(ctx->height * ctx->width * 3), PIX_FMT_RGB24, ctx->width, ctx->height);
+	memcpy(out, &picture.data, sizeof(picture.data));
+	*outsize = ctx->height * (picture.linesize[0] + picture.linesize[1] + picture.linesize[2]);
+	memcpy(outstride, &picture.linesize, sizeof(picture.linesize));
 
-	/* Colorspace conversion (I420 -> RGB) */
-	sws_scale(ctx->yuv2rgb, picture->data, picture->linesize, 0, ctx->height, pic.data, pic.linesize);
-	
-	av_free(picture);
-
-	/* Output (must be freed!) */
-	*out = pic.data[0];
-	*outsize = pic.linesize[0] * ctx->height;
-	*outstride = pic.linesize[0];
-
-	//printf("After decoding, got %p, size %d, stride %d, size %d\n", pic.data[0], pic.linesize[0] * ctx->height, pic.linesize[0], pic.linesize[0]*ctx->height);
 	return 0;
 }
 
@@ -224,9 +238,9 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->encoding_preset -= increase;
 	if (ctx->encoding_preset < 0)
-	    ctx->encoding_preset = 0;
+		ctx->encoding_preset = 0;
 	if (ctx->encoding_preset > 5)
-	    ctx->encoding_preset = 5;
+		ctx->encoding_preset = 5;
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
 	//printf("Setting encoding preset %s %d\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset);
 	x264_param_apply_profile(&param, "baseline");
@@ -235,6 +249,6 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 #else
 void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 {
-    ;
+	;
 }
 #endif

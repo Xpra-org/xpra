@@ -91,7 +91,7 @@ class Backing(object):
                 del decoders[self.wid]
             self._on_close.append(close_decoder)
         try:
-            err, outstride, data = decoder.decompress_image(img_data)
+            err, outstride, data = decoder.decompress_image_to_rgb(img_data)
             if err!=0:
                 log.error("paint_with_video_decoder: ouch, decompression error %s", err)
                 return

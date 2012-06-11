@@ -10,6 +10,7 @@ int encode(const char *in_file, int w, int h, const char *out_file)
 	int i;
 	int sz;
 	FILE *dump;
+	x264_picture_t *yuv_img;
 	struct x264lib_ctx *ctx = init_encoder(w, h);
 
 	uint8_t *b = malloc(w*h*3);
@@ -19,8 +20,13 @@ int encode(const char *in_file, int w, int h, const char *out_file)
 	fread(b, w*h*3, 1, in);
 	fclose(in);
 
+	printf("Doing colorspace conversion\n");
+	yuv_img = csc_image_rgb2yuv(ctx, b, w*3);
+
+	free(b);
+
 	printf("Compressing image, size %d...", w*h*3);
-	if (compress_image(ctx, b, w*3, &out, &sz)) {
+	if (compress_image(ctx, yuv_img, &out, &sz)) {
 		fprintf(stderr, "Error when compressing.\n");
 		return 1;
 	}
@@ -44,6 +50,8 @@ int decode(const char *in_file, int w, int h, const char *out_file)
 	int stride;
 	struct x264lib_ctx *ctx = init_decoder(w, h);
 	FILE *fout;
+	uint8_t *yuvplanes[3];
+	int yuvstrides[3];
 
 	uint8_t *b = malloc(w*h*3);
 
@@ -53,12 +61,19 @@ int decode(const char *in_file, int w, int h, const char *out_file)
 	printf("Read %d bytes\n", sz);
 	fclose(in);
 
-	decompress_image(ctx, b, sz, &out2, &sz2, &stride);
-	printf("After decompressing, size %d, stride %d...\n", sz2, stride);
+	decompress_image(ctx, b, sz, &yuvplanes, &sz2, &yuvstrides);
+	free(b);
+	csc_image_yuv2rgb(ctx, yuvplanes, yuvstrides, &out2, &sz2, &stride);
 
 	fout = fopen(out_file, "w");
 	fwrite(out2, sz2, 1, fout);
+
+	free(out2);
 	fclose(fout);
+
+	clean_decoder(ctx);
+	free(ctx);
+
 	return 0;
 }
 
