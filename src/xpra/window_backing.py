@@ -357,7 +357,7 @@ class GLPixmapBacking(PixmapBacking):
             raise SystemExit, "** Cannot create OpenGL rendering context!"
         print "OpenGL rendering context is created."
         self.texture = None
-        self.textures = None
+        self.textures = [ 0 ]
         self.use_openGL_CSC = True
         self.yuv420_shader = None
         
@@ -372,7 +372,6 @@ class GLPixmapBacking(PixmapBacking):
         glMatrixMode(GL_MODELVIEW)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         self.gldrawable.gl_end()
 
@@ -396,8 +395,6 @@ class GLPixmapBacking(PixmapBacking):
         cr.fill()
 
     def paint_rgb24(self, img_data, x, y, width, height, rowstride):
-        import time
-        before=time.time()
         
         # OpenGL begin
         if not self.gldrawable.gl_begin(self.glcontext):
@@ -447,8 +444,6 @@ class GLPixmapBacking(PixmapBacking):
 #       self.gldrawable.swap_buffers()
         glFinish()
         self.gldrawable.gl_end()
-        end=time.time()
-#        log.info("Took %f ms" % (end - before))
 
     def paint_yuv420(self, img_data, x, y, width, height, rowstrides):
         import time
@@ -460,7 +455,7 @@ class GLPixmapBacking(PixmapBacking):
             return False
        
         # Upload texture
-        if not self.textures:
+        if self.textures[0] == 0:
             self.textures = glGenTextures(3)    
 
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -550,10 +545,30 @@ END
                           [ width, height],
                           [ width, 0] ]
             vtxcoords = texcoords
+            texcoords_half = [ [ 0, 0 ],    
+                          [ 0, height/2],
+                          [ width/2, height/2],
+                          [ width/2, 0] ]
 
             glVertexPointeri(vtxcoords)
+     
+            glActiveTexture(GL_TEXTURE0);
+            glClientActiveTexture(GL_TEXTURE0)
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
             glTexCoordPointeri(texcoords)
-            glDrawArrays(GL_QUADS, 0, 10);
+
+            glActiveTexture(GL_TEXTURE1);
+            glClientActiveTexture(GL_TEXTURE1)
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            glTexCoordPointeri(texcoords_half)
+
+            glActiveTexture(GL_TEXTURE2);
+            glClientActiveTexture(GL_TEXTURE2)
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            glTexCoordPointeri(texcoords_half)
+
+            glDrawArrays(GL_QUADS, 0, 4);
+
         else:
             glBegin(GL_QUADS);
             glMultiTexCoord2i(GL_TEXTURE0, 0, 0);
