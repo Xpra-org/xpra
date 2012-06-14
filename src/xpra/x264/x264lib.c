@@ -224,6 +224,11 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
 	*outsize = ctx->height * (picture.linesize[0] + picture.linesize[1] + picture.linesize[2]);
 	memcpy(outstride, &picture.linesize, sizeof(picture.linesize));
 
+    if (*outsize == 0) {
+        printf("Decoded image, size %d %d %d, ptr %p %p %p\n", (*outstride)[0] * ctx->height, (*outstride)[1]*ctx->height, (*outstride)[2]*ctx->height, picture.data[0], picture.data[1], picture.data[2]);
+        return 3;
+    }
+
 	return 0;
 }
 
