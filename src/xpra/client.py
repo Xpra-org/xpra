@@ -503,6 +503,7 @@ class GLClientWindow(ClientWindow):
         glMatrixMode(GL_MODELVIEW)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisable(GL_FRAGMENT_PROGRAM_ARB)
         
         if self.textures[0] == 0:
             self.textures = glGenTextures(3)
