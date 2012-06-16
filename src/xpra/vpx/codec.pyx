@@ -64,7 +64,7 @@ cdef class Decoder(xcoder):
             clean_decoder(self.context)
             self.context = NULL
 
-    def decompress_image(self, input):
+    def decompress_image_to_rgb(self, input):
         cdef uint8_t *dout
         cdef int outsize
         cdef int outstride
