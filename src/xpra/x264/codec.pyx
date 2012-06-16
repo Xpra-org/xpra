@@ -10,6 +10,7 @@ from libc.stdlib cimport free
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
+    ctypedef void** const_void_pp "const void**"
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
@@ -19,12 +20,12 @@ cdef extern from "x264lib.h":
     x264lib_ctx* init_encoder(int width, int height)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
-    int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride)
     int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz) nogil
 
     x264lib_ctx* init_decoder(int width, int height)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
+    int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     void change_encoding_speed(x264lib_ctx *context, int increase)
 
 
@@ -68,7 +69,7 @@ cdef class Decoder(xcoder):
             clean_decoder(self.context)
             free(self.context)
             self.context = NULL
-    
+
     def decompress_image_to_yuv(self, input):
         cdef uint8_t *dout[3]
         cdef int outsize
@@ -76,7 +77,7 @@ cdef class Decoder(xcoder):
         cdef unsigned char * buf = <uint8_t *> 0
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
-        PyObject_AsReadBuffer(input, <void **>&buf, &buf_len)
+        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
@@ -86,7 +87,6 @@ cdef class Decoder(xcoder):
         out = [doutvY, doutvU, doutvV]
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
-
 
     def decompress_image_to_rgb(self, input):
         cdef uint8_t *yuvplanes[3]
@@ -98,17 +98,18 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         assert self.last_image==NULL
-        PyObject_AsReadBuffer(input, <void **>&buf, &buf_len)
+        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:
             return i, 0, ""
-        i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
+        with nogil:
+            i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         if i!=0:
             return i, 0, ""
         self.last_image = dout
         doutv = (<char *>dout)[:outsize]
         return  i, outstride, doutv
-    
+
     def free_image(self):
         assert self.last_image!=NULL
         free(self.last_image)
@@ -134,7 +135,7 @@ cdef class Encoder(xcoder):
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         #colourspace conversion with gil held:
-        PyObject_AsReadBuffer(input, <void **>&buf, &buf_len)
+        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         pic_in = csc_image_rgb2yuv(self.context, buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
         #actual compression (no gil):
