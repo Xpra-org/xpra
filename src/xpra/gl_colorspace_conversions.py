@@ -1,5 +1,5 @@
 # The following fragprog is:
-# * MIT X11 license, Copyright (c) 2007 by:                               
+# * MIT X11 license, Copyright (c) 2007 by:
 # *      Michael Dominic K. <mdk@mdk.am>
 #http://www.mdk.org.pl/2007/11/17/gl-colorspace-conversions
 

@@ -7,9 +7,12 @@
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.client_window import ClientWindow, queue_draw, gtk
+from xpra.client_window import ClientWindow, queue_draw
 from xpra.scripts.main import ENCODINGS
 
+
+import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
+assert gtk.gdkgl is not None and gtk.gtkgl is not None
 
 from OpenGL.GL import GL_VERSION, GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_COORD_ARRAY, GL_FRAGMENT_PROGRAM_ARB, \
@@ -33,9 +36,6 @@ gl_major = glGetString(GL_VERSION)[0]
 gl_minor = glGetString(GL_VERSION)[2]
 if gl_major<=1 and gl_minor<1:
     raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
-
-#this is needed by gl_window_backing
-assert gtk.gdkgl
 
 
 class GLClientWindow(ClientWindow):
