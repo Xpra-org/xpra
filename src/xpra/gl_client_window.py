@@ -49,9 +49,9 @@ try:
             raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
         log.info("found valid OpenGL: %s.%s", gl_major, gl_minor)
 
-        if not glInitFragmentProgramARB():
-            #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
-            raise ImportError("** OpenGL output requires the ARB_fragment_program extension")
+        #this allows us to do CSC via OpenGL:
+        #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
+        use_openGL_CSC = glInitFragmentProgramARB()
     finally:
         gldrawable.gl_end()
         del glcontext, gldrawable, glext, glconfig
@@ -77,7 +77,6 @@ class GLClientWindow(ClientWindow):
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
 
-        self.use_openGL_CSC = True
         self.yuv420_shader = None
         self.current_mode = 0 # 0 = uninitialized 1 = RGB 2 = YUV
 
@@ -150,7 +149,7 @@ class GLClientWindow(ClientWindow):
                 del decoders[self._id]
             self._on_close.append(close_decoder)
         try:
-            if self.use_openGL_CSC:
+            if use_openGL_CSC:
                 decompress = decoder.decompress_image_to_yuv
                 update_texture = self.update_texture_yuv420
             else:
@@ -167,7 +166,7 @@ class GLClientWindow(ClientWindow):
             log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
             update_texture(data, x, y, width, height, outstride)
         finally:
-            if not self.use_openGL_CSC:
+            if not use_openGL_CSC:
                 decoder.free_image()
 
     def update_texture_rgb24(self, img_data, x, y, width, height, rowstride):
