@@ -58,14 +58,14 @@ from xpra.version_util import is_compatible_with
 
 from xpra.client_window import ClientWindow
 ClientWindowClass = ClientWindow
-#the GL backend only works with gtk2 (and is disabled by default)
-USE_OPENGL = False
+#the GL backend only works with gtk2
+USE_OPENGL = True
 if USE_OPENGL and not is_gtk3():
     try:
         from xpra.gl_client_window import GLClientWindow
         ClientWindowClass = GLClientWindow
     except ImportError, e:
-        pass    #GL not available
+        log.info("Disabled OpenGL output: %s" % e)
 
 def nn(x):
     if x is None:

@@ -30,14 +30,33 @@ from OpenGL.GL import GL_VERSION, GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, 
     glDrawArrays, glMultiTexCoord2i, \
     glVertex2i, glEnd
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glBindProgramARB, glProgramStringARB
+from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
 from xpra.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 
-#This check would be nice to have,
-#but crashes python on some intel chipsets.. so we can't have it.
-#gl_major = glGetString(GL_VERSION)[0]
-#gl_minor = glGetString(GL_VERSION)[2]
-#if gl_major<=1 and gl_minor<1:
-#    raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
+#sanity checks: OpenGL version
+try:
+    from gtk import gdk
+    glconfig = gtk.gdkgl.Config(mode=gtk.gdkgl.MODE_RGB|gtk.gdkgl.MODE_SINGLE)
+    glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+    gldrawable = glext.set_gl_capability(glconfig)
+    glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+    if not gldrawable.gl_begin(glcontext):
+        raise ImportError("gl_begin failed on %s" % gldrawable)
+    try:
+        gl_major = int(glGetString(GL_VERSION)[0])
+        gl_minor = int(glGetString(GL_VERSION)[2])
+        if gl_major<=1 and gl_minor<1:
+            raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
+        log.info("found valid OpenGL: %s.%s", gl_major, gl_minor)
+
+        if not glInitFragmentProgramARB():
+            #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
+            raise ImportError("** OpenGL output requires the ARB_fragment_program extension")
+    finally:
+        gldrawable.gl_end()
+        del glcontext, gldrawable, glext, glconfig
+except Exception, e:
+    raise ImportError("** OpenGL initialization error: %s" % e)
 
 
 class GLClientWindow(ClientWindow):
