@@ -32,10 +32,12 @@ from OpenGL.GL import GL_VERSION, GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, 
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glBindProgramARB, glProgramStringARB
 from xpra.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 
-gl_major = glGetString(GL_VERSION)[0]
-gl_minor = glGetString(GL_VERSION)[2]
-if gl_major<=1 and gl_minor<1:
-    raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
+#This check would be nice to have,
+#but crashes python on some intel chipsets.. so we can't have it.
+#gl_major = glGetString(GL_VERSION)[0]
+#gl_minor = glGetString(GL_VERSION)[2]
+#if gl_major<=1 and gl_minor<1:
+#    raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
 
 
 class GLClientWindow(ClientWindow):
