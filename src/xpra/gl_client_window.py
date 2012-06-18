@@ -63,14 +63,13 @@ class GLClientWindow(ClientWindow):
     def __init__(self, client, wid, x, y, w, h, metadata, override_redirect):
         ClientWindow.__init__(self, client, wid, x, y, w, h, metadata, override_redirect)
         display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
-        #FIXME: We use single buffer because double doesn't work, figure out why
         self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
         self.glarea.set_size_request(w, h)
         self.glarea.show()
         self.add(self.glarea)
         self._on_close = []
-        self.textures = [ 0 ]
+        self.textures = [ 0 ] # OpenGL texture IDs 
 
     def do_configure_event(self, event):
         ClientWindow.do_configure_event(self, event)
