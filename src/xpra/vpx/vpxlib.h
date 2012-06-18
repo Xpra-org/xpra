@@ -27,7 +27,17 @@ void clean_decoder(struct vpx_context *ctx);
  @param stride: Input stride (size is taken from context).
  @return: the converted picture.
 */
-vpx_image_t* csc_image(struct vpx_context *ctx, const uint8_t *in, int stride);
+vpx_image_t* csc_image_rgb2yuv(struct vpx_context *ctx, const uint8_t *in, int stride);
+
+/** Colorspace conversion.
+ @param in: Input picture (3 planes).
+ @param stride: Input strides (3 planes).
+ @param out: Will be set to point to the output data in packed RGB24 format. Must be freed after use by calling free().
+ @param outsz: Will be set to the size of the output buffer.
+ @param outstride: Output stride.
+ @return non zero on error.
+*/
+int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride);
 
 /** Compress an image using the given context.
  @param pic_in: the input image, as returned by csc_image
@@ -40,7 +50,8 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
  @param size: Input size.
- @param out: Will be set to point to the output data in RGB24 format.
- @param outstride: Output stride.
+ @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder. 
+ @param outsize: Output size.
+ @param outstride: Output strides (3 planes).
 */
-int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride);
+int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]);

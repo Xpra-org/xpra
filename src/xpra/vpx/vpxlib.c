@@ -99,7 +99,7 @@ void clean_decoder(struct vpx_context *ctx)
 	free(ctx);
 }
 
-vpx_image_t* csc_image(struct vpx_context *ctx, const uint8_t *in, int stride)
+vpx_image_t* csc_image_rgb2yuv(struct vpx_context *ctx, const uint8_t *in, int stride)
 {
 	vpx_image_t *image = malloc(sizeof(vpx_image_t));
 	if (!vpx_img_alloc(image, VPX_IMG_FMT_I420, ctx->width, ctx->height, 1)) {
@@ -144,7 +144,26 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
 	return 0;
 }
 
-int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **out, int *outsize, int *outstride)
+int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
+{
+	int aligned_width;
+	uint8_t *dst[4] = { malloc(ctx->height * ctx->width * 3), NULL, NULL, NULL };
+	int dststride[4] = { ctx->width * 3, 0, 0, 0 };
+	
+	if (!ctx->yuv2rgb)
+		return 1;
+	
+	sws_scale(ctx->yuv2rgb, in, stride, 0, ctx->height, dst, dststride);
+	
+	/* Output (must be freed!) */
+	*out = dst[0];
+	*outsz = dststride[0] * ctx->height;
+	*outstride = dststride[0];
+
+	return 0;
+}
+
+int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 {
 	vpx_image_t      *img;
 	int frame_sz = size;
@@ -152,7 +171,6 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **o
 	uint8_t* frame = in;
 	int outstrides[4];
 	uint8_t* outs[4];
-	int stride = 0;
 	int i = 0;
 
 	if (vpx_codec_decode(&ctx->codec, frame, frame_sz, NULL, 0)) {
@@ -164,19 +182,13 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t **o
 		codec_error(&ctx->codec, "vpx_codec_get_frame");
 		return -1;
 	}
-	for (i=0; i<4; i++)
-		stride += img->stride[i];
-	*outsize = stride * img->h;
-
-	*out = malloc(*outsize);
-	for (i=0; i<4; i++) {
-		outstrides[i] = img->w*3;
-		outs[i] = *out;
+	
+	*outsize = 0;
+	for (i = 0; i < 3; i++) {
+		(*out)[i] = img->planes[i];
+		(*outstride)[i] = img->stride[i];
+		*outsize += img->stride[i] * img->h;
 	}
-	sws_scale(ctx->yuv2rgb, img->planes, img->stride, 0, img->h, outs, outstrides);
-	stride = 0;
-	for (i=0; i<4; i++)
-		stride += img->stride[i];
-	*outstride = stride;
+
 	return 0;
 }

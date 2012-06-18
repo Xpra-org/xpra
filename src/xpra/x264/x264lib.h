@@ -35,7 +35,6 @@ void clean_decoder(struct x264lib_ctx *);
 x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride);
 
 /** Colorspace conversion.
- * Note: you must call compress_image to free the image buffer.
  @param in: Input picture (3 planes).
  @param stride: Input strides (3 planes).
  @param out: Will be set to point to the output data in packed RGB24 format. Must be freed after use by calling free().
