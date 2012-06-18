@@ -200,6 +200,7 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
 {
 	int got_picture;
 	int len;
+	int i;
 	AVFrame picture;
 	AVPacket avpkt;
 
@@ -220,12 +221,14 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
 		return 2;
 	}
 
-	memcpy(out, &picture.data, sizeof(picture.data));
-	*outsize = ctx->height * (picture.linesize[0] + picture.linesize[1] + picture.linesize[2]);
-	memcpy(outstride, &picture.linesize, sizeof(picture.linesize));
+	for (i = 0; i < 3; i++) {
+		(*out)[i] = picture.data[i];
+		*outsize += ctx->height * picture.linesize[i];
+		(*outstride)[i] = picture.linesize[i];
+	}
 
     if (*outsize == 0) {
-        printf("Decoded image, size %d %d %d, ptr %p %p %p\n", (*outstride)[0] * ctx->height, (*outstride)[1]*ctx->height, (*outstride)[2]*ctx->height, picture.data[0], picture.data[1], picture.data[2]);
+        fprintf(stderr, "Decoded image, size %d %d %d, ptr %p %p %p\n", (*outstride)[0] * ctx->height, (*outstride)[1]*ctx->height, (*outstride)[2]*ctx->height, picture.data[0], picture.data[1], picture.data[2]);
         return 3;
     }
 
