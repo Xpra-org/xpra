@@ -168,7 +168,8 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 	return 0;
 }
 #else
-x264_picture_t* csc_image(struct x264lib_ctx *ctx, const uint8_t *in, int stride) {
+x264_picture_t* csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride) 
+{
 	return	NULL;
 }
 int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)

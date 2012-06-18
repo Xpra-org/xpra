@@ -9,6 +9,7 @@
 #include <x264.h>
 #else
 #define inline __inline
+typedef void * x264_picture_t;
 #endif
 
 /** Opaque structure - "context". You must have a context to encode images of a given size */
