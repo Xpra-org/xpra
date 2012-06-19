@@ -14,10 +14,13 @@
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %define requires_extra , libvpx, libx264
 %if %{defined fedora}
-%define requires_extra , libvpx, libx264_118
+%define requires_extra , libvpx, libx264_118, PyOpenGL, pygtkglext
 %endif
 %if 0%{?static_video_libs}
 %define requires_extra %{nil}
+%endif
+%if 0%{?el6}
+%define requires_extra , PyOpenGL, pygtkglext
 %endif
 %if 0%{?el5}
 %define requires_extra , python-uuid, python-ctypes
@@ -30,7 +33,7 @@
 
 
 Summary: Xpra gives you "persistent remote applications" for X.
-Vendor: http://code.google.com/p/partiwm/wiki/xpra
+Vendor: http://xpra.org/
 Name: xpra
 Version: %{version}
 Release: %{build_no}

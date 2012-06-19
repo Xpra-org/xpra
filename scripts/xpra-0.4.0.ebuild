@@ -16,7 +16,7 @@ SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="jpeg libnotify parti png server x264 vpx ssh"
+IUSE="jpeg libnotify parti png server x264 vpx ssh opengl"
 
 EPATCH_OPTS="-p1"
 
@@ -34,6 +34,7 @@ RDEPEND="${COMMON_DEPEND}
 	parti? ( dev-python/ipython
 		 dev-python/dbus-python )
 	libnotify? ( dev-python/dbus-python )
+	opengl? ( dev-python/pyopengl dev-python/pygtkglext )
 	jpeg? ( dev-python/imaging )
 	png? ( dev-python/imaging )
 	x264? ( media-libs/x264 >=dev-python/cython-0.16 )
