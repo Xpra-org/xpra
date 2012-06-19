@@ -36,13 +36,13 @@ RDEPEND="${COMMON_DEPEND}
 	libnotify? ( dev-python/dbus-python )
 	jpeg? ( dev-python/imaging )
 	png? ( dev-python/imaging )
-	x264? ( media-libs/x264 )
-	vpx? ( media-libs/libvpx )
+	x264? ( media-libs/x264 >=dev-python/cython-0.16 )
+	vpx? ( media-libs/libvpx >=dev-python/cython-0.16 )
 	ssh? ( net-misc/openssh )
 	server? ( x11-base/xorg-server[xvfb] )"
 DEPEND="${COMMON_DEPEND}
 	dev-util/pkgconfig
-	server? ( dev-python/cython )"
+	server? ( >=dev-python/cython-0.14 )"
 
 src_prepare() {
 	if ! use server; then
