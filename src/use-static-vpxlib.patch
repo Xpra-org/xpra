@@ -2,11 +2,11 @@ Description: Build vpx codec as a static library.
  Author: Arthur Huillet <ahuillet@serviware.com>
  Forwarded: not-needed
  
---- a/setup.py	(revision 747)
+--- a/setup.py	(revision 935)
 +++ b/setup.py	(working copy)
-@@ -244,6 +244,10 @@
+@@ -248,6 +248,10 @@
                  **pkgconfig("x264", "libswscale", "libavcodec")
-                 ))
+                 ), min_version=(0, 16))
  if vpx_ENABLED:
 +    def pkgconfig(*args):
 +        return {'include_dirs': ["/usr/local/include"],
