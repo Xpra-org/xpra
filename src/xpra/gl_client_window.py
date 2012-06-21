@@ -70,6 +70,7 @@ class GLClientWindow(ClientWindow):
         self.add(self.glarea)
         self._on_close = []
         self.textures = [ 0 ] # OpenGL texture IDs 
+        self.current_mode = 0 # 0 = uninitialized 1 = RGB 2 = YUV
 
     def do_configure_event(self, event):
         ClientWindow.do_configure_event(self, event)
@@ -77,7 +78,6 @@ class GLClientWindow(ClientWindow):
         context = self.glarea.get_gl_context()
 
         self.yuv420_shader = None
-        self.current_mode = 0 # 0 = uninitialized 1 = RGB 2 = YUV
 
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
