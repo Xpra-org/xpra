@@ -13,19 +13,34 @@
 
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %define requires_extra , libvpx, libx264
+%define requires_vpx , libvpx
+%define requires_x264 , libx264
+
+# distro-specific creative land of wonderness
 %if %{defined fedora}
-%define requires_extra , libvpx, libx264_118, PyOpenGL, pygtkglext
-%endif
-%if 0%{?static_video_libs}
-%define requires_extra %{nil}
-%endif
-%if 0%{?el6}
+%define requires_x264 , libx264_118
 %define requires_extra , PyOpenGL, pygtkglext
 %endif
+
+%if 0%{?el6}
+%define requires_x264 %{nil}
+%define requires_extra , PyOpenGL, pygtkglext
+%if 0%{?static_video_libs}
+%define static_x264 1
+%endif
+%endif
+
 %if 0%{?el5}
+%define requires_vpx %{nil}
+%define requires_x264 %{nil}
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
+%if 0%{?static_video_libs}
+%define static_x264 1
+%define static_vpx 1
 %endif
+%endif
+
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
 %define requires_extra %{nil}
@@ -38,7 +53,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}
 License: GPL
-Requires: %{requires} %{requires_extra}
+Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
 URL: http://xpra.org/
@@ -304,8 +319,10 @@ cd parti-all-%{version}
 %patch1 -p1
 %patch2 -p1
 %endif
-%if 0%{?static_video_libs}
+%if 0%{?static_x264}
 %patch3 -p1
+%endif
+%if 0%{?static_vpx}
 %patch4 -p1
 %endif
 
