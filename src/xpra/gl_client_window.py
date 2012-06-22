@@ -60,6 +60,10 @@ except Exception, e:
 
 
 class GLClientWindow(ClientWindow):
+    MODE_UNINITIALIZED = 0
+    MODE_RGB = 1
+    MODE_YUV = 2
+
     def __init__(self, client, wid, x, y, w, h, metadata, override_redirect):
         ClientWindow.__init__(self, client, wid, x, y, w, h, metadata, override_redirect)
         display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
@@ -70,7 +74,7 @@ class GLClientWindow(ClientWindow):
         self.add(self.glarea)
         self._on_close = []
         self.textures = None # OpenGL texture IDs
-        self.current_mode = 0 # 0 = uninitialized 1 = RGB 2 = YUV
+        self.current_mode = GLClientWindow.MODE_UNINITIALIZED
 
     def do_configure_event(self, event):
         ClientWindow.do_configure_event(self, event)
@@ -178,9 +182,9 @@ class GLClientWindow(ClientWindow):
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
 
-        if self.current_mode == 2:
+        if self.current_mode == GLClientWindow.MODE_YUV:
             raise Exception("** YUV -> RGB mode change unimplemented!")
-        elif self.current_mode == 0:
+        elif self.current_mode == GLClientWindow.MODE_UNINITIALIZED:
             log("Creating new RGB texture")
             w, h = self.get_size()
             # First time we draw must be full image
@@ -189,7 +193,7 @@ class GLClientWindow(ClientWindow):
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)
-            self.current_mode = 1
+            self.current_mode = GLClientWindow.MODE_RGB
         log("Updating RGB texture")
         glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, img_data)
         drawable.gl_end()
@@ -203,9 +207,9 @@ class GLClientWindow(ClientWindow):
             raise Exception("** Cannot create OpenGL rendering context!")
         assert self.textures is not None
 
-        if self.current_mode == 1:
+        if self.current_mode == GLClientWindow.MODE_RGB:
             raise Exception("** RGB -> YUV mode change unimplemented!")
-        elif self.current_mode == 0:
+        elif self.current_mode == GLClientWindow.MODE_UNINITIALIZED:
             log("Creating new YUV textures")
 
             # Create textures of the same size as the window's
@@ -242,7 +246,7 @@ class GLClientWindow(ClientWindow):
                 log.error(glGetString(GL_PROGRAM_ERROR_STRING_ARB))
                 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv420_shader[0])
 
-            self.current_mode = 2
+            self.current_mode = GLClientWindow.MODE_YUV
 
         # Clamp width and height to the actual texture size
         if x + width > window_width:
@@ -280,11 +284,11 @@ class GLClientWindow(ClientWindow):
                       [ w, 0 ] ]
         vtxcoords = texcoords
 
-        if self.current_mode == 1: #RGB
+        if self.current_mode == GLClientWindow.MODE_RGB:
             glVertexPointeri(vtxcoords)
             glTexCoordPointeri(texcoords)
             glDrawArrays(GL_QUADS, 0, 4);
-        elif self.current_mode == 2: #YUV
+        elif self.current_mode == GLClientWindow.MODE_YUV:
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             glBegin(GL_QUADS);
             glMultiTexCoord2i(GL_TEXTURE0, 0, 0);
