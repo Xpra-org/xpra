@@ -1540,7 +1540,19 @@ class XpraServer(gobject.GObject):
         return True
 
     def get_info(self, proto):
-        info = {"version" : xpra.__version__}
+        info = {}
+        info["version"] = xpra.__version__
+        try:
+            from xpra.build_info import LOCAL_MODIFICATIONS, BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, REVISION
+            info["local_modifications"] = LOCAL_MODIFICATIONS
+            info["build_date"] = BUILD_DATE
+            info["built_by"] = BUILT_BY
+            info["built_on"] = BUILT_ON
+            info["build_bit"] = BUILD_BIT
+            info["build_cpu"] = BUILD_CPU
+            info["revision"] = REVISION
+        except:
+            pass
         info["session_name"] = self.session_name or ""
         info["clipboard"] = self.clipboard_enabled
         info["password_file"] = self.password_file or ""
