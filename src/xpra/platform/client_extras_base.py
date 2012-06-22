@@ -665,6 +665,27 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_clipboard_menuitem)
         return self.clipboard_menuitem
 
+    def make_keyboardsyncmenuitem(self):
+        def set_keyboard_sync_tooltip():
+            if not self.client.toggle_keyboard_sync:
+                set_tooltip_text(self.keyboard_sync_menuitem, "This server does not support changes to keyboard synchronization")
+            elif self.client.keyboard_sync:
+                set_tooltip_text(self.keyboard_sync_menuitem, "Disable keyboard synchronization (prevents spurious key repeats on high latency connections)")
+            else:
+                set_tooltip_text(self.keyboard_sync_menuitem, "Enable keyboard state synchronization")
+        def keyboard_sync_toggled(*args):
+            self.client.keyboard_sync = self.keyboard_sync_menuitem.get_active()
+            log.debug("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
+            set_keyboard_sync_tooltip()
+            self.client.emit("keyboard-sync-toggled")
+        self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
+        def set_keyboard_sync_menuitem(*args):
+            self.keyboard_sync_menuitem.set_active(self.client.keyboard_sync)
+            self.keyboard_sync_menuitem.set_sensitive(self.client.toggle_keyboard_sync)
+            set_keyboard_sync_tooltip()
+        self.client.connect("handshake-complete", set_keyboard_sync_menuitem)
+        return self.keyboard_sync_menuitem
+
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
         self.encodings_submenu = gtk.Menu()
@@ -871,6 +892,7 @@ class ClientExtrasBase(object):
             menu.append(self.make_compressionmenu())
         if not self.client.readonly:
             menu.append(self.make_layoutsmenuitem())
+        menu.append(self.make_keyboardsyncmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))

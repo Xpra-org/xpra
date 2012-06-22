@@ -77,6 +77,7 @@ def nn(x):
 class XpraClient(XpraClientBase):
     __gsignals__ = {
         "clipboard-toggled": n_arg_signal(0),
+        "keyboard-sync-toggled": n_arg_signal(0),
         }
 
     def __init__(self, conn, opts):
@@ -107,6 +108,7 @@ class XpraClient(XpraClientBase):
         self.server_load = None
         self.client_latency = maxdeque(maxlen=100)
         self.toggle_cursors_bell_notify = False
+        self.toggle_keyboard_sync = False
         self.bell_enabled = True
         self.cursors_enabled = True
         self.notifications_enabled = True
@@ -615,7 +617,8 @@ class XpraClient(XpraClientBase):
         self.send_deflate_level()
         self.server_start_time = capabilities.get("start_time", -1)
         self.server_platform = capabilities.get("platform")
-        self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify")
+        self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify", False)
+        self.toggle_keyboard_sync = capabilities.get("toggle_keyboard_sync", False)
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
@@ -623,6 +626,8 @@ class XpraClient(XpraClientBase):
         if clipboard_server_support:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
+        if self.toggle_keyboard_sync:
+            self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
 
     def send_notify_enabled(self):
         if self.toggle_cursors_bell_notify:
@@ -641,6 +646,9 @@ class XpraClient(XpraClientBase):
 
     def send_clipboard_enabled_status(self, *args):
         self.send(["set-clipboard-enabled", self.clipboard_enabled])
+
+    def send_keyboard_sync_enabled_status(self, *args):
+        self.send(["set-keyboard-sync-enabled", self.keyboard_sync])
 
     def set_encoding(self, encoding):
         assert encoding in ENCODINGS
