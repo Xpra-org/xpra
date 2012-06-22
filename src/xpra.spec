@@ -19,7 +19,7 @@
 # distro-specific creative land of wonderness
 %if %{defined fedora}
 %define requires_x264 , libx264_118
-%define requires_extra , PyOpenGL, pygtkglext
+%define requires_extra , PyOpenGL, pygtkglext, python-numeric
 %endif
 
 %if 0%{?el6}
