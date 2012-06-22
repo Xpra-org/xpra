@@ -223,6 +223,7 @@ class ClientExtrasBase(object):
         dialog.connect("response", self.close_about)
         self.about_dialog = dialog
         dialog.show()
+        dialog.present()
 
     def get_build_info(self):
         info = []
@@ -448,6 +449,7 @@ class ClientExtrasBase(object):
         self.session_info_window = window
         populate_table()
         window.show_all()
+        window.present()
 
     def close_session_info(self, *args):
         try:
