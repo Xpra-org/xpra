@@ -90,25 +90,25 @@ if sys.platform.startswith("win"):
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
 
-    def pkgconfig(*args):
+    def pkgconfig(*packages):
         def add_to_PATH(bindir):
             import os
             if os.environ['PATH'].find(bindir)<0:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
                 sys.path.append(bindir)
-        if args[0]=="x264":
+        if "x264" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
             return {'include_dirs': ["xpra/x264/win32", ffmpeg_include_dir],
                     'library_dirs': ["xpra/x264/win32", ffmpeg_lib_dir],
                     'libraries':    ["x264lib", "swscale", "avcodec", "avutil"]}
-        elif args[0]=="vpx":
+        elif "vpx" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
             return {'include_dirs': ["xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir],
                     'library_dirs': ["xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir],
                     'libraries':    ["vpxmt", "vpxmtd", "swscale", "avcodec", "avutil"]}
         else:
-            raise Exception("unknown package config: %s" % str(args))
+            raise Exception("unknown package config: %s" % str(packages))
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
@@ -152,7 +152,29 @@ if sys.platform.startswith("win"):
     )
 else:
     # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-    def pkgconfig(*packages, **ekw):
+    def pkgconfig(*packages_options, **ekw):
+        packages = []
+        #find out which package name to use from potentially many options
+        #and bail out early with a meaningful error if we can't find any valid options
+        for package_options in packages_options:
+            #for this package options, find the ones that work
+            valid_option = None
+            if type(package_options)==str:
+                options = [package_options]     #got given just one string
+            else:
+                assert type(package_options)==list
+                options = package_options       #got given a list of options
+            for option in options:
+                cmd = ["pkg-config", "--exists", option]
+                proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                status = proc.wait()
+                if status==0:
+                    valid_option = option
+                    break
+            if not valid_option:
+                raise Exception("cannot find a valid pkg-config package for %s" % (package_options,))
+            packages.append(valid_option)
+        print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, packages))
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
@@ -172,7 +194,7 @@ else:
                 kw.setdefault('extra_link_args', []).append(token)
             for k, v in kw.items(): # remove duplicates
                 kw[k] = list(set(v))
-        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
+        print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
         return kw
 
     scripts=["scripts/parti", "scripts/parti-repl",
@@ -251,7 +273,7 @@ if vpx_ENABLED:
     packages.append("xpra.vpx")
     cython_add(Extension("xpra.vpx.codec",
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
-                **pkgconfig("vpx", "libswscale", "libavcodec")
+                **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 
 
