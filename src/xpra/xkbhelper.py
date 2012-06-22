@@ -136,45 +136,34 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             xkbmap_print = xkbmap_print[pos:]
         exec_keymap_command(["xkbcomp", "-", display], xkbmap_print)
 
-def set_all_keycodes(xkbmap_keycodes, xkbmap_initial_keycodes):
+def set_all_keycodes(xkbmap_keycodes):
     """
-        Both parameters should contain a list of:
+        The xkbmap_keycodes must contain a list of:
         (keyval, keyname, keycode, group, level)
-        The first one contains the desired keymap,
-        the second one the initial X11 server keycodes.
-        We try to preserve the initial keycodes
-        Returns a translation map for keycodes.
+        Returns a translation map for keycodes,
+        if any keycodes could not be mapped to the same value.
     """
-    # The preserve_keycodes is a dict containing {keysym:keycode}
-    # for keys we want to preserve the keycode for.
-    # By default, all keys which have a name and group=level=0
-    preserve_keycodes = {}
-    for (_, keyname, keycode, group, level) in xkbmap_initial_keycodes:
-        if group==0 and level==0 and keyname:
-            preserve_keycodes[keyname] = keycode
     # convert the keycode entries into a dict where the keycode is the key:
     # {keycode : (keyval, name, keycode, group, level)}
     # since the instructions are generated per keycode in set_keycodes()
     keycodes = {}
-    log.debug("set_all_keycodes(%s..., %s..)", str(xkbmap_keycodes)[:120], str(preserve_keycodes)[:120])
+    log.debug("set_all_keycodes(%s...)", str(xkbmap_keycodes)[:120])
     for entry in xkbmap_keycodes:
         _, _, keycode, _, _ = entry
         entries = keycodes.setdefault(keycode, [])
         entries.append(entry)
-    return set_keycodes(keycodes, preserve_keycodes)
+    return set_keycodes(keycodes)
 
-def set_keycodes(keycodes, preserve_keycodes={}):
+def set_keycodes(keycodes):
     """
         The keycodes given may not match the range that the server supports,
         so we return a translation map for those keycodes that have been
         remapped.
-        The preserve_keycodes is a dict containing {keysym:keycode}
-        for keys we want to preserve the keycode for.
     """
     kcmin,kcmax = get_minmax_keycodes()
     free_keycodes = []
     for i in range(kcmin, kcmax):
-        if i not in keycodes.keys() and i not in preserve_keycodes.values():
+        if i not in keycodes.keys():
             free_keycodes.append(i)
     log.debug("set_keycodes(..) min=%s, max=%s, free_keycodes=%s", kcmin, kcmax, free_keycodes)
 
@@ -184,13 +173,6 @@ def set_keycodes(keycodes, preserve_keycodes={}):
     missing_keysyms = []
     for keycode, entries in keycodes.items():
         server_keycode = keycode
-        if preserve_keycodes:
-            for entry in entries:
-                (_, name, _, group, level) = entry
-                if group==0 and level==0 and name in preserve_keycodes:
-                    server_keycode = preserve_keycodes.get(name)
-                    if server_keycode!=keycode:
-                        log.debug("set_keycodes key %s(%s) mapped to keycode=%s", keycode, entries, server_keycode)
         if server_keycode<0 or server_keycode in used or server_keycode<kcmin or server_keycode>kcmax:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]

@@ -859,7 +859,6 @@ class XpraServer(gobject.GObject):
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
         ### Set up keymap:
-        self.xkbmap_initial = get_gtk_keymap()
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
@@ -973,7 +972,7 @@ class XpraServer(gobject.GObject):
                 self._keynames_for_mod = None
                 if self.keyboard:
                     assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, self.xkbmap_initial)
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes)
 
                     #now set the new modifier mappings:
                     self.clean_keyboard_state()
