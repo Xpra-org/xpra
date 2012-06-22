@@ -146,15 +146,14 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
 
 int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
 {
-	int aligned_width;
 	uint8_t *dst[4] = { malloc(ctx->height * ctx->width * 3), NULL, NULL, NULL };
 	int dststride[4] = { ctx->width * 3, 0, 0, 0 };
-	
+
 	if (!ctx->yuv2rgb)
 		return 1;
-	
-	sws_scale(ctx->yuv2rgb, in, stride, 0, ctx->height, dst, dststride);
-	
+
+	sws_scale(ctx->yuv2rgb, (const uint8_t * const*) in, stride, 0, ctx->height, dst, dststride);
+
 	/* Output (must be freed!) */
 	*out = dst[0];
 	*outsz = dststride[0] * ctx->height;
@@ -169,8 +168,6 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*
 	int frame_sz = size;
 	vpx_codec_iter_t  iter = NULL;
 	uint8_t* frame = in;
-	int outstrides[4];
-	uint8_t* outs[4];
 	int i = 0;
 
 	if (vpx_codec_decode(&ctx->codec, frame, frame_sz, NULL, 0)) {
@@ -182,7 +179,7 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*
 		codec_error(&ctx->codec, "vpx_codec_get_frame");
 		return -1;
 	}
-	
+
 	*outsize = 0;
 	for (i = 0; i < 3; i++) {
 		(*out)[i] = img->planes[i];
