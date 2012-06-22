@@ -11,6 +11,9 @@ import getpass
 import socket
 import platform
 import os.path
+import re
+
+IGNORED_CHANGED_FILES = ["xpra/build_info.py"]
 
 def get_svn_props():
     props = {
@@ -55,9 +58,23 @@ def get_svn_props():
         if sys.platform.startswith("win") and line.find("\\wcw"):
             """ windows is easily confused, symlinks for example - ignore them """
             continue
-        if line.startswith("M") and line.find("build_info.py")<0:
+        ignore = False
+        parts = line.split(" ", 1)
+        if len(parts)!=2:
+            continue
+        filename = parts[1].strip()
+        for x in IGNORED_CHANGED_FILES:
+            rstr = r"^%s$" % x.replace("*", ".*")
+            regexp = re.compile(rstr)
+            if regexp.match(filename):
+                print("'%s' matches ignore list entry: '%s', not counting it as a modified file" % (filename, x))
+                ignore = True
+                break
+        if ignore:
+            continue
+        if line.startswith("M"):
             changes += 1
-            print("WARNING: found modified file: %s" % line)
+            print("WARNING: found modified file: %s" % filename)
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
