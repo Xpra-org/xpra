@@ -122,10 +122,10 @@ if sys.platform.startswith("win"):
     windows = [
                     {'script': 'win32/xpra_silent.py',                  'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra",},
                     {'script': 'xpra/gtk_view_keyboard.py',             'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra-Launcher",},
+                    {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra-Launcher",},
               ]
     console = [
-                    {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "xpra.ico")],            "dest_base": "Xpra_cmd",}
+                    {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
               ]
     includes = ['cairo', 'pango', 'pangocairo', 'atk', 'glib', 'gobject', 'gio', 'gtk.keysyms',
                 "Crypto", "Crypto.Cipher",
