@@ -194,6 +194,10 @@ else:
                 kw.setdefault('extra_link_args', []).append(token)
             for k, v in kw.items(): # remove duplicates
                 kw[k] = list(set(v))
+        WARN_ALL = True
+        if WARN_ALL:
+            kw.setdefault('extra_compile_args', []).append("-Wall")
+            kw.setdefault('extra_link_args', []).append("-Wall")
         print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
         return kw
 
