@@ -83,6 +83,9 @@ class GLClientWindow(ClientWindow):
 
         self.yuv420_shader = None
 
+        # Re-create textures
+        self.current_mode = GLClientWindow.MODE_UNINITIALIZED
+
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
 
