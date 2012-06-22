@@ -69,7 +69,7 @@ class GLClientWindow(ClientWindow):
         self.glarea.show()
         self.add(self.glarea)
         self._on_close = []
-        self.textures = [ 0 ] # OpenGL texture IDs 
+        self.textures = None # OpenGL texture IDs
         self.current_mode = 0 # 0 = uninitialized 1 = RGB 2 = YUV
 
     def do_configure_event(self, event):
@@ -83,7 +83,7 @@ class GLClientWindow(ClientWindow):
             raise Exception("** Cannot create OpenGL rendering context!")
 
         w, h = self.get_size()
-        log("Configure widget size size is %d, %d" % (w, h))
+        log("Configure widget size: %d x %d" % (w, h))
         glViewport(0, 0, w, h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -93,7 +93,7 @@ class GLClientWindow(ClientWindow):
         glEnableClientState(GL_TEXTURE_COORD_ARRAY)
         glDisable(GL_FRAGMENT_PROGRAM_ARB)
 
-        if self.textures[0] == 0:
+        if self.textures is None:
             self.textures = glGenTextures(3)
 
         drawable.gl_end()
@@ -124,7 +124,7 @@ class GLClientWindow(ClientWindow):
             self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
         elif coding == "vpx":
             assert "vpx" in ENCODINGS
-            from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport
+            from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport    @Reimport
             self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
         else:
             raise Exception("** No JPEG/PNG support for OpenGL")
@@ -173,6 +173,7 @@ class GLClientWindow(ClientWindow):
         context = self.glarea.get_gl_context()
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
+        assert self.textures is not None
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
@@ -200,6 +201,7 @@ class GLClientWindow(ClientWindow):
         window_width, window_height = self.get_size()
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
+        assert self.textures is not None
 
         if self.current_mode == 1:
             raise Exception("** RGB -> YUV mode change unimplemented!")
