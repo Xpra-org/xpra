@@ -20,10 +20,16 @@ def get_svn_props():
     #find revision:
     proc = subprocess.Popen("svnversion -n", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
+    if proc.returncode!=0:
+        print("'svnversion -n' failed with return code %s" % proc.returncode)
+        return  props
     if not out:
         print("could not get version information")
         return  props
     out = out.decode('utf-8')
+    if out=="exported":
+        print("svn repository information is missing ('exported')")
+        return  props
     pos = out.find(":")
     if pos>=0:
         out = out[pos+1:]
@@ -32,7 +38,7 @@ def get_svn_props():
         if c in "0123456789":
             rev_str += c
     if not rev_str:
-        print("could not parse version information from string: %s" % rev_str)
+        print("could not parse version information from string: %s (original version string: %s)" % (rev_str, out))
         return  props
 
     rev = int(rev_str)
@@ -55,25 +61,64 @@ def get_svn_props():
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
+BUILD_INFO_FILE = "./xpra/build_info.py"
+
 def save_properties_to_file(props):
-    filename = "./xpra/build_info.py"
-    if os.path.exists(filename):
-        os.unlink(filename)
-    f = open(filename, mode='w')
+    if os.path.exists(BUILD_INFO_FILE):
+        os.unlink(BUILD_INFO_FILE)
+    f = open(BUILD_INFO_FILE, mode='w')
     for name,value in props.items():
         f.write("%s='%s'\n" % (name,value))
     f.close()
     print("updated build_info.py with %s" % props)
 
+def get_existing_properties():
+    props = dict()
+    try:
+        f = open(BUILD_INFO_FILE, "rU")
+        for line in f:
+            s = line.strip()
+            if len(s)==0:
+                continue
+            if s[0] in ('!', '#'):
+                continue
+            parts = s.split("=", 1)
+            name = parts[0]
+            value = parts[1]
+            if value[0]!="'" or value[-1]!="'":
+                continue
+            props[name]= value[1:-1]
+    finally:
+        f.close()
+    return props
+
+def get_cpuinfo():
+    if platform.uname()[5]:
+        return platform.uname()[5]
+    try:
+        if os.path.exists("/proc/cpuinfo"):
+            f = open("/proc/cpuinfo", "rU")
+            for line in f:
+                if line.startswith("model name"):
+                    return line.split(": ")[1].replace("\n", "").replace("\r", "")
+            f.close()
+    finally:
+        pass
+    return "unknown"
+
 def main():
-    props = {"BUILT_BY":getpass.getuser(),
-            "BUILT_ON":socket.gethostname(),
-            "BUILD_DATE":date.today().isoformat(),
-            "BUILD_CPU":(platform.uname()[5] or "unknown"),
-            "BUILD_BIT": platform.architecture()[0]
-            }
+    def set_prop(props, key, value):
+        if value!="unknown" or props.get(key) is None:
+            props[key] = value
+
+    props = get_existing_properties()
+    set_prop(props, "BUILT_BY", getpass.getuser())
+    set_prop(props, "BUILT_ON", socket.gethostname())
+    set_prop(props, "BUILD_DATE", date.today().isoformat())
+    set_prop(props, "BUILD_CPU", get_cpuinfo())
+    set_prop(props, "BUILD_BIT", platform.architecture()[0])
     for k,v in get_svn_props().items():
-        props[k] = v
+        set_prop(props, k, v)
     save_properties_to_file(props)
 
 if __name__ == "__main__":
