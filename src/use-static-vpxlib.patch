@@ -4,7 +4,7 @@ Description: Build vpx codec as a static library.
  
 --- a/setup.py	(revision 935)
 +++ b/setup.py	(working copy)
-@@ -248,6 +248,10 @@
+@@ -293,6 +293,10 @@
                  **pkgconfig("x264", "libswscale", "libavcodec")
                  ), min_version=(0, 16))
  if vpx_ENABLED:

@@ -24,6 +24,7 @@ import parti
 import xpra
 assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
+print(" ".join(sys.argv))
 
 packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
@@ -53,6 +54,10 @@ full_desc = """This package contains several sub-projects:
     %s""" % (wimpiggy_desc, parti_desc, xpra_desc)
 
 
+def add_to_keywords(kw, key, *args):
+    values = kw.setdefault(key, [])
+    for arg in args:
+        values.append(arg)
 
 
 extra_options = {}
@@ -90,25 +95,27 @@ if sys.platform.startswith("win"):
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
 
-    def pkgconfig(*packages):
+    def pkgconfig(*packages, **ekw):
         def add_to_PATH(bindir):
             import os
             if os.environ['PATH'].find(bindir)<0:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
                 sys.path.append(bindir)
+        kw = dict(ekw)
         if "x264" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
-            return {'include_dirs': ["xpra/x264/win32", ffmpeg_include_dir],
-                    'library_dirs': ["xpra/x264/win32", ffmpeg_lib_dir],
-                    'libraries':    ["x264lib", "swscale", "avcodec", "avutil"]}
+            add_to_keywords(kw, 'include_dirs', "xpra/x264/win32", ffmpeg_include_dir)
+            add_to_keywords(kw, 'library_dirs', "xpra/x264/win32", ffmpeg_lib_dir)
+            add_to_keywords(kw, 'libraries', "x264lib", "swscale", "avcodec", "avutil")
         elif "vpx" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
-            return {'include_dirs': ["xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir],
-                    'library_dirs': ["xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir],
-                    'libraries':    ["vpxmt", "vpxmtd", "swscale", "avcodec", "avutil"]}
+            add_to_keywords(kw, 'include_dirs', "xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir)
+            add_to_keywords(kw, 'library_dirs', "xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir)
+            add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
         else:
             raise Exception("unknown package config: %s" % str(packages))
+        return kw
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
@@ -172,7 +179,7 @@ else:
                     valid_option = option
                     break
             if not valid_option:
-                raise Exception("cannot find a valid pkg-config package for %s" % (package_options,))
+                raise Exception("cannot find a valid pkg-config package for %s" % (options,))
             packages.append(valid_option)
         print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, packages))
         flag_map = {'-I': 'include_dirs',
@@ -182,22 +189,22 @@ else:
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (output, _) = proc.communicate()
         status = proc.wait()
-        if status!=0 and not ('clean' in sys.argv or 'sdist' in sys.argv):
+        if status!=0:
             raise Exception("call to pkg-config ('%s') failed" % (cmd,))
         kw = dict(ekw)
         if sys.version>='3':
             output = output.decode('utf-8')
         for token in output.split():
             if token[:2] in flag_map:
-                kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
+                add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
             else: # throw others to extra_link_args
-                kw.setdefault('extra_link_args', []).append(token)
+                add_to_keywords(kw, 'extra_link_args', token)
             for k, v in kw.items(): # remove duplicates
                 kw[k] = list(set(v))
         WARN_ALL = True
         if WARN_ALL:
-            kw.setdefault('extra_compile_args', []).append("-Wall")
-            kw.setdefault('extra_link_args', []).append("-Wall")
+            add_to_keywords(kw, 'extra_compile_args', "-Wall")
+            add_to_keywords(kw, 'extra_link_args', "-Wall")
         print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
         return kw
 
@@ -222,6 +229,9 @@ else:
 
 
 
+
+
+
 ext_modules = []
 cmdclass = {}
 def cython_version_check(min_version):
@@ -240,6 +250,15 @@ def cython_add(extension, min_version=(0, 14, 0)):
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
     cmdclass = {'build_ext': build_ext}
+
+
+if 'clean' in sys.argv or 'sdist' in sys.argv:
+    #clean and sdist don't actually use cython,
+    #so skip this (and avoid errors)
+    def pkgconfig(*packages_options, **ekw):
+        return {}
+
+
 
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 if XPRA_LOCAL_SERVERS_SUPPORTED:
