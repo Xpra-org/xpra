@@ -1,4 +1,4 @@
-include COPYING NEWS README* *.1
+include COPYING NEWS README*
 include do-build parti/try-parti
 include install.sh
 include wimpiggy/lowlevel/constants.pxi
@@ -6,6 +6,7 @@ include xpra/x264/*.h
 include xpra/vpx/*.h
 include *.desktop
 include *.png
+include *.1
 recursive-include working-notes *
 global-include *.py *.txt
 global-exclude *~ #*
