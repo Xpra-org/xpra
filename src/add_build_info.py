@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from datetime import date
-import subprocess, sys
+import subprocess
 import getpass
 import socket
 import platform
@@ -54,10 +54,8 @@ def get_svn_props():
         print("could not get status of local files")
         return  props
 
-    for line in out.decode('utf-8').splitlines():
-        if sys.platform.startswith("win") and line.find("\\wcw"):
-            """ windows is easily confused, symlinks for example - ignore them """
-            continue
+    lines = out.decode('utf-8').splitlines()
+    for line in lines:
         ignore = False
         parts = line.split(" ", 1)
         if len(parts)!=2:
