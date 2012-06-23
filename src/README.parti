@@ -82,10 +82,10 @@ particular the LACK OF ANY WARRANTY).
 How can I try Parti?
 --------------------
 
-Running './try-parti' in the source directory will build Parti, and
-start a parti session inside a Xephyr nested X server.  Currently you
-may need to hit "tab" to get a client window focused, and you may find
-running the "parti-repl" command interesting.
+Running './parti/try-parti' in the source directory will build Parti,
+and start a parti session inside a Xephyr nested X server.
+Currently you may need to hit "tab" to get a client window focused,
+and you may find running the "parti-repl" command interesting.
 
 Running Parti requires at least:
    python
