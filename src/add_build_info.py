@@ -56,23 +56,30 @@ def get_svn_props():
 
     lines = out.decode('utf-8').splitlines()
     for line in lines:
-        ignore = False
+        if not line.startswith("M"):
+            continue
         parts = line.split(" ", 1)
         if len(parts)!=2:
             continue
         filename = parts[1].strip()
+        ignore = False
         for x in IGNORED_CHANGED_FILES:
+            #use a normalized path ("/") that does not interfere with regexp:
+            norm_path = filename.replace(os.path.sep, "/")
+            if norm_path==filename:
+                print("'%s' matches ignore list entry: '%s' exactly, not counting it as a modified file" % (filename, x))
+                ignore = True
+                break
             rstr = r"^%s$" % x.replace("*", ".*")
             regexp = re.compile(rstr)
-            if regexp.match(filename):
-                print("'%s' matches ignore list entry: '%s', not counting it as a modified file" % (filename, x))
+            if regexp.match(norm_path):
+                print("'%s' matches ignore list regexp: '%s', not counting it as a modified file" % (filename, x))
                 ignore = True
                 break
         if ignore:
             continue
-        if line.startswith("M"):
-            changes += 1
-            print("WARNING: found modified file: %s" % filename)
+        changes += 1
+        print("WARNING: found modified file: %s" % filename)
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
