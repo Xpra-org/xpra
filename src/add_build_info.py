@@ -96,22 +96,23 @@ def save_properties_to_file(props):
 
 def get_existing_properties():
     props = dict()
-    try:
-        f = open(BUILD_INFO_FILE, "rU")
-        for line in f:
-            s = line.strip()
-            if len(s)==0:
-                continue
-            if s[0] in ('!', '#'):
-                continue
-            parts = s.split("=", 1)
-            name = parts[0]
-            value = parts[1]
-            if value[0]!="'" or value[-1]!="'":
-                continue
-            props[name]= value[1:-1]
-    finally:
-        f.close()
+    if os.path.exists(BUILD_INFO_FILE):
+        try:
+            f = open(BUILD_INFO_FILE, "rU")
+            for line in f:
+                s = line.strip()
+                if len(s)==0:
+                    continue
+                if s[0] in ('!', '#'):
+                    continue
+                parts = s.split("=", 1)
+                name = parts[0]
+                value = parts[1]
+                if value[0]!="'" or value[-1]!="'":
+                    continue
+                props[name]= value[1:-1]
+        finally:
+            f.close()
     return props
 
 def get_cpuinfo():
