@@ -351,23 +351,25 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_bindir}/parti
-%{_bindir}/parti-repl
 %{_bindir}/xpra
 %{_bindir}/xpra_launcher
 %{python_sitelib}/xpra
-%{python_sitelib}/parti
 %{python_sitelib}/wimpiggy
 %if %{include_egg}
 %{python_sitelib}/parti_all-*.egg-info
 %endif
 /usr/share/xpra
-/usr/share/parti
 /usr/share/wimpiggy
 /usr/share/man/man1/xpra*
-/usr/share/man/man1/parti.*
 /usr/share/applications/xpra_launcher.desktop
 /usr/share/icons/xpra.png
+
+# we no longer ship parti in rpms:
+%exclude %{_bindir}/parti
+%exclude %{_bindir}/parti-repl
+%exclude %{python_sitelib}/parti
+%exclude /usr/share/parti
+%exclude /usr/share/man/man1/parti.*
 
 ###
 ### eof
