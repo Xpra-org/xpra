@@ -27,28 +27,51 @@ TEST_VNC = True
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999
 
+#some commands (games especially) may need longer to startup:
+TEST_COMMAND_SETTLE_TIME = {}
+
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 
+#tools we use:
 TRICKLE_BIN = "/usr/bin/trickle"
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
 XORG_BIN = "/usr/bin/Xorg"
 
+#the glx tests:
 GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
+GLX_TESTS = [GLX_SPHERES, GLX_GEARS]
+
+#the plain X11 tests:
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
 GTKPERF_TEST = "while true; do gtkperf -a; done"
+X11_TESTS = [X11_PERF, XTERM_TEST, GTKPERF_TEST]
+
+#the screensaver tests:
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
-ALL_XSCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
+ALL_SCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
                             ["rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes"]
                          ]
-SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
+SOME_SCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
                             ["memscroller", "eruption", "xmatrix"]
                           ]
+
+#games tests:
+#for more info, see here: http://dri.freedesktop.org/wiki/Benchmarking
+NEXUIZ_TEST = ["/usr/bin/nexuiz-glx", "-benchmark", "demos/demo1", "-nosound"]
+XONOTIC_TEST = ["/opt/Xonotic/xonotic-linux64-glx", "-basedir", "/opt/Xonotic", "-benchmark", "demos/the-big-keybench"]
+TEST_COMMAND_SETTLE_TIME[NEXUIZ_TEST[0]] = 10
+TEST_COMMAND_SETTLE_TIME[XONOTIC_TEST[0]] = 20
+GAMES_TESTS = [NEXUIZ_TEST, XONOTIC_TEST]
+
+#our selection:
+TEST_CANDIDATES = GLX_TESTS + X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
+
+#now we filter all the test commands and only keep the valid ones:
 X11_TEST_COMMANDS = []
-TEST_CANDIDATES = [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS 
 for x in TEST_CANDIDATES:
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
@@ -58,9 +81,9 @@ TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
 
 #but these should be ok:
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 120           #run for N seconds
+MEASURE_TIME = 120          #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
-TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
+DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
 XVNC_BIN = "/usr/bin/Xvnc"
 XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
@@ -346,7 +369,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[-LIMIT_TESTS:]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
-    print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
+    print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+DEFAULT_TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
 
     server_process = None
     test_command_process = None
@@ -359,7 +382,8 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
         try:
             print("**************************************************************")
             count += 1
-            eta = int((SERVER_SETTLE_TIME+TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*(len(tests)-count)/60)
+            test_command_settle_time = TEST_COMMAND_SETTLE_TIME.get(test_command[0], DEFAULT_TEST_COMMAND_SETTLE_TIME)
+            eta = int((SERVER_SETTLE_TIME+test_command_settle_time+SETTLE_TIME+MEASURE_TIME+1)*(len(tests)-count)/60)
             print("%s/%s: %s            ETA=%s minutes" % (count, len(tests), name, eta))
             test_command_process = None
             try:
@@ -377,9 +401,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     server_pid = 0
     
                 #start the test command:
-                print("starting test command: %s" % str(test_command))
+                print("starting test command: %s, settle time=%s" % (str(test_command), test_command_settle_time))
                 test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(test_command)==str)
-                time.sleep(TEST_COMMAND_SETTLE_TIME)
+                time.sleep(test_command_settle_time)
                 code = test_command_process.poll()
                 assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
 
