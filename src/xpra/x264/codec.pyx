@@ -7,6 +7,13 @@
 
 from libc.stdlib cimport free
 
+cdef extern from "string.h":
+    void * memcpy ( void * destination, void * source, size_t num )
+    void * memset ( void * ptr, int value, size_t num )
+
+cdef extern from "stdlib.h":
+    int posix_memalign (void **memptr, size_t alignment, size_t size)
+
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
@@ -24,7 +31,7 @@ cdef extern from "x264lib.h":
 
     x264lib_ctx* init_decoder(int width, int height)
     void clean_decoder(x264lib_ctx *context)
-    int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
+    int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]) nogil
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     void change_encoding_speed(x264lib_ctx *context, int increase)
 
@@ -94,16 +101,22 @@ cdef class Decoder(xcoder):
         cdef int outsize
         cdef int yuvstrides[3]
         cdef int outstride
+        cdef unsigned char * padded_buf = <uint8_t *> 0
         cdef unsigned char * buf = <uint8_t *> 0
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
+        i = posix_memalign(<const_void_pp> &padded_buf, 32, buf_len+32)
         if i!=0:
             return i, 0, ""
+        memcpy(padded_buf, buf, buf_len)
+        memset(padded_buf+buf_len, 0, 32)
         with nogil:
-            i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
+            i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
+            if i==0:
+                i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
+            free(padded_buf)
         if i!=0:
             return i, 0, ""
         self.last_image = dout
