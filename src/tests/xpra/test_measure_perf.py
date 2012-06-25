@@ -4,6 +4,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import subprocess
 import os.path
 import time
@@ -47,7 +48,8 @@ SOME_XSCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
                             ["memscroller", "eruption", "xmatrix"]
                           ]
 X11_TEST_COMMANDS = []
-for x in [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS:
+TEST_CANDIDATES = [GLX_SPHERES, GLX_GEARS, X11_PERF, XTERM_TEST, GTKPERF_TEST] + SOME_XSCREENSAVER_TESTS 
+for x in TEST_CANDIDATES:
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("WARNING: cannot find %s - removed from tests" % str(x))
     else:
@@ -220,6 +222,9 @@ XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r"
 XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
 print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 
+SVN_VERSION = getoutput(["svnversion", "-n"])
+
+
 def clean_sys_state():
     #clear the caches
     cmd = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
@@ -379,7 +384,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                 assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
 
                 #run the client test
-                result = [name, tech_name, server_version, client_version]
+                result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
                 result += [encoding, get_command_name(test_command)]
                 result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
                 result += ["%sx%s" % gdk.get_default_root_window().get_size()]
@@ -694,7 +699,7 @@ def main():
         vnc_results = test_vnc()
     print("")
     print("results:")
-    headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version",
+    headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
                "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
                "CPU info", "Platform", "Xorg version", "OpenGL", "Screen Size",
                "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
