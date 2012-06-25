@@ -66,7 +66,7 @@ def get_svn_props():
         for x in IGNORED_CHANGED_FILES:
             #use a normalized path ("/") that does not interfere with regexp:
             norm_path = filename.replace(os.path.sep, "/")
-            if norm_path==filename:
+            if norm_path==x:
                 print("'%s' matches ignore list entry: '%s' exactly, not counting it as a modified file" % (filename, x))
                 ignore = True
                 break
