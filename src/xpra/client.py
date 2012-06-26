@@ -59,7 +59,7 @@ from xpra.version_util import is_compatible_with
 from xpra.client_window import ClientWindow
 ClientWindowClass = ClientWindow
 #the GL backend only works with gtk2
-USE_OPENGL = True
+USE_OPENGL = False
 if USE_OPENGL and not is_gtk3():
     try:
         from xpra.gl_client_window import GLClientWindow
