@@ -696,8 +696,7 @@ class XpraClient(XpraClientBase):
                 data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
                 offset, length = data[-1]
                 data_start.value = offset+length
-        if packet_sequence:
-            self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
+        self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
 
     def _process_cursor(self, packet):
         (_, new_cursor) = packet
