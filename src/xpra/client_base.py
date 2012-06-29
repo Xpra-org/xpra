@@ -194,6 +194,19 @@ class GLibXpraClient(XpraClientBase):
         self.ready(conn)
         self.send_hello()
 
+    def init_packet_handlers(self):
+        XpraClientBase.init_packet_handlers(self)
+        def noop(*args):
+            log("ignoring packet: %s", args)
+        #ignore the following packet types without error:
+        for t in ["new-window", "new-override-redirect",
+                  "draw", "cursor", "bell",
+                  "notify_show", "notify_close",
+                  "ping", "ping_echo",
+                  "window-metadata", "configure-override-redirect",
+                  "lost-window"]:
+            self._packet_handlers[t] = noop
+
     def run(self):
         import glib
         try:
@@ -248,7 +261,7 @@ class ScreenshotXpraClient(GLibXpraClient):
         self.quit()
 
     def init_packet_handlers(self):
-        XpraClientBase.init_packet_handlers(self)
+        GLibXpraClient.init_packet_handlers(self)
         self._packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
