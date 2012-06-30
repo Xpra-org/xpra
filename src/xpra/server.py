@@ -1003,10 +1003,10 @@ class XpraServer(gobject.GObject):
         for wid in self._id_to_window.keys():
             batch = source.get_batch_config(wid)
             if batch:
-                for d in batch.last_delays:
+                for _,d in batch.last_delays:
                     batch_delays.append(d)
         if len(batch_delays)>0:
-            info["min_batch_delay"] = int(max(batch_delays))
+            info["min_batch_delay"] = int(min(batch_delays))
             info["max_batch_delay"] = int(max(batch_delays))
             info["avg_batch_delay"] = int(sum(batch_delays)/len(batch_delays))
 
@@ -1071,6 +1071,11 @@ class XpraServer(gobject.GObject):
             pixels_encoded_per_second = int(total_pixels / total_time)
             info["pixels_encoded_per_second"] = pixels_encoded_per_second
             log("pixels_encoded_per_second=%s", pixels_encoded_per_second)
+        if len(source._client_latency)>0:
+            latencies = [int(1000*latency) for (when, latency) in source._client_latency]
+            info["min_client_latency"] = int(min(latencies))
+            info["max_client_latency"] = int(max(latencies))
+            info["avg_client_latency"] = int(sum(latencies)/len(latencies))
 
         #damage regions per second:
         total_pixels = 0            #pixels processed
@@ -1654,10 +1659,7 @@ class XpraServer(gobject.GObject):
         log("received sequence: %s", packet_sequence)
         if len(packet)>=6:
             wid, width, height, decode_time = packet[2:6]
-            log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
-            client_decode_list = self._server_source.client_decode_time.setdefault(wid, maxdeque(maxlen=20))
-            client_decode_list.append((time.time(), width*height, decode_time))
-        self._server_source.last_client_packet_sequence = packet_sequence
+            self._server_source.client_ack_damage(packet_sequence, wid, width, height, decode_time)
 
     def _process_buffer_refresh(self, proto, packet):
         [wid, _, jpeg_qual] = packet[1:4]

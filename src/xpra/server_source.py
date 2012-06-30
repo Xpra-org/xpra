@@ -19,9 +19,10 @@ import time
 import ctypes
 from threading import Thread, Lock
 try:
-    from queue import Queue, Empty  #@UnresolvedImport @UnusedImport (python3)
+    from queue import Queue         #@UnresolvedImport @UnusedImport (python3)
 except:
-    from Queue import Queue, Empty  #@Reimport
+    from Queue import Queue         #@Reimport
+from collections import deque
 from math import log as mathlog
 def logp2(x):
     return mathlog(1+max(1, x), 2)
@@ -62,6 +63,10 @@ def get_rgb_rawdata(damage_time, wid, pixmap, x, y, width, height, encoding, seq
     rowstride = pixbuf.get_rowstride()
     return (damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
 
+def dec1(x):
+    #for pretty debug output of decimals:
+    return int(10.0*x)/10.0
+
 
 class DamageBatchConfig(object):
     """
@@ -74,6 +79,7 @@ class DamageBatchConfig(object):
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
     MAX_DELAY = 15000
+    RECALCULATE_DELAY = 0.04           #re-compute delay 25 times per second at most
     def __init__(self):
         self.enabled = self.ENABLED
         self.always = self.ALWAYS
@@ -83,7 +89,8 @@ class DamageBatchConfig(object):
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
         self.delay = self.MIN_DELAY
-        self.last_delays = maxdeque(100)
+        self.recalculate_delay = self.RECALCULATE_DELAY
+        self.last_delays = maxdeque(64)
         self.last_updated = 0
         self.encoding = None
 
@@ -107,12 +114,14 @@ class ServerSource(object):
         self._damage_cancelled = {}
         self._damage_last_events = {}
         self._damage_delayed = {}
+        self._damage_stats = {}
         self.client_decode_time = {}
         # for managing sequence numbers:
-        self._sequence = 0                      #increase with every Region
-        self._damage_packet_sequence = 0        #increase with every packet send
+        self._sequence = 1                      #increase with every Region
+        self._damage_packet_sequence = 1        #increase with every packet send
         self._damage_packet_sizes = maxdeque(100)
         self._damage_latency = maxdeque(100)
+        self._client_latency = maxdeque(100)
         self.last_client_packet_sequence = -1   #the last damage_packet_sequence the client echoed back to us
         self.last_client_delta = None           #last delta between our damage_packet_sequence and last_client_packet_sequence
         self.default_batch_config = batch_config
@@ -123,7 +132,10 @@ class ServerSource(object):
         self._mmap_bytes_sent = 0
         protocol.source = self
         self._damage_data_queue = Queue()
-        self._damage_packet_queue = Queue()
+        self._damage_data_queue_sizes = maxdeque(100)
+        self._damage_packet_queue = deque()
+        self._damage_packet_queue_sizes = maxdeque(100)
+        self._damage_packet_queue_pixels = maxdeque(100)
 
         self._closed = False
         self._video_encoder_cleanup = {}
@@ -155,21 +167,15 @@ class ServerSource(object):
         finally:
             self._video_encoder_lock.release()
 
-    def _have_more(self):
-        return not self._closed and bool(self._ordinary_packets) or not self._damage_packet_queue.empty()
-
     def next_packet(self):
-        if self._closed:
-            return  None, None, False
-        if self._ordinary_packets:
-            packet = self._ordinary_packets.pop(0)
-            cb = None
-        else:
-            try:
-                packet, cb = self._damage_packet_queue.get(False)
-            except Empty:
-                packet, cb = None, None
-        return packet, cb, packet is not None and self._have_more()
+        packet, cb, have_more = None, None, False
+        if not self._closed:
+            if self._ordinary_packets:
+                packet = self._ordinary_packets.pop(0)
+            elif len(self._damage_packet_queue)>0:
+                packet, _, cb = self._damage_packet_queue.popleft()
+            have_more = packet is not None and (bool(self._ordinary_packets) or len(self._damage_packet_queue)>0)
+        return packet, cb, have_more
 
     def queue_ordinary_packet(self, packet):
         assert self._protocol
@@ -209,7 +215,8 @@ class ServerSource(object):
         gobject.timeout_add(30*1000, clear_cancel, self._sequence)
 
     def clear_stats(self, wid):
-        for d in [self._damage_last_events, self.client_decode_time, self.batch_configs]:
+        log("clearing stats for window %s", wid)
+        for d in [self._damage_last_events, self.client_decode_time, self.batch_configs, self._damage_stats]:
             if wid in d:
                 del d[wid]
 
@@ -232,56 +239,161 @@ class ServerSource(object):
             self.batch_configs[wid] = batch
         return batch
 
-    def calculate_batch_delay(self, wid, batch):
-        def update_batch_delay(reason, factor=1, delta=0):
-            batch.delay = max(batch.min_delay, min(batch.max_delay, int(100.0*batch.delay*factor)/100.0)-delta)
+    def calculate_batch_delay(self, wid, window, batch):
+        def update_batch_delay(reason, factor=1):
+            current_delay = batch.delay
+            target_delay = max(batch.min_delay, min(batch.max_delay, current_delay*factor))
+            if len(batch.last_delays)==0:
+                return
+            #get the weighted average:
+            now = time.time()
+            tv, tw = 0.0, 0.0
+            for when, delay in batch.last_delays:
+                #newer matter more:
+                w = 1.0/(1.0+(now-when)**2)
+                tv += delay*w
+                tw += w
+            avg = tv / tw
+            #favour our new value (absolute boost)
+            #and more so if the factor is not close to 1.0
+            #(and more so if the factor is >1.0)
+            w = 16+tw*((factor-1)+3*abs(factor-1))
+            tw += w
+            tv += target_delay*w
+            decimal_delays = [dec1(x) for _,x in batch.last_delays]
+            batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
             batch.last_updated = time.time()
-            log("update_batch_delay: %s, wid=%s, factor=%s, delta=%s, new batch delay=%s", reason, wid, factor, delta, batch.delay)
+            log.info("update_batch_delay: wid=%s, factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, target=%s, wgt=%s, tot wgt=%s (%s%%), new delay=%s -- %s",
+                        wid, dec1(factor), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+                        dec1(current_delay), dec1(avg), dec1(target_delay), dec1(w), dec1(tw), dec1(100*w/tw), dec1(batch.delay), reason)
 
-        last_delta = self.last_client_delta
-        delta = self._damage_packet_sequence-self.last_client_packet_sequence
-        self.last_client_delta = delta
-        if True:
-            if self._damage_packet_queue.qsize()>3:
-                #packets ready for sending by network layer
-                update_batch_delay("damage packet queue overflow: %s" % self._damage_packet_queue.qsize(), logp2(self._damage_packet_queue.qsize()-2))
-            if self._damage_data_queue.qsize()>3:
-                #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
-                update_batch_delay("damage data queue overflow: %s" % self._damage_data_queue.qsize(), logp10(self._damage_data_queue.qsize()-2))
-        if not last_delta:
+        now = time.time()
+        if batch.last_updated>0 and (batch.last_updated+batch.recalculate_delay*16)<now:
+            #we haven't been called for a while
+            #slash the delay accordingly
+            elapsed = now-batch.last_updated
+            n_skipped_calcs = elapsed / batch.recalculate_delay
+            new_delay = max(batch.min_delay, min(batch.max_delay, batch.delay / logp2(n_skipped_calcs)))
+            log("update_batch_delay: wid=%s, skipped %s times (%s ms), slashing delay by %s, was %s, now %s",
+                        wid, dec1(n_skipped_calcs), dec1(1000*elapsed), dec1(logp2(n_skipped_calcs)), dec1(batch.delay), dec1(new_delay))
+            batch.delay = new_delay
+            batch.last_updated = now
             return
-        #figure out how many pixels behind we are, rather than just the number of packets
-        all_unprocessed = list(self._damage_packet_sizes)[-delta:]
-        unprocessed = [pixels for (uwid,pixels,_) in all_unprocessed if uwid==wid]
-        all_last_unprocessed = list(self._damage_packet_sizes)[-last_delta:]
-        last_unprocessed = [pixels for (uwid,pixels,_) in all_last_unprocessed if uwid==wid]
 
-        packets_due = len(unprocessed)
-        last_packets_due = len(last_unprocessed)
-        pixels_behind = sum(unprocessed)
-        last_pixels_behind = sum(last_unprocessed)
-        log("calculate_batch_delay: wid=%s, unprocessed=%s, last_unprocessed=%s, pixels_behind=%s, last_pixels_behind=%s", wid, unprocessed, last_unprocessed, pixels_behind, last_pixels_behind)
-        if packets_due<=2 and last_packets_due<=2:
-            return update_batch_delay("client is up to date: %s packets in queue" % packets_due, 0.9, 1)
-        if packets_due<last_packets_due and pixels_behind<last_pixels_behind:
-            return update_batch_delay("client is catching up: down from %s to %s packets in queue, %s to %s pixels due" % (last_packets_due, packets_due, last_pixels_behind, pixels_behind), 0.9, 1)
-        low_limit, high_limit = 8*1024, 32*1024
+        #calculate average and recent latency:
+        avg_latency = 0.1   #assume 100ms
+        recent_latency = 0.1
+        if len(self._client_latency)>0:
+            tv, tw = 0.0, 0.0
+            rv, rw = 0.0, 0.0
+            for when, latency in self._client_latency:
+                #newer matter more:
+                w = 1.0/(1.0+(now-when)**2)
+                tv += latency*w
+                tw += w
+                if when>(now-1.0):
+                    rv += latency*w
+                    rw += w
+            avg = tv / tw
+            if rv>0:
+                #found some recent values, average them:
+                recent_latency = rv/rw
+            else:
+                recent_latency = avg
+            ms_latency_values = [dec1(1000*x) for _,x in self._client_latency]
+            log("update_batch_delay: latency min=%s, avg=%s, max=%s, weighted average=%s, recent_latency=%s",
+                    min(ms_latency_values), dec1(sum(ms_latency_values)/len(ms_latency_values)), max(ms_latency_values),
+                    dec1(1000*avg), dec1(1000*recent_latency))
+            avg_latency = avg
+
+        #always record a new last_delta:
+        last_delta = self.last_client_delta
+        pixels_backlog, packets_backlog = 0, 0
+        ack_pending = self._damage_stats.get(wid)
+        #may be empty on startup
+        if ack_pending:
+            #latency adjusted (remove packets which may not have had enough time to do the roundtrip):
+            sent_before = now-avg_latency
+            pixels_backlog, packets_backlog = 0, 0
+            for sent_at, pixels in ack_pending.values():
+                if sent_at>sent_before:
+                    continue
+                packets_backlog += 1
+                pixels_backlog += pixels
+        self.last_client_delta = packets_backlog, pixels_backlog
+        #from here on, we can return from this method, having made a decision
+
+        ww, wh = self.get_window_dimensions(window)
+        low_limit = ww*wh
         if self._mmap and self._mmap_size>0:
-            low_limit, high_limit = 256*1024, 1*1024*1024
-        #things are getting worse or unchanged:
-        if pixels_behind<=low_limit:
-            if packets_due<=5:
-                return update_batch_delay("client is only %s pixels and only %s packets behind" % (pixels_behind, packets_due), 0.8, 1)
-            if packets_due<10 and packets_due<last_packets_due:
-                return update_batch_delay("client is only %s pixels and %s packets behind" % (pixels_behind, packets_due), 0.9, 0)
-        if pixels_behind>=high_limit:
-            return update_batch_delay("client is %s pixels behind!" % pixels_behind, min(1.5, logp2(1.0*pixels_behind/high_limit)))
-        if pixels_behind<last_pixels_behind:
-            #things are getting better:
-            return update_batch_delay("client is only %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), 0.4+(10.0*pixels_behind/(1+last_pixels_behind)/2)/10.0)
-        if packets_due>last_packets_due:
-            return update_batch_delay("client is %s packets behind, up from %s" % (packets_due, last_packets_due), logp10(1.0*packets_due/(1+last_packets_due)))
-        return update_batch_delay("client is %s pixels behind, from %s last time around" % (pixels_behind, last_pixels_behind), min(1.4, logp2(1.0*pixels_behind/last_pixels_behind)))
+            #mmap can accumulate much more as it is much faster
+            low_limit *= 4
+
+        #start with the negative tests:
+        if recent_latency>(0.005+1.05*avg_latency):
+            #never allow the delay to go down when latency is going up
+            factor = logp2(recent_latency/avg_latency)
+            return update_batch_delay("recent latency is %s%% above average (%s vs %s)" %
+                              (dec1(100*((recent_latency/avg_latency)-1)), dec1(1000*recent_latency), dec1(1000*avg_latency)), factor)
+
+        def queue_inspect(qsizes, qsize):
+            #inspect a queue size history: figure out if things are better or worse than before
+            if qsize==0:
+                return  "OK (empty)", 1.0
+            factor = logp10(qsize)
+            last_10 = list(qsizes)[-10:]
+            if max(last_10)==qsize:
+                #it's the worst it's been recently, ouch increase faster
+                return "%s worst of %s" % (qsize, last_10), factor+0.2
+            elif min(last_10)==qsize:
+                #it's the best it's been recently, leave it alone
+                return "%s best of %s" % (qsize, last_10), 1.0
+            elif len(last_10)>4 and last_10[-1]>qsize and last_10[-2]>qsize:
+                return "%s improving: %s" % (qsize, last_10), (factor+2)/3.0
+            else:
+                return "last_10=%s, min=%s, max=%s, current=%s" % (last_10, min(last_10), max(last_10), qsize), factor
+
+        dp_qsize = len(self._damage_packet_queue)
+        if dp_qsize>2:
+            #there are a few packets waiting for the network layer
+            pixels_in_packet_queue = sum([pixels for _,pixels,_ in list(self._damage_packet_queue)])
+            msg, factor = queue_inspect(self._damage_packet_queue_pixels, dp_qsize)
+            return update_batch_delay("damage packet queue overflow: %s (%s packets and %s pixels)" % (msg, dp_qsize, pixels_in_packet_queue), factor)
+
+        dd_qsize = self._damage_data_queue.qsize()
+        if dd_qsize>2:
+            #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
+            msg, factor = queue_inspect(self._damage_data_queue_sizes, dd_qsize)
+            return update_batch_delay("damage data queue overflow: %s" % msg, factor)
+
+        if not last_delta:
+            #happens first time around
+            return
+
+        if ack_pending is None or len(ack_pending)==0:
+            return update_batch_delay("client is fully up to date: no damage ACKs pending", 0.5)
+
+        if pixels_backlog==0 and packets_backlog==0 and avg_latency<0.2 and len(ack_pending)<5:
+            factor = 0.6+len(ack_pending)/10.0
+            return update_batch_delay("client is up to date: only %s packets pending, within average latency bounds of %s ms" % (len(ack_pending), dec1(1000*avg_latency)), factor)
+
+        #diff the backlogs since last time:
+        last_packets_backlog, last_pixels_backlog = last_delta
+        packets_diff = packets_backlog-last_packets_backlog
+        pixels_diff = pixels_backlog-last_pixels_backlog
+
+        if packets_diff<0 and pixels_diff<0 and pixels_backlog<(low_limit*4):
+            #things are getting better somewhat
+            factor = 0.6+0.4*pixels_backlog/(low_limit*4)
+            return update_batch_delay("client is catching up: down from %s to %s packets in queue, %s to %s pixels due" % (last_packets_backlog, packets_backlog, last_pixels_backlog, pixels_backlog), factor)
+
+        if pixels_backlog<=low_limit and packets_backlog<5:
+            factor = 0.75+0.25*pixels_backlog/low_limit
+            return update_batch_delay("client is only %s pixels and only %s packets behind" % (pixels_backlog, packets_backlog), factor)
+        factor = min(1.5, logp2(pixels_backlog/low_limit))
+        if packets_diff>0:
+            factor += 0.25
+        return update_batch_delay("client is %s pixels behind!" % pixels_backlog, factor)
 
     def get_encoding(self, wid):
         batch = self.get_batch_config(wid, False)
@@ -341,7 +453,8 @@ class ServerSource(object):
             pixmap = self.get_window_pixmap(wid, window, self._sequence)
             if pixmap:
                 self._process_damage_region(now, pixmap, wid, x, y, w, h, coding, self._sequence, options)
-                batch.last_delays.append(0)
+                batch.last_delays.append((now, 0))
+                batch.last_updated = time.time()
         #record this damage event in the damage_last_events queue:
         now = time.time()
         last_events = self._damage_last_events.setdefault(wid, maxdeque(100))
@@ -352,6 +465,9 @@ class ServerSource(object):
         if options and options.get("batching", True) is False:
             return damage_now("batching option is off")
 
+        if batch.last_updated+batch.recalculate_delay<now:
+            self.calculate_batch_delay(wid, window, batch)
+
         delayed = self._damage_delayed.get(wid)
         if delayed:
             region = delayed[3]
@@ -359,13 +475,12 @@ class ServerSource(object):
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
 
-        if batch.last_updated+0.025<now:
-            self.calculate_batch_delay(wid, batch)
         event_min_time = now-batch.time_unit
         all_pixels = [pixels for event_time,pixels in last_events if event_time>event_min_time]
         beyond_limit = len(all_pixels)>batch.max_events or sum(all_pixels)>batch.max_pixels
         if not beyond_limit and not batch.always and batch.delay<=batch.min_delay:
-            return damage_now("delay is at the minimum threshold")
+            return damage_now("delay (%s) is at the minimum threshold (%s): %s pixels (%s items) in the last %s ms" %
+                              (batch.delay, batch.min_delay, sum(all_pixels), len(all_pixels), dec1(1000*batch.time_unit)))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
@@ -377,15 +492,15 @@ class ServerSource(object):
             delayed = self._damage_delayed.get(wid)
             if delayed:
                 damage_time = delayed[0]
-                log("send_delayed for wid %s, batch delay is %s, elapsed time is %s", wid, batch.delay, int(1000*(time.time()-damage_time)))
+                log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", wid, batch.delay, dec1(1000*(time.time()-damage_time)))
                 del self._damage_delayed[wid]
                 self.send_delayed_regions(*delayed)
                 log("moving region %s to expired list", delayed)
             else:
                 log("window %s already removed from delayed list?", wid)
             return False
-        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %sms", wid, x, y, w, h, self._sequence, batch.delay)
-        batch.last_delays.append(batch.delay)
+        log("damage(%s, %s, %s, %s, %s) scheduling batching expiry for sequence %s in %s ms", wid, x, y, w, h, self._sequence, dec1(batch.delay))
+        batch.last_delays.append((now, batch.delay))
         gobject.timeout_add(int(batch.delay), send_delayed)
 
     def send_delayed_regions(self, damage_time, wid, window, damage, coding, sequence, options):
@@ -444,7 +559,8 @@ class ServerSource(object):
     def _process_damage_region(self, damage_time, pixmap, wid, x, y, w, h, coding, sequence, options):
         data = get_rgb_rawdata(damage_time, wid, pixmap, x, y, w, h, coding, sequence, options)
         if data:
-            log("process_damage_regions: adding pixel data %s to queue, elapsed time=%s, queue size=%s", data[:6], int(1000*(time.time()-damage_time)), self._damage_data_queue.qsize())
+            log("process_damage_regions: adding pixel data %s to queue, elapsed time=%s, queue size=%s", data[:6], dec1(1000*(time.time()-damage_time)), self._damage_data_queue.qsize())
+            self._damage_data_queue_sizes.append(self._damage_data_queue.qsize())
             self._damage_data_queue.put(data)
 
     def data_to_packet(self):
@@ -453,20 +569,53 @@ class ServerSource(object):
             if item is None:
                 return              #empty marker
             try:
+                #damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options = item
                 damage_time = item[0]
-                log("data_to_packet: elapsed time before encoding=%s, size=%s", int(1000*(time.time()-damage_time)), self._damage_packet_queue.qsize())
+                log("data_to_packet: elapsed time before encoding=%s, size=%s", int(1000*(time.time()-damage_time)), len(self._damage_packet_queue))
                 packet = self.make_data_packet(*item)
                 if packet:
-                    log("data_to_packet: adding packet to queue, damage elapsed time=%s ms, size=%s, full=%s", int(1000*(time.time()-damage_time)), self._damage_packet_queue.qsize(), self._damage_packet_queue.full())
-                    if self._damage_packet_queue.full():
-                        self._protocol.source_has_more()
-                    def damage_packet_sent():
-                        log("damage_packet_sent: took %s ms", int(1000*(time.time()-damage_time)))
-                        self._damage_latency.append(time.time()-damage_time)
-                    self._damage_packet_queue.put((packet, damage_packet_sent))
-                    self._protocol.source_has_more()
+                    self.queue_damage_packet(packet, damage_time)
             except Exception, e:
                 log.error("error processing damage data: %s", e, exc_info=True)
+    
+    def queue_damage_packet(self, packet, damage_time):
+        log("queue_damage_packet: damage elapsed time=%s ms, size=%s", dec1(1000*(time.time()-damage_time)), len(self._damage_packet_queue))
+        width = packet[4]
+        height = packet[5]
+        def damage_packet_sent():
+            #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
+            wid = packet[1]
+            packet_sequence = packet[8]
+            now = time.time()
+            damage_latency = now-damage_time
+            self._damage_latency.append(damage_latency)
+            ack_pending = self._damage_stats.setdefault(wid, {})
+            ack_pending[packet_sequence] = now, width*height
+            log("damage_packet_sent: took %s ms for %s pixels of packet_sequence %s", dec1(1000*damage_latency), width*height, packet_sequence)
+        self._damage_packet_queue.append((packet, width*height, damage_packet_sent))
+        self._damage_packet_queue_sizes.append(len(self._damage_packet_queue))
+        self._damage_packet_queue_pixels.append(sum([pixels for _,pixels,_ in list(self._damage_packet_queue)]))
+        self._protocol.source_has_more()
+
+    def client_ack_damage(self, packet_sequence, wid, width, height, decode_time):
+        log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
+        self.last_client_packet_sequence = packet_sequence
+        client_decode_list = self.client_decode_time.setdefault(wid, maxdeque(maxlen=20))
+        client_decode_list.append((time.time(), width*height, decode_time))
+        ack_pending = self._damage_stats.get(wid)
+        if not ack_pending:
+            log("cannot find damage_pending list for window %s - already removed?", wid)
+            return
+        pending = ack_pending.get(packet_sequence)
+        if pending is None:
+            log.error("cannot find sent time for sequence %s", packet_sequence)
+            return
+        del ack_pending[packet_sequence]
+        sent_at, pixels = pending
+        now = time.time()
+        diff = now-sent_at
+        log("client_ack_damage: took %s ms round trip, %s for decoding of %s pixels, %s for network", dec1(diff*1000), dec1(decode_time/1000), pixels, dec1((diff*1000*1000-decode_time)/1000))
+        self._client_latency.append((now, diff))
 
     def make_data_packet(self, damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         if self.is_cancelled(wid, sequence):
@@ -478,7 +627,7 @@ class ServerSource(object):
         if self._mmap and self._mmap_size>0 and len(data)>256:
             mmap_data = self._mmap_send(data)
             end = time.time()
-            log("%s MBytes/s - %s bytes written to mmap in %sms", int(len(data)/(end-start)/1024/1024), len(data), int(1000*1000*(end-start))/1000.0)
+            log("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/(end-start)/1024/1024), len(data), dec1(1000*(end-start)))
             if mmap_data is not None:
                 self._mmap_bytes_sent += len(data)
                 coding = "mmap"
@@ -559,7 +708,7 @@ class ServerSource(object):
                     del encoders[wid]
                 self._video_encoder_cleanup[wid] = close_encoder
             log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
-            err, size, data = encoder.compress_image(data, rowstride)
+            err, _, data = encoder.compress_image(data, rowstride)
             if err!=0:
                 log.error("%s: ouch, compression error %s", coding, err)
                 return None
