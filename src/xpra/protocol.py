@@ -95,9 +95,9 @@ def untilConcludes(f, *a, **kw):
             raise
 
 class Compressible(object):
-    def __init__(self, datatype, pixels):
+    def __init__(self, datatype, data):
         self.datatype = datatype
-        self.pixels = pixels
+        self.data = data
 
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
@@ -225,21 +225,25 @@ class Protocol(object):
         ]
         """
         packets = []
-        if self.raw_packets:
-            for i in range(len(packet)):
-                item = packet[i]
-                if type(item)==str and len(item)>=4096:
-                    #add new binary packet with large item:
-                    if sys.version>='3':
-                        item = item.encode("latin1")
-                    packets.append((i, False, item))
-                    #replace this item with an empty string placeholder:
+        for i in range(len(packet)):
+            item = packet[i]
+            if self.raw_packets and type(item)==str and len(item)>=4096:
+                #add new binary packet with large item:
+                if sys.version>='3':
+                    item = item.encode("latin1")
+                packets.append((i, False, item))
+                #replace this item with an empty string placeholder:
+                packet[i] = ''
+            elif type(item)==Compressible:
+                #this is binary, but we *DO* want to compress it since it isn't compressed already!
+                log("unwrapping %s bytes of %s data", len(item.data), item.datatype)
+                if self.raw_packets:
+                    #make a new compressed packet for it:
+                    packets.append((i, True, item.data))
                     packet[i] = ''
-                elif type(item)==Compressible:
-                    #this is binary, but we *DO* want to compress it since it isn't compressed already!
-                    log("unwrapping %s bytes of %s data", len(item.pixels), item.datatype)
-                    packets.append((i, True, item.pixels))
-                    packet[i] = ''
+                else:
+                    #old compression code: just unwrap it in place:
+                    packet[i] = item.data
         #now the main packet (or what is left of it):
         try:
             main_packet = bencode(packet)
