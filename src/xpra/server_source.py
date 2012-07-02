@@ -263,7 +263,7 @@ class ServerSource(object):
             decimal_delays = [dec1(x) for _,x in batch.last_delays]
             batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
             batch.last_updated = time.time()
-            log.info("update_batch_delay: wid=%s, factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, target=%s, wgt=%s, tot wgt=%s (%s%%), new delay=%s -- %s",
+            log("update_batch_delay: wid=%s, factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, target=%s, wgt=%s, tot wgt=%s (%s%%), new delay=%s -- %s",
                         wid, dec1(factor), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
                         dec1(current_delay), dec1(avg), dec1(target_delay), dec1(w), dec1(tw), dec1(100*w/tw), dec1(batch.delay), reason)
 

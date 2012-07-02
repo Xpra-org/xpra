@@ -978,7 +978,7 @@ class XpraServer(gobject.GObject):
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
         info["encoding"] = source._encoding
-        info["damage_packet_queue_size"] = source._damage_packet_queue.qsize()
+        info["damage_packet_queue_size"] = len(source._damage_packet_queue)
         info["damage_data_queue_size"] = source._damage_data_queue.qsize()
         if len(source._damage_latency)>0:
             info["min_damage_latency"] = int(1000*min(source._damage_latency))
