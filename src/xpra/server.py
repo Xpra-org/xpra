@@ -1180,6 +1180,8 @@ class XpraServer(gobject.GObject):
                 log.error("cannot use mmap file '%s': %s", mmap_file, e)
                 self.close_mmap()
         self._protocol = proto
+        #max packet size from client (the biggest we can get are clipboard packets)
+        self._protocol.max_packet_size = 1024*1024  #1MB
         self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))

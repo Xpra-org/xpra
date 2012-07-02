@@ -94,8 +94,9 @@ def untilConcludes(f, *a, **kw):
                 continue
             raise
 
-class RGB24(object):
-    def __init__(self, pixels):
+class Compressible(object):
+    def __init__(self, datatype, pixels):
+        self.datatype = datatype
         self.pixels = pixels
 
 class Protocol(object):
@@ -234,9 +235,9 @@ class Protocol(object):
                     packets.append((i, False, item))
                     #replace this item with an empty string placeholder:
                     packet[i] = ''
-                elif type(item)==RGB24:
+                elif type(item)==Compressible:
                     #this is binary, but we *DO* want to compress it since it isn't compressed already!
-                    log("unwrapping %s bytes of rgb24 data", len(item.pixels))
+                    log("unwrapping %s bytes of %s data", len(item.pixels), item.datatype)
                     packets.append((i, True, item.pixels))
                     packet[i] = ''
         #now the main packet (or what is left of it):

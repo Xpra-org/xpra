@@ -37,7 +37,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.deque import maxdeque
-from xpra.protocol import RGB24
+from xpra.protocol import Compressible
 from xpra.scripts.main import ENCODINGS
 
 
@@ -662,7 +662,7 @@ class ServerSource(object):
             from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
             data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
         elif coding=="rgb24":
-            data = RGB24(data)
+            data = Compressible(coding, data)
         elif coding=="mmap":
             pass
         else:
