@@ -218,7 +218,7 @@ else:
                 ("share/wimpiggy", ["README.wimpiggy"]),
                 ("share/xpra/icons", glob.glob("icons/*")),
                 ("share/applications", ["xpra_launcher.desktop"]),
-                ("share/icons/xpra.png", ["xpra.png"])
+                ("share/icons", ["xpra.png"])
                 ]
     extra_options = dict(
         packages = packages,
