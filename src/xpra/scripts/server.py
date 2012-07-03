@@ -153,6 +153,7 @@ fi
     return "".join(script)
 
 def create_unix_domain_socket(sockpath, mmap_group):
+    print("create_unix_domain_socket(%s,%s)" % (sockpath, mmap_group))
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
@@ -229,13 +230,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # daemonize:
     starting_dir = os.getcwd()
 
-    clobber = upgrading or opts.use_display
-    try:
-        sockpath = dotxpra.server_socket_path(display_name, clobber)
-    except ServerSockInUse:
-        parser.error("You already have an xpra server running at %s\n"
-                     "  (did you want 'xpra upgrade'?)"
-                     % (display_name,))
     # Daemonize:
     if opts.daemon:
         logpath = dotxpra.conf_path(display_name) + ".log"
@@ -278,6 +272,41 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         os.chmod(scriptpath, o0700 & ~umask)
     scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.sockdir))
     scriptfile.close()
+
+    # Initialize the sockets before the display,
+    # That way, errors won't make us kill the Xvfb
+    # (which may not be ours to kill at that point)
+    sockets = []
+    if opts.bind_tcp:
+        try:
+            tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
+            sockets.append(tcp_socket)
+            def cleanup_tcp_socket():
+                print("closing tcp socket")
+                try:
+                    tcp_socket.close()
+                except:
+                    pass
+            _cleanups.append(cleanup_tcp_socket)
+        except Exception, e:
+            print("cannot start - failed to create tcp socket at %s: %s" % (opts.bind_tcp, e))
+            return  1
+    #print("creating server socket %s" % sockpath)
+    clobber = upgrading or opts.use_display
+    try:
+        sockpath = dotxpra.server_socket_path(display_name, clobber)
+    except ServerSockInUse:
+        parser.error("You already have an xpra server running at %s\n"
+                     "  (did you want 'xpra upgrade'?)"
+                     % (display_name,))
+    sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
+    def cleanup_socket():
+        print("removing socket %s" % sockpath)
+        try:
+            os.unlink(sockpath)
+        except:
+            pass
+    _cleanups.append(cleanup_socket)
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
@@ -329,6 +358,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     def kill_xvfb():
         # Close our display(s) first, so the server dying won't kill us.
+        print("killing xvfb with pid %s" % xvfb_pid)
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
         if xvfb_pid is not None:
@@ -341,32 +371,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     from xpra.server import can_run_server, XpraServer
     if not can_run_server():
         return  1
-
-    sockets = []
-    #print("creating server socket %s" % sockpath)
-    sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
-    def cleanup_socket():
-        print("removing socket %s" % sockpath)
-        try:
-            os.unlink(sockpath)
-        except:
-            pass
-    _cleanups.append(cleanup_socket)
-    tcp_socket = None
-    if opts.bind_tcp:
-        try:
-            tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
-            sockets.append(tcp_socket)
-            def cleanup_tcp_socket():
-                print("closing tcp socket")
-                try:
-                    tcp_socket.close()
-                except:
-                    pass
-            _cleanups.append(cleanup_tcp_socket)
-        except Exception, e:
-            print("cannot start - failed to create tcp socket: %s" % e)
-            return  1
 
     # This import is delayed because the module depends on gtk:
     app = XpraServer(clobber, sockets, opts)
