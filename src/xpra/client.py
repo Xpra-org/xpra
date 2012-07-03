@@ -208,6 +208,8 @@ class XpraClient(XpraClientBase):
             gobject.timeout_add(2000, compute_receive_bandwidth, 2000)
         if opts.send_pings:
             gobject.timeout_add(1000, self.send_ping)
+        else:
+            gobject.timeout_add(20*1000, self.send_ping)
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
