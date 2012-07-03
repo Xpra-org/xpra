@@ -195,6 +195,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if len(extra_args) != 1:
         parser.error("need exactly 1 extra argument")
     display_name = extra_args.pop(0)
+    if display_name==":0":
+        print("WARNING:")
+        print("You are attempting to run the xpra server against the default X11 display '%s'." % display_name)
+        print("This is generally not what you want.")
+        print("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
 
     if opts.exit_with_children and not opts.children:
         print("--exit-with-children specified without any children to spawn; exiting immediately")
