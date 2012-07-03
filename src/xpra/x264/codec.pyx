@@ -107,7 +107,7 @@ cdef class Decoder(xcoder):
         assert self.context!=NULL
         assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = posix_memalign(<const_void_pp> &padded_buf, 32, buf_len+32)
+        i = posix_memalign(<void **> &padded_buf, 32, buf_len+32)
         if i!=0:
             return i, 0, ""
         memcpy(padded_buf, buf, buf_len)
