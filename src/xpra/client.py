@@ -118,6 +118,7 @@ class XpraClient(XpraClientBase):
         self.mmap_token = None
         self.mmap_file = None
         self.mmap_size = 0
+        self.last_ping_echoed_time = 0
 
         self._client_extras = ClientExtras(self, opts)
         self.clipboard_enabled = not self.readonly and opts.clipboard and self._client_extras.supports_clipboard()
@@ -516,11 +517,20 @@ class XpraClient(XpraClientBase):
         return capabilities
 
     def send_ping(self):
-        self.send(["ping", int(1000*time.time())])
+        now_ms = int(1000*time.time())
+        self.send(["ping", now_ms])
+        wait = 15
+        def check_echo_received(*args):
+            if self.last_ping_echoed_time<now_ms:
+                log.error("check_echo_received: we sent a ping to the server %s seconds ago and we have not received its echo!", wait)
+                log.error("    assuming that the connection is dead and disconnecting", wait)
+                self.quit(1)
+        gobject.timeout_add(wait*1000, check_echo_received)
         return True
 
     def _process_ping_echo(self, packet):
         (echoedtime, l1, l2, l3, cl) = packet[1:6]
+        self.last_ping_echoed_time = echoedtime
         diff = int(1000*time.time()-echoedtime)
         self.server_latency.append(diff)
         self.server_load = (l1, l2, l3)
