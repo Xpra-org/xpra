@@ -352,17 +352,16 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         try:
             tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
             sockets.append(tcp_socket)
+            def cleanup_tcp_socket():
+                print("closing tcp socket")
+                try:
+                    tcp_socket.close()
+                except:
+                    pass
+            _cleanups.append(cleanup_tcp_socket)
         except Exception, e:
             print("cannot start - failed to create tcp socket: %s" % e)
             return  1
-    def cleanup_tcp_socket():
-        if tcp_socket:
-            print("closing tcp socket")
-            try:
-                tcp_socket.close()
-            except:
-                pass
-    _cleanups.append(cleanup_tcp_socket)
 
     # This import is delayed because the module depends on gtk:
     app = XpraServer(clobber, sockets, opts)
@@ -390,7 +389,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return False # Only call once
     gobject.timeout_add(0, check_once)
 
-    _cleanups.append(app.cleanup)
+    _cleanups.insert(0, app.cleanup)
     if app.run():
         print("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
