@@ -20,7 +20,6 @@ import datetime
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.keys import get_gtk_keymap
-from wimpiggy.util import gtk_main_quit_really
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -123,7 +122,7 @@ class ClientExtrasBase(object):
                 log.error("failed to set window icon %s: %s, continuing", window_icon, e)
 
     def quit(self, *args):
-        gtk_main_quit_really()
+        self.client.quit()
 
     def exit(self):
         self.close_about()

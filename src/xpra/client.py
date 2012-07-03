@@ -233,7 +233,8 @@ class XpraClient(XpraClientBase):
         gtk.main()
         return  self.exit_code
 
-    def quit(self, *args):
+    def quit(self, exit_code=0):
+        self.exit_code = exit_code
         gtk_main_quit_really()
 
     def cleanup(self):
@@ -564,7 +565,7 @@ class XpraClient(XpraClientBase):
             log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
-            self.quit()
+            self.quit(1)
             return
         #figure out the maximum actual desktop size and use to
         #calculate the maximum size of a packet (a full screen update packet)
