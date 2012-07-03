@@ -65,7 +65,7 @@ log = Logger()
 import xpra
 from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata
 from xpra.deque import maxdeque
-from xpra.protocol import Protocol, SocketConnection, dump_packet
+from xpra.protocol import Protocol, SocketConnection, dump_packet, Compressible
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
@@ -465,7 +465,7 @@ class XpraServer(gobject.GObject):
         self.send_cursor()
 
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image or ""])
+        self._send(["cursor", Compressible(self.cursor_image or "")])
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)
