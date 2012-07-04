@@ -525,7 +525,7 @@ class XpraClient(XpraClientBase):
         def check_echo_received(*args):
             if self.last_ping_echoed_time<now_ms:
                 log.error("check_echo_received: we sent a ping to the server %s seconds ago and we have not received its echo!", wait)
-                log.error("    assuming that the connection is dead and disconnecting", wait)
+                log.error("    assuming that the connection is dead and disconnecting")
                 self.quit(1)
         gobject.timeout_add(wait*1000, check_echo_received)
         return True
