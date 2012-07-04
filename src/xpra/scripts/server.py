@@ -153,7 +153,6 @@ fi
     return "".join(script)
 
 def create_unix_domain_socket(sockpath, mmap_group):
-    print("create_unix_domain_socket(%s,%s)" % (sockpath, mmap_group))
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
