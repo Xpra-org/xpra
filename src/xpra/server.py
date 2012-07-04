@@ -1246,7 +1246,6 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         capabilities["version"] = xpra.__version__
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
-        capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["platform"] = sys.platform
         capabilities["clipboard"] = self.clipboard_enabled
         capabilities["encodings"] = ENCODINGS
@@ -1267,7 +1266,13 @@ class XpraServer(gobject.GObject):
             capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
         capabilities["window_configure"] = True
-        self._send(["hello", capabilities])
+        #_get_desktop_size_capability may cause an asynchronous root window resize event
+        #so we must give the gtk event loop a chance to run before we query
+        #for the actual root window size!
+        def do_send_hello():
+            capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
+            self._send(["hello", capabilities])
+        gobject.idle_add(do_send_hello)
 
     def send_ping(self):
         self._send(["ping", int(1000*time.time())])
