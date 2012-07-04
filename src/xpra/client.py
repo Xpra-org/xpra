@@ -226,6 +226,7 @@ class XpraClient(XpraClientBase):
             "window-metadata":      self._process_window_metadata,
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
+            "desktop_size":         self._process_desktop_size,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._packet_handlers[k] = v
@@ -511,6 +512,7 @@ class XpraClient(XpraClientBase):
         if self.mmap_file:
             capabilities["mmap_file"] = self.mmap_file
             capabilities["mmap_token"] = self.mmap_token
+        capabilities["randr_notify"] = True
         #these should be turned into options:
         capabilities["cursors"] = True
         capabilities["bell"] = True
@@ -578,27 +580,17 @@ class XpraClient(XpraClientBase):
         if not is_compatible_with(self._remote_version):
             self.quit(1)
             return
-        #figure out the maximum actual desktop size and use to
+        #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
-        root_w, root_h = get_root_size()
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
-        maxw, maxh = root_w, root_h
-        try:
-            server_w, server_h = self.server_actual_desktop_size
-            maxw = max(root_w, server_w)
-            maxh = max(root_h, server_h)
-        except:
-            pass
-        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
-        #full screen at 32bits times 4 for safety
-        self._protocol.max_packet_size = maxw*maxh*4*4
-        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
-        log("set maximum packet size to %s", self._protocol.max_packet_size)
+        self.set_max_packet_size()
+        self.server_max_desktop_size = capabilities.get("max_desktop_size")
         server_desktop_size = capabilities.get("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         assert server_desktop_size
         avail_w, avail_h = server_desktop_size
+        root_w, root_h = get_root_size()
         if avail_w<root_w or avail_h<root_h:
             log.warn("Server's virtual screen is too small -- "
                      "(server: %sx%s vs. client: %sx%s)\n"
@@ -767,6 +759,26 @@ class XpraClient(XpraClientBase):
         if len(self._id_to_window)==0:
             log.debug("last window gone, clearing key repeat")
             self.clear_repeat()
+
+    def _process_desktop_size(self, packet):
+        root_w, root_h, max_w, max_h = packet[1:5]
+        log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+        self.server_max_desktop_size = max_w, max_h
+        self.server_actual_desktop_size = root_w, root_h
+
+    def set_max_packet_size(self):
+        root_w, root_h = get_root_size()
+        maxw, maxh = root_w, root_h
+        try:
+            server_w, server_h = self.server_actual_desktop_size
+            maxw = max(root_w, server_w)
+            maxh = max(root_h, server_h)
+        except:
+            pass
+        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "problems calculating maximum desktop size: %sx%s" % (maxw, maxh)
+        #full screen at 32bits times 4 for safety
+        self._protocol.max_packet_size = maxw*maxh*4*4
+        log("set maximum packet size to %s", self._protocol.max_packet_size)
 
     def process_packet(self, proto, packet):
         packet_type = str(packet[0])

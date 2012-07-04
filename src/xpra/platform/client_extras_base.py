@@ -351,6 +351,8 @@ class ClientExtrasBase(object):
             if self.client.server_actual_desktop_size:
                 w,h = self.client.server_actual_desktop_size
                 size_info = " - %sx%s" % (w,h)
+                if self.client.server_randr and self.client.server_max_desktop_size:
+                    size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
             if self.client.server_randr:
                 self.server_randr_label.set_text("Yes%s" % size_info)
             else:

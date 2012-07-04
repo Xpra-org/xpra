@@ -298,7 +298,15 @@ class XpraServer(gobject.GObject):
             #with only one resolution available
             #since we don't support adding them on the fly yet
             self.randr = False
+        if self.randr:
+            display = gtk.gdk.display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                i += 1
         log("randr enabled: %s", self.randr)
+        self.randr_notify = False
 
         self.pulseaudio = opts.pulseaudio
 
@@ -824,8 +832,29 @@ class XpraServer(gobject.GObject):
             or self._desktop_manager.visible(window)):
             self._damage(window, event.x, event.y, event.width, event.height)
 
+    def _screen_size_changed(self, *args):
+        log("_screen_size_changed(%s)", args)
+        #randr has resized the screen, tell the client (if it supports it)
+        if not self.randr_notify:
+            return
+        def send_updated_screen_size():
+            max_w, max_h = self.get_max_screen_size()
+            root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+            log("sending updated screen size to client: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+            self._send(["desktop_size", root_w, root_h, max_w, max_h])
+        gobject.idle_add(send_updated_screen_size)
+
+    def get_max_screen_size(self):
+        max_w, max_h = gtk.gdk.get_default_root_window().get_size()
+        sizes = get_screen_sizes()
+        if self.randr and len(sizes)>=1:
+            for w,h in sizes:
+                max_w = max(max_w, w)
+                max_h = max(max_h, h)
+        return max_w, max_h
+
     def _get_desktop_size_capability(self, client_capabilities):
-        (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         client_size = client_capabilities.get("desktop_size")
         log.info("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
@@ -836,12 +865,12 @@ class XpraServer(gobject.GObject):
             """ server does not support randr - return minimum of the client/server dimensions """
             w = min(client_w, root_w)
             h = min(client_h, root_h)
-            return    w,h
+            return    w, h
         log("client resolution is %sx%s, current server resolution is %sx%s", client_w, client_h, root_w, root_h)
         return self.set_screen_size(client_w, client_h)
 
     def set_screen_size(self, client_w, client_h):
-        (root_w, root_h) = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         if client_w==root_w and client_h==root_h:
             return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
@@ -872,7 +901,7 @@ class XpraServer(gobject.GObject):
                     log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
         w = min(client_w, root_w)
         h = min(client_h, root_h)
-        return w,h
+        return w, h
 
     def _process_desktop_size(self, proto, packet):
         (width, height) = packet[1:3]
@@ -956,6 +985,8 @@ class XpraServer(gobject.GObject):
             info["revision"] = REVISION
         except:
             pass
+        info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
+        info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
         info["clipboard"] = self.clipboard_enabled
         info["password_file"] = self.password_file or ""
@@ -1192,6 +1223,9 @@ class XpraServer(gobject.GObject):
         batch_config.encoding = self.encoding
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
+        #send_hello will take care of sending the current and max screen resolutions,
+        #so only activate this feature afterwards:
+        self.randr_notify = self.randr and capabilities.get("randr_notify", False)
         if "jpeg" in capabilities:
             self.default_damage_options["jpegquality"] = capabilities["jpeg"]
         self.keyboard = bool(capabilities.get("keyboard", True))
@@ -1245,7 +1279,9 @@ class XpraServer(gobject.GObject):
     def send_hello(self, client_capabilities):
         capabilities = {}
         capabilities["version"] = xpra.__version__
+        capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
+        capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["platform"] = sys.platform
         capabilities["clipboard"] = self.clipboard_enabled
         capabilities["encodings"] = ENCODINGS
