@@ -13,6 +13,7 @@ log = Logger()
 
 from xpra.protocol import Protocol
 from xpra.scripts.main import ENCODINGS
+from xpra.version_util import is_compatible_with
 
 import xpra
 
@@ -158,7 +159,14 @@ class XpraClientBase(gobject.GObject):
         self.send_hello(challenge_response.hexdigest())
 
     def _process_hello(self, packet):
-        pass
+        capabilities = packet[1]
+        self.parse_server_capabilities(capabilities)
+
+    def parse_server_capabilities(self, capabilities):
+        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
+        self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
+        if not is_compatible_with(self._remote_version):
+            self.quit(1)
 
     def _process_set_deflate(self, packet):
         #this tell us the server has set its compressor
