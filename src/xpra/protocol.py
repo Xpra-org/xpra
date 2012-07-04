@@ -321,8 +321,10 @@ class Protocol(object):
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
                 except TypeError:
-                    assert self._closed
-                    break
+                    #can happen during close(), in which case we just ignore:
+                    if self._closed:
+                        break
+                    raise
                 if self._write_queue.empty():
                     gobject.idle_add(self._maybe_queue_more_writes)
         finally:
