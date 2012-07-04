@@ -473,7 +473,7 @@ class XpraServer(gobject.GObject):
         self.send_cursor()
 
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image])
+        self._send(["cursor", self.cursor_image or ""])
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)
