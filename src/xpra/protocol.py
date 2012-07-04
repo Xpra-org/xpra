@@ -402,7 +402,7 @@ class Protocol(object):
                         break
                     if current_packet_size<0:
                         if read_buffer[0] not in ["P", ord("P")]:
-                            return self._call_connection_lost("invalid packet header, not an xpra client?")
+                            return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
                         if bl<2:
                             break
                         if read_buffer[1] in ["S", ord("S")]:
@@ -472,6 +472,8 @@ class Protocol(object):
                         raw_packets = {}
                     gobject.idle_add(self._process_packet, packet)
                     assert l==len(raw_string)
+                    #special case: we can't wait for idle_add to make the call...
+                    #(this will be removed in 0.5 in favour of the per-packet compression header)
                     if packet[0]=="set_deflate":
                         level = packet[1]
                         if level!=self._compression_level:
