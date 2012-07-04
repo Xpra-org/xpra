@@ -20,7 +20,7 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client, opts)
         self.setup_menu()
-        self.setup_tray(opts.tray_icon)
+        self.setup_tray(opts.no_tray, opts.tray_icon)
         self.setup_clipboard_helper(ClipboardProtocolHelper)
         self._last_key_events = maxdeque(maxlen=5)
         self._dropped_num_lock_press = False
@@ -38,13 +38,14 @@ class ClientExtras(ClientExtrasBase):
             self.notify(self.tray.getHWND(), summary, body, expire_timeout)
 
 
-    def setup_tray(self, tray_icon_filename):
+    def setup_tray(self, no_tray, tray_icon_filename):
         self.tray = None
         self.notify = None
-        #we wait for session_name to be set during the handshake
-        #the alternative would be to implement a set_name() method
-        #on the Win32Tray - but this looks too complicated
-        self.client.connect("handshake-complete", self.do_setup_tray, tray_icon_filename)
+        if not no_tray:
+            #we wait for session_name to be set during the handshake
+            #the alternative would be to implement a set_name() method
+            #on the Win32Tray - but this looks too complicated
+            self.client.connect("handshake-complete", self.do_setup_tray, tray_icon_filename)
 
     def do_setup_tray(self, client, tray_icon_filename):
         self.tray = None

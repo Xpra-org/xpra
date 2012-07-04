@@ -24,7 +24,7 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client, opts)
         self.setup_menu(True)
-        self.setup_tray(opts.tray_icon)
+        self.setup_tray(opts.no_tray, opts.tray_icon)
         self.setup_xprops(opts.pulseaudio)
         self.setup_x11_bell()
         self.has_dbusnotify = False
@@ -154,11 +154,15 @@ class ClientExtras(ClientExtrasBase):
         except:
             return False
 
-    def setup_tray(self, tray_icon_filename):
+    def setup_tray(self, no_tray, tray_icon_filename):
         """ choose the most appropriate tray implementation
             Ubuntu is a disaster in this area, see:
             http://xpra.org/trac/ticket/43#comment:8
         """
+        self.tray_widget = None
+        self.hide_tray = None
+        if no_tray:
+            return
         if self._is_ubuntu_11_10_or_later() and self.setup_appindicator(tray_icon_filename):
             return
         if not self.setup_statusicon(tray_icon_filename):
