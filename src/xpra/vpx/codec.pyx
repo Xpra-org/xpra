@@ -70,7 +70,7 @@ cdef class Decoder(xcoder):
         cdef uint8_t *dout[3]
         cdef int outsize
         cdef int outstrides[3]
-        cdef unsigned char * buf = <uint8_t *> 0
+        cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
@@ -90,7 +90,7 @@ cdef class Decoder(xcoder):
         cdef int outsize
         cdef int yuvstrides[3]
         cdef int outstride
-        cdef unsigned char * buf = <uint8_t *> 0
+        cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         assert self.last_image==NULL
@@ -125,7 +125,7 @@ cdef class Encoder(xcoder):
         cdef vpx_image_t *pic_in = NULL
         cdef uint8_t *cout
         cdef int coutsz
-        cdef uint8_t *buf = <uint8_t *> 0
+        cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         #colourspace conversion with gil held:
