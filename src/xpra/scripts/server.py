@@ -373,6 +373,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if xvfb_error(True):
             return  1
         xvfb_pid = xvfb.pid
+        if xvfb_pid is not None:
+            save_pid(xvfb_pid)
 
     def kill_xvfb():
         # Close our display(s) first, so the server dying won't kill us.
@@ -382,9 +384,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if xvfb_pid is not None:
             os.kill(xvfb_pid, signal.SIGTERM)
     _cleanups.append(kill_xvfb)
-
-    if xvfb_pid is not None:
-        save_pid(xvfb_pid)
 
     from xpra.server import can_run_server, XpraServer
     if not can_run_server():
