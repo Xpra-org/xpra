@@ -101,7 +101,6 @@ class XpraClient(XpraClientBase):
         self.server_start_time = -1
         self.server_platform = ""
         self.server_actual_desktop_size = None
-        self.server_desktop_size = None
         self.server_randr = False
         self.pixel_counter = maxdeque(maxlen=100)
         self.server_latency = maxdeque(maxlen=100)
@@ -583,6 +582,7 @@ class XpraClient(XpraClientBase):
         #calculate the maximum size of a packet (a full screen update packet)
         root_w, root_h = get_root_size()
         self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
+        log("server actual desktop size=%s", self.server_actual_desktop_size)
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size
@@ -595,9 +595,10 @@ class XpraClient(XpraClientBase):
         self._protocol.max_packet_size = maxw*maxh*4*4
         self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         log("set maximum packet size to %s", self._protocol.max_packet_size)
-        self.server_desktop_size = capabilities.get("desktop_size")
-        assert self.server_desktop_size
-        avail_w, avail_h = self.server_desktop_size
+        server_desktop_size = capabilities.get("desktop_size")
+        log("server desktop size=%s", server_desktop_size)
+        assert server_desktop_size
+        avail_w, avail_h = server_desktop_size
         if avail_w<root_w or avail_h<root_h:
             log.warn("Server's virtual screen is too small -- "
                      "(server: %sx%s vs. client: %sx%s)\n"
