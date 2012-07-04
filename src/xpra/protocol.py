@@ -446,6 +446,7 @@ class Protocol(object):
                         current_packet_size = -1
                         packet_index = 0
                         continue
+                    result = None
                     try:
                         #final packet (packet_index==0), decode it:
                         result = bdecode(raw_string)
@@ -455,10 +456,13 @@ class Protocol(object):
                         log.error("value error reading packet: %s", e)
                         if self._closed:
                             return
-                        # Peek at the data we got, in case we can make sense of it:
-                        self._process_packet([Protocol.GIBBERISH, buf])
-                        # Then hang up:
-                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(read_buffer), packet_index, current_packet_size, bl, e))
+                        def gibberish(buf):
+                            # Peek at the data we got, in case we can make sense of it:
+                            self._process_packet([Protocol.GIBBERISH, buf])
+                            # Then hang up:
+                            return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(raw_string), packet_index, current_packet_size, bl, e))
+                        gobject.idle_add(gibberish, raw_string)
+                        return
 
                     current_packet_size = -1
                     if result is None or self._closed:
