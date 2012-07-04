@@ -457,9 +457,15 @@ def run_client(parser, opts, extra_args, mode):
             sys.stdout.write("Attached (press Control-C to detach)\n")
             sys.stdout.flush()
     app.connect("handshake-complete", handshake_complete)
-    signal.signal(signal.SIGINT, app.quit)
+    def client_SIGINT(*args):
+        print("received SIGINT, closing")
+        app.quit(signal.SIGINT)
+    signal.signal(signal.SIGINT, client_SIGINT)
     try:
-        return app.run()
+        try:
+            return app.run()
+        except KeyboardInterrupt, e:
+            return signal.SIGINT
     finally:
         app.cleanup()
 
