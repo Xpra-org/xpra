@@ -997,31 +997,10 @@ class XpraServer(gobject.GObject):
         info["platform"] = sys.platform
         info["windows"] = len(self._id_to_window)
         info["potential_clients"] = len([p for p in self._potential_protocols if (p is not proto and p is not self._protocol)])
-        if self._protocol is None or self._protocol.source is None or self._protocol.source._closed:
+        if self._protocol is None or self._protocol._closed or self._protocol.source is None or self._protocol.source._closed:
             info["clients"] = 0
             return  info
         self.send_ping()
-        source = self._protocol.source
-        info["clients"] = 1
-        info["client_encodings"] = ",".join(self.encodings)
-        info["keyboard_sync"] = self.keyboard_sync
-        info["keyboard"] = self.keyboard
-        info["key_repeat_delay"] = self.key_repeat_delay
-        info["key_repeat_interval"] = self.key_repeat_interval
-        info["encoding"] = source._encoding
-        info["damage_packet_queue_size"] = len(source._damage_packet_queue)
-        info["damage_data_queue_size"] = source._damage_data_queue.qsize()
-        if len(source._damage_latency)>0:
-            info["min_damage_latency"] = int(1000*min(source._damage_latency))
-            info["max_damage_latency"] = int(1000*max(source._damage_latency))
-            info["avg_damage_latency"] = int(1000*sum(source._damage_latency)/len(source._damage_latency))
-        info["input_bytecount"] = self._protocol.input_bytecount
-        info["input_packetcount"] = self._protocol.input_packetcount
-        info["input_raw_packetcount"] = self._protocol.input_raw_packetcount
-        info["output_bytecount"] = self._protocol.output_bytecount
-        info["output_mmap_bytecount"] = source._mmap_bytes_sent
-        info["output_packetcount"] = self._protocol.output_packetcount
-        info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         if len(self.server_latency)>0:
             info["min_server_latency"] = int(min(self.server_latency))
             info["max_server_latency"] = int(max(self.server_latency))
@@ -1030,113 +1009,13 @@ class XpraServer(gobject.GObject):
             info["min_client_latency"] = int(min(self.client_latency))
             info["max_client_latency"] = int(max(self.client_latency))
             info["avg_client_latency"] = int(sum(self.client_latency)/len(self.client_latency))
-        batch_delays = []
-        for wid in self._id_to_window.keys():
-            batch = source.get_batch_config(wid)
-            if batch:
-                for _,d in batch.last_delays:
-                    batch_delays.append(d)
-        if len(batch_delays)>0:
-            info["min_batch_delay"] = int(min(batch_delays))
-            info["max_batch_delay"] = int(max(batch_delays))
-            info["avg_batch_delay"] = int(sum(batch_delays)/len(batch_delays))
-
-        #client pixels per second:
-        now = time.time()
-        time_limit = now-30             #ignore old records (30s)
-        #pixels per second: decode time and overall
-        total_pixels = 0                #total number of pixels processed
-        total_time = 0                  #total decoding time
-        latest_start_time = 0           #the highest time any of the queues starts from
-        for wid in self._id_to_window.keys():
-            decode_time_list = source.client_decode_time.get(wid)
-            if not decode_time_list:
-                continue
-            window_pixels = 0           #pixel count
-            window_time = 0             #decoding time
-            window_start_time = 0
-            for when, pixels, decode_time in decode_time_list:
-                if when<time_limit or decode_time<=0:
-                    continue
-                if window_start_time==0:
-                    window_start_time = when
-                    latest_start_time = max(latest_start_time, when)
-                log("wid=%s, pixels=%s in %s", wid, pixels, decode_time)
-                window_pixels += pixels
-                window_time += decode_time
-            log("wid=%s, window_time=%s, window_pixels=%s", wid, window_time, window_pixels)
-            if window_time>0:
-                #zero time means we dropped the data without processing it,
-                #so don't count it (or try to divide by zero!)
-                log("wid=%s, pixels/s=%s", wid, int(window_pixels *1000*1000 / window_time))
-                total_time += window_time
-                total_pixels += window_pixels
-        log("total_time=%s, total_pixels=%s", total_time, total_pixels)
-        if total_time>0:
-            pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
-            info["pixels_decoded_per_second"] = pixels_decoded_per_second
-            log("pixels_decoded_per_second=%s", pixels_decoded_per_second)
-
-        if latest_start_time:
-            elapsed = now-latest_start_time
-            #count all pixels newer than this time
-            total_pixels = 0
-            for wid in self._id_to_window.keys():
-                decode_time_list = source.client_decode_time.get(wid)
-                if not decode_time_list:
-                    continue
-                for when, pixels, decode_time in decode_time_list:
-                    if decode_time<=0:
-                        continue
-                    if when>=latest_start_time:
-                        total_pixels += pixels
-            pixels_per_second = int(total_pixels/elapsed)
-            info["pixels_per_second"] = pixels_per_second
-            log("pixels_per_second=%s", pixels_per_second)
-        if len(source._damage_packet_sizes)>0:
-            total_pixels = 0
-            total_time = 0
-            for _, pixels, elapsed in list(source._damage_packet_sizes):
-                total_pixels += pixels
-                total_time += elapsed
-            pixels_encoded_per_second = int(total_pixels / total_time)
-            info["pixels_encoded_per_second"] = pixels_encoded_per_second
-            log("pixels_encoded_per_second=%s", pixels_encoded_per_second)
-        if len(source._client_latency)>0:
-            latencies = [int(1000*latency) for (when, latency) in source._client_latency]
-            info["min_client_latency"] = int(min(latencies))
-            info["max_client_latency"] = int(max(latencies))
-            info["avg_client_latency"] = int(sum(latencies)/len(latencies))
-
-        #damage regions per second:
-        total_pixels = 0            #pixels processed
-        regions_count = 0           #weighted value: sum of (regions count * number of pixels / elapsed time)
-        for wid in self._id_to_window.keys():
-            last_events = source._damage_last_events.get(wid)
-            if not last_events:
-                continue
-            start_when = 0
-            window_regions = 0      #regions for this window
-            window_pixels = 0       #pixel count
-            for when, pixels in last_events:
-                if when<time_limit:
-                    continue
-                window_regions += 1
-                if start_when==0:
-                    start_when = when
-                log("wid=%s, pixels=%s", wid, pixels)
-                window_pixels += pixels
-                total_pixels += pixels
-            log("wid=%s, window_pixels=%s", wid, window_pixels)
-            if start_when>0:
-                log("wid=%s, window_pixels=%s, regions=%s, elapsed=%s", wid, window_pixels, window_regions, now-start_when)
-                log("wid=%s, regions_per_second=%s", wid, (window_regions/(now-start_when)))
-                regions_count += window_pixels*window_regions/(now-start_when)
-        log("regions_count=%s, total_pixels=%s", regions_count, total_pixels)
-        if regions_count:
-            regions_per_second = int(regions_count/total_pixels)
-            info["regions_per_second"] = regions_per_second
-            log("regions_per_second=%s", regions_per_second)
+        info["clients"] = 1
+        info["client_encodings"] = ",".join(self.encodings)
+        info["keyboard_sync"] = self.keyboard_sync
+        info["keyboard"] = self.keyboard
+        info["key_repeat_delay"] = self.key_repeat_delay
+        info["key_repeat_interval"] = self.key_repeat_interval
+        self._protocol.source.add_stats(info, self._id_to_window.keys())
         return info
 
     def _process_hello(self, proto, packet):
@@ -1314,7 +1193,7 @@ class XpraServer(gobject.GObject):
         self._send(["ping", int(1000*time.time())])
 
     def _process_ping_echo(self, proto, packet):
-        (echoedtime, l1, l2, l3, sl) = packet[1:6]
+        echoedtime, l1, l2, l3, sl = packet[1:6]
         diff = int(1000*time.time()-echoedtime)
         self.client_latency.append(diff)
         self.client_load = (l1, l2, l3)

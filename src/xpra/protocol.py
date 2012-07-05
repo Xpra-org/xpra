@@ -98,6 +98,8 @@ class Compressible(object):
     def __init__(self, datatype, data):
         self.datatype = datatype
         self.data = data
+    def __len__(self):
+        return len(self.data)
 
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
