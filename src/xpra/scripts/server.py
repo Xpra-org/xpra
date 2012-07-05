@@ -281,7 +281,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
             sockets.append(tcp_socket)
             def cleanup_tcp_socket():
-                print("closing tcp socket")
+                print("closing tcp socket %s" % opts.bind_tcp)
                 try:
                     tcp_socket.close()
                 except:
