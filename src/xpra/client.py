@@ -236,8 +236,9 @@ class XpraClient(XpraClientBase):
         return  self.exit_code
 
     def quit(self, exit_code=0):
+        self.cleanup()
         self.exit_code = exit_code
-        gtk_main_quit_really()
+        gobject.timeout_add(50, gtk_main_quit_really)
 
     def cleanup(self):
         if self._client_extras:

@@ -376,122 +376,123 @@ class Protocol(object):
             to ensure we enable compression synchronously within the thread.
             (this due for removal when we drop old protocol support)
         """
-        try:
-            read_buffer = None
-            current_packet_size = -1
-            packet_index = 0
-            compression_level = False
-            raw_packets = {}
+        read_buffer = None
+        current_packet_size = -1
+        packet_index = 0
+        compression_level = False
+        raw_packets = {}
+        while not self._closed:
+            buf = self._read_queue.get()
+            if not buf:
+                log("read thread: empty marker, exiting")
+                gobject.idle_add(self.close)
+                return
+            #this is the old/unconditional compression code (to be removed):
+            if not self.raw_packets and self._compression_level>0:
+                buf = self._decompressor.decompress(buf)
+            if read_buffer:
+                read_buffer = read_buffer + buf
+            else:
+                read_buffer = buf
+            bl = len(read_buffer)
+            if self.max_packet_size>0 and bl>self.max_packet_size:
+                return self._call_connection_lost("read buffer too big: %s (maximum is %s), dropping this connection!" % (bl, self.max_packet_size))
             while not self._closed:
-                buf = self._read_queue.get()
-                if not buf:
-                    log("read thread: empty marker, exiting")
-                    gobject.idle_add(self.close)
-                    return
-                #this is the old/unconditional compression code (to be removed):
-                if not self.raw_packets and self._compression_level>0:
-                    buf = self._decompressor.decompress(buf)
-                if read_buffer:
-                    read_buffer = read_buffer + buf
-                else:
-                    read_buffer = buf
                 bl = len(read_buffer)
-                if self.max_packet_size>0 and bl>self.max_packet_size:
-                    return self._call_connection_lost("read buffer too big: %s (maximum is %s), dropping this connection!" % (bl, self.max_packet_size))
-                while not self._closed:
-                    bl = len(read_buffer)
-                    if bl<=0:
+                if bl<=0:
+                    break
+                if current_packet_size<0:
+                    if read_buffer[0] not in ["P", ord("P")]:
+                        return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
+                    if bl<2:
                         break
-                    if current_packet_size<0:
-                        if read_buffer[0] not in ["P", ord("P")]:
-                            return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
-                        if bl<2:
+                    if read_buffer[1] in ["S", ord("S")]:
+                        #old packet format: "PS%02d%012d" - 16 bytes
+                        if bl<16:
                             break
-                        if read_buffer[1] in ["S", ord("S")]:
-                            #old packet format: "PS%02d%012d" - 16 bytes
-                            if bl<16:
-                                break
-                            current_packet_size = int(read_buffer[2:16])
-                            packet_index = 0
-                            compression_level = 0
-                            read_buffer = read_buffer[16:]
-                        else:
-                            #new packet format: struct.pack('cBBBL', ...) - 8 bytes
-                            if bl<8:
-                                break
-                            try:
-                                (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
-                            except Exception, e:
-                                raise Exception("invalid packet format: %s", e)
-                            read_buffer = read_buffer[8:]
-                        bl = len(read_buffer)
-
-                    if current_packet_size>0 and bl<current_packet_size:
-                        # incomplete packet
-                        break
-
-                    #chop this packet from the buffer:
-                    if len(read_buffer)==current_packet_size:
-                        raw_string = read_buffer
-                        read_buffer = ''
-                    else:
-                        raw_string = read_buffer[:current_packet_size]
-                        read_buffer = read_buffer[current_packet_size:]
-                    if compression_level>0:
-                        raw_string = self._decompressor.decompress(raw_string)
-                    if sys.version>='3':
-                        raw_string = raw_string.decode("latin1")
-
-                    if packet_index>0:
-                        #raw packet, store it and continue:
-                        raw_packets[packet_index] = raw_string
-                        current_packet_size = -1
+                        current_packet_size = int(read_buffer[2:16])
                         packet_index = 0
-                        continue
-                    result = None
-                    try:
-                        #final packet (packet_index==0), decode it:
-                        result = bdecode(raw_string)
-                    except ValueError, e:
-                        import traceback
-                        traceback.print_exc()
-                        log.error("value error reading packet: %s", e)
-                        if self._closed:
-                            return
-                        def gibberish(buf):
-                            # Peek at the data we got, in case we can make sense of it:
-                            self._process_packet([Protocol.GIBBERISH, buf])
-                            # Then hang up:
-                            return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(raw_string), packet_index, current_packet_size, bl, e))
-                        gobject.idle_add(gibberish, raw_string)
-                        return
+                        compression_level = 0
+                        read_buffer = read_buffer[16:]
+                    else:
+                        #new packet format: struct.pack('cBBBL', ...) - 8 bytes
+                        if bl<8:
+                            break
+                        try:
+                            (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
+                        except Exception, e:
+                            raise Exception("invalid packet format: %s", e)
+                        read_buffer = read_buffer[8:]
+                    bl = len(read_buffer)
 
+                if current_packet_size>0 and bl<current_packet_size:
+                    # incomplete packet
+                    break
+
+                #chop this packet from the buffer:
+                if len(read_buffer)==current_packet_size:
+                    raw_string = read_buffer
+                    read_buffer = ''
+                else:
+                    raw_string = read_buffer[:current_packet_size]
+                    read_buffer = read_buffer[current_packet_size:]
+                if compression_level>0:
+                    raw_string = self._decompressor.decompress(raw_string)
+                if sys.version>='3':
+                    raw_string = raw_string.decode("latin1")
+
+                if self._closed:
+                    return
+                if packet_index>0:
+                    #raw packet, store it and continue:
+                    raw_packets[packet_index] = raw_string
                     current_packet_size = -1
-                    if result is None or self._closed:
-                        break
-                    packet, l = result
-                    #add any raw packets back into it:
-                    if raw_packets:
-                        for index,raw_data in raw_packets.items():
-                            #replace placeholder with the raw_data packet data:
-                            packet[index] = raw_data
-                        raw_packets = {}
-                    gobject.idle_add(self._process_packet, packet)
-                    assert l==len(raw_string)
-                    #special case: we can't wait for idle_add to make the call...
-                    #(this will be removed in 0.5 in favour of the per-packet compression header)
-                    if packet[0]=="set_deflate":
-                        level = packet[1]
-                        if level!=self._compression_level:
-                            log("set_deflate packet, changing compressor to level=%s", level)
-                            previous_level = self._compression_level
-                            self._compression_level = level
-                            if level>0:
-                                if previous_level==0 and not self.raw_packets:
-                                    # deflate was just enabled: so decompress the unprocessed data:
-                                    read_buffer = self._decompressor.decompress(read_buffer)
-        finally:
-            log("read parse thread: ended")
+                    packet_index = 0
+                    continue
+                result = None
+                try:
+                    #final packet (packet_index==0), decode it:
+                    result = bdecode(raw_string)
+                except ValueError, e:
+                    import traceback
+                    traceback.print_exc()
+                    log.error("value error reading packet: %s", e)
+                    if self._closed:
+                        return
+                    def gibberish(buf):
+                        # Peek at the data we got, in case we can make sense of it:
+                        self._process_packet([Protocol.GIBBERISH, buf])
+                        # Then hang up:
+                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(raw_string), packet_index, current_packet_size, bl, e))
+                    gobject.idle_add(gibberish, raw_string)
+                    return
+
+                if self._closed:
+                    return
+                current_packet_size = -1
+                if result is None:
+                    break
+                packet, l = result
+                #add any raw packets back into it:
+                if raw_packets:
+                    for index,raw_data in raw_packets.items():
+                        #replace placeholder with the raw_data packet data:
+                        packet[index] = raw_data
+                    raw_packets = {}
+                gobject.idle_add(self._process_packet, packet)
+                assert l==len(raw_string)
+                #special case: we can't wait for idle_add to make the call...
+                #(this will be removed in 0.5 in favour of the per-packet compression header)
+                if packet[0]=="set_deflate":
+                    level = packet[1]
+                    if level!=self._compression_level:
+                        log("set_deflate packet, changing compressor to level=%s", level)
+                        previous_level = self._compression_level
+                        self._compression_level = level
+                        if level>0:
+                            if previous_level==0 and not self.raw_packets:
+                                # deflate was just enabled: so decompress the unprocessed data:
+                                read_buffer = self._decompressor.decompress(read_buffer)
 
     def _process_packet(self, decoded):
         if self._closed:

@@ -238,7 +238,8 @@ class GLibXpraClient(XpraClientBase):
         return capabilities
 
     def quit(self, *args):
-        self.glib_mainloop.quit()
+        self.cleanup()
+        gobject.timeout_add(50, self.glib_mainloop.quit)
 
     def _process_connection_lost(self, packet):
         log("Connection lost")
