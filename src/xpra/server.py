@@ -1318,7 +1318,8 @@ class XpraServer(gobject.GObject):
         diff = int(1000*time.time()-echoedtime)
         self.client_latency.append(diff)
         self.client_load = (l1, l2, l3)
-        self.server_latency.append(sl)
+        if sl>=0:
+            self.server_latency.append(sl)
         log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
 
     def _process_ping(self, proto, packet):
