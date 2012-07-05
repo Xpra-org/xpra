@@ -341,7 +341,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         sys.stderr.write("\n")
         if instance_exists:
             sys.stderr.write("There is an X11 server already running on display %s:\n" % display_name)
-            sys.stderr.write("You may want to use:\n" % display_name)
+            sys.stderr.write("You may want to use:\n")
             sys.stderr.write("  'xpra upgrade' if an instance of xpra is still connected to it\n")
             sys.stderr.write("  'xpra --use-display start' to connect xpra to an existing X11 server only\n")
         return True
