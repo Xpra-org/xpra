@@ -166,7 +166,8 @@ class XpraClientBase(gobject.GObject):
         self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
-            self.quit(1)
+            self.exit_code = 1
+            self.quit()
 
     def _process_set_deflate(self, packet):
         #this tell us the server has set its compressor
