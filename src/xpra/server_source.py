@@ -6,6 +6,12 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#Set this variable to True and batch delay debug messages
+#will be printed every 30 seconds or every MAX_DEBUG_MESSAGES messages
+#(whichever comes first)
+DEBUG_DELAY = False
+MAX_DEBUG_MESSAGES = 1000
+
 
 import gtk.gdk
 gtk.gdk.threads_init()
@@ -75,18 +81,24 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
     return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
 
 
+#how many historical records to keep
+#for the various statistics we collect:
+#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
+NRECS = 100
+
+
 class DamageBatchConfig(object):
     """
     Encapsulate all the damage batching configuration into one object.
     """
     ENABLED = True
     ALWAYS = False
-    MAX_EVENTS = 80                     #maximum number of damage events
+    MAX_EVENTS = min(50, NRECS)         #maximum number of damage events
     MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
     MAX_DELAY = 15000
-    RECALCULATE_DELAY = 0.04           #re-compute delay 25 times per second at most
+    RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
     def __init__(self):
         self.enabled = self.ENABLED
         self.always = self.ALWAYS
@@ -108,10 +120,6 @@ class DamageBatchConfig(object):
             setattr(c, x, getattr(self, x))
         return c
 
-
-#how many historical records to keep
-#for the various statistics we collect:
-NRECS = 50
 
 class ServerSource(object):
     """
@@ -142,13 +150,13 @@ class ServerSource(object):
         # the queues of damage requests we work through:
         self._damage_data_queue = Queue()           #holds raw pixel data (pixbuf), dimensions, etc
                                                     #items placed in this queue are picked off by the "data_to_packet" thread
+                                                    #which will then place one or more packets in the damage_packet_queue
         self._damage_packet_queue = deque()         #holds actual packets ready for sending (already encoded)
                                                     #these packets are picked off by the "protocol"
         # statistics:
         self._damage_last_events = {}               #records the x11 damage requests for each window as they are received
                                                     #last NRECS per window: (event time, no of pixels)
         self._damage_packet_sequence = 1            #increase with every damage packet created
-        self._last_client_packet_sequence = -1      #the last damage_packet_sequence the client echoed back to us
         self._damage_ack_pending = {}               #records when damage packets are sent (per window dict),
                                                     #so we can calculate the "client_latency" when the client sends
                                                     #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
@@ -171,9 +179,25 @@ class ServerSource(object):
         self._damage_packet_qpixels = maxdeque(NRECS) #number of pixels waiting in the damage_packet_queue before we add a new packet to it
                                                     #(event_time, size)
 
+        if DEBUG_DELAY:
+            self._debug_delay_messages = []
+            gobject.timeout_add(30*1000, self.dump_debug_delay_messages)
+
         # ready for processing:
         protocol.source = self
         self._datapacket_thread = start_daemon_thread(self.data_to_packet, "data_to_packet")
+
+    def dump_debug_delay_messages(self):
+        log.info("dump_debug_delay_messages():")
+        for x in list(self._debug_delay_messages):
+            log.info(*x)
+        self._debug_delay_messages = []
+        return  True
+
+    def add_DEBUG_DELAY_MESSAGE(self, message):
+        if len(self._debug_delay_messages)>=MAX_DEBUG_MESSAGES:
+            self.dump_debug_delay_messages()
+        self._debug_delay_messages.append(message)
 
     def close(self):
         self._closed = True
@@ -465,13 +489,22 @@ class ServerSource(object):
         """
             Call this method whenever a batch delay related statistic has changed,
             this will call 'calculate_batch_delay' if we haven't done so
-            for at least 'batch.recalculate_delay'. (cheap to call)
+            for at least 'batch.recalculate_delay'.
         """
         now = time.time()
-        r = batch.last_updated+batch.recalculate_delay<now
-        #log("may_calculate_batch_delay(%s,...) now=%s, last_update=%s, delay=%s, recalculate=%s", wid, now, batch.last_updated, batch.recalculate_delay, r)
-        if r:
+        if batch.last_updated+batch.recalculate_delay<now:
+            #simple timeout
             self.calculate_batch_delay(wid, window, batch)
+        last_events = self._damage_last_events.get(wid)
+        if last_events:
+            #work out if we have too many damage requests
+            #or too many pixels in those requests
+            #for the last time_unit:
+            event_min_time = now-batch.time_unit
+            all_pixels = [pixels for event_time,pixels in last_events if event_time>event_min_time]
+            if len(all_pixels)>batch.max_events or sum(all_pixels)>batch.max_pixels:
+                #force batching: set it above min_delay
+                batch.delay = max(batch.min_delay+1, batch.delay)
 
     def calculate_time_weighted_average(self, data, recent_time=1):
         """
@@ -525,19 +558,28 @@ class ServerSource(object):
         now = time.time()
         #if the last record is old, make it count less
         weight_multiplier = min(1, 1/(now-sent_time))
+        if last_latency>0.2:
+            weight_multiplier += 1
         values = [x for _, _, _, x in list(self._damage_latency)]
         #log("damage_latency last 10=%s, average=%s, recent_avg=%s", last_10, avg, recent_avg)
-        factor = logp2(last_latency/min(avg, recent_avg))
         if max(values)==last_latency:
-            return  ["damage latency highest: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg)),
-                     factor+0.5, 1.0 * weight_multiplier]
+            weight = max(2.0, weight_multiplier*8)
+            factor = logp2(last_latency/min(avg,recent_avg))+1
+            msg = "damage latency highest: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
         if recent_avg<last_latency:
-            return  ["damage latency above recent average: %s (recent average=%s)" % (dec1(1000*last_latency), dec1(1000*recent_avg)),
-                     factor+0.25, 0.5 * weight_multiplier]
+            weight = max(1.0, weight_multiplier*4)
+            factor = logp2(last_latency/recent_avg)+0.5
+            msg = "damage latency above recent average: %s (recent average=%s)" % (dec1(1000*last_latency), dec1(1000*recent_avg))
         if avg<last_latency:
-            return  ["damage latency above average: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg)),
-                     factor+0.1, 0.3 * weight_multiplier]
-        return ["damage latency ok: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg)), 0.9, 0.1 * weight_multiplier]
+            factor = logp2(last_latency/avg)
+            weight = max(1.0, weight_multiplier*2)
+            msg = "damage latency above average: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
+        else:
+            factor = 0.9
+            weight = weight_multiplier
+            msg = "damage latency ok: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
+        #log.info("get_damage_latency_factor(%s,%s)=%s", avg, recent_avg, (msg, factor, weight))
+        return [msg, factor, weight]
 
     def get_elasped_time_factor(self, batch, recent_damage_latency):
         """
@@ -728,7 +770,10 @@ class ServerSource(object):
             factor = 0.75+0.25*pixels_backlog/low_limit
             return  ["client is only %s pixels and only %s packets behind" % (pixels_backlog, packets_backlog),
                      factor, 0.5]
-        factor = min(1.5, logp2(pixels_backlog/low_limit))
+        factor = max(1.1, min(2, logp2(pixels_backlog/low_limit)))
+        if packets_diff==0:
+            return ["client is still %s packets behind (and %s pixels)" % (packets_backlog, pixels_backlog),
+                    factor, 0.5]
         if packets_diff>0:
             factor += 0.25
         return ["client is falling further behind (from %s to %s packets)" % (last_packets_backlog, packets_backlog),
@@ -743,7 +788,7 @@ class ServerSource(object):
             then combine it with the new factors.
         """
         current_delay = batch.delay
-        #avg = 0
+        avg = 0
         tv, tw = 0.0, 0.0
         if len(batch.last_delays)>0:
             #get the weighted average:
@@ -754,7 +799,7 @@ class ServerSource(object):
                 d = max(batch.min_delay, min(batch.max_delay, delay))
                 tv += d*w
                 tw += w
-            #avg = tv / tw
+            avg = tv / tw
         hist_w = tw
 
         valid_factors = [x for x in factors if x is not None]
@@ -765,12 +810,14 @@ class ServerSource(object):
             tv += target_delay*w
         batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
         batch.last_updated = time.time()
-        #decimal_delays = [dec1(x) for _,x in batch.last_delays]
-        #if len(decimal_delays)==0:
-        #    decimal_delays.append(0)
-        #log("update_batch_delay: wid=%s, change factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
-        #            batch.wid, dec1(batch.delay/current_delay), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
-        #            dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), factors)
+        if DEBUG_DELAY:
+            decimal_delays = [dec1(x) for _,x in batch.last_delays]
+            if len(decimal_delays)==0:
+                decimal_delays.append(0)
+            rec = ("update_batch_delay: wid=%s, change factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
+                    batch.wid, dec1(batch.delay/current_delay), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+                    dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), factors)
+            self.add_DEBUG_DELAY_MESSAGE(rec)
 
     def calculate_batch_delay(self, wid, window, batch):
         """
@@ -859,7 +906,10 @@ class ServerSource(object):
             x,y = 0,0
         def damage_now(reason):
             self._sequence += 1
-            log("damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", wid, x, y, w, h, reason, self._sequence)
+            logrec = "damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", wid, x, y, w, h, reason, self._sequence
+            if DEBUG_DELAY:
+                self.add_DEBUG_DELAY_MESSAGE(logrec)
+            log(*logrec)
             pixmap = self.get_window_pixmap(wid, window, self._sequence)
             if pixmap:
                 self._process_damage_region(now, pixmap, wid, x, y, w, h, coding, self._sequence, options)
@@ -885,12 +935,8 @@ class ServerSource(object):
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
 
-        event_min_time = now-batch.time_unit
-        all_pixels = [pixels for event_time,pixels in last_events if event_time>event_min_time]
-        beyond_limit = len(all_pixels)>batch.max_events or sum(all_pixels)>batch.max_pixels
-        if not beyond_limit and not batch.always and batch.delay<=batch.min_delay:
-            return damage_now("delay (%s) is at the minimum threshold (%s): %s pixels (%s items) in the last %s ms" %
-                              (batch.delay, batch.min_delay, sum(all_pixels), len(all_pixels), dec1(1000*batch.time_unit)))
+        if not batch.always and batch.delay<=batch.min_delay:
+            return damage_now("delay (%s) is at the minimum threshold (%s)" % (batch.delay, batch.min_delay))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
@@ -1046,7 +1092,6 @@ class ServerSource(object):
             and the "client latency".
         """
         log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
-        self._last_client_packet_sequence = damage_packet_sequence
         client_decode_list = self._client_decode_time.setdefault(wid, maxdeque(maxlen=NRECS))
         client_decode_list.append((time.time(), width*height, decode_time))
         ack_pending = self._damage_ack_pending.get(wid)
