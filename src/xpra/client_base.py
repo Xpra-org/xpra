@@ -81,6 +81,7 @@ class XpraClientBase(gobject.GObject):
         self.encoding = opts.encoding
         self.jpegquality = opts.jpegquality
         self._protocol = None
+        self.server_capabilities = {}
         self.init_packet_handlers()
 
     def ready(self, conn):
@@ -162,8 +163,8 @@ class XpraClientBase(gobject.GObject):
         self.send_hello(challenge_response.hexdigest())
 
     def _process_hello(self, packet):
-        capabilities = packet[1]
-        self.parse_server_capabilities(capabilities)
+        self.server_capabilities = packet[1]
+        self.parse_server_capabilities(self.server_capabilities)
 
     def parse_server_capabilities(self, capabilities):
         self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))

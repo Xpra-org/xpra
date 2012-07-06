@@ -94,8 +94,6 @@ class XpraClient(XpraClientBase):
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
 
-        self.server_capabilities = {}
-
         self.mmap_enabled = False
         self.server_start_time = -1
         self.server_platform = ""
@@ -654,7 +652,8 @@ class XpraClient(XpraClientBase):
 
     def set_encoding(self, encoding):
         assert encoding in ENCODINGS
-        assert encoding in self.server_capabilities.get("encodings", [])
+        server_encodings = self.server_capabilities.get("encodings", [])
+        assert encoding in server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, server_encodings)
         self.encoding = encoding
         self.send(["encoding", encoding])
 
