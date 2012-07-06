@@ -223,6 +223,7 @@ class ServerSource(object):
         self.video_encoder_cleanup(window_ids)
         if window_ids is not None:
             for wid in window_ids:
+                self.cancel_damage(wid)
                 batch = self.get_batch_config(wid, False)
                 if batch and batch.encoding==encoding:
                     continue
@@ -230,6 +231,7 @@ class ServerSource(object):
                 batch.encoding = encoding
         else:
             for wid, batch in self._batch_configs.items():
+                self.cancel_damage(wid)
                 if batch.encoding==encoding:
                     continue
                 self.clear_stats(wid)
@@ -1071,7 +1073,7 @@ class ServerSource(object):
             ready for sending by the network layer.
             x264 and vpx use 'video_encode', mmap will use 'mmap_send',
             'rgb24', 'jpeg' and 'png' are handled within.
-            
+
         """
         if self.is_cancelled(wid, sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
@@ -1143,7 +1145,7 @@ class ServerSource(object):
             has changed.
             Since this runs in the non-UI thread 'data_to_packet', we must
             use the 'video_encoder_lock' to prevent races.
-             
+
         """
         assert coding in ENCODINGS
         assert x==0 and y==0, "invalid position: %sx%s" % (x,y)

@@ -1,4 +1,4 @@
-# coding=utf8 
+# coding=utf8
 # This file is part of Parti.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
@@ -933,11 +933,22 @@ class XpraServer(gobject.GObject):
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
         if len(packet)>=3:
-            wids = packet[2]
-            wids = [wid for wid in wids if wid in self._id_to_window.keys()]
+            #client specified which windows this is for:
+            in_wids = packet[2]
+            wids = []
+            wid_windows = {}
+            for wid in in_wids:
+                if wid not in self._id_to_window:
+                    continue
+                wids.append(wid)
+                wid_windows[wid] = self._id_to_window.get(wid)
         else:
+            #apply to all windows:
             wids = None
+            wid_windows = self._id_to_window
         self._set_encoding(encoding, wids)
+        opts = self.default_damage_options.copy()
+        self.refresh_windows(opts, wid_windows)
 
     def _send_password_challenge(self, proto):
         self.salt = "%s" % uuid.uuid4()
@@ -1595,14 +1606,21 @@ class XpraServer(gobject.GObject):
         if self.encoding=="jpeg":
             opts["jpegquality"] = jpeg_qual
         if wid==-1:
-            windows = self._id_to_window.values()
+            wid_windows = self._id_to_window
         elif wid in self._id_to_window:
-            windows = [self._id_to_window[wid]]
+            wid_windows = {wid : self._id_to_window.get(wid)}
         else:
             return
-        log("Requested refresh for windows: %s", windows)
+        log("Requested refresh for windows: %s", wid_windows)
         opts["batching"] = False
-        for window in windows:
+        self.refresh_windows(opts, wid_windows)
+
+    def refresh_windows(self, opts, wid_windows):
+        for wid, window in wid_windows.items():
+            if window is None:
+                continue
+            if self._server_source is not None:
+                self._server_source.cancel_damage(wid)
             if (isinstance(window, OverrideRedirectWindowModel)):
                 (_, _, w, h) = window.get_property("geometry")
             else:
@@ -1616,6 +1634,8 @@ class XpraServer(gobject.GObject):
         quality = packet[1]
         log("Setting JPEG quality to ", quality)
         self.default_damage_options["jpegquality"] = quality
+        opts = self.default_damage_options.copy()
+        self.refresh_windows(opts, self._id_to_window)
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
