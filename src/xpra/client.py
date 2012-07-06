@@ -479,7 +479,9 @@ class XpraClient(XpraClientBase):
 
     def mask_to_names(self, mask):
         mn = mask_to_names(mask, self._modifier_map)
-        names = self._client_extras.current_modifiers(mn)
+        names = mn
+        if self._client_extras:
+            names = self._client_extras.current_modifiers(mn)
         return  names
 
     def send_positional(self, packet):
