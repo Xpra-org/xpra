@@ -117,6 +117,7 @@ class ServerSource(object):
     """
     Strategy: if we have ordinary packets to send, send those.
     When we don't, then send window updates (expired ones first).
+    See 'next_packet'.
     The UI thread adds damage requests to a queue - see damage()
     """
 
@@ -145,7 +146,7 @@ class ServerSource(object):
                                                     #these packets are picked off by the "protocol"
         # statistics:
         self._damage_last_events = {}               #records the x11 damage requests for each window as they are received
-                                                    #last NRECS: event time, no of pixels
+                                                    #last NRECS per window: (event time, no of pixels)
         self._damage_packet_sequence = 1            #increase with every damage packet created
         self._last_client_packet_sequence = -1      #the last damage_packet_sequence the client echoed back to us
         self._damage_ack_pending = {}               #records when damage packets are sent (per window dict),
@@ -156,7 +157,7 @@ class ServerSource(object):
         self._damage_latency = maxdeque(NRECS)      #records how long it took for a damage request to be sent
                                                     #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
         self._client_decode_time = {}               #records how long it took the client to decode frames:
-                                                    #last NRECS: (ack_time, no of pixels, decoding_time)
+                                                    #last NRECS per window: (ack_time, no of pixels, decoding_time)
         self._encoding_stats = maxdeque(NRECS)      #encoding statistics
                                                     #last NRECS: (wid, coding, pixels, compressed_size, encoding_time)
 
@@ -179,20 +180,27 @@ class ServerSource(object):
         self._damage_data_queue.put(None, block=False)
         self.video_encoder_cleanup()
 
-    def video_encoder_cleanup(self):
+    def video_encoder_cleanup(self, window_ids=None):
+        """ Video encoders (x264 and vpx) require us to run
+            cleanup code to free the memory they use.
+            This method performs the cleanup for all the video encoders registered
+            if 'windows_ids' is None, or just the given window ids given.
+        """
         try:
             self._video_encoder_lock.acquire()
             for wid,cb in self._video_encoder_cleanup.items():
-                try:
-                    log("calling %s for wid=%s", cb, wid)
-                    cb()
-                except:
-                    log.error("error on close callback %s", cb, exc_info=True)
+                if window_ids==None or wid in window_ids:
+                    try:
+                        log("calling %s for wid=%s", cb, wid)
+                        cb()
+                    except:
+                        log.error("error on close callback %s", cb, exc_info=True)
             self._video_encoder_cleanup = {}
         finally:
             self._video_encoder_lock.release()
 
     def next_packet(self):
+        """ Called by protocol.py when it is ready to send the next packet """
         packet, cb, have_more = None, None, False
         if not self._closed:
             if self._ordinary_packets:
@@ -203,13 +211,17 @@ class ServerSource(object):
         return packet, cb, have_more
 
     def queue_ordinary_packet(self, packet):
+        """ This method queues non-damage packets (higher priority) """
         assert self._protocol
         self._ordinary_packets.append(packet)
         self._protocol.source_has_more()
 
     def set_new_encoding(self, encoding, window_ids):
-        self.video_encoder_cleanup()
-        if window_ids:
+        """ Changes the encoder for the given 'window_ids',
+            or for all windows if 'window_ids' is None.
+        """
+        self.video_encoder_cleanup(window_ids)
+        if window_ids is not None:
             for wid in window_ids:
                 batch = self.get_batch_config(wid, False)
                 if batch and batch.encoding==encoding:
@@ -226,6 +238,14 @@ class ServerSource(object):
             self._encoding = encoding
 
     def cancel_damage(self, wid):
+        """
+        Use this method to cancel all currently pending and ongoing
+        damage requests for a window.
+        Damage methods check this cancel list via 'is_cancelled(wid)'.
+        As one of the reasons for cancelling may be that the window is gone,
+        we also clear the timeout entry after 30 seconds to avoid a small
+        memory leak.
+        """
         #if delayed, we can just drop it now
         if wid in self._damage_delayed:
             log("cancel_damage: %s, removed batched region", wid)
@@ -239,7 +259,12 @@ class ServerSource(object):
                 del self._damage_cancelled[wid]
         gobject.timeout_add(30*1000, clear_cancel, self._sequence)
 
+    def is_cancelled(self, wid, sequence):
+        """ See cancel_damage(wid) """
+        return sequence>0 and self._damage_cancelled.get(wid, 0)>=sequence
+
     def remove_window(self, wid):
+        """ The given window is gone, ensure we free all the related resources """
         self.cancel_damage(wid)
         self.clear_stats(wid)
         try:
@@ -252,12 +277,18 @@ class ServerSource(object):
             self._video_encoder_lock.release()
 
     def clear_stats(self, wid):
+        """ Free all statistics for the given window """
         log("clearing stats for window %s", wid)
+        #self._damage_delayed is cleared in cancel_damage
+        #self._damage_cancelled is cleared automatically with a timer (also in cancel_damage)
         for d in [self._damage_last_events, self._client_decode_time, self._batch_configs, self._damage_ack_pending]:
             if wid in d:
                 del d[wid]
 
     def get_batch_config(self, wid, create=True):
+        """ Retrieves the DamageBatchConfig for the given window.
+            May clone the default is one does not exist yet and create flag is True.
+        """
         batch = self._batch_configs.get(wid)
         if not batch and create:
             batch = self._default_batch_config.clone()
@@ -266,14 +297,20 @@ class ServerSource(object):
         return batch
 
     def add_stats(self, info, window_ids=[]):
+        """
+            Adds most of the statistics available to the 'info' dict passed in.
+            This is used by server.py to provide those statistics to clients
+            via the 'xpra info' command.
+        """
         info["encoding"] = self._encoding
-        info["input_bytecount"] = self._protocol.input_bytecount
-        info["input_packetcount"] = self._protocol.input_packetcount
-        info["input_raw_packetcount"] = self._protocol.input_raw_packetcount
-        info["output_bytecount"] = self._protocol.output_bytecount
+        if self._protocol:
+            info["input_bytecount"] = self._protocol.input_bytecount
+            info["input_packetcount"] = self._protocol.input_packetcount
+            info["input_raw_packetcount"] = self._protocol.input_raw_packetcount
+            info["output_bytecount"] = self._protocol.output_bytecount
+            info["output_packetcount"] = self._protocol.output_packetcount
+            info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         info["output_mmap_bytecount"] = self._mmap_bytes_sent
-        info["output_packetcount"] = self._protocol.output_packetcount
-        info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         latencies = [x for _, _, _, x in list(self._damage_latency)]
         if len(latencies)>0:
             info["min_damage_latency"] = int(1000*min(latencies))
@@ -423,6 +460,11 @@ class ServerSource(object):
 
 
     def may_calculate_batch_delay(self, wid, window, batch):
+        """
+            Call this method whenever a batch delay related statistic has changed,
+            this will call 'calculate_batch_delay' if we haven't done so
+            for at least 'batch.recalculate_delay'. (cheap to call)
+        """
         now = time.time()
         r = batch.last_updated+batch.recalculate_delay<now
         #log("may_calculate_batch_delay(%s,...) now=%s, last_update=%s, delay=%s, recalculate=%s", wid, now, batch.last_updated, batch.recalculate_delay, r)
@@ -430,6 +472,14 @@ class ServerSource(object):
             self.calculate_batch_delay(wid, window, batch)
 
     def calculate_time_weighted_average(self, data, recent_time=1):
+        """
+            Given a list of items of the form [(event_time, value)],
+            this method calculates a time-weighted average where
+            recent values matter a lot more than more ancient ones.
+            Also calculates a 'recent' average which only takes
+            into account events that happened no more than 'recent_time'
+            seconds ago.
+        """
         now = time.time()
         tv, tw = 0.0, 0.0
         rv, rw = 0.0, 0.0
@@ -450,18 +500,28 @@ class ServerSource(object):
         return avg, recent
 
     def calculate_average_damage_latency(self):
+        """
+            Returns the time-weighted average and recent average
+            for the "damage latency".
+            (the time it takes for damage requests to be processed and sent)
+            See calculate_time_weighted_average()
+        """
         if len(self._damage_latency)==0:
             return  0, 0
         data = [(when, latency) for when, _, _, latency in list(self._damage_latency)]
         return  self.calculate_time_weighted_average(data)
 
     def get_damage_latency_factor(self, avg, recent_avg):
+        """
+            Returns the batch delay change factor based on changes
+            to the "damage-latency".
+        """
         if len(self._damage_latency)==0:
             return  None            #not enough records yet
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         sent_time, _, _, last_latency = self._damage_latency[-1]
         now = time.time()
-        #if the last record is old, make it cound less
+        #if the last record is old, make it count less
         weight_multiplier = min(1, 1/(now-sent_time))
         values = [x for _, _, _, x in list(self._damage_latency)]
         #log("damage_latency last 10=%s, average=%s, recent_avg=%s", last_10, avg, recent_avg)
@@ -478,6 +538,13 @@ class ServerSource(object):
         return ["damage latency ok: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg)), 0.9, 0.1 * weight_multiplier]
 
     def get_elasped_time_factor(self, batch, recent_damage_latency):
+        """
+            Returns the batch delay change factor based on
+            the time since we last re-calculated it.
+            If nothing happens for a while then we can reduce the batch delay,
+            however we must ensure this is not caused by a high damage latency
+            so we ignore short elapsed times.
+        """
         if batch.last_updated==0 or len(self._damage_latency)==0:
             return  None
         _, _, _, last_latency = self._damage_latency[-1]
@@ -493,12 +560,23 @@ class ServerSource(object):
                 0.1, weight]
 
     def calculate_average_client_latency(self):
+        """
+            Returns the time-weighted average and recent average
+            for the "client latency".
+            (how long it takes for a packet to get to the client and get the echo back)
+            See calculate_time_weighted_average()
+        """
         if len(self._client_latency)==0:
             return  0.1, 0.1
         data = [(when, latency) for when, _, latency in list(self._client_latency)]
         return  self.calculate_time_weighted_average(data)
 
     def get_client_latency_factor(self, avg_client_latency, recent_client_latency):
+        """
+            Returns the batch delay change factor based on
+            the "client latency".
+            We want to keep client latency as low as can be.
+        """
         if avg_client_latency is None or recent_client_latency is None:
             return  None
         pct_change = dec1(100*((recent_client_latency/avg_client_latency)-1))
@@ -511,9 +589,17 @@ class ServerSource(object):
                     1.0+(pct_change/100), 0.1]
 
     def queue_inspect(self, qsizes, qsize):
+        """
+            Utility method used by:
+            - get_damage_packet_queue_size_factor
+            - get_damage_packet_queue_pixels_factor
+            - get_damage_data_queue_factor
+            Given an historical list of values and a current value,
+            figure out if things are getting better or worse.
+        """
         #inspect a queue size history: figure out if things are better or worse than before
         if qsize==0:
-            return  "OK (empty)", 1.0, 0
+            return  "OK (empty)", 0.9, 0.1
         notime = [x for _,x in list(qsizes)]
         factor = logp10(qsize)
         last_10 = notime[-10:]
@@ -529,28 +615,64 @@ class ServerSource(object):
             return "last_10=%s, min=%s, max=%s, current=%s" % (last_10, min(last_10), max(last_10), qsize), factor, 0.1
 
     def get_damage_packet_queue_size_factor(self):
+        """
+            Returns the batch delay change factor based on
+            the size of the packet queue.
+            Although the number of packets waiting is important,
+            it is not as important as the number of pixels in them.
+            See:
+            - queue_inspect
+            - get_damage_packet_queue_pixels_factor
+        """
         dp_qsize = len(self._damage_packet_queue)
         msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes, dp_qsize)
-        return ["damage packet queue size: %s" % msg, factor, weight]
+        return ["damage packet queue size: %s" % msg, factor, weight/2]
 
     def get_damage_packet_queue_pixels_factor(self):
+        """
+            Returns the batch delay change factor based on
+            the number of pixels waiting in the packet queue.
+            See 'queue_inspect'
+        """
         pixels_in_packet_queue = sum([pixels for _,pixels,_ in list(self._damage_packet_queue)])
         msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, pixels_in_packet_queue)
-        return ["damage packet queue pixels: %s" % msg, factor, weight]
+        return ["damage packet queue pixels: %s" % msg, factor, weight*2]
 
     def get_damage_data_queue_factor(self):
+        """
+            Returns the batch delay change factor based on
+            the number of items in the damage queue.
+            This is an important metric since each item will
+            consume a fair amount of memory and each will later on
+            go through the other queues.
+            See 'queue_inspect'
+        """
         dd_qsize = self._damage_data_queue.qsize()
         #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
         msg, factor, weight = self.queue_inspect(self._damage_data_qsizes, dd_qsize)
-        return ["damage data queue: %s" % msg, factor, weight*2]
+        return ["damage data queue: %s" % msg, factor, weight*4]
 
     def get_pending_acks_factor(self, ack_pending):
+        """
+            Returns the batch delay change factor based on
+            the number of damage ACKs we are still waiting for.
+            Because of latency, it is normal to have a few pending,
+            so we only use this factor to reduce the batch delay
+            when there is absolutely nothing pending, not to increase it.
+        """
         if ack_pending is None or len(ack_pending)==0:
             return  ["client is fully up to date: no damage ACKs pending",
                 0.5, 1.0]
         return ["client has some ACKs pending: %s" % len(ack_pending), 1.0, 0.05]
 
     def calculate_client_backlog(self, ack_pending, sent_before):
+        """
+            Given the list of ACKs pending and a time cut off point
+            (which is based on the client latency),
+            we calculate how far behind the client is:
+            how many packets and how many pixels it should have processed
+            by now  but has not.
+        """
         if not ack_pending:
             return  0, 0
         packets_backlog, pixels_backlog = 0, 0
@@ -562,6 +684,13 @@ class ServerSource(object):
         return packets_backlog, pixels_backlog
 
     def calculate_low_limit(self, window):
+        """
+            Ugly method to calculate the 'low_limit':
+            the number of pixels which can be considered 'low'
+            in terms of backlog.
+            Generally, just one full frame, more with mmap
+            because it is so fast (things can accumulate more quickly).
+        """
         low_limit = 1024*1024
         if window:
             ww, wh = self.get_window_dimensions(window)
@@ -572,6 +701,11 @@ class ServerSource(object):
         return low_limit
 
     def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before):
+        """
+            Returns the batch delay change factor based on
+            the client pixels and packets latency-adjusted backlog count.
+            See calculate_client_backlog.
+        """
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
         self._last_client_delta = self.calculate_client_backlog(ack_pending, sent_before)
         packets_backlog, pixels_backlog = self._last_client_delta
@@ -599,6 +733,13 @@ class ServerSource(object):
                 factor, 1.0]
 
     def update_batch_delay(self, batch, factors):
+        """
+            Given a list of factors of the form:
+            [(description, factor, weight)]
+            we calculate a new batch delay.
+            We use a time-weighted average of previous delays as a starting value,
+            then combine it with the new factors.
+        """
         current_delay = batch.delay
         #avg = 0
         tv, tw = 0.0, 0.0
@@ -620,16 +761,32 @@ class ServerSource(object):
             w = weight*max(1, hist_w)/len(valid_factors)
             tw += w
             tv += target_delay*w
-        decimal_delays = [dec1(x) for _,x in batch.last_delays]
-        if len(decimal_delays)==0:
-            decimal_delays.append(0)
         batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
         batch.last_updated = time.time()
+        #decimal_delays = [dec1(x) for _,x in batch.last_delays]
+        #if len(decimal_delays)==0:
+        #    decimal_delays.append(0)
         #log("update_batch_delay: wid=%s, change factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
         #            batch.wid, dec1(batch.delay/current_delay), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
         #            dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), factors)
 
     def calculate_batch_delay(self, wid, window, batch):
+        """
+            Calculates a new batch delay.
+            We first gather some statistics, see:
+            - calculate_average_client_latency
+            - calculate_average_damage_latency
+            then use them to calculate a number of factors, see:
+            - get_damage_latency_factor
+            - get_elasped_time_factor
+            - get_client_latency_factor
+            - get_damage_packet_queue_size_factor
+            - get_damage_packet_queue_pixels_factor
+            - get_damage_data_queue_factor
+            - get_pending_acks_factor
+            - get_client_backlog_factor
+            which are then used to adjust the batch delay in 'update_batch_delay'.
+        """
         #calculate some values and references we will need:
         avg_client_latency, recent_client_latency = self.calculate_average_client_latency()
         avg_damage_latency, recent_damage_latency = self.calculate_average_damage_latency()
@@ -646,17 +803,15 @@ class ServerSource(object):
         factors.append(self.get_client_backlog_factor(window, ack_pending, avg_client_latency, time.time()-avg_client_latency))
         self.update_batch_delay(batch, factors)
 
-
     def get_encoding(self, wid):
+        """ returns the encoding defined for the window given, or the default encoding """
         batch = self.get_batch_config(wid, False)
         if batch:
             return batch.encoding or self._encoding
         return self._encoding
 
-    def is_cancelled(self, wid, sequence):
-        return sequence>0 and self._damage_cancelled.get(wid, 0)>=sequence
-
     def get_window_pixmap(self, wid, window, sequence):
+        """ Grabs the window's context (pixels) as a pixmap """
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
         window.acknowledge_changes()
@@ -669,6 +824,7 @@ class ServerSource(object):
         return pixmap
 
     def get_window_dimensions(self, window):
+        """ OR and regular windows differ when it comes to getting their size... sigh """
         is_or = isinstance(window, OverrideRedirectWindowModel)
         try:
             if is_or:
@@ -755,6 +911,11 @@ class ServerSource(object):
         gobject.timeout_add(int(batch.delay), send_delayed)
 
     def send_delayed_regions(self, damage_time, wid, window, damage, coding, sequence, options):
+        """ Called by 'send_delayed' when we expire a delayed region,
+            There may be many rectangles within this delayed region,
+            so figure out if we want to send them all or if we
+            just send one full screen update instead.
+        """
         log("send_delayed_regions: processing sequence=%s", sequence)
         if self.is_cancelled(wid, sequence):
             log("send_delayed_regions: dropping request with sequence=%s", sequence)
@@ -812,6 +973,10 @@ class ServerSource(object):
             self._process_damage_region(damage_time, pixmap, wid, x, y, w, h, coding, sequence, options)
 
     def _process_damage_region(self, damage_time, pixmap, wid, x, y, w, h, coding, sequence, options):
+        """
+            Called by 'damage_now' or 'send_delayed_regions' to process a damage region,
+            we extract the rgb data from the pixmap and place it on the damage queue.
+        """
         process_damage_time = time.time()
         data = get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, w, h, coding, sequence, options)
         if data:
@@ -820,6 +985,10 @@ class ServerSource(object):
             self._damage_data_queue.put(data)
 
     def data_to_packet(self):
+        """
+            This runs in a separate thread and calls 'queue_damage_packet'
+            with each data packet obtained from 'make_data_packet'.
+        """
         while not self._closed:
             item = self._damage_data_queue.get(True)
             if item is None:
@@ -836,6 +1005,14 @@ class ServerSource(object):
                 log.error("error processing damage data: %s", e, exc_info=True)
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
+        """
+            Adds the given packet to the damage_packet_queue,
+            (warning: this runs from the non-UI thread 'data_to_packet')
+            we also record a number of statistics:
+            - damage packet queue size
+            - number of pixels in damage packet queue
+            - damage latency (via a callback once the packet is actually sent)
+        """
         #log("queue_damage_packet: damage elapsed time=%s ms, queue size=%s", dec1(1000*(time.time()-damage_time)), len(self._damage_packet_queue))
         wid = packet[1]
         width = packet[4]
@@ -861,6 +1038,11 @@ class ServerSource(object):
         gobject.idle_add(self.may_calculate_batch_delay, wid, None, batch)
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):
+        """
+            The client is acknoledging a damage packet,
+            we record the 'client decode time' (provided by the client itself)
+            and the "client latency".
+        """
         log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
         self._last_client_packet_sequence = damage_packet_sequence
         client_decode_list = self._client_decode_time.setdefault(wid, maxdeque(maxlen=NRECS))
@@ -882,6 +1064,15 @@ class ServerSource(object):
         self._client_latency.append((now, width*height, latency))
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
+        """
+            Picture encoding - non-UI thread.
+            Converts a damage item picked from the 'damage_data_queue'
+            by the 'data_to_packet' thread and returns a packet
+            ready for sending by the network layer.
+            x264 and vpx use 'video_encode', mmap will use 'mmap_send',
+            'rgb24', 'jpeg' and 'png' are handled within.
+            
+        """
         if self.is_cancelled(wid, sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
@@ -945,6 +1136,15 @@ class ServerSource(object):
         return packet
 
     def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
+        """
+            This method is used by make_data_packet to encode frames using x264 or vpx.
+            Video encoders only deal with fixed dimensions,
+            so we must clean and reinitialize the encoder if the window dimensions
+            has changed.
+            Since this runs in the non-UI thread 'data_to_packet', we must
+            use the 'video_encoder_lock' to prevent races.
+             
+        """
         assert coding in ENCODINGS
         assert x==0 and y==0, "invalid position: %sx%s" % (x,y)
         #time_before = time.clock()
@@ -981,6 +1181,10 @@ class ServerSource(object):
             self._video_encoder_lock.release()
 
     def _mmap_send(self, data):
+        """
+            Sends 'data' to the client via the mmap shared memory region,
+            called by 'make_data_packet' from the non-UI thread 'data_to_packet'.
+        """
         #This is best explained using diagrams:
         #mmap_area=[&S&E-------------data-------------]
         #The first pair of 4 bytes are occupied by:
