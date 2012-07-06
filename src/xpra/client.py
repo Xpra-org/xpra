@@ -662,6 +662,8 @@ class XpraClient(XpraClientBase):
         root_w, root_h = get_root_size()
         log.debug("sending updated screen size to server: %sx%s", root_w, root_h)
         self.send(["desktop_size", root_w, root_h])
+        #update the max packet size (may have gone up):
+        self.set_max_packet_size()
 
     def _process_new_common(self, packet, override_redirect):
         (wid, x, y, w, h, metadata) = packet[1:7]
