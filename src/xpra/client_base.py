@@ -76,7 +76,7 @@ class XpraClientBase(gobject.GObject):
 
     def __init__(self, opts):
         gobject.GObject.__init__(self)
-        self.exit_code = 1
+        self.exit_code = None
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.jpegquality = opts.jpegquality
@@ -131,19 +131,23 @@ class XpraClientBase(gobject.GObject):
     def run(self):
         raise Exception("override me!")
 
-    def quit(self, *args):
+    def quit(self, exit_code=0):
+        if self.exit_code is None:
+            self.exit_code = exit_code
         raise Exception("override me!")
 
     def _process_disconnect(self, packet):
         log.error("server requested disconnect: %s", packet[1:])
-        self.quit()
-        return
+        self.quit(0)
+
+    def _process_connection_lost(self, packet):
+        log.error("Connection lost")
+        self.quit(1)
 
     def _process_challenge(self, packet):
         if not self.password_file:
             log.error("password is required by the server")
-            self.exit_code = 2
-            self.quit()
+            self.quit(2)
             return
         import hmac
         try:
@@ -151,8 +155,7 @@ class XpraClientBase(gobject.GObject):
             password = passwordFile.read()
         except IOError, e:
             log.error("failed to open password file %s: %s", self.password_file, e)
-            self.exit_code = 3
-            self.quit()
+            self.quit(3)
             return
         salt = packet[1]
         challenge_response = hmac.HMAC(password, salt)
@@ -166,17 +169,12 @@ class XpraClientBase(gobject.GObject):
         self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
-            self.exit_code = 1
-            self.quit()
+            self.quit(4)
 
     def _process_set_deflate(self, packet):
         #this tell us the server has set its compressor
         #(the decompressor has been enabled - see protocol)
         log.debug("set_deflate: %s", packet[1:])
-
-    def _process_connection_lost(self, packet):
-        log.error("Connection lost")
-        self.quit()
 
     def _process_gibberish(self, packet):
         (_, data) = packet
@@ -238,13 +236,12 @@ class GLibXpraClient(XpraClientBase):
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, *args):
+    def quit(self, exit_code):
+        if self.exit_code is None:
+            self.exit_code = exit_code
         self.cleanup()
         gobject.timeout_add(50, self.glib_mainloop.quit)
 
-    def _process_connection_lost(self, packet):
-        log("Connection lost")
-        self.quit()
 
 class ScreenshotXpraClient(GLibXpraClient):
     """ This client does one thing only:
@@ -257,7 +254,7 @@ class ScreenshotXpraClient(GLibXpraClient):
         def screenshot_timeout(*args):
             self.exit_code = 1
             log.error("timeout: did not receive the screenshot")
-            self.quit()
+            self.quit(5)
         gobject.timeout_add(10*1000, screenshot_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
@@ -268,8 +265,7 @@ class ScreenshotXpraClient(GLibXpraClient):
         f.write(img_data)
         f.close()
         log.info("screenshot %sx%s saved to: %s", w, h, self.screenshot_filename)
-        self.exit_code = 0
-        self.quit()
+        self.quit(0)
 
     def init_packet_handlers(self):
         GLibXpraClient.init_packet_handlers(self)
@@ -290,7 +286,7 @@ class InfoXpraClient(GLibXpraClient):
         def info_timeout(*args):
             self.exit_code = 1
             log.error("timeout: did not receive the info")
-            self.quit()
+            self.quit(5)
         gobject.timeout_add(10*1000, info_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
@@ -300,8 +296,7 @@ class InfoXpraClient(GLibXpraClient):
         if props:
             for k,v in props.items():
                 log.info("%s=%s", k, v)
-        self.exit_code = 0
-        self.quit()
+        self.quit(0)
 
     def make_hello(self, challenge_response=None):
         capabilities = GLibXpraClient.make_hello(self, challenge_response)
@@ -317,9 +312,8 @@ class VersionXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts):
         def version_timeout(*args):
-            self.exit_code = 1
             log.error("timeout: did not receive the version")
-            self.quit()
+            self.quit(5)
         gobject.timeout_add(10*1000, version_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
@@ -327,8 +321,7 @@ class VersionXpraClient(GLibXpraClient):
         log.debug("process_hello: %s", packet)
         props = packet[1]
         log.info("%s" % props.get("version"))
-        self.exit_code = 0
-        self.quit()
+        self.quit(0)
 
     def make_hello(self, challenge_response=None):
         capabilities = GLibXpraClient.make_hello(self, challenge_response)
@@ -342,12 +335,10 @@ class StopXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts):
         def stop_timeout(*args):
-            self.exit_code = 1
             log.error("timeout: server did not disconnect us")
-            self.quit()
+            self.quit(5)
         gobject.timeout_add(5*1000, stop_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
     def _process_hello(self, packet):
         self.send(["shutdown-server"])
-        self.exit_code = 0

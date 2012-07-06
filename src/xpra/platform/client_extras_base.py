@@ -122,7 +122,7 @@ class ClientExtrasBase(object):
                 log.error("failed to set window icon %s: %s, continuing", window_icon, e)
 
     def quit(self, *args):
-        self.client.quit()
+        self.client.quit(0)
 
     def exit(self):
         self.close_about()

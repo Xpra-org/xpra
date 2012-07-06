@@ -236,8 +236,9 @@ class XpraClient(XpraClientBase):
         return  self.exit_code
 
     def quit(self, exit_code=0):
+        if self.exit_code is None:
+            self.exit_code = exit_code
         self.cleanup()
-        self.exit_code = exit_code
         gobject.timeout_add(50, gtk_main_quit_really)
 
     def cleanup(self):
@@ -532,7 +533,7 @@ class XpraClient(XpraClientBase):
         return True
 
     def _process_ping_echo(self, packet):
-        (echoedtime, l1, l2, l3, cl) = packet[1:6]
+        echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         diff = int(1000*time.time()-echoedtime)
         self.server_latency.append(diff)

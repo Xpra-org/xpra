@@ -357,7 +357,7 @@ class ClientWindow(gtk.Window):
         return True
 
     def quit(self):
-        self._client.quit()
+        self._client.quit(0)
 
     def void(self):
         pass
