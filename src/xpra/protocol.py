@@ -397,8 +397,6 @@ class Protocol(object):
             else:
                 read_buffer = buf
             bl = len(read_buffer)
-            if self.max_packet_size>0 and bl>self.max_packet_size:
-                return self._call_connection_lost("read buffer too big: %s (maximum is %s), dropping this connection!" % (bl, self.max_packet_size))
             while not self._closed:
                 bl = len(read_buffer)
                 if bl<=0:
@@ -427,8 +425,18 @@ class Protocol(object):
                         read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
 
+                if current_packet_size>self.max_packet_size:
+                    #this packet is seemingly too big, but check again from the main UI thread
+                    #this gives 'set_max_packet_size' a chance to run
+                    def check_packet_size(size_to_check):
+                        log.info("check_packet_size(%s) limit is %s", size_to_check, self.max_packet_size)
+                        if size_to_check>self.max_packet_size:
+                            return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s), dropping this connection!" %
+                                                              (size_to_check, self.max_packet_size))
+                    gobject.idle_add(check_packet_size, current_packet_size)
+
                 if current_packet_size>0 and bl<current_packet_size:
-                    # incomplete packet
+                    # incomplete packet, wait for the rest to arrive
                     break
 
                 #chop this packet from the buffer:
