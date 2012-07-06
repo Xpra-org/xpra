@@ -1065,7 +1065,6 @@ class ServerSource(object):
         wid = packet[1]
         width = packet[4]
         height = packet[5]
-        batch = self.get_batch_config(wid)
         def damage_packet_sent():
             #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
             damage_packet_sequence = packet[8]
@@ -1077,13 +1076,11 @@ class ServerSource(object):
             ack_pending[damage_packet_sequence] = now, width*height
             #log("damage_packet_sent: took %s ms for %s pixels of packet_sequence %s, %s ns per pixel",
             #         dec1(1000*damage_latency), width*height, packet_sequence, dec1(1000*1000*1000*damage_latency/(width*height)))
-            gobject.idle_add(self.may_calculate_batch_delay, wid, None, batch)
         now = time.time()
         self._damage_packet_qsizes.append((now, len(self._damage_packet_queue)))
         self._damage_packet_qpixels.append((now, sum([pixels for _,pixels,_ in list(self._damage_packet_queue)])))
         self._damage_packet_queue.append((packet, width*height, damage_packet_sent))
-        self._protocol.source_has_more()
-        gobject.idle_add(self.may_calculate_batch_delay, wid, None, batch)
+        gobject.idle_add(self._protocol.source_has_more)
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):
         """
