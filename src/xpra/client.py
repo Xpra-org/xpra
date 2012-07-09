@@ -737,9 +737,10 @@ class XpraClient(XpraClientBase):
         self._client_extras.close_notify(nid)
 
     def _process_window_metadata(self, packet):
-        (wid, metadata) = packet[1:3]
-        window = self._id_to_window[wid]
-        window.update_metadata(metadata)
+        wid, metadata = packet[1:3]
+        window = self._id_to_window.get(wid)
+        if window:
+            window.update_metadata(metadata)
 
     def _process_configure_override_redirect(self, packet):
         (wid, x, y, w, h) = packet[1:6]
