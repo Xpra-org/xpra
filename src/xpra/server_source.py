@@ -30,10 +30,8 @@ except:
     from Queue import Queue         #@Reimport
 from collections import deque
 from math import log as mathlog
-def logp2(x):
-    return mathlog(1+max(1, x), 2)
-def logp10(x):
-    return mathlog(9+max(1, x), 10)
+def logp(x):
+    return mathlog(1+x, 2)
 
 #it would be nice to be able to get rid of those 2 imports here:
 from wimpiggy.window import OverrideRedirectWindowModel
@@ -162,8 +160,13 @@ class ServerSource(object):
                                                     #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
         self._client_latency = maxdeque(NRECS)      #how long it took for a packet to get to the client and get the echo back.
                                                     #last NRECS: (echo_time, no of pixels, client_latency)
-        self._damage_latency = maxdeque(NRECS)      #records how long it took for a damage request to be sent
+        self._damage_in_latency = maxdeque(NRECS)   #records how long it took for a damage request to be sent
                                                     #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
+        self._damage_out_latency = maxdeque(NRECS)  #records how long it took for a damage request to be processed
+                                                    #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
+        self._damage_send_speed = maxdeque(NRECS)   #how long it took to send damage packets (this is not a sustained speed)
+                                                    #last NRECS: (sent_time, no_of_pixels, elapsed_time)
+        self._last_packet_send_stats = None         #used by _damage_send_speed
         self._client_decode_time = {}               #records how long it took the client to decode frames:
                                                     #last NRECS per window: (ack_time, no of pixels, decoding_time)
         self._encoding_stats = maxdeque(NRECS)      #encoding statistics
@@ -225,14 +228,14 @@ class ServerSource(object):
 
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, cb, have_more = None, None, False
+        packet, start_send_cb, end_send_cb, have_more = None, None, None, False
         if not self._closed:
             if self._ordinary_packets:
                 packet = self._ordinary_packets.pop(0)
             elif len(self._damage_packet_queue)>0:
-                packet, _, cb = self._damage_packet_queue.popleft()
+                packet, _, start_send_cb, end_send_cb = self._damage_packet_queue.popleft()
             have_more = packet is not None and (bool(self._ordinary_packets) or len(self._damage_packet_queue)>0)
-        return packet, cb, have_more
+        return packet, start_send_cb, end_send_cb, have_more
 
     def queue_ordinary_packet(self, packet):
         """ This method queues non-damage packets (higher priority) """
@@ -337,11 +340,16 @@ class ServerSource(object):
             info["output_packetcount"] = self._protocol.output_packetcount
             info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         info["output_mmap_bytecount"] = self._mmap_bytes_sent
-        latencies = [x for _, _, _, x in list(self._damage_latency)]
+        latencies = [x for _, _, _, x in list(self._damage_in_latency)]
         if len(latencies)>0:
-            info["min_damage_latency"] = int(1000*min(latencies))
-            info["max_damage_latency"] = int(1000*max(latencies))
-            info["avg_damage_latency"] = int(1000*sum(latencies)/len(latencies))
+            info["min_damage_in_latency"] = int(1000*min(latencies))
+            info["max_damage_in_latency"] = int(1000*max(latencies))
+            info["avg_damage_in_latency"] = int(1000*sum(latencies)/len(latencies))
+        latencies = [x for _, _, _, x in list(self._damage_out_latency)]
+        if len(latencies)>0:
+            info["min_damage_out_latency"] = int(1000*min(latencies))
+            info["max_damage_out_latency"] = int(1000*max(latencies))
+            info["avg_damage_out_latency"] = int(1000*sum(latencies)/len(latencies))
         latencies = [int(1000*latency) for (_, _, latency) in self._client_latency]
         if len(latencies)>0:
             info["min_client_latency"] = int(min(latencies))
@@ -359,7 +367,7 @@ class ServerSource(object):
             info["min_damage_packet_queue_size"] = int(min(qsizes))
             info["max_damage_packet_queue_size"] = int(max(qsizes))
             info["avg_damage_packet_queue_size"] = int(sum(qsizes)/len(qsizes))
-        qpixels = [pixels for _,pixels,_ in list(self._damage_packet_queue)]
+        qpixels = [x[1] for x in list(self._damage_packet_queue)]
         info["damage_packet_queue_pixels"] = sum(qpixels)
         if len(qpixels):
             info["min_damage_packet_queue_pixels"] = int(min(qpixels))
@@ -504,135 +512,81 @@ class ServerSource(object):
             all_pixels = [pixels for event_time,pixels in last_events if event_time>event_min_time]
             if len(all_pixels)>batch.max_events or sum(all_pixels)>batch.max_pixels:
                 #force batching: set it above min_delay
-                batch.delay = max(batch.min_delay+1, batch.delay)
+                batch.delay = max(batch.min_delay+0.01, batch.delay)
 
-    def calculate_time_weighted_average(self, data, recent_time=1):
+    def calculate_time_weighted_average(self, data):
         """
             Given a list of items of the form [(event_time, value)],
             this method calculates a time-weighted average where
             recent values matter a lot more than more ancient ones.
-            Also calculates a 'recent' average which only takes
-            into account events that happened no more than 'recent_time'
-            seconds ago.
+            The 'recent' average is even more slanted towards recent values.
         """
         now = time.time()
-        tv, tw = 0.0, 0.0
-        rv, rw = 0.0, 0.0
+        tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
         for event_time, value in data:
             #newer matter more:
-            w = 1.0/(1.0+(now-event_time)**2)
+            w = 1.0/(1.0+(now-event_time))
             tv += value*w
             tw += w
-            if event_time>(now-recent_time):
-                rv += value*w
-                rw += w
-        avg = tv / tw
-        if rv>0:
-            #found some recent values, average them:
-            recent = rv/rw
-        else:
-            recent = avg
-        return avg, recent
+            w = 1.0/(0.1+(now-event_time)**2)
+            rv += value*w
+            rw += w
+        return tv / tw, rv / rw
 
-    def calculate_average_damage_latency(self):
+    def calculate_timesize_weighted_average(self, data, sizeunit=1):
         """
-            Returns the time-weighted average and recent average
-            for the "damage latency".
-            (the time it takes for damage requests to be processed and sent)
-            See calculate_time_weighted_average()
+            This is a time weighted average where the size
+            of each record also gives it a weight boost.
+            This is to prevent small packets from skewing the average.
+            Data format: (event_time, size, elapsed_time)
         """
-        if len(self._damage_latency)==0:
-            return  0, 0
-        data = [(when, latency) for when, _, _, latency in list(self._damage_latency)]
-        return  self.calculate_time_weighted_average(data)
-
-    def get_damage_latency_factor(self, avg, recent_avg):
-        """
-            Returns the batch delay change factor based on changes
-            to the "damage-latency".
-        """
-        if len(self._damage_latency)==0:
-            return  None            #not enough records yet
-        #(sent_time, no of pixels, actual batch delay, damage_latency)
-        sent_time, _, _, last_latency = self._damage_latency[-1]
+        size_avg = sum([x for _, x, _ in data])/len(data)
         now = time.time()
-        #if the last record is old, make it count less
-        weight_multiplier = min(1, 1/(now-sent_time))
-        if last_latency>0.2:
-            weight_multiplier += 1
-        values = [x for _, _, _, x in list(self._damage_latency)]
-        #log("damage_latency last 10=%s, average=%s, recent_avg=%s", last_10, avg, recent_avg)
-        if max(values)==last_latency:
-            weight = max(2.0, weight_multiplier*8)
-            factor = logp2(last_latency/min(avg,recent_avg))+1
-            msg = "damage latency highest: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
-        if recent_avg<last_latency:
-            weight = max(1.0, weight_multiplier*4)
-            factor = logp2(last_latency/recent_avg)+0.5
-            msg = "damage latency above recent average: %s (recent average=%s)" % (dec1(1000*last_latency), dec1(1000*recent_avg))
-        if avg<last_latency:
-            factor = logp2(last_latency/avg)
-            weight = max(1.0, weight_multiplier*2)
-            msg = "damage latency above average: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
+        tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
+        for event_time, size, elapsed_time in data:
+            pw = logp(size/size_avg)
+            size_ps = max(1, size*sizeunit/elapsed_time)
+            w = pw/(1.0+(now-event_time))
+            tv += w*size_ps
+            tw += w
+            w = pw/(0.1+(now-event_time)**2)
+            rv += w*size_ps
+            rw += w
+        return tv / tw, rv / rw
+
+    def calculate_for_target(self, msg, target_value, avg_value, recent_value, div=1, slope=0.5):
+        """
+            Calculates factor and weight to try to bring us closer to 'target_value'.
+
+            The factor is a function of how far the 'recent_value' if from it. (logp)
+            It will be greater than 1.0 if recent_value is higher than the target_value,
+            and less than 1.0 if it is lower.
+
+            The weight is a function of how far the 'recent_value' is from the 'avg_value'.
+
+            The 'slope' controls how the weight is calculated: the lower the slope (cannot be zero),
+            the more the weight will be high in cases of differences between recent and average,
+            the higher the slope, the more the weight will remain close to 1.
+        """
+        factor = logp((slope+recent_value)/(slope+target_value)/div)
+        weight = logp((slope+abs(recent_value-target_value)) / (slope+abs(avg_value-target_value)))
+        return  msg, factor, weight
+
+    def calculate_for_average(self, msg, avg_value, recent_value, div=1):
+        """
+            Calculates factor and weight based on how far we are from the average value.
+            This is used by metrics for which we do not know the optimal target value. 
+        """
+        factor = logp(avg_value/recent_value/div)
+        if factor==0:
+            weight = 0
+        elif factor<1:
+            weight = logp(1/factor)
         else:
-            factor = 0.9
-            weight = weight_multiplier
-            msg = "damage latency ok: %s (average=%s)" % (dec1(1000*last_latency), dec1(1000*avg))
-        #log.info("get_damage_latency_factor(%s,%s)=%s", avg, recent_avg, (msg, factor, weight))
-        return [msg, factor, weight]
+            weight = factor
+        return  msg, factor, weight
 
-    def get_elasped_time_factor(self, batch, recent_damage_latency):
-        """
-            Returns the batch delay change factor based on
-            the time since we last re-calculated it.
-            If nothing happens for a while then we can reduce the batch delay,
-            however we must ensure this is not caused by a high damage latency
-            so we ignore short elapsed times.
-        """
-        if batch.last_updated==0 or len(self._damage_latency)==0:
-            return  None
-        _, _, _, last_latency = self._damage_latency[-1]
-        #if damage latency is high, it could just be that the
-        #ui thread is too busy, so only fire if nothing happens for a substantial amount of time:
-        ignore_time = 2*max(last_latency, recent_damage_latency*2)
-        ignore_count = 2 + ignore_time / batch.recalculate_delay
-        elapsed = time.time()-batch.last_updated
-        n_skipped_calcs = elapsed / batch.recalculate_delay
-        #the longer the elapsed time, the more we slash:
-        weight = max(0, logp2(n_skipped_calcs-ignore_count)-1)
-        return ["delay not updated for %s ms (skipped %s times)" % (dec1(1000*elapsed), int(n_skipped_calcs)),
-                0.1, weight]
-
-    def calculate_average_client_latency(self):
-        """
-            Returns the time-weighted average and recent average
-            for the "client latency".
-            (how long it takes for a packet to get to the client and get the echo back)
-            See calculate_time_weighted_average()
-        """
-        if len(self._client_latency)==0:
-            return  0.1, 0.1
-        data = [(when, latency) for when, _, latency in list(self._client_latency)]
-        return  self.calculate_time_weighted_average(data)
-
-    def get_client_latency_factor(self, avg_client_latency, recent_client_latency):
-        """
-            Returns the batch delay change factor based on
-            the "client latency".
-            We want to keep client latency as low as can be.
-        """
-        if avg_client_latency is None or recent_client_latency is None:
-            return  None
-        pct_change = dec1(100*((recent_client_latency/avg_client_latency)-1))
-        if pct_change>=0:
-            factor = logp2(recent_client_latency/avg_client_latency)
-            return ["recent client latency is %s%% above average (%s vs %s)" % (pct_change, dec1(1000*recent_client_latency), dec1(1000*avg_client_latency)),
-                    factor, 0.5+pct_change/200]
-        else:
-            return ["recent client latency is %s%% below average (%s vs %s)" % (-pct_change, dec1(1000*recent_client_latency), dec1(1000*avg_client_latency)),
-                    1.0+(pct_change/100), 0.1]
-
-    def queue_inspect(self, qsizes, qsize):
+    def queue_inspect(self, time_values, target=0, div=1):
         """
             Utility method used by:
             - get_damage_packet_queue_size_factor
@@ -642,72 +596,47 @@ class ServerSource(object):
             figure out if things are getting better or worse.
         """
         #inspect a queue size history: figure out if things are better or worse than before
-        if qsize==0:
-            return  "OK (empty)", 0.9, 0.1
-        notime = [x for _,x in list(qsizes)]
-        factor = logp10(qsize)
-        last_10 = notime[-10:]
-        if max(last_10)<=qsize:
-            #it's the worst it's been recently, ouch increase faster
-            return "%s worst of %s" % (qsize, last_10), factor+0.2, 1
-        elif min(last_10)>=qsize:
-            #it's the best it's been recently
-            return "%s best of %s" % (qsize, last_10), 1, 0.1
-        elif len(last_10)>4 and last_10[-1]>qsize and last_10[-2]>qsize:
-            return "%s improving: %s" % (qsize, last_10), (factor+2)/3.0, 0.1
-        else:
-            return "last_10=%s, min=%s, max=%s, current=%s" % (last_10, min(last_10), max(last_10), qsize), factor, 0.1
+        if len(time_values)==0:
+            return  "(empty)", 1.0, 0.0
+        avg, recent = self.calculate_time_weighted_average(list(time_values))
+        msg = "avg=%s, recent=%s, target=%s, div=%s" % (avg, recent, target, div)
+        return  self.calculate_for_target(msg, target, avg, recent, div=div)
 
-    def get_damage_packet_queue_size_factor(self):
-        """
-            Returns the batch delay change factor based on
-            the size of the packet queue.
-            Although the number of packets waiting is important,
-            it is not as important as the number of pixels in them.
-            See:
-            - queue_inspect
-            - get_damage_packet_queue_pixels_factor
-        """
-        dp_qsize = len(self._damage_packet_queue)
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes, dp_qsize)
-        return ["damage packet queue size: %s" % msg, factor, weight/2]
 
-    def get_damage_packet_queue_pixels_factor(self):
+    def calculate_average_damage_in_latency(self):
         """
-            Returns the batch delay change factor based on
-            the number of pixels waiting in the packet queue.
-            See 'queue_inspect'
+            Returns the time-weighted average and recent average
+            for the "damage in latency".
+            (the time it takes for damage requests to be processed only)
         """
-        pixels_in_packet_queue = sum([pixels for _,pixels,_ in list(self._damage_packet_queue)])
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, pixels_in_packet_queue)
-        return ["damage packet queue pixels: %s" % msg, factor, weight*2]
+        if len(self._damage_in_latency)==0:
+            return  0, 0
+        data = [(when, latency) for when, _, _, latency in list(self._damage_in_latency)]
+        return  self.calculate_time_weighted_average(data)
 
-    def get_damage_data_queue_factor(self):
+    def calculate_average_damage_out_latency(self):
         """
-            Returns the batch delay change factor based on
-            the number of items in the damage queue.
-            This is an important metric since each item will
-            consume a fair amount of memory and each will later on
-            go through the other queues.
-            See 'queue_inspect'
+            Returns the time-weighted average and recent average
+            for the "damage out latency".
+            (the time it takes for damage requests to be processed and sent out)
         """
-        dd_qsize = self._damage_data_queue.qsize()
-        #contains pixmaps before they get converted to a packet that goes to the damage_packet_queue
-        msg, factor, weight = self.queue_inspect(self._damage_data_qsizes, dd_qsize)
-        return ["damage data queue: %s" % msg, factor, weight*4]
+        if len(self._damage_out_latency)==0:
+            return  0, 0
+        data = [(when, latency) for when, _, _, latency in list(self._damage_out_latency)]
+        return  self.calculate_time_weighted_average(data)
 
-    def get_pending_acks_factor(self, ack_pending):
+    def calculate_average_client_latency(self):
         """
-            Returns the batch delay change factor based on
-            the number of damage ACKs we are still waiting for.
-            Because of latency, it is normal to have a few pending,
-            so we only use this factor to reduce the batch delay
-            when there is absolutely nothing pending, not to increase it.
+            Returns the time-weighted average and recent average
+            for the "client latency".
+            (how long it takes for a packet to get to the client and get the echo back)
+            See calculate_time_weighted_average()
         """
-        if ack_pending is None or len(ack_pending)==0:
-            return  ["client is fully up to date: no damage ACKs pending",
-                0.5, 1.0]
-        return ["client has some ACKs pending: %s" % len(ack_pending), 1.0, 0.05]
+        if len(self._client_latency)==0:
+            #assume 100ms until we get some data...
+            return  0.1, 0.1
+        data = [(when, latency) for when, _, latency in list(self._client_latency)]
+        return  self.calculate_time_weighted_average(data)
 
     def calculate_client_backlog(self, ack_pending, sent_before):
         """
@@ -715,7 +644,7 @@ class ServerSource(object):
             (which is based on the client latency),
             we calculate how far behind the client is:
             how many packets and how many pixels it should have processed
-            by now  but has not.
+            by now but has not.
         """
         if not ack_pending:
             return  0, 0
@@ -733,7 +662,7 @@ class ServerSource(object):
             the number of pixels which can be considered 'low'
             in terms of backlog.
             Generally, just one full frame, more with mmap
-            because it is so fast (things can accumulate more quickly).
+            because it is so fast that things can accumulate more quickly.
         """
         low_limit = 1024*1024
         if window:
@@ -744,7 +673,148 @@ class ServerSource(object):
                 low_limit *= 4
         return low_limit
 
-    def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before):
+    def calculate_client_decode_speed(self, wid):
+        """
+            This is a time and pixel size weighted average.
+            The values are in pixels per second.
+        """
+        decode_time_list = self._client_decode_time.get(wid)
+        if not decode_time_list:
+            return  None, None
+        #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
+        return  self.calculate_timesize_weighted_average(list(decode_time_list), sizeunit=1000*1000)
+
+    def calculate_network_send_speed(self):
+        """
+            This is a time and packet size weighted average.
+            This values are in bytes per second.
+        """
+        if len(self._damage_send_speed)==0:
+            return  None, None
+        return  self.calculate_timesize_weighted_average(list(self._damage_send_speed))
+
+    def get_client_decode_speed_factor(self, avg, recent):
+        """
+            Returns the batch delay change factor based on changes
+            to the "client decode time".
+        """
+        if avg is None or recent is None:
+            return  None
+        msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(avg/1000/1000), dec1(recent/1000/1000))
+        return  self.calculate_for_target(msg, 25000000, avg, recent)
+
+    def get_damage_in_latency_factor(self, avg, recent):
+        """
+            Returns the batch delay change factor based on changes
+            to the "damage-in-latency".
+        """
+        if len(self._damage_in_latency)==0:
+            return  None            #not enough records yet
+        #(sent_time, no of pixels, actual batch delay, damage_latency)
+        msg = "damage processing latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
+        target_latency = 0.010  #10ms
+        return self.calculate_for_target(msg, target_latency, avg, recent)
+
+    def get_damage_out_latency_factor(self, avg, recent):
+        """
+            Returns the batch delay change factor based on changes
+            to the "damage-out-latency".
+        """
+        if len(self._damage_in_latency)==0:
+            return  None            #not enough records yet
+        #(sent_time, no of pixels, actual batch delay, damage_latency)
+        msg = "damage send latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
+        target_latency = 0.020  #20ms
+        return self.calculate_for_target(msg, target_latency, avg, recent)
+
+    def get_network_send_speed_factor(self, avg_send_speed, recent_send_speed):
+        if avg_send_speed is None or recent_send_speed is None:
+            return  None
+        msg = "network send speed: avg=%s, recent=%s (KBytes/s)" % (int(avg_send_speed/1024), int(recent_send_speed/1024))
+        return  self.calculate_for_average(msg, avg_send_speed, recent_send_speed)
+
+    def get_elasped_time_factor(self, batch, highest_latency):
+        """
+            Returns the batch delay change factor based on
+            the time since we last re-calculated it.
+            If nothing happens for a while then we can reduce the batch delay,
+            however we must ensure this is not caused by a high damage latency
+            so we ignore short elapsed times.
+        """
+        if batch.last_updated==0 or highest_latency>0.25:
+            return  None
+        #if damage latency is high, it could just be that the
+        #ui thread is too busy, so only fire if nothing happens for a substantial amount of time:
+        ignore_time = 2*highest_latency
+        ignore_count = 2 + ignore_time / batch.recalculate_delay
+        elapsed = time.time()-batch.last_updated
+        n_skipped_calcs = elapsed / batch.recalculate_delay
+        #the longer the elapsed time, the more we slash:
+        weight = logp(max(0, n_skipped_calcs-ignore_count))
+        return ["delay not updated for %s ms (skipped %s times)" % (dec1(1000*elapsed), int(n_skipped_calcs)),
+                0, weight]
+
+    def get_client_latency_factor(self, avg_client_latency, recent_client_latency):
+        """
+            Returns the batch delay change factor based on
+            the "client latency".
+            We want to keep client latency as low as can be.
+        """
+        if len(self._client_latency)==0 or avg_client_latency is None or recent_client_latency is None:
+            return  None
+        target_latency = 0.010
+        msg = "client latency: avg=%s, recent=%s" % (dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
+        return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency)
+
+    def get_damage_packet_queue_size_factor(self):
+        """
+            Returns the batch delay change factor based on
+            the size of the packet queue.
+            Although the number of packets waiting is important,
+            it is not as important as the number of pixels in them.
+            See:
+            - queue_inspect
+            - get_damage_packet_queue_pixels_factor
+        """
+        msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes, target=1)
+        return ["damage packet queue size: %s" % msg, factor, weight/2.0]
+
+    def get_damage_packet_queue_pixels_factor(self, low_limit):
+        """
+            Returns the batch delay change factor based on
+            the number of pixels waiting in the packet queue.
+            See 'queue_inspect'
+        """
+        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=1, div=low_limit/2.0)
+        return ["damage packet queue pixels: %s" % msg, factor, weight]
+
+    def get_damage_data_queue_factor(self):
+        """
+            Returns the batch delay change factor based on
+            the number of items in the damage queue.
+            This is an important metric since each item will
+            consume a fair amount of memory and each will later on
+            go through the other queues.
+            See 'queue_inspect'
+        """
+        msg, factor, weight = self.queue_inspect(self._damage_data_qsizes)
+        if factor>1.0:
+            weight += factor
+        return ["damage data queue: %s" % msg, factor, weight]
+
+    def get_pending_acks_factor(self, ack_pending):
+        """
+            Returns the batch delay change factor based on
+            the number of damage ACKs we are still waiting for.
+            Because of latency, it is normal to have a few pending,
+            so we only use this factor to reduce the batch delay
+            when there is absolutely nothing pending, not to increase it.
+        """
+        if ack_pending is None or len(ack_pending)==0:
+            return  ["client is fully up to date: no damage ACKs pending", 0, 1.0]
+        return ["client has some ACKs pending: %s" % len(ack_pending), 1.0, 0]
+
+    def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before, low_limit):
         """
             Returns the batch delay change factor based on
             the client pixels and packets latency-adjusted backlog count.
@@ -753,31 +823,14 @@ class ServerSource(object):
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
         self._last_client_delta = self.calculate_client_backlog(ack_pending, sent_before)
         packets_backlog, pixels_backlog = self._last_client_delta
-        if pixels_backlog==0 and packets_backlog==0 and ack_pending is not None and len(ack_pending)<5:
-            factor = 0.6+len(ack_pending)/10.0
-            return  ["client is up to date: only %s packets pending, within average latency bounds of %s ms" % (len(ack_pending), dec1(1000*avg_client_latency)),
-                     factor, 0.5]
-        #diff the backlogs since last time:
-        packets_diff = packets_backlog-last_packets_backlog
-        pixels_diff = pixels_backlog-last_pixels_backlog
-        low_limit = self.calculate_low_limit(window)
-        if packets_diff<0 and pixels_diff<0 and pixels_backlog<(low_limit*4):
-            #things are getting better somewhat
-            factor = 0.6+0.4*pixels_backlog/(low_limit*4)
-            return  ["client is catching up: down from %s to %s packets in queue, %s to %s pixels due" % (last_packets_backlog, packets_backlog, last_pixels_backlog, pixels_backlog),
-                     factor, 0.5]
-        if pixels_backlog<=low_limit and packets_backlog<5:
-            factor = 0.75+0.25*pixels_backlog/low_limit
-            return  ["client is only %s pixels and only %s packets behind" % (pixels_backlog, packets_backlog),
-                     factor, 0.5]
-        factor = max(1.1, min(2, logp2(pixels_backlog/low_limit)))
-        if packets_diff==0:
-            return ["client is still %s packets behind (and %s pixels)" % (packets_backlog, pixels_backlog),
-                    factor, 0.5]
-        if packets_diff>0:
-            factor += 0.25
-        return ["client is falling further behind (from %s to %s packets)" % (last_packets_backlog, packets_backlog),
-                factor, 1.0]
+        packets_factor = logp(packets_backlog)
+        packets_weight = logp((1+packets_backlog)/(1+last_packets_backlog))
+        pixels_factor = logp(pixels_backlog/low_limit)
+        pixels_weight = logp((1+pixels_backlog)/(1+last_pixels_backlog)/low_limit)
+        factor = (packets_factor+pixels_factor)/2
+        weight = (packets_weight+pixels_weight)/2
+        return  ["packets/pixels backlog from %s/%s to %s/%s" % (last_packets_backlog, last_pixels_backlog, packets_backlog, pixels_backlog),
+                 factor, weight]
 
     def update_batch_delay(self, batch, factors):
         """
@@ -814,8 +867,8 @@ class ServerSource(object):
             decimal_delays = [dec1(x) for _,x in batch.last_delays]
             if len(decimal_delays)==0:
                 decimal_delays.append(0)
-            rec = ("update_batch_delay: wid=%s, change factor=%s, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
-                    batch.wid, dec1(batch.delay/current_delay), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+            rec = ("update_batch_delay: wid=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
+                    batch.wid, dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
                     dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), factors)
             self.add_DEBUG_DELAY_MESSAGE(rec)
 
@@ -824,7 +877,8 @@ class ServerSource(object):
             Calculates a new batch delay.
             We first gather some statistics, see:
             - calculate_average_client_latency
-            - calculate_average_damage_latency
+            - calculate_average_damage_in_latency
+            - calculate_average_damage_out_latency
             then use them to calculate a number of factors, see:
             - get_damage_latency_factor
             - get_elasped_time_factor
@@ -832,24 +886,31 @@ class ServerSource(object):
             - get_damage_packet_queue_size_factor
             - get_damage_packet_queue_pixels_factor
             - get_damage_data_queue_factor
-            - get_pending_acks_factor
             - get_client_backlog_factor
             which are then used to adjust the batch delay in 'update_batch_delay'.
         """
         #calculate some values and references we will need:
         avg_client_latency, recent_client_latency = self.calculate_average_client_latency()
-        avg_damage_latency, recent_damage_latency = self.calculate_average_damage_latency()
+        avg_damage_in_latency, recent_damage_in_latency = self.calculate_average_damage_in_latency()
+        avg_damage_out_latency, recent_damage_out_latency = self.calculate_average_damage_out_latency()
         ack_pending = self._damage_ack_pending.get(wid)
+        low_limit = self.calculate_low_limit(window)
+        avg_decode_speed, recent_decode_speed = self.calculate_client_decode_speed(wid)
+        avg_send_speed, recent_send_speed = self.calculate_network_send_speed()
+        max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
         #for each indicator: (description, factor, weight)
         factors = []
-        factors.append(self.get_damage_latency_factor(avg_damage_latency, recent_damage_latency))
-        factors.append(self.get_elasped_time_factor(batch, recent_damage_latency))
+        factors.append(self.get_damage_in_latency_factor(avg_damage_in_latency, recent_damage_in_latency))
+        factors.append(self.get_damage_out_latency_factor(avg_damage_out_latency, recent_damage_out_latency))
+        factors.append(self.get_network_send_speed_factor(avg_send_speed, recent_send_speed))
+        factors.append(self.get_client_decode_speed_factor(avg_decode_speed, recent_decode_speed))
+        factors.append(self.get_elasped_time_factor(batch, max_latency))
         factors.append(self.get_client_latency_factor(avg_client_latency, recent_client_latency))
         factors.append(self.get_damage_packet_queue_size_factor())
-        factors.append(self.get_damage_packet_queue_pixels_factor())
+        factors.append(self.get_damage_packet_queue_pixels_factor(low_limit))
         factors.append(self.get_damage_data_queue_factor())
         factors.append(self.get_pending_acks_factor(ack_pending))
-        factors.append(self.get_client_backlog_factor(window, ack_pending, avg_client_latency, time.time()-avg_client_latency))
+        factors.append(self.get_client_backlog_factor(window, ack_pending, avg_client_latency, time.time()-avg_client_latency, low_limit))
         self.update_batch_delay(batch, factors)
 
     def get_encoding(self, wid):
@@ -1065,21 +1126,28 @@ class ServerSource(object):
         wid = packet[1]
         width = packet[4]
         height = packet[5]
-        def damage_packet_sent():
+        actual_batch_delay = process_damage_time-damage_time
+        def start_send(bytecount):
+            self._last_packet_send_stats = time.time(), bytecount
+        def damage_packet_sent(bytecount):
+            now = time.time()
+            if self._last_packet_send_stats:
+                start_send_time, start_bytecount = self._last_packet_send_stats
+                self._damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
             #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
             damage_packet_sequence = packet[8]
-            now = time.time()
-            damage_latency = now-process_damage_time
-            actual_batch_delay = process_damage_time-damage_time
-            self._damage_latency.append((now, width*height, actual_batch_delay, damage_latency))
+            damage_out_latency = now-process_damage_time
+            self._damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
             ack_pending = self._damage_ack_pending.setdefault(wid, {})
             ack_pending[damage_packet_sequence] = now, width*height
             #log("damage_packet_sent: took %s ms for %s pixels of packet_sequence %s, %s ns per pixel",
             #         dec1(1000*damage_latency), width*height, packet_sequence, dec1(1000*1000*1000*damage_latency/(width*height)))
         now = time.time()
+        damage_in_latency = now-process_damage_time
+        self._damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
+        self._damage_packet_queue.append((packet, width*height, start_send, damage_packet_sent))
         self._damage_packet_qsizes.append((now, len(self._damage_packet_queue)))
-        self._damage_packet_qpixels.append((now, sum([pixels for _,pixels,_ in list(self._damage_packet_queue)])))
-        self._damage_packet_queue.append((packet, width*height, damage_packet_sent))
+        self._damage_packet_qpixels.append((now, sum([x[1] for x in list(self._damage_packet_queue)])))
         gobject.idle_add(self._protocol.source_has_more)
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):

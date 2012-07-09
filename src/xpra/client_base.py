@@ -59,7 +59,7 @@ class ClientSource(object):
         has_more = packet is not None and \
                 (bool(self._priority_packets) or bool(self._ordinary_packets) \
                  or self._mouse_position is not None)
-        return packet, None, has_more
+        return packet, None, None, has_more
 
 
 class XpraClientBase(gobject.GObject):

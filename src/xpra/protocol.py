@@ -156,7 +156,7 @@ class Protocol(object):
             self._flush_one_packet_into_buffer()
         return False
 
-    def _queue_write(self, data, cb=None, flush=False):
+    def _queue_write(self, data, start_cb=None, end_cb=None, flush=False):
         """
             This method should be called with _write_lock held
         """
@@ -164,16 +164,16 @@ class Protocol(object):
             return
         if self.raw_packets or self._compressor is None:
             #raw packets are compressed individually, without the header
-            self._write_queue.put((data, cb))
+            self._write_queue.put((data, start_cb, end_cb))
             return
         c = self._compressor.compress(data)
         if c:
-            self._write_queue.put((c, None))
+            self._write_queue.put((c, None, None))
         if not flush:
             return
         c = self._compressor.flush(zlib.Z_SYNC_FLUSH)
         if c:
-            self._write_queue.put((c, cb))
+            self._write_queue.put((c, start_cb, end_cb))
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -205,9 +205,9 @@ class Protocol(object):
     def _flush_one_packet_into_buffer(self):
         if not self.source:
             return
-        packet, cb, self._source_has_more = self.source.next_packet()
+        packet, start_send_cb, end_send_cb, self._source_has_more = self.source.next_packet()
         if packet is not None:
-            self._add_packet_to_queue(packet, cb)
+            self._add_packet_to_queue(packet, start_send_cb, end_send_cb)
 
     def encode(self, packet):
         """
@@ -257,12 +257,13 @@ class Protocol(object):
         packets.append((0, True, main_packet))
         return packets
 
-    def _add_packet_to_queue(self, packet, cb=None):
+    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
         packets = self.encode(packet)
         if not self.raw_packets:
             assert len(packets)==1
         try:
             self._write_lock.acquire()
+            counter = 0
             for index,compress,data in packets:
                 if self.raw_packets:
                     if compress and self._compression_level>0:
@@ -279,16 +280,20 @@ class Protocol(object):
                     assert index==0
                     l = len(data)
                     header = ("PS%014d" % l).encode('latin1')
-                #fire the callback when the last packet (index==0) makes it out:
-                pcb = None
+                scb, ecb = None, None
+                #fire the start_send_callback just before the first packet is processed:
+                if counter==0:
+                    scb = start_send_cb
+                #fire the end_send callback when the last packet (index==0) makes it out:
                 if index==0:
-                    pcb = cb
+                    ecb = end_send_cb
                 if l<4096 and sys.version<'3':
                     #send size and data together (low copy overhead):
-                    self._queue_write(header+data, pcb, True)
+                    self._queue_write(header+data, scb, ecb, True)
                 else:
                     self._queue_write(header)
-                    self._queue_write(data, pcb, True)
+                    self._queue_write(data, scb, ecb, True)
+                counter += 1
         finally:
             if packet[0]=="set_deflate":
                 level = packet[1]
@@ -309,16 +314,18 @@ class Protocol(object):
                 if item is None:
                     log("write thread: empty marker, exiting")
                     break
-                buf, cb = item
+                buf, start_cb, end_cb = item
                 try:
+                    if start_cb:
+                        start_cb(self.output_bytecount)
                     while buf and not self._closed:
                         written = untilConcludes(self._conn.write, buf)
                         if written:
                             buf = buf[written:]
                             self.output_raw_packetcount += 1
                             self.output_bytecount += written
-                    if cb:
-                        cb()
+                    if end_cb:
+                        end_cb(self.output_bytecount)
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
