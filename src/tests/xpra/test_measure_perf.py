@@ -14,33 +14,43 @@ log = Logger()
 HOME = os.path.expanduser("~/")
 
 #You will probably need to change those:
-IP = "127.0.0.1"       #this is your IP
+IP = "127.0.0.1"            #this is your IP
 PORT = 10000                #the port to test on
 DISPLAY_NO = 10             #the test DISPLAY no to use
 XORG_CONFIG="%s/xorg.conf" % HOME
 XORG_LOG = "%s/Xorg.%s.log" % (HOME, DISPLAY_NO)
 START_SERVER = True         #if False, you are responsible for starting it
                             #and the data will not be available
+
+SETTLE_TIME = 3             #how long to wait before we start measuring
+MEASURE_TIME = 120           #run for N seconds
+SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
+DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
+                            #this is the default value, some tests may override this below
+
 TEST_XPRA = True
 TEST_VNC = True
 
 LIMIT_TESTS = 2
-LIMIT_TESTS = 99999
+LIMIT_TESTS = 99999         #to limit the total number of tests being run
 
 #some commands (games especially) may need longer to startup:
 TEST_COMMAND_SETTLE_TIME = {}
 
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 300)]
+
 
 #tools we use:
+IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
 TRICKLE_BIN = "/usr/bin/trickle"
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
-XORG_BIN = "/usr/bin/Xorg"
+XORG_BIN = "/usr/local/bin/Xorg"
 
 #the glx tests:
-GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres"]
+GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres64"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 GLX_TESTS = [GLX_SPHERES, GLX_GEARS]
 
@@ -58,6 +68,9 @@ ALL_SCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
 SOME_SCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
                             ["memscroller", "eruption", "xmatrix"]
                           ]
+SOME_SCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
+                            ["memscroller", "moebiusgears", "polytopes", "rss-glx-lattice"]
+                          ]
 
 #games tests:
 #for more info, see here: http://dri.freedesktop.org/wiki/Benchmarking
@@ -68,22 +81,21 @@ TEST_COMMAND_SETTLE_TIME[XONOTIC_TEST[0]] = 20
 GAMES_TESTS = [NEXUIZ_TEST, XONOTIC_TEST]
 
 #our selection:
-TEST_CANDIDATES = GLX_TESTS + X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
+TEST_CANDIDATES = X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
+TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + GAMES_TESTS
+
 
 #now we filter all the test commands and only keep the valid ones:
+print("Checking for test commands:")
 X11_TEST_COMMANDS = []
 for x in TEST_CANDIDATES:
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
-        print("WARNING: cannot find %s - removed from tests" % str(x))
+        print("* WARNING: cannot find %s - removed from tests" % str(x))
     else:
+        print("* adding test: %s" % str(x))
         X11_TEST_COMMANDS.append(x)
 TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
 
-#but these should be ok:
-SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 120          #run for N seconds
-SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
-DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
 
 XVNC_BIN = "/usr/bin/Xvnc"
 XVNC_SERVER_START_COMMAND = [XVNC_BIN, "--rfbport=%s" % PORT,
@@ -113,10 +125,10 @@ XPRA_SERVER_STOP_COMMANDS = [
                              [XPRA_BIN, "stop", ":%s" % DISPLAY_NO],
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
                              ]
-XPRA_INFO_COMMAND = [XPRA_BIN, "info", ":%s" % DISPLAY_NO]
-#XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (IP, PORT)]
+XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
-XPRA_TEST_ENCODINGS = ["x264"]
 XPRA_JPEG_OPTIONS = [40, 80, 90]
 XPRA_JPEG_OPTIONS = [40, 90]
 XPRA_JPEG_OPTIONS = [80]
@@ -159,14 +171,14 @@ def try_to_kill(process, grace=0):
 
 def getoutput(cmd, env=None):
     try:
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, close_fds=True)
     except Exception, e:
         print("error running %s: %s" % (cmd, e))
         raise e
-    (out,_) = process.communicate()
+    (out,err) = process.communicate()
     code = process.poll()
     if code!=0:
-        raise Exception("command '%s' returned error code %s" % (cmd, code))
+        raise Exception("command '%s' returned error code %s, out=%s, err=%s" % (cmd, code, out, err))
     return out
 
 def find_matching_lines(out, pattern):
@@ -204,6 +216,7 @@ def get_cpu_info():
 XORG_VERSION = getoutput_line([XORG_BIN, "-version"], "X.Org X Server", "Cannot detect Xorg server version")
 print("XORG_VERSION=%s" % XORG_VERSION)
 CPU_INFO, N_CPUS = get_cpu_info()
+KERNEL_VERSION = getoutput(["uname", "-r"]).replace("\n", "").replace("\r", "")
 PAGE_SIZE = int(getoutput(["getconf", "PAGESIZE"]).replace("\n", "").replace("\r", ""))
 PLATFORM = getoutput(["uname", "-p"]).replace("\n", "").replace("\r", "")
 OPENGL_INFO = getoutput_line(["glxinfo"], "OpenGL renderer string", "Cannot detect OpenGL renderer string").split("OpenGL renderer string:")[1].strip()
@@ -255,7 +268,7 @@ def clean_sys_state():
     assert process.wait()==0, "failed to run %s" % str(cmd)
 
 def zero_iptables():
-    cmds = [['iptables', '-Z', 'INPUT'], ['iptables', '-Z', 'OUTPUT']]
+    cmds = [IPTABLES_CMD+['-Z', 'INPUT'], IPTABLES_CMD+['-Z', 'OUTPUT']]
     for cmd in cmds:
         getoutput(cmd)
         #out = getoutput(cmd)
@@ -297,7 +310,7 @@ def compute_stat(time_total_diff, old_pid_stat, new_pid_stat):
     return [user_pct, sys_pct, nthreads, vsize, rss]
 
 def getiptables_line(chain, pattern, setup_info):
-    cmd = ["iptables", "-vnL", chain]
+    cmd = IPTABLES_CMD + ["-vnL", chain]
     line = getoutput_line(cmd, pattern, setup_info)
     if not line:
         raise Exception("no line found matching %s, make sure you have a rule like: %s" % (pattern, setup_info))
@@ -411,7 +424,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #run the client test
                     result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
                     result += [encoding, get_command_name(test_command)]
-                    result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, XORG_VERSION, OPENGL_INFO]
+                    result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO]
                     result += ["%sx%s" % gdk.get_default_root_window().get_size()]
                     result += [compression, down, up, latency]
                     result += measure_client(server_pid, name, client_cmd, get_stats_cb)
@@ -722,11 +735,12 @@ def main():
     vnc_results = []
     if TEST_VNC:
         vnc_results = test_vnc()
+    print("*"*80)
+    print("RESULTS:")
     print("")
-    print("results:")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
                "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
-               "CPU info", "Platform", "Xorg version", "OpenGL", "Screen Size",
+               "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Screen Size",
                "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
