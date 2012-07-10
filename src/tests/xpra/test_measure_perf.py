@@ -380,7 +380,7 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
             assert code is not None, "failed to stop client!"
 
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
-    tests = in_tests[-LIMIT_TESTS:]
+    tests = in_tests[:LIMIT_TESTS]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+DEFAULT_TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
 
@@ -527,7 +527,7 @@ def xpra_get_stats(last_record=None):
     last_input_bytecount = 0
     last_output_bytecount = 0
     if last_record:
-        index = 5
+        index = 7
         last_input_packetcount = last_record[index]
         last_input_bytecount = last_record[index+1]
         last_output_packetcount = last_record[index+2]
@@ -549,9 +549,9 @@ def xpra_get_stats(last_record=None):
             get("min_batch_delay", "batch_delay.min"),
             get("max_batch_delay", "batch_delay.max"),
             get("avg_batch_delay", "batch_delay.avg"),
-            int(get("input_packetcount", None, 0))-last_input_packetcount/MEASURE_TIME,
+            (int(get("input_packetcount", None, 0))-last_input_packetcount)/MEASURE_TIME,
             (int(get("input_bytecount", None, 0))-last_input_bytecount)/MEASURE_TIME,
-            int(get("output_packetcount", None, 0))-last_output_packetcount/MEASURE_TIME,
+            (int(get("output_packetcount", None, 0))-last_output_packetcount)/MEASURE_TIME,
             (int(get("output_bytecount", None, 0))-last_output_bytecount)/MEASURE_TIME,
             (int(get("output_mmap_bytecount", None, 0))-last_mmap_bytes)/MEASURE_TIME,
             get("min_client_latency", "client_latency.min"),
