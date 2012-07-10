@@ -14,7 +14,6 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.nested_main import NestedMainLoop
-from xpra.protocol import Compressible
 
 #debug = log.info
 debug = log.debug
@@ -142,7 +141,7 @@ class ClipboardProtocolHelperBase(object):
                     no_contents()
                     return
                 self.send(["clipboard-contents", request_id, selection,
-                           type, format, wire_encoding, Compressible("clipboard", wire_data)])
+                           type, format, wire_encoding, wire_data])
             proxy.get_contents(target, got_contents)
         else:
             self.send(["clipboard-contents-none", request_id, selection])
