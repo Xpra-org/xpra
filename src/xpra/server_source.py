@@ -108,8 +108,9 @@ def add_list_stats(info, basename, in_values):
     if avg!=0:
         #coefficient of variation
         info["%s.cv_pct" % basename] = int(100.0*std/avg)
-    #geometric mean
-    info["%s.gm" % basename] = int(pow(p, 1/counter))
+    if counter>0:
+        #geometric mean
+        info["%s.gm" % basename] = int(pow(p, 1/counter))
     if h!=0:
         #harmonic mean
         info["%s.h" % basename] = int(counter/h)

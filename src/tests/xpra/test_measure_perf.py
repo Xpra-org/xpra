@@ -492,11 +492,22 @@ def get_command_name(command_arg):
     assert type(c)==str
     return c.split("/")[-1]             #/usr/bin/xterm -> xterm
 
+def get_stats_headers():
+    #the stats that are returned by get_xpra_stats or get_vnc_stats
+    return  ["Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s",
+             "Min Batch Delay (ms)", "Max Batch Delay (ms)", "Avg Batch Delay (ms)",
+             "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
+             "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
+             "Min Server Latency (ms)", "Max Server Latency (ms)", "Avg Server Latency (ms)",
+             "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
+             ]
+
 def no_stats(last_record=None):
     return  ["", "", "", "",
              "", "", "", "", "", "",
              "", "", "",
-             "", "", ""
+             "", "", "",
+             "", "", "",
              ]
 
 def xpra_get_stats(last_record=None):
@@ -535,18 +546,23 @@ def xpra_get_stats(last_record=None):
             get("pixels_per_second"),
             get("pixels_encoded_per_second"),
             get("pixels_decoded_per_second"),
+            get("min_batch_delay", "batch_delay.min"),
+            get("max_batch_delay", "batch_delay.max"),
             get("avg_batch_delay", "batch_delay.avg"),
             int(get("input_packetcount", None, 0))-last_input_packetcount/MEASURE_TIME,
             (int(get("input_bytecount", None, 0))-last_input_bytecount)/MEASURE_TIME,
             int(get("output_packetcount", None, 0))-last_output_packetcount/MEASURE_TIME,
             (int(get("output_bytecount", None, 0))-last_output_bytecount)/MEASURE_TIME,
             (int(get("output_mmap_bytecount", None, 0))-last_mmap_bytes)/MEASURE_TIME,
-            d.get("min_client_latency", "client_latency.min"),
-            d.get("max_client_latency", "client_latency.max"),
-            d.get("avg_client_latency", "client_latency.avg"),
-            d.get("min_server_latency", "server_latency.min"),
-            d.get("max_server_latency", "server_latency.max"),
-            d.get("avg_server_latency", "server_latency.avg"),
+            get("min_client_latency", "client_latency.min"),
+            get("max_client_latency", "client_latency.max"),
+            get("avg_client_latency", "client_latency.avg"),
+            get("min_server_latency", "server_latency.min"),
+            get("max_server_latency", "server_latency.max"),
+            get("avg_server_latency", "server_latency.avg"),
+            get("damage_in_latency.min"),
+            get("damage_in_latency.max"),
+            get("damage_in_latency.avg"),
            ]
 
 def test_xpra():
@@ -723,14 +739,6 @@ def test_vnc():
                             tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, encoding, compression, (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 
-
-def get_stats_headers():
-    #the stats that are returned by get_xpra_stats or get_vnc_stats
-    return  ["Regions/s", "Pixels/s Sent", "Encoding Pixels/s", "Decoding Pixels/s", "Average Batch Delay",
-             "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
-             "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
-             "Min Server Latency (ms)", "Max Server Latency (ms)", "Avg Server Latency (ms)",
-             ]
 
 def main():
     #before doing anything, check that the firewall is setup correctly:
