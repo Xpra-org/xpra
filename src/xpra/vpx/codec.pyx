@@ -18,7 +18,7 @@ cdef extern from "vpxlib.h":
     vpx_codec_ctx_t* init_encoder(int width, int height)
     void clean_encoder(vpx_codec_ctx_t *context)
     vpx_image_t* csc_image_rgb2yuv(vpx_codec_ctx_t *ctx, uint8_t *input, int stride)
-    int csc_image_yuv2rgb(vpx_codec_ctx_t *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride)
+    int csc_image_yuv2rgb(vpx_codec_ctx_t *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     int compress_image(vpx_codec_ctx_t *ctx, vpx_image_t *image, uint8_t **out, int *outsz) nogil
 
     vpx_codec_ctx_t* init_decoder(int width, int height)
@@ -98,7 +98,8 @@ cdef class Decoder(xcoder):
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:
             return i, 0, ""
-        i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
+        with nogil:
+            i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         if i!=0:
             return i, 0, ""
         self.last_image = dout
