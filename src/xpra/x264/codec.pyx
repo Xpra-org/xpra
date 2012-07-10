@@ -81,11 +81,18 @@ cdef class Decoder(xcoder):
         cdef uint8_t *dout[3]
         cdef int outsize
         cdef int outstrides[3]
+        cdef unsigned char * padded_buf = NULL
         cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
+        i = posix_memalign(<void **> &padded_buf, 32, buf_len+32)
+        if i!=0:
+            return i, [0, 0, 0], ["", "", ""]
+        memcpy(padded_buf, buf, buf_len)
+        memset(padded_buf+buf_len, 0, 32)
+        with nogil:
+            i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
         doutvY = (<char *>dout[0])[:self.height * outstrides[0]]
