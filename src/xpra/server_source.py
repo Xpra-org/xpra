@@ -563,6 +563,8 @@ class ServerSource(object):
         now = time.time()
         tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
         for event_time, size, elapsed_time in data:
+            if elapsed_time<=0:
+                continue        #invalid record
             pw = logp(size/size_avg)
             size_ps = max(1, size*sizeunit/elapsed_time)
             w = pw/(1.0+(now-event_time))
@@ -1176,8 +1178,9 @@ class ServerSource(object):
             and the "client latency".
         """
         log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
-        client_decode_list = self._client_decode_time.setdefault(wid, maxdeque(maxlen=NRECS))
-        client_decode_list.append((time.time(), width*height, decode_time))
+        if decode_time:
+            client_decode_list = self._client_decode_time.setdefault(wid, maxdeque(maxlen=NRECS))
+            client_decode_list.append((time.time(), width*height, decode_time))
         ack_pending = self._damage_ack_pending.get(wid)
         if not ack_pending:
             log("cannot find damage_pending list for window %s - already removed?", wid)
@@ -1187,12 +1190,13 @@ class ServerSource(object):
             log.error("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         del ack_pending[damage_packet_sequence]
-        sent_at, pixels = pending
-        now = time.time()
-        diff = now-sent_at
-        latency = max(0, diff-decode_time/1000/1000)
-        log("client_ack_damage: took %s ms round trip, %s for decoding of %s pixels, %s for network", dec1(diff*1000), dec1(decode_time/1000), pixels, dec1(latency*1000))
-        self._client_latency.append((now, width*height, latency))
+        if decode_time:
+            sent_at, pixels = pending
+            now = time.time()
+            diff = now-sent_at
+            latency = max(0, diff-decode_time/1000/1000)
+            log("client_ack_damage: took %s ms round trip, %s for decoding of %s pixels, %s for network", dec1(diff*1000), dec1(decode_time/1000), pixels, dec1(latency*1000))
+            self._client_latency.append((now, width*height, latency))
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         """
