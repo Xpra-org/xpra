@@ -297,7 +297,8 @@ class InfoXpraClient(GLibXpraClient):
         log.debug("process_hello: %s", packet)
         props = packet[1]
         if props:
-            for k,v in props.items():
+            for k in sorted(props.keys()):
+                v = props.get(k)
                 log.info("%s=%s", k, v)
         self.quit(0)
 

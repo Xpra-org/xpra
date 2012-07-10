@@ -29,7 +29,7 @@ try:
 except:
     from Queue import Queue         #@Reimport
 from collections import deque
-from math import log as mathlog
+from math import log as mathlog, sqrt, pow
 def logp(x):
     return mathlog(1+x, 2)
 
@@ -57,6 +57,9 @@ def dec1(x):
     return int(10.0*x)/10.0
 
 def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
+    """
+        Extracts pixels from the given pixmap
+    """
     start = time.time()
     pixmap_w, pixmap_h = pixmap.get_size()
     # Just in case we somehow end up with damage larger than the pixmap,
@@ -77,6 +80,45 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
+
+def add_list_stats(info, basename, in_values):
+    #this may be backed by a deque/list whichi is used by other threads
+    #so make a copy before use:
+    values = list(in_values)
+    if len(values)==0:
+        return
+    info["%s.min" % basename] = int(min(values))
+    info["%s.max" % basename] = int(max(values))
+    #arithmetic mean
+    avg = sum(values)/len(values)
+    info["%s.avg" % basename] = int(avg)
+    p = 1           #geometric mean
+    h = 0           #harmonic mean
+    var = 0         #variance
+    counter = 0
+    for x in values:
+        if x!=0:
+            p *= x
+            h += 1.0/x
+            counter += 1
+        var += (x-avg)**2
+    #standard deviation:
+    std = sqrt(var/len(values))
+    info["%s.std" % basename] = int(std)
+    if avg!=0:
+        #coefficient of variation
+        info["%s.cv_pct" % basename] = int(100.0*std/avg)
+    #geometric mean
+    info["%s.gm" % basename] = int(pow(p, 1/counter))
+    if h!=0:
+        #harmonic mean
+        info["%s.h" % basename] = int(counter/h)
+    #percentile
+    svalues = sorted(values)
+    for i in range(1,10):
+        pct = i*10
+        index = len(values)*i//10
+        info["%s.%sp" % (basename, pct)] = int(svalues[index])
 
 
 #how many historical records to keep
@@ -340,39 +382,22 @@ class ServerSource(object):
             info["output_packetcount"] = self._protocol.output_packetcount
             info["output_raw_packetcount"] = self._protocol.output_raw_packetcount
         info["output_mmap_bytecount"] = self._mmap_bytes_sent
-        latencies = [x for _, _, _, x in list(self._damage_in_latency)]
-        if len(latencies)>0:
-            info["min_damage_in_latency"] = int(1000*min(latencies))
-            info["max_damage_in_latency"] = int(1000*max(latencies))
-            info["avg_damage_in_latency"] = int(1000*sum(latencies)/len(latencies))
-        latencies = [x for _, _, _, x in list(self._damage_out_latency)]
-        if len(latencies)>0:
-            info["min_damage_out_latency"] = int(1000*min(latencies))
-            info["max_damage_out_latency"] = int(1000*max(latencies))
-            info["avg_damage_out_latency"] = int(1000*sum(latencies)/len(latencies))
-        latencies = [int(1000*latency) for (_, _, latency) in self._client_latency]
-        if len(latencies)>0:
-            info["min_client_latency"] = int(min(latencies))
-            info["max_client_latency"] = int(max(latencies))
-            info["avg_client_latency"] = int(sum(latencies)/len(latencies))
-        info["damage_data_queue_size"] = self._damage_data_queue.qsize()
+        latencies = [x*1000 for _, _, _, x in list(self._damage_in_latency)]
+        add_list_stats(info, "damage_in_latency",  latencies)
+        latencies = [x*1000 for _, _, _, x in list(self._damage_out_latency)]
+        add_list_stats(info, "damage_out_latency",  latencies)
+        latencies = [x*1000 for (_, _, x) in list(self._client_latency)]
+        add_list_stats(info, "client_latency",  latencies)
+        info["damage_data_queue_size.current"] = self._damage_data_queue.qsize()
         qsizes = [x for _,x in list(self._damage_data_qsizes)]
-        if len(qsizes)>0:
-            info["min_damage_data_queue_size"] = int(min(qsizes))
-            info["max_damage_data_queue_size"] = int(max(qsizes))
-            info["avg_damage_data_queue_size"] = int(sum(qsizes)/len(qsizes))
-        info["damage_packet_queue_size"] = len(self._damage_packet_queue)
+        add_list_stats(info, "damage_data_queue_size",  qsizes)
+        info["damage_packet_queue_size.current"] = len(self._damage_packet_queue)
         qsizes = [x for _,x in list(self._damage_packet_qsizes)]
-        if len(self._damage_packet_qsizes)>0:
-            info["min_damage_packet_queue_size"] = int(min(qsizes))
-            info["max_damage_packet_queue_size"] = int(max(qsizes))
-            info["avg_damage_packet_queue_size"] = int(sum(qsizes)/len(qsizes))
+        add_list_stats(info, "damage_packet_queue_size",  qsizes)
         qpixels = [x[1] for x in list(self._damage_packet_queue)]
-        info["damage_packet_queue_pixels"] = sum(qpixels)
-        if len(qpixels):
-            info["min_damage_packet_queue_pixels"] = int(min(qpixels))
-            info["max_damage_packet_queue_pixels"] = int(max(qpixels))
-            info["avg_damage_packet_queue_pixels"] = int(sum(qpixels)/len(qpixels))
+        if len(qpixels)>0:
+            info["damage_packet_queue_pixels.current"] = qpixels[-1]
+        add_list_stats(info, "damage_packet_queue_pixels",  qsizes)
 
         batch_delays = []
         for wid in window_ids:
@@ -380,10 +405,7 @@ class ServerSource(object):
             if batch:
                 for _,d in list(batch.last_delays):
                     batch_delays.append(d)
-        if len(batch_delays)>0:
-            info["min_batch_delay"] = int(min(batch_delays))
-            info["max_batch_delay"] = int(max(batch_delays))
-            info["avg_batch_delay"] = int(sum(batch_delays)/len(batch_delays))
+        add_list_stats(info, "batch_delay", batch_delays)
 
         estats = list(self._encoding_stats)
         if len(estats)>0:
@@ -393,12 +415,8 @@ class ServerSource(object):
                 if compressed_size>0 and pixels>0:
                     comp_ratios_pct.append(100*compressed_size/(pixels*3))
                     comp_times_ns.append(1000*1000*1000*compression_time/pixels)
-            info["min_compression_ratio_pct"] = int(min(comp_ratios_pct))
-            info["max_compression_ratio_pct"] = int(max(comp_ratios_pct))
-            info["avg_compression_ratio_pct"] = int(sum(comp_ratios_pct)/len(comp_ratios_pct))
-            info["min_compression_pixels_per_ns"] = int(min(comp_times_ns))
-            info["max_compression_pixels_per_ns"] = int(max(comp_times_ns))
-            info["avg_compression_pixels_per_ns"] = int(sum(comp_times_ns)/len(comp_times_ns))
+            add_list_stats(info, "compression_ratio_pct", comp_ratios_pct)
+            add_list_stats(info, "compression_pixels_per_ns", comp_times_ns)
 
         #client pixels per second:
         now = time.time()

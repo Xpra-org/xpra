@@ -522,23 +522,31 @@ def xpra_get_stats(last_record=None):
         last_output_packetcount = last_record[index+2]
         last_output_bytecount = last_record[index+3]
         last_mmap_bytes = last_record[index+4]
+    def get(old_var_name, new_var_name=None, default_value=""):
+        """ some of the fields got renamed, try both old and new names """
+        v = d.get(old_var_name)
+        if not v and new_var_name is not None:
+            v = d.get(new_var_name)
+        if not v:
+            v = default_value
+        return v
     return [
-            d.get("regions_per_second", ""),
-            d.get("pixels_per_second", ""),
-            d.get("pixels_encoded_per_second", ""),
-            d.get("pixels_decoded_per_second", ""),
-            d.get("avg_batch_delay", ""),
-            int(d.get("input_packetcount", 0))-last_input_packetcount/MEASURE_TIME,
-            (int(d.get("input_bytecount", 0))-last_input_bytecount)/MEASURE_TIME,
-            int(d.get("output_packetcount", 0))-last_output_packetcount/MEASURE_TIME,
-            (int(d.get("output_bytecount", 0))-last_output_bytecount)/MEASURE_TIME,
-            (int(d.get("output_mmap_bytecount", 0))-last_mmap_bytes)/MEASURE_TIME,
-            d.get("min_client_latency", ""),
-            d.get("max_client_latency", ""),
-            d.get("avg_client_latency", ""),
-            d.get("min_server_latency", ""),
-            d.get("max_server_latency", ""),
-            d.get("avg_server_latency", ""),
+            get("regions_per_second"),
+            get("pixels_per_second"),
+            get("pixels_encoded_per_second"),
+            get("pixels_decoded_per_second"),
+            get("avg_batch_delay", "batch_delay.avg"),
+            int(get("input_packetcount", None, 0))-last_input_packetcount/MEASURE_TIME,
+            (int(get("input_bytecount", None, 0))-last_input_bytecount)/MEASURE_TIME,
+            int(get("output_packetcount", None, 0))-last_output_packetcount/MEASURE_TIME,
+            (int(get("output_bytecount", None, 0))-last_output_bytecount)/MEASURE_TIME,
+            (int(get("output_mmap_bytecount", None, 0))-last_mmap_bytes)/MEASURE_TIME,
+            d.get("min_client_latency", "client_latency.min"),
+            d.get("max_client_latency", "client_latency.max"),
+            d.get("avg_client_latency", "client_latency.avg"),
+            d.get("min_server_latency", "server_latency.min"),
+            d.get("max_server_latency", "server_latency.max"),
+            d.get("avg_server_latency", "server_latency.avg"),
            ]
 
 def test_xpra():

@@ -63,7 +63,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata
+from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata, add_list_stats
 from xpra.deque import maxdeque
 from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
@@ -1012,14 +1012,8 @@ class XpraServer(gobject.GObject):
             info["clients"] = 0
             return  info
         self.send_ping()
-        if len(self.server_latency)>0:
-            info["min_server_latency"] = int(min(self.server_latency))
-            info["max_server_latency"] = int(max(self.server_latency))
-            info["avg_server_latency"] = int(sum(self.server_latency)/len(self.server_latency))
-        if len(self.client_latency)>0:
-            info["min_client_latency"] = int(min(self.client_latency))
-            info["max_client_latency"] = int(max(self.client_latency))
-            info["avg_client_latency"] = int(sum(self.client_latency)/len(self.client_latency))
+        add_list_stats(info, "server_latency", self.server_latency)
+        add_list_stats(info, "client_latency", self.client_latency)
         info["clients"] = 1
         info["client_encodings"] = ",".join(self.encodings)
         info["keyboard_sync"] = self.keyboard_sync
