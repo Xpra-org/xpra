@@ -36,7 +36,9 @@ from wimpiggy.log import Logger
 log = Logger()
 
 class XError(Exception):
-    pass
+    def __init__(self, message):
+        Exception.__init__(self)
+        self.msg = message
 
 #useful for debugging X11 errors that get swallowed:
 LOG_ALL_X_ERRORS = False
@@ -52,8 +54,8 @@ def XErrorToName(xerror):
                 if name=="Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
             log("XErrorToName(..) initialized error names: %s", xerror_to_name)
-        if xerror.message in xerror_to_name:
-            return xerror_to_name.get(xerror.message)
+        if xerror.msg in xerror_to_name:
+            return xerror_to_name.get(xerror.msg)
     except:
         log.error("XErrorToName", exc_info=True)
     return xerror
@@ -101,12 +103,12 @@ class _ErrorManager(object):
         except:
             if LOG_ALL_X_ERRORS:
                 log.error("_call(%s,%s,%s,%s)", need_sync, fun, args, kwargs, exc_info=True)
-            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exc_type, exc_value = sys.exc_info()[:2]
             try:
                 self._exit(need_sync)
             except XError:
                 log("XError detected while already in unwind; discarding")
-            raise exc_type(exc_value, exc_traceback)
+            raise exc_type(exc_value)
         self._exit(need_sync)
         return value
 
