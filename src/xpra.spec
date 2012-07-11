@@ -12,19 +12,24 @@
 %define include_egg 1
 
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
-%define requires_extra , libvpx, libx264
+%define requires_opengl %{nil}
+%define requires_extra %{nil}
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
 
 # distro-specific creative land of wonderness
 %if %{defined fedora}
 %define requires_x264 , x264-libs
-%define requires_extra , PyOpenGL, pygtkglext, python-numeric
+%if %{defined opengl}
+%define requires_opengl , PyOpenGL, pygtkglext, python-numeric
+%endif
 %endif
 
 %if 0%{?el6}
 %define requires_x264 %{nil}
-%define requires_extra , PyOpenGL, pygtkglext
+%if %{defined opengl}
+%define requires_opengl , PyOpenGL, pygtkglext
+%endif
 %if 0%{?static_video_libs}
 %define static_x264 1
 %endif
@@ -53,7 +58,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}
 License: GPL
-Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264}
+Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_opengl}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
 URL: http://xpra.org/
