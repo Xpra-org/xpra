@@ -20,7 +20,7 @@
 # distro-specific creative land of wonderness
 %if %{defined fedora}
 %define requires_x264 , x264-libs
-%if %{defined opengl}
+%if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric
 %endif
 %endif
@@ -28,7 +28,7 @@
 %if 0%{?el6}
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
-%if %{defined opengl}
+%if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
 %if 0%{?static_video_libs}
