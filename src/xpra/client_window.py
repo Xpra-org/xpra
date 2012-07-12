@@ -308,30 +308,31 @@ class ClientWindow(gtk.Window):
         gobject.idle_add(self._focus_change)
 
     def do_configure_event(self, event):
-        log("Got configure event")
+        log("Got configure event: %s", event)
         gtk.Window.do_configure_event(self, event)
-        if not self._override_redirect:
-            x, y, w, h = get_window_geometry(self)
-            ox, oy = self._pos
-            dx, dy = x-ox, y-oy
-            self._pos = (x, y)
-            if self._client.window_configure:
-                #if we support configure-window, send that first
-                self._client.send(["configure-window", self._id, x, y, w, h])
-            if dx!=0 or dy!=0:
-                #window has moved
-                if not self._client.window_configure:
-                    #if we don't handle the move via configure:
-                    self._client.send(["move-window", self._id, x, y])
-                #move any OR window with their parent:
-                for window in self._override_redirect_windows:
-                    x, y = window.get_position()
-                    window.move(x+dx, y+dy)
-            if (w, h) != self._size:
-                self._size = (w, h)
-                self.new_backing(w, h)
-                if not self._client.window_configure:
-                    self._client.send(["resize-window", self._id, w, h])
+        if self._override_redirect:
+            return
+        x, y, w, h = get_window_geometry(self)
+        ox, oy = self._pos
+        dx, dy = x-ox, y-oy
+        self._pos = (x, y)
+        if self._client.window_configure:
+            #if we support configure-window, send that first
+            self._client.send(["configure-window", self._id, x, y, w, h])
+        if dx!=0 or dy!=0:
+            #window has moved
+            if not self._client.window_configure:
+                #if we don't handle the move via configure:
+                self._client.send(["move-window", self._id, x, y])
+            #move any OR window with their parent:
+            for window in self._override_redirect_windows:
+                x, y = window.get_position()
+                window.move(x+dx, y+dy)
+        if (w, h) != self._size:
+            self._size = (w, h)
+            self.new_backing(w, h)
+            if not self._client.window_configure:
+                self._client.send(["resize-window", self._id, w, h])
 
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
