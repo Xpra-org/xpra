@@ -377,7 +377,7 @@ def get_pywindow(display_source, xwindow):
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
-        raise XError, BadWindow
+        raise XError(BadWindow)
     return win
 
 def get_display_for(obj):
