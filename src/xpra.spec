@@ -56,7 +56,7 @@ Summary: Xpra gives you "persistent remote applications" for X.
 Vendor: http://xpra.org/
 Name: xpra
 Version: %{version}
-Release: %{build_no}
+Release: %{build_no}%{dist}
 License: GPL
 Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_opengl}
 Group: Networking
