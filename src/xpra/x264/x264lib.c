@@ -272,10 +272,10 @@ void* xmemalign(size_t size)
 	//Crapple version: "all memory allocations are 16-byte aligned"
 	return malloc(size);
 #else
-	void** memptr=NULL;
-	if (posix_memalign(memptr, 32, size))
+	void* memptr=NULL;
+	if (posix_memalign(&memptr, 32, size))
 		return	NULL;
-	return	*memptr;
+	return	memptr;
 #endif
 #endif
 }
