@@ -115,6 +115,7 @@ class XpraClientBase(gobject.GObject):
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
         capabilities["raw_packets"] = True
+        capabilities["server-window-resize"] = True
         capabilities["randr_notify"] = False    #only client.py cares about this
         return capabilities
 

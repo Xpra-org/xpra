@@ -89,11 +89,15 @@ class DesktopManager(gtk.Widget):
         assert self.flags() & gtk.REALIZED
         s = AdHocStruct()
         s.shown = False
-        s.geom = (x, y, w, h)
+        s.geom = [x, y, w, h]
         s.window = None
         self._models[model] = s
         model.connect("unmanaged", self._unmanaged)
         model.connect("ownership-election", self._elect_me)
+        def new_geom(window_model, *args):
+            log("new_geom(%s,%s)", window_model, args)
+            
+        model.connect("geometry", new_geom)
         model.ownership_election()
 
     def window_geometry(self, model):
@@ -106,11 +110,12 @@ class DesktopManager(gtk.Widget):
             model.set_property("iconic", False)
 
     def configure_window(self, model, x, y, w, h):
+        log("DesktopManager.configure_window(%s, %s, %s, %s, %s)", model, x, y, w, h)
         if not self.visible(model):
             self._models[model].shown = True
             model.set_property("iconic", False)
             model.ownership_election()
-        self._models[model].geom = (x, y, w, h)
+        self._models[model].geom = [x, y, w, h]
         model.maybe_recalculate_geometry_for(self)
 
     def hide_window(self, model):
@@ -146,15 +151,15 @@ class DesktopManager(gtk.Widget):
         self._models[model].window = window
 
     def window_size(self, model):
-        (_, _, w, h) = self._models[model].geom
-        return (w, h)
+        w, h = self._models[model].geom[2:4]
+        return w, h
 
     def window_position(self, model, w, h):
-        (x, y, w0, h0) = self._models[model].geom
+        [x, y, w0, h0] = self._models[model].geom
         if (w0, h0) != (w, h):
             log.warn("Uh-oh, our size doesn't fit window sizing constraints: "
                      "%sx%s vs %sx%s", w0, h0, w, h)
-        return (x, y)
+        return x, y
 
 gobject.type_register(DesktopManager)
 
@@ -212,6 +217,7 @@ class XpraServer(gobject.GObject):
         ### Create the WM object
         self._wm = Wm("Xpra", clobber)
         self._wm.connect("new-window", self._new_window_signaled)
+        self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
 
@@ -456,6 +462,14 @@ class XpraServer(gobject.GObject):
     def _keys_changed(self, *args):
         if not self.keymap_changing:
             self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
+
+    def _window_resized_signaled(self, wm, window):
+        nw,nh = window.get_property("actual-size")
+        geom = self._desktop_manager.window_geometry(window)
+        log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", wm, window, nw, nh, geom)
+        geom[2:4] = nw,nh
+        if self.server_window_resize:
+            self._send(["window-resized", self._window_to_id[window], nw, nh])
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
@@ -1141,6 +1155,7 @@ class XpraServer(gobject.GObject):
         log("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
+        self.server_window_resize = capabilities.get("server-window-resize", False)
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
         log("setting modifiers to %s", modifiers)
@@ -1381,7 +1396,8 @@ class XpraServer(gobject.GObject):
             log("cannot map window %s: already removed!", wid)
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
-        (_, _, oww, owh) = self._desktop_manager.window_geometry(window)
+        (owx, owy, oww, owh) = self._desktop_manager.window_geometry(window)
+        log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
         self._desktop_manager.configure_window(window, x, y, w, h)
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
             self._damage(window, 0, 0, w, h)
@@ -1389,6 +1405,7 @@ class XpraServer(gobject.GObject):
     def _process_move_window(self, proto, packet):
         (wid, x, y) = packet[1:4]
         window = self._id_to_window.get(wid)
+        log("_process_move_window(%s)", packet[1:])
         if not window:
             log("cannot move window %s: already removed!", wid)
             return
@@ -1399,6 +1416,7 @@ class XpraServer(gobject.GObject):
     def _process_resize_window(self, proto, packet):
         (wid, w, h) = packet[1:4]
         window = self._id_to_window.get(wid)
+        log("_process_resize_window(%s)", packet[1:])
         if not window:
             log("cannot resize window %s: already removed!", wid)
             return

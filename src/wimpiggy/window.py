@@ -256,9 +256,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             # Keith Packard says that composite state is undefined following a
             # reparent, so I'm not sure doing this here in the superclass,
             # before we reparent, actually works... let's wait and see.
-            self._composite = CompositeHelper(self.client_window, False)
-            h = self._composite.connect("contents-changed",
-                                        self._forward_contents_changed)
+            self._composite = CompositeHelper(self.client_window, False, )  #self.composite_configure_event)
+            h = self._composite.connect("contents-changed", self._forward_contents_changed)
+            self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
             self._damage_forward_handle = h
             self._geometry = geometry_with_border(self.client_window)
         try:
@@ -282,6 +282,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._geometry = (event.x, event.y, event.width, event.height,
                           event.border_width)
         self.notify("geometry")
+
+    def composite_configure_event(self, composite_window, event):
+        log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
 
     def do_get_property_geometry(self, pspec):
         (x, y, w, h, b) = self._geometry
@@ -448,6 +451,7 @@ class WindowModel(BaseWindowModel):
     __gsignals__ = {
         # X11 bell event:
         "bell": one_arg_signal,
+        "geometry": one_arg_signal,
         
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),
@@ -649,20 +653,51 @@ class WindowModel(BaseWindowModel):
     def _update_client_geometry(self):
         owner = self.get_property("owner")
         if owner is not None:
-            (allocated_w, allocated_h) = owner.window_size(self)
+            log("_update_client_geometry: owner()=%s", owner)
+            def window_size():
+                return  owner.window_size(self)
+            def window_position(w, h):
+                return  owner.window_position(self, w, h)
+            self._do_update_client_geometry(window_size, window_position)
+
+    def _do_update_client_geometry(self, window_size_cb, window_position_cb):
+        allocated_w, allocated_h = window_size_cb()
+        log("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
+        hints = self.get_property("size-hints")
+        self._sanitize_size_hints(hints)
+        size = calc_constrained_size(allocated_w, allocated_h, hints)
+        log("_do_update_client_geometry: size=%s", size)
+        w, h, wvis, hvis = size
+        x, y = window_position_cb(w, h)
+        log("_do_update_client_geometry: position=%s", (x,y))
+        self.corral_window.move_resize(x, y, w, h)
+        trap.swallow(configureAndNotify, self.client_window, 0, 0, w, h)
+        self._internal_set_property("actual-size", (w, h))
+        self._internal_set_property("user-friendly-size", (wvis, hvis))
+
+    def composite_configure_event(self, composite_window, event):
+        #the client window may have been resized (generally programmatically)
+        #so we may need to update the corral_window to match
+        log("WindowModel.composite_configure_event(%s, %s)", composite_window, event)
+        cow, coh = self.corral_window.get_geometry()[2:4]
+        clw, clh = self.client_window.get_geometry()[2:4]
+        if cow!=clw or coh!=clh:
+            log("WindowModel.composite_configure_event(%s, %s) corral window (%sx%s) does not match client window (%sx%s), resizing it",
+                     composite_window, event, cow, coh, clw, clh)
+            self.corral_window.resize(clw, clh)
             hints = self.get_property("size-hints")
             self._sanitize_size_hints(hints)
-            size = calc_constrained_size(allocated_w, allocated_h, hints)
-            (w, h, wvis, hvis) = size
-            (x, y) = owner.window_position(self, w, h)
-            self.corral_window.move_resize(x, y, w, h)
-            trap.swallow(configureAndNotify, self.client_window, 0, 0, w, h)
+            size = calc_constrained_size(clw, clh, hints)
+            log("composite_configure_event: new constrained size=%s", size)
+            w, h, wvis, hvis = size
             self._internal_set_property("actual-size", (w, h))
             self._internal_set_property("user-friendly-size", (wvis, hvis))
+            self.emit("geometry", event)
 
     def do_child_configure_request_event(self, event):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
         # ConfigureNotify telling the client that nothing has happened.
+        log("do_child_configure_request_event(%s)", event)
         trap.swallow(sendConfigureNotify, event.window)
 
         # Also potentially update our record of what the app has requested:
@@ -1231,21 +1266,22 @@ class WindowView(gtk.Widget):
         # widgets.  For now the assumption is that we're pretty much always
         # going to get a size imposed on us, so no point in spending excessive
         # effort figuring out what requisition means in this context.
-        (requisition.width, requisition.height) = (100, 100)
+        log("do_size_request(%s)", requisition)
+        requisition.width, requisition.height = 100, 100
 
     def do_size_allocate(self, allocation):
         self.allocation = allocation
-        log("New allocation = %r", tuple(self.allocation))
+        log("do_size_allocate(%r)", tuple(self.allocation))
         if self.flags() & gtk.REALIZED:
             self.window.move_resize(*allocation)
             self._image_window.resize(allocation.width, allocation.height)
-            self._image_window.input_shape_combine_region(gtk.gdk.Region(),
-                                                          0, 0)
+            self._image_window.input_shape_combine_region(gtk.gdk.Region(), 0, 0)
         self.model.ownership_election()
         self.model.maybe_recalculate_geometry_for(self)
 
     def window_size(self, model):
         assert self.flags() & gtk.REALIZED
+        log("window_size(%s)=%s", model, (self.allocation.width, self.allocation.height))
         return (self.allocation.width, self.allocation.height)
 
     def take_window(self, model, window):

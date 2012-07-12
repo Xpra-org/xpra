@@ -135,6 +135,8 @@ class Wm(gobject.GObject):
         # Public use:
         # A new window has shown up:
         "new-window": one_arg_signal,
+        # A window got resized:
+        "window-resized": one_arg_signal,
         # X11 bell event:
         "bell": one_arg_signal,
         # You can emit this to cause the WM to quit, or the WM may
@@ -257,7 +259,10 @@ class Wm(gobject.GObject):
         def bell_event(window_model, event):
             self.do_bell_event(event)
         win.connect("bell", bell_event)
-        #win.connect("bell", self.do_bell_event)
+        def geometry_changed(model, *args):
+            log("Wm.geometry_changed(%s, %s) on window %s", model, args, win)
+            self.emit("window-resized", win)
+        win.connect("geometry", geometry_changed)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")
@@ -296,7 +301,7 @@ class Wm(gobject.GObject):
         #   _NET_RESTACK_WINDOW
         #   _NET_WM_DESKTOP
         #   _NET_WM_STATE
-        pass
+        log("do_wimpiggy_client_message_event(%s)", event)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection, exiting")
@@ -318,6 +323,7 @@ class Wm(gobject.GObject):
         # anyway, no harm in letting them move existing ones around), and it
         # means that when the window actually gets mapped, we have more
         # accurate info on what the app is actually requesting.
+        log("do_child_configure_request_event(%s)", event)
         if event.window in self._windows:
             return
         log("Reconfigure on withdrawn window")

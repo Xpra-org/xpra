@@ -213,6 +213,7 @@ class XpraClient(XpraClientBase):
             "hello":                self._process_hello,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
+            "window-resized":       self._process_window_resized,
             "draw":                 self._process_draw,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
@@ -682,6 +683,13 @@ class XpraClient(XpraClientBase):
 
     def _process_new_override_redirect(self, packet):
         self._process_new_common(packet, True)
+
+    def _process_window_resized(self, packet):
+        (wid, w, h) = packet[1:4]
+        window = self._id_to_window.get(wid)
+        log("_process_window_resized resizing window %s (id=%s) to %s", window, wid, (w,h))
+        if window:
+            window.resize(w, h)
 
     def _process_draw(self, packet):
         (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
