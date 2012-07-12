@@ -26,12 +26,14 @@
 %endif
 
 %if 0%{?el6}
+%define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %if %{defined opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
 %if 0%{?static_video_libs}
 %define static_x264 1
+%define static_vpx 1
 %endif
 %endif
 
