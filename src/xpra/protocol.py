@@ -436,7 +436,7 @@ class Protocol(object):
                     #this packet is seemingly too big, but check again from the main UI thread
                     #this gives 'set_max_packet_size' a chance to run
                     def check_packet_size(size_to_check):
-                        log.info("check_packet_size(%s) limit is %s", size_to_check, self.max_packet_size)
+                        log("check_packet_size(%s) limit is %s", size_to_check, self.max_packet_size)
                         if size_to_check>self.max_packet_size:
                             return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size))
