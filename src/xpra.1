@@ -326,6 +326,12 @@ funny location, or you want to use some other virtual X server, then
 this switch allows you to specify how to run your preferred X server
 executable. The default value used is:
 \fIXvfb +extension Composite \-screen 0 3840x2560x24+32 \-nolisten tcp \-noreset  \-auth $XAUTHORITY\fP
+
+This can also be used to specify Xdummy as an alternative to Xvfb,
+this requires Xorg server version 1.12 or later and the dummy driver
+version 0.3.5 or later. For more information, see:
+https://xpra.org/Xdummy.html
+
 .TP
 \fB\-\-no\-randr\fP
 Disables X11 randr support. The X11 randr extensions allows the virtual
@@ -535,10 +541,9 @@ attach\fP (see also the discussion of \fB\-\-remote\-xpra\fP).
 Xpra has no test suite.
 
 Xpra does not fully handle all aspects of the X protocol; for
-instance, as of March 2009 it does not yet forward custom cursors,
-beeps, fancy input features like pressure-sensitivity on tablets, some
-window manager hints, and probably other more obscure parts of the X
-protocol.  It does, however, degrade gracefully, and patches for each
+instance, fancy input features like pressure-sensitivity on tablets,
+some window manager hints, and probably other more obscure parts of the
+X protocol. It does, however, degrade gracefully, and patches for each
 feature would be gratefully accepted.
 
 The xpra server allocates an over-large framebuffer when using Xvfb;
@@ -546,7 +551,7 @@ this wastes memory, and can cause applications to misbehave (e.g.,
 by letting menus go off-screen).  Conversely, if the framebuffer is ever
 insufficiently large, clients will misbehave in other ways (e.g.,
 input events will be misdirected). This is not a problem when using
-Xdummy.
+Xdummy, see the \fB\-\-xvfb=\fP switch for details.
 
 The need to choose display numbers by hand is annoying.
 .\" --------------------------------------------------------------------
