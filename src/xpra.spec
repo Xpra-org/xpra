@@ -84,10 +84,58 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed May 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.1-1
-- TODO
+* Thu Jul 12 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.0-1
+- fix client application resizing its own window
+- fix window dimensions hints not applied
+- fix memleak in x264 cleanup code 
+- simplify build by using setup file to generate all constants
+- release Python's GIL during vpx and x264 compression and colourspace conversion
+- use padded buffers to prevent colourspace conversion from reading random memory
+- x264 used memory aligned buffer for better performance
+- force a full refresh when the encoding is changed
+- fix xpra command exit code (more complete fix)
+- reworked batch delay calculations: take more parameters into account
+- fix latency bottleneck in processing of damage requests
+- detect dead connection with ping packets: disconnect if echo not received
+- new menu option to toggle keyboard sync at runtime
+- text clients now ignore packets they are not meant to handle
+- removed compression menu since the default is good enough
+- "xpra info" reports all build version information
+- ignore dependency issues during sdist/clean phase of build
+- record more statistics (mostly latency) in test reports
+- documentation and logging added to code, moved test code out of main packages
+- include distribution name in RPM version/filename
+- CentOS 6 RPMs now depends on libvpx rather than a statically linked library
 
-* Wed May 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.1-1
+* Tue Jul 10 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.3-1
+- do not try to free the empty x264/vpx buffers after a decompression failure
+- fix xpra command exit code (zero) when no error occurred
+- fix Xvfb deadlock on shutdown
+- fix wrongly removing unix domain socket on startup failure
+- fix wrongly killing Xvfb on startup failure
+- fix race in network code and meta data packets
+- ensure clients use raw_packets if the server supports it (fixes 'gibberish' compressed packet errors)
+- fix screen resolution reported by the server
+- fix maximum packet size check wrongly dropping valid connections
+- honour the --no-tray command line argument
+- detect Xvfb startup failures and avoid taking over other displays
+- don't record invalid placeholder value for "server latency"
+- fix missing "damage-sequence" packet for sequence zero
+- fix window focus with some Tk based application (ie: git gui)
+- prevent large clipboard packets from causing the connection to drop
+- fix for connection with older clients and server without raw packet support and rgb24 encoding
+- high latency fix: reduce batch delay when screen updates slow down
+- non-US keyboard layout fix
+- correctly calculate min_batch_delay shown in statistics via "xpra info"
+- require x264-libs for x264 support on Fedora
+
+* Mon Jun 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.2-1
+- fix missing 'a' key using OS X clients
+- fix debian packaging for xpra_launcher
+- fix unicode decoding problems in window title
+- fix latency issue
+
+* Tue May 29 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.1-1
 - fix DoS in network connections setup code
 - fix for non-ascii characters in source file
 - log remote IP or socket address
@@ -95,7 +143,6 @@ So basically it's screen for remote X apps.
 - updates to the man page and xpra command help page
 - support running the automated tests against older versions
 - "xpra info" to report the number of clients connected
-- compile cython extensions with -O2
 - use xpra's own icon for its own windows (about and info dialogs)
 
 * Sun May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
