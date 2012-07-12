@@ -6,10 +6,8 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# NOTE (FIXME): This setup.py file will not work on its own; you have to run
-#   $ python make-constants-pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi
-# before using this setup.py, and again if you change
-# wimpiggy/lowlevel/constants.txt.
+
+
 
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make-constants-pxi.py hack.)
@@ -228,10 +226,6 @@ else:
     )
 
 
-
-
-
-
 ext_modules = []
 cmdclass = {}
 def cython_version_check(min_version):
@@ -258,10 +252,16 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     def pkgconfig(*packages_options, **ekw):
         return {}
 
-
-
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 if XPRA_LOCAL_SERVERS_SUPPORTED:
+    import os.path
+    base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
+    constants_file = "%s.txt" % base
+    pxi_file = "%s.pxi" % base
+    if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
+        from make_constants_pxi import make_constants_pxi
+        print("(re)generating %s" % pxi_file)
+        make_constants_pxi(constants_file, pxi_file)
     cython_add(Extension("wimpiggy.lowlevel.bindings",
                 ["wimpiggy/lowlevel/bindings.pyx"],
                 **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",

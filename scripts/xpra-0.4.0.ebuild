@@ -55,6 +55,4 @@ src_prepare() {
 	if ! use vpx; then
 		epatch disable-vpx.patch
 	fi
-
-	$(PYTHON -2) make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi || die
 }
