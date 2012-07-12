@@ -11,8 +11,8 @@ cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
     void * memset ( void * ptr, int value, size_t num )
 
-cdef extern from "stdlib.h":
-    int posix_memalign (void **memptr, size_t alignment, size_t size)
+cdef extern from *:
+    ctypedef unsigned long size_t
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -24,6 +24,8 @@ ctypedef unsigned char uint8_t
 ctypedef void x264lib_ctx
 ctypedef void x264_picture_t
 cdef extern from "x264lib.h":
+    void* xmemalign(size_t size)
+
     x264lib_ctx* init_encoder(int width, int height)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
@@ -86,11 +88,12 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = posix_memalign(<void **> &padded_buf, 32, buf_len+32)
-        if i!=0:
-            return i, [0, 0, 0], ["", "", ""]
+        padded_buf = <unsigned char *> xmemalign(buf_len+32)
+        if padded_buf==NULL:
+            return 1, [0, 0, 0], ["", "", ""]
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
+        i = 0
         with nogil:
             i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         if i!=0:
@@ -114,11 +117,12 @@ cdef class Decoder(xcoder):
         assert self.context!=NULL
         assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = posix_memalign(<void **> &padded_buf, 32, buf_len+32)
-        if i!=0:
-            return i, 0, ""
+        padded_buf = <unsigned char *> xmemalign(buf_len+32)
+        if padded_buf==NULL:
+            return 1, 0, ""
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
+        i = 0
         with nogil:
             i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
             if i==0:

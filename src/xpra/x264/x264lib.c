@@ -8,19 +8,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifndef _WIN32
-#include <stdint.h>
-#include <unistd.h>
-#else
+#ifdef _WIN32
+#include <malloc.h>
 #include "stdint.h"
 #include "inttypes.h"
+#else
+#include <stdint.h>
+#include <unistd.h>
 #endif
 
-#ifndef _WIN32
-#include <x264.h>
-#else
+#ifdef _WIN32
 typedef void x264_t;
 #define inline __inline
+#else
+#include <x264.h>
 #endif
 
 #include <libswscale/swscale.h>
@@ -261,3 +262,20 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 	;
 }
 #endif
+
+void* xmemalign(size_t size)
+{
+#ifdef _WIN32
+	return _aligned_malloc(size, 32);
+#else
+#if defined(__APPLE__) || defined(__OSX__)
+	//Crapple version: "all memory allocations are 16-byte aligned"
+	return malloc(size);
+#else
+	void** memptr=NULL;
+	if (posix_memalign(memptr, 32, size))
+		return	NULL;
+	return	*memptr;
+#endif
+#endif
+}

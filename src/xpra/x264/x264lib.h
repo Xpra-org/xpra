@@ -3,6 +3,7 @@
 #include "inttypes.h"
 #else
 #include "stdint.h"
+#include "stdlib.h"
 #endif
 
 #ifndef _WIN32
@@ -67,3 +68,10 @@ int decompress_image(struct x264lib_ctx *, uint8_t *in, int size, uint8_t *(*out
  * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
  */
 void change_encoding_speed(struct x264lib_ctx *ctx, int increase);
+
+/**
+ * Define our own memalign function so we can more easily
+ * workaround platforms that lack posix_memalign.
+ * It does its best to provide sse compatible memory allocation.
+ */
+void* xmemalign(size_t size);
