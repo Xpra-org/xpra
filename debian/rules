@@ -3,9 +3,5 @@ export LDFLAGS=-Wl,--as-needed
 %:
 	dh $@ --with python2 --with quilt
 
-override_dh_auto_build:
-	python make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi
-	dh_auto_build
-
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
