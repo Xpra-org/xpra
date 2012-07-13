@@ -55,6 +55,9 @@ def start_daemon_thread(target, name):
 def dec1(x):
     #for pretty debug output of numbers with one decimal
     return int(10.0*x)/10.0
+def dec2(x):
+    #for pretty debug output of numbers with one decimal
+    return int(100.0*x)/100.0
 
 def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
     """
@@ -777,8 +780,8 @@ class ServerSource(object):
         n_skipped_calcs = elapsed / batch.recalculate_delay
         #the longer the elapsed time, the more we slash:
         weight = logp(max(0, n_skipped_calcs-ignore_count))
-        return ["delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*highest_latency)),
-                0, weight]
+        return ("delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*highest_latency)),
+                0, weight)
 
     def get_client_latency_factor(self, avg_client_latency, recent_client_latency):
         """
@@ -805,7 +808,7 @@ class ServerSource(object):
             - get_damage_packet_queue_pixels_factor
         """
         msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes, target=1)
-        return ["damage packet queue size: %s" % msg, factor, weight/2.0]
+        return ("damage packet queue size: %s" % msg, factor, weight/2.0)
 
     def get_damage_packet_queue_pixels_factor(self, low_limit):
         """
@@ -814,7 +817,7 @@ class ServerSource(object):
             See 'queue_inspect'
         """
         msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=1, div=low_limit/2.0)
-        return ["damage packet queue pixels: %s" % msg, factor, weight]
+        return ("damage packet queue pixels: %s" % msg, factor, weight)
 
     def get_damage_data_queue_factor(self):
         """
@@ -828,7 +831,7 @@ class ServerSource(object):
         msg, factor, weight = self.queue_inspect(self._damage_data_qsizes)
         if factor>1.0:
             weight += (factor-1.0)/2
-        return ["damage data queue: %s" % msg, factor, weight]
+        return ("damage data queue: %s" % msg, factor, weight)
 
     def get_pending_acks_factor(self, ack_pending):
         """
@@ -840,7 +843,7 @@ class ServerSource(object):
         """
         if ack_pending is None or len(ack_pending)==0:
             return  ["client is fully up to date: no damage ACKs pending", 0, 2.0]
-        return ["client has some ACKs pending: %s" % len(ack_pending), 1.0, 0]
+        return ("client has some ACKs pending: %s" % len(ack_pending), 1.0, 0)
 
     def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before, low_limit):
         """
@@ -857,8 +860,8 @@ class ServerSource(object):
         pixels_weight = logp((1+pixels_backlog)/(1+last_pixels_backlog)/low_limit)
         factor = (packets_factor+pixels_factor)/2
         weight = (packets_weight+pixels_weight)/2
-        return  ["packets/pixels backlog from %s/%s to %s/%s" % (last_packets_backlog, last_pixels_backlog, packets_backlog, pixels_backlog),
-                 factor, weight]
+        return  ("packets/pixels backlog from %s/%s to %s/%s" % (last_packets_backlog, last_pixels_backlog, packets_backlog, pixels_backlog),
+                 factor, weight)
 
     def update_batch_delay(self, batch, factors):
         """
@@ -895,9 +898,10 @@ class ServerSource(object):
             decimal_delays = [dec1(x) for _,x in batch.last_delays]
             if len(decimal_delays)==0:
                 decimal_delays.append(0)
+            logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
             rec = ("update_batch_delay: wid=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
                     batch.wid, dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
-                    dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), factors)
+                    dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), logfactors)
             self.add_DEBUG_DELAY_MESSAGE(rec)
 
     def calculate_batch_delay(self, wid, window, batch):
