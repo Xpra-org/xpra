@@ -201,6 +201,7 @@ class ServerSource(object):
         self._damage_ack_pending = {}               #records when damage packets are sent (per window dict),
                                                     #so we can calculate the "client_latency" when the client sends
                                                     #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
+        self._min_client_latency = None             #the lowest client latency ever recorded
         self._client_latency = maxdeque(NRECS)      #how long it took for a packet to get to the client and get the echo back.
                                                     #last NRECS: (echo_time, no of pixels, client_latency)
         self._damage_in_latency = maxdeque(NRECS)   #records how long it took for a damage request to be sent
@@ -389,6 +390,8 @@ class ServerSource(object):
         add_list_stats(info, "damage_out_latency",  latencies)
         latencies = [x*1000 for (_, _, x) in list(self._client_latency)]
         add_list_stats(info, "client_latency",  latencies)
+        if self._min_client_latency:
+            info["client_latency.absmin"] = self._min_client_latency
         info["damage_data_queue_size.current"] = self._damage_data_queue.qsize()
         qsizes = [x for _,x in list(self._damage_data_qsizes)]
         add_list_stats(info, "damage_data_queue_size",  qsizes)
@@ -722,7 +725,7 @@ class ServerSource(object):
         if avg is None or recent is None:
             return  None
         msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(avg/1000/1000), dec1(recent/1000/1000))
-        return  self.calculate_for_target(msg, 25000000, avg, recent)
+        return  self.calculate_for_target(msg, 1/25000000, 1/avg, 1/recent)
 
     def get_damage_in_latency_factor(self, avg, recent):
         """
@@ -752,6 +755,8 @@ class ServerSource(object):
         if avg_send_speed is None or recent_send_speed is None:
             return  None
         msg = "network send speed: avg=%s, recent=%s (KBytes/s)" % (int(avg_send_speed/1024), int(recent_send_speed/1024))
+        if recent_send_speed>10*1024*1024:
+            return  [msg, 0, 0]
         return  self.calculate_for_average(msg, avg_send_speed, recent_send_speed)
 
     def get_elasped_time_factor(self, batch, highest_latency):
@@ -772,7 +777,7 @@ class ServerSource(object):
         n_skipped_calcs = elapsed / batch.recalculate_delay
         #the longer the elapsed time, the more we slash:
         weight = logp(max(0, n_skipped_calcs-ignore_count))
-        return ["delay not updated for %s ms (skipped %s times)" % (dec1(1000*elapsed), int(n_skipped_calcs)),
+        return ["delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*highest_latency)),
                 0, weight]
 
     def get_client_latency_factor(self, avg_client_latency, recent_client_latency):
@@ -784,6 +789,8 @@ class ServerSource(object):
         if len(self._client_latency)==0 or avg_client_latency is None or recent_client_latency is None:
             return  None
         target_latency = 0.010
+        if self._min_client_latency:
+            target_latency = self._min_client_latency
         msg = "client latency: avg=%s, recent=%s" % (dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
         return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency)
 
@@ -820,7 +827,7 @@ class ServerSource(object):
         """
         msg, factor, weight = self.queue_inspect(self._damage_data_qsizes)
         if factor>1.0:
-            weight += factor
+            weight += (factor-1.0)/2
         return ["damage data queue: %s" % msg, factor, weight]
 
     def get_pending_acks_factor(self, ack_pending):
@@ -832,7 +839,7 @@ class ServerSource(object):
             when there is absolutely nothing pending, not to increase it.
         """
         if ack_pending is None or len(ack_pending)==0:
-            return  ["client is fully up to date: no damage ACKs pending", 0, 1.0]
+            return  ["client is fully up to date: no damage ACKs pending", 0, 2.0]
         return ["client has some ACKs pending: %s" % len(ack_pending), 1.0, 0]
 
     def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before, low_limit):
@@ -1196,6 +1203,8 @@ class ServerSource(object):
             diff = now-sent_at
             latency = max(0, diff-decode_time/1000/1000)
             log("client_ack_damage: took %s ms round trip, %s for decoding of %s pixels, %s for network", dec1(diff*1000), dec1(decode_time/1000), pixels, dec1(latency*1000))
+            if self._min_client_latency is None or self._min_client_latency>latency:
+                self._min_client_latency = latency
             self._client_latency.append((now, width*height, latency))
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
