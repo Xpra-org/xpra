@@ -59,6 +59,24 @@ def dec2(x):
     #for pretty debug output of numbers with one decimal
     return int(100.0*x)/100.0
 
+def find_invpow(x, n):
+    """Finds the integer component of the n'th root of x,
+    an integer such that y ** n <= x < (y + 1) ** n.
+    """
+    high = 1
+    while high ** n < x:
+        high *= 2
+    low = high/2
+    while low < high:
+        mid = (low + high) // 2
+        if low < mid and mid**n < x:
+            low = mid
+        elif high > mid and mid**n > x:
+            high = mid
+        else:
+            return mid
+    return mid + 1
+
 def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
     """
         Extracts pixels from the given pixmap
@@ -113,7 +131,11 @@ def add_list_stats(info, basename, in_values):
         info["%s.cv_pct" % basename] = int(100.0*std/avg)
     if counter>0:
         #geometric mean
-        info["%s.gm" % basename] = int(pow(p, 1/counter))
+        try:
+            v = int(pow(p, 1.0/counter))
+        except OverflowError:
+            v = find_invpow(p, counter)
+        info["%s.gm" % basename] = v
     if h!=0:
         #harmonic mean
         info["%s.h" % basename] = int(counter/h)
@@ -394,7 +416,7 @@ class ServerSource(object):
         latencies = [x*1000 for (_, _, x) in list(self._client_latency)]
         add_list_stats(info, "client_latency",  latencies)
         if self._min_client_latency:
-            info["client_latency.absmin"] = self._min_client_latency
+            info["client_latency.absmin"] = int(self._min_client_latency*1000)
         info["damage_data_queue_size.current"] = self._damage_data_queue.qsize()
         qsizes = [x for _,x in list(self._damage_data_qsizes)]
         add_list_stats(info, "damage_data_queue_size",  qsizes)
@@ -420,8 +442,8 @@ class ServerSource(object):
             comp_times_ns = []
             for wid, _, pixels, compressed_size, compression_time in estats:
                 if compressed_size>0 and pixels>0:
-                    comp_ratios_pct.append(100*compressed_size/(pixels*3))
-                    comp_times_ns.append(1000*1000*1000*compression_time/pixels)
+                    comp_ratios_pct.append(int(100*compressed_size/(pixels*3)))
+                    comp_times_ns.append(int(1000*1000*1000*compression_time/pixels))
             add_list_stats(info, "compression_ratio_pct", comp_ratios_pct)
             add_list_stats(info, "compression_pixels_per_ns", comp_times_ns)
 
