@@ -48,7 +48,6 @@ class Backing(object):
             from StringIO import StringIO   #@Reimport
             buf = StringIO(img_data)
         return Image.open(buf)
-        #return Image.fromstring("RGB", (width, height), img_data, 'jpeg', 'RGB')
 
     def rgb24image(self, img_data, width, height, rowstride):
         import Image
@@ -66,12 +65,12 @@ class Backing(object):
     def paint_x264(self, img_data, x, y, width, height, rowstride):
         assert "x264" in ENCODINGS
         from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-        self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
+        return  self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
 
     def paint_vpx(self, img_data, x, y, width, height, rowstride):
         assert "vpx" in ENCODINGS
         from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport
-        self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
+        return  self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
 
     def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
         assert x==0 and y==0
@@ -92,13 +91,14 @@ class Backing(object):
         err, outstride, data = decoder.decompress_image_to_rgb(img_data)
         if err!=0:
             log.error("paint_with_video_decoder: ouch, decompression error %s", err)
-            return
+            return  False
         if not data:
             log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
-            return
+            return  False
         try:
             log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
             self.paint_rgb24(data, x, y, width, height, outstride)
+            return  True
         finally:
             decoder.free_image()
 
@@ -159,6 +159,7 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
+        return  True
 
     def paint_pil_image(self, pil_image, width, height):
         try:
@@ -171,6 +172,7 @@ class CairoBacking(Backing):
         png_data = buf.getvalue()
         buf.close()
         self.cairo_paint_png(png_data, 0, 0, width, height)
+        return  True
 
     def paint_rgb24(self, img_data, x, y, width, height, rowstride):
         log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s)" % (x, y, width, height, rowstride))
@@ -181,6 +183,7 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
+        return  True
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride):
         """ see _mmap_send() in server.py for details """
@@ -203,32 +206,33 @@ class CairoBacking(Backing):
                 data += self.mmap.read(length)
                 data_start.value = offset+length
             image = self.rgb24image(data, width, height, rowstride)
-        self.paint_pil_image(image, width, height)
+        return  self.paint_pil_image(image, width, height)
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride):
         log.debug("draw_region(%s,%s,%s,%s,%s,..,%s)", x, y, width, height, coding, rowstride)
         if coding == "mmap":
-            self.paint_mmap(img_data, x, y, width, height, rowstride)
+            return  self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding in ["rgb24", "jpeg"]:
             assert coding in ENCODINGS
             if coding=="rgb24":
                 image = self.rgb24image(img_data, width, height, rowstride)
             else:   #if coding=="jpeg":
                 image = self.jpegimage(img_data, width, height)
-            self.paint_pil_image(image, width, height)
+            return  self.paint_pil_image(image, width, height)
         elif coding == "png":
             assert coding in ENCODINGS
-            self.paint_png(img_data, x, y, width, height)
-        else:
-            raise Exception("invalid picture encoding: %s" % coding)
+            return  self.paint_png(img_data, x, y, width, height)
+        raise Exception("invalid picture encoding: %s" % coding)
 
     def cairo_draw(self, context, x, y):
         try:
             context.set_source_surface(self._backing, x, y)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
+            return True
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
+            return False
 
 
 """
@@ -263,6 +267,7 @@ class PixmapBacking(Backing):
         assert "rgb24" in ENCODINGS
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        return  True
 
     def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride):
         assert coding in ENCODINGS
@@ -272,9 +277,10 @@ class PixmapBacking(Backing):
         pixbuf = loader.get_pixbuf()
         if not pixbuf:
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-            return
+            return  False
         gc = self._backing.new_gc()
         self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+        return  True
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride):
         """ see _mmap_send() in server.py for details """
@@ -285,7 +291,7 @@ class PixmapBacking(Backing):
             offset, length = img_data[0]
             arraytype = ctypes.c_char * length
             data = arraytype.from_buffer(self.mmap, offset)
-            self.paint_rgb24(data, x, y, width, height, rowstride)
+            success = self.paint_rgb24(data, x, y, width, height, rowstride)
             data_start.value = offset+length
         else:
             #re-construct the buffer from discontiguous chunks:
@@ -295,33 +301,35 @@ class PixmapBacking(Backing):
                 self.mmap.seek(offset)
                 data += self.mmap.read(length)
                 data_start.value = offset+length
-            self.paint_rgb24(data, x, y, width, height, rowstride)
+            success = self.paint_rgb24(data, x, y, width, height, rowstride)
+        return  success
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride):
         log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s)", x, y, width, height, coding, len(img_data), rowstride)
         if coding == "mmap":
-            self.paint_mmap(img_data, x, y, width, height, rowstride)
+            return self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding == "rgb24":
             if rowstride>0:
                 assert len(img_data) == rowstride * height
             else:
                 assert len(img_data) == width * 3 * height
-            self.paint_rgb24(img_data, x, y, width, height, rowstride)
+            return self.paint_rgb24(img_data, x, y, width, height, rowstride)
         elif coding == "x264":
-            self.paint_x264(img_data, x, y, width, height, rowstride)
+            return self.paint_x264(img_data, x, y, width, height, rowstride)
         elif coding == "vpx":
-            self.paint_vpx(img_data, x, y, width, height, rowstride)
+            return self.paint_vpx(img_data, x, y, width, height, rowstride)
         else:
-            self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
+            return self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
 
     def cairo_draw(self, context, x, y):
         try:
             context.set_source_pixmap(self._backing, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
-            return False
+            return True
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
+            return False
 
 
 def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):

@@ -136,6 +136,7 @@ class GLClientWindow(ClientWindow):
         else:
             raise Exception("** No JPEG/PNG support for OpenGL")
         queue_draw(self, x, y, width, height)
+        return  True
 
     #FIXME: This is a copypaste from window_backing.py...
     def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):

@@ -694,14 +694,14 @@ class XpraClient(XpraClientBase):
     def _process_draw(self, packet):
         (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
         window = self._id_to_window.get(wid)
+        decode_time = 0
         if window:
             start = time.time()
-            window.draw_region(x, y, width, height, coding, data, rowstride)
-            end = time.time()
-            self.pixel_counter.append((end, width*height))
-            decode_time = int(end*1000*1000-start*1000*1000)
+            if window.draw_region(x, y, width, height, coding, data, rowstride):
+                end = time.time()
+                self.pixel_counter.append((end, width*height))
+                decode_time = int(end*1000*1000-start*1000*1000)
         else:
-            decode_time = 0
             #window is gone
             if coding=="mmap":
                 #we need to ack the data to free the space!

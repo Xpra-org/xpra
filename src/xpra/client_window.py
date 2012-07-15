@@ -268,8 +268,9 @@ class ClientWindow(gtk.Window):
         self._client.send_refresh_all()
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride):
-        self._backing.draw_region(x, y, width, height, coding, img_data, rowstride)
-        queue_draw(self, x, y, width, height)
+        success = self._backing.draw_region(x, y, width, height, coding, img_data, rowstride)
+        if success:
+            queue_draw(self, x, y, width, height)
         if self._refresh_requested:
             self._refresh_requested = False
         else:
@@ -278,6 +279,7 @@ class ClientWindow(gtk.Window):
                 self._refresh_timer = None
             if self._client.auto_refresh_delay and coding == "jpeg":
                 self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
+        return success
 
     """ gtk3 """
     def do_draw(self, context):
