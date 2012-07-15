@@ -206,6 +206,7 @@ class ServerSource(object):
         self._mmap = mmap
         self._mmap_size = mmap_size
         self._mmap_bytes_sent = 0
+        self._mmap_free_size = 0                    #how much of the mmap space is left (may be negative if we failed to write the last chunk)
         # used for safely cleaninup video encoders (x264/vpx):
         self._video_encoder_cleanup = {}
         self._video_encoder_lock = Lock()
@@ -885,6 +886,14 @@ class ServerSource(object):
         return  ("packets/pixels backlog from %s/%s to %s/%s" % (last_packets_backlog, last_pixels_backlog, packets_backlog, pixels_backlog),
                  factor, weight)
 
+    def get_mmap_factor(self):
+        if not self._mmap or self._mmap_size<=0:
+            return  None
+        #full: effective range is 0.0 to ~1.2
+        full = 1.0-float(self._mmap_free_size)/self._mmap_size
+        #aim for ~50%
+        return ("mmap area %s full" % int(100*full), logp(2*full), 2*full)
+
     def update_batch_delay(self, batch, factors):
         """
             Given a list of factors of the form:
@@ -965,6 +974,7 @@ class ServerSource(object):
         factors.append(self.get_damage_data_queue_factor())
         factors.append(self.get_pending_acks_factor(ack_pending))
         factors.append(self.get_client_backlog_factor(window, ack_pending, avg_client_latency, time.time()-avg_client_latency, low_limit))
+        factors.append(self.get_mmap_factor())
         self.update_batch_delay(batch, factors)
 
     def get_encoding(self, wid):
@@ -1220,7 +1230,7 @@ class ServerSource(object):
             return
         pending = ack_pending.get(damage_packet_sequence)
         if pending is None:
-            log.error("cannot find sent time for sequence %s", damage_packet_sequence)
+            log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         del ack_pending[damage_packet_sequence]
         if decode_time:
@@ -1381,6 +1391,7 @@ class ServerSource(object):
             chunk = self._mmap_size-end
             available = chunk+(start-8)
         l = len(data)
+        self._mmap_free_size = available-l
         if l>=available:
             log.warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
             return None
