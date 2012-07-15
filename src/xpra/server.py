@@ -1127,7 +1127,7 @@ class XpraServer(gobject.GObject):
         if "jpeg" in capabilities:
             self.default_damage_options["jpegquality"] = capabilities["jpeg"]
         self.keyboard = bool(capabilities.get("keyboard", True))
-        self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
+        self.keyboard_sync = self.keyboard and bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
