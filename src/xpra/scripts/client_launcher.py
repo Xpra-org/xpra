@@ -12,6 +12,7 @@ This is a simple GUI for starting the xpra client.
 import sys
 import os.path
 import tempfile
+import inspect
 
 try:
 	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
@@ -28,9 +29,23 @@ import gobject
 import socket
 from xpra.client import XpraClient
 
+APPLICATION_NAME = "Xpra Launcher"
 
-""" Start of crappy platform workarounds """
+
+def valid_dir(path):
+	try:
+		return path and os.path.exists(path) and os.path.isdir(path)
+	except:
+		return False
+
+"""
+	Start of crappy platform workarounds
+	SUBPROCESS_CREATION_FLAGS is for win32 to avoid creating DOS windows for console applications
+	ICONS_DIR is for location the icons
+"""
 SUBPROCESS_CREATION_FLAGS = 0
+APP_DIR = os.getcwd()
+ICONS_DIR = None
 if sys.platform.startswith("win"):
 	try:
 		import win32process			#@UnresolvedImport
@@ -50,6 +65,32 @@ if sys.platform.startswith("win"):
 		log_file = os.path.join(log_path, "Xpra.log")
 		sys.stdout = open(log_file, "a")
 		sys.stderr = sys.stdout
+		APP_DIR = os.path.dirname(sys.executable)
+		ICONS_DIR = os.path.join(APP_DIR, "icons")
+elif sys.platform.startswith("darwin"):
+	rsc = None
+	try:
+		import gtk_osxapplication		#@UnresolvedImport
+		rsc = gtk_osxapplication.quartz_application_get_resource_path()
+	except:
+		pass
+	if rsc:
+		CONTENTS = "/Contents/"
+		i = rsc.rfind(CONTENTS)
+		if i>0:
+			APP_DIR = rsc[:i+len(CONTENTS)]
+		ICONS_DIR = os.path.join(rsc, "icons")
+if not ICONS_DIR or not os.path.exists(ICONS_DIR):
+	if not valid_dir(APP_DIR):
+		APP_DIR = os.path.dirname(inspect.getfile(sys._getframe(1)))
+	if not valid_dir(APP_DIR):
+		APP_DIR = os.path.dirname(sys.argv[0])
+	if not valid_dir(APP_DIR):
+		APP_DIR = os.getcwd()
+	for x in ["%s/icons" % APP_DIR, "/usr/local/share/icons", "/usr/share/icons"]:
+		if os.path.exists(x):
+			ICONS_DIR = x
+			break
 
 
 LOSSY_5 = "lowest quality"
@@ -82,6 +123,38 @@ xpra_opts.mode = "tcp"
 xpra_opts.autoconnect = False
 xpra_opts.password_file = False
 
+
+
+def get_icon_from_file(filename):
+	try:
+		if not os.path.exists(filename):
+			return	None
+		f = open(filename, mode='rb')
+		data = f.read()
+		f.close()
+		loader = gtk.gdk.PixbufLoader()
+		loader.write(data)
+		loader.close()
+	except Exception, e:
+		print("get_icon_from_file(%s) %s" % (filename, e))
+		return	None
+	pixbuf = loader.get_pixbuf()
+	return pixbuf
+
+def add_close_accel(window, callback):
+	# key accelerators
+	accel_group = gtk.AccelGroup()
+	accel_group.connect_group(ord('w'), gtk.gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+	window.add_accel_group(accel_group)
+	accel_group = gtk.AccelGroup()
+	key, mod = gtk.accelerator_parse('<Alt>F4')
+	accel_group.connect_group(key, mod, gtk.ACCEL_LOCKED, callback)
+	window.add_accel_group(accel_group)
+
+def scaled_image(pixbuf, icon_size):
+	return	gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size,gtk.gdk.INTERP_BILINEAR))
+
+
 class ApplicationWindow:
 
 	def	__init__(self):
@@ -89,13 +162,25 @@ class ApplicationWindow:
 		self.window.connect("destroy", self.destroy)
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
+		self.window.set_title(APPLICATION_NAME)
+		icon_pixbuf = get_icon_from_file(os.path.join(ICONS_DIR, "xpra.png"))
+		if icon_pixbuf:
+			self.window.set_icon(icon_pixbuf)
+		self.window.set_position(gtk.WIN_POS_CENTER)
 
-		# Title
 		vbox = gtk.VBox(False, 0)
 		vbox.set_spacing(15)
+
+		# Title
+		hbox = gtk.HBox(False, 0)
+		if icon_pixbuf:
+			image = gtk.Image()
+			image.set_from_pixbuf(icon_pixbuf)
+			hbox.pack_start(image)
 		label = gtk.Label("Connect to xpra server")
 		label.modify_font(pango.FontDescription("sans 13"))
-		vbox.pack_start(label)
+		hbox.pack_start(label)
+		vbox.pack_start(hbox)
 
 		# Mode:
 		hbox = gtk.HBox(False, 20)
@@ -112,6 +197,12 @@ class ApplicationWindow:
 			self.mode_combo.set_active(0)
 		else:
 			self.mode_combo.set_active(1)
+		def mode_changed(*args):
+			if self.mode_combo.get_active_text()=="ssh":
+				self.port_entry.set_text("22")
+			else:
+				self.port_entry.set_text("%s" % xpra_opts.port)
+		self.mode_combo.connect("changed", mode_changed)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
 
@@ -178,12 +269,23 @@ class ApplicationWindow:
 		self.info = gtk.Label()
 		self.info.set_line_wrap(True)
 		self.info.set_size_request(360, -1)
+		color_obj = gtk.gdk.color_parse("red")
+		if color_obj:
+			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
 		vbox.pack_start(self.info)
 
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked, None)
+		connect_icon = get_icon_from_file(os.path.join(ICONS_DIR, "retry.png"))
+		if connect_icon:
+			self.button.set_image(scaled_image(connect_icon, 24))
 		vbox.pack_start(self.button)
+
+		def accel_close(*args):
+			gtk.main_quit()
+
+		add_close_accel(self.window, accel_close)
 
 		self.window.add(vbox)
 		self.window.show_all()
@@ -352,6 +454,12 @@ def update_options_from_file(filename):
 		xpra_opts.password_file = create_password_file(val)
 
 def main():
+	try:
+		import glib
+		glib.set_application_name(APPLICATION_NAME)
+	except:
+		pass
+
 	if len(sys.argv) == 2:
 		update_options_from_file(sys.argv[1])
 	app = ApplicationWindow()
