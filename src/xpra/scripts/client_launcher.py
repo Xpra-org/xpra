@@ -58,6 +58,11 @@ LOSSY_50 = "average quality"
 LOSSY_90 = "best lossy quality"
 
 XPRA_ENCODING_OPTIONS = [ "jpeg", "x264", "png", "rgb24", "vpx" ]
+try:
+	from xpra.scripts.main import ENCODINGS
+	XPRA_ENCODING_OPTIONS = ENCODINGS
+except:
+	pass
 
 XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
 XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
@@ -69,7 +74,7 @@ XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 # Default connection options
 from wimpiggy.util import AdHocStruct
 xpra_opts = AdHocStruct()
-xpra_opts.encoding = "jpeg"
+xpra_opts.encoding = "png"
 xpra_opts.jpegquality = 90
 xpra_opts.host = "127.0.0.1"
 xpra_opts.port = 16010
@@ -125,7 +130,8 @@ class ApplicationWindow:
 		# JPEG:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
-		hbox.pack_start(gtk.Label("JPEG Compression: "))
+		self.jpeg_label = gtk.Label("JPEG Compression: ")
+		hbox.pack_start(self.jpeg_label)
 		self.jpeg_combo = gtk.combo_box_new_text()
 		self.jpeg_combo.get_model().clear()
 		for option in XPRA_COMPRESSION_OPTIONS:
@@ -133,6 +139,15 @@ class ApplicationWindow:
 		self.jpeg_combo.set_active(2)
 		hbox.pack_start(self.jpeg_combo)
 		vbox.pack_start(hbox)
+		def encoding_changed(*args):
+			is_jpeg = self.encoding_combo.get_active_text()=="jpeg"
+			if is_jpeg:
+				self.jpeg_combo.show()
+				self.jpeg_label.show()
+			else:
+				self.jpeg_combo.hide()
+				self.jpeg_label.hide()
+		self.encoding_combo.connect("changed", encoding_changed)
 
 		# Host:Port
 		hbox = gtk.HBox(False, 0)
@@ -172,6 +187,7 @@ class ApplicationWindow:
 
 		self.window.add(vbox)
 		self.window.show_all()
+		encoding_changed()
 
 	def connect_tcp(self):
 		self.info.set_text("Connecting.")
