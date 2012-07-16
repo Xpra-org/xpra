@@ -9,7 +9,8 @@
 #include <fcntl.h>
 
 #define MEMALIGN 1
-#define MEMALIGN_ALIGNMENT 32		//not honoured on OSX
+//not honoured on OSX:
+#define MEMALIGN_ALIGNMENT 32
 
 #ifdef _WIN32
 #include <malloc.h>
@@ -271,25 +272,25 @@ void* xmemalign(size_t size)
 #ifdef MEMALIGN
 #ifdef _WIN32
 	return _aligned_malloc(size, MEMALIGN_ALIGNMENT);
-#else
-#if defined(__APPLE__) || defined(__OSX__)
+#elif defined(__APPLE__) || defined(__OSX__)
 	//Crapple version: "all memory allocations are 16-byte aligned"
 	return malloc(size);
-#else	//not WIN32 and not APPLE/OSX:
+#else
+	//not WIN32 and not APPLE/OSX:
 	void* memptr=NULL;
 	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
 		return	NULL;
 	return	memptr;
 #endif
-#endif
-#else	//not MEMALIGN
+//MEMALIGN not set:
+#else
 	return	malloc(size);
 #endif
 }
 
 void xmemfree(void *ptr)
 {
-#ifdef _WIN32 && MEMALIGN
+#if defined(_WIN32) && defined(MEMALIGN)
 	_aligned_free(ptr);
 #else
 	free(ptr);
