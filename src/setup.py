@@ -6,9 +6,9 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-
-
+##############################################################################
+# WARNING: please try to keep line numbers unchanged when modifying this file
+#  a number of patches will break otherwise.
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make-constants-pxi.py hack.)
 
@@ -51,13 +51,10 @@ full_desc = """This package contains several sub-projects:
   xpra:
     %s""" % (wimpiggy_desc, parti_desc, xpra_desc)
 
-
 def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
         values.append(arg)
-
-
 
 extra_options = {}
 if sys.platform.startswith("win"):
@@ -112,6 +109,8 @@ if sys.platform.startswith("win"):
             add_to_keywords(kw, 'include_dirs', "xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir)
             add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
         else:
             raise Exception("unknown package config: %s" % str(packages))
         return kw

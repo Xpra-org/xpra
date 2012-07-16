@@ -22,16 +22,42 @@ REM 371226b8346f29011137c7aa9e93f2f6  Microsoft.VC90.MFC/mfcm90u.dll
 
 ECHO ****** Clearing build directory
 RMDIR /S /Q %BUILD_DIR% dist Output
-DEL Xpra_Setup.exe
+DEL /Q Xpra_Setup.exe
+DEL /Q xpra\x264\win32\codec.pyd
+DEL /Q xpra\x264\codec.pyd
+DEL /Q xpra\vpx\win32\codec.pyd
+DEL /Q xpra\vpx\codec.pyd
 
-ECHO ****** py2exe
-%PYTHON_EXE% -OO setup.py py2exe > py2exe-xpra.log
-ECHO returncode: %errorlevel%
+ECHO ***************************************************************
+ECHO ****** Hack for x264/vpx:
+ECHO ****** build x264/vpx pyd and place it where it should be...
+%PYTHON_EXE% -OO setup.py build > build-xpra.log
 if %errorlevel% NEQ 0 (
-	ECHO "py2exe error"
+	ECHO "build error, see build-xpra.log"
+	GOTO:EOF
+)
+SET X264_CODEC_PYD=build\lib.win32-2.7\xpra\x264\codec.pyd
+COPY %X264_CODEC_PYD% xpra\x264\
+if %errorlevel% NEQ 0 (
+	ECHO "build error: cannot find compiled x264 codec.pyd"
+	GOTO:EOF
+)
+SET VPX_CODEC_PYD=build\lib.win32-2.7\xpra\vpx\codec.pyd
+COPY %VPX_CODEC_PYD% xpra\vpx\
+if %errorlevel% NEQ 0 (
+	ECHO "build error: cannot find compiled vpx codec.pyd"
 	GOTO:EOF
 )
 
+ECHO ***************************************************************
+ECHO ****** py2exe
+%PYTHON_EXE% -OO setup.py py2exe > py2exe-xpra.log
+if %errorlevel% NEQ 0 (
+	ECHO "py2exe error, see py2exe-xpra.log"
+	GOTO:EOF
+)
+
+ECHO ***************************************************************
 ECHO ****** InnoSetup
 COPY win32\xpra.iss xpra.iss
 %INNOSETUP% xpra.iss > innosetup.log
