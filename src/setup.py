@@ -38,7 +38,6 @@ except:
     traceback.print_exc()
     print("failed to update build_info")
 
-
 wimpiggy_desc = "A library for writing window managers, using GTK+"
 parti_desc = "A tabbing/tiling window manager using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
@@ -80,6 +79,7 @@ if sys.platform.startswith("win"):
     # http://ffmpeg.zeranoe.com/builds/
     # beware that some builds work, others crash.. here is one that is known to work ok:
     # ffmpeg-git-4082198-win32-dev
+    # ffmpeg-20120708-git-299387e-win32-dev
     # This is where I keep them, you will obviously need to change this value:
     ffmpeg_path="E:\\ffmpeg-win32-shared"
     ffmpeg_include_dir = "%s\\include" % ffmpeg_path
