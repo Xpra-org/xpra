@@ -761,7 +761,7 @@ class WindowModel(BaseWindowModel):
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
         old_hints = self.get_property("size-hints")
-        if old_hints is None or size_hints.__dict__ != old_hints.__dict__:
+        if size_hints and (old_hints is None or size_hints.__dict__ != old_hints.__dict__):
             self._internal_set_property("size-hints", size_hints)
             self._update_client_geometry()
 
