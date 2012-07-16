@@ -9,7 +9,8 @@
 #Set this variable to True and batch delay debug messages
 #will be printed every 30 seconds or every MAX_DEBUG_MESSAGES messages
 #(whichever comes first)
-DEBUG_DELAY = False
+import os
+DEBUG_DELAY = len(os.environ.get("XPRA_DEBUG_LATENCY", ""))>0
 MAX_DEBUG_MESSAGES = 1000
 
 
