@@ -57,6 +57,8 @@ def add_to_keywords(kw, key, *args):
     for arg in args:
         values.append(arg)
 
+
+
 extra_options = {}
 if sys.platform.startswith("win"):
     # The Microsoft C library DLLs:
@@ -103,12 +105,10 @@ if sys.platform.startswith("win"):
         if "x264" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', "xpra/x264/win32", ffmpeg_include_dir)
-            add_to_keywords(kw, 'library_dirs', "xpra/x264/win32", ffmpeg_lib_dir)
             add_to_keywords(kw, 'libraries', "swscale", "avcodec", "avutil")
         elif "vpx" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', "xpra/vpx/win32", vpx_include_dir, ffmpeg_include_dir)
-            add_to_keywords(kw, 'library_dirs', "xpra/vpx/win32", vpx_lib_dir, ffmpeg_lib_dir)
             add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
         else:
