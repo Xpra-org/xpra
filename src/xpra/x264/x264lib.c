@@ -8,6 +8,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#define MEMALIGN 1
+#define MEMALIGN_ALIGNMENT 32		//not honoured on OSX
+
 #ifdef _WIN32
 #include <malloc.h>
 #include "stdint.h"
@@ -265,17 +268,30 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 
 void* xmemalign(size_t size)
 {
+#ifdef MEMALIGN
 #ifdef _WIN32
-	return _aligned_malloc(size, 32);
+	return _aligned_malloc(size, MEMALIGN_ALIGNMENT);
 #else
 #if defined(__APPLE__) || defined(__OSX__)
 	//Crapple version: "all memory allocations are 16-byte aligned"
 	return malloc(size);
-#else
+#else	//not WIN32 and not APPLE/OSX:
 	void* memptr=NULL;
-	if (posix_memalign(&memptr, 32, size))
+	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
 		return	NULL;
 	return	memptr;
 #endif
+#endif
+#else	//not MEMALIGN
+	return	malloc(size);
+#endif
+}
+
+void xmemfree(void *ptr)
+{
+#ifdef _WIN32 && MEMALIGN
+	_aligned_free(ptr);
+#else
+	free(ptr);
 #endif
 }

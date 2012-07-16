@@ -75,3 +75,8 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase);
  * It does its best to provide sse compatible memory allocation.
  */
 void* xmemalign(size_t size);
+
+/**
+ * Frees memory allocated with xmemalign
+ */
+void xmemfree(void *ptr);

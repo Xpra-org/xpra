@@ -25,6 +25,7 @@ ctypedef void x264lib_ctx
 ctypedef void x264_picture_t
 cdef extern from "x264lib.h":
     void* xmemalign(size_t size)
+    void xmemfree(void* ptr)
 
     x264lib_ctx* init_encoder(int width, int height)
     void clean_encoder(x264lib_ctx *context)
@@ -96,6 +97,7 @@ cdef class Decoder(xcoder):
         i = 0
         with nogil:
             i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
+        xmemfree(padded_buf)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
         doutvY = (<char *>dout[0])[:self.height * outstrides[0]]
@@ -127,7 +129,7 @@ cdef class Decoder(xcoder):
             i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
             if i==0:
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
-            free(padded_buf)
+        xmemfree(padded_buf)
         if i!=0:
             return i, 0, ""
         self.last_image = dout
@@ -136,7 +138,7 @@ cdef class Decoder(xcoder):
 
     def free_image(self):
         assert self.last_image!=NULL
-        free(self.last_image)
+        xmemfree(self.last_image)
         self.last_image = NULL
 
 
