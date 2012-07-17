@@ -285,9 +285,12 @@ class ApplicationWindow:
 
 		self.window.add(vbox)
 
-	def run(self):
+	def show(self):
 		self.window.show_all()
 		self.encoding_changed()
+
+	def run(self):
+		self.show()
 		gtk.main()
 
 	def encoding_changed(self, *args):
@@ -365,19 +368,26 @@ class ApplicationWindow:
 		logging.root.setLevel(logging.INFO)
 		logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
+		self.window.hide()
 		app = XpraClient(socket_wrapper, opts)
 		app.run()
+		self.window.show()
 
 	def launch_xpra(self):
 		thread.start_new_thread(self.do_launch_xpra, ())
 
+	def set_info_text(self, text):
+		if self.info:
+			gobject.idle_add(self.info.set_text, text)
+
 	def do_launch_xpra(self):
 		""" Launches Xpra in a new process """
-		self.window.hide()
+		gobject.idle_add(self.window.hide)
 		try:
-			self.info.set_text("Launching")
+			self.set_info_text("Launching")
 			process = self.start_xpra_process()
-			(out,err) = process.communicate()
+			gobject.idle_add(self.window.hide)
+			out,err = process.communicate()
 			print("stdout=%s" % out)
 			print("stderr=%s" % err)
 			ret = process.wait()
@@ -386,12 +396,13 @@ class ApplicationWindow:
 					out = "..."+out[len(out)-255:]
 				if len(err)>255:
 					err = "..."+err[len(err)-255:]
-				self.info.set_text("command terminated with status %s,\noutput:\n%s\nerror:\n%s" % (ret, out, err))
-				self.window.show_all()
+				self.set_info_text("command terminated with status %s,\noutput:\n%s\nerror:\n%s" % (ret, out, err))
+				self.show()
 			gobject.idle_add(show_result, out, err)
 		except Exception, e:
 			print("error: %s" % e)
-			self.info.set_text("Error launching: %s" % (e))
+			gobject.idle_add(self.show)
+			self.set_info_text("Error launching: %s" % (e))
 
 	def start_xpra_process(self):
 		#ret = os.system(" ".join(args))
