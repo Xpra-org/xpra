@@ -120,9 +120,24 @@ xpra_opts.jpegquality = 90
 xpra_opts.host = "127.0.0.1"
 xpra_opts.port = 16010
 xpra_opts.mode = "tcp"
+xpra_opts.debug = False
 xpra_opts.autoconnect = False
 xpra_opts.no_tray = False
+xpra_opts.dock_icon = ""
+xpra_opts.tray_icon = ""
 xpra_opts.password_file = False
+xpra_opts.clipboard = True
+xpra_opts.pulseaudio = True
+xpra_opts.mmap = True
+xpra_opts.readonly = False
+xpra_opts.keyboard_sync = True
+xpra_opts.compression_level = 3
+xpra_opts.auto_refresh_delay = 0.0
+xpra_opts.max_bandwidth = 0.0
+xpra_opts.window_icon = ""
+xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
+xpra_opts.password_file = ""
+xpra_opts.send_pings = False
 
 
 
@@ -346,23 +361,23 @@ class ApplicationWindow:
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
 		opts.jpegquality = xpra_opts.jpegquality
-		opts.max_bandwidth = 0.0
-		opts.auto_refresh_delay = 0.0
-		opts.key_shortcuts = []
-		opts.compression_level = 3
+		opts.max_bandwidth = xpra_opts.max_bandwidth
+		opts.auto_refresh_delay = xpra_opts.auto_refresh_delay
+		opts.key_shortcuts = xpra_opts.key_shortcuts
+		opts.compression_level = xpra_opts.compression_level
 		from xpra.platform import DEFAULT_SSH_CMD
 		opts.ssh = DEFAULT_SSH_CMD
 		opts.remote_xpra = ".xpra/run-xpra"
-		opts.debug = None
-		opts.no_tray = False
-		opts.dock_icon = None
-		opts.tray_icon = None
-		opts.window_icon = None
-		opts.readonly = False
+		opts.debug = xpra_opts.debug
+		opts.no_tray = xpra_opts.no_tray
+		opts.dock_icon = xpra_opts.dock_icon
+		opts.tray_icon = xpra_opts.tray_icon
+		opts.window_icon = xpra_opts.window_icon
+		opts.readonly = xpra_opts.readonly
 		opts.session_name = "Xpra session"
-		opts.mmap = True
-		opts.keyboard_sync = True
-		opts.send_pings = False
+		opts.mmap = xpra_opts.mmap
+		opts.keyboard_sync = xpra_opts.keyboard_sync
+		opts.send_pings = xpra_opts.send_pings
 
 		import logging
 		logging.root.setLevel(logging.INFO)
