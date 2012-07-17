@@ -121,6 +121,7 @@ xpra_opts.host = "127.0.0.1"
 xpra_opts.port = 16010
 xpra_opts.mode = "tcp"
 xpra_opts.autoconnect = False
+xpra_opts.no_tray = False
 xpra_opts.password_file = False
 
 
@@ -158,6 +159,9 @@ def scaled_image(pixbuf, icon_size):
 class ApplicationWindow:
 
 	def	__init__(self):
+		pass
+	
+	def create_window(self):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.window.connect("destroy", self.destroy)
 		self.window.set_default_size(400, 300)
@@ -230,15 +234,7 @@ class ApplicationWindow:
 		self.jpeg_combo.set_active(2)
 		hbox.pack_start(self.jpeg_combo)
 		vbox.pack_start(hbox)
-		def encoding_changed(*args):
-			is_jpeg = self.encoding_combo.get_active_text()=="jpeg"
-			if is_jpeg:
-				self.jpeg_combo.show()
-				self.jpeg_label.show()
-			else:
-				self.jpeg_combo.hide()
-				self.jpeg_label.hide()
-		self.encoding_combo.connect("changed", encoding_changed)
+		self.encoding_combo.connect("changed", self.encoding_changed)
 
 		# Host:Port
 		hbox = gtk.HBox(False, 0)
@@ -288,8 +284,31 @@ class ApplicationWindow:
 		add_close_accel(self.window, accel_close)
 
 		self.window.add(vbox)
+
+	def run(self):
 		self.window.show_all()
-		encoding_changed()
+		self.encoding_changed()
+		gtk.main()
+
+	def encoding_changed(self, *args):
+		is_jpeg = self.encoding_combo.get_active_text()=="jpeg"
+		if is_jpeg:
+			self.jpeg_combo.show()
+			self.jpeg_label.show()
+		else:
+			self.jpeg_combo.hide()
+			self.jpeg_label.hide()
+
+	def do_connect(self):
+		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
+			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
+			self.connect_tcp()
+		else:
+			self.launch_xpra()
+
+	def connect_clicked(self, *args):
+		self.update_options_from_gui()
+		self.do_connect()
 
 	def connect_tcp(self):
 		self.info.set_text("Connecting.")
@@ -332,6 +351,7 @@ class ApplicationWindow:
 		opts.ssh = DEFAULT_SSH_CMD
 		opts.remote_xpra = ".xpra/run-xpra"
 		opts.debug = None
+		opts.no_tray = False
 		opts.dock_icon = None
 		opts.tray_icon = None
 		opts.window_icon = None
@@ -349,7 +369,32 @@ class ApplicationWindow:
 		app.run()
 
 	def launch_xpra(self):
+		thread.start_new_thread(self.do_launch_xpra, ())
+
+	def do_launch_xpra(self):
 		""" Launches Xpra in a new process """
+		self.window.hide()
+		try:
+			self.info.set_text("Launching")
+			process = self.start_xpra_process()
+			(out,err) = process.communicate()
+			print("stdout=%s" % out)
+			print("stderr=%s" % err)
+			ret = process.wait()
+			def show_result(out, err):
+				if len(out)>255:
+					out = "..."+out[len(out)-255:]
+				if len(err)>255:
+					err = "..."+err[len(err)-255:]
+				self.info.set_text("command terminated with status %s,\noutput:\n%s\nerror:\n%s" % (ret, out, err))
+				self.window.show_all()
+			gobject.idle_add(show_result, out, err)
+		except Exception, e:
+			print("error: %s" % e)
+			self.info.set_text("Error launching: %s" % (e))
+
+	def start_xpra_process(self):
+		#ret = os.system(" ".join(args))
 		cmd = "xpra"
 		if sys.platform.startswith("win"):
 			if hasattr(sys, "frozen"):
@@ -360,43 +405,16 @@ class ApplicationWindow:
 			if not os.path.exists(cmd):
 				self.info.set_text("Xpra command not found!")
 				return
-		self.info.set_text("Launching: %s" % cmd)
-		self.window.hide()
-		thread.start_new_thread(self.start_xpra_process, (cmd,))
-		import time
-		time.sleep(40)
-
-	def start_xpra_process(self, cmd):
-		try:
-			self.do_start_xpra_process(cmd)
-		except Exception, e:
-			print("error: %s" % e)
-			self.info.set_text("Error launching %s: %s" % (cmd, e))
-
-	def do_start_xpra_process(self, cmd):
-		#ret = os.system(" ".join(args))
 		uri = "%s:%s:%s" % (xpra_opts.mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
-#print("jpeg=%s" % xpra_opts.jpegquality)
-		args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
 		args.append("--encoding=%s" % xpra_opts.encoding)
+		if xpra_opts.encoding=="jpeg":
+			args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
 		print("Running %s" % args)
 		process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, creationflags=SUBPROCESS_CREATION_FLAGS)
-		(out,err) = process.communicate()
-		print("do_start_xpra_process(%s) command terminated" % str(cmd))
-		print("stdout=%s" % out)
-		print("stderr=%s" % err)
-		ret = process.wait()
-		def show_result(out, err):
-			if len(out)>255:
-				out = "..."+out[len(out)-255:]
-			if len(err)>255:
-				err = "..."+err[len(err)-255:]
-			self.info.set_text("command:\n%s\nterminated with status %s,\noutput:\n%s\nerror:\n%s" % (args, ret, out, err))
-			self.window.show_all()
-		gobject.idle_add(show_result, out, err)
+		return process
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
@@ -407,17 +425,6 @@ class ApplicationWindow:
 		password = self.password_entry.get_text()
 		if len(password) > 0:
 			xpra_opts.password_file = create_password_file(password)
-
-	def do_connect(self):
-		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
-			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
-			self.connect_tcp()
-		else:
-			self.launch_xpra()
-
-	def connect_clicked(self, *args):
-		self.update_options_from_gui()
-		self.do_connect()
 
 	def destroy(self, *args):
 		gtk.main_quit()
@@ -464,13 +471,16 @@ def main():
 		update_options_from_file(sys.argv[1])
 	app = ApplicationWindow()
 	if xpra_opts.autoconnect == "True":
-		app.do_connect()
+		#file says we should connect, do that only:
+		process = app.start_xpra_process()
+		return process.wait()
 	else:
-		gtk.main()
+		app.create_window()
+		app.run()
 	if xpra_opts.password_file:
 		os.unlink(xpra_opts.password_file)
-	sys.exit(0)
+	return 0
 
 if __name__ == "__main__":
-	main()
-	sys.exit(0)
+	v = main()
+	sys.exit(v)
