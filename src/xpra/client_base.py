@@ -4,6 +4,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 
@@ -114,6 +115,7 @@ class XpraClientBase(gobject.GObject):
         capabilities["encodings"] = ENCODINGS
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
+        capabilities["platform"] = sys.platform
         capabilities["raw_packets"] = True
         capabilities["server-window-resize"] = True
         capabilities["randr_notify"] = False    #only client.py cares about this
