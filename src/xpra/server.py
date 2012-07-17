@@ -66,7 +66,7 @@ import xpra
 from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata, add_list_stats
 from xpra.deque import maxdeque
 from xpra.protocol import Protocol, SocketConnection, dump_packet
-from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
@@ -268,6 +268,7 @@ class XpraServer(gobject.GObject):
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
         ### Set up keymap:
+        self.xkbmap_initial = get_gtk_keymap()
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
@@ -389,7 +390,13 @@ class XpraServer(gobject.GObject):
                 self._keynames_for_mod = None
                 if self.keyboard:
                     assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes)
+                    #if the client does not provide a full keymap,
+                    #try to preserve the initial server keycodes
+                    #(used by non X11 clients like osx,win32 or Android)
+                    preserve_keycodes = {}
+                    if not self.xkbmap_print:
+                        preserve_keycodes = self.xkbmap_initial
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, preserve_keycodes)
 
                     #now set the new modifier mappings:
                     self.clean_keyboard_state()
