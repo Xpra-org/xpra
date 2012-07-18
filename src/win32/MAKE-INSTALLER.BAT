@@ -8,8 +8,8 @@ SET BUILD_DIR=build
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM "SET THESE TO 0 TO DISABLE VPX/X264:"
-SET X264=0
-SET VPX=0
+SET X264=1
+SET VPX=1
 
 
 REM "*** These are the DLLs you are looking for:"
