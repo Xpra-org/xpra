@@ -1,5 +1,9 @@
-/* Copyright (C) 2012 Serviware, Arthur Huillet <arthur dot huillet AT free dot fr>
-   */
+/* This file is part of Parti.
+ * Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
+ * Copyright (C) 2012 Antoine Martin <antoine@devloop.org.uk>
+ * Parti is released under the terms of the GNU GPL v2, or, at your option, any
+ * later version. See the file COPYING for details.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+//not honoured on MS Windows:
 #define MEMALIGN 1
 //not honoured on OSX:
 #define MEMALIGN_ALIGNMENT 32
@@ -271,12 +276,16 @@ void* xmemalign(size_t size)
 {
 #ifdef MEMALIGN
 #ifdef _WIN32
-	return _aligned_malloc(size, MEMALIGN_ALIGNMENT);
+	//_aligned_malloc and _aligned_free lead to a memleak
+	//well done Microsoft, I didn't think you could screw up this badly
+	//and thank you for wasting my time once again
+	return malloc(size);
 #elif defined(__APPLE__) || defined(__OSX__)
 	//Crapple version: "all memory allocations are 16-byte aligned"
+	//no choice, this is what you get
 	return malloc(size);
 #else
-	//not WIN32 and not APPLE/OSX:
+	//not WIN32 and not APPLE/OSX, assume POSIX:
 	void* memptr=NULL;
 	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
 		return	NULL;
@@ -290,9 +299,5 @@ void* xmemalign(size_t size)
 
 void xmemfree(void *ptr)
 {
-#if defined(_WIN32) && defined(MEMALIGN)
-	_aligned_free(ptr);
-#else
 	free(ptr);
-#endif
 }
