@@ -7,6 +7,11 @@ SET INNOSETUP="C:\Program Files\Inno Setup 5\ISCC.exe"
 SET BUILD_DIR=build
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
+REM "SET THESE TO 0 TO DISABLE VPX/X264:"
+SET X264=0
+SET VPX=0
+
+
 REM "*** These are the DLLs you are looking for:"
 REM 6fda4c0ef8715eead5b8cec66512d3c8  Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
 REM 4a8bc195abdc93f0db5dab7f5093c52f  Microsoft.VC90.CRT/msvcm90.dll
@@ -31,23 +36,32 @@ DEL /Q xpra\vpx\codec.pyd
 ECHO ***************************************************************
 ECHO ****** Hack for x264/vpx:
 ECHO ****** build x264/vpx pyd and place it where it should be...
-%PYTHON_EXE% -OO setup.py build > build-xpra.log
+SET BUILD_ARGS=
+IF %X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-x264
+IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
+
+ECHO %PYTHON_EXE% -OO setup.py build %BUILD_ARGS%
+%PYTHON_EXE% -OO setup.py build %BUILD_ARGS% > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO:EOF
 )
+IF %X264% NEQ 1 GOTO:NO_X264
 SET X264_CODEC_PYD=build\lib.win32-2.7\xpra\x264\codec.pyd
 COPY %X264_CODEC_PYD% xpra\x264\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled x264 codec.pyd"
 	GOTO:EOF
 )
+:NO_X264
+IF %VPX% NEQ 1 GOTO:NO_VPX
 SET VPX_CODEC_PYD=build\lib.win32-2.7\xpra\vpx\codec.pyd
 COPY %VPX_CODEC_PYD% xpra\vpx\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled vpx codec.pyd"
 	GOTO:EOF
 )
+:NO_VPX
 
 ECHO ***************************************************************
 ECHO ****** py2exe
