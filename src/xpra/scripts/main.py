@@ -50,14 +50,26 @@ else:
 #we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
 if "rgb24" in ENCODINGS:
     try:
-        from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
-        ENCODINGS.append("x264")
-    except Exception, e:
+        from xpra import x264           #@UnusedImport
+        try:
+            from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
+            ENCODINGS.append("x264")
+        except Exception, e:
+            print("cannot load x264 codec: %s" % e)
+    except ImportError, e:
+        #the x264 module does not exist
+        #xpra was probably built with --without-x264
         pass
     try:
-        from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
-        ENCODINGS.append("vpx")
-    except Exception, e:
+        from xpra import vpx            #@UnusedImport
+        try:
+            from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
+            ENCODINGS.append("vpx")
+        except Exception, e:
+            print("cannot load vpx codec: %s" % e)
+    except ImportError, e:
+        #the vpx module does not exist
+        #xpra was probably built with --without-vpx
         pass
 DEFAULT_ENCODING = ENCODINGS[0]
 
