@@ -39,6 +39,8 @@ cdef extern from "x264lib.h":
     void change_encoding_speed(x264lib_ctx *context, int increase)
 
 
+NOGIL = True
+
 ENCODERS = {}
 DECODERS = {}
 
@@ -95,7 +97,10 @@ cdef class Decoder(xcoder):
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
         i = 0
-        with nogil:
+        if NOGIL:
+            with nogil:
+                i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
+        else:
             i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         xmemfree(padded_buf)
         if i!=0:
@@ -125,7 +130,12 @@ cdef class Decoder(xcoder):
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
         i = 0
-        with nogil:
+        if NOGIL:
+            with nogil:
+                i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
+                if i==0:
+                    i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
+        else:
             i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
             if i==0:
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
@@ -169,7 +179,10 @@ cdef class Encoder(xcoder):
         cdef int i
         cdef uint8_t *cout
         cdef int coutsz
-        with nogil:
+        if NOGIL:
+            with nogil:
+                i = compress_image(self.context, pic_in, &cout, &coutsz)
+        else:
             i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
             return i, 0, ""
