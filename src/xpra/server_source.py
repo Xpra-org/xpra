@@ -582,7 +582,7 @@ class ServerSource(object):
             rw += w
         return tv / tw, rv / rw
 
-    def calculate_timesize_weighted_average(self, data, sizeunit=1):
+    def calculate_timesize_weighted_average(self, data, sizeunit=1.0):
         """
             This is a time weighted average where the size
             of each record also gives it a weight boost.
@@ -605,7 +605,7 @@ class ServerSource(object):
             rw += w
         return tv / tw, rv / rw
 
-    def calculate_for_target(self, msg, target_value, avg_value, recent_value, div=1, slope=0.5):
+    def calculate_for_target(self, msg, target_value, avg_value, recent_value, div=1.0, slope=0.5):
         """
             Calculates factor and weight to try to bring us closer to 'target_value'.
 
@@ -623,21 +623,23 @@ class ServerSource(object):
         weight = logp((slope+abs(recent_value-target_value)) / (slope+abs(avg_value-target_value)))
         return  msg, factor, weight
 
-    def calculate_for_average(self, msg, avg_value, recent_value, div=1):
+    def calculate_for_average(self, msg, avg_value, recent_value, div=1.0):
         """
             Calculates factor and weight based on how far we are from the average value.
             This is used by metrics for which we do not know the optimal target value. 
         """
-        factor = logp(avg_value/recent_value/div)
+        avg = avg_value/div
+        recent = recent_value/div
+        factor = logp(recent/avg)
         if factor==0:
             weight = 0
         elif factor<1:
-            weight = logp(1/factor)
+            weight = logp(avg/recent)
         else:
             weight = factor
         return  msg, factor, weight
 
-    def queue_inspect(self, time_values, target=0, div=1):
+    def queue_inspect(self, time_values, target=0.5, div=1.0):
         """
             Utility method used by:
             - get_damage_packet_queue_size_factor
@@ -752,7 +754,7 @@ class ServerSource(object):
         if avg is None or recent is None:
             return  None
         msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(avg/1000/1000), dec1(recent/1000/1000))
-        return  self.calculate_for_target(msg, 1/25000000, 1/avg, 1/recent)
+        return  self.calculate_for_average(msg, avg, recent, div=10.0*1000*1000)
 
     def get_damage_in_latency_factor(self, avg, recent):
         """
@@ -818,7 +820,8 @@ class ServerSource(object):
         target_latency = 0.010
         if self._min_client_latency:
             target_latency = self._min_client_latency
-        msg = "client latency: avg=%s, recent=%s" % (dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
+        msg = "client latency: lowest=%s, avg=%s, recent=%s" % \
+                (dec1(1000*target_latency), dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
         return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency)
 
     def get_damage_packet_queue_size_factor(self):
@@ -831,8 +834,8 @@ class ServerSource(object):
             - queue_inspect
             - get_damage_packet_queue_pixels_factor
         """
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes, target=1)
-        return ("damage packet queue size: %s" % msg, factor, weight/2.0)
+        msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes)
+        return ("damage packet queue size: %s" % msg, factor, weight)
 
     def get_damage_packet_queue_pixels_factor(self, low_limit):
         """
@@ -840,7 +843,7 @@ class ServerSource(object):
             the number of pixels waiting in the packet queue.
             See 'queue_inspect'
         """
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=1, div=low_limit/2.0)
+        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=3, div=low_limit)
         return ("damage packet queue pixels: %s" % msg, factor, weight)
 
     def get_damage_data_queue_factor(self):
@@ -927,12 +930,18 @@ class ServerSource(object):
         batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
         batch.last_updated = time.time()
         if DEBUG_DELAY:
+            fps = 0
+            now = time.time()
+            for event_list in self._damage_last_events.values():
+                for event_time, _ in event_list:
+                    if event_time+1.0>now:
+                        fps += 1
             decimal_delays = [dec1(x) for _,x in batch.last_delays]
             if len(decimal_delays)==0:
                 decimal_delays.append(0)
             logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
-            rec = ("update_batch_delay: wid=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
-                    batch.wid, dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+            rec = ("update_batch_delay: wid=%s, fps=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
+                    batch.wid, fps, dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
                     dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), logfactors)
             self.add_DEBUG_DELAY_MESSAGE(rec)
 
@@ -1210,8 +1219,8 @@ class ServerSource(object):
         now = time.time()
         damage_in_latency = now-process_damage_time
         self._damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
-        self._damage_packet_queue.append((packet, width*height, start_send, damage_packet_sent))
         self._damage_packet_qsizes.append((now, len(self._damage_packet_queue)))
+        self._damage_packet_queue.append((packet, width*height, start_send, damage_packet_sent))
         self._damage_packet_qpixels.append((now, sum([x[1] for x in list(self._damage_packet_queue)])))
         gobject.idle_add(self._protocol.source_has_more)
 
