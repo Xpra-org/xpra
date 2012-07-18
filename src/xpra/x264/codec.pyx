@@ -155,8 +155,6 @@ cdef class Encoder(xcoder):
 
     def compress_image(self, input, rowstride):
         cdef x264_picture_t *pic_in = NULL
-        cdef uint8_t *cout
-        cdef int coutsz
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert self.context!=NULL
@@ -164,7 +162,13 @@ cdef class Encoder(xcoder):
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         pic_in = csc_image_rgb2yuv(self.context, buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
+        return self.do_compress_image(pic_in)
+
+    cdef do_compress_image(self, x264_picture_t *pic_in):
         #actual compression (no gil):
+        cdef int i
+        cdef uint8_t *cout
+        cdef int coutsz
         with nogil:
             i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
