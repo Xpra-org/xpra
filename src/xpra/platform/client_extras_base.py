@@ -305,8 +305,18 @@ class ClientExtrasBase(object):
             row = new_row(row, "GTK version", label(gtk._version))
             row = new_row(row, "GDK version", label(gdk._version))
         else:
-            row = new_row(row, "PyGTK version", label(".".join([str(x) for x in gtk.pygtk_version])))
-            row = new_row(row, "GTK version", label(".".join([str(x) for x in gtk.gtk_version])))
+            def make_version_str(version):
+                return  ".".join([str(x) for x in version])
+            def make_version_info(prop_name):
+                info = "unknown"
+                if hasattr(gtk, prop_name):
+                    info = make_version_str(getattr(gtk, prop_name))
+                server_version = self.client.server_capabilities.get(prop_name)
+                if server_version:
+                    info += " (server: %s)" % make_version_str(server_version)
+                return info
+            row = new_row(row, "PyGTK version", label(make_version_info("pygtk_version")))
+            row = new_row(row, "GTK version", label(make_version_info("gtk_version")))
 
         if self.client.server_platform:
             row = new_row(row, "Server Platform", label(self.client.server_platform))
