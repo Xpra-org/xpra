@@ -31,7 +31,7 @@ Forwarded: not-needed
 +sys.path.append("/usr/lib/xpra")
  import xpra.scripts.main
  
- xpra.scripts.main.main(__file__, sys.argv)
+ sys.exit(xpra.scripts.main.main(__file__, sys.argv))
 --- a/scripts/xpra_launcher
 +++ b/scripts/xpra_launcher
 @@ -1,5 +1,7 @@
