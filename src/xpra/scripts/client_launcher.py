@@ -466,15 +466,20 @@ def update_options_from_file(filename):
 	propFile = open(filename, "rU")
 	propDict = dict()
 	for propLine in propFile:
-		propDef= propLine.strip()
+		propDef = propLine.strip()
 		if len(propDef) == 0:
 			continue
 		if propDef[0] in ( '!', '#' ):
 			continue
-		punctuation = [ propDef.find(c) for c in ':= ' ] + [ len(propDef) ]
-		found = min( [ pos for pos in punctuation if pos != -1 ] )
-		name= propDef[:found].rstrip()
-		value= propDef[found:].lstrip(":= ").rstrip()
+		if propDef.find(":=")>0:
+			props = propDef.split(":=", 1)
+		elif propDef.find("=")>0:
+			props = propDef.split("=", 1)
+		else:
+			continue
+		assert len(props)==2
+		name = props[0].strip()
+		value = props[1].strip()
 		propDict[name] = value
 	propFile.close()
 
