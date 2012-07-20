@@ -77,8 +77,10 @@ struct x264lib_ctx *init_encoder(int width, int height)
 
 void clean_encoder(struct x264lib_ctx *ctx)
 {
-	sws_freeContext(ctx->rgb2yuv);
-	x264_encoder_close(ctx->encoder);
+	if (ctx->rgb2yuv)
+		sws_freeContext(ctx->rgb2yuv);
+	if (ctx->encoder)
+		x264_encoder_close(ctx->encoder);
 }
 
 #else
@@ -96,6 +98,7 @@ void clean_encoder(struct x264lib_ctx *ctx)
 struct x264lib_ctx *init_decoder(int width, int height)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
+	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	ctx->width = width;
 	ctx->height = height;
 	ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, PIX_FMT_YUV420P, ctx->width, ctx->height, PIX_FMT_RGB24, SWS_POINT | SWS_ACCURATE_RND, NULL, NULL, NULL);
@@ -123,9 +126,11 @@ struct x264lib_ctx *init_decoder(int width, int height)
 
 void clean_decoder(struct x264lib_ctx *ctx)
 {
-	avcodec_close(ctx->codec_ctx);
-	av_free(ctx->codec_ctx);
-	sws_freeContext(ctx->yuv2rgb);
+	if (ctx->codec_ctx)
+		avcodec_close(ctx->codec_ctx);
+		av_free(ctx->codec_ctx);
+	if (ctx->yuv2rgb)
+		sws_freeContext(ctx->yuv2rgb);
 }
 
 #ifndef _WIN32
