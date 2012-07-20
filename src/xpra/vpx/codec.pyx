@@ -74,6 +74,7 @@ cdef class Decoder(xcoder):
         cdef int outstrides[3]
         cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef int i = 0
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
@@ -94,6 +95,7 @@ cdef class Decoder(xcoder):
         cdef int outstride
         cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef int i = 0
         assert self.context!=NULL
         assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)

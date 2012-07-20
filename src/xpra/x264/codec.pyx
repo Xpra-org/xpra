@@ -121,6 +121,7 @@ cdef class Decoder(xcoder):
         cdef unsigned char * padded_buf = NULL
         cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef int i = 0
         assert self.context!=NULL
         assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
@@ -129,7 +130,6 @@ cdef class Decoder(xcoder):
             return 1, 0, ""
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
-        i = 0
         if NOGIL:
             with nogil:
                 i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
