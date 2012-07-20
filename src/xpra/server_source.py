@@ -196,11 +196,12 @@ class ServerSource(object):
     The UI thread adds damage requests to a queue - see damage()
     """
 
-    def __init__(self, protocol, batch_config, encoding, mmap, mmap_size):
+    def __init__(self, protocol, batch_config, encoding, encodings, mmap, mmap_size):
         self._closed = False
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding                   #the default encoding for all windows
+        self._encodings = encodings                 #all the encodings supported by the client
         self._default_batch_config = batch_config
         self._batch_configs = {}                    #batch config per window
         # mmap:
@@ -626,7 +627,7 @@ class ServerSource(object):
     def calculate_for_average(self, msg, avg_value, recent_value, div=1.0):
         """
             Calculates factor and weight based on how far we are from the average value.
-            This is used by metrics for which we do not know the optimal target value. 
+            This is used by metrics for which we do not know the optimal target value.
         """
         avg = avg_value/div
         recent = recent_value/div
@@ -1036,9 +1037,6 @@ class ServerSource(object):
         now = time.time()
         batch = self.get_batch_config(wid)
         coding = self.get_encoding(wid)
-        if coding in ["x264", "vpx"]:
-            w,h = self.get_window_dimensions(window)
-            x,y = 0,0
         def damage_now(reason):
             self._sequence += 1
             logrec = "damage(%s, %s, %s, %s, %s) %s, sending now with sequence %s", wid, x, y, w, h, reason, self._sequence
@@ -1047,10 +1045,17 @@ class ServerSource(object):
             log(*logrec)
             pixmap = self.get_window_pixmap(wid, window, self._sequence)
             if pixmap:
-                self._process_damage_region(now, pixmap, wid, x, y, w, h, coding, self._sequence, options)
+                ww,wh = self.get_window_dimensions(window)
+                actual_encoding = self.get_best_encoding(w*h, ww, wh, coding)
+                if actual_encoding in ["x264", "vpx"]:
+                    #always fullscreen
+                    self._process_damage_region(now, pixmap, wid, 0, 0, ww, wh, actual_encoding, self._sequence, options)
+                else:
+                    self._process_damage_region(now, pixmap, wid, x, y, w, h, actual_encoding, self._sequence, options)
                 batch.last_delays.append((now, 0))
                 batch.last_updated = time.time()
-        #record this damage event in the damage_last_events queue:
+        #record this damage event in the damage_last_events queue
+        #note: we may actually end up sending more pixels than this value (ie: full screen update)
         now = time.time()
         last_events = self._damage_last_events.setdefault(wid, maxdeque(NRECS))
         last_events.append((now, w*h))
@@ -1064,9 +1069,8 @@ class ServerSource(object):
 
         delayed = self._damage_delayed.get(wid)
         if delayed:
-            if coding not in ["x264", "vpx"]:
-                region = delayed[3]
-                region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+            region = delayed[3]
+            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
 
@@ -1111,10 +1115,6 @@ class ServerSource(object):
             if pixmap:
                 self._process_damage_region(damage_time, pixmap, wid, 0, 0, ww, wh, coding, sequence, options)
 
-        if coding in ["x264", "vpx"]:
-            send_full_screen_update()
-            return
-
         try:
             count_threshold = 60
             pixels_threshold = ww*wh*9/10
@@ -1145,6 +1145,12 @@ class ServerSource(object):
         except Exception, e:
             log.error("send_delayed_regions: error processing region %s: %s", damage, e)
             return
+
+        actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
+        if actual_encoding in ["x264", "vpx"]:
+            send_full_screen_update()
+            return
+
         pixmap = self.get_window_pixmap(wid, window, sequence)
         if pixmap is None:
             return
@@ -1153,7 +1159,32 @@ class ServerSource(object):
             x, y, w, h = region
             if self.is_cancelled(wid, sequence):
                 return
-            self._process_damage_region(damage_time, pixmap, wid, x, y, w, h, coding, sequence, options)
+            self._process_damage_region(damage_time, pixmap, wid, x, y, w, h, actual_encoding, sequence, options)
+
+    def get_best_encoding(self, pixel_count, ww, wh, current_encoding):
+        #decide whether we send a full screen update
+        #using the video encoder or if small region(s) will do:
+        if current_encoding not in ["x264", "vpx"]:
+            return current_encoding
+        def switch():
+            coding = self.find_common_lossless_encoder(current_encoding)
+            log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
+            return  coding
+        if current_encoding=="x264" and (ww==1 or wh==1):
+            return  switch()
+        if pixel_count>512 or pixel_count>=(ww*wh):
+            #too many pixels, use current video encoder
+            return current_encoding
+        if pixel_count>0.5*(ww*wh):
+            #small, but over 50% of the full window
+            return current_encoding
+        return switch()
+
+    def find_common_lossless_encoder(self, fallback):
+        for e in ["rgb24", "png"]:
+            if e in ENCODINGS and e in self._encodings:
+                return e
+        return fallback
 
     def _process_damage_region(self, damage_time, pixmap, wid, x, y, w, h, coding, sequence, options):
         """

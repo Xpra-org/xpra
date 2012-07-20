@@ -1115,7 +1115,7 @@ class XpraServer(gobject.GObject):
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.min_delay)))
         batch_config.encoding = self.encoding
-        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.mmap, self.mmap_size)
+        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size)
         self.send_hello(capabilities)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
