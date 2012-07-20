@@ -724,7 +724,7 @@ class ServerSource(object):
             if self._mmap and self._mmap_size>0:
                 #mmap can accumulate much more as it is much faster
                 low_limit *= 4
-        return low_limit
+        return max(8*8, low_limit)
 
     def calculate_client_decode_speed(self, wid):
         """
@@ -1064,8 +1064,8 @@ class ServerSource(object):
 
         delayed = self._damage_delayed.get(wid)
         if delayed:
-            region = delayed[3]
             if coding not in ["x264", "vpx"]:
+                region = delayed[3]
                 region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
             log("damage(%s, %s, %s, %s, %s) using existing delayed region: %s", wid, x, y, w, h, delayed)
             return
@@ -1266,6 +1266,8 @@ class ServerSource(object):
         if self.is_cancelled(wid, sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
+        assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
+        assert data, "data is missing"
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
         #send via mmap?
@@ -1300,6 +1302,8 @@ class ServerSource(object):
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
+            if w==0 or h==0:
+                return None
             from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
             data = self.video_encode(x264_encoders, x264Encoder, wid, x, y, w, h, coding, data, rowstride)
         elif coding=="vpx":
