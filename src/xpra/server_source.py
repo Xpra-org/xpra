@@ -97,7 +97,11 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
     if width <= 0 or height <= 0:
         return None
     pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
-    pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(), x, y, 0, 0, width, height)
+    colormap = pixmap.get_colormap()
+    if not colormap:
+        log.error("get_rgb_rawdata(..) no colormap for RGB pixbuf %sx%s", width, height)
+        return None
+    pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
     log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", dec1(1000*(time.time()-start)))
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
