@@ -31,8 +31,9 @@ except:
     from Queue import Queue         #@Reimport
 from collections import deque
 from math import log as mathlog, sqrt, pow
+sqrt2 = sqrt(2)
 def logp(x):
-    return mathlog(1+x, 2)
+    return mathlog(1.0+x, sqrt2)/2.0
 
 #it would be nice to be able to get rid of those 2 imports here:
 from wimpiggy.window import OverrideRedirectWindowModel
@@ -610,22 +611,26 @@ class ServerSource(object):
             rw += w
         return tv / tw, rv / rw
 
-    def calculate_for_target(self, msg, target_value, avg_value, recent_value, div=1.0, slope=0.5):
+    def calculate_for_target(self, msg, target_value, avg_value, recent_value, aim=0.5, div=1.0, slope=0.5):
         """
             Calculates factor and weight to try to bring us closer to 'target_value'.
 
-            The factor is a function of how far the 'recent_value' if from it. (logp)
-            It will be greater than 1.0 if recent_value is higher than the target_value,
-            and less than 1.0 if it is lower.
-
-            The weight is a function of how far the 'recent_value' is from the 'avg_value'.
-
-            The 'slope' controls how the weight is calculated: the lower the slope (cannot be zero),
-            the more the weight will be high in cases of differences between recent and average,
-            the higher the slope, the more the weight will remain close to 1.
+            The factor is a function of how far the 'recent_value' is from it,
+            and of how things are progressing (better or worse than average),
+            'aim' controls the proportion of each. (at 0.5 it is an average of both,
+            the closer to 0 the more target matters, the closer to 1.0 the more average matters)
         """
-        factor = logp((slope+recent_value)/(slope+target_value)/div)
-        weight = logp((slope+abs(recent_value-target_value)) / (slope+abs(avg_value-target_value)))
+        assert aim>0.0 and aim<1.0
+        target_factor = (slope+recent_value/div)/(slope+target_value/div)
+        avg_factor = (recent_value/div)/(slope+avg_value/div)
+        aimed_average = target_factor*(1-aim) + avg_factor*aim
+        factor = logp(aimed_average)
+        if avg_factor == 0:
+            weight = logp(target_factor*(1.0-aim) + (1.0-aim)/target_factor)
+        else:
+            weight = logp(max(target_factor*(1.0-aim), avg_factor*aim) + max((1.0-aim)/target_factor, aim/avg_factor))
+        if DEBUG_DELAY:
+            msg += " [factors: target=%s, average=%s, aim=%s, aimed_average=%s]" % (dec2(target_factor), dec2(avg_factor), dec2(aim), dec2(aimed_average))
         return  msg, factor, weight
 
     def calculate_for_average(self, msg, avg_value, recent_value, div=1.0):
@@ -636,15 +641,10 @@ class ServerSource(object):
         avg = avg_value/div
         recent = recent_value/div
         factor = logp(recent/avg)
-        if factor==0:
-            weight = 0
-        elif factor<1:
-            weight = logp(avg/recent)
-        else:
-            weight = factor
+        weight = max(factor, 1/factor)-0.5
         return  msg, factor, weight
 
-    def queue_inspect(self, time_values, target=0.5, div=1.0):
+    def queue_inspect(self, time_values, target=1):
         """
             Utility method used by:
             - get_damage_packet_queue_size_factor
@@ -657,8 +657,8 @@ class ServerSource(object):
         if len(time_values)==0:
             return  "(empty)", 1.0, 0.0
         avg, recent = self.calculate_time_weighted_average(list(time_values))
-        msg = "avg=%s, recent=%s, target=%s, div=%s" % (avg, recent, target, div)
-        return  self.calculate_for_target(msg, target, avg, recent, div=div)
+        msg = "avg=%s, recent=%s, target=%s" % (avg, recent, target)
+        return  self.calculate_for_target(msg, target, avg, recent, aim=0.25, slope=0.01)
 
 
     def calculate_average_damage_in_latency(self):
@@ -759,9 +759,13 @@ class ServerSource(object):
         if avg is None or recent is None:
             return  None
         msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(avg/1000/1000), dec1(recent/1000/1000))
-        return  self.calculate_for_average(msg, avg, recent, div=10.0*1000*1000)
+        #our calculate methods aims for lower values, so invert speed
+        #this is how long it takes to send 1MB:
+        avg1MB = 1.0*1024*1024/avg
+        recent1MB = 1.0*1024*1024/recent
+        return  self.calculate_for_average(msg, avg1MB, recent1MB)
 
-    def get_damage_in_latency_factor(self, avg, recent):
+    def get_damage_in_latency_factor(self, low_limit, avg, recent):
         """
             Returns the batch delay change factor based on changes
             to the "damage-in-latency".
@@ -770,28 +774,35 @@ class ServerSource(object):
             return  None            #not enough records yet
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage processing latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
-        target_latency = 0.010  #10ms
-        return self.calculate_for_target(msg, target_latency, avg, recent)
+        target_latency = 0.005 + (0.040*low_limit/1024.0/1024.0)
+        return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.005)
 
-    def get_damage_out_latency_factor(self, avg, recent):
+    def get_damage_out_latency_factor(self, low_limit, avg, recent):
         """
             Returns the batch delay change factor based on changes
             to the "damage-out-latency".
         """
-        if len(self._damage_in_latency)==0:
+        if len(self._damage_out_latency)==0:
             return  None            #not enough records yet
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage send latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
-        target_latency = 0.020  #20ms
-        return self.calculate_for_target(msg, target_latency, avg, recent)
+        target_latency = 0.020 + (0.050*low_limit/1024.0/1024.0)
+        return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.010)
 
     def get_network_send_speed_factor(self, avg_send_speed, recent_send_speed):
         if avg_send_speed is None or recent_send_speed is None:
             return  None
         msg = "network send speed: avg=%s, recent=%s (KBytes/s)" % (int(avg_send_speed/1024), int(recent_send_speed/1024))
-        if recent_send_speed>10*1024*1024:
-            return  [msg, 0, 0]
-        return  self.calculate_for_average(msg, avg_send_speed, recent_send_speed)
+        #our calculate methods aims for lower values, so invert speed
+        #this is how long it takes to send 1MB:
+        avg1MB = 1.0*1024*1024/avg_send_speed
+        recent1MB = 1.0*1024*1024/recent_send_speed
+        msg, factor, weight = self.calculate_for_average(msg, avg1MB, recent1MB)
+        #we only really care about this when the speed is quite low,
+        #so adjust the weight accordingly:
+        minspeed = float(128*1024)
+        div = logp(max(recent_send_speed, minspeed)/minspeed)
+        return  [msg, factor, weight/div]
 
     def get_elasped_time_factor(self, batch, highest_latency):
         """
@@ -805,7 +816,7 @@ class ServerSource(object):
             return  None
         #if damage latency is high, it could just be that the
         #ui thread is too busy, so only fire if nothing happens for a substantial amount of time:
-        ignore_time = 2*highest_latency
+        ignore_time = 2*max(highest_latency, batch.delay)
         ignore_count = 2 + ignore_time / batch.recalculate_delay
         elapsed = time.time()-batch.last_updated
         n_skipped_calcs = elapsed / batch.recalculate_delay
@@ -824,10 +835,10 @@ class ServerSource(object):
             return  None
         target_latency = 0.010
         if self._min_client_latency:
-            target_latency = self._min_client_latency
+            target_latency = max(target_latency, self._min_client_latency)
         msg = "client latency: lowest=%s, avg=%s, recent=%s" % \
-                (dec1(1000*target_latency), dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
-        return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency)
+                (dec1(1000*self._min_client_latency), dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
+        return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005)
 
     def get_damage_packet_queue_size_factor(self):
         """
@@ -848,7 +859,7 @@ class ServerSource(object):
             the number of pixels waiting in the packet queue.
             See 'queue_inspect'
         """
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=3, div=low_limit)
+        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=low_limit)
         return ("damage packet queue pixels: %s" % msg, factor, weight)
 
     def get_damage_data_queue_factor(self):
@@ -886,12 +897,13 @@ class ServerSource(object):
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
         self._last_client_delta = self.calculate_client_backlog(ack_pending, sent_before)
         packets_backlog, pixels_backlog = self._last_client_delta
+        slope = 0.1
         packets_factor = logp(packets_backlog)
-        packets_weight = logp((1+packets_backlog)/(1+last_packets_backlog))
+        packets_weight = logp((slope+packets_backlog)/(slope+last_packets_backlog))
         pixels_factor = logp(pixels_backlog/low_limit)
-        pixels_weight = logp((1+pixels_backlog)/(1+last_pixels_backlog)/low_limit)
-        factor = (packets_factor+pixels_factor)/2
-        weight = (packets_weight+pixels_weight)/2
+        pixels_weight = logp((slope+pixels_backlog)/(slope+last_pixels_backlog)/low_limit)
+        factor = sqrt(packets_factor*pixels_factor)
+        weight = packets_weight+pixels_weight
         return  ("packets/pixels backlog from %s/%s to %s/%s" % (last_packets_backlog, last_pixels_backlog, packets_backlog, pixels_backlog),
                  factor, weight)
 
@@ -915,11 +927,14 @@ class ServerSource(object):
         avg = 0
         tv, tw = 0.0, 0.0
         if len(batch.last_delays)>0:
-            #get the weighted average:
+            #get the weighted average
+            #older values matter less, we decay them according to how much we batch already
+            #(older values matter more when we batch a lot)
+            decay = logp(current_delay/batch.min_delay)
             now = time.time()
             for when, delay in batch.last_delays:
                 #newer matter more:
-                w = 1.0/(1.0+(now-when)**2)
+                w = 1.0/(1.0+((now-when)/decay)**2)
                 d = max(batch.min_delay, min(batch.max_delay, delay))
                 tv += d*w
                 tw += w
@@ -978,8 +993,8 @@ class ServerSource(object):
         max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
         #for each indicator: (description, factor, weight)
         factors = []
-        factors.append(self.get_damage_in_latency_factor(avg_damage_in_latency, recent_damage_in_latency))
-        factors.append(self.get_damage_out_latency_factor(avg_damage_out_latency, recent_damage_out_latency))
+        factors.append(self.get_damage_in_latency_factor(low_limit, avg_damage_in_latency, recent_damage_in_latency))
+        factors.append(self.get_damage_out_latency_factor(low_limit, avg_damage_out_latency, recent_damage_out_latency))
         factors.append(self.get_network_send_speed_factor(avg_send_speed, recent_send_speed))
         factors.append(self.get_client_decode_speed_factor(avg_decode_speed, recent_decode_speed))
         factors.append(self.get_elasped_time_factor(batch, max_latency))
