@@ -40,7 +40,7 @@ TEST_COMMAND_SETTLE_TIME = {}
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (128, 32, 200), (32, 8, 100)]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
 
 
 #tools we use:
@@ -265,6 +265,7 @@ print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 
 SVN_VERSION = getoutput(["svnversion", "-n"])
 
+WINDOW_MANAGER = os.environ.get("DESKTOP_SESSION", "unknown")
 
 def clean_sys_state():
     #clear the caches
@@ -429,7 +430,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #run the client test
                     result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
                     result += [encoding, get_command_name(test_command)]
-                    result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO]
+                    result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO, WINDOW_MANAGER]
                     result += ["%sx%s" % gdk.get_default_root_window().get_size()]
                     result += [compression, down, up, latency]
                     result += measure_client(server_pid, name, client_cmd, get_stats_cb)
@@ -761,7 +762,7 @@ def main():
     print("")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
                "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
-               "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Screen Size",
+               "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
                "compression", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
