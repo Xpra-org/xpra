@@ -287,7 +287,9 @@ def main(script_file, cmdline):
         toggle_logging(logging.DEBUG)
     else:
         toggle_logging(logging.INFO)
-    logging.root.addHandler(logging.StreamHandler(sys.stderr))
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+    logging.root.addHandler(handler)
     if os.name=="posix":
         def sigusr1(*args):
             dump_frames()
