@@ -1,3 +1,7 @@
+v0.5.0
+	-- TODO
+
+
 v0.4.0 (2012-07-23)
 	-- fix client application resizing its own window
 	-- fix window dimensions hints not applied

@@ -1,3 +1,8 @@
+xpra (0.5.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Jul 2012 23:25:28 +0700
+
 xpra (0.4.0-1) UNRELEASED; urgency=low
   * fix client application resizing its own window
   * fix window dimensions hints not applied

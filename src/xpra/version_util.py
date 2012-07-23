@@ -17,12 +17,9 @@ def is_compatible_with(remote_version):
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return True
-    if rv[:3]<=[0, 0, 7]:
+    if rv[:2]<[0, 3]:
         log("remote version %s is too old, sorry", remote_version)
         return  False
-    if rv[:2]>=[0, 1]:
-        log("local version %s is compatible with older remote version: %s", local_version, remote_version)
-        return True
     if rv[0]==0:
         log("local version %s should be compatible with newer remote version: %s", local_version, remote_version)
         return True

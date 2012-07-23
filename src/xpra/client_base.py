@@ -172,15 +172,13 @@ class XpraClientBase(gobject.GObject):
         self.parse_server_capabilities(self.server_capabilities)
 
     def parse_server_capabilities(self, capabilities):
-        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit(4)
 
     def _process_set_deflate(self, packet):
-        #this tell us the server has set its compressor
-        #(the decompressor has been enabled - see protocol)
-        log.debug("set_deflate: %s", packet[1:])
+        #legacy, should not be used for anything
+        pass
 
     def _process_gibberish(self, packet):
         (_, data) = packet

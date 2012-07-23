@@ -1107,7 +1107,6 @@ class XpraServer(gobject.GObject):
         self._protocol = proto
         #max packet size from client (the biggest we can get are clipboard packets)
         self._protocol.max_packet_size = 1024*1024  #1MB
-        self._protocol.raw_packets = bool(capabilities.get("raw_packets", False))
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
         batch_config.always = bool(capabilities.get("batch.always", False))
@@ -1316,8 +1315,8 @@ class XpraServer(gobject.GObject):
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
         log("client has requested compression level=%s", level)
-        #at this point the client is sending compressed, we have enabled the decompressor
-        #we echo it back to set the server's compressor and the client will set its decompressor
+        self._protocol.set_compression_level(level)
+        #echo it back to the client:
         self._send(["set_deflate", level])
 
     def disconnect(self, reason):

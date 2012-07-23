@@ -28,9 +28,12 @@ class TestGiberringCommandClient(GLibXpraClient):
     def try_sending_again(self):
         self.send(["irrelevant: should be kicked out already"])
 
+    def _queue_write(self, data):
+        self._protocol._write_queue.put((data, None, None))
+
     def send_hello(self, challenge_response=None):
         GLibXpraClient.send_hello(self, challenge_response)
-        self._protocol._queue_write("PS00000000000006l201234567890123456789")
+        self._queue_write("PS00000000000006l201234567890123456789")
         gobject.timeout_add(1000, self.try_sending_again)
 
     def quit(self, *args):
@@ -40,9 +43,9 @@ class TestGiberringCommandClient(GLibXpraClient):
 class TestGiberringCommandClientNoPacketSize(TestGiberringCommandClient):
     def send_hello(self, challenge_response=None):
         hello = self.make_hello(challenge_response)
-        self._protocol._queue_write(bencode(["hello", hello]))
+        self._queue_write(bencode(["hello", hello]))
         def send_gibberish():
-            self._protocol._queue_write("01234567890123456789")
+            self._queue_write("01234567890123456789")
         gobject.timeout_add(1000, send_gibberish)
         gobject.timeout_add(3000, self.try_sending_again)
 
