@@ -37,9 +37,10 @@ LIMIT_TESTS = 99999         #to limit the total number of tests being run
 #some commands (games especially) may need longer to startup:
 TEST_COMMAND_SETTLE_TIME = {}
 
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 300)]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (128, 32, 200), (32, 8, 100)]
 
 
 #tools we use:
@@ -62,13 +63,15 @@ X11_TESTS = [X11_PERF, XTERM_TEST, GTKPERF_TEST]
 
 #the screensaver tests:
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
-ALL_SCREENSAVER_TESTS = ["%s/%s" % (XSCREENSAVERS_PATH, x) for x in
+def screensaver(x):
+    return  ["%s/%s" % (XSCREENSAVERS_PATH, x)]
+ALL_SCREENSAVER_TESTS = [screensaver(x) for x in
                             ["rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes"]
                          ]
-SOME_SCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
+SOME_SCREENSAVER_TESTS = [screensaver(x) for x in
                             ["memscroller", "eruption", "xmatrix"]
                           ]
-SOME_SCREENSAVER_TESTS = [["%s/%s" % (XSCREENSAVERS_PATH, x)] for x in
+SOME_SCREENSAVER_TESTS = [screensaver(x) for x in
                             ["memscroller", "moebiusgears", "polytopes", "rss-glx-lattice"]
                           ]
 
@@ -81,8 +84,10 @@ TEST_COMMAND_SETTLE_TIME[XONOTIC_TEST[0]] = 20
 GAMES_TESTS = [NEXUIZ_TEST, XONOTIC_TEST]
 
 #our selection:
+TEST_CANDIDATES = [screensaver("deluxe")]
 TEST_CANDIDATES = X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
 TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + GAMES_TESTS
+TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS
 
 
 #now we filter all the test commands and only keep the valid ones:
