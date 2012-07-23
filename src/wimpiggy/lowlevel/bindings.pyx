@@ -820,6 +820,7 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     keysyms_per_keycode = min(8, keysyms_per_keycode)
     ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
     try:
+        missing_keysyms = []
         for i in range(0, num_codes):
             keycode = first_keycode+i
             keysyms_strs = keycodes.get(keycode)
@@ -844,12 +845,14 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
                         keysyms.append(k)
                     else:
                         keysyms.append(NoSymbol)
-                        log.info("cannot find keysym: %s", k)
+                        missing_keysyms.append(k)
             for j in range(0, keysyms_per_keycode):
                 keysym = NoSymbol
                 if keysyms and j<len(keysyms):
                     keysym = keysyms[j]
                 ckeysyms[i*keysyms_per_keycode+j] = keysym
+        if len(missing_keysyms)>0:
+            log.info("could not find the following keysyms: %s", " ".join(set(missing_keysyms)))
         return XChangeKeyboardMapping(display, first_keycode, keysyms_per_keycode, ckeysyms, num_codes)==0
     finally:
         free(ckeysyms)
