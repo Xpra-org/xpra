@@ -102,7 +102,7 @@ So basically it's screen for remote X apps.
 - release Python's GIL during vpx and x264 compression and colourspace conversion
 - better UI launcher: UI improvements, detect encodings, fix standalone/win32 usage, minimize window once the client has started
 - "xpra stop" disconnects all potential clients cleanly before exiting
-- x264 used memory aligned buffer for better performance
+- use memory aligned buffer for better performance with x264
 - avoid vpx/x264 overhead for very small damage regions
 - detect dead connection with ping packets: disconnect if echo not received
 - force a full refresh when the encoding is changed
