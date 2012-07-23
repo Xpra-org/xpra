@@ -4,4 +4,3 @@
 # later version. See the file COPYING for details.
 
 __version__ = "0.4.0"
-svn_revision="unknown"

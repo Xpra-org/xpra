@@ -6,4 +6,3 @@
 __version__ = "0.4.0"
 import wimpiggy
 assert wimpiggy.__version__ == __version__
-svn_revision="unknown"
