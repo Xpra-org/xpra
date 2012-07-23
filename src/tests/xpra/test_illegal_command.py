@@ -34,5 +34,5 @@ class TestIllegalCommandClient(GLibXpraClient):
 
 if __name__ == "__main__":
     import sys
-    from xpra.test_DoS_client import test_DoS
+    from tests.xpra.test_DoS_client import test_DoS
     test_DoS(TestIllegalCommandClient, sys.argv)
