@@ -644,7 +644,12 @@ class XpraClient(XpraClientBase):
         if self.toggle_cursors_bell_notify:
             self.send(["set-cursors", self.cursors_enabled])
 
+    def set_deflate_level(self, level):
+        self.compression_level = level
+        self.send_deflate_level()
+
     def send_deflate_level(self):
+        self._protocol.set_compression_level(self.compression_level)
         self.send(["set_deflate", self.compression_level])
 
     def send_clipboard_enabled_status(self, *args):
