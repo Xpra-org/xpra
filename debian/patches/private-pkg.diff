@@ -44,14 +44,15 @@ Forwarded: not-needed
  main()
 --- a/add_build_info.py
 +++ b/add_build_info.py
-@@ -13,7 +13,9 @@
- import os.path
+@@ -14,7 +14,9 @@
  import re
  
--IGNORED_CHANGED_FILES = ["xpra/build_info.py"]
-+IGNORED_CHANGED_FILES = ["xpra/build_info.py",
-+                         "add_build_info.py",
-+                         "scripts/*"]
+ IGNORED_CHANGED_FILES = ["xpra/build_info.py",
+-						 "tests/*"]
++						 "tests/*",
++						 "add_build_info.py",
++						 "scripts/*"]
  
  def get_svn_props():
      props = {
+
