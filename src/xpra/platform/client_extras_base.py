@@ -838,8 +838,7 @@ class ClientExtrasBase(object):
             c = int(item.get_label().replace("None", "0"))
             if c!=self.client.compression_level:
                 log.debug("setting compression level to %s", c)
-                self.client.compression_level = c
-                self.client.send_deflate_level()
+                self.client.set_deflate_level(c)
         for i in range(0, 10):
             c = CheckMenuItem(str(compression_options.get(i, i)))
             c.set_draw_as_radio(True)
