@@ -235,11 +235,11 @@ class ClipboardProxy(gtk.Invisible):
         elif target == "MULTIPLE":
             def get_targets(targets):
                 atoms = prop_get(event.window, event.property, ["multiple-conversion"])
-                log("MULTIPLE clipboard atoms: %r", atoms)
+                debug("MULTIPLE clipboard atoms: %r", atoms)
                 targets += atoms[::2]
             targets = []
             trap.swallow(get_targets, targets)
-            log("MULTIPLE clipboard targets: %r", targets)
+            debug("MULTIPLE clipboard targets: %r", targets)
             for target in targets:
                 self.selection_add_target(self._selection, target, 0)
         else:
@@ -260,7 +260,7 @@ class ClipboardProxy(gtk.Invisible):
             debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s,%s,%s)", selection_data, info, time, result["type"], result["format"], len(result["data"]))
             selection_data.set(result["type"], result["format"], result["data"])
         else:
-            log("remote selection fetch timed out")
+            debug("remote selection fetch timed out")
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
