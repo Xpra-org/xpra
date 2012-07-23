@@ -13,7 +13,8 @@ import platform
 import os.path
 import re
 
-IGNORED_CHANGED_FILES = ["xpra/build_info.py"]
+IGNORED_CHANGED_FILES = ["xpra/build_info.py",
+						 "tests/*"]
 
 def get_svn_props():
     props = {
