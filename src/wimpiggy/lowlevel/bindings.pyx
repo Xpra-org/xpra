@@ -362,6 +362,7 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
     cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
     ctypedef unsigned long GdkAtom
+    GdkAtom GDK_NONE
     # FIXME: this should have stricter type checking
     GdkAtom PyGdkAtom_Get(object)
     object PyGdkAtom_New(GdkAtom)
@@ -411,11 +412,13 @@ def get_xatom(str_or_xatom):
 def get_pyatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
         raise Exception, "weirdly huge purported xatom: %s" % xatom
+    if xatom==0:
+        return  None
     cdef cGdkDisplay * disp
     cdef GdkAtom gdk_atom
     disp = get_raw_display_for(display_source)
     gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
-    if gdk_atom==0:
+    if gdk_atom==GDK_NONE:
         return  None
     return str(PyGdkAtom_New(gdk_atom))
 
