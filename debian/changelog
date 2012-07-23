@@ -2,27 +2,47 @@ xpra (0.4.0-1) UNRELEASED; urgency=low
   * fix client application resizing its own window
   * fix window dimensions hints not applied
   * fix memleak in x264 cleanup code 
-  * simplify build by using setup file to generate all constants
-  * release Python's GIL during vpx/x264 decompression and colourspace
-    conversion
+  * fix xpra command exit code (more complete fix)
+  * fix latency bottleneck in processing of damage requests
+  * fix free uninitialized pointers in video decoder initialization error
+    codepath
+  * fix x264 related crash when resizing windows to one pixel width or height
+  * fix accounting of client decode time: ignore figure in case of decoding
+    error
+  * fix subversion build information detection on MS Windows
+  * fix some binary packages which were missing some menu icons
+  * restore keyboard compatiblity code for MS Windows and OSX clients
   * use padded buffers to prevent colourspace conversion from reading random
     memory
+  * release Python's GIL during vpx and x264 compression and colourspace
+    conversion
+  * better UI launcher: UI improvements, detect encodings, fix standalone/win32
+    usage, minimize window once the client has started
+  * "xpra stop" disconnects all potential clients cleanly before exiting
   * x264 used memory aligned buffer for better performance
-  * force a full refresh when the encoding is changed
-  * fix xpra command exit code (more complete fix)
-  * reworked batch delay calculations: take more parameters into account
-  * fix latency bottleneck in processing of damage requests
+  * avoid vpx/x264 overhead for very small damage regions
   * detect dead connection with ping packets: disconnect if echo not received
+  * force a full refresh when the encoding is changed
+  * more dynamic framerate performance adjustments, based on more metrics
   * new menu option to toggle keyboard sync at runtime
+  * vpx/x264 runtime imports: detect broken installations and warn, but ignore
+    when the codec is simply not installed
+  * enable environment debugging for damage batching via "XPRA_DEBUG_LATENCY"
+    env variable
+  * simplify build by using setup file to generate all constants
   * text clients now ignore packets they are not meant to handle
   * removed compression menu since the default is good enough
   * "xpra info" reports all build version information
+  * report server pygtk/gtk versions and show them on session info dialog and
+    "xpra info"
   * ignore dependency issues during sdist/clean phase of build
   * record more statistics (mostly latency) in test reports
   * documentation and logging added to code, moved test code out of main
-    source modules
+    packages
+  * debian: build with hardening features
+  * debian: don't record as modified the files we know we modify during build
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 12 Jul 2012 17:42:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 23 Jul 2012 13:10:57 +0700
 
 xpra (0.3.3-1) UNRELEASED; urgency=low
   * do not try to free the empty x264/vpx buffers after a decompression failure
