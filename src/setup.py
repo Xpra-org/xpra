@@ -304,10 +304,11 @@ if vpx_ENABLED:
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #ensure we remove the cython generated files:
-    CLEAN_FILES = ["./xpra/wait_for_x_server.c",
-                   "./xpra/vpx/codec.c",
-                   "./xpra/x264/codec.c",
-                   "./wimpiggy/lowlevel/bindings.c"]
+    CLEAN_FILES = ["xpra/wait_for_x_server.c",
+                   "xpra/vpx/codec.c",
+                   "xpra/x264/codec.c",
+                   "wimpiggy/lowlevel/constants.pxi",
+                   "wimpiggy/lowlevel/bindings.c"]
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
