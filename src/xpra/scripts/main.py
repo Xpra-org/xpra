@@ -134,9 +134,6 @@ def main(script_file, cmdline):
         group.add_option("--xvfb", action="store",
                           dest="xvfb", default="Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
-        group.add_option("--no-randr", action="store_false",
-                          dest="randr", default=True,
-                          help="Disables X11 randr support, xrandr allows the virtual display to be resized to match the client's dimensions (if supported by Xvfb)")
         group.add_option("--bind-tcp", action="store",
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",

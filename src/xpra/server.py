@@ -299,7 +299,7 @@ class XpraServer(gobject.GObject):
         self.password_file = opts.password_file
         self.salt = None
 
-        self.randr = opts.randr and has_randr()
+        self.randr = has_randr()
         if self.randr and len(get_screen_sizes())<=1:
             #disable randr when we are dealing with a Xvfb
             #with only one resolution available
