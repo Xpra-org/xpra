@@ -19,7 +19,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb=CMD\fP]
-[\fB\-\-no\-randr\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
@@ -332,13 +331,6 @@ this requires Xorg server version 1.12 or later and the dummy driver
 version 0.3.5 or later. For more information, see:
 https://xpra.org/Xdummy.html
 
-.TP
-\fB\-\-no\-randr\fP
-Disables X11 randr support. The X11 randr extensions allows the virtual
-display to be resized to match the client's screen dimensions.
-The default xvfb command (Xvfb) does not support randr, so using
-this switch will have no effect unless a different xvfb is used
-(like Xdummy).
 .TP
 \fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
 The xpra server always listens for connections on a local Unix domain
