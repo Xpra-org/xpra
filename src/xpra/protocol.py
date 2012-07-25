@@ -372,6 +372,8 @@ class Protocol(object):
                 if current_packet_size<0:
                     if read_buffer[0] not in ["P", ord("P")]:
                         return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
+                    if bl<8:
+                        break   #packet still too small
                     if read_buffer[1] in ["S", ord("S")]:
                         #old packet format: "PS%02d%012d" - 16 bytes
                         #can be dropped when we drop compatibility with clients older than 0.5
@@ -383,8 +385,6 @@ class Protocol(object):
                         compression_level = 0
                         read_buffer = read_buffer[16:]
                     else:
-                        if bl<8:
-                            break   #packet still too small
                         #packet format: struct.pack('cBBBL', ...) - 8 bytes
                         try:
                             (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
