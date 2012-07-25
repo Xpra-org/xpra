@@ -347,7 +347,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     CLEAN_FILES = ["xpra/wait_for_x_server.c",
                    "xpra/vpx/codec.c",
                    "xpra/x264/codec.c",
-                   "etc/xpra/server.conf",
+                   "etc/xpra/xpra.conf",
                    "wimpiggy/lowlevel/constants.pxi",
                    "wimpiggy/lowlevel/bindings.c"]
     if 'clean' in sys.argv:
