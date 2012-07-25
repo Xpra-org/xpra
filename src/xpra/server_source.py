@@ -611,7 +611,7 @@ class ServerSource(object):
             rw += w
         return tv / tw, rv / rw
 
-    def calculate_for_target(self, msg, target_value, avg_value, recent_value, aim=0.5, div=1.0, slope=0.5):
+    def calculate_for_target(self, msg, target_value, avg_value, recent_value, aim=0.5, div=1.0, slope=0.1):
         """
             Calculates factor and weight to try to bring us closer to 'target_value'.
 
@@ -621,19 +621,19 @@ class ServerSource(object):
             the closer to 0 the more target matters, the closer to 1.0 the more average matters)
         """
         assert aim>0.0 and aim<1.0
-        target_factor = (slope+recent_value/div)/(slope+target_value/div)
+        #target factor: how far are we from 'target'
+        target_factor = (recent_value/div)/(slope+target_value/div)
+        #average factor: how far are we from the 'average'
         avg_factor = (recent_value/div)/(slope+avg_value/div)
+        #aimed average: combine the two factors above with the 'aim' weight distribution:
         aimed_average = target_factor*(1-aim) + avg_factor*aim
         factor = logp(aimed_average)
-        if avg_factor == 0:
-            weight = logp(target_factor*(1.0-aim) + (1.0-aim)/target_factor)
-        else:
-            weight = logp(max(target_factor*(1.0-aim), avg_factor*aim) + max((1.0-aim)/target_factor, aim/avg_factor))
+        weight = logp(max(0.0, 1.0-factor, factor-1.0))
         if DEBUG_DELAY:
             msg += " [factors: target=%s, average=%s, aim=%s, aimed_average=%s]" % (dec2(target_factor), dec2(avg_factor), dec2(aim), dec2(aimed_average))
         return  msg, factor, weight
 
-    def calculate_for_average(self, msg, avg_value, recent_value, div=1.0):
+    def calculate_for_average(self, msg, avg_value, recent_value, div=1.0, weight_offset=0.5, weight_div=1.0):
         """
             Calculates factor and weight based on how far we are from the average value.
             This is used by metrics for which we do not know the optimal target value.
@@ -641,7 +641,7 @@ class ServerSource(object):
         avg = avg_value/div
         recent = recent_value/div
         factor = logp(recent/avg)
-        weight = max(factor, 1/factor)-0.5
+        weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
         return  msg, factor, weight
 
     def queue_inspect(self, time_values, target=1):
@@ -763,7 +763,7 @@ class ServerSource(object):
         #this is how long it takes to send 1MB:
         avg1MB = 1.0*1024*1024/avg
         recent1MB = 1.0*1024*1024/recent
-        return  self.calculate_for_average(msg, avg1MB, recent1MB)
+        return  self.calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0)
 
     def get_damage_in_latency_factor(self, low_limit, avg, recent):
         """
@@ -774,7 +774,7 @@ class ServerSource(object):
             return  None            #not enough records yet
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage processing latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
-        target_latency = 0.005 + (0.040*low_limit/1024.0/1024.0)
+        target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
         return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.005)
 
     def get_damage_out_latency_factor(self, low_limit, avg, recent):
@@ -786,23 +786,22 @@ class ServerSource(object):
             return  None            #not enough records yet
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage send latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
-        target_latency = 0.020 + (0.050*low_limit/1024.0/1024.0)
+        target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
         return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.010)
 
     def get_network_send_speed_factor(self, avg_send_speed, recent_send_speed):
         if avg_send_speed is None or recent_send_speed is None:
             return  None
-        msg = "network send speed: avg=%s, recent=%s (KBytes/s)" % (int(avg_send_speed/1024), int(recent_send_speed/1024))
         #our calculate methods aims for lower values, so invert speed
         #this is how long it takes to send 1MB:
         avg1MB = 1.0*1024*1024/avg_send_speed
         recent1MB = 1.0*1024*1024/recent_send_speed
-        msg, factor, weight = self.calculate_for_average(msg, avg1MB, recent1MB)
         #we only really care about this when the speed is quite low,
         #so adjust the weight accordingly:
         minspeed = float(128*1024)
         div = logp(max(recent_send_speed, minspeed)/minspeed)
-        return  [msg, factor, weight/div]
+        msg = "network send speed: avg=%s, recent=%s (KBytes/s), div=%s" % (int(avg_send_speed/1024), int(recent_send_speed/1024), div)
+        return self.calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div)
 
     def get_elasped_time_factor(self, batch, highest_latency):
         """
@@ -816,7 +815,7 @@ class ServerSource(object):
             return  None
         #if damage latency is high, it could just be that the
         #ui thread is too busy, so only fire if nothing happens for a substantial amount of time:
-        ignore_time = 2*max(highest_latency, batch.delay)
+        ignore_time = max(highest_latency+batch.recalculate_delay, batch.delay+batch.recalculate_delay)
         ignore_count = 2 + ignore_time / batch.recalculate_delay
         elapsed = time.time()-batch.last_updated
         n_skipped_calcs = elapsed / batch.recalculate_delay
@@ -876,18 +875,6 @@ class ServerSource(object):
             weight += (factor-1.0)/2
         return ("damage data queue: %s" % msg, factor, weight)
 
-    def get_pending_acks_factor(self, ack_pending):
-        """
-            Returns the batch delay change factor based on
-            the number of damage ACKs we are still waiting for.
-            Because of latency, it is normal to have a few pending,
-            so we only use this factor to reduce the batch delay
-            when there is absolutely nothing pending, not to increase it.
-        """
-        if ack_pending is None or len(ack_pending)==0:
-            return  ["client is fully up to date: no damage ACKs pending", 0, 2.0]
-        return ("client has some ACKs pending: %s" % len(ack_pending), 1.0, 0)
-
     def get_client_backlog_factor(self, window, ack_pending, avg_client_latency, sent_before, low_limit):
         """
             Returns the batch delay change factor based on
@@ -923,14 +910,15 @@ class ServerSource(object):
             We use a time-weighted average of previous delays as a starting value,
             then combine it with the new factors.
         """
+        last_updated = batch.last_updated
         current_delay = batch.delay
         avg = 0
         tv, tw = 0.0, 0.0
+        decay = max(1, logp(current_delay/batch.min_delay)/5.0)
         if len(batch.last_delays)>0:
             #get the weighted average
             #older values matter less, we decay them according to how much we batch already
             #(older values matter more when we batch a lot)
-            decay = logp(current_delay/batch.min_delay)
             now = time.time()
             for when, delay in batch.last_delays:
                 #newer matter more:
@@ -942,9 +930,10 @@ class ServerSource(object):
         hist_w = tw
 
         valid_factors = [x for x in factors if x is not None]
+        all_factors_weight = sum([w for _,_,w in valid_factors])
         for _, factor, weight in valid_factors:
             target_delay = max(batch.min_delay, min(batch.max_delay, current_delay*factor))
-            w = weight*max(1, hist_w)/len(valid_factors)
+            w = max(1, hist_w)*weight/all_factors_weight
             tw += w
             tv += target_delay*w
         batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
@@ -960,9 +949,9 @@ class ServerSource(object):
             if len(decimal_delays)==0:
                 decimal_delays.append(0)
             logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
-            rec = ("update_batch_delay: wid=%s, fps=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
-                    batch.wid, fps, dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
-                    dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), logfactors)
+            rec = ("update_batch_delay: wid=%s, fps=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s -- %s",
+                    batch.wid, fps, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+                    dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
             self.add_DEBUG_DELAY_MESSAGE(rec)
 
     def calculate_batch_delay(self, wid, window, batch):
@@ -1002,7 +991,6 @@ class ServerSource(object):
         factors.append(self.get_damage_packet_queue_size_factor())
         factors.append(self.get_damage_packet_queue_pixels_factor(low_limit))
         factors.append(self.get_damage_data_queue_factor())
-        factors.append(self.get_pending_acks_factor(ack_pending))
         factors.append(self.get_client_backlog_factor(window, ack_pending, avg_client_latency, time.time()-avg_client_latency, low_limit))
         factors.append(self.get_mmap_factor())
         self.update_batch_delay(batch, factors)
