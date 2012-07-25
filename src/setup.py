@@ -218,6 +218,45 @@ else:
                 ("share/applications", ["xpra_launcher.desktop"]),
                 ("share/icons", ["xpra.png"])
                 ]
+
+    if 'install' in sys.argv and sys.platform not in ["win32", "darwin"]:
+        #prepare default [/usr/local]/etc configuration files:
+        if sys.prefix == '/usr':
+            etc_prefix = '/etc/xpra'
+        else:
+            etc_prefix = sys.prefix + '/etc/xpra'
+        #by default, include the template as-is:
+        import shutil
+        shutil.copy("etc/xpra/xpra.conf.template", "etc/xpra/xpra.conf")
+        #figure out the version of the Xorg server:
+        etc_files = ["etc/xpra/xpra.conf", "etc/xpra/xorg.conf"]
+        data_files.append((etc_prefix, etc_files))
+        try:
+            proc = subprocess.Popen(["Xorg", "-version"], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out, _ = proc.communicate()
+            V_LINE = "X.Org X Server "
+            xorg_version = None
+            for line in out.splitlines():
+                if line.startswith(V_LINE):
+                    v_str = line[len(V_LINE):]
+                    xorg_version = v_str.split(".")[:2]
+                    break
+            if not xorg_version:
+                print("Xorg version could not be detected, Xdummy support unavailable")
+            elif xorg_version>=[0, 12]:
+                print("found valid Xorg server version %s" % v_str)
+                print("enabling Xdummy in config file")
+                f = open("etc/xpra/xpra.conf", mode='a')
+                f.write("xvfb=Xorg -dpi 96 -noreset -nolisten tcp "+
+                        "+extension GLX +extension RANDR +extension RENDER "+
+                        "-logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf")
+                f.close()
+            else:
+                print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
+        except Exception, e:
+            print("failed to detect Xorg version: %s" % e)
+            print("not installing Xdummy support")
+            traceback.print_exc()
     extra_options = dict(
         packages = packages,
         scripts = scripts,
@@ -303,10 +342,11 @@ if vpx_ENABLED:
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
-    #ensure we remove the cython generated files:
+    #ensure we remove the files we generate:
     CLEAN_FILES = ["xpra/wait_for_x_server.c",
                    "xpra/vpx/codec.c",
                    "xpra/x264/codec.c",
+                   "etc/xpra/server.conf",
                    "wimpiggy/lowlevel/constants.pxi",
                    "wimpiggy/lowlevel/bindings.c"]
     if 'clean' in sys.argv:

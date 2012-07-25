@@ -3,3 +3,4 @@ wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.c
 wimpiggy/lowlevel/constants.pxi
 xpra/x264/codec.c
 xpra/vpx/codec.c
+etc/xpra/xpra.conf

@@ -313,7 +313,15 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if not clobber:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-        xvfb_cmd = opts.xvfb.replace("$XAUTHORITY", xauthority).split()
+        subs = {"XAUTHORITY" : xauthority,
+                "USER" : os.environ.get("USER", "unknown-user"),
+                "HOME" : os.environ.get("HOME", os.getcwd()),
+                "DISPLAY" : display_name}
+        xvfb = opts.xvfb
+        for var,value in subs.items():
+            xvfb = xvfb.replace("$%s" % var, value)
+            xvfb = xvfb.replace("${%s}" % var, value)
+        xvfb_cmd = xvfb.split()
         xvfb_executable = xvfb_cmd[0]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         try:

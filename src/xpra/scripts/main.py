@@ -71,9 +71,38 @@ if "rgb24" in ENCODINGS:
         #the vpx module does not exist
         #xpra was probably built with --without-vpx
         pass
-DEFAULT_ENCODING = ENCODINGS[0]
 
-
+def read_xpra_conf():
+    d = {}
+    if sys.prefix == '/usr':
+        conf_file = '/etc/xpra/xpra.conf'
+    else:
+        conf_file = sys.prefix + '/etc/xpra/xpra.conf'
+    if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
+        return  d
+    f = open(conf_file, "rU")
+    for line in f:
+        sline = line.strip()
+        if len(sline) == 0:
+            continue
+        if sline[0] in ( '!', '#' ):
+            continue
+        if sline.find("=")<=0:
+            continue
+        props = sline.split("=", 1)
+        assert len(props)==2
+        name = props[0].strip()
+        value = props[1].strip()
+        current_value = d.get(name)
+        if current_value:
+            if type(current_value)==list:
+                d[name] = current_value + [value]
+            else:
+                d[name] = [current_value, value]
+        else:
+            d[name] = value
+    f.close()
+    return  d
 
 def nox():
     if "DISPLAY" in os.environ:
@@ -92,6 +121,20 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
+    defaults = read_xpra_conf()
+    def bool_default(varname, default_value):
+        v = defaults.get(varname)
+        if not v:
+            return default_value
+        if type(v)==str:
+            v = v.lower()
+        if v in ["yes", "true", "1"]:
+            return  True
+        if v in ["no", "false", "0"]:
+            return  False
+        print("invalid value for '%s': %s, using default value %s instead" % (varname, v, default_value))
+        return default_value
+    
     if XPRA_LOCAL_SERVERS_SUPPORTED:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
@@ -131,8 +174,11 @@ def main(script_file, cmdline):
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=False,
                           help="Use an existing display rather than starting one with xvfb")
+        DEFAULT_XVFB = "Xvfb -dpi 96 +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY"
         group.add_option("--xvfb", action="store",
-                          dest="xvfb", default="Xvfb -dpi 96 +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY", metavar="CMD",
+                          dest="xvfb",
+                          default=defaults.get("xvfb", DEFAULT_XVFB),
+                          metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
         group.add_option("--bind-tcp", action="store",
                           dest="bind_tcp", default=None,
@@ -145,25 +191,26 @@ def main(script_file, cmdline):
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     group.add_option("--no-clipboard", action="store_false",
-                      dest="clipboard", default=True,
+                      dest="clipboard", default=bool_default("clipboard", True),
                       help="Disable clipboard support")
     group.add_option("--no-pulseaudio", action="store_false",
-                      dest="pulseaudio", default=True,
+                      dest="pulseaudio", default=bool_default("pulseaudio", True),
                       help="Disable pulseaudio support via X11 root window properties")
     group.add_option("--no-mmap", action="store_false",
-                      dest="mmap", default=True,
+                      dest="mmap", default=bool_default("mmap", True),
                       help="Disable memory mapped transfers for local connections")
     group.add_option("--readonly", action="store_true",
-                      dest="readonly", default=False,
+                      dest="readonly", default=bool_default("readonly", False),
                       help="Ignore all keyboard input and mouse events from the clients")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression.")
+    default_encoding = defaults.get("encoding", ENCODINGS[0])
     group.add_option("--encoding", action="store",
-                      metavar="ENCODING",
+                      metavar="ENCODING", default=default_encoding,
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), DEFAULT_ENCODING))
+                      help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), default_encoding))
     if "jpeg" in ENCODINGS:
         group.add_option("--jpeg-quality", action="store",
                           metavar="LEVEL",
@@ -178,8 +225,14 @@ def main(script_file, cmdline):
                       help="Idle delay in seconds before doing automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
+    compress_str = defaults.get("compress", "3")
+    try:
+        compress = int(compress_str)
+    except:
+        print("WARNING: invalid default value for 'compress' option, using default")
+        compress = 3
     group.add_option("-z", "--compress", action="store",
-                      dest="compression_level", type="int", default=3,
+                      dest="compression_level", type="int", default=compress,
                       metavar="LEVEL",
                       help="How hard to work on compressing data."
                       + " You generally do not need to use this option,"
@@ -210,7 +263,7 @@ def main(script_file, cmdline):
                       help="Define key shortcuts that will trigger specific actions."
                       + " Defaults to 'Meta+Shift+F4:quit' if no shortcuts are defined.")
     group.add_option("--no-keyboard-sync", action="store_false",
-                      dest="keyboard_sync", default=True,
+                      dest="keyboard_sync", default=bool_default("keyboard-sync", True),
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
     parser.add_option_group(group)
 
@@ -219,24 +272,29 @@ def main(script_file, cmdline):
     group.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
+    default_socket_dir = defaults.get("socket-dir")
+    default_socket_dir_str = default_socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
-                      dest="sockdir", default=None,
-                      help="Directory to place/look for the socket files in (default: $XPRA_SOCKET_DIR or '~/.xpra')")
+                      dest="sockdir", default=default_socket_dir,
+                      help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
+    debug_default = None
+    if bool_default("debug", False):
+        debug_default = "all"
     group.add_option("-d", "--debug", action="store",
-                      dest="debug", default=None, metavar="FILTER1,FILTER2,...",
+                      dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\")")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Advanced Client Options",
                 "Please refer to the man page for details.")
     group.add_option("--ssh", action="store",
-                      dest="ssh", default=DEFAULT_SSH_CMD, metavar="CMD",
+                      dest="ssh", default=defaults.get("ssh", DEFAULT_SSH_CMD), metavar="CMD",
                       help="How to run ssh (default: '%default')")
     group.add_option("--mmap-group", action="store_true",
-                      dest="mmap_group", default=False,
+                      dest="mmap_group", default=bool_default("mmap-group", False),
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
     group.add_option("--enable-pings", action="store_true",
-                      dest="send_pings", default=False,
+                      dest="send_pings", default=bool_default("pings", False),
                       help="Send ping packets every second to gather latency statistics")
     group.add_option("--remote-xpra", action="store",
                       dest="remote_xpra", default=".xpra/run-xpra",

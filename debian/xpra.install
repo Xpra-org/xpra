@@ -6,3 +6,4 @@ usr/bin/xpra_launcher
 usr/share/xpra
 usr/share/applications/xpra_launcher.desktop
 usr/share/icons/xpra.png
+etc/xpra/*

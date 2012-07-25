@@ -433,6 +433,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/man/man1/xpra*
 /usr/share/applications/xpra_launcher.desktop
 /usr/share/icons/xpra.png
+/etc/xpra/*
 
 # we no longer ship parti in rpms:
 %exclude %{_bindir}/parti

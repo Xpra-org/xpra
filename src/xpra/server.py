@@ -70,7 +70,7 @@ from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, 
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
-from xpra.scripts.main import ENCODINGS, DEFAULT_ENCODING
+from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -204,7 +204,7 @@ class XpraServer(gobject.GObject):
         self.default_damage_options = {}
 
         self.supports_mmap = opts.mmap
-        self.encoding = opts.encoding or DEFAULT_ENCODING
+        self.encoding = opts.encoding
         assert self.encoding in ENCODINGS
         self.png_window_icons = False
         self.session_name = opts.session_name
