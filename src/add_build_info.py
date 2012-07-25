@@ -51,7 +51,7 @@ def get_svn_props():
     changes = 0
     proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
-    if not out:
+    if proc.poll()!=0:
         print("could not get status of local files")
         return  props
 
