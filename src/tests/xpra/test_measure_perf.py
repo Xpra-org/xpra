@@ -58,8 +58,9 @@ GLX_TESTS = [GLX_SPHERES, GLX_GEARS]
 #the plain X11 tests:
 X11_PERF = ["/usr/bin/x11perf", "-resize", "-all"]
 XTERM_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "while true; do dmesg; done"]
+FAKE_CONSOLE_USER_TEST = ["/usr/bin/xterm", "-geometry", "160x60", "-e", "PYTHONPATH=`pwd` ./tests/xpra/simulate_console_user.py"]
 GTKPERF_TEST = "while true; do gtkperf -a; done"
-X11_TESTS = [X11_PERF, XTERM_TEST, GTKPERF_TEST]
+X11_TESTS = [X11_PERF, XTERM_TEST, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
 
 #the screensaver tests:
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
