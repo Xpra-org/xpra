@@ -98,12 +98,19 @@ LOSSY_20 = "low quality"
 LOSSY_50 = "average quality"
 LOSSY_90 = "best lossy quality"
 
-XPRA_ENCODING_OPTIONS = [ "jpeg", "x264", "png", "rgb24", "vpx" ]
+ENCODING_OPTIONS = [ "jpeg", "x264", "png", "rgb24", "vpx" ]
 try:
 	from xpra.scripts.main import ENCODINGS
-	XPRA_ENCODING_OPTIONS = ENCODINGS
+	ENCODING_OPTIONS = ENCODINGS
 except:
 	pass
+
+# find the default encoding (below list is in our hard-coded preferred order):
+DEFAULT_ENCODING = ENCODING_OPTIONS[0]
+for enc in [ "png", "x264", "vpx", "jpeg", "rgb24" ]:
+	if enc in ENCODING_OPTIONS:
+		DEFAULT_ENCODING = enc
+		break
 
 XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
 XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
@@ -113,32 +120,65 @@ XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 						}
 
 # Default connection options
+from xpra.scripts.main import read_xpra_defaults
+defaults = read_xpra_defaults()
+def default_str(varname, default_value, valid_values=None):
+	if varname not in defaults:
+		return default_value
+	v = defaults.get(varname)
+	if valid_values is not None and v not in valid_values:
+		return default_value
+	return v
+def str_to_int(s, default_value):
+	try:
+		return int(s)
+	except:
+		return default_value
+def default_int(varname, default_value):
+	if varname not in defaults:
+		return default_value
+	return str_to_int(defaults.get(varname), default_value)
+def str_to_bool(v, default_value):
+	if type(v)==str:
+		v = v.lower()
+	if v in ["yes", "true", "1"]:
+		return  True
+	if v in ["no", "false", "0"]:
+		return  False
+	return default_value
+def default_bool(varname, default_value):
+	if varname not in defaults:
+		return default_value
+	v = defaults.get(varname)
+	return str_to_bool(v, default_value)
+
 from wimpiggy.util import AdHocStruct
 xpra_opts = AdHocStruct()
-xpra_opts.encoding = "png"
-xpra_opts.jpegquality = 90
-xpra_opts.host = "127.0.0.1"
-xpra_opts.port = 16010
-xpra_opts.mode = "tcp"
-xpra_opts.debug = False
-xpra_opts.autoconnect = False
-xpra_opts.no_tray = False
-xpra_opts.dock_icon = ""
-xpra_opts.tray_icon = ""
-xpra_opts.password_file = False
-xpra_opts.clipboard = True
-xpra_opts.pulseaudio = True
-xpra_opts.mmap = True
-xpra_opts.readonly = False
-xpra_opts.keyboard_sync = True
-xpra_opts.compression_level = 3
+xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
+xpra_opts.jpegquality = default_int("jpegquality", 90)
+xpra_opts.host = defaults.get("host", "127.0.0.1")
+xpra_opts.port = default_int("port", 10000)
+xpra_opts.mode = default_str("mode", "tcp", ["tcp", "ssh"])
+xpra_opts.debug = default_bool("debug", False)
+xpra_opts.no_tray = default_bool("debug", False)
+xpra_opts.dock_icon = default_str("dock-icon", "")
+xpra_opts.tray_icon = default_str("tray-icon", "")
+xpra_opts.window_icon = default_str("window-icon", "")
+xpra_opts.password_file = default_str("password-file", "")
+xpra_opts.clipboard = default_bool("clipboard", True)
+xpra_opts.pulseaudio = default_bool("pulseaudio", True)
+xpra_opts.mmap = default_bool("mmap", True)
+xpra_opts.mmap_group = default_bool("mmap-group", False)
+xpra_opts.readonly = default_bool("readonly", False)
+xpra_opts.keyboard_sync = default_bool("keyboard-sync", True)
+xpra_opts.compression_level = default_int("compression", 3)
+xpra_opts.send_pings = default_bool("pings", False)
+#these would need testing/work:
 xpra_opts.auto_refresh_delay = 0.0
 xpra_opts.max_bandwidth = 0.0
-xpra_opts.window_icon = ""
 xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
-xpra_opts.password_file = ""
-xpra_opts.send_pings = False
-
+#these cannot be set in the xpra.conf (would not make sense):
+xpra_opts.autoconnect = False
 
 
 def get_icon_from_file(filename):
@@ -231,9 +271,9 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Encoding: "))
 		self.encoding_combo = gtk.combo_box_new_text()
 		self.encoding_combo.get_model().clear()
-		for option in XPRA_ENCODING_OPTIONS:
+		for option in ENCODING_OPTIONS:
 			self.encoding_combo.append_text(option)
-		self.encoding_combo.set_active(XPRA_ENCODING_OPTIONS.index(xpra_opts.encoding))
+		self.encoding_combo.set_active(ENCODING_OPTIONS.index(xpra_opts.encoding))
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
 
@@ -355,8 +395,8 @@ class ApplicationWindow:
 		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 		gtk_main_quit_on_fatal_exceptions_enable()
 		opts = AdHocStruct()
-		opts.clipboard = True
-		opts.pulseaudio = True
+		opts.clipboard = xpra_opts.clipboard
+		opts.pulseaudio = xpra_opts.pulseaudio
 		opts.password_file = xpra_opts.password_file
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
@@ -411,7 +451,19 @@ class ApplicationWindow:
 					out = "..."+out[len(out)-255:]
 				if len(err)>255:
 					err = "..."+err[len(err)-255:]
-				self.set_info_text("command terminated with status %s,\noutput:\n%s\nerror:\n%s" % (ret, out, err))
+				info = "command terminated with exitcode %s" % ret
+				if out:
+					info += ",\noutput:\n%s" % out
+				if err:
+					info += ",\nerror:\n%s" % err
+				#red only for non-zero returncode:
+				if ret!=0:
+					color_obj = gtk.gdk.color_parse("red")
+				else:
+					color_obj = gtk.gdk.color_parse("black")
+				if color_obj:
+					self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
+				self.set_info_text(info)
 				self.show()
 			gobject.idle_add(show_result, out, err)
 		except Exception, e:
@@ -483,13 +535,16 @@ def update_options_from_file(filename):
 		propDict[name] = value
 	propFile.close()
 
-	for prop in ["host", "port", "encoding", "jpegquality", "mode", "autoconnect"]:
+	for prop in ["host", "encoding", "mode"]:
 		val = propDict.get(prop)
 		if val:
 			setattr(xpra_opts, prop, val)
+	xpra_opts.port = str_to_int(propDict.get("port"), 10000)
+	xpra_opts.autoconnect = str_to_bool(propDict.get("autoconnect"), False)
 	val = propDict.get("password")
 	if val:
 		xpra_opts.password_file = create_password_file(val)
+
 
 def main():
 	try:
@@ -497,17 +552,19 @@ def main():
 		glib.set_application_name(APPLICATION_NAME)
 	except:
 		pass
-
 	if len(sys.argv) == 2:
 		update_options_from_file(sys.argv[1])
 	app = ApplicationWindow()
-	if xpra_opts.autoconnect == "True":
-		#file says we should connect, do that only:
-		process = app.start_xpra_process()
-		return process.wait()
-	else:
-		app.create_window()
-		app.run()
+	try:
+		if xpra_opts.autoconnect:
+			#file says we should connect, do that only:
+			process = app.start_xpra_process()
+			return process.wait()
+		else:
+			app.create_window()
+			app.run()
+	except KeyboardInterrupt:
+		pass
 	if xpra_opts.password_file:
 		os.unlink(xpra_opts.password_file)
 	return 0
