@@ -309,6 +309,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x264/codec.c",
                    "wimpiggy/lowlevel/constants.pxi",
                    "wimpiggy/lowlevel/bindings.c"]
+    if 'clean' in sys.argv:
+        CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
