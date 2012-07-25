@@ -514,7 +514,10 @@ which display the remote applications should be shown on.
 .\" --------------------------------------------------------------------
 .SH FILES
 \fIxpra.conf\fP stores default values for most options.
+There is a global config file in \fI/etc\fP or \fI/usr/local/etc\fP,
+and each user may override it using \fI.xpra/xpra.conf\fP.
 Xpra uses the directory \fI~/.xpra\fP to store a number of files.
+(the examples below are given for the display \fI:7\fP)
 .TP
 \fI~/.xpra/:7\fP
 The unix domain socket that clients use to contact the xpra server.

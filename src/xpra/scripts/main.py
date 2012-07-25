@@ -72,12 +72,11 @@ if "rgb24" in ENCODINGS:
         #xpra was probably built with --without-vpx
         pass
 
-def read_xpra_conf():
+def read_xpra_conf(conf_dir):
     d = {}
-    if sys.prefix == '/usr':
-        conf_file = '/etc/xpra/xpra.conf'
-    else:
-        conf_file = sys.prefix + '/etc/xpra/xpra.conf'
+    if not os.path.exists(conf_dir) or not os.path.isdir(conf_dir):
+        return  d
+    conf_file = os.path.join(conf_dir, 'xpra.conf')
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         return  d
     f = open(conf_file, "rU")
@@ -104,6 +103,25 @@ def read_xpra_conf():
     f.close()
     return  d
 
+def read_xpra_defaults():
+    #first, read the global defaults:
+    if sys.platform.startswith("win"):
+        conf_dir = os.path.dirname(sys.executable)
+    elif sys.prefix == '/usr':
+        conf_dir = '/etc/xpra'
+    else:
+        conf_dir = sys.prefix + '/etc/xpra/'
+    defaults = read_xpra_conf(conf_dir)
+    #now load the per-user config over it:
+    if sys.platform.startswith("win"):
+        conf_dir = os.path.join(os.environ.get("APPDATA"), "Xpra")
+    else:
+        conf_dir = os.path.expanduser("~/.xpra")
+    user_defaults = read_xpra_conf(conf_dir)
+    for k,v in user_defaults.items():
+        defaults[k] = v
+    return defaults
+
 def nox():
     if "DISPLAY" in os.environ:
         del os.environ["DISPLAY"]
@@ -121,7 +139,7 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    defaults = read_xpra_conf()
+    defaults = read_xpra_defaults()
     def bool_default(varname, default_value):
         v = defaults.get(varname)
         if not v:

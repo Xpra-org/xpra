@@ -142,6 +142,7 @@ if sys.platform.startswith("win"):
                    ('', ['COPYING']),
                    ('', ['README.xpra']),
                    ('', ['website.url']),
+                   ('', ['etc/xpra/xpra.conf']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
