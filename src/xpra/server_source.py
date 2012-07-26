@@ -50,6 +50,7 @@ log = Logger()
 from xpra.deque import maxdeque
 from xpra.protocol import Compressible
 from xpra.scripts.main import ENCODINGS
+from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import dec1, dec2, add_list_stats, \
         calculate_time_weighted_average, calculate_timesize_weighted_average, \
         calculate_for_target, calculate_for_average, queue_inspect
@@ -61,35 +62,6 @@ def start_daemon_thread(target, name):
     t.daemon = True
     t.start()
     return t
-
-def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
-    """
-        Extracts pixels from the given pixmap
-    """
-    start = time.time()
-    pixmap_w, pixmap_h = pixmap.get_size()
-    # Just in case we somehow end up with damage larger than the pixmap,
-    # we don't want to start requesting random chunks of memory (this
-    # could happen if a window is resized but we don't throw away our
-    # existing damage map):
-    assert x >= 0
-    assert y >= 0
-    if x + width > pixmap_w:
-        width = pixmap_w - x
-    if y + height > pixmap_h:
-        height = pixmap_h - y
-    if width <= 0 or height <= 0:
-        return None
-    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
-    colormap = pixmap.get_colormap()
-    if not colormap:
-        log.error("get_rgb_rawdata(..) no colormap for RGB pixbuf %sx%s", width, height)
-        return None
-    pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
-    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", dec1(1000*(time.time()-start)))
-    raw_data = pixbuf.get_pixels()
-    rowstride = pixbuf.get_rowstride()
-    return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
 
 
 class DamageBatchConfig(object):
