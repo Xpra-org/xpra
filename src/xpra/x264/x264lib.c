@@ -37,12 +37,17 @@ typedef void x264_t;
 #include <libavcodec/avcodec.h>
 #include "x264lib.h"
 
+#define MAX(a,b) ((a) > (b) ? a : b)
+#define MIN(a,b) ((a) < (b) ? a : b)
 
 struct x264lib_ctx {
 	// Encoding
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
 	int encoding_preset;
+	//x264_preset_names[] = {
+	// "ultrafast", "superfast", "veryfast", "faster", "fast", "medium",
+	//"slow", "slower", "veryslow", "placebo", 0 }
 
 	// Decoding
 	AVCodec *codec;
@@ -260,10 +265,14 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 {
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
-	int new_preset = max(0, min(5, ctx->encoding_preset-increase));
+	int new_preset = MAX(0, MIN(5, ctx->encoding_preset-increase));
 	if (new_preset==ctx->encoding_preset)
 		return
 	ctx->encoding_preset = new_preset;
+	//"tune" options: film, animation, grain, stillimage, psnr, ssim, fastdecode, zerolatency
+	//Multiple tunings can be used if separated by a delimiter in ",./-+"
+	//however multiple psy tunings cannot be used.
+	//film, animation, grain, stillimage, psnr, and ssim are psy tunings.
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
 	//printf("Setting encoding preset %s %d\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset);
 	x264_param_apply_profile(&param, "baseline");
