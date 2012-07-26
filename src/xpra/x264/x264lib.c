@@ -260,11 +260,10 @@ void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
 {
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
-	ctx->encoding_preset -= increase;
-	if (ctx->encoding_preset < 0)
-		ctx->encoding_preset = 0;
-	if (ctx->encoding_preset > 5)
-		ctx->encoding_preset = 5;
+	int new_preset = max(0, min(5, ctx->encoding_preset-increase));
+	if (new_preset==ctx->encoding_preset)
+		return
+	ctx->encoding_preset = new_preset;
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
 	//printf("Setting encoding preset %s %d\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset);
 	x264_param_apply_profile(&param, "baseline");
