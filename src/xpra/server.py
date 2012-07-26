@@ -63,7 +63,8 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata, add_list_stats
+from xpra.server_source import DamageBatchConfig, ServerSource, get_rgb_rawdata
+from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
 from xpra.protocol import Protocol, SocketConnection, dump_packet
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS

@@ -13,6 +13,11 @@ import os
 DEBUG_DELAY = len(os.environ.get("XPRA_DEBUG_LATENCY", ""))>0
 MAX_DEBUG_MESSAGES = 1000
 
+#how many historical records to keep
+#for the various statistics we collect:
+#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
+NRECS = 100
+
 
 import gtk.gdk
 gtk.gdk.threads_init()
@@ -30,7 +35,7 @@ try:
 except:
     from Queue import Queue         #@Reimport
 from collections import deque
-from math import log as mathlog, sqrt, pow
+from math import log as mathlog, sqrt
 sqrt2 = sqrt(2)
 def logp(x):
     return mathlog(1.0+x, sqrt2)/2.0
@@ -45,6 +50,9 @@ log = Logger()
 from xpra.deque import maxdeque
 from xpra.protocol import Compressible
 from xpra.scripts.main import ENCODINGS
+from xpra.maths import dec1, dec2, add_list_stats, \
+        calculate_time_weighted_average, calculate_timesize_weighted_average, \
+        calculate_for_target, calculate_for_average, queue_inspect
 
 
 def start_daemon_thread(target, name):
@@ -53,31 +61,6 @@ def start_daemon_thread(target, name):
     t.daemon = True
     t.start()
     return t
-
-def dec1(x):
-    #for pretty debug output of numbers with one decimal
-    return int(10.0*x)/10.0
-def dec2(x):
-    #for pretty debug output of numbers with one decimal
-    return int(100.0*x)/100.0
-
-def find_invpow(x, n):
-    """Finds the integer component of the n'th root of x,
-    an integer such that y ** n <= x < (y + 1) ** n.
-    """
-    high = 1
-    while high ** n < x:
-        high *= 2
-    low = high/2
-    while low < high:
-        mid = (low + high) // 2
-        if low < mid and mid**n < x:
-            low = mid
-        elif high > mid and mid**n > x:
-            high = mid
-        else:
-            return mid
-    return mid + 1
 
 def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
     """
@@ -107,56 +90,6 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
-
-def add_list_stats(info, basename, in_values):
-    #this may be backed by a deque/list whichi is used by other threads
-    #so make a copy before use:
-    values = list(in_values)
-    if len(values)==0:
-        return
-    info["%s.min" % basename] = int(min(values))
-    info["%s.max" % basename] = int(max(values))
-    #arithmetic mean
-    avg = sum(values)/len(values)
-    info["%s.avg" % basename] = int(avg)
-    p = 1           #geometric mean
-    h = 0           #harmonic mean
-    var = 0         #variance
-    counter = 0
-    for x in values:
-        if x!=0:
-            p *= x
-            h += 1.0/x
-            counter += 1
-        var += (x-avg)**2
-    #standard deviation:
-    std = sqrt(var/len(values))
-    info["%s.std" % basename] = int(std)
-    if avg!=0:
-        #coefficient of variation
-        info["%s.cv_pct" % basename] = int(100.0*std/avg)
-    if counter>0:
-        #geometric mean
-        try:
-            v = int(pow(p, 1.0/counter))
-        except OverflowError:
-            v = find_invpow(p, counter)
-        info["%s.gm" % basename] = v
-    if h!=0:
-        #harmonic mean
-        info["%s.h" % basename] = int(counter/h)
-    #percentile
-    svalues = sorted(values)
-    for i in range(1,10):
-        pct = i*10
-        index = len(values)*i//10
-        info["%s.%sp" % (basename, pct)] = int(svalues[index])
-
-
-#how many historical records to keep
-#for the various statistics we collect:
-#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
-NRECS = 100
 
 
 class DamageBatchConfig(object):
@@ -569,97 +502,6 @@ class ServerSource(object):
                 #force batching: set it above min_delay
                 batch.delay = max(batch.min_delay+0.01, batch.delay)
 
-    def calculate_time_weighted_average(self, data):
-        """
-            Given a list of items of the form [(event_time, value)],
-            this method calculates a time-weighted average where
-            recent values matter a lot more than more ancient ones.
-            The 'recent' average is even more slanted towards recent values.
-        """
-        now = time.time()
-        tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
-        for event_time, value in data:
-            #newer matter more:
-            w = 1.0/(1.0+(now-event_time))
-            tv += value*w
-            tw += w
-            w = 1.0/(0.1+(now-event_time)**2)
-            rv += value*w
-            rw += w
-        return tv / tw, rv / rw
-
-    def calculate_timesize_weighted_average(self, data, sizeunit=1.0):
-        """
-            This is a time weighted average where the size
-            of each record also gives it a weight boost.
-            This is to prevent small packets from skewing the average.
-            Data format: (event_time, size, elapsed_time)
-        """
-        size_avg = sum([x for _, x, _ in data])/len(data)
-        now = time.time()
-        tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
-        for event_time, size, elapsed_time in data:
-            if elapsed_time<=0:
-                continue        #invalid record
-            pw = logp(size/size_avg)
-            size_ps = max(1, size*sizeunit/elapsed_time)
-            w = pw/(1.0+(now-event_time))
-            tv += w*size_ps
-            tw += w
-            w = pw/(0.1+(now-event_time)**2)
-            rv += w*size_ps
-            rw += w
-        return tv / tw, rv / rw
-
-    def calculate_for_target(self, msg, target_value, avg_value, recent_value, aim=0.5, div=1.0, slope=0.1):
-        """
-            Calculates factor and weight to try to bring us closer to 'target_value'.
-
-            The factor is a function of how far the 'recent_value' is from it,
-            and of how things are progressing (better or worse than average),
-            'aim' controls the proportion of each. (at 0.5 it is an average of both,
-            the closer to 0 the more target matters, the closer to 1.0 the more average matters)
-        """
-        assert aim>0.0 and aim<1.0
-        #target factor: how far are we from 'target'
-        target_factor = (recent_value/div)/(slope+target_value/div)
-        #average factor: how far are we from the 'average'
-        avg_factor = (recent_value/div)/(slope+avg_value/div)
-        #aimed average: combine the two factors above with the 'aim' weight distribution:
-        aimed_average = target_factor*(1-aim) + avg_factor*aim
-        factor = logp(aimed_average)
-        weight = logp(max(0.0, 1.0-factor, factor-1.0))
-        if DEBUG_DELAY:
-            msg += " [factors: target=%s, average=%s, aim=%s, aimed_average=%s]" % (dec2(target_factor), dec2(avg_factor), dec2(aim), dec2(aimed_average))
-        return  msg, factor, weight
-
-    def calculate_for_average(self, msg, avg_value, recent_value, div=1.0, weight_offset=0.5, weight_div=1.0):
-        """
-            Calculates factor and weight based on how far we are from the average value.
-            This is used by metrics for which we do not know the optimal target value.
-        """
-        avg = avg_value/div
-        recent = recent_value/div
-        factor = logp(recent/avg)
-        weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
-        return  msg, factor, weight
-
-    def queue_inspect(self, time_values, target=1):
-        """
-            Utility method used by:
-            - get_damage_packet_queue_size_factor
-            - get_damage_packet_queue_pixels_factor
-            - get_damage_data_queue_factor
-            Given an historical list of values and a current value,
-            figure out if things are getting better or worse.
-        """
-        #inspect a queue size history: figure out if things are better or worse than before
-        if len(time_values)==0:
-            return  "(empty)", 1.0, 0.0
-        avg, recent = self.calculate_time_weighted_average(list(time_values))
-        msg = "avg=%s, recent=%s, target=%s" % (avg, recent, target)
-        return  self.calculate_for_target(msg, target, avg, recent, aim=0.25, slope=0.01)
-
 
     def calculate_average_damage_in_latency(self):
         """
@@ -670,7 +512,7 @@ class ServerSource(object):
         if len(self._damage_in_latency)==0:
             return  0, 0
         data = [(when, latency) for when, _, _, latency in list(self._damage_in_latency)]
-        return  self.calculate_time_weighted_average(data)
+        return  calculate_time_weighted_average(data)
 
     def calculate_average_damage_out_latency(self):
         """
@@ -681,7 +523,7 @@ class ServerSource(object):
         if len(self._damage_out_latency)==0:
             return  0, 0
         data = [(when, latency) for when, _, _, latency in list(self._damage_out_latency)]
-        return  self.calculate_time_weighted_average(data)
+        return  calculate_time_weighted_average(data)
 
     def calculate_average_client_latency(self):
         """
@@ -694,7 +536,7 @@ class ServerSource(object):
             #assume 100ms until we get some data...
             return  0.1, 0.1
         data = [(when, latency) for when, _, latency in list(self._client_latency)]
-        return  self.calculate_time_weighted_average(data)
+        return  calculate_time_weighted_average(data)
 
     def calculate_client_backlog(self, ack_pending, sent_before):
         """
@@ -740,7 +582,7 @@ class ServerSource(object):
         if not decode_time_list:
             return  None, None
         #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
-        return  self.calculate_timesize_weighted_average(list(decode_time_list), sizeunit=1000*1000)
+        return  calculate_timesize_weighted_average(list(decode_time_list), sizeunit=1000*1000)
 
     def calculate_network_send_speed(self):
         """
@@ -749,7 +591,7 @@ class ServerSource(object):
         """
         if len(self._damage_send_speed)==0:
             return  None, None
-        return  self.calculate_timesize_weighted_average(list(self._damage_send_speed))
+        return  calculate_timesize_weighted_average(list(self._damage_send_speed))
 
     def get_client_decode_speed_factor(self, avg, recent):
         """
@@ -763,7 +605,7 @@ class ServerSource(object):
         #this is how long it takes to send 1MB:
         avg1MB = 1.0*1024*1024/avg
         recent1MB = 1.0*1024*1024/recent
-        return  self.calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0)
+        return  calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0)
 
     def get_damage_in_latency_factor(self, low_limit, avg, recent):
         """
@@ -775,7 +617,7 @@ class ServerSource(object):
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage processing latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
         target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-        return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.005)
+        return calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.005)
 
     def get_damage_out_latency_factor(self, low_limit, avg, recent):
         """
@@ -787,7 +629,7 @@ class ServerSource(object):
         #(sent_time, no of pixels, actual batch delay, damage_latency)
         msg = "damage send latency: avg=%s, recent=%s" % (dec1(1000*avg), dec1(1000*recent))
         target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
-        return self.calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.010)
+        return calculate_for_target(msg, target_latency, avg, recent, aim=0.8, slope=0.010)
 
     def get_network_send_speed_factor(self, avg_send_speed, recent_send_speed):
         if avg_send_speed is None or recent_send_speed is None:
@@ -801,7 +643,7 @@ class ServerSource(object):
         minspeed = float(128*1024)
         div = logp(max(recent_send_speed, minspeed)/minspeed)
         msg = "network send speed: avg=%s, recent=%s (KBytes/s), div=%s" % (int(avg_send_speed/1024), int(recent_send_speed/1024), div)
-        return self.calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div)
+        return calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div)
 
     def get_elasped_time_factor(self, batch, highest_latency):
         """
@@ -837,7 +679,7 @@ class ServerSource(object):
             target_latency = max(target_latency, self._min_client_latency)
         msg = "client latency: lowest=%s, avg=%s, recent=%s" % \
                 (dec1(1000*self._min_client_latency), dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
-        return  self.calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005)
+        return  calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005)
 
     def get_damage_packet_queue_size_factor(self):
         """
@@ -849,7 +691,7 @@ class ServerSource(object):
             - queue_inspect
             - get_damage_packet_queue_pixels_factor
         """
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qsizes)
+        msg, factor, weight = queue_inspect(self._damage_packet_qsizes)
         return ("damage packet queue size: %s" % msg, factor, weight)
 
     def get_damage_packet_queue_pixels_factor(self, low_limit):
@@ -858,7 +700,7 @@ class ServerSource(object):
             the number of pixels waiting in the packet queue.
             See 'queue_inspect'
         """
-        msg, factor, weight = self.queue_inspect(self._damage_packet_qpixels, target=low_limit)
+        msg, factor, weight = queue_inspect(self._damage_packet_qpixels, target=low_limit)
         return ("damage packet queue pixels: %s" % msg, factor, weight)
 
     def get_damage_data_queue_factor(self):
@@ -870,7 +712,7 @@ class ServerSource(object):
             go through the other queues.
             See 'queue_inspect'
         """
-        msg, factor, weight = self.queue_inspect(self._damage_data_qsizes)
+        msg, factor, weight = queue_inspect(self._damage_data_qsizes)
         if factor>1.0:
             weight += (factor-1.0)/2
         return ("damage data queue: %s" % msg, factor, weight)
