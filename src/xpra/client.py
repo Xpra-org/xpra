@@ -524,7 +524,7 @@ class XpraClient(XpraClientBase):
     def send_ping(self):
         now_ms = int(1000*time.time())
         self.send(["ping", now_ms])
-        wait = 15
+        wait = 60
         def check_echo_received(*args):
             if self.last_ping_echoed_time<now_ms:
                 log.error("check_echo_received: we sent a ping to the server %s seconds ago and we have not received its echo!", wait)
