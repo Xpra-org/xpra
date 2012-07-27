@@ -72,9 +72,9 @@ int decompress_image(struct x264lib_ctx *, uint8_t *in, int size, uint8_t *(*out
 
 /**
  * Change the speed of encoding (x264 preset).
- * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
+ * @param percent: 100 for maximum ("ultrafast") with lowest compression, 0 for highest compression (slower)
  */
-void change_encoding_speed(struct x264lib_ctx *ctx, int increase);
+void set_encoding_speed(struct x264lib_ctx *ctx, int pct);
 
 /**
  * Define our own memalign function so we can more easily

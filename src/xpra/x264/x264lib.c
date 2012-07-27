@@ -37,6 +37,8 @@ typedef void x264_t;
 #include <libavcodec/avcodec.h>
 #include "x264lib.h"
 
+//beware that these macros may evaluate a or b twice!
+//ie: do not use them for something like: MAX(i++, N)
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
@@ -258,28 +260,29 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
 
 /**
  * Change the speed of encoding (x264 preset).
- * @param increase: increase encoding speed (decrease preset) by this value. Negative values decrease encoding speed.
+ * @param percent: 100 for maximum ("ultrafast") with lowest compression, 0 for highest compression (slower)
  */
 #ifndef _WIN32
-void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
+void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
-	int new_preset = MAX(0, MIN(5, ctx->encoding_preset-increase));
+	//int old_preset = ctx->encoding_preset;
+	int new_preset = 7-MAX(0, MIN(7, pct/14));
 	if (new_preset==ctx->encoding_preset)
-		return
+		return;
 	ctx->encoding_preset = new_preset;
 	//"tune" options: film, animation, grain, stillimage, psnr, ssim, fastdecode, zerolatency
 	//Multiple tunings can be used if separated by a delimiter in ",./-+"
 	//however multiple psy tunings cannot be used.
 	//film, animation, grain, stillimage, psnr, and ssim are psy tunings.
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
-	//printf("Setting encoding preset %s %d\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset);
+	//printf("Setting encoding preset %s %d (from %d - pct=%d)\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset, old_preset, pct);
 	x264_param_apply_profile(&param, "baseline");
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
 #else
-void change_encoding_speed(struct x264lib_ctx *ctx, int increase)
+void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	;
 }

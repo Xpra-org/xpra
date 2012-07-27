@@ -36,7 +36,7 @@ cdef extern from "x264lib.h":
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]) nogil
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
-    void change_encoding_speed(x264lib_ctx *context, int increase)
+    void set_encoding_speed(x264lib_ctx *context, int pct)
 
 
 NOGIL = True
@@ -189,8 +189,5 @@ cdef class Encoder(xcoder):
         coutv = (<char *>cout)[:coutsz]
         return  i, coutsz, coutv
 
-    def increase_encoding_speed(self):
-        change_encoding_speed(self.context, 1)
-
-    def decrease_encoding_speed(self):
-        change_encoding_speed(self.context, -1)
+    def set_encoding_speed(self, pct):
+        set_encoding_speed(self.context, int(pct))

@@ -155,8 +155,5 @@ cdef class Encoder(xcoder):
         coutv = (<char *>cout)[:coutsz]
         return  i, coutsz, coutv
 
-    def increase_encoding_speed(self):
-        return
-
-    def decrease_encoding_speed(self):
+    def set_encoding_speed(self, pct):
         return
