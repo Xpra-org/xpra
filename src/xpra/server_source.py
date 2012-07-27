@@ -341,7 +341,7 @@ class ServerSource(object):
         info["damage_packet_queue_size.current"] = len(self._damage_packet_queue)
         qsizes = [x for _,x in list(self._damage_packet_qsizes)]
         add_list_stats(info, "damage_packet_queue_size",  qsizes)
-        qpixels = [x[1] for x in list(self._damage_packet_queue)]
+        qpixels = [x[2] for x in list(self._damage_packet_queue)]
         if len(qpixels)>0:
             info["damage_packet_queue_pixels.current"] = qpixels[-1]
         add_list_stats(info, "damage_packet_queue_pixels",  qsizes)
