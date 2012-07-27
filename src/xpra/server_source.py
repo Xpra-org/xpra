@@ -594,8 +594,8 @@ class ServerSource(object):
             weight += (factor-1.0)/2
         #packet and pixels backlog:
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
-        factors.append(calculate_for_target("client packets backlog", 0, last_packets_backlog, packets_backlog, slope=1))
-        factors.append(calculate_for_target("client pixels backlog", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=0.1))
+        factors.append(calculate_for_target("client packets backlog", 0, last_packets_backlog, packets_backlog, slope=1.0))
+        factors.append(calculate_for_target("client pixels backlog", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=1.0))
         if self._mmap and self._mmap_size>0:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self._mmap_free_size)/self._mmap_size
@@ -1025,6 +1025,17 @@ class ServerSource(object):
         buf.close()
         return data
 
+    def video_encoders(self, coding):
+        assert coding in ENCODINGS
+        if coding=="x264":
+            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
+            return x264_encoders, x264Encoder
+        elif coding=="vpx":
+            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
+            return vpx_encoders, vpxEncoder
+        else:
+            raise Exception("invalid video encoder: %s" % coding)
+
     def video_encode(self, wid, x, y, w, h, coding, data, rowstride):
         """
             This method is used by make_data_packet to encode frames using x264 or vpx.
@@ -1035,18 +1046,8 @@ class ServerSource(object):
             use the 'video_encoder_lock' to prevent races.
 
         """
-        assert coding in ENCODINGS
         assert x==0 and y==0, "invalid position: %sx%s" % (x,y)
-        if coding=="x264":
-            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
-            encoders = x264_encoders
-            factory = x264Encoder
-        elif coding=="vpx":
-            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
-            encoders = vpx_encoders
-            factory = vpxEncoder
-        else:
-            raise Exception("invalid video encoder: %s" % coding)
+        encoders, factory = self.video_encoders(coding)
         #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()

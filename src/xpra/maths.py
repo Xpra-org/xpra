@@ -169,4 +169,4 @@ def queue_inspect(msg_header, time_values, target=1.0, div=1.0):
         return  "(empty)", 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
     msg = "%s avg=%s, recent=%s, target=%s" % (msg_header, avg, recent, target)
-    return  calculate_for_target(msg, target, avg, recent, aim=0.25, div=div, slope=0.01)
+    return  calculate_for_target(msg, target, avg, recent, aim=0.25, div=div, slope=1.0)
