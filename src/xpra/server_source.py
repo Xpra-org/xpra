@@ -121,7 +121,9 @@ class ServerSource(object):
         self._mmap_free_size = 0                    #how much of the mmap space is left (may be negative if we failed to write the last chunk)
         # used for safely cleaninup video encoders (x264/vpx):
         self._video_encoder_cleanup = {}
-        self._video_encoder_lock = Lock()
+        self._video_encoder_lock = Lock()           #to ensure we serialize access to encoders and their internals
+        self._video_encoder_speed = {}              #keep track of the target encoding_speed for each window encoder:
+                                                    #last NRECS per window: (event time, encoding speed)
         # for managing/cancelling damage requests:
         self._damage_delayed = {}                   #may store delayed region (batching in progress) for each window
         self._sequence = 1                          #increase with every region we process or delay
@@ -527,6 +529,7 @@ class ServerSource(object):
                     continue
                 packets_backlog += 1
                 pixels_backlog += pixels
+        max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
 
         #for each indicator: (description, factor, weight)
         factors = []
@@ -566,7 +569,6 @@ class ServerSource(object):
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high damage latency
             #so we ignore short elapsed times.
-            max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
             ignore_time = max(max_latency+batch.recalculate_delay, batch.delay+batch.recalculate_delay)
             ignore_count = 2 + ignore_time / batch.recalculate_delay
             elapsed = time.time()-batch.last_updated
@@ -603,6 +605,47 @@ class ServerSource(object):
             factors.append(("mmap area %s%% full" % int(100*full), logp(2*full), 2*full))
         #now use those factors to drive the delay change:
         self.update_batch_delay(batch, factors)
+        #***************************************************************
+        #special hook for video encoders
+        coding = self.get_encoding(wid)
+        if coding not in ("vpx", "x264") or self._mmap:
+            return
+        encoders, _ = self.video_encoders(coding)
+        if len(encoders)==0:
+            return              #not been used yet
+        try:
+            self._video_encoder_lock.acquire()
+            encoder = encoders.get(wid)
+            if not encoder:
+                return          #this window has not used the encoder yet
+            #first, let's not get the damage latency get too high:
+            max_damage_latency = max(0.020, batch.delay/4.0)
+            dam_lat = (avg_damage_in_latency or 0)/max_damage_latency
+            #try to ensure the client does not suffer too much at decoding:
+            min_decode_speed = 1*1000*1000      #1MPixels/s
+            dec_lat = min_decode_speed/(avg_decode_speed or min_decode_speed)
+            #min pct: 0.0 to 50.0
+            min_pct = 50.0 * min(1.0, max(dam_lat, dec_lat))
+            if batch.last_updated>0:
+                pass
+            #but if the packets are queuing, then we want to compress more:
+            packet_qs = len(self._damage_packet_queue)/5.0
+            #or if the client is falling behind:
+            packets_bl = last_packets_backlog
+            #and obviously, existing batching is a sign that we probably need more compression:
+            max_pct = 100-50.0 * max(0.0, min(1.0, max(packet_qs, packets_bl)))
+            target = 150-50*batch.delay/batch.min_delay
+            target_speed = max(min_pct, min(max_pct, target))
+            #beware: we store the target speed in this list, not the one we actually use!
+            encoding_speeds = self._video_encoder_speed.setdefault(wid, maxdeque(NRECS))
+            encoding_speeds.append((time.time(), target_speed))
+            _, speed_recent = calculate_time_weighted_average(encoding_speeds)
+            new_speed = speed_recent
+            log.info("video encoder factors: dam_lat=%s, dec_lat=%s, min_pct=%s, packet_qs=%s, packets_bl=%s, max_pct=%s, target=%s, new_speed=%s",
+                     dam_lat, dec_lat, min_pct, packet_qs, packets_bl, max_pct, target, new_speed)
+            encoder.set_encoding_speed(new_speed)
+        finally:
+            self._video_encoder_lock.release()
 
     def update_batch_delay(self, batch, factors):
         """

@@ -90,6 +90,7 @@ def calculate_time_weighted_average(data):
         recent values matter a lot more than more ancient ones.
         The 'recent' average is even more slanted towards recent values.
     """
+    assert len(data)>0
     now = time.time()
     tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
     for event_time, value in data:

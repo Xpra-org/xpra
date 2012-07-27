@@ -268,7 +268,7 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
 	//int old_preset = ctx->encoding_preset;
-	int new_preset = 7-MAX(0, MIN(7, pct/14));
+	int new_preset = 7-MAX(0, MIN(7, pct/12.5));
 	if (new_preset==ctx->encoding_preset)
 		return;
 	ctx->encoding_preset = new_preset;
