@@ -273,7 +273,7 @@ class ServerSource(object):
 
     def is_cancelled(self, wid, sequence):
         """ See cancel_damage(wid) """
-        return sequence>0 and self._damage_cancelled.get(wid, 0)>=sequence
+        return sequence>=0 and self._damage_cancelled.get(wid, 0)>=sequence
 
     def remove_window(self, wid):
         """ The given window is gone, ensure we free all the related resources """
@@ -600,7 +600,7 @@ class ServerSource(object):
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self._mmap_free_size)/self._mmap_size
             #aim for ~50%
-            factors.append(("mmap area %s full" % int(100*full), logp(2*full), 2*full))
+            factors.append(("mmap area %s%% full" % int(100*full), logp(2*full), 2*full))
         #now use those factors to drive the delay change:
         self.update_batch_delay(batch, factors)
 
@@ -926,7 +926,7 @@ class ServerSource(object):
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):
         """
-            The client is acknoledging a damage packet,
+            The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
             and the "client latency".
         """
@@ -959,9 +959,11 @@ class ServerSource(object):
             Converts a damage item picked from the 'damage_data_queue'
             by the 'data_to_packet' thread and returns a packet
             ready for sending by the network layer.
-            x264 and vpx use 'video_encode', mmap will use 'mmap_send',
-            'rgb24', 'jpeg' and 'png' are handled within.
 
+            * 'mmap' will use 'mmap_send' - always if available, otherwise:
+            * 'jpeg' and 'png' are handled by 'PIL_encode'.
+            * 'x264' and 'vpx' use 'video_encode'
+            * 'rgb24' uses the Compressible wrapper to let the network layer zlib it,
         """
         if self.is_cancelled(wid, sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
@@ -970,56 +972,31 @@ class ServerSource(object):
         assert data, "data is missing"
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        #send via mmap?
         if self._mmap and self._mmap_size>0 and len(data)>256:
-            mmap_data = self._mmap_send(data)
-            end = time.time()
-            log("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/(end-start)/1024/1024), len(data), dec1(1000*(end-start)))
-            if mmap_data is not None:
-                self._mmap_bytes_sent += len(data)
-                coding = "mmap"
-                data = mmap_data
-        #encode to jpeg/png:
-        if coding in ["jpeg", "png"]:
-            assert coding in ENCODINGS
-            import Image
-            im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
-            buf = StringIO()
-            if coding=="jpeg":
-                q = 50
-                if options:
-                    q = options.get("jpegquality", 50)
-                q = min(99, max(1, q))
-                log("sending with jpeg quality %s", q)
-                im.save(buf, "JPEG", quality=q)
-            else:
-                log("sending as %s", coding)
-                im.save(buf, coding.upper())
-            data = buf.getvalue()
-            buf.close()
+            #try with mmap (will change coding to "mmap" if it succeeds)
+            coding, data = self.mmap_send(coding, data)
+
+        if coding in ("jpeg", "png"):
+            data = self.PIL_encode(w, h, coding, data, rowstride, options)
         elif coding=="x264":
-            assert coding in ENCODINGS
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
             if w==0 or h==0:
                 return None
-            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
-            data = self.video_encode(x264_encoders, x264Encoder, wid, x, y, w, h, coding, data, rowstride)
+            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride)
         elif coding=="vpx":
-            assert coding in ENCODINGS
-            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
-            data = self.video_encode(vpx_encoders, vpxEncoder, wid, x, y, w, h, coding, data, rowstride)
+            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride)
         elif coding=="rgb24":
+            #use wrapper so network code will compress it with zlib:
             data = Compressible(coding, data)
         elif coding=="mmap":
-            pass
+            pass        #already handled via mmap_send
         else:
             raise Exception("invalid encoding: %s" % coding)
-
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and sequence>=0 and self.is_cancelled(wid, sequence):
+        if coding!="mmap" and self.is_cancelled(wid, sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #actual network packet:
@@ -1029,7 +1006,26 @@ class ServerSource(object):
         self._encoding_stats.append((wid, coding, w*h, len(data), end-start))
         return packet
 
-    def video_encode(self, encoders, factory, wid, x, y, w, h, coding, data, rowstride):
+    def PIL_encode(self, w, h, coding, data, rowstride, options):
+        assert coding in ENCODINGS
+        import Image
+        im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
+        buf = StringIO()
+        if coding=="jpeg":
+            q = 50
+            if options:
+                q = options.get("jpegquality", 50)
+            q = min(99, max(1, q))
+            log("sending with jpeg quality %s", q)
+            im.save(buf, "JPEG", quality=q)
+        else:
+            log("sending as %s", coding)
+            im.save(buf, coding.upper())
+        data = buf.getvalue()
+        buf.close()
+        return data
+
+    def video_encode(self, wid, x, y, w, h, coding, data, rowstride):
         """
             This method is used by make_data_packet to encode frames using x264 or vpx.
             Video encoders only deal with fixed dimensions,
@@ -1041,6 +1037,16 @@ class ServerSource(object):
         """
         assert coding in ENCODINGS
         assert x==0 and y==0, "invalid position: %sx%s" % (x,y)
+        if coding=="x264":
+            from xpra.x264.codec import ENCODERS as x264_encoders, Encoder as x264Encoder   #@UnresolvedImport
+            encoders = x264_encoders
+            factory = x264Encoder
+        elif coding=="vpx":
+            from xpra.vpx.codec import ENCODERS as vpx_encoders, Encoder as vpxEncoder      #@UnresolvedImport
+            encoders = vpx_encoders
+            factory = vpxEncoder
+        else:
+            raise Exception("invalid video encoder: %s" % coding)
         #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()
@@ -1073,6 +1079,17 @@ class ServerSource(object):
             return data
         finally:
             self._video_encoder_lock.release()
+
+    def mmap_send(self, coding, data):
+        start = time.time()
+        mmap_data = self._mmap_send(data)
+        end = time.time()
+        log("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/(end-start)/1024/1024), len(data), dec1(1000*(end-start)))
+        if mmap_data is not None:
+            self._mmap_bytes_sent += len(data)
+            coding = "mmap"
+            data = mmap_data
+        return coding, data
 
     def _mmap_send(self, data):
         """
