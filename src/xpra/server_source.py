@@ -641,8 +641,8 @@ class ServerSource(object):
             encoding_speeds.append((time.time(), target_speed))
             _, speed_recent = calculate_time_weighted_average(encoding_speeds)
             new_speed = speed_recent
-            log.info("video encoder factors: dam_lat=%s, dec_lat=%s, min_pct=%s, packet_qs=%s, packets_bl=%s, max_pct=%s, target=%s, new_speed=%s",
-                     dam_lat, dec_lat, min_pct, packet_qs, packets_bl, max_pct, target, new_speed)
+            log("video encoder factors: dam_lat=%s, dec_lat=%s, min_pct=%s, packet_qs=%s, packets_bl=%s, max_pct=%s, target=%s, new_speed=%s",
+                     dam_lat, dec_lat, min_pct, packet_qs, packets_bl, max_pct, target_speed, new_speed)
             encoder.set_encoding_speed(new_speed)
         finally:
             self._video_encoder_lock.release()
