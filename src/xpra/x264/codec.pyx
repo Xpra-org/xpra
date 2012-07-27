@@ -30,13 +30,14 @@ cdef extern from "x264lib.h":
     x264lib_ctx* init_encoder(int width, int height)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
-    int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz) nogil
+    int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override) nogil
 
     x264lib_ctx* init_decoder(int width, int height)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]) nogil
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     void set_encoding_speed(x264lib_ctx *context, int pct)
+    void set_encoding_quality(x264lib_ctx *context, int pct)
 
 
 NOGIL = True
@@ -163,7 +164,7 @@ cdef class Encoder(xcoder):
             free(self.context)
             self.context = NULL
 
-    def compress_image(self, input, rowstride):
+    def compress_image(self, input, rowstride, quality_override):
         cdef x264_picture_t *pic_in = NULL
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -172,18 +173,18 @@ cdef class Encoder(xcoder):
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         pic_in = csc_image_rgb2yuv(self.context, buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
-        return self.do_compress_image(pic_in)
+        return self.do_compress_image(pic_in, quality_override)
 
-    cdef do_compress_image(self, x264_picture_t *pic_in):
+    cdef do_compress_image(self, x264_picture_t *pic_in, int quality_override):
         #actual compression (no gil):
         cdef int i
         cdef uint8_t *cout
         cdef int coutsz
         if NOGIL:
             with nogil:
-                i = compress_image(self.context, pic_in, &cout, &coutsz)
+                i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
         else:
-            i = compress_image(self.context, pic_in, &cout, &coutsz)
+            i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
         if i!=0:
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
@@ -191,3 +192,6 @@ cdef class Encoder(xcoder):
 
     def set_encoding_speed(self, pct):
         set_encoding_speed(self.context, int(pct))
+
+    def set_encoding_quality(self, pct):
+        set_encoding_quality(self.context, int(pct))

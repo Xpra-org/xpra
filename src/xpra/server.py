@@ -1629,10 +1629,11 @@ class XpraServer(gobject.GObject):
             self._server_source.client_ack_damage(packet_sequence, wid, width, height, decode_time)
 
     def _process_buffer_refresh(self, proto, packet):
-        [wid, _, jpeg_qual] = packet[1:4]
+        [wid, _, qual] = packet[1:4]
         opts = self.default_damage_options.copy()
+        opts["quality"] = qual
         if self.encoding=="jpeg":
-            opts["jpegquality"] = jpeg_qual
+            opts["jpegquality"] = qual
         if wid==-1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:

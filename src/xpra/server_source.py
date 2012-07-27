@@ -122,6 +122,8 @@ class ServerSource(object):
         # used for safely cleaninup video encoders (x264/vpx):
         self._video_encoder_cleanup = {}
         self._video_encoder_lock = Lock()           #to ensure we serialize access to encoders and their internals
+        self._video_encoder_quality = {}            #keep track of the target encoding_quality for each window encoder:
+                                                    #last NRECS per window: (event time, encoding speed)
         self._video_encoder_speed = {}              #keep track of the target encoding_speed for each window encoder:
                                                     #last NRECS per window: (event time, encoding speed)
         # for managing/cancelling damage requests:
@@ -617,33 +619,32 @@ class ServerSource(object):
             self._video_encoder_lock.acquire()
             encoder = encoders.get(wid)
             if not encoder:
-                return          #this window has not used the encoder yet
-            #first, let's not get the damage latency get too high:
-            max_damage_latency = max(0.020, batch.delay/4.0)
-            dam_lat = (avg_damage_in_latency or 0)/max_damage_latency
-            #try to ensure the client does not suffer too much at decoding:
-            min_decode_speed = 1*1000*1000      #1MPixels/s
-            dec_lat = min_decode_speed/(avg_decode_speed or min_decode_speed)
-            #min pct: 0.0 to 50.0
-            min_pct = 50.0 * min(1.0, max(dam_lat, dec_lat))
-            if batch.last_updated>0:
-                pass
-            #but if the packets are queuing, then we want to compress more:
-            packet_qs = len(self._damage_packet_queue)/5.0
-            #or if the client is falling behind:
-            packets_bl = last_packets_backlog
-            #and obviously, existing batching is a sign that we probably need more compression:
-            max_pct = 100-50.0 * max(0.0, min(1.0, max(packet_qs, packets_bl)))
-            target = 150-50*batch.delay/batch.min_delay
-            target_speed = max(min_pct, min(max_pct, target))
-            #beware: we store the target speed in this list, not the one we actually use!
+                return  #this window has not used the encoder yet
+            #***********************************************************
+            #encoding speed: minimize latency and client decode speed
+            min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
+            target_damage_latency = max(min_damage_latency, batch.delay/4.0)
+            dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
+            target_decode_speed = 1*1000*1000      #1MPixels/s
+            dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
+            target_speed = 100.0 * min(1.0, max(dam_lat, dec_lat))
             encoding_speeds = self._video_encoder_speed.setdefault(wid, maxdeque(NRECS))
             encoding_speeds.append((time.time(), target_speed))
-            _, speed_recent = calculate_time_weighted_average(encoding_speeds)
-            new_speed = speed_recent
-            log("video encoder factors: dam_lat=%s, dec_lat=%s, min_pct=%s, packet_qs=%s, packets_bl=%s, max_pct=%s, target=%s, new_speed=%s",
-                     dam_lat, dec_lat, min_pct, packet_qs, packets_bl, max_pct, target_speed, new_speed)
+            _, new_speed = calculate_time_weighted_average(encoding_speeds)
+            log("video encoder speed factors: dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s",
+                     dam_lat, dec_lat, target_speed, new_speed)
             encoder.set_encoding_speed(new_speed)
+            #***********************************************************
+            #quality: minimize batch.delay and packet backlog
+            packets_bl = last_packets_backlog/low_limit/4.0     #any more than 4 frames behind and we drop quality to zero
+            batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
+            target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
+            encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
+            encoding_qualities.append((time.time(), target_quality))
+            _, new_quality = calculate_time_weighted_average(encoding_qualities)
+            log("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
+                     packets_bl, batch_q, target_quality, new_quality)
+            encoder.set_encoding_quality(new_quality)
         finally:
             self._video_encoder_lock.release()
 
@@ -1027,9 +1028,9 @@ class ServerSource(object):
             h = h & 0xFFFE
             if w==0 or h==0:
                 return None
-            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride)
+            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="vpx":
-            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride)
+            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24":
             #use wrapper so network code will compress it with zlib:
             data = Compressible(coding, data)
@@ -1079,7 +1080,7 @@ class ServerSource(object):
         else:
             raise Exception("invalid video encoder: %s" % coding)
 
-    def video_encode(self, wid, x, y, w, h, coding, data, rowstride):
+    def video_encode(self, wid, x, y, w, h, coding, data, rowstride, options):
         """
             This method is used by make_data_packet to encode frames using x264 or vpx.
             Video encoders only deal with fixed dimensions,
@@ -1099,6 +1100,11 @@ class ServerSource(object):
                 log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
                 encoder.clean()
                 encoder.init(w, h)
+                #if we had an encoding speed set, restore it:
+                encoding_speeds = self._video_encoder_speed.get(wid)
+                if encoding_speeds:
+                    _, recent_speed = calculate_time_weighted_average(encoding_speeds)
+                    encoder.set_encoding_speed(recent_speed)
             if encoder is None:
                 #we could have an old encoder if we were using a different encoding
                 #if so, clean it up:
@@ -1115,8 +1121,9 @@ class ServerSource(object):
                     encoder.clean()
                     del encoders[wid]
                 self._video_encoder_cleanup[wid] = close_encoder
-            log("%s: compress_image(%s bytes, %s)", coding, len(data), rowstride)
-            err, _, data = encoder.compress_image(data, rowstride)
+            quality = options.get("quality", -1)
+            log("%s: compress_image(%s bytes, %s) quality=%s", coding, len(data), rowstride, quality)
+            err, _, data = encoder.compress_image(data, rowstride, quality)
             if err!=0:
                 log.error("%s: ouch, compression error %s", coding, err)
                 return None

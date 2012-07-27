@@ -562,7 +562,6 @@ class XpraClient(XpraClientBase):
 
     def send_refresh(self, wid):
         self.send(["buffer-refresh", wid, True, 95])
-        self._refresh_requested = True
 
     def send_refresh_all(self):
         log.debug("Automatic refresh for all windows ")
@@ -702,7 +701,7 @@ class XpraClient(XpraClientBase):
         decode_time = 0
         if window:
             start = time.time()
-            if window.draw_region(x, y, width, height, coding, data, rowstride):
+            if window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence):
                 end = time.time()
                 self.pixel_counter.append((end, width*height))
                 decode_time = int(end*1000*1000-start*1000*1000)

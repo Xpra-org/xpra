@@ -129,7 +129,7 @@ cdef class Encoder(xcoder):
             clean_encoder(self.context)
             self.context = NULL
 
-    def compress_image(self, input, rowstride):
+    def compress_image(self, input, rowstride, quality_override):
         cdef vpx_image_t *pic_in = NULL
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -156,4 +156,7 @@ cdef class Encoder(xcoder):
         return  i, coutsz, coutv
 
     def set_encoding_speed(self, pct):
+        return
+
+    def set_encoding_quality(self, pct):
         return

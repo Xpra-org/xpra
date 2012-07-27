@@ -58,8 +58,9 @@ int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[
  @param out: Will be set to point to the output data. This output buffer MUST NOT BE FREED and will be erased on the
  next call to compress_image.
  @param outsz: Output size
+ @param quality_override: Desired quality setting (0 to 100), -1 to use current settings.
 */
-int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz);
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override);
 
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
@@ -75,6 +76,12 @@ int decompress_image(struct x264lib_ctx *, uint8_t *in, int size, uint8_t *(*out
  * @param percent: 100 for maximum ("ultrafast") with lowest compression, 0 for highest compression (slower)
  */
 void set_encoding_speed(struct x264lib_ctx *ctx, int pct);
+
+/**
+ * Change the quality of encoding (x264 f_rf_constant).
+ * @param percent: 100 for maximum quality, 0 for lowest quality
+ */
+void set_encoding_quality(struct x264lib_ctx *ctx, int pct);
 
 /**
  * Define our own memalign function so we can more easily

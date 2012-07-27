@@ -160,7 +160,7 @@ static void free_csc_image(x264_picture_t *image)
 	free(image);
 }
 
-int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override)
 {
 	if (!ctx->encoder || !ctx->rgb2yuv) {
 		free_csc_image(pic_in);
@@ -172,6 +172,9 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 
 	/* Encoding */
 	pic_in->i_pts = 1;
+	if (quality_override>=0) {
+		//TODO: override quality in x264_picture_t->param
+	}
 
 	x264_nal_t* nals;
 	int i_nals;
@@ -287,6 +290,23 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	;
 }
 #endif
+
+/**
+ * Change the quality of encoding (x264 f_rf_constant).
+ * @param percent: 100 for best quality, 0 for lowest quality.
+ */
+#ifndef _WIN32
+void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
+{
+	;	//TODO!
+}
+#else
+void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
+{
+	;
+}
+#endif
+
 
 void* xmemalign(size_t size)
 {

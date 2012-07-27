@@ -150,7 +150,7 @@ class ClientWindow(gtk.Window):
         self._metadata = {}
         self._override_redirect = override_redirect
         self._refresh_timer = None
-        self._refresh_requested = False
+        self._refresh_ignore_sequence = -1
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
@@ -267,17 +267,20 @@ class ClientWindow(gtk.Window):
         #the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence):
         success = self._backing.draw_region(x, y, width, height, coding, img_data, rowstride)
         if success:
             queue_draw(self, x, y, width, height)
-        if self._refresh_requested:
-            self._refresh_requested = False
-        else:
-            if self._refresh_timer:
-                gobject.source_remove(self._refresh_timer)
-                self._refresh_timer = None
-            if self._client.auto_refresh_delay and coding == "jpeg":
+        #clear the auto refresh if enough pixels were sent (arbitrary limit..)
+        if self._refresh_timer and width*height>16*16:
+            gobject.source_remove(self._refresh_timer)
+            self._refresh_timer = None
+        #if we need to set a refresh timer, do it:
+        if self._refresh_timer is None and self._client.auto_refresh_delay and coding in ("jpeg", "vpx", "x264"):
+            #make sure our own refresh does not make us fire again
+            #FIXME: this should be per-window!
+            if self._refresh_ignore_sequence<packet_sequence:
+                self._refresh_ignore_sequence = packet_sequence+1
                 self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
         return success
 
