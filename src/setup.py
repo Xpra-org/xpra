@@ -270,7 +270,14 @@ ext_modules = []
 cmdclass = {}
 def cython_version_check(min_version):
     from Cython.Compiler.Version import version as cython_version_string
-    cython_version = [int(part) for part in cython_version_string.split(".")]
+    cython_version = []
+    for x in cython_version_string.split("."):
+        try:
+            cython_version.append(int(x))
+        except Exception, e:
+            assert len(cython_version)>0, "failed to parse cython version number '%s': %s" % (cython_version_string, e)
+            print("ignoring cython version string characters following non-digits: '%s' (from version string '%s')" % (x,cython_version_string))
+            break
     if tuple(cython_version) < min_version:
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
                  "You have version %s\n"
