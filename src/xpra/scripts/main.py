@@ -243,12 +243,13 @@ def main(script_file, cmdline):
                       help="Idle delay in seconds before doing automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
-    compress_str = defaults.get("compress", "3")
+    DEFAULT_COMPRESS = 1
+    compress_str = defaults.get("compress", str(DEFAULT_COMPRESS))
     try:
         compress = int(compress_str)
     except:
-        print("WARNING: invalid default value for 'compress' option, using default")
-        compress = 3
+        print("WARNING: invalid default value for 'compress' option, using default: %s" % DEFAULT_COMPRESS)
+        compress = DEFAULT_COMPRESS
     group.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=compress,
                       metavar="LEVEL",
