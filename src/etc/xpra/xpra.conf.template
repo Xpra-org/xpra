@@ -21,7 +21,7 @@ mmap = yes
 mmap-group = no
 
 # Default compression (0 to 9):
-compress = 3
+compress = 1
 
 # Socket directory:
 socket-dir = ~/.xpra
