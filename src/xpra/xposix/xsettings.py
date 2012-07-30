@@ -80,8 +80,7 @@ class XSettingsWatcher(gobject.GObject):
         owner = self._owner()
         if owner is None:
             return None
-        blob = prop_get(owner, "_XSETTINGS_SETTINGS", "xsettings-settings")
-        return blob
+        return prop_get(owner, "_XSETTINGS_SETTINGS", "xsettings-settings")
 
     def get_settings_blob(self):
         log("Fetching current XSettings data")

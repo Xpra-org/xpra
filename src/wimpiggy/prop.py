@@ -133,8 +133,8 @@ def _read_image(disp, stream):
         if not header:
             return None
         (width, height) = struct.unpack("=II", header)
-        bytes = stream.read(width * height * 4)
-        if len(bytes) < width * height * 4:
+        data = stream.read(width * height * 4)
+        if len(data) < width * height * 4:
             log.warn("Corrupt _NET_WM_ICON")
             return None
     except Exception, e:
@@ -152,7 +152,7 @@ def _read_image(disp, stream):
         log.warn("Your Cairo is too old! Carrying on as best I can, "
                  "but don't expect a miracle")
         return None
-    surf.get_data()[:] = bytes
+    surf.get_data()[:] = data
     # Cairo uses premultiplied alpha. EWMH actually doesn't specify what it
     # uses, but apparently the de-facto standard is non-premultiplied. (At
     # least that's what Compiz's sources say.)
@@ -184,7 +184,7 @@ def _get_atom(disp, d):
 
 
 _prop_types = {
-    # Python type, X type Atom, format, serializer, deserializer, list
+    # Python type, X type Atom, formatbits, serializer, deserializer, list
     # terminator
     "utf8": (unicode, "UTF8_STRING", 8,
              lambda disp, u: u.encode("UTF-8"),
@@ -248,18 +248,20 @@ def _prop_encode(disp, etype, value):
         return _prop_encode_scalar(disp, etype, value)
 
 def _prop_encode_scalar(disp, etype, value):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
+    (pytype, atom, formatbits, serialize, _, _) = _prop_types[etype]
+    if pytype==str and type(value)==unicode:
+        value = str(unicode)
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
-    return (atom, format, serialize(disp, value))
+    return (atom, formatbits, serialize(disp, value))
 
 def _prop_encode_list(disp, etype, value):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
+    (_, atom, formatbits, _, _, terminator) = _prop_types[etype]
     value = list(value)
     serialized = [_prop_encode_scalar(disp, etype, v)[2] for v in value]
     no_none = [x for x in serialized if x is not None]
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
-    return (atom, format, terminator.join(no_none))
+    return (atom, formatbits, terminator.join(no_none))
 
 
 def prop_set(target, key, etype, value):
@@ -273,18 +275,18 @@ def _prop_decode(disp, etype, data):
         return _prop_decode_scalar(disp, etype, data)
 
 def _prop_decode_scalar(disp, etype, data):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
+    (pytype, _, _, _, deserialize, _) = _prop_types[etype]
     value = deserialize(disp, data)
-    assert value is None or isinstance(value, pytype)
+    assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
 def _prop_decode_list(disp, etype, data):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
+    (_, _, formatbits, _, _, terminator) = _prop_types[etype]
     if terminator:
         datums = data.split(terminator)
     else:
         datums = []
-        nbytes = format // 8
+        nbytes = formatbits // 8
         while data:
             datums.append(data[:nbytes])
             data = data[nbytes:]
@@ -298,7 +300,7 @@ def prop_get(target, key, etype, ignore_errors=False):
         scalar_type = etype[0]
     else:
         scalar_type = etype
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[scalar_type]
+    (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
         #print(atom)
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
