@@ -241,45 +241,45 @@ _prop_types = {
     "multiple-conversion": (str, 0, 32, unsupported, _get_atom, None),
     }
 
-def _prop_encode(disp, type, value):
-    if isinstance(type, list):
-        return _prop_encode_list(disp, type[0], value)
+def _prop_encode(disp, etype, value):
+    if isinstance(etype, list):
+        return _prop_encode_list(disp, etype[0], value)
     else:
-        return _prop_encode_scalar(disp, type, value)
+        return _prop_encode_scalar(disp, etype, value)
 
-def _prop_encode_scalar(disp, type, value):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
+def _prop_encode_scalar(disp, etype, value):
+    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, format, serialize(disp, value))
 
-def _prop_encode_list(disp, type, value):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
+def _prop_encode_list(disp, etype, value):
+    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
     value = list(value)
-    serialized = [_prop_encode_scalar(disp, type, v)[2] for v in value]
+    serialized = [_prop_encode_scalar(disp, etype, v)[2] for v in value]
     no_none = [x for x in serialized if x is not None]
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
     return (atom, format, terminator.join(no_none))
 
 
-def prop_set(target, key, type, value):
+def prop_set(target, key, etype, value):
     trap.call_unsynced(XChangeProperty, target, key,
-                       _prop_encode(target, type, value))
+                       _prop_encode(target, etype, value))
 
-def _prop_decode(disp, type, data):
-    if isinstance(type, list):
-        return _prop_decode_list(disp, type[0], data)
+def _prop_decode(disp, etype, data):
+    if isinstance(etype, list):
+        return _prop_decode_list(disp, etype[0], data)
     else:
-        return _prop_decode_scalar(disp, type, data)
+        return _prop_decode_scalar(disp, etype, data)
 
-def _prop_decode_scalar(disp, type, data):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
+def _prop_decode_scalar(disp, etype, data):
+    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
     value = deserialize(disp, data)
     assert value is None or isinstance(value, pytype)
     return value
 
-def _prop_decode_list(disp, type, data):
-    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[type]
+def _prop_decode_list(disp, etype, data):
+    (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[etype]
     if terminator:
         datums = data.split(terminator)
     else:
@@ -288,35 +288,35 @@ def _prop_decode_list(disp, type, data):
         while data:
             datums.append(data[:nbytes])
             data = data[nbytes:]
-    props = [_prop_decode_scalar(disp, type, datum) for datum in datums]
+    props = [_prop_decode_scalar(disp, etype, datum) for datum in datums]
     #assert None not in props
     return [x for x in props if x is not None]
 
 # May return None.
-def prop_get(target, key, type, ignore_errors=False):
-    if isinstance(type, list):
-        scalar_type = type[0]
+def prop_get(target, key, etype, ignore_errors=False):
+    if isinstance(etype, list):
+        scalar_type = etype[0]
     else:
-        scalar_type = type
+        scalar_type = etype
     (pytype, atom, format, serialize, deserialize, terminator) = _prop_types[scalar_type]
     try:
         #print(atom)
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
         #print(atom, repr(data[:100]))
     except NoSuchProperty:
-        log.debug("Missing property %s (%s)", key, type)
+        log.debug("Missing property %s (%s)", key, etype)
         return None
     except (XError, PropertyError):
         if not ignore_errors:
-            log.info("Missing window or missing property or wrong property type %s (%s)", key, type)
+            log.info("Missing window or missing property or wrong property type %s (%s)", key, etype)
             import traceback
             traceback.print_stack()
         return None
     try:
-        return _prop_decode(target, type, data)
+        return _prop_decode(target, etype, data)
     except:
         log.warn("Error parsing property %s (type %s); this may be a"
                  + " misbehaving application, or bug in Wimpiggy\n"
                  + "  Data: %r[...?]",
-                 key, type, data[:160])
+                 key, etype, data[:160])
         raise
