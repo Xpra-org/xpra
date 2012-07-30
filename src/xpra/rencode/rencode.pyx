@@ -204,17 +204,17 @@ cdef encode_float64(char **buf, int *pos, double x):
         x = swap_byte_order_double(<char *>&x)
     write_buffer(buf, pos, &x, sizeof(x))
 
-cdef encode_str(char **buf, int *pos, char* x):
+cdef encode_str(char **buf, int *pos, bytes x):
     cdef char *p
     cdef int lx = len(x)
     if lx < STR_FIXED_COUNT:
         write_buffer_char(buf, pos, STR_FIXED_START + lx)
-        write_buffer(buf, pos, x, lx)
+        write_buffer(buf, pos, <char *>x, lx)
     else:
         s = str(lx) + ":"
         p = s
         write_buffer(buf, pos, p, len(s))
-        write_buffer(buf, pos, x, lx)
+        write_buffer(buf, pos, <char *>x, lx)
 
 cdef encode_none(char **buf, int *pos):
     write_buffer_char(buf, pos, CHR_NONE)
