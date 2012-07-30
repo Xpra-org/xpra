@@ -497,11 +497,6 @@ class ClientExtrasBase(object):
             }
         return modifier_map
 
-    def current_modifiers(self, modifiers):
-        """ subclasses may filter or add modifiers (see win32)
-            this default implementation just leaves them unchanged """
-        return  modifiers
-
 
     def get_data_dir(self):
         return  os.path.dirname(sys.executable) or os.getcwd()
