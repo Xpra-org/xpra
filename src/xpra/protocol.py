@@ -24,6 +24,9 @@ except:
     from Queue import Queue     #@Reimport
 from threading import Thread, Lock
 
+from wimpiggy.log import Logger
+log = Logger()
+
 from xpra.bencode import bencode, bdecode
 has_rencode = False
 try:
@@ -31,11 +34,9 @@ try:
     from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
     has_rencode = True
 except Exception, e:
-    print("rencode is missing: %s" % e)
+    log.error("xpra.rencode is missing: %s" % e)
     rencode_dumps, rencode_loads = None, None
 
-from wimpiggy.log import Logger
-log = Logger()
 
 # A simple, portable abstraction for a blocking, low-level
 # (os.read/os.write-style interface) two-way byte stream:
@@ -157,7 +158,8 @@ class Protocol(object):
     def source_has_more(self):
         assert self.source is not None
         self._source_has_more = True
-        self._maybe_queue_more_writes()
+        if self._write_queue.empty():
+            self._flush_one_packet_into_buffer()
 
     def _maybe_queue_more_writes(self):
         if self._write_queue.empty() and self._source_has_more:
@@ -234,9 +236,7 @@ class Protocol(object):
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif type(item)==Compressible:
-                #this is binary, but we *DO* want to compress it since it isn't compressed already!
-                log("unwrapping %s bytes of %s data of type %s", len(item.data), item.datatype, type(item.data))
-                #make a new compressed packet for it:
+                #this is binary, but we *DO* want to compress it since it isn't compressed yet!
                 packets.append((i, True, item.data))
                 packet[i] = ''
         #now the main packet (or what is left of it):
@@ -267,7 +267,6 @@ class Protocol(object):
                         self._compressor = zlib.compressobj(level)
                         compressor = self._compressor
                     cdata = compressor.compress(udata)+compressor.flush(zlib.Z_SYNC_FLUSH)
-                    log("compressed data from %s to %s", len(udata), len(cdata))
                 else:
                     level = 0
                     cdata = udata
@@ -510,7 +509,7 @@ class Protocol(object):
         self.terminate_io_threads()
         #wait for last_packet to be sent:
         def wait_for_end_of_write(timeout=15):
-            log.debug("wait_for_end_of_write(%s) closed=%s, size=%s", timeout, self._closed, self._write_queue.qsize())
+            log("wait_for_end_of_write(%s) closed=%s, size=%s", timeout, self._closed, self._write_queue.qsize())
             if self._closed:
                 """ client has disconnected """
                 return
