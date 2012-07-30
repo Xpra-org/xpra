@@ -67,7 +67,7 @@ from xpra.server_source import DamageBatchConfig, ServerSource
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
-from xpra.protocol import Protocol, SocketConnection, dump_packet
+from xpra.protocol import Protocol, SocketConnection, Compressible, dump_packet
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
@@ -263,6 +263,7 @@ class XpraServer(gobject.GObject):
         self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
+        self.compressible_cursors = False
         #store list of currently pressed keys
         #(using a dict only so we can display their names in debug messages)
         self.keys_pressed = {}
@@ -491,12 +492,25 @@ class XpraServer(gobject.GObject):
         self.cursor_image = get_cursor_image()
         if self.cursor_image:
             log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
+            pixels = self.cursor_image[7]
+            if pixels:
+                if self.compressible_cursors:
+                    self.cursor_image[7] = Compressible("cursor", pixels)
+                else:
+                    self.cursor_image[7] = pixels.tostring()
+                log("do_wimpiggy_cursor_event(%s) pixels=%s", event, self.cursor_image[7])
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         self.send_cursor()
 
     def send_cursor(self):
-        self._send(["cursor", self.cursor_image or ""])
+        if self.cursor_image:
+            if self.compressible_cursors:
+                self._send(["cursor"] + self.cursor_image)  #new format
+            else:
+                self._send(["cursor", self.cursor_image])   #old format
+        else:
+            self._send(["cursor", ""])
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)
@@ -1146,6 +1160,7 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
         self.set_keymap()
         self.send_cursors = capabilities.get("cursors", False)
+        self.compressible_cursors = capabilities.get("compressible_cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = self.notifications_forwarder is not None and capabilities.get("notifications", False)
         self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
@@ -1728,7 +1743,7 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        assert isinstance(packet_type, str)
+        assert isinstance(packet_type, str), "packet_type is not a string: %s" % type(packet_type)
         if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 self._clipboard_helper.process_clipboard_packet(packet)

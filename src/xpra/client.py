@@ -511,6 +511,7 @@ class XpraClient(XpraClientBase):
             capabilities["mmap_file"] = self.mmap_file
             capabilities["mmap_token"] = self.mmap_token
         capabilities["randr_notify"] = True
+        capabilities["compressible_cursors"] = True
         #these should be turned into options:
         capabilities["cursors"] = True
         capabilities["bell"] = True
@@ -712,7 +713,21 @@ class XpraClient(XpraClientBase):
         self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
 
     def _process_cursor(self, packet):
-        (_, new_cursor) = packet
+        if len(packet)==2:
+            new_cursor = packet[1]
+        elif len(packet)>=8:
+            new_cursor = packet[1:]
+        else:
+            raise Exception("invalid cursor packet: %s items" % len(packet))
+        if len(new_cursor)>0:
+            pixels = new_cursor[7]
+            if type(pixels)==tuple:
+                #newer versions encode as a list, see "compressible_cursors" capability
+                import array
+                a = array.array('b', '\0'* len(pixels))
+                a.fromlist(list(pixels))
+                new_cursor = list(new_cursor)
+                new_cursor[7] = a
         set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def _process_bell(self, packet):
