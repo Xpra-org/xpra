@@ -471,8 +471,8 @@ def _munge_packed_ints_to_longs(data):
 def XChangeProperty(pywindow, property, value):
     "Set a property on a window."
     (type, format, data) = value
-    assert format in (8, 16, 32)
-    assert (len(data) % (format / 8)) == 0
+    assert format in (8, 16, 32), "invalid format for property: %s" % format
+    assert (len(data) % (format / 8)) == 0, "size of data is not a multiple of %s" % (format/8)
     nitems = len(data) / (format / 8)
     if format == 32:
         data = _munge_packed_ints_to_longs(data)
