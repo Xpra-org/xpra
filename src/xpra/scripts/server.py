@@ -389,9 +389,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         print("killing xvfb with pid %s" % xvfb_pid)
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
-        if xvfb_pid is not None:
-            os.kill(xvfb_pid, signal.SIGTERM)
-    _cleanups.append(kill_xvfb)
+        os.kill(xvfb_pid, signal.SIGTERM)
+    if xvfb_pid is not None and not opts.use_display:
+        _cleanups.append(kill_xvfb)
 
     from xpra.server import can_run_server, XpraServer
     if not can_run_server():
