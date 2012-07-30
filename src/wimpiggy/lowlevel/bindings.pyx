@@ -1574,9 +1574,8 @@ def get_cursor_image():
             return  None
         l = image.width*image.height
         pixels = argbdata_to_pixdata(image.pixels, l)
-        pixels_string = pixels.tostring()
-        return (image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-            image.cursor_serial, pixels_string)
+        return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
+            image.cursor_serial, pixels]
     finally:
         XFree(image)
 

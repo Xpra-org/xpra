@@ -12,7 +12,7 @@ from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.protocol import Protocol
+from xpra.protocol import Protocol, has_rencode
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
@@ -117,6 +117,7 @@ class XpraClientBase(gobject.GObject):
             capabilities["jpeg"] = self.jpegquality
         capabilities["platform"] = sys.platform
         capabilities["raw_packets"] = True
+        capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
         capabilities["randr_notify"] = False    #only client.py cares about this
         return capabilities
@@ -175,6 +176,10 @@ class XpraClientBase(gobject.GObject):
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
         if not is_compatible_with(self._remote_version):
             self.quit(4)
+            return False
+        if capabilities.get("rencode") and has_rencode:
+            self._protocol.enable_rencode()
+        return True
 
     def _process_set_deflate(self, packet):
         #legacy, should not be used for anything

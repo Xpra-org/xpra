@@ -25,6 +25,14 @@ except:
 from threading import Thread, Lock
 
 from xpra.bencode import bencode, bdecode
+has_rencode = False
+try:
+    from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
+    from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
+    has_rencode = True
+except Exception, e:
+    print("rencode is missing: %s" % e)
+    rencode_dumps, rencode_loads = None, None
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -124,6 +132,7 @@ class Protocol(object):
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
         self._closed = False
+        self._encoder = self.bencode
         self._compressor = None
         self._decompressor = zlib.decompressobj()
         self._compression_level = 0
@@ -189,6 +198,17 @@ class Protocol(object):
         if packet is not None:
             self._add_packet_to_queue(packet, start_send_cb, end_send_cb)
 
+    def enable_rencode(self):
+        assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
+        log("enable_rencode()")
+        self._encoder = self.rencode
+
+    def bencode(self, data):
+        return  bencode(data), 0
+
+    def rencode(self, data):
+        return  rencode_dumps(data), 1
+
     def encode(self, packet):
         """
         Given a packet (tuple or list of items), converts it for the wire.
@@ -200,7 +220,7 @@ class Protocol(object):
         may get converted to:
         [
             (1, False, [large binary data]),
-            (0, True, bencoded(["blah", '', "hello", 200]))
+            (0, True, bencoded/rencoded(["blah", '', "hello", 200]))
         ]
         """
         packets = []
@@ -215,13 +235,13 @@ class Protocol(object):
                 packet[i] = ''
             elif type(item)==Compressible:
                 #this is binary, but we *DO* want to compress it since it isn't compressed already!
-                log("unwrapping %s bytes of %s data", len(item.data), item.datatype)
+                log("unwrapping %s bytes of %s data of type %s", len(item.data), item.datatype, type(item.data))
                 #make a new compressed packet for it:
                 packets.append((i, True, item.data))
                 packet[i] = ''
         #now the main packet (or what is left of it):
         try:
-            main_packet = bencode(packet)
+            main_packet, proto_version = self._encoder(packet)
         except KeyError or TypeError, e:
             import traceback
             traceback.print_exc()
@@ -230,14 +250,14 @@ class Protocol(object):
         if sys.version>='3':
             main_packet = main_packet.encode("latin1")
         packets.append((0, True, main_packet))
-        return packets
+        return packets, proto_version
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
-        packets = self.encode(packet)
+        packets, proto_version = self.encode(packet)
         try:
             self._write_lock.acquire()
             counter = 0
-            for index,compress,data in packets:
+            for index,compress,udata in packets:
                 if compress and self._compression_level>0:
                     #make a reference copy
                     #(as another thread could clear it - see set_compression)
@@ -246,12 +266,14 @@ class Protocol(object):
                     if compressor is None:
                         self._compressor = zlib.compressobj(level)
                         compressor = self._compressor
-                    data = compressor.compress(data)+compressor.flush(zlib.Z_SYNC_FLUSH)
+                    cdata = compressor.compress(udata)+compressor.flush(zlib.Z_SYNC_FLUSH)
+                    log("compressed data from %s to %s", len(udata), len(cdata))
                 else:
                     level = 0
-                l = len(data)
+                    cdata = udata
+                l = len(cdata)
                 #'p' + protocol-version + compression_level + packet_index + packet_size
-                header = struct.pack('!cBBBL', "P", 0, level, index, l)
+                header = struct.pack('!cBBBL', "P", proto_version, level, index, l)
                 scb, ecb = None, None
                 #fire the start_send_callback just before the first packet is processed:
                 if counter==0:
@@ -261,10 +283,10 @@ class Protocol(object):
                     ecb = end_send_cb
                 if l<4096 and sys.version<'3':
                     #send size and data together (low copy overhead):
-                    self._write_queue.put((header+data, scb, ecb))
+                    self._write_queue.put((header+cdata, scb, ecb))
                 else:
                     self._write_queue.put((header, scb, None))
-                    self._write_queue.put((data, None, ecb))
+                    self._write_queue.put((cdata, None, ecb))
                 counter += 1
         finally:
             self.output_packetcount += 1
@@ -383,11 +405,12 @@ class Protocol(object):
                         current_packet_size = int(read_buffer[2:16])
                         packet_index = 0
                         compression_level = 0
+                        protocol_version = 0        #only bencode supported with old protocol
                         read_buffer = read_buffer[16:]
                     else:
                         #packet format: struct.pack('cBBBL', ...) - 8 bytes
                         try:
-                            (_, _, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
+                            (_, protocol_version, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
                         except Exception, e:
                             raise Exception("invalid packet format: %s", e)
                         read_buffer = read_buffer[8:]
@@ -430,7 +453,17 @@ class Protocol(object):
                 result = None
                 try:
                     #final packet (packet_index==0), decode it:
-                    result = bdecode(raw_string)
+                    if protocol_version==0:
+                        result = bdecode(raw_string)
+                        if result is None:
+                            break
+                        packet, l = result
+                        assert l==len(raw_string)
+                    elif protocol_version==1:
+                        assert has_rencode, "we don't support rencode mode but the other end sent us an rencoded packet!"
+                        packet = list(rencode_loads(raw_string))
+                    else:
+                        raise Exception("unsupported protocol version: %s" % protocol_version)
                 except ValueError, e:
                     import traceback
                     traceback.print_exc()
@@ -448,9 +481,6 @@ class Protocol(object):
                 if self._closed:
                     return
                 current_packet_size = -1
-                if result is None:
-                    break
-                packet, l = result
                 #add any raw packets back into it:
                 if raw_packets:
                     for index,raw_data in raw_packets.items():
@@ -458,7 +488,6 @@ class Protocol(object):
                         packet[index] = raw_data
                     raw_packets = {}
                 gobject.idle_add(self._process_packet, packet)
-                assert l==len(raw_string)
 
     def _process_packet(self, decoded):
         if self._closed:

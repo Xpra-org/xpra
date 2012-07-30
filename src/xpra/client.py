@@ -565,7 +565,8 @@ class XpraClient(XpraClientBase):
         self.send_refresh(-1)
 
     def parse_server_capabilities(self, capabilities):
-        XpraClientBase.parse_server_capabilities(self, capabilities)
+        if not XpraClientBase.parse_server_capabilities(self, capabilities):
+            return
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
         try:

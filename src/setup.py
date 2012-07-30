@@ -316,12 +316,21 @@ x264_ENABLED = True
 
 
 vpx_ENABLED = True
+
+
+
+rencode_ENABLED = True
+
+
+
 filtered_args = []
 for arg in sys.argv:
     if arg == "--without-x264":
         x264_ENABLED = False
     elif arg == "--without-vpx":
         vpx_ENABLED = False
+    elif arg == "--without-rencode":
+        rencode_ENABLED = False
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
@@ -338,8 +347,11 @@ if vpx_ENABLED:
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
-
-
+if rencode_ENABLED:
+    packages.append("xpra.rencode")
+    cython_add(Extension("xpra.rencode._rencode",
+                ["xpra/rencode/rencode.pyx"],
+                extra_compile_args=["-O3"]))
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
@@ -347,6 +359,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     CLEAN_FILES = ["xpra/wait_for_x_server.c",
                    "xpra/vpx/codec.c",
                    "xpra/x264/codec.c",
+                   "xpra/rencode/rencode.c",
                    "etc/xpra/xpra.conf",
                    "wimpiggy/lowlevel/constants.pxi",
                    "wimpiggy/lowlevel/bindings.c"]

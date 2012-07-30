@@ -67,7 +67,7 @@ from xpra.server_source import DamageBatchConfig, ServerSource
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
-from xpra.protocol import Protocol, SocketConnection, Compressible, dump_packet
+from xpra.protocol import Protocol, SocketConnection, Compressible, dump_packet, has_rencode
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
@@ -1120,6 +1120,8 @@ class XpraServer(gobject.GObject):
             except Exception, e:
                 log.error("cannot use mmap file '%s': %s", mmap_file, e)
                 self.close_mmap()
+        if capabilities.get("rencode") and has_rencode:
+            proto.enable_rencode()
         self._protocol = proto
         #max packet size from client (the biggest we can get are clipboard packets)
         self._protocol.max_packet_size = 1024*1024  #1MB
@@ -1217,6 +1219,7 @@ class XpraServer(gobject.GObject):
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
+        capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
         self.add_version_info(capabilities)
         #_get_desktop_size_capability may cause an asynchronous root window resize event
@@ -1743,7 +1746,7 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        assert isinstance(packet_type, str), "packet_type is not a string: %s" % type(packet_type)
+        assert isinstance(packet_type, str) or isinstance(packet_type, unicode), "packet_type is not a string: %s" % type(packet_type)
         if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 self._clipboard_helper.process_clipboard_packet(packet)
