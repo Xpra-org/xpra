@@ -280,12 +280,8 @@ class Protocol(object):
                 #fire the end_send callback when the last packet (index==0) makes it out:
                 if index==0:
                     ecb = end_send_cb
-                if l<4096 and sys.version<'3':
-                    #send size and data together (low copy overhead):
-                    self._write_queue.put((header+cdata, scb, ecb))
-                else:
-                    self._write_queue.put((header, scb, None))
-                    self._write_queue.put((cdata, None, ecb))
+                self._write_queue.put((header, scb, None))
+                self._write_queue.put((cdata, None, ecb))
                 counter += 1
         finally:
             self.output_packetcount += 1
