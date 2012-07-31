@@ -319,7 +319,7 @@ vpx_ENABLED = True
 
 
 
-rencode_ENABLED = True
+rencode_ENABLED = False
 
 
 
