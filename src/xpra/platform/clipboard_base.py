@@ -62,11 +62,11 @@ class ClipboardProtocolHelperBase(object):
         del self._clipboard_outstanding_requests[request_id]
         return result
 
-    def _clipboard_got_contents(self, request_id, type, format, data):
-        debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data or []), type, format)
+    def _clipboard_got_contents(self, request_id, dtype, dformat, data):
+        debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data or []), dtype, dformat)
         if request_id in self._clipboard_outstanding_requests:
             loop = self._clipboard_outstanding_requests[request_id]
-            loop.done({"type": type, "format": format, "data": data})
+            loop.done({"type": dtype, "format": dformat, "data": data})
         else:
             debug("got unexpected response to clipboard request %s", request_id)
 
@@ -74,52 +74,53 @@ class ClipboardProtocolHelperBase(object):
         debug("send clipboard token: %s", selection)
         self.send(["clipboard-token", self.local_to_remote(selection)])
 
-    def _munge_raw_selection_to_wire(self, target, type, format, data):
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         # Some types just cannot be marshalled:
         if type in ("WINDOW", "PIXMAP", "BITMAP", "DRAWABLE",
                     "PIXEL", "COLORMAP"):
-            debug("skipping clipboard data of type: %s, format=%s, len(data)=%s", type, format, len(data))
-            return (None, None)
-        return self._do_munge_raw_selection_to_wire(target, type, format, data)
+            debug("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data))
+            return None, None
+        return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
 
-    def _do_munge_raw_selection_to_wire(self, target, type, format, data):
+    def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
-        if format == 32:
+        debug("_do_munge_raw_selection_to_wire(%s,%s,%s,%s:%s)", target, dtype, dformat, type(data), len(data))
+        if dformat == 32:
             sizeof_long = struct.calcsize("=I")
             assert sizeof_long == 4, "struct.calcsize('=I)=%s" % sizeof_long
             binfmt = "=" + "I" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
             return ("integers", ints)
-        elif format == 16:
+        elif dformat == 16:
             sizeof_short = struct.calcsize("=H")
             assert sizeof_short == 2
             binfmt = "=" + "H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
             return ("integers", ints)
-        elif format == 8:
+        elif dformat == 8:
             return ("bytes", data)
         else:
-            log.error("unhandled format %s for clipboard data type %s" % (format, type))
-            return (None, None)
+            log.error("unhandled format %s for clipboard data type %s" % (dformat, dtype))
+            return None, None
 
-    def _munge_wire_selection_to_raw(self, encoding, type, format, data):
-        debug("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, type, format, len(data))
+    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
+        debug("wire selection to raw, encoding=%s, type=%s, format=%s, len(data)=%s", encoding, dtype, dformat, len(data))
         if encoding == "bytes":
             return data
         elif encoding == "integers":
-            if format == 32:
+            if dformat == 32:
                 format_char = "L"
-            elif format == 16:
+            elif dformat == 16:
                 format_char = "H"
-            elif format == 8:
+            elif dformat == 8:
                 format_char = "B"
             else:
-                raise Exception("unknown encoding format: %s" % format)
+                raise Exception("unknown encoding format: %s" % dformat)
             return struct.pack("=" + format_char * len(data), *data)
         else:
-            assert False
+            raise Exception("unhanled encoding: %s" % encoding)
 
     def _process_clipboard_request(self, packet):
         (_, request_id, selection, target) = packet
@@ -127,31 +128,31 @@ class ClipboardProtocolHelperBase(object):
         debug("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         if name in self._clipboard_proxies:
             proxy = self._clipboard_proxies[name]
-            def got_contents(type, format, data):
-                debug("got_contents(%s,%s,%s)", type, format, len(data or []))
+            def got_contents(dtype, dformat, data):
+                debug("got_contents(%s,%s,%s)", dtype, dformat, len(data or []))
                 def no_contents():
                     self.send(["clipboard-contents-none", request_id, selection])
-                if type is None or data is None:
+                if dtype is None or data is None:
                     no_contents()
                     return
-                munged = self._munge_raw_selection_to_wire(target, type, format, data)
-                (wire_encoding, wire_data) = munged
-                log("clipboard raw -> wire: %r -> %r", (type, format, data), munged)
+                munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                wire_encoding, wire_data = munged
+                log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
                 if wire_encoding is None:
                     no_contents()
                     return
                 self.send(["clipboard-contents", request_id, selection,
-                           type, format, wire_encoding, wire_data])
+                           dtype, dformat, wire_encoding, wire_data])
             proxy.get_contents(target, got_contents)
         else:
             self.send(["clipboard-contents-none", request_id, selection])
 
     def _process_clipboard_contents(self, packet):
-        (_, request_id, selection, type, format, wire_encoding, wire_data) = packet
-        debug("process clipboard contents, selection=%s, type=%s, format=%s", selection, type, format)
-        raw_data = self._munge_wire_selection_to_raw(wire_encoding, type, format, wire_data)
-        debug("clipboard wire -> raw: %r -> %r", (type, format, wire_encoding, wire_data), raw_data)
-        self._clipboard_got_contents(request_id, type, format, raw_data)
+        (_, request_id, selection, dtype, dformat, wire_encoding, wire_data) = packet
+        debug("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
+        raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+        debug("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
+        self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
     def _process_clipboard_contents_none(self, packet):
         debug("process clipboard contents none")
