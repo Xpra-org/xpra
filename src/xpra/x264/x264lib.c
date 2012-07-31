@@ -173,7 +173,11 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 	/* Encoding */
 	pic_in->i_pts = 1;
 	if (quality_override>=0) {
-		//TODO: override quality in x264_picture_t->param
+		// Retrieve current parameters and override quality for this frame
+		x264_param_t param;
+		x264_encoder_parameters(ctx->encoder, &param);
+		param.rc.f_rf_constant = 51.0 - (quality_override * 51.0 / 100);	
+		pic_in->param = &param;
 	}
 
 	x264_nal_t* nals;
