@@ -274,7 +274,6 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
-	//int old_preset = ctx->encoding_preset;
 	int new_preset = 7-MAX(0, MIN(7, pct/12.5));
 	if (new_preset==ctx->encoding_preset)
 		return;
@@ -284,7 +283,6 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	//however multiple psy tunings cannot be used.
 	//film, animation, grain, stillimage, psnr, and ssim are psy tunings.
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
-	//printf("Setting encoding preset %s %d (from %d - pct=%d)\n", x264_preset_names[ctx->encoding_preset], ctx->encoding_preset, old_preset, pct);
 	x264_param_apply_profile(&param, "baseline");
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
@@ -302,7 +300,17 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 #ifndef _WIN32
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
-	;	//TODO!
+	x264_param_t param;
+	// Retrieve current parameters
+	x264_encoder_parameters(ctx->encoder, &param);
+
+	// Compute new quality
+	printf("set_encoding_quality: old quality %f", param.rc.f_rf_constant);
+	param.rc.f_rf_constant = 51.0 - (pct * 51.0 / 100);
+	printf(" new quality %f\n", param.rc.f_rf_constant);
+
+	// Read new configuration
+	x264_encoder_reconfig(ctx->encoder, &param);
 }
 #else
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
