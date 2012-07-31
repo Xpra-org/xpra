@@ -86,21 +86,23 @@ class ClipboardProtocolHelperBase(object):
         """ this method is overriden in xclipboard to parse X11 atoms """
         # Other types need special handling, and all types need to be
         # converting into an endian-neutral format:
-        debug("_do_munge_raw_selection_to_wire(%s,%s,%s,%s:%s)", target, dtype, dformat, type(data), len(data))
+        debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
-            sizeof_long = struct.calcsize("=I")
-            assert sizeof_long == 4, "struct.calcsize('=I)=%s" % sizeof_long
-            binfmt = "=" + "I" * (len(data) // sizeof_long)
+            #important note: on 64 bits, format=32 means 8 bytes, not 4
+            #that's just the way it is...
+            sizeof_long = struct.calcsize('@L')
+            assert sizeof_long in (4, 8), "struct.calcsize('@L')=%s" % sizeof_long
+            binfmt = "@" + "L" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
-            return ("integers", ints)
+            return "integers", ints
         elif dformat == 16:
-            sizeof_short = struct.calcsize("=H")
-            assert sizeof_short == 2
+            sizeof_short = struct.calcsize('=H')
+            assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
             binfmt = "=" + "H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
-            return ("integers", ints)
+            return "integers", ints
         elif dformat == 8:
-            return ("bytes", data)
+            return "bytes", data
         else:
             log.error("unhandled format %s for clipboard data type %s" % (dformat, dtype))
             return None, None
@@ -118,7 +120,9 @@ class ClipboardProtocolHelperBase(object):
                 format_char = "B"
             else:
                 raise Exception("unknown encoding format: %s" % dformat)
-            return struct.pack("=" + format_char * len(data), *data)
+            fstr = "@" + format_char * len(data)
+            debug("struct.pack(%s, %s)", fstr, data)
+            return struct.pack(fstr, *data)
         else:
             raise Exception("unhanled encoding: %s" % encoding)
 
@@ -129,7 +133,7 @@ class ClipboardProtocolHelperBase(object):
         if name in self._clipboard_proxies:
             proxy = self._clipboard_proxies[name]
             def got_contents(dtype, dformat, data):
-                debug("got_contents(%s,%s,%s)", dtype, dformat, len(data or []))
+                debug("got_contents(%s, %s, %s:%s) data=%s, str(data)=%s", dtype, dformat, type(data), len(data or ""), list(bytearray(data or "")[:200]), str(data)[:200])
                 def no_contents():
                     self.send(["clipboard-contents-none", request_id, selection])
                 if dtype is None or data is None:
@@ -137,7 +141,7 @@ class ClipboardProtocolHelperBase(object):
                     return
                 munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
                 wire_encoding, wire_data = munged
-                log("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
+                debug("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
                 if wire_encoding is None:
                     no_contents()
                     return
