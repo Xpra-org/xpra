@@ -1,4 +1,4 @@
-0) ./run-tests
+0) ./tests/run-tests
 
 1) Write user-readable notes at the top of the NEWS file, summarizing
    important/user-visible changes.
@@ -19,17 +19,9 @@
 
 6) ./run-tests in the unpacked tarball
 
-7) scp <tarball> roberts.vorpus.org:~parti/web/static/downloads
+(... steps missing ...)
 
-8) Update http://partiwm.org frontpage
 
-9) Update #parti topic.
-
-10) Tag and push the tag.
-
-11) Send release announcement to:
-      parti-discuss@partiwm.org
+99) Send release announcement to:
+      shifter-users@lists.devloop.org.uk
       lwn@lwn.net
-    Post release announcement to:
-      freshmeat.net
-      pypi.python.org

@@ -9,7 +9,6 @@ include *.png
 include *.1
 recursive-include etc *
 recursive-include icons *
-recursive-include working-notes *
 global-include *.py *.txt
 global-exclude *~ #*
 prune build
