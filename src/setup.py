@@ -16,6 +16,7 @@ import glob
 from distutils.core import setup
 from distutils.extension import Extension
 import subprocess, sys, traceback
+import os.path
 
 import wimpiggy
 import parti
@@ -62,19 +63,34 @@ if sys.platform.startswith("win"):
     # So here is the md5sum so you can find the right version:
     # (you can find them in various packages, including Visual Studio 2008,
     # pywin32, etc...)
-    # 6fda4c0ef8715eead5b8cec66512d3c8  Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
-    # 4a8bc195abdc93f0db5dab7f5093c52f  Microsoft.VC90.CRT/msvcm90.dll
-    # 6de5c66e434a9c1729575763d891c6c2  Microsoft.VC90.CRT/msvcp90.dll
-    # e7d91d008fe76423962b91c43c88e4eb  Microsoft.VC90.CRT/msvcr90.dll
-    # f6a85f3b0e30c96c993c69da6da6079e  Microsoft.VC90.CRT/vcomp90.dll
-    # 17683bda76942b55361049b226324be9  Microsoft.VC90.MFC/Microsoft.VC90.MFC.manifest
-    # 462ddcc5eb88f34aed991416f8e354b2  Microsoft.VC90.MFC/mfc90.dll
-    # b9030d821e099c79de1c9125b790e2da  Microsoft.VC90.MFC/mfc90u.dll
-    # d4e7c1546cf3131b7d84b39f8da9e321  Microsoft.VC90.MFC/mfcm90.dll
-    # 371226b8346f29011137c7aa9e93f2f6  Microsoft.VC90.MFC/mfcm90u.dll
-    #
+    import md5
+    md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "6fda4c0ef8715eead5b8cec66512d3c8",
+               "Microsoft.VC90.CRT/msvcm90.dll"                 : "4a8bc195abdc93f0db5dab7f5093c52f",
+               "Microsoft.VC90.CRT/msvcp90.dll"                 : "6de5c66e434a9c1729575763d891c6c2",
+               "Microsoft.VC90.CRT/msvcr90.dll"                 : "e7d91d008fe76423962b91c43c88e4eb",
+               "Microsoft.VC90.CRT/vcomp90.dll"                 : "f6a85f3b0e30c96c993c69da6da6079e",
+               "Microsoft.VC90.MFC/Microsoft.VC90.MFC.manifest" : "17683bda76942b55361049b226324be9",
+               "Microsoft.VC90.MFC/mfc90.dll"                   : "462ddcc5eb88f34aed991416f8e354b2",
+               "Microsoft.VC90.MFC/mfc90u.dll"                  : "b9030d821e099c79de1c9125b790e2da",
+               "Microsoft.VC90.MFC/mfcm90.dll"                  : "d4e7c1546cf3131b7d84b39f8da9e321",
+               "Microsoft.VC90.MFC/mfcm90u.dll"                 : "371226b8346f29011137c7aa9e93f2f6",
+               }
     # This is where I keep them, you will obviously need to change this value:
     C_DLLs="E:\\"
+    for dll_file, md5sum in md5sums.items():
+        filename = os.path.join(C_DLLs, *dll_file.split("/"))
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            raise Exception("DLL file %s is missing or not a file!" % filename)
+        sys.stdout.write("verifying md5sum for %s: " % filename)
+        f = open(filename, mode='rb')
+        data = f.read()
+        f.close()
+        m = md5.new()
+        m.update(data)
+        digest = m.hexdigest()
+        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (md5sum, digest)
+        sys.stdout.write("OK\n")
+        sys.stdout.flush()
     # The x264 DLLs which you can grab from here:
     # http://ffmpeg.zeranoe.com/builds/
     # beware that some builds work, others crash.. here is one that is known to work ok:

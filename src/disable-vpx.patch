@@ -4,13 +4,12 @@ Description: Disable vpx encoding support.
  
 --- a/setup.py	(revision 1184)
 +++ b/setup.py	(working copy)
-@@ -315,7 +315,7 @@
+@@ -331,7 +331,7 @@
  
  
  
 -vpx_ENABLED = True
 +vpx_ENABLED = False
- filtered_args = []
- for arg in sys.argv:
-     if arg == "--without-x264":
+
+
 

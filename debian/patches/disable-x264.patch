@@ -4,7 +4,7 @@ Description: Disable x264 encoding support.
  
 --- a/setup.py	(revision 1184)
 +++ b/setup.py	(working copy)
-@@ -311,7 +311,7 @@
+@@ -327,7 +327,7 @@
                  ["xpra/wait_for_x_server.pyx"],
                  **pkgconfig("x11")
                  ))
