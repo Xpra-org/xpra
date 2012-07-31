@@ -249,6 +249,7 @@ class ClipboardProxy(gtk.Invisible):
                 self.selection_add_target(self._selection, target, 0)
         else:
             self.selection_add_target(self._selection, target, 0)
+        debug("do_selection_request_event(%s) target=%s, selection=%s", event, target, self._selection)
         gtk.Invisible.do_selection_request_event(self, event)
 
     # This function is called by GTK+ when we own the clipboard and a local
@@ -257,13 +258,16 @@ class ClipboardProxy(gtk.Invisible):
         # Either call selection_data.set() or don't, and then return.
         # In practice, send a call across the wire, then block in a recursive
         # main loop.
-        debug("do_selection_get(%s,%s,%s)", selection_data, info, time)
+        debug("do_selection_get(%s, %s, %s)", selection_data, info, time)
         assert self._selection == str(selection_data.selection)
         target = str(selection_data.target)
         result = self.emit("get-clipboard-from-remote", self._selection, target)
         if result is not None and result["type"] is not None:
-            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s,%s,%s)", selection_data, info, time, result["type"], result["format"], len(result["data"]))
-            selection_data.set(result["type"], result["format"], result["data"])
+            data = result["data"]
+            dformat = result["format"]
+            dtype = result["type"]
+            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)", selection_data, info, time, dtype, dformat, type(data), len(data or ""))
+            selection_data.set(dtype, dformat, data)
         else:
             debug("remote selection fetch timed out")
 
