@@ -7,10 +7,8 @@ import struct
 
 from wimpiggy.lowlevel import (gdk_atom_objects_from_gdk_atom_array, #@UnresolvedImport
                                gdk_atom_array_from_gdk_atom_objects) #@UnresolvedImport
-from wimpiggy.log import Logger
-log = Logger()
 
-from xpra.platform.clipboard_base import ClipboardProtocolHelperBase
+from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, debug
 
 class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
     """ This clipboard helper adds the ability to parse raw X11 atoms
@@ -20,7 +18,8 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
     def __init__(self, send_packet_cb):
         ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
 
-    def _do_munge_raw_selection_to_wire(self, target, ype, format, data):
+    def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
+        debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s)", target, datatype, dataformat, data)
         if format == 32 and type in ("ATOM", "ATOM_PAIR"):
             # Convert to strings and send that. Bizarrely, the atoms are
             # not actual X atoms, but an array of GdkAtom's reinterpreted
@@ -31,12 +30,13 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
                 atom_names.remove("SAVE_TARGETS")
                 atom_names.remove("COMPOUND_TEXT")
             return ("atoms", atom_names)
-        return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, type, format, data)
+        return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data)
 
-    def _munge_wire_selection_to_raw(self, encoding, datatype, format, data):
+    def _munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data):
+        debug("_munge_wire_selection_to_raw(%s, %s, %s, %s)", encoding, datatype, dataformat, data)
         if encoding == "atoms":
             import gtk.gdk
             gdk_atoms = [gtk.gdk.atom_intern(a) for a in data]
             atom_array = gdk_atom_array_from_gdk_atom_objects(gdk_atoms)
             return struct.pack("=" + "I" * len(atom_array), *atom_array)
-        return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, format, data)
+        return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data)
