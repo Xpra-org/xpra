@@ -182,6 +182,14 @@ def _get_atom(disp, d):
         return  None
     return str(pyatom)
 
+def _get_multiple(disp, d):
+    uint_struct = struct.Struct("=I")
+    log("get_multiple struct size=%s, len(%s)=%s", uint_struct.size, d, len(d))
+    if len(d)!=uint_struct.size and False:
+        log.info("get_multiple value is not an atom: %s", d)
+        return  str(d)
+    return _get_atom(disp, d)
+
 def get_xsettings(disp, d):
     return  list(bytearray(d))
 
@@ -243,7 +251,7 @@ _prop_types = {
     # specified what 'type' one should use; you just fetch with
     # AnyPropertyType and assume that what you get is a bunch of pairs of
     # atoms.
-    "multiple-conversion": (str, 0, 32, unsupported, _get_atom, None),
+    "multiple-conversion": (str, 0, 32, unsupported, _get_multiple, None),
     }
 
 def _prop_encode(disp, etype, value):
