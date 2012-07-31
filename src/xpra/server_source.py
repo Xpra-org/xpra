@@ -636,13 +636,13 @@ class ServerSource(object):
             encoder.set_encoding_speed(new_speed)
             #***********************************************************
             #quality: minimize batch.delay and packet backlog
-            packets_bl = last_packets_backlog/low_limit/4.0     #any more than 4 frames behind and we drop quality to zero
+            packets_bl = logp(last_packets_backlog/low_limit)/2.0
             batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
             target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
             encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
             encoding_qualities.append((time.time(), target_quality))
-            _, new_quality = calculate_time_weighted_average(encoding_qualities)
-            log("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
+            new_quality, _ = calculate_time_weighted_average(encoding_qualities)
+            log.info("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
                      packets_bl, batch_q, target_quality, new_quality)
             encoder.set_encoding_quality(new_quality)
         finally:
