@@ -262,9 +262,14 @@ def _prop_encode(disp, etype, value):
 
 def _prop_encode_scalar(disp, etype, value):
     (pytype, atom, formatbits, serialize, _, _) = _prop_types[etype]
-    if pytype==list and type(value)==tuple:
-        #rencode gives it back to us as a tuple..
-        value = list(value)
+    if pytype==list and atom=="_XSETTINGS_SETTINGS":
+        #hack for xsettings since we changed the format in 0.5:
+        if type(value)==tuple:
+            #rencode gives it back to us as a tuple..
+            value = list(value)
+        elif type(value)==str:
+            #old clients used a string with zero bytes in it:
+            value = list(bytearray(value))
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, formatbits, serialize(disp, value))
 
