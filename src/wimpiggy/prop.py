@@ -182,6 +182,11 @@ def _get_atom(disp, d):
         return  None
     return str(pyatom)
 
+def get_xsettings(disp, d):
+    return  list(bytearray(d))
+
+def set_xsettings(disp, d):
+    return  str(bytearray(d))
 
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
@@ -223,9 +228,9 @@ _prop_types = {
                       unsupported, NetWMStrut, None),
     "icon": (cairo.ImageSurface, "CARDINAL", 32,
              unsupported, NetWMIcons, None),
-    "xsettings-settings": (str, "_XSETTINGS_SETTINGS", 8,
-                           lambda disp, d: d,
-                           lambda disp, d: d,
+    "xsettings-settings": (list, "_XSETTINGS_SETTINGS", 8,
+                           set_xsettings,
+                           get_xsettings,
                            None),
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:
@@ -249,8 +254,9 @@ def _prop_encode(disp, etype, value):
 
 def _prop_encode_scalar(disp, etype, value):
     (pytype, atom, formatbits, serialize, _, _) = _prop_types[etype]
-    if pytype==str and type(value)==unicode:
-        value = str(unicode)
+    if pytype==list and type(value)==tuple:
+        #rencode gives it back to us as a tuple..
+        value = list(value)
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, formatbits, serialize(disp, value))
 
