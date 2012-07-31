@@ -28,14 +28,13 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.bencode import bencode, bdecode
-has_rencode = False
+rencode_dumps, rencode_loads = None, None
 try:
     from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
     from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
-    has_rencode = True
 except Exception, e:
     log.error("xpra.rencode is missing: %s" % e)
-    rencode_dumps, rencode_loads = None, None
+has_rencode = rencode_dumps is not None and rencode_loads is not None
 
 
 # A simple, portable abstraction for a blocking, low-level
