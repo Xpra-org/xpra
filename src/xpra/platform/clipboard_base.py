@@ -88,6 +88,9 @@ class ClipboardProtocolHelperBase(object):
         # converting into an endian-neutral format:
         debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
+            if dtype in ("ATOM", "ATOM_PAIR"):
+                #we cannot handle gdk atoms here (but xclipboard does)
+                return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4
             #that's just the way it is...
             sizeof_long = struct.calcsize('@L')
