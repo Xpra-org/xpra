@@ -152,7 +152,7 @@ def main(script_file, cmdline):
             return  False
         print("invalid value for '%s': %s, using default value %s instead" % (varname, v, default_value))
         return default_value
-    
+
     if XPRA_LOCAL_SERVERS_SUPPORTED:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
@@ -357,13 +357,22 @@ def main(script_file, cmdline):
             traceback.print_stack(frame)
         print("")
 
+    #configure default logging handler:
+    mode = args.pop(0)
+    if mode in ("start", "upgrade", "attach"):
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+        logging.root.addHandler(handler)
+    else:
+        logging.root.addHandler(logging.StreamHandler(sys.stderr))
+
+    #set debug log on if required:
     if options.debug is not None:
         toggle_logging(logging.DEBUG)
     else:
         toggle_logging(logging.INFO)
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
-    logging.root.addHandler(handler)
+
+    #register posix signals for debugging:
     if os.name=="posix":
         def sigusr1(*args):
             dump_frames()
@@ -373,7 +382,6 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
-    mode = args.pop(0)
     if mode in ("start", "upgrade") and XPRA_LOCAL_SERVERS_SUPPORTED:
         nox()
         from xpra.scripts.server import run_server
