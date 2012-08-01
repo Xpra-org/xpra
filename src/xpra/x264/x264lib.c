@@ -176,7 +176,7 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 		// Retrieve current parameters and override quality for this frame
 		x264_param_t param;
 		x264_encoder_parameters(ctx->encoder, &param);
-		param.rc.f_rf_constant = 51.0 - (quality_override * 51.0 / 100);	
+		param.rc.f_rf_constant = 50.0 - (quality_override * 49.0 / 100);	
 		pic_in->param = &param;
 	}
 
