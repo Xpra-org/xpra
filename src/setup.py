@@ -335,7 +335,7 @@ vpx_ENABLED = True
 
 
 
-rencode_ENABLED = False
+rencode_ENABLED = True
 
 
 
