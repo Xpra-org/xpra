@@ -48,7 +48,7 @@ if is_gtk3():
                          }
         geom = gdk.Geometry()
         mask = 0
-        for k,v in hints:
+        for k,v in hints.items():
             if k in INT_FIELDS:
                 setattr(geom, k, int(v))
                 mask |= int(name_to_hint.get(k, 0))
@@ -187,7 +187,9 @@ class ClientWindow(gtk.Window):
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
                 default_value = default_values.get(var, u("<unknown %s>") % var)
                 value = self._metadata.get(var, default_value)
-                return value.decode("utf-8")
+                if sys.version<'3':
+                    value = value.decode("utf-8")
+                return value
             title = re.sub("@[\w\-]*@", metadata_replace, title)
         self.set_title(title)
 
