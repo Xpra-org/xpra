@@ -45,8 +45,8 @@ class GLPixmapBacking(PixmapBacking):
 # We use single buffer because double doesn't work, figure out why
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        except gtk.gdkgl.NoMatches:
-            raise SystemExit
+        except gtk.gdkgl.NoMatches, e:
+            raise Exception("could not find matching mode for %s: %s" % (display_mode, e))
         self._backing = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), w, h))
         log.info("Creating GL pixmap size %d %d " % (w, h))
         self.gldrawable = self._backing.set_gl_capability(self.glconfig)
@@ -56,8 +56,8 @@ class GLPixmapBacking(PixmapBacking):
                                                direct=True)
         log.info("context ok")
         if not self.glcontext:
-            raise SystemExit, "** Cannot create OpenGL rendering context!"
-        print "OpenGL rendering context is created."
+            raise Exception("** Cannot create OpenGL rendering context!")
+        log.info("OpenGL rendering context is created.")
         self.texture = None
         self.textures = [ 0 ]
         self.use_openGL_CSC = True

@@ -253,10 +253,10 @@ else:
             out, _ = proc.communicate()
             V_LINE = "X.Org X Server "
             xorg_version = None
-            for line in out.splitlines():
+            for line in out.decode("utf8").splitlines():
                 if line.startswith(V_LINE):
                     v_str = line[len(V_LINE):]
-                    xorg_version = v_str.split(".")[:2]
+                    xorg_version = [int(x) for x in v_str.split(".")[:2]]
                     break
             if not xorg_version:
                 print("Xorg version could not be detected, Xdummy support unavailable")
