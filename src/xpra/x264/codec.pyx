@@ -191,9 +191,11 @@ cdef class Encoder(xcoder):
         return  i, coutsz, coutv
 
     def set_encoding_speed(self, pct):
-        assert pct>=0.0 and pct<=100.0, "invalid percentage: %s" % pct
-        set_encoding_speed(self.context, int(pct))
+        ipct = int(pct)
+        assert ipct>=0 and ipct<=100, "invalid percentage: %s" % ipct
+        set_encoding_speed(self.context, ipct)
 
     def set_encoding_quality(self, pct):
-        assert pct>=0.0 and pct<=100.0, "invalid percentage: %s" % pct
-        set_encoding_quality(self.context, int(pct))
+        ipct = int(pct)
+        assert ipct>=0 and ipct<=100, "invalid percentage: %s" % ipct
+        set_encoding_quality(self.context, ipct)
