@@ -67,7 +67,8 @@ from xpra.server_source import DamageBatchConfig, ServerSource
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
-from xpra.protocol import Protocol, SocketConnection, Compressible, dump_packet, has_rencode
+from xpra.bytestreams import SocketConnection
+from xpra.protocol import Protocol, Compressible, dump_packet, has_rencode
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.xposix.xclipboard import ClipboardProtocolHelper

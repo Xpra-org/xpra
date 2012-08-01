@@ -383,7 +383,7 @@ class ApplicationWindow:
 			return
 		self.info.set_text("Connection established")
 		try:
-			from xpra.protocol import SocketConnection
+			from xpra.bytestreams import SocketConnection
 			global socket_wrapper
 			socket_wrapper = SocketConnection(sock, "xprahost")
 		except Exception, e:

@@ -12,7 +12,6 @@ from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 import sys
-import os
 import socket # for socket.error
 import zlib
 import errno
@@ -36,53 +35,6 @@ except Exception, e:
     log.error("xpra.rencode is missing: %s" % e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None
 
-
-# A simple, portable abstraction for a blocking, low-level
-# (os.read/os.write-style interface) two-way byte stream:
-
-class TwoFileConnection(object):
-    def __init__(self, writeable, readable, abort_test=None, target=None):
-        self._writeable = writeable
-        self._readable = readable
-        self._abort_test = abort_test
-        self.target = target
-
-    def may_abort(self, action):
-        """ if abort_test is defined, run it """
-        if self._abort_test:
-            self._abort_test(action)
-
-    def read(self, n):
-        self.may_abort("read")
-        return os.read(self._readable.fileno(), n)
-
-    def write(self, buf):
-        self.may_abort("write")
-        return os.write(self._writeable.fileno(), buf)
-
-    def close(self):
-        self._writeable.close()
-        self._readable.close()
-
-    def __str__(self):
-        return "TwoFileConnection(%s)" % str(self.target)
-
-class SocketConnection(object):
-    def __init__(self, s, target):
-        self._s = s
-        self.target = target
-
-    def read(self, n):
-        return self._s.recv(n)
-
-    def write(self, buf):
-        return self._s.send(buf)
-
-    def close(self):
-        return self._s.close()
-
-    def __str__(self):
-        return "SocketConnection(%s)" % str(self.target)
 
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str) and len(obj) > limit:

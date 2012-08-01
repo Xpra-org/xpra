@@ -19,7 +19,7 @@ def test_DoS(client_class_constructor, args):
     assert len(args)==2, "usage: test_DoS_client :DISPLAY"
     import socket
     from xpra.dotxpra import DotXpra
-    from xpra.protocol import SocketConnection
+    from xpra.bytestreams import SocketConnection
     import logging
     logging.root.setLevel(logging.DEBUG)
     logging.root.addHandler(logging.StreamHandler(sys.stderr))

@@ -20,7 +20,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            DEFAULT_SSH_CMD,
                            GOT_PASSWORD_PROMPT_SUGGESTION,
                            add_client_options)
-from xpra.protocol import TwoFileConnection, SocketConnection
+from xpra.bytestreams import TwoFileConnection, SocketConnection
 
 from wimpiggy.gobject_compat import import_gobject, is_gtk3
 import_gobject()
