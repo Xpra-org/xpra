@@ -99,7 +99,6 @@ class DesktopManager(gtk.Widget):
         model.connect("ownership-election", self._elect_me)
         def new_geom(window_model, *args):
             log("new_geom(%s,%s)", window_model, args)
-            
         model.connect("geometry", new_geom)
         model.ownership_election()
 

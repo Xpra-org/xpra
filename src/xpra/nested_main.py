@@ -1,5 +1,5 @@
 # A utility system for cooperation among stuff that needs nested main-loops.
-# 
+#
 # So here's the problem: in the clipboard code, and eventually maybe in other
 # places too, we have to define a function that
 #   1) gets called

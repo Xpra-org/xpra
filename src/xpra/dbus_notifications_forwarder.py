@@ -34,7 +34,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         dbus.service.Object.__init__(self, bus_name, BUS_PATH)
- 
+
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
         log("Notify(%s,%s,%s,%s,%s,%s,%s,%s)" % (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))

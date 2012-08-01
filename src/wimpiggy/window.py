@@ -452,7 +452,7 @@ class WindowModel(BaseWindowModel):
         # X11 bell event:
         "bell": one_arg_signal,
         "geometry": one_arg_signal,
-        
+
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),
                                non_none_list_accumulator),
@@ -830,7 +830,7 @@ class WindowModel(BaseWindowModel):
     def _read_initial_properties(self):
         # Things that don't change:
         BaseWindowModel._read_initial_properties(self)
-        
+
         geometry = self.client_window.get_geometry()
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
         self._internal_set_property("requested-size", (geometry[2], geometry[3]))

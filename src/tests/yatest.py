@@ -58,7 +58,7 @@ except ImportError:
 SKIPPED = "SKIPPED"
 SUCCESS = "SUCCESS"
 FAILURE = "FAILURE"
-    
+
 def ispkg(path):
     return (os.path.isdir(path)
             and os.path.exists(os.path.join(path, "__init__.py")))
@@ -75,9 +75,9 @@ class YaTest(object):
                           action="append",
                           help="package(s) to scan for tests")
         (opts, args) = parser.parse_args()
-            
+
         pkg_paths = opts.packages
-           
+
         assert pkg_paths
         for pkg in pkg_paths:
             assert ispkg(pkg)
@@ -139,7 +139,7 @@ class Runner(object):
                 and child_basename != "__init__.py"):
                 child_modname = ".".join([pkg_name, child_basename[:-3]])
                 self.maybe_load_and_scan_module(child_modname, test_names)
-            
+
     def maybe_load_and_scan_module(self, module_name, test_names):
         # Hack: Skip out early if the module cannot possibly be interesting.
         if not self.thing_looks_testy(module_name, None):
@@ -153,7 +153,7 @@ class Runner(object):
                              % (module_name, e))
             return
         for comp in module_name.split(".")[1:]:
-            mod = getattr(mod, comp) 
+            mod = getattr(mod, comp)
         if not self.thing_looks_testy(module_name, mod):
             return
 
@@ -208,7 +208,7 @@ class Runner(object):
                                           output)
             # This should not return
             assert False
-        
+
     def run_test_method_in_parent(self, child_pid,
                                   class_name, cls, name, readable, output):
         method_name = ".".join([class_name, name])
@@ -301,7 +301,7 @@ class Runner(object):
             pass
         writeable.close()
         sys.exit()
-            
+
 
 class Reporter(object):
     def __init__(self):

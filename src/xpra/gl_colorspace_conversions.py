@@ -39,5 +39,5 @@ GL_COLORSPACE_CONVERSIONS = """!!ARBfp1.0
     DP3 result.color.x, R1, c[2];
     MOV result.color.w, fragment.color.primary;
     END
-# 10 instructions, 2 R-regs                        
+# 10 instructions, 2 R-regs
 """

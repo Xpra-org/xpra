@@ -66,7 +66,7 @@ def apply_xmodmap(instructions):
 def do_set_keymap(xkbmap_layout, xkbmap_variant,
                   xkbmap_print, xkbmap_query):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
-        xkbmap_variant is the layout variant (may not be set)  
+        xkbmap_variant is the layout variant (may not be set)
         xkbmap_print is the output of "setxkbmap -print" on the client
         xkbmap_query is the output of "setxkbmap -query" on the client
         Use those to try to setup the correct keyboard map for the client

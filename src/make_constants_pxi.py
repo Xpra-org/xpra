@@ -42,7 +42,7 @@ def make_constants_pxi(constants_path, pxi_path):
             out.write('    unsigned int %s %s\n' % const)
         else:
             out.write('    unsigned int %s\n' % (const,))
-    
+
     out.write("const = {\n")
     for const in constants:
         if isinstance(const, tuple):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import gtk 
+import gtk
 
 def change_callback(self, window, entry):
 	print("text=%s" % entry.get_text())

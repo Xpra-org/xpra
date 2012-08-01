@@ -19,7 +19,7 @@ log = Logger()
 # always and exactly covers the entire screen (possibly crossing multiple
 # screens, in the Xinerama case); it also mediates between the GTK+ and X
 # focus models.
-# 
+#
 # This requires a very long comment, because focus management is teh awesome.
 # The basic problems are:
 #    1) X focus management sucks
@@ -93,7 +93,7 @@ class WorldWindow(gtk.Window):
         gtk.gdk.screen_get_default().connect("size-changed", self._resize)
         self.move(0, 0)
         self._resize()
-        
+
     def _resize(self, *args):
         x = gtk.gdk.screen_width()
         y = gtk.gdk.screen_height()

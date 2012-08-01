@@ -57,7 +57,7 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
  @param size: Input size.
- @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder. 
+ @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder.
  @param outsize: Output size.
  @param outstride: Output strides (3 planes).
 */

@@ -92,7 +92,7 @@ So basically it's screen for remote X apps.
 * Mon Jul 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.0-1
 - fix client application resizing its own window
 - fix window dimensions hints not applied
-- fix memleak in x264 cleanup code 
+- fix memleak in x264 cleanup code
 - fix xpra command exit code (more complete fix)
 - fix latency bottleneck in processing of damage requests
 - fix free uninitialized pointers in video decoder initialization error codepath

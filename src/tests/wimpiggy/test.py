@@ -71,7 +71,7 @@ class Session(object):
         self._x11 = None
         self._dbus = None
         self._dbus_address = None
-        
+
     def _alive(self, pid):
         # Just in case it's a zombie, reap it; otherwise, do nothing.
         try:

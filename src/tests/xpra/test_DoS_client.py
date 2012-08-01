@@ -15,7 +15,7 @@ def test_DoS(client_class_constructor, args):
     """ utility method for running DoS tests
         See: test_DoS_*_client.py
     """
-    
+
     assert len(args)==2, "usage: test_DoS_client :DISPLAY"
     import socket
     from xpra.dotxpra import DotXpra

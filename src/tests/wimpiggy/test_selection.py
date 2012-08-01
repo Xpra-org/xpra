@@ -13,7 +13,7 @@ class TestSelection(TestWithSession, MockEventReceiver):
     def test_acquisition_stealing(self):
         d1 = self.clone_display()
         d2 = self.clone_display()
-        
+
         m1 = ManagerSelection(d1, "WM_S0")
         m2 = ManagerSelection(d2, "WM_S0")
 

@@ -165,7 +165,7 @@ class Wm(gobject.GObject):
         self._alt_display = gtk.gdk.Display(self._display.get_name())
         self._root = self._display.get_default_screen().get_root_window()
         self._ewmh_window = None
-        
+
         self._windows = {}
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
@@ -232,7 +232,7 @@ class Wm(gobject.GObject):
             log.error("wm.do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
         self.do_bell_event(event)
-    
+
     def do_bell_event(self, event):
         self.emit("bell", event)
 

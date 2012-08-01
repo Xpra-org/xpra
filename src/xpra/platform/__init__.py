@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 ### NOTE: this must be kept in sync with the version in
-###    xpra/platform/gui.py 
+###    xpra/platform/gui.py
 #@PydevCodeAnalysisIgnore
 import os as _os
 import sys as _sys
