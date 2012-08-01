@@ -73,7 +73,7 @@ from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_m
 from xpra.xposix.xclipboard import ClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
-from xpra.version_util import is_compatible_with
+from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -1021,7 +1021,8 @@ class XpraServer(gobject.GObject):
 
     def get_info(self, proto):
         info = {}
-        self.add_version_info(info)
+        add_version_info(info)
+        add_gtk_version_info(info, gtk)
         info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
@@ -1221,7 +1222,8 @@ class XpraServer(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
-        self.add_version_info(capabilities)
+        add_version_info(capabilities)
+        add_gtk_version_info(capabilities, gtk)
         #_get_desktop_size_capability may cause an asynchronous root window resize event
         #so we must give the gtk event loop a chance to run before we query
         #for the actual root window size!
@@ -1229,23 +1231,6 @@ class XpraServer(gobject.GObject):
             capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
             self._send(["hello", capabilities])
         gobject.idle_add(do_send_hello)
-
-    def add_version_info(self, props):
-        props["version"] = xpra.__version__
-        if hasattr(gtk, "pygtk_version"):
-            props["pygtk_version"] = gtk.pygtk_version
-        props["gtk_version"] = gtk.gtk_version
-        try:
-            from xpra.build_info import LOCAL_MODIFICATIONS, BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, REVISION
-            props["local_modifications"] = LOCAL_MODIFICATIONS
-            props["build_date"] = BUILD_DATE
-            props["built_by"] = BUILT_BY
-            props["built_on"] = BUILT_ON
-            props["build_bit"] = BUILD_BIT
-            props["build_cpu"] = BUILD_CPU
-            props["revision"] = REVISION
-        except:
-            pass
 
     def send_ping(self):
         self._send(["ping", int(1000*time.time())])

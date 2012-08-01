@@ -54,6 +54,7 @@ from xpra.client_base import XpraClientBase
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
+from xpra.version_util import add_gtk_version_info
 
 from xpra.client_window import ClientWindow
 ClientWindowClass = ClientWindow
@@ -489,6 +490,7 @@ class XpraClient(XpraClientBase):
 
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
+        add_gtk_version_info(capabilities, gtk)
         for k,v in self.get_keymap_properties().items():
             capabilities[k] = v
         if self.readonly:

@@ -16,7 +16,7 @@ from xpra.protocol import Protocol, has_rencode
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with
 
-import xpra
+from xpra.version_util import add_version_info
 
 def nn(x):
     if x is None:
@@ -107,7 +107,8 @@ class XpraClientBase(gobject.GObject):
         self.send(["hello", hello])
 
     def make_hello(self, challenge_response=None):
-        capabilities = {"version": xpra.__version__}
+        capabilities = {}
+        add_version_info(capabilities)
         if challenge_response:
             capabilities["challenge_response"] = challenge_response
         if self.encoding:
