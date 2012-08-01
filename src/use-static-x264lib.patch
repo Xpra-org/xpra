@@ -4,7 +4,7 @@ Description: Build x264 codec as a static library.
  
 --- a/setup.py	(revision 1184)
 +++ b/setup.py	(working copy)
-@@ -352,6 +352,10 @@
+@@ -355,6 +355,10 @@
  sys.argv = filtered_args
  
  if x264_ENABLED:

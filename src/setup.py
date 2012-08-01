@@ -107,9 +107,9 @@ if sys.platform.startswith("win"):
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
 
+
     def pkgconfig(*packages, **ekw):
         def add_to_PATH(bindir):
-            import os
             if os.environ['PATH'].find(bindir)<0:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
@@ -308,9 +308,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     def pkgconfig(*packages_options, **ekw):
         return {}
 
+
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 if XPRA_LOCAL_SERVERS_SUPPORTED:
-    import os.path
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
@@ -327,6 +327,9 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                 ["xpra/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ))
+
+
+
 x264_ENABLED = True
 
 
