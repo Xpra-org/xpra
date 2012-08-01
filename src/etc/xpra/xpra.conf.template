@@ -51,4 +51,4 @@ pings = no
 # Old Xvfb option:
 # xvfb=Xvfb -dpi 96 +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY
 # With Xorg 1.12 or newer and the dummy driver:
-# xvfb=Xorg -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf
+# xvfb=/usr/bin/Xorg-nosuid -dpi 96 -noreset -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf
