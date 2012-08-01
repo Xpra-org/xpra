@@ -613,37 +613,38 @@ class ServerSource(object):
         if coding not in ("vpx", "x264") or self._mmap:
             return
         encoders, _ = self.video_encoders(coding)
-        if len(encoders)==0:
+        if len(encoders)==0 or wid not in encoders:
             return              #not been used yet
+
+        #***********************************************************
+        #encoding speed: minimize latency and client decode speed
+        min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
+        target_damage_latency = max(min_damage_latency, batch.delay/4.0)
+        dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
+        target_decode_speed = 1*1000*1000      #1MPixels/s
+        dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
+        target_speed = 100.0 * min(1.0, max(dam_lat, dec_lat))
+        encoding_speeds = self._video_encoder_speed.setdefault(wid, maxdeque(NRECS))
+        encoding_speeds.append((time.time(), target_speed))
+        _, new_speed = calculate_time_weighted_average(encoding_speeds)
+        log("video encoder speed factors: dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s",
+                 dam_lat, dec_lat, target_speed, new_speed)
+        #***********************************************************
+        #quality: minimize batch.delay and packet backlog
+        packets_bl = logp(last_packets_backlog/low_limit)/2.0
+        batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
+        target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
+        encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
+        encoding_qualities.append((time.time(), target_quality))
+        new_quality, _ = calculate_time_weighted_average(encoding_qualities)
+        log.info("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
+                 packets_bl, batch_q, target_quality, new_quality)
         try:
             self._video_encoder_lock.acquire()
             encoder = encoders.get(wid)
             if not encoder:
-                return  #this window has not used the encoder yet
-            #***********************************************************
-            #encoding speed: minimize latency and client decode speed
-            min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-            target_damage_latency = max(min_damage_latency, batch.delay/4.0)
-            dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
-            target_decode_speed = 1*1000*1000      #1MPixels/s
-            dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
-            target_speed = 100.0 * min(1.0, max(dam_lat, dec_lat))
-            encoding_speeds = self._video_encoder_speed.setdefault(wid, maxdeque(NRECS))
-            encoding_speeds.append((time.time(), target_speed))
-            _, new_speed = calculate_time_weighted_average(encoding_speeds)
-            log("video encoder speed factors: dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s",
-                     dam_lat, dec_lat, target_speed, new_speed)
+                return  #this window has not used the encoder yet or has disappeared
             encoder.set_encoding_speed(new_speed)
-            #***********************************************************
-            #quality: minimize batch.delay and packet backlog
-            packets_bl = logp(last_packets_backlog/low_limit)/2.0
-            batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
-            target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
-            encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
-            encoding_qualities.append((time.time(), target_quality))
-            new_quality, _ = calculate_time_weighted_average(encoding_qualities)
-            log.info("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
-                     packets_bl, batch_q, target_quality, new_quality)
             encoder.set_encoding_quality(new_quality)
         finally:
             self._video_encoder_lock.release()
