@@ -3,9 +3,9 @@
 set -e
 rm -rf build install py3
 mkdir py3
-cp -apr scripts parti wimpiggy xpra add_build_info.py setup.py make_constants_pxi.py parti.1 xpra.1 xpra_launcher.1 README* COPYING ./py3
+cp -apr etc scripts parti wimpiggy xpra add_build_info.py setup.py make_constants_pxi.py parti.1 xpra.1 xpra_launcher.1 README* COPYING ./py3
 pushd py3
-patch -p0 < ../disable-posix-server.patch
-2to3 --no-diffs -x all -f except -w -n .
+patch -p1 < ../disable-posix-server.patch
+python3-2to3 --no-diffs -x all -f except -w -n .
 CFLAGS=-O2 python3 setup.py install
 popd
