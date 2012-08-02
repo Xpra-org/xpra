@@ -8,6 +8,7 @@
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
+import traceback
 import struct
 try:
     from StringIO import StringIO   #@UnresolvedImport @UnusedImport
@@ -190,11 +191,107 @@ def _get_multiple(disp, d):
         return  str(d)
     return _get_atom(disp, d)
 
-def get_xsettings(disp, d):
-    return  list(bytearray(d))
+#undocumented XSETTINGS values:
+LITTLE_ENDIAN = 0
+BIG_ENDIAN    = 1
+def get_local_byteorder():
+    if sys.byteorder=="little":
+        return  LITTLE_ENDIAN
+    else:
+        return  BIG_ENDIAN
 
-def set_xsettings(disp, d):
-    return  str(bytearray(d))
+def parse_xsettings(d):
+    #parse xsettings according to
+    #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
+    assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
+    log("parse_xsettings(%s)", list(d))    
+    byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
+    log("parse_xsettings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
+    settings = []
+    pos = 12
+    while n_settings>len(settings) and len(d)>0:
+        istart = pos
+        #parse header:
+        setting_type, _, name_len = struct.unpack("=BBH", d[pos:pos+4])
+        pos += 4
+        #extract property name:
+        prop_name = d[pos:pos+name_len]
+        pos += (name_len + 0x3) & ~0x3
+        #serial:
+        last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
+        pos += 4
+        log("parse_xsettings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
+        #extract value:
+        if setting_type==0:     #XSettingsTypeInteger
+            value = struct.unpack("=I", d[pos:pos+4])[0]
+            pos += 4
+        elif setting_type==1:   #XSettingsTypeString
+            value_len = struct.unpack("=I", d[pos:pos+4])[0]
+            value = d[pos+4:pos+4+value_len]
+            pos += 4 + ((value_len + 0x3) & ~0x3)
+        elif setting_type==2:   #XSettingsTypeColor
+            red, blue, green, alpha = struct.unpack("=HHHH", d[pos:pos+8])
+            value = (red, blue, green, alpha)
+            pos += 8
+        else:
+            log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
+            break
+        setting = setting_type, prop_name, value, last_change_serial
+        log("parse_xsettings(..) %s -> %s", list(d[istart:pos]), setting)
+        settings.append(setting)
+    log("parse_xsettings(..) settings=%s", settings)
+    return  serial, settings
+
+def format_xsettings(d):
+    #TODO: detect old clients
+    assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
+    serial, settings = d
+    log("format_xsettings(%s) serial=%s, %s settings", d, serial, len(settings))
+    a = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, len(settings))
+    for setting in settings:
+        setting_type, prop_name, value, last_change_serial = setting
+        x = b''
+        x += struct.pack("=BBH", setting_type, 0, len(prop_name))
+        x += struct.pack("="+"s"*len(prop_name), *list(prop_name))
+        pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
+        x += '\0'*pad_len
+        x += struct.pack("=I", last_change_serial)
+        if setting_type==0:     #XSettingsTypeInteger
+            assert type(value)==int
+            x += struct.pack("=I", value)
+        elif setting_type==1:   #XSettingsTypeString
+            assert type(value)==str
+            x += struct.pack("=I", len(value))
+            x += struct.pack("="+"s"*len(value), *list(value))
+            pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
+            x += '\0'*pad_len
+        elif setting_type==2:   #XSettingsTypeColor
+            red, blue, green, alpha = value
+            x = struct.pack("=HHHH", red, blue, green, alpha)
+        else:
+            log.error("invalid xsetting type: %s, cannot continue parsing XSETTINGS!", setting_type)
+            break
+        log("format_xsettings(..) %s -> %s", setting, list(x))
+        a += x
+    a += '\0'
+    log("format_xsettings(%s)=%s", d, list(a))
+    return  a
+
+def set_xsettings_format(use_tuple=True):
+    log("set_xsettings_format(%s)", use_tuple)
+    global _prop_types
+    if use_tuple:
+        _prop_types["xsettings-settings"] = (tuple, "_XSETTINGS_SETTINGS", 8,
+                           lambda disp, c: format_xsettings(c),
+                           lambda disp, d: parse_xsettings(d),
+                           None)
+    else:
+        #for old clients that rely on the old string format:
+        _prop_types["xsettings-settings"] = (str, "_XSETTINGS_SETTINGS", 8,
+                           lambda disp, c: c,
+                           lambda disp, d: d,
+                           None)
+
 
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
@@ -236,10 +333,6 @@ _prop_types = {
                       unsupported, NetWMStrut, None),
     "icon": (cairo.ImageSurface, "CARDINAL", 32,
              unsupported, NetWMIcons, None),
-    "xsettings-settings": (list, "_XSETTINGS_SETTINGS", 8,
-                           set_xsettings,
-                           get_xsettings,
-                           None),
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:
     "debug-CARDINAL": (str, "CARDINAL", 32,
@@ -253,6 +346,7 @@ _prop_types = {
     # atoms.
     "multiple-conversion": (str, 0, 32, unsupported, _get_multiple, None),
     }
+set_xsettings_format(True)
 
 def _prop_encode(disp, etype, value):
     if isinstance(etype, list):
@@ -262,14 +356,6 @@ def _prop_encode(disp, etype, value):
 
 def _prop_encode_scalar(disp, etype, value):
     (pytype, atom, formatbits, serialize, _, _) = _prop_types[etype]
-    if pytype==list and atom=="_XSETTINGS_SETTINGS":
-        #hack for xsettings since we changed the format in 0.5:
-        if type(value)==tuple:
-            #rencode gives it back to us as a tuple..
-            value = list(value)
-        elif type(value)==str:
-            #old clients used a string with zero bytes in it:
-            value = list(bytearray(value))
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return (atom, formatbits, serialize(disp, value))
 
@@ -330,8 +416,7 @@ def prop_get(target, key, etype, ignore_errors=False):
     except (XError, PropertyError):
         if not ignore_errors:
             log.info("Missing window or missing property or wrong property type %s (%s)", key, etype)
-            import traceback
-            traceback.print_stack()
+            traceback.print_exc()
         return None
     try:
         return _prop_decode(target, etype, data)
@@ -340,4 +425,6 @@ def prop_get(target, key, etype, ignore_errors=False):
                  + " misbehaving application, or bug in Wimpiggy\n"
                  + "  Data: %r[...?]",
                  key, etype, data[:160])
+        if not ignore_errors:
+            traceback.print_exc()
         raise

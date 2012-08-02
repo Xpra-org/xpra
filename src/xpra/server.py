@@ -54,7 +54,7 @@ from wimpiggy.lowlevel import (displayHasXComposite,       #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                get_xatom                    #@UnresolvedImport
                                )
-from wimpiggy.prop import prop_set
+from wimpiggy.prop import prop_set, set_xsettings_format
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
 from wimpiggy.keys import grok_modifier_map
 from wimpiggy.error import XError, trap
@@ -1171,6 +1171,7 @@ class XpraServer(gobject.GObject):
         self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.server_window_resize = capabilities.get("server-window-resize", False)
+        set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
         log("setting modifiers to %s", modifiers)
@@ -1222,6 +1223,7 @@ class XpraServer(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
+        capabilities["xsettings-tuple"] = True
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         #_get_desktop_size_capability may cause an asynchronous root window resize event

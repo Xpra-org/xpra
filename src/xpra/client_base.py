@@ -120,6 +120,7 @@ class XpraClientBase(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
+        capabilities["xsettings-tuple"] = True
         capabilities["randr_notify"] = False    #only client.py cares about this
         return capabilities
 
@@ -175,6 +176,11 @@ class XpraClientBase(gobject.GObject):
 
     def parse_server_capabilities(self, capabilities):
         self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
+        try:
+            from wimpiggy.prop import set_xsettings_format
+            set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
+        except Exception, e:
+            log.info("failed to set xsettings format: %s", e)
         if not is_compatible_with(self._remote_version):
             self.quit(4)
             return False
