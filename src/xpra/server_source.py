@@ -637,8 +637,8 @@ class ServerSource(object):
         encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
         encoding_qualities.append((time.time(), target_quality))
         new_quality, _ = calculate_time_weighted_average(encoding_qualities)
-        log.info("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
-                 packets_bl, batch_q, target_quality, new_quality)
+        log("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
+                 dec2(packets_bl), dec2(batch_q), dec2(target_quality), dec2(new_quality))
         try:
             self._video_encoder_lock.acquire()
             encoder = encoders.get(wid)

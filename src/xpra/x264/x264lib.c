@@ -305,9 +305,9 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 	x264_encoder_parameters(ctx->encoder, &param);
 
 	// Compute new quality
-	printf("set_encoding_quality: old quality %f", param.rc.f_rf_constant);
+	//printf("set_encoding_quality: old quality %f", param.rc.f_rf_constant);
 	param.rc.f_rf_constant = 50.0 - (pct * 49.0 / 100.0);
-	printf(" new quality %f\n", param.rc.f_rf_constant);
+	//printf(" new quality %f\n", param.rc.f_rf_constant);
 
 	// Read new configuration
 	x264_encoder_reconfig(ctx->encoder, &param);
