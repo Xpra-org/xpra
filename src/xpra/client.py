@@ -183,8 +183,6 @@ class XpraClient(XpraClientBase):
 
         if self._keymap:
             self._keymap.connect("keys-changed", self._keys_changed)
-        self._xsettings_watcher = None
-        self._root_props_watcher = None
 
         self._focused = None
         def compute_receive_bandwidth(delay):
