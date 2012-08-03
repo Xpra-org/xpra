@@ -1105,30 +1105,10 @@ class XpraServer(gobject.GObject):
         #mmap:
         self.close_mmap()
         mmap_file = capabilities.get("mmap_file")
+        mmap_token = capabilities.get("mmap_token")
         log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
         if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
-            import mmap
-            try:
-                f = open(mmap_file, "r+b")
-                self.mmap_size = os.path.getsize(mmap_file)
-                self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
-                mmap_token = capabilities.get("mmap_token")
-                if mmap_token:
-                    #verify the token:
-                    v = 0
-                    for i in range(0,16):
-                        v = v<<8
-                        peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
-                        v += peek.value
-                    log("mmap_token=%s, verification=%s", mmap_token, v)
-                    if v!=mmap_token:
-                        log.error("WARNING: mmap token verification failed, not using mmap area!")
-                        self.close_mmap()
-                if self.mmap:
-                    log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
-            except Exception, e:
-                log.error("cannot use mmap file '%s': %s", mmap_file, e)
-                self.close_mmap()
+            self.init_mmap(mmap_file, mmap_token)
         if capabilities.get("rencode") and has_rencode:
             proto.enable_rencode()
         self._protocol = proto
@@ -1187,6 +1167,29 @@ class XpraServer(gobject.GObject):
         #important: call send_windows_and_cursors via idle_add
         #so send_hello's do_send_hello can fire first!
         gobject.idle_add(self.send_windows_and_cursors)
+
+    def init_mmap(self, mmap_file, mmap_token):
+        import mmap
+        try:
+            f = open(mmap_file, "r+b")
+            self.mmap_size = os.path.getsize(mmap_file)
+            self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
+            if mmap_token:
+                #verify the token:
+                v = 0
+                for i in range(0,16):
+                    v = v<<8
+                    peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
+                    v += peek.value
+                log("mmap_token=%s, verification=%s", mmap_token, v)
+                if v!=mmap_token:
+                    log.error("WARNING: mmap token verification failed, not using mmap area!")
+                    self.close_mmap()
+            if self.mmap:
+                log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
+        except Exception, e:
+            log.error("cannot use mmap file '%s': %s", mmap_file, e)
+            self.close_mmap()
 
     def send_windows_and_cursors(self):
         # We send the new-window packets sorted by id because this sorts them

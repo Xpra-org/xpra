@@ -122,48 +122,7 @@ class XpraClient(XpraClientBase):
         self.clipboard_enabled = not self.readonly and opts.clipboard and self._client_extras.supports_clipboard()
         self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
         if self.supports_mmap:
-            try:
-                import mmap
-                import tempfile
-                import uuid
-                from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
-                mmap_dir = os.getenv("TMPDIR", "/tmp")
-                if not os.path.exists(mmap_dir):
-                    raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-                #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
-                #that the file is readable and writable only by the creating user ID
-                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
-                #keep a reference to it so it does not disappear!
-                self._mmap_temp_file = temp
-                self.mmap_file = temp.name
-                fd = temp.file.fileno()
-                #set the group permissions and gid if the mmap-group option is specified
-                if opts.mmap_group and type(conn.target)==str and os.path.exists(conn.target):
-                    s = os.stat(conn.target)
-                    os.fchown(fd, -1, s.st_gid)
-                    os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-                self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
-                log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
-                os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
-                assert os.write(fd, '\x00')
-                os.lseek(fd, 0, os.SEEK_SET)
-                self.mmap = mmap.mmap(fd, length=self.mmap_size)
-                #write the 16 byte token one byte at a time - no endianness
-                self.mmap_token = uuid.uuid4().int
-                log.debug("mmap_token=%s", self.mmap_token)
-                v = self.mmap_token
-                for i in range(0,16):
-                    poke = ctypes.c_ubyte.from_buffer(self.mmap, 512+i)
-                    poke.value = v % 256
-                    v = v>>8
-                assert v==0
-            except Exception, e:
-                log.error("failed to setup mmap: %s", e)
-                self.supports_mmap = False
-                self.clean_mmap()
-                self.mmap = None
-                self.mmap_file = None
-                self.mmap_size = 0
+            self.init_mmap(opts.mmap_group, conn.target)
 
         self.init_packet_handlers()
         self.ready(conn)
@@ -206,6 +165,50 @@ class XpraClient(XpraClientBase):
             gobject.timeout_add(1000, self.send_ping)
         else:
             gobject.timeout_add(20*1000, self.send_ping)
+
+    def init_mmap(self, mmap_group, socket_filename):
+        try:
+            import mmap
+            import tempfile
+            import uuid
+            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
+            mmap_dir = os.getenv("TMPDIR", "/tmp")
+            if not os.path.exists(mmap_dir):
+                raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+            #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
+            #that the file is readable and writable only by the creating user ID
+            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+            #keep a reference to it so it does not disappear!
+            self._mmap_temp_file = temp
+            self.mmap_file = temp.name
+            fd = temp.file.fileno()
+            #set the group permissions and gid if the mmap-group option is specified
+            if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
+                s = os.stat(socket_filename)
+                os.fchown(fd, -1, s.st_gid)
+                os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
+            self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
+            log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
+            os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
+            assert os.write(fd, '\x00')
+            os.lseek(fd, 0, os.SEEK_SET)
+            self.mmap = mmap.mmap(fd, length=self.mmap_size)
+            #write the 16 byte token one byte at a time - no endianness
+            self.mmap_token = uuid.uuid4().int
+            log.debug("mmap_token=%s", self.mmap_token)
+            v = self.mmap_token
+            for i in range(0,16):
+                poke = ctypes.c_ubyte.from_buffer(self.mmap, 512+i)
+                poke.value = v % 256
+                v = v>>8
+            assert v==0
+        except Exception, e:
+            log.error("failed to setup mmap: %s", e)
+            self.supports_mmap = False
+            self.clean_mmap()
+            self.mmap = None
+            self.mmap_file = None
+            self.mmap_size = 0
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
