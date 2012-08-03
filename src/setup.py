@@ -368,9 +368,14 @@ if vpx_ENABLED:
                 ), min_version=(0, 16))
 if rencode_ENABLED:
     packages.append("xpra.rencode")
+    extra_compile_args = []
+    if not sys.platform.startswith("win"):
+        extra_compile_args.append("-O3")
+    else:
+        extra_compile_args.append("/Ox")
     cython_add(Extension("xpra.rencode._rencode",
                 ["xpra/rencode/rencode.pyx"],
-                extra_compile_args=["-O3"]))
+                extra_compile_args=extra_compile_args))
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
