@@ -5,7 +5,7 @@
 
 #@PydevCodeAnalysisIgnore
 
-from wimpiggy.test import *
+from tests.wimpiggy import *
 import struct
 import gtk
 import cairo

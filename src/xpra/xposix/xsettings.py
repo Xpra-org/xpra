@@ -1,3 +1,9 @@
+# This file is part of Parti.
+# Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
+# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
 import gobject
 import gtk
 from wimpiggy.error import *
@@ -12,6 +18,7 @@ from wimpiggy.lowlevel import (
                 )
 from wimpiggy.log import Logger
 log = Logger()
+
 
 class XSettingsManager(object):
     def __init__(self, settings_blob):

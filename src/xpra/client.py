@@ -95,6 +95,7 @@ class XpraClient(XpraClientBase):
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
 
+        self.dpi = int(opts.dpi)
         self.mmap_enabled = False
         self.server_start_time = -1
         self.server_platform = ""
@@ -512,6 +513,7 @@ class XpraClient(XpraClientBase):
             capabilities["mmap_token"] = self.mmap_token
         capabilities["randr_notify"] = True
         capabilities["compressible_cursors"] = True
+        capabilities["dpi"] = self.dpi
         #these should be turned into options:
         capabilities["cursors"] = True
         capabilities["bell"] = True

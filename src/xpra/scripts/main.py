@@ -152,6 +152,14 @@ def main(script_file, cmdline):
             return  False
         print("invalid value for '%s': %s, using default value %s instead" % (varname, v, default_value))
         return default_value
+    def int_default(varname, default_value):
+        v = defaults.get(varname)
+        if not v:
+            return default_value
+        try:
+            return int(v)
+        except:
+            return default_value
 
     if XPRA_LOCAL_SERVERS_SUPPORTED:
         start_str = "\t%prog start DISPLAY\n"
@@ -291,6 +299,9 @@ def main(script_file, cmdline):
     group.add_option("--password-file", action="store",
                       dest="password_file", default=None,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
+    group.add_option("--dpi", action="store",
+                      dest="dpi", default=int_default("dpi", 96),
+                      help="The 'dots per inch' value that client applications should try to honour (default: %s)")
     default_socket_dir = defaults.get("socket-dir")
     default_socket_dir_str = default_socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
@@ -327,6 +338,10 @@ def main(script_file, cmdline):
         #the option is not shown to the user as it is not available
         options.jpegquality = 80
         options.max_bandwidth = 0
+    try:
+        int(options.dpi)
+    except Exception, e:
+        parser.error("invalid dpi: %s" % e)
 
     if not args:
         parser.error("need a mode")

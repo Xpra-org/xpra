@@ -199,6 +199,9 @@ class XpraServer(gobject.GObject):
                             xpra.__version__)
         add_event_receiver(root, self)
 
+        self.default_dpi = int(opts.dpi)
+        self.dpi = self.default_dpi
+
         # This must happen early, before loading in windows at least:
         self._protocol = None
         self._potential_protocols = []
@@ -1094,6 +1097,11 @@ class XpraServer(gobject.GObject):
         self.reset_statistics()
         self.encodings = capabilities.get("encodings", [])
         self._set_encoding(capabilities.get("encoding", None), None)
+        self.dpi = capabilities.get("dpi", self.default_dpi)
+        if self.dpi>0:
+            #some non-posix clients never send us 'resource-manager' settings
+            #so just use a fake one to ensure the dpi gets applied:
+            self.update_server_settings({'resource-manager' : ""})
         #mmap:
         self.close_mmap()
         mmap_file = capabilities.get("mmap_file")
@@ -1368,14 +1376,42 @@ class XpraServer(gobject.GObject):
         log("toggled keyboard-sync to %s", self.keyboard_sync)
 
     def _process_server_settings(self, proto, packet):
-        settings = packet[1]
+        self.update_server_settings(packet[1])
+
+    def update_server_settings(self, settings):
         old_settings = dict(self._settings)
+        log("server_settings: old=%s, updating with=%s", old_settings, settings)
         self._settings.update(settings)
+        root = gtk.gdk.get_default_root_window()
         for k, v in settings.items():
+            #cook the "resource-manager" value to add the DPI:
+            if k == "resource-manager" and self.dpi>0:
+                value = v.decode("utf-8")
+                #parse the resources into a dict:
+                values={}
+                options = value.split("\n")
+                for option in options:
+                    if not option:
+                        continue
+                    parts = option.split(":\t")
+                    if len(parts)!=2:
+                        continue
+                    values[parts[0]] = parts[1]
+                values["Xft.dpi"] = self.dpi
+                log("server_settings: resource-manager values=%s", values)
+                #convert the dict back into a resource string:
+                value = u''
+                for vk, vv in values.items():
+                    value += "%s:\t%s\n" % (vk, vv)
+                value += '\n'
+                #record the actual value used
+                self._settings["resource-manager"] = value
+                v = value.encode("utf-8")
+
             if k not in old_settings or v != old_settings[k]:
                 def root_set(p):
-                    prop_set(gtk.gdk.get_default_root_window(),
-                             p, "latin1", v.decode("utf-8"))
+                    log("server_settings: setting %s to %s", p, v)
+                    prop_set(root, p, "latin1", v.decode("utf-8"))
                 if k == "xsettings-blob":
                     self._xsettings_manager = XSettingsManager(v)
                 elif k == "resource-manager":

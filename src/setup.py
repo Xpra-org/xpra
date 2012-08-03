@@ -264,7 +264,7 @@ else:
                 print("found valid Xorg server version %s" % v_str)
                 print("enabling Xdummy in config file")
                 f = open("etc/xpra/xpra.conf", mode='a')
-                f.write("xvfb=/usr/bin/Xorg-nosuid -dpi 96 -noreset -nolisten tcp "+
+                f.write("xvfb=/usr/bin/Xorg-nosuid -noreset -nolisten tcp "+
                         "+extension GLX +extension RANDR +extension RENDER "+
                         "-logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf")
                 f.close()

@@ -23,6 +23,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
+[\fB\-\-dpi=VALUE\fP]
 [\fB\-\-socket\-dir=DIR\fP]
 .HP
 \fBxpra\fP \fBattach\fP
@@ -45,6 +46,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-tray\-icon=filename\fP]
 [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
 [\fB\-\-password\-file=filename\fP]
+[\fB\-\-dpi=VALUE\fP]
 [\fB\-\-socket\-dir=DIR\fP]
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-enable\-pings\fP]
@@ -347,12 +349,20 @@ and is a major security risk (especially when passing 0.0.0.0)!
 Anyone at all may connect to this port and access your session.
 Use it only if you have special needs, and understand the consequences
 of your actions.
+
+.SS Options for start, upgrade and attach
 .TP
 \fB\-\-password\-file\fP=\fIFILENAME\fP
 This allows sessions to be secured with a password stored in a text
 file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
+[\fB\-\-dpi=VALUE\fP]
+The 'dots per inch' value that client applications should try to honour.
+This numeric value should be in the range 10 to 500 to be useful.
+Many applications will only read this value when starting up,
+so connecting to an existing session started with a different DPI
+value may not have the desired effect.
 
 .SS Options for attach
 .TP
