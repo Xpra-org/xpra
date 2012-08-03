@@ -4,6 +4,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
@@ -120,7 +121,12 @@ class XpraClientBase(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
-        capabilities["xsettings-tuple"] = True
+        try:
+            from wimpiggy.prop import set_xsettings_format
+            assert set_xsettings_format
+            capabilities["xsettings-tuple"] = True
+        except:
+            pass
         capabilities["randr_notify"] = False    #only client.py cares about this
         return capabilities
 
@@ -180,7 +186,8 @@ class XpraClientBase(gobject.GObject):
             from wimpiggy.prop import set_xsettings_format
             set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         except Exception, e:
-            log.info("failed to set xsettings format: %s", e)
+            if os.name=="posix":
+                log.err("failed to set xsettings format: %s", e)
         if not is_compatible_with(self._remote_version):
             self.quit(4)
             return False
