@@ -23,6 +23,7 @@ rm -f "${DIR}/xpra/vpx/win32/codec.pyd"
 rm -f "${DIR}/wimpiggy/lowlevel/bindings.c"
 rm -f "${DIR}/wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.dep"
 rm -f "${DIR}/wimpiggy/lowlevel/constants.pxi"
+rm -f "${DIR}/wimpiggy/gdk/gdk_atoms.c"
 pushd "${DIR}"
 svn info > ./svn-info
 popd

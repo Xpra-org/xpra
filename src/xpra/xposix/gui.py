@@ -1,5 +1,6 @@
 # This file is part of Parti.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -33,10 +34,12 @@ class ClientExtras(ClientExtrasBase):
             if not self.setup_dbusnotify() and not self.setup_pynotify():
                 log.error("turning notifications off")
         try:
-            from xpra.xposix.xclipboard import ClipboardProtocolHelper
-            self.setup_clipboard_helper(ClipboardProtocolHelper)
-        except ImportError:
-            self.clipboard_helper = None
+            from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+            self.setup_clipboard_helper(GDKClipboardProtocolHelper)
+        except ImportError, e:
+            log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
+            from xpra.platform.default_clipboard import DefaultClipboardProtocolHelper
+            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
 
     def exit(self):
         ClientExtrasBase.exit(self)

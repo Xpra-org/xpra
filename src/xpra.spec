@@ -408,6 +408,7 @@ cd parti-all-%{version}
 %{__python} setup.py install -O1  --prefix /usr --skip-build --root %{buildroot}
 %if %{defined generic_rpm}
 # remove .so (not suitable for a generic RPM)
+rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/gdk/gdk_atoms.so"
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/wimpiggy/bindings.so"
 rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so"
 %else

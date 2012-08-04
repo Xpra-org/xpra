@@ -71,7 +71,7 @@ from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, Compressible, dump_packet, has_rencode
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
-from xpra.xposix.xclipboard import ClipboardProtocolHelper
+from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
@@ -287,15 +287,14 @@ class XpraServer(gobject.GObject):
 
         ### Clipboard handling:
         self.clipboard_enabled = opts.clipboard
+        self._clipboard_helper = None
         if self.clipboard_enabled:
             def send_clipboard(packet):
                 if self.clipboard_enabled:
                     self._send(packet)
                 else:
                     log("clipboard is disabled, dropping packet")
-            self._clipboard_helper = ClipboardProtocolHelper(send_clipboard)
-        else:
-            self._clipboard_helper = None
+            self._clipboard_helper = GDKClipboardProtocolHelper(send_clipboard)
 
         ### Misc. state:
         self._settings = {}

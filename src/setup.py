@@ -106,7 +106,23 @@ if sys.platform.startswith("win"):
     vpx_PATH="E:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
-
+    # Same for PyGTK:
+    # http://www.pygtk.org/downloads.html
+    gtk2_PATH = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
+    python_include_PATH = "C:\\Python27\\include"
+    gtk2runtime_PATH = "%s\\runtime" % gtk2_PATH
+    gtk2_lib_dir = "%s\\bin" % gtk2runtime_PATH
+    
+    pygtk_include_dir = "%s\\pygtk-2.0" % python_include_PATH
+    atk_include_dir = "%s\\include\\atk-1.0" % gtk2runtime_PATH
+    gtk2_include_dir = "%s\\include\\gtk-2.0" % gtk2runtime_PATH
+    gdkconfig_include_dir = "%s\\lib\\gtk-2.0\\include" % gtk2runtime_PATH
+    gdkpixbuf_include_dir = "%s\\include\gdk-pixbuf-2.0" % gtk2runtime_PATH
+    gdk_include_dir = "%s\\include\\" % gtk2runtime_PATH
+    glib_include_dir = "%s\\include\\glib-2.0" % gtk2runtime_PATH
+    glibconfig_include_dir = "%s\\lib\\glib-2.0\\include" % gtk2runtime_PATH
+    cairo_include_dir = "%s\\include\\cairo" % gtk2runtime_PATH
+    pango_include_dir = "%s\\include\\pango-1.0" % gtk2runtime_PATH
 
     def pkgconfig(*packages, **ekw):
         def add_to_PATH(bindir):
@@ -127,6 +143,14 @@ if sys.platform.startswith("win"):
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
+        elif "pygobject-2.0" in packages[0]:
+            add_to_keywords(kw, 'include_dirs', python_include_PATH,
+                            pygtk_include_dir, atk_include_dir, gtk2_include_dir,
+                            gdk_include_dir, gdkconfig_include_dir, gdkpixbuf_include_dir,
+                            glib_include_dir, glibconfig_include_dir,
+                            cairo_include_dir, pango_include_dir)
+            #add_to_keywords(kw, 'libraries', "")
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % gtk2_lib_dir)
         else:
             raise Exception("unknown package config: %s" % str(packages))
         return kw
@@ -309,6 +333,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
         return {}
 
 
+PYGTK_PACKAGES = ["pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0"]
+if sys.platform.startswith("darwin"):
+    PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
+X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 if XPRA_LOCAL_SERVERS_SUPPORTED:
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
@@ -318,15 +346,19 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
         from make_constants_pxi import make_constants_pxi
         print("(re)generating %s" % pxi_file)
         make_constants_pxi(constants_file, pxi_file)
+    BINDINGS_LIBS = PYGTK_PACKAGES + X11_PACKAGES
     cython_add(Extension("wimpiggy.lowlevel.bindings",
                 ["wimpiggy/lowlevel/bindings.pyx"],
-                **pkgconfig("pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0",
-                            "xtst", "xfixes", "xcomposite", "xdamage", "xrandr")
+                **pkgconfig(*BINDINGS_LIBS)
                 ))
     cython_add(Extension("xpra.wait_for_x_server",
                 ["xpra/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ))
+
+
+
+cliboard_ENABLED = True
 
 
 
@@ -350,9 +382,18 @@ for arg in sys.argv:
         vpx_ENABLED = False
     elif arg == "--without-rencode":
         rencode_ENABLED = False
+    elif arg == "--without-clipboard":
+        cliboard_ENABLED = False
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
+
+if cliboard_ENABLED:
+    packages.append("wimpiggy.gdk")
+    cython_add(Extension("wimpiggy.gdk.gdk_atoms",
+                ["wimpiggy/gdk/gdk_atoms.pyx"],
+                **pkgconfig(*PYGTK_PACKAGES)
+                ))
 
 if x264_ENABLED:
     packages.append("xpra.x264")
@@ -360,12 +401,14 @@ if x264_ENABLED:
                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
+
 if vpx_ENABLED:
     packages.append("xpra.vpx")
     cython_add(Extension("xpra.vpx.codec",
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
+
 if rencode_ENABLED:
     packages.append("xpra.rencode")
     extra_compile_args = []

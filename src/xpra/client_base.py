@@ -187,7 +187,7 @@ class XpraClientBase(gobject.GObject):
             set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         except Exception, e:
             if os.name=="posix":
-                log.err("failed to set xsettings format: %s", e)
+                log.error("failed to set xsettings format: %s", e)
         if not is_compatible_with(self._remote_version):
             self.quit(4)
             return False

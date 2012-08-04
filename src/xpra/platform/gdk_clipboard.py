@@ -6,12 +6,14 @@
 
 import struct
 
-from wimpiggy.lowlevel import (gdk_atom_objects_from_gdk_atom_array, #@UnresolvedImport
-                               gdk_atom_array_from_gdk_atom_objects) #@UnresolvedImport
+from wimpiggy.gdk.gdk_atoms import (
+                gdk_atom_objects_from_gdk_atom_array,   #@UnresolvedImport
+                gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
+                )
 
 from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, debug
 
-class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
+class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
     """ This clipboard helper adds the ability to parse raw X11 atoms
         to and from a form suitable for transport over the wire.
     """
@@ -21,15 +23,19 @@ class ClipboardProtocolHelper(ClipboardProtocolHelperBase):
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
         if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):
+            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) using gdk atom code", target, datatype, dataformat, type(data), len(data))
             # Convert to strings and send that. Bizarrely, the atoms are
             # not actual X atoms, but an array of GdkAtom's reinterpreted
             # as a byte buffer.
             atoms = gdk_atom_objects_from_gdk_atom_array(data)
+            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s", target, datatype, dataformat, type(data), len(data), list(atoms))
             atom_names = [str(atom) for atom in atoms]
-            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s, atom_names=%s", target, datatype, dataformat, type(data), len(data), atoms, atom_names)
+            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atom_names=%s", target, datatype, dataformat, type(data), len(data), atom_names)
             if target=="TARGET":
+                otargets = list(atom_names)
                 atom_names.remove("SAVE_TARGETS")
                 atom_names.remove("COMPOUND_TEXT")
+                debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) filtered targets(%s)=%s", target, datatype, dataformat, type(data), len(data), otargets, atom_names)
             return "atoms", atom_names
         return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data)
 

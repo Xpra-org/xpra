@@ -422,34 +422,6 @@ def get_pyatom(display_source, xatom):
         return  None
     return str(PyGdkAtom_New(gdk_atom))
 
-def gdk_atom_objects_from_gdk_atom_array(atom_string):
-    # gdk_property_get auto-converts ATOM and ATOM_PAIR properties from a
-    # string of marshalled X atoms to an array of GDK atoms. GDK atoms and X
-    # atoms are both basically numeric values, but they are often *different*
-    # numeric values. The GTK+ clipboard code uses gdk_property_get. To
-    # interpret atoms when dealing with the clipboard, therefore, we need to
-    # be able to take an array of GDK atom objects (integers) and figure out
-    # what they mean.
-    cdef GdkAtom * array = <GdkAtom*> 0
-    cdef Py_ssize_t array_len_bytes = 0
-    # const_void_pp is a typedef for "const void**"
-    # (only defined to avoid a compile warning on the following line)
-    PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)
-    array_len = array_len_bytes / sizeof(GdkAtom)
-    objects = []
-    for i in xrange(array_len):
-        objects.append(PyGdkAtom_New(array[i]))
-    return objects
-
-def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):
-    cdef GdkAtom c_gdk_atom
-    cdef unsigned long gdk_atom_value
-    atom_array = []
-    for atom_object in gdk_atom_objects:
-        c_gdk_atom = PyGdkAtom_Get(atom_object)
-        gdk_atom_value = <unsigned long> c_gdk_atom
-        atom_array.append(gdk_atom_value)
-    return atom_array
 
 
 # Property handling:

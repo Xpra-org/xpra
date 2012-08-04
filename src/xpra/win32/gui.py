@@ -1,6 +1,6 @@
 # This file is part of Parti.
-# Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,6 @@ import os.path
 
 from xpra.deque import maxdeque
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
-from xpra.platform.default_clipboard import ClipboardProtocolHelper
 from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
@@ -21,9 +20,15 @@ class ClientExtras(ClientExtrasBase):
         ClientExtrasBase.__init__(self, client, opts)
         self.setup_menu()
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
-        self.setup_clipboard_helper(ClipboardProtocolHelper)
         self._last_key_events = maxdeque(maxlen=5)
         self._dropped_num_lock_press = False
+        try:
+            from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+            self.setup_clipboard_helper(GDKClipboardProtocolHelper)
+        except ImportError, e:
+            log.error("GDK Clipboard failed to load: %s - using 'Translated Clipboard' fallback", e)
+            from xpra.platform.default_clipboard import TranslatedClipboardProtocolHelper
+            self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
 
     def exit(self):
         ClientExtrasBase.exit(self)

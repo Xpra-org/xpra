@@ -1,8 +1,10 @@
 # This file is part of Parti.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2012 Antoine Martin <antoine@devloop.org.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import pygtk
 pygtk.require("2.0")
 import struct
@@ -88,8 +90,9 @@ class ClipboardProtocolHelperBase(object):
         # converting into an endian-neutral format:
         debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
-            if dtype in ("ATOM", "ATOM_PAIR"):
-                #we cannot handle gdk atoms here (but xclipboard does)
+            #you should be using gdk_clipboard for atom support!
+            if dtype in ("ATOM", "ATOM_PAIR") and os.name=="posix":
+                #we cannot handle gdk atoms here (but gdk_clipboard does)
                 return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4
             #that's just the way it is...
@@ -130,7 +133,7 @@ class ClipboardProtocolHelperBase(object):
             raise Exception("unhanled encoding: %s" % encoding)
 
     def _process_clipboard_request(self, packet):
-        (_, request_id, selection, target) = packet
+        request_id, selection, target = packet[1:4]
         name = self.remote_to_local(selection)
         debug("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         if name in self._clipboard_proxies:
@@ -155,7 +158,7 @@ class ClipboardProtocolHelperBase(object):
             self.send(["clipboard-contents-none", request_id, selection])
 
     def _process_clipboard_contents(self, packet):
-        (_, request_id, selection, dtype, dformat, wire_encoding, wire_data) = packet
+        request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
         debug("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         debug("clipboard wire -> raw: %r -> %r", (dtype, dformat, wire_encoding, wire_data), raw_data)
@@ -163,7 +166,7 @@ class ClipboardProtocolHelperBase(object):
 
     def _process_clipboard_contents_none(self, packet):
         debug("process clipboard contents none")
-        (_, request_id, _) = packet
+        request_id = packet[1]
         self._clipboard_got_contents(request_id, None, None, None)
 
     _packet_handlers = {
@@ -287,7 +290,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def got_token(self):
         # We got the anti-token.
-        debug("got token")
+        debug("got token, selection=%s", self._selection)
         self._have_token = True
         if not self.selection_owner_set(self._selection):
             # I don't know how this can actually fail, given that we pass
@@ -306,9 +309,12 @@ class ClipboardProxy(gtk.Invisible):
                      + "*I* thought *they* had it... weird.")
             cb(None, None, None)
         def unpack(clipboard, selection_data, data):
+            debug("unpack(%s, %s, %s:%s)", clipboard, selection_data, type(data), len(data or ""))
             if selection_data is None:
                 cb(None, None, None)
             else:
+                debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
+                            type(selection_data.data), len(selection_data.data or ""))
                 cb(str(selection_data.type),
                    selection_data.format,
                    selection_data.data)

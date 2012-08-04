@@ -87,6 +87,8 @@ file path=usr/lib/python2.6/site-packages/wimpiggy/lowlevel/__init__.py \
     owner=root group=bin mode=644
 file path=usr/lib/python2.6/site-packages/wimpiggy/lowlevel/bindings.so \
     owner=root group=bin mode=644
+file path=usr/lib/python2.6/site-packages/wimpiggy/gdk/gdk_atoms.so \
+    owner=root group=bin mode=644
 file path=usr/lib/python2.6/site-packages/wimpiggy/prop.py owner=root \
     group=bin mode=644
 file path=usr/lib/python2.6/site-packages/wimpiggy/pseudoclient.py owner=root \
