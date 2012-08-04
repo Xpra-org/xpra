@@ -35,12 +35,13 @@ from wimpiggy.lowlevel import (
                XRemoveFromSaveSet,                          #@UnresolvedImport
                XSetInputFocus,                              #@UnresolvedImport
                XKillClient,                                 #@UnresolvedImport
-               send_wm_take_focus,                          #@UnresolvedImport
-               send_wm_delete_window,                       #@UnresolvedImport
                sendConfigureNotify,                         #@UnresolvedImport
                configureAndNotify,                          #@UnresolvedImport
                substructureRedirect                         #@UnresolvedImport
                )
+from wimpiggy.lowlevel.send_wm import (
+                send_wm_take_focus,                         #@UnresolvedImport
+                send_wm_delete_window)                      #@UnresolvedImport
 from wimpiggy.util import (AutoPropGObjectMixin,
                            one_arg_signal,
                            non_none_list_accumulator)

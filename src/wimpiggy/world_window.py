@@ -8,11 +8,9 @@ import gobject
 import wimpiggy.window
 import wimpiggy.prop
 from wimpiggy.error import trap
+from wimpiggy.lowlevel import const                         #@UnresolvedImport
+from wimpiggy.lowlevel.send_wm import send_wm_take_focus    #@UnresolvedImport
 from wimpiggy.log import Logger
-from wimpiggy.lowlevel import (
-               const,                           #@UnresolvedImport
-               send_wm_take_focus               #@UnresolvedImport
-               )
 log = Logger()
 
 # This file defines Wimpiggy's top-level widget.  It is a magic window that

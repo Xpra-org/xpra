@@ -7,6 +7,7 @@
 
 from wimpiggy.test import *
 import wimpiggy.lowlevel as l
+import wimpiggy.lowlevel.send_wm
 import gtk
 from wimpiggy.error import trap, XError
 
@@ -389,7 +390,7 @@ class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
         l.add_event_receiver(win, self)
         gtk.gdk.flush()
 
-        l.send_wm_take_focus(win, 1234)
+        send_wm.send_wm_take_focus(win, 1234)
         gtk.main()
         assert len(self.evs) == 1
         event = self.evs[0]
@@ -405,7 +406,7 @@ class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
         l.add_event_receiver(win, self)
         gtk.gdk.flush()
 
-        l.send_wm_take_focus(win, 0xff000000)
+        send_wm.send_wm_take_focus(win, 0xff000000)
         gtk.main()
         assert len(self.evs) == 1
         event = self.evs[0]
