@@ -535,7 +535,6 @@ class XpraClient(XpraClientBase):
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
-        capabilities["png_window_icons"] = "png" in ENCODINGS
         return capabilities
 
     def send_ping(self):

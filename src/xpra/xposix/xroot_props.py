@@ -20,12 +20,15 @@ class XRootPropWatcher(gobject.GObject):
         add_event_receiver(self._root, self)
 
     def do_wimpiggy_property_notify_event(self, event):
+        log.info("do_wimpiggy_property_notify_event(%s)", event)
         if event.atom in self._props:
             self._notify(event.atom)
 
     def _notify(self, prop):
+        log.info("notify(%s)", prop)
         v = prop_get(gtk.gdk.get_default_root_window(),
                      prop, "latin1", ignore_errors=True)
+        log.info("notify(%s) value=%s", prop, v)
         self.emit("root-prop-changed", prop, v)
 
     def notify_all(self):

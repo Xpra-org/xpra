@@ -1234,7 +1234,6 @@ class XpraServer(gobject.GObject):
         capabilities["notifications"] = self.notifications_forwarder is not None
         capabilities["bell"] = self.bell
         capabilities["cursors"] = self.cursors
-        capabilities["png_window_icons"] = "png" in ENCODINGS
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
