@@ -15,6 +15,8 @@ if is_gtk3():
         #TODO: no idea how to do this with gtk3
         #maybe not even possible..
         gtk.Window.__init__(win)
+    def is_mapped(win):
+        return win.get_mapped()
     def get_window_geometry(gtkwindow):
         x, y = gtkwindow.get_position()
         w, h = gtkwindow.get_size()
@@ -70,6 +72,8 @@ if is_gtk3():
 else:
     def init_window(gtkwindow, wintype):
         gtk.Window.__init__(gtkwindow, wintype)
+    def is_mapped(win):
+        return win.window is not None and win.window.is_visible()
     def get_window_geometry(gtkwindow):
         gdkwindow = gtkwindow.get_window()
         x, y = gdkwindow.get_origin()
@@ -249,7 +253,8 @@ class ClientWindow(gtk.Window):
             if window:
                 self.set_transient_for(window)
 
-        if "window-type" in self._metadata:
+        #apply window-type hint if window is not mapped yet:
+        if "window-type" in self._metadata and not is_mapped(self):
             window_types = self._metadata.get("window-type")
             log("window types=%s", window_types)
             for window_type in window_types:
