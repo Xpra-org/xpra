@@ -94,9 +94,9 @@ class XpraClient(XpraClientBase):
         if self.max_bandwidth>0.0 and self.jpegquality==0:
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
-
         self.dpi = int(opts.dpi)
-        self.mmap_enabled = False
+
+        #statistics:
         self.server_start_time = -1
         self.server_platform = ""
         self.server_actual_desktop_size = None
@@ -105,21 +105,28 @@ class XpraClient(XpraClientBase):
         self.server_latency = maxdeque(maxlen=100)
         self.server_load = None
         self.client_latency = maxdeque(maxlen=100)
+        self.last_ping_echoed_time = 0
+
+        #features:
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
-        self.bell_enabled = True
-        self.cursors_enabled = True
-        self.notifications_enabled = True
-        self.clipboard_enabled = False
         self.window_configure = False
+        self._client_extras = ClientExtras(self, opts)
+        self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
+        self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
+        self.client_supports_cursors = opts.cursors
+        self.client_supports_bell = opts.bell
+        self.notifications_enabled = self.client_supports_notifications
+        self.clipboard_enabled = self.client_supports_clipboard
+        self.cursors_enabled = self.client_supports_cursors
+        self.bell_enabled = self.client_supports_bell
+
+        #mmap:
+        self.mmap_enabled = False
         self.mmap = None
         self.mmap_token = None
         self.mmap_file = None
         self.mmap_size = 0
-        self.last_ping_echoed_time = 0
-
-        self._client_extras = ClientExtras(self, opts)
-        self.clipboard_enabled = not self.readonly and opts.clipboard and self._client_extras.supports_clipboard()
         self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
         if self.supports_mmap:
             self.init_mmap(opts.mmap_group, conn.target)
@@ -127,6 +134,7 @@ class XpraClient(XpraClientBase):
         self.init_packet_handlers()
         self.ready(conn)
 
+        #keyboard:
         self.keyboard_sync = opts.keyboard_sync
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
@@ -509,8 +517,6 @@ class XpraClient(XpraClientBase):
         else:
             capabilities["xkbmap_layout"] = nn(self.xkbmap_layout)
             capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
-        capabilities["clipboard"] = self.clipboard_enabled
-        capabilities["notifications"] = self._client_extras.can_notify()
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
@@ -525,9 +531,10 @@ class XpraClient(XpraClientBase):
         capabilities["randr_notify"] = True
         capabilities["compressible_cursors"] = True
         capabilities["dpi"] = self.dpi
-        #these should be turned into options:
-        capabilities["cursors"] = True
-        capabilities["bell"] = True
+        capabilities["clipboard"] = self.client_supports_clipboard
+        capabilities["notifications"] = self.client_supports_notifications
+        capabilities["cursors"] = self.client_supports_cursors
+        capabilities["bell"] = self.client_supports_bell
         capabilities["png_window_icons"] = "png" in ENCODINGS
         return capabilities
 
@@ -619,9 +626,14 @@ class XpraClient(XpraClientBase):
             log.debug("server is using %s encoding" % e)
             self.encoding = e
         self.window_configure = capabilities.get("window_configure", False)
-        self.notifications_enabled = capabilities.get("notifications", False)
-        clipboard_server_support = capabilities.get("clipboard", True)
-        self.clipboard_enabled = clipboard_server_support and self._client_extras.supports_clipboard()
+        self.server_supports_notifications = capabilities.get("notifications", False)
+        self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
+        self.server_supports_cursors = capabilities.get("cursors", True)    #added in 0.5, default to True!
+        self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
+        self.server_supports_bell = capabilities.get("bell", True)          #added in 0.5, default to True!
+        self.bell_enabled = self.server_supports_bell and self.client_supports_bell
+        self.server_supports_clipboard = capabilities.get("clipboard", False)
+        self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
@@ -636,23 +648,29 @@ class XpraClient(XpraClientBase):
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
-        if clipboard_server_support:
+        if self.clipboard_enabled:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
 
     def send_notify_enabled(self):
-        if self.toggle_cursors_bell_notify:
-            self.send(["set-notify", self.notifications_enabled])
+        assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
+        assert self.server_supports_notifications, "cannot toggle notifications: the feature is disabled by the server"
+        assert self.toggle_cursors_bell_notify, "cannot toggle notifications: server lacks the feature"
+        self.send(["set-notify", self.notifications_enabled])
 
     def send_bell_enabled(self):
-        if self.toggle_cursors_bell_notify:
-            self.send(["set-bell", self.bell_enabled])
+        assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
+        assert self.server_supports_bell, "cannot toggle bell: the feature is disabled by the server"
+        assert self.toggle_cursors_bell_notify, "cannot toggle bell: server lacks the feature"
+        self.send(["set-bell", self.bell_enabled])
 
     def send_cursors_enabled(self):
-        if self.toggle_cursors_bell_notify:
-            self.send(["set-cursors", self.cursors_enabled])
+        assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
+        assert self.server_supports_cursors, "cannot toggle cursors: the feature is disabled by the server"
+        assert self.toggle_cursors_bell_notify, "cannot toggle cursors: server lacks the feature"
+        self.send(["set-cursors", self.cursors_enabled])
 
     def set_deflate_level(self, level):
         self.compression_level = level

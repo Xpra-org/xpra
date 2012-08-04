@@ -622,8 +622,16 @@ class ClientExtrasBase(object):
             self.client.send_bell_enabled()
             log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
-        set_tooltip_text(self.bell_menuitem, "Forward system bell")
-        self.bell_menuitem.set_active(self.client.bell_enabled)
+        def set_bell_menuitem(*args):
+            self.bell_menuitem.set_active(self.client.bell_enabled)
+            c = self.client
+            can_toggle_bell = c.toggle_cursors_bell_notify and c.server_supports_bell and c.client_supports_bell
+            self.bell_menuitem.set_sensitive(can_toggle_bell)
+            if can_toggle_bell:
+                set_tooltip_text(self.bell_menuitem, "Forward system bell")
+            else:
+                set_tooltip_text(self.bell_menuitem, "Cannot forward the system bell: the feature has been disabled")
+        self.client.connect("handshake-complete", set_bell_menuitem)
         return  self.bell_menuitem
 
     def make_cursorsmenuitem(self):
@@ -632,8 +640,16 @@ class ClientExtrasBase(object):
             self.client.send_cursors_enabled()
             log.debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
-        set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
-        self.cursors_menuitem.set_active(self.client.cursors_enabled)
+        def set_cursors_menuitem(*args):
+            self.cursors_menuitem.set_active(self.client.cursors_enabled)
+            c = self.client
+            can_toggle_cursors = c.toggle_cursors_bell_notify and c.server_supports_cursors and c.client_supports_cursors
+            self.cursors_menuitem.set_sensitive(can_toggle_cursors)
+            if can_toggle_cursors:
+                set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
+            else:
+                set_tooltip_text(self.cursors_menuitem, "Cannot forward mouse cursors: the feature has been disabled")
+        self.client.connect("handshake-complete", set_cursors_menuitem)
         return  self.cursors_menuitem
 
     def make_notificationsmenuitem(self):
@@ -644,13 +660,13 @@ class ClientExtrasBase(object):
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         def set_notifications_menuitem(*args):
             self.notifications_menuitem.set_active(self.client.notifications_enabled)
-            can_notify = self.client.server_capabilities.get("notifications", False)
+            c = self.client
+            can_notify = c.toggle_cursors_bell_notify and c.server_supports_notifications and c.client_supports_notifications
             self.notifications_menuitem.set_sensitive(can_notify)
             if can_notify:
                 set_tooltip_text(self.notifications_menuitem, "Forward system notifications")
             else:
-                set_tooltip_text(self.notifications_menuitem, "Cannot forward system notifications: disabled by server")
-            set_tooltip_text(self.cursors_menuitem, "Forward custom mouse cursors")
+                set_tooltip_text(self.notifications_menuitem, "Cannot forward system notifications: the feature has been disabled")
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
@@ -662,9 +678,10 @@ class ClientExtrasBase(object):
         self.clipboard_menuitem = self.checkitem("Clipboard", clipboard_toggled)
         def set_clipboard_menuitem(*args):
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
-            can_clip = self.client.server_capabilities.get("clipboard", False)
-            self.clipboard_menuitem.set_sensitive(can_clip)
-            if can_clip:
+            c = self.client
+            can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
+            self.clipboard_menuitem.set_sensitive(can_clipboard)
+            if can_clipboard:
                 set_tooltip_text(self.clipboard_menuitem, "Enable clipboard synchronization")
             else:
                 set_tooltip_text(self.clipboard_menuitem, "Clipboard synchronization cannot be enabled: disabled by server")

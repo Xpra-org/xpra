@@ -174,6 +174,8 @@ xpra_opts.keyboard_sync = default_bool("keyboard-sync", True)
 xpra_opts.compression_level = default_int("compression", 3)
 xpra_opts.send_pings = default_bool("pings", False)
 xpra_opts.dpi = default_int("dpi", 96)
+xpra_opts.cursors = default_bool("cursors", True)
+xpra_opts.notifications = default_bool("notifications", True)
 #these would need testing/work:
 xpra_opts.auto_refresh_delay = 0.0
 xpra_opts.max_bandwidth = 0.0
@@ -420,7 +422,8 @@ class ApplicationWindow:
 		opts.keyboard_sync = xpra_opts.keyboard_sync
 		opts.send_pings = xpra_opts.send_pings
 		opts.dpi = xpra_opts.dpi
-
+		opts.cursors = xpra_opts.cursors
+		opts.notifications = xpra_opts.notifications
 		import logging
 		logging.root.setLevel(logging.INFO)
 		logging.root.addHandler(logging.StreamHandler(sys.stderr))

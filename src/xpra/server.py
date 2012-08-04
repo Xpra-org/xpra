@@ -225,6 +225,7 @@ class XpraServer(gobject.GObject):
         self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
+        self._wm.enableCursors(True)
 
         ### Create our window managing data structures:
         self._desktop_manager = DesktopManager()
@@ -323,14 +324,17 @@ class XpraServer(gobject.GObject):
 
         self.pulseaudio = opts.pulseaudio
 
-        try:
-            from xpra.dbus_notifications_forwarder import register
-            self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
-            if self.notifications_forwarder:
-                log.info("using notification forwarder: %s", self.notifications_forwarder)
-        except Exception, e:
-            log.error("error loading or registering our dbus notifications forwarder: %s", e)
-            self.notifications_forwarder = None
+        self.bell = opts.bell
+        self.cursors = opts.cursors
+        self.notifications_forwarder = None
+        if opts.notifications:
+            try:
+                from xpra.dbus_notifications_forwarder import register
+                self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
+                if self.notifications_forwarder:
+                    log.info("using notification forwarder: %s", self.notifications_forwarder)
+            except Exception, e:
+                log.error("error loading or registering our dbus notifications forwarder: %s", e)
 
         ### All right, we're ready to accept customers:
         for sock in sockets:
@@ -504,7 +508,8 @@ class XpraServer(gobject.GObject):
                 log("do_wimpiggy_cursor_event(%s) pixels=%s", event, self.cursor_image[7])
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
-        self.send_cursor()
+        if self.send_cursors:
+            self.send_cursor()
 
     def send_cursor(self):
         if self.cursor_image:
@@ -1150,13 +1155,12 @@ class XpraServer(gobject.GObject):
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
         self.set_keymap()
-        self.send_cursors = capabilities.get("cursors", False)
+        self.send_cursors = self.cursors and capabilities.get("cursors", False)
         self.compressible_cursors = capabilities.get("compressible_cursors", False)
-        self.send_bell = capabilities.get("bell", False)
+        self.send_bell = self.bell and capabilities.get("bell", False)
         self.send_notifications = self.notifications_forwarder is not None and capabilities.get("notifications", False)
         self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
         log("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
-        self._wm.enableCursors(self.send_cursors)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.server_window_resize = capabilities.get("server-window-resize", False)
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
@@ -1228,6 +1232,8 @@ class XpraServer(gobject.GObject):
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["toggle_keyboard_sync"] = True
         capabilities["notifications"] = self.notifications_forwarder is not None
+        capabilities["bell"] = self.bell
+        capabilities["cursors"] = self.cursors
         capabilities["png_window_icons"] = "png" in ENCODINGS
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
@@ -1321,13 +1327,15 @@ class XpraServer(gobject.GObject):
         return packet
 
     def _process_set_notify(self, proto, packet):
+        assert self.notifications_forwarder is not None, "cannot toggle notifications: the feature is disabled"
         self.send_notifications = bool(packet[1])
 
     def _process_set_cursors(self, proto, packet):
+        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         self.send_cursors = bool(packet[1])
-        self._wm.enableCursors(self.send_cursors)
 
     def _process_set_bell(self, proto, packet):
+        assert self.bell, "cannot toggle send_bell: the feature is disabled"
         self.send_bell = bool(packet[1])
 
     def _process_set_deflate(self, proto, packet):

@@ -222,6 +222,15 @@ def main(script_file, cmdline):
     group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=bool_default("pulseaudio", True),
                       help="Disable pulseaudio support via X11 root window properties")
+    group.add_option("--no-notifications", action="store_false",
+                      dest="notifications", default=bool_default("notifications", True),
+                      help="Disable forwarding of system notifications")
+    group.add_option("--no-cursors", action="store_false",
+                      dest="cursors", default=bool_default("cursors", True),
+                      help="Disable forwarding of custom application mouse cursors")
+    group.add_option("--no-bell", action="store_false",
+                      dest="bell", default=bool_default("bell", True),
+                      help="Disable forwarding of the system bell")
     group.add_option("--no-mmap", action="store_false",
                       dest="mmap", default=bool_default("mmap", True),
                       help="Disable memory mapped transfers for local connections")

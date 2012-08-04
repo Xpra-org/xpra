@@ -16,12 +16,14 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client, opts)
         self.locate_icon_filename(opts.tray_icon)
-        self.setup_growl()
+        self.setup_growl(opts.notifications)
         self.setup_macdock()
         self.clipboard_helper = None
 
-    def setup_growl(self):
+    def setup_growl(self, enabled):
         self.growl_notifier = None
+        if not enabled:
+            return
         try:
             import Growl        #@UnresolvedImport
             name = self.client.session_name or "Xpra"
@@ -117,7 +119,7 @@ class ClientExtras(ClientExtrasBase):
     def can_notify(self):
         return  self.growl_notifier is not None
 
-    def show_notify(self, dbus_id, id, app_name, replaces_id, app_icon, summary, body, expire_timeout):
+    def show_notify(self, dbus_id, nid, app_name, replaces_id, app_icon, summary, body, expire_timeout):
         if not self.growl_notifier:
             return
         if self.icon_filename:

@@ -21,6 +21,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-xvfb=CMD\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
+[\fB\-\-no\-cursors\fP]
+[\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-bell\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
 [\fB\-\-dpi=VALUE\fP]
@@ -32,6 +35,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-mmap\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
+[\fB\-\-no\-cursors\fP]
+[\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-bell\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
 [\fB\-\-no-tray\fP]
 [\fB\-\-encoding=ENCODING\fP]
@@ -357,12 +363,29 @@ This allows sessions to be secured with a password stored in a text
 file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
-[\fB\-\-dpi=VALUE\fP]
+.TP
+\fB\-\-dpi=VALUE\fP
 The 'dots per inch' value that client applications should try to honour.
 This numeric value should be in the range 10 to 500 to be useful.
 Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
+.TP
+\fB\-\-no\-cursors\fP
+Disable forwarding of custom application mouse cursors.
+Client applications may change the mouse cursor at any time, which
+will cause the new cursor's pixels to be sent to the client each time.
+This disables the feature.
+.TP
+\fB\-\-no\-notifications\fP
+Disable forwarding of system notifications.
+System notifications require the xpra server to have its own instance
+of a dbus daemon, if it is missing an warning will be printed on
+startup. This switch disables the feature entirely, and avoids
+the warning.
+.TP
+\fB\-\-no\-bell\fP
+Disable forwarding of the system bell.
 
 .SS Options for attach
 .TP

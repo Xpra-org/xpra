@@ -598,6 +598,10 @@ def test_xpra():
                             cmd += ["-z", str(compression), "--readonly"]
                             if XPRA_VERSION_NO>=[0, 3]:
                                 cmd.append("--enable-pings")
+                                cmd.append("--no-cursors")
+                                cmd.append("--no-notifications")
+                                cmd.append("--no-clipboard")
+                                cmd.append("--no-bell")
                             if encoding=="jpeg":
                                 cmd.append("--jpeg-quality=%s" % jpeg_q)
                                 name = "%s-%s" % (encoding, jpeg_q)

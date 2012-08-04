@@ -29,8 +29,9 @@ class ClientExtras(ClientExtrasBase):
         self.setup_x11_bell()
         self.has_dbusnotify = False
         self.has_pynotify = False
-        if not self.setup_dbusnotify() and not self.setup_pynotify():
-            log.error("turning notifications off")
+        if opts.notifications:
+            if not self.setup_dbusnotify() and not self.setup_pynotify():
+                log.error("turning notifications off")
         try:
             from xpra.xposix.xclipboard import ClipboardProtocolHelper
             self.setup_clipboard_helper(ClipboardProtocolHelper)
