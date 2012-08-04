@@ -497,9 +497,12 @@ def pick_display(parser, opts, extra_args):
 
 def _socket_connect(sock, target):
     try:
+        sock.settimeout(10)
         sock.connect(target)
     except socket.error, e:
         sys.exit("Connection failed: %s" % (e,))
+        return
+    sock.settimeout(None)
     return SocketConnection(sock, target)
 
 def connect_or_fail(display_desc):
@@ -529,7 +532,6 @@ def connect_or_fail(display_desc):
 
     elif display_desc["type"] == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         return _socket_connect(sock, tcp_endpoint)
 
