@@ -485,10 +485,18 @@ class XpraClient(XpraClientBase):
         return mask_to_names(mask, self._modifier_map)
 
     def send_positional(self, packet):
-        self._protocol.source.queue_positional_packet(packet)
+        p = self._protocol
+        if p is not None:
+            s = p.source
+            if s:
+                s.queue_positional_packet(packet)
 
     def send_mouse_position(self, packet):
-        self._protocol.source.queue_mouse_position_packet(packet)
+        p = self._protocol
+        if p is not None:
+            s = p.source
+            if s:
+                s.queue_mouse_position_packet(packet)
 
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
