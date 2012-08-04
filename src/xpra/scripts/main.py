@@ -529,6 +529,7 @@ def connect_or_fail(display_desc):
 
     elif display_desc["type"] == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         return _socket_connect(sock, tcp_endpoint)
 
