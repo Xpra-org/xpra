@@ -223,7 +223,7 @@ class Protocol(object):
                     cdata = udata
                 l = len(cdata)
                 #'p' + protocol-version + compression_level + packet_index + packet_size
-                header = struct.pack('!cBBBL', b"P", proto_version, level, index, l)
+                header = struct.pack('!BBBBL', ord("P"), proto_version, level, index, l)
                 scb, ecb = None, None
                 #fire the start_send_callback just before the first packet is processed:
                 if counter==0:

@@ -1411,7 +1411,7 @@ class XpraServer(gobject.GObject):
                 values["Xft.dpi"] = self.dpi
                 log("server_settings: resource-manager values=%s", values)
                 #convert the dict back into a resource string:
-                value = u''
+                value = ''
                 for vk, vv in values.items():
                     value += "%s:\t%s\n" % (vk, vv)
                 value += '\n'

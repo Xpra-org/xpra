@@ -82,12 +82,11 @@ def set_settings(disp, d):
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
     debug("format_xsettings(%s) serial=%s, %s settings", d, serial, len(settings))
-    all_bin_settings = b''
+    all_bin_settings = None
     n_settings = 0
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
-        x = b''
-        x += struct.pack("=BBH", setting_type, 0, len(prop_name))
+        x = struct.pack("=BBH", setting_type, 0, len(prop_name))
         x += struct.pack("="+"s"*len(prop_name), *list(prop_name))
         pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
         x += '\0'*pad_len
@@ -108,7 +107,10 @@ def set_settings(disp, d):
             log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
             continue
         debug("format_xsettings(..) %s -> %s", setting, list(x))
-        all_bin_settings += x
+        if all_bin_settings is None:
+            all_bin_settings = x
+        else:
+            all_bin_settings += x
         n_settings += 1
     #header
     v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, n_settings)
