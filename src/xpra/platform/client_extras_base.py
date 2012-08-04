@@ -106,6 +106,7 @@ class ClientExtrasBase(object):
         self.about_dialog = None
         self.tray_icon = opts.tray_icon
         self.session_name = opts.session_name
+        self.clipboard_helper = None
         self.set_window_icon(opts.window_icon)
 
     def set_window_icon(self, window_icon):
@@ -670,7 +671,7 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_notifications_menuitem)
         return self.notifications_menuitem
 
-    def make_clipboardmenuitem(self):
+    def make_clipboard_togglemenuitem(self):
         def clipboard_toggled(*args):
             self.client.clipboard_enabled = self.clipboard_menuitem.get_active()
             log.debug("clipboard_toggled(%s) clipboard_enabled=%s", args, self.client.clipboard_enabled)
@@ -687,6 +688,58 @@ class ClientExtrasBase(object):
                 set_tooltip_text(self.clipboard_menuitem, "Clipboard synchronization cannot be enabled: disabled by server")
         self.client.connect("handshake-complete", set_clipboard_menuitem)
         return self.clipboard_menuitem
+
+    def make_translatedclipboard_optionsmenuitem(self):
+        clipboard_menu = self.menuitem("Clipboard", "clipboard.png", "Choose which remote clipboard to connect to", None)
+        clipboard_submenu = gtk.Menu()
+        clipboard_menu.set_submenu(clipboard_submenu)
+        self.popup_menu_workaround(clipboard_submenu)
+        def set_clipboard_menu(*args):
+            c = self.client
+            can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
+            log("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
+            clipboard_menu.set_sensitive(can_clipboard)
+            LABEL_TO_NAME = {"Disabled"  : None,
+                            "Clipboard" : "CLIPBOARD",
+                            "Primary"   : "PRIMARY",
+                            "Secondary" : "SECONDARY"}
+            for label, remote_clipboard in LABEL_TO_NAME.items():
+                clipboard_item = CheckMenuItem(label)
+                def remote_clipboard_changed(item):
+                    item = ensure_item_selected(clipboard_submenu, item)
+                    label = item.get_label()
+                    remote_clipboard = LABEL_TO_NAME.get(label)
+                    old_state = self.client.clipboard_enabled
+                    if remote_clipboard:
+                        self.clipboard_helper.remote_clipboard = remote_clipboard
+                        new_state = True
+                    else:
+                        new_state = False
+                    log("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
+                             item, label, remote_clipboard, old_state, new_state)
+                    if new_state!=old_state:
+                        self.client.clipboard_enabled = new_state
+                        self.client.emit("clipboard-toggled")
+                    if new_state:
+                        self.clipboard_helper.send_all_tokens()
+                clipboard_item.set_active(self.clipboard_helper.remote_clipboard==remote_clipboard)
+                clipboard_item.set_sensitive(can_clipboard)
+                clipboard_item.set_draw_as_radio(True)
+                clipboard_item.connect("toggled", remote_clipboard_changed)
+                clipboard_submenu.append(clipboard_item)
+            clipboard_submenu.show_all()
+        self.client.connect("handshake-complete", set_clipboard_menu)
+        return clipboard_menu
+
+    def make_clipboardmenuitem(self):
+        try:
+            from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
+            if self.clipboard_helper and isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
+                return self.make_translatedclipboard_optionsmenuitem()
+        except:
+            log.error("make_clipboardmenuitem()", exc_info=True)
+        return self.make_clipboard_togglemenuitem()
+
 
     def make_keyboardsyncmenuitem(self):
         def set_keyboard_sync_tooltip():

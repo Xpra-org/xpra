@@ -18,7 +18,6 @@ class ClientExtras(ClientExtrasBase):
         self.locate_icon_filename(opts.tray_icon)
         self.setup_growl(opts.notifications)
         self.setup_macdock()
-        self.clipboard_helper = None
 
     def setup_growl(self, enabled):
         self.growl_notifier = None

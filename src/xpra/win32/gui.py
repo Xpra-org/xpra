@@ -10,6 +10,7 @@ import os.path
 
 from xpra.deque import maxdeque
 from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
+from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
@@ -18,17 +19,15 @@ log = Logger()
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts):
         ClientExtrasBase.__init__(self, client, opts)
-        self.setup_menu()
-        self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
-        self._last_key_events = maxdeque(maxlen=5)
-        self._dropped_num_lock_press = False
         try:
             from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
             self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
         except ImportError, e:
             log.error("GDK Translated Clipboard failed to load: %s - using default fallback", e)
-            from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+        self.setup_menu()
+        self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
+        self._last_key_events = maxdeque(maxlen=5)
 
     def exit(self):
         ClientExtrasBase.exit(self)
