@@ -18,13 +18,7 @@ class ClientExtras(ClientExtrasBase):
         self.locate_icon_filename(opts.tray_icon)
         self.setup_growl(opts.notifications)
         self.setup_macdock()
-        try:
-            from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-            self.setup_clipboard_helper(GDKClipboardProtocolHelper)
-        except ImportError, e:
-            log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
-            from xpra.platform.default_clipboard import DefaultClipboardProtocolHelper
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+        self.clipboard_helper = None
 
     def setup_growl(self, enabled):
         self.growl_notifier = None

@@ -23,12 +23,12 @@ class ClientExtras(ClientExtrasBase):
         self._last_key_events = maxdeque(maxlen=5)
         self._dropped_num_lock_press = False
         try:
-            from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-            self.setup_clipboard_helper(GDKClipboardProtocolHelper)
-        except ImportError, e:
-            log.error("GDK Clipboard failed to load: %s - using 'Translated Clipboard' fallback", e)
-            from xpra.platform.default_clipboard import TranslatedClipboardProtocolHelper
+            from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
             self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
+        except ImportError, e:
+            log.error("GDK Translated Clipboard failed to load: %s - using default fallback", e)
+            from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
+            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
 
     def exit(self):
         ClientExtrasBase.exit(self)

@@ -182,6 +182,16 @@ class ClipboardProtocolHelperBase(object):
         self._packet_handlers[packet_type](self, packet)
 
 
+class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
+    """
+        Default clipboard implementation with all 3 selections.
+        But without gdk atom support, see gdk_clipboard for a better one!
+    """
+
+    def __init__(self, send_packet_cb):
+        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
+
+
 class ClipboardProxy(gtk.Invisible):
     __gsignals__ = {
         # arguments: (selection, target)
@@ -202,13 +212,6 @@ class ClipboardProxy(gtk.Invisible):
 
     def do_selection_request_event(self, event):
         debug("do_selection_request_event(%s)", event)
-        try:
-            from wimpiggy.prop import prop_get
-            from wimpiggy.error import trap
-        except ImportError:
-            gtk.Invisible.do_selection_request_event(self, event)
-            return
-
         # Black magic: the superclass default handler for this signal
         # implements all the hards parts of selection handling, occasionally
         # calling back to the do_selection_get handler (below) to actually get
@@ -244,6 +247,13 @@ class ClipboardProxy(gtk.Invisible):
         if target == "TIMESTAMP":
             pass
         elif target == "MULTIPLE":
+            try:
+                from wimpiggy.prop import prop_get
+                from wimpiggy.error import trap
+            except ImportError:
+                debug("MULTIPLE for property '%s' not handled due to missing wimpiggy bindings", event.property)
+                gtk.Invisible.do_selection_request_event(self, event)
+                return
             def get_targets(targets):
                 atoms = prop_get(event.window, event.property, ["multiple-conversion"])
                 debug("MULTIPLE clipboard atoms: %r", atoms)
@@ -254,6 +264,7 @@ class ClipboardProxy(gtk.Invisible):
             for target in targets:
                 self.selection_add_target(self._selection, target, 0)
         else:
+            debug("target for %s: %r", self._selection, target)
             self.selection_add_target(self._selection, target, 0)
         debug("do_selection_request_event(%s) target=%s, selection=%s", event, target, self._selection)
         gtk.Invisible.do_selection_request_event(self, event)

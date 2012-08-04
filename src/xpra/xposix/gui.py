@@ -38,7 +38,7 @@ class ClientExtras(ClientExtrasBase):
             self.setup_clipboard_helper(GDKClipboardProtocolHelper)
         except ImportError, e:
             log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
-            from xpra.platform.default_clipboard import DefaultClipboardProtocolHelper
+            from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
 
     def exit(self):
