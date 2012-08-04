@@ -37,9 +37,10 @@ class TwoFileConnection(object):
         return "TwoFileConnection(%s)" % str(self.target)
 
 class SocketConnection(object):
-    def __init__(self, s, target):
+    def __init__(self, s, local, remote):
         self._s = s
-        self.target = target
+        self.local = local
+        self.remote = remote
 
     def read(self, n):
         return self._s.recv(n)
@@ -51,4 +52,4 @@ class SocketConnection(object):
         return self._s.close()
 
     def __str__(self):
-        return "SocketConnection(%s)" % str(self.target)
+        return "SocketConnection(%s - %s)" % (self.local, self.remote)

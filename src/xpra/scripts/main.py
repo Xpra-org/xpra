@@ -503,7 +503,7 @@ def _socket_connect(sock, target):
         sys.exit("Connection failed: %s" % (e,))
         return
     sock.settimeout(None)
-    return SocketConnection(sock, target)
+    return SocketConnection(sock, sock.getsockname(), sock.getpeername())
 
 def connect_or_fail(display_desc):
     if display_desc["type"] == "ssh":
