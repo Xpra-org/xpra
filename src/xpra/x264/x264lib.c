@@ -122,7 +122,7 @@ struct x264lib_ctx *init_decoder(int width, int height)
 	ctx->codec_ctx->width = ctx->width;
 	ctx->codec_ctx->height = ctx->height;
 	ctx->codec_ctx->pix_fmt = PIX_FMT_YUV420P;
-	if (avcodec_open(ctx->codec_ctx, ctx->codec) < 0) {
+	if (avcodec_open2(ctx->codec_ctx, ctx->codec, NULL) < 0) {
 		fprintf(stderr, "could not open codec\n");
 		free(ctx);
 		return NULL;
