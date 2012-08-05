@@ -28,8 +28,6 @@
 #include "vpx/vp8dx.h"
 #include "vpxlib.h"
 #include "vpx/vpx_image.h"
-#define enc_interface (vpx_codec_vp8_cx())
-#define dec_interface (vpx_codec_vp8_dx())
 #define fourcc    0x30385056
 #define IVF_FILE_HDR_SZ  (32)
 #include <libswscale/swscale.h>
@@ -55,13 +53,14 @@ struct vpx_context *init_encoder(int width, int height)
 {
 	vpx_codec_enc_cfg_t  cfg;
 	struct vpx_context *ctx;
-	if (vpx_codec_enc_config_default(enc_interface, &cfg, 0))
+	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_cx();
+	if (vpx_codec_enc_config_default(codec_iface, &cfg, 0))
 		return	NULL;
 	cfg.rc_target_bitrate = width * height * cfg.rc_target_bitrate / cfg.g_w / cfg.g_h;
 	cfg.g_w = width;
 	cfg.g_h = height;
 	ctx = malloc(sizeof(struct vpx_context));
-	if (vpx_codec_enc_init(&ctx->codec, enc_interface, &cfg, 0)) {
+	if (vpx_codec_enc_init(&ctx->codec, codec_iface, &cfg, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_enc_init");
 		free(ctx);
 		return NULL;
@@ -81,9 +80,9 @@ void clean_encoder(struct vpx_context *ctx)
 struct vpx_context *init_decoder(int width, int height)
 {
 	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
+	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx();
 	int              flags = 0;
-	//printf("Using %s\n", vpx_codec_iface_name(dec_interface));
-	int i = vpx_codec_dec_init(&ctx->codec, dec_interface, NULL, flags);
+	int i = vpx_codec_dec_init(&ctx->codec, codec_iface, NULL, flags);
 	if (i) {
 		codec_error(&ctx->codec, "vpx_codec_dec_init");
 		printf("vpx_codec_dec_init(..) failed with error %d\n", i);
