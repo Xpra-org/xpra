@@ -10,7 +10,19 @@
 #will be printed every 30 seconds or every MAX_DEBUG_MESSAGES messages
 #(whichever comes first)
 import os
-DEBUG_DELAY = len(os.environ.get("XPRA_DEBUG_LATENCY", ""))>0
+def env_bool(varname, defaultvalue=False):
+    v = os.environ.get(varname)
+    if v is None:
+        return  defaultvalue
+    v = v.lower()
+    if v in ["1", "true", "on"]:
+        return  True
+    if v in ["0", "false", "off"]:
+        return  False
+    return  defaultvalue
+DEBUG_DELAY = env_bool("XPRA_DEBUG_LATENCY")
+AUTO_SPEED = env_bool("XPRA_AUTO_SPEED", True)
+AUTO_QUALITY = env_bool("XPRA_AUTO_QUALITY", True)
 MAX_DEBUG_MESSAGES = 1000
 
 #how many historical records to keep
@@ -631,6 +643,8 @@ class ServerSource(object):
                  dam_lat, dec_lat, target_speed, new_speed)
         #***********************************************************
         #quality: minimize batch.delay and packet backlog
+        if not AUTO_QUALITY and not AUTO_SPEED:
+            return
         packets_bl = logp(last_packets_backlog/low_limit)/2.0
         batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
         target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
@@ -644,8 +658,10 @@ class ServerSource(object):
             encoder = encoders.get(wid)
             if not encoder:
                 return  #this window has not used the encoder yet or has disappeared
-            encoder.set_encoding_speed(new_speed)
-            encoder.set_encoding_quality(new_quality)
+            if AUTO_SPEED:
+                encoder.set_encoding_speed(new_speed)
+            if AUTO_QUALITY:
+                encoder.set_encoding_quality(new_quality)
         finally:
             self._video_encoder_lock.release()
 
