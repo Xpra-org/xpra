@@ -26,6 +26,51 @@ assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
 print(" ".join(sys.argv))
 
+
+#NOTE: these variables are defined here to make it easier
+#to keep their line number unchanged.
+#There are 3 empty lines in between each var so patches
+#cannot cause further patches to fail to apply due to context changes.
+
+
+
+cliboard_ENABLED = True
+
+
+
+x264_ENABLED = True
+
+
+
+vpx_ENABLED = True
+
+
+
+rencode_ENABLED = True
+
+
+
+xdummy_ENABLED = False
+
+
+
+filtered_args = []
+for arg in sys.argv:
+    if arg == "--without-x264":
+        x264_ENABLED = False
+    elif arg == "--without-vpx":
+        vpx_ENABLED = False
+    elif arg == "--without-rencode":
+        rencode_ENABLED = False
+    elif arg == "--without-clipboard":
+        cliboard_ENABLED = False
+    elif arg == "--enable-Xdummy":
+        xdummy_ENABLED = True
+    else:
+        filtered_args.append(arg)
+sys.argv = filtered_args
+
+
 packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
           "xpra", "xpra.scripts", "xpra.platform",
@@ -277,7 +322,11 @@ else:
                 XORG_BIN = xorg
                 break
         xorg_conf = "etc/xpra/Xvfb/xpra.conf"
-        if XORG_BIN:
+        if xdummy_ENABLED:
+            #enabled unconditionally via constant
+            xorg_conf = "etc/xpra/Xdummy/xpra.conf"
+        elif XORG_BIN:
+            #do live detection
             xorg_stat = os.stat(XORG_BIN)
             if (xorg_stat.st_mode & stat.S_ISUID)!=0:
                 print("%s is suid, it cannot be used for Xdummy")
@@ -370,42 +419,14 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
 
 
 
-cliboard_ENABLED = True
-
-
-
-x264_ENABLED = True
-
-
-
-vpx_ENABLED = True
-
-
-
-rencode_ENABLED = True
-
-
-
-filtered_args = []
-for arg in sys.argv:
-    if arg == "--without-x264":
-        x264_ENABLED = False
-    elif arg == "--without-vpx":
-        vpx_ENABLED = False
-    elif arg == "--without-rencode":
-        rencode_ENABLED = False
-    elif arg == "--without-clipboard":
-        cliboard_ENABLED = False
-    else:
-        filtered_args.append(arg)
-sys.argv = filtered_args
-
 if cliboard_ENABLED:
     packages.append("wimpiggy.gdk")
     cython_add(Extension("wimpiggy.gdk.gdk_atoms",
                 ["wimpiggy/gdk/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
+
+
 
 if x264_ENABLED:
     packages.append("xpra.x264")
@@ -414,12 +435,16 @@ if x264_ENABLED:
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 
+
+
 if vpx_ENABLED:
     packages.append("xpra.vpx")
     cython_add(Extension("xpra.vpx.codec",
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
+
+
 
 if rencode_ENABLED:
     packages.append("xpra.rencode")
@@ -431,6 +456,7 @@ if rencode_ENABLED:
     cython_add(Extension("xpra.rencode._rencode",
                 ["xpra/rencode/rencode.pyx"],
                 extra_compile_args=extra_compile_args))
+
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
