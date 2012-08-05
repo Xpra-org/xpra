@@ -272,32 +272,44 @@ else:
         #figure out the version of the Xorg server:
         etc_files = ["etc/xpra/xpra.conf", "etc/xpra/xorg.conf"]
         data_files.append((etc_prefix, etc_files))
-        try:
-            proc = subprocess.Popen(["Xorg", "-version"], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            out, _ = proc.communicate()
-            V_LINE = "X.Org X Server "
-            xorg_version = None
-            for line in out.decode("utf8").splitlines():
-                if line.startswith(V_LINE):
-                    v_str = line[len(V_LINE):]
-                    xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                    break
-            if not xorg_version:
-                print("Xorg version could not be detected, Xdummy support unavailable")
-            elif xorg_version>=[0, 12]:
-                print("found valid Xorg server version %s" % v_str)
-                print("enabling Xdummy in config file")
-                f = open("etc/xpra/xpra.conf", mode='a')
-                f.write("xvfb=/usr/bin/Xorg-nosuid -noreset -nolisten tcp "+
-                        "+extension GLX +extension RANDR +extension RENDER "+
-                        "-logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf")
-                f.close()
-            else:
-                print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
-        except Exception, e:
-            print("failed to detect Xorg version: %s" % e)
-            print("not installing Xdummy support")
-            traceback.print_exc()
+        XORG_BIN = None
+        PATHS = os.environ.get("PATH").split(os.pathsep)
+        for x in PATHS:
+            xorg = os.path.join(x, "Xorg")
+            if os.path.isfile(xorg):
+                XORG_BIN = xorg
+                break
+        if XORG_BIN:
+            cmd = ["Xorg", "-version"]
+            print("detecting Xorg version using: %s" % str(cmd))
+            try:
+                proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                out, _ = proc.communicate()
+                V_LINE = "X.Org X Server "
+                xorg_version = None
+                for line in out.decode("utf8").splitlines():
+                    if line.startswith(V_LINE):
+                        v_str = line[len(V_LINE):]
+                        xorg_version = [int(x) for x in v_str.split(".")[:2]]
+                        break
+                if not xorg_version:
+                    print("Xorg version could not be detected, Xdummy support unavailable")
+                elif xorg_version>=[0, 12]:
+                    print("found valid Xorg server version %s" % v_str)
+                    print("enabling Xdummy in config file")
+                    f = open("etc/xpra/xpra.conf", mode='a')
+                    f.write("xvfb=/usr/bin/Xorg-nosuid -noreset -nolisten tcp "+
+                            "+extension GLX +extension RANDR +extension RENDER "+
+                            "-logfile ${HOME}/.xpra/Xorg.${DISPLAY}.log -config /etc/xpra/xorg.conf")
+                    f.close()
+                else:
+                    print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
+            except Exception, e:
+                print("failed to detect Xorg version: %s" % e)
+                print("not installing Xdummy support")
+                traceback.print_exc()
+        else:
+            print("Xorg not found, cannot detect version or Xdummy support")
     extra_options = dict(
         packages = packages,
         scripts = scripts,
