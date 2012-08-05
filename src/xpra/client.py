@@ -745,6 +745,8 @@ class XpraClient(XpraClientBase):
         self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
 
     def _process_cursor(self, packet):
+        if not self.cursors_enabled:
+            return
         if len(packet)==2:
             new_cursor = packet[1]
         elif len(packet)>=8:
