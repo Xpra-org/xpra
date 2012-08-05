@@ -129,7 +129,7 @@ class XpraClient(XpraClientBase):
         self.mmap_size = 0
         self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
         if self.supports_mmap:
-            self.init_mmap(opts.mmap_group, conn.target)
+            self.init_mmap(opts.mmap_group, conn.filename)
 
         self.init_packet_handlers()
         self.ready(conn)
@@ -175,6 +175,7 @@ class XpraClient(XpraClientBase):
             gobject.timeout_add(20*1000, self.send_ping)
 
     def init_mmap(self, mmap_group, socket_filename):
+        log("init_mmap(%s, %s)", mmap_group, socket_filename)
         try:
             import mmap
             import tempfile
