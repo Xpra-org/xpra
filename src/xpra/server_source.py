@@ -23,6 +23,11 @@ def env_bool(varname, defaultvalue=False):
 DEBUG_DELAY = env_bool("XPRA_DEBUG_LATENCY")
 AUTO_SPEED = env_bool("XPRA_AUTO_SPEED", True)
 AUTO_QUALITY = env_bool("XPRA_AUTO_QUALITY", True)
+MAX_NONVIDEO_PIXELS = 512
+try:
+    MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 512))
+except:
+    pass
 MAX_DEBUG_MESSAGES = 1000
 
 #how many historical records to keep
@@ -902,7 +907,7 @@ class ServerSource(object):
             return  coding
         if current_encoding=="x264" and (ww==1 or wh==1):
             return  switch()
-        if pixel_count>512 or pixel_count>=(ww*wh):
+        if pixel_count>MAX_NONVIDEO_PIXELS or pixel_count>=(ww*wh):
             #too many pixels, use current video encoder
             return current_encoding
         if pixel_count>0.5*(ww*wh):
