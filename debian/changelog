@@ -1,9 +1,9 @@
-xpra (0.5.0-1) xpra; urgency=low
+xpra (0.5.0-1) UNRELEASED; urgency=low
   * TODO
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Jul 2012 23:25:28 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 05 Aug 2012 13:11:45 +0700
 
-xpra (0.4.0-1) xpra; urgency=low
+xpra (0.4.0-1) UNRELEASED; urgency=low
   * fix client application resizing its own window
   * fix window dimensions hints not applied
   * fix memleak in x264 cleanup code 
@@ -49,7 +49,7 @@ xpra (0.4.0-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 23 Jul 2012 13:10:57 +0700
 
-xpra (0.3.3-1) xpra; urgency=low
+xpra (0.3.3-1) UNRELEASED; urgency=low
   * do not try to free the empty x264/vpx buffers after a decompression failure
   * fix xpra command exit code (zero) when no error occurred
   * fix Xvfb deadlock on shutdown
@@ -72,12 +72,12 @@ xpra (0.3.3-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Jul 2012 16:10:37 +0700
 
-xpra (0.3.2-2) xpra; urgency=low
+xpra (0.3.2-2) UNRELEASED; urgency=low
   * fix debian packaging of xpra_launcher
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 05 Jun 2012 20:18:08 +0700
 
-xpra (0.3.2-1) xpra; urgency=low
+xpra (0.3.2-1) UNRELEASED; urgency=low
   * fix missing 'a' key using OS X clients
   * fix debian packaging for xpra_launcher
   * fix unicode decoding problems in window title
@@ -85,7 +85,7 @@ xpra (0.3.2-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 04 Jun 2012 00:14:00 +0700
 
-xpra (0.3.1-1) xpra; urgency=low
+xpra (0.3.1-1) UNRELEASED; urgency=low
   * fix DoS in network connections setup code
   * fix for non-ascii characters in source file
   * log remote IP or socket address
@@ -100,7 +100,7 @@ xpra (0.3.1-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 May 2012 18:05:45 +0100
 
-xpra (0.3.0-1) xpra; urgency=low
+xpra (0.3.0-1) UNRELEASED; urgency=low
   * zero-copy network code, per packet compression
   * fix race causing DoS in threaded network protocol setup
   * fix vpx encoder memory leak
@@ -119,7 +119,7 @@ xpra (0.3.0-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 20 May 2012 15:00:42 +0200
 
-xpra (0.2.0-1) xpra; urgency=low
+xpra (0.2.0-1) UNRELEASED; urgency=low
   * x264 and vpx video encoding support
   * gtk3 and python 3 partial support (client only - no keyboard support)
   * detect missing X11 server extensions and exit with error
@@ -131,7 +131,7 @@ xpra (0.2.0-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 20 Apr 2012 14:19:47 +0700
 
-xpra (0.1.0-1) xpra; urgency=low
+xpra (0.1.0-1) UNRELEASED; urgency=low
   * security: strict filtering of packet handlers until connection authenticated
   * prevent DoS: limit number of concurrent connections attempting login (20)
   * prevent DoS: limit initial packet size (memory exhaustion: 32KB)
@@ -158,14 +158,14 @@ xpra (0.1.0-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 21 Mar 2012 18:03:38 +0700
 
-xpra (0.0.7.36-1) xpra; urgency=low
+xpra (0.0.7.36-1) UNRELEASED; urgency=low
   * fix clipboard bug which was causing Java applications to crash
   * ensure we always properly disconnect previous client when new connection is accepted
   * avoid warnings with Java applications, focus errors, etc
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Feb 2012 02:41:53 +0700
 
-xpra (0.0.7.35-1) xpra; urgency=low
+xpra (0.0.7.35-1) UNRELEASED; urgency=low
   * ssh password input fix
   * ability to take screenshots ("xpra screenshot")
   * report server version ("xpra version")
@@ -177,7 +177,7 @@ xpra (0.0.7.35-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 01 Feb 2012 19:03:55 +0700
 
-xpra (0.0.7.34-1) xpra; urgency=low
+xpra (0.0.7.34-1) UNRELEASED; urgency=low
   * security: restrict access to run-xpra script (chmod)
   * security: cursor data sent to the client was too big (exposing server memory)
   * fix thread leak - properly this time, SIGUSR1 now dumps all threads
@@ -191,7 +191,7 @@ xpra (0.0.7.34-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 19 Jan 2012 02:12:42 +0700
 
-xpra (0.0.7.33-1) xpra; urgency=low
+xpra (0.0.7.33-1) UNRELEASED; urgency=low
   * readonly command line option
   * correctly stop all network related threads on disconnection
   * faster pixel data transfers for large areas
@@ -202,7 +202,7 @@ xpra (0.0.7.33-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 13 Jan 2012 03:30:37 +0700
 
-xpra (0.0.7.32-1) xpra; urgency=low
+xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
   * bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
   * bug fix: initial windows should get focus (partial fix)
@@ -220,7 +220,7 @@ xpra (0.0.7.32-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 08 Dec 2011 23:23:52 +0700
 
-xpra (0.0.7.31-1) xpra; urgency=low
+xpra (0.0.7.31-1) UNRELEASED; urgency=low
   * threaded server for much lower latency
   * fast memory mapped transfers for local connections
   * adaptive damage batching, fixes window refresh
@@ -230,19 +230,19 @@ xpra (0.0.7.31-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 23 Nov 2011 17:46:03 +0700
 
-xpra (0.0.7.30-1) xpra; urgency=low
+xpra (0.0.7.30-1) UNRELEASED; urgency=low
   * fix for update batching causing screen corruption
   * fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
   * fix for jitter compensation code being a little bit too trigger-happy
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 01 Nov 2011 15:08:06 +0700
 
-xpra (0.0.7.29-2) xpra; urgency=low
+xpra (0.0.7.29-2) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop (properly this time)
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 26 Oct 2011 14:43:00 +0700
 
-xpra (0.0.7.29-1) xpra; urgency=low
+xpra (0.0.7.29-1) UNRELEASED; urgency=low
   * fix partial packets on boundary causing connection to drop
   * support ubuntu's appindicator (yet another system tray implementation)
   * improve disconnection diagnostic messages
@@ -253,13 +253,13 @@ xpra (0.0.7.29-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 25 Oct 2011 23:25:26 +0700
 
-xpra (0.0.7.28-2) xpra; urgency=low
+xpra (0.0.7.28-2) UNRELEASED; urgency=low
 
   * fix password mode - oops
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Oct 2011 00:37:15 +0700
 
-xpra (0.0.7.28-1) xpra; urgency=low
+xpra (0.0.7.28-1) UNRELEASED; urgency=low
 
   * much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
   * forwarding of system notifications, system bell and custom cursors
@@ -274,14 +274,14 @@ xpra (0.0.7.28-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Oct 2011 00:37:15 +0700
 
-xpra (0.0.7.27-1) xpra; urgency=low
+xpra (0.0.7.27-1) UNRELEASED; urgency=low
 
   * compatibility fix for python 2.4 (remove "with" statement)
   * slow down updates from windows that refresh continuously
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Sep 2011 11:05:45 +0700
 
-xpra (0.0.7.26-1) xpra; urgency=low
+xpra (0.0.7.26-1) UNRELEASED; urgency=low
 
   * minor changes to support the Android client (work in progress)
   * allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
@@ -292,27 +292,27 @@ xpra (0.0.7.26-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 20 Sep 2011 23:15:09 +0700
 
-xpra (0.0.7.25-1) xpra; urgency=low
+xpra (0.0.7.25-1) UNRELEASED; urgency=low
 
   * Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
   * Reset modifiers whenever we gain or lose focus, or when the keymap changes
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 31 Aug 2011 19:26:34 +0700
 
-xpra (0.0.7.24-1) xpra; urgency=low
+xpra (0.0.7.24-1) UNRELEASED; urgency=low
 
   * Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
   * Keyboard fixes for AltGr and special keys for non Unix-like clients
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 15 Aug 2011 15:10:22 +0200
 
-xpra (0.0.7.23-2) xpra; urgency=low
+xpra (0.0.7.23-2) UNRELEASED; urgency=low
 
   * Rebuilt with debian patches applied: "--with quilt" flag was missing
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 27 Jul 2011 18:15:03 +0000
 
-xpra (0.0.7.23-1) xpra; urgency=low
+xpra (0.0.7.23-1) UNRELEASED; urgency=low
 
   * New upstream release.
   * Moved debian/parti.1 to main source tree
@@ -324,7 +324,7 @@ xpra (0.0.7.23-1) xpra; urgency=low
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 24 Jul 2011 23:09:42 +0700
 
-xpra (0.0.7.22.1+dfsg-1) xpra; urgency=low
+xpra (0.0.7.22.1+dfsg-1) UNRELEASED; urgency=low
 
   * New upstream release.
   * Refreshed manpage.diff & setup.diff patches
