@@ -4,7 +4,7 @@ Description: Build vpx codec as a static library.
  
 --- a/setup.py	(revision 1274)
 +++ b/setup.py	(working copy)
-@@ -403,6 +403,10 @@
+@@ -415,6 +415,10 @@
                  ), min_version=(0, 16))
  
  if vpx_ENABLED:

@@ -4,7 +4,7 @@ Description: Disable vpx encoding support.
  
 --- a/setup.py	(revision 1274)
 +++ b/setup.py	(working copy)
-@@ -366,7 +366,7 @@
+@@ -378,7 +378,7 @@
  
  
  
