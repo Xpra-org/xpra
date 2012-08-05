@@ -417,11 +417,6 @@ mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 %endif
 %endif
 
-%post
-%if 0%{?Xdummy}
-cp /usr/bin/Xorg /usr/bin/Xorg-nosuid
-%endif
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
