@@ -264,8 +264,8 @@ class ClientWindow(gtk.Window):
                     self.set_type_hint(hint)
                     break
 
-    def refresh_window(self):
-        log("Automatic refresh for id %s", self._id)
+    def refresh_window(self, *args):
+        log("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)
 
     def refresh_all_windows(self):
@@ -279,7 +279,7 @@ class ClientWindow(gtk.Window):
         if success:
             queue_draw(self, x, y, width, height)
         #clear the auto refresh if enough pixels were sent (arbitrary limit..)
-        if self._refresh_timer and width*height>16*16:
+        if success and self._refresh_timer and width*height>16*16:
             gobject.source_remove(self._refresh_timer)
             self._refresh_timer = None
         #if we need to set a refresh timer, do it:
