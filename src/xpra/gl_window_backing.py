@@ -301,16 +301,16 @@ END
         #end=time.time()
         #log.info("Took %f ms" % (end - before))
 
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
+    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
         decoder = decoders.get(self.wid)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
             decoder.clean()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
         if decoder is None:
             decoder = factory()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
             decoders[self.wid] = decoder
             def close_decoder():
                 log("closing %s decoder for window %s", coding, self.wid)
@@ -319,7 +319,7 @@ END
             self._on_close.append(close_decoder)
         try:
             if self.use_openGL_CSC == True:
-                err, outstride, data = decoder.decompress_image_to_yuv(img_data)
+                err, outstride, data = decoder.decompress_image_to_yuv(img_data, options)
                 if err!=0:
                     log.error("paint_with_video_decoder: ouch, decompression error %s", err)
                     return

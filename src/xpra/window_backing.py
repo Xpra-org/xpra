@@ -62,33 +62,34 @@ class Backing(object):
     def paint_png(self, img_data, x, y, width, height):
         raise Exception("override me!")
 
-    def paint_x264(self, img_data, x, y, width, height, rowstride):
+    def paint_x264(self, img_data, x, y, width, height, rowstride, options):
         assert "x264" in ENCODINGS
         from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
+        return  self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride, options)
 
-    def paint_vpx(self, img_data, x, y, width, height, rowstride):
+    def paint_vpx(self, img_data, x, y, width, height, rowstride, options):
         assert "vpx" in ENCODINGS
         from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
+        return  self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
 
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
+    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
         decoder = decoders.get(self.wid)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
             decoder.clean()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
         if decoder is None:
             decoder = factory()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
             decoders[self.wid] = decoder
             def close_decoder():
                 log("closing %s decoder for window %s", coding, self.wid)
                 decoder.clean()
                 del decoders[self.wid]
             self._on_close.append(close_decoder)
-        err, outstride, data = decoder.decompress_image_to_rgb(img_data)
+        log("paint_with_video_decoder: options=%s", options)
+        err, outstride, data = decoder.decompress_image_to_rgb(img_data, options)
         if err!=0:
             log.error("paint_with_video_decoder: ouch, decompression error %s", err)
             return  False
@@ -208,8 +209,8 @@ class CairoBacking(Backing):
             image = self.rgb24image(data, width, height, rowstride)
         return  self.paint_pil_image(image, width, height)
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
-        log.debug("draw_region(%s,%s,%s,%s,%s,..,%s)", x, y, width, height, coding, rowstride)
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options):
+        log.debug("draw_region(%s,%s,%s,%s,%s,..,%s,%s)", x, y, width, height, coding, rowstride, options)
         if coding == "mmap":
             return  self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding in ["rgb24", "jpeg"]:
@@ -304,8 +305,8 @@ class PixmapBacking(Backing):
             success = self.paint_rgb24(data, x, y, width, height, rowstride)
         return  success
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
-        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s)", x, y, width, height, coding, len(img_data), rowstride)
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options):
+        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options)
         if coding == "mmap":
             return self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding == "rgb24":
@@ -315,9 +316,9 @@ class PixmapBacking(Backing):
                 assert len(img_data) == width * 3 * height
             return self.paint_rgb24(img_data, x, y, width, height, rowstride)
         elif coding == "x264":
-            return self.paint_x264(img_data, x, y, width, height, rowstride)
+            return self.paint_x264(img_data, x, y, width, height, rowstride, options)
         elif coding == "vpx":
-            return self.paint_vpx(img_data, x, y, width, height, rowstride)
+            return self.paint_vpx(img_data, x, y, width, height, rowstride, options)
         else:
             return self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
 

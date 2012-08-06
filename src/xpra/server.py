@@ -261,6 +261,7 @@ class XpraServer(gobject.GObject):
         self.encodings = []
         self.mmap = None
         self.mmap_size = 0
+        self.encoding_client_options = False
 
         self.reset_statistics()
 
@@ -1100,6 +1101,7 @@ class XpraServer(gobject.GObject):
         if self._protocol is not None:
             self.disconnect("new valid connection received")
         self.reset_statistics()
+        self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.encodings = capabilities.get("encodings", [])
         self._set_encoding(capabilities.get("encoding", None), None)
         self.dpi = capabilities.get("dpi", self.default_dpi)
@@ -1126,7 +1128,7 @@ class XpraServer(gobject.GObject):
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.min_delay)))
         batch_config.encoding = self.encoding
-        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size)
+        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size, self.encoding_client_options)
         self.send_hello(capabilities)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
@@ -1691,7 +1693,7 @@ class XpraServer(gobject.GObject):
             wid_windows = {wid : self._id_to_window.get(wid)}
         else:
             return
-        log("Requested refresh for windows: %s", wid_windows)
+        log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
         opts["batching"] = False
         self.refresh_windows(opts, wid_windows)
 

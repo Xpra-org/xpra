@@ -27,12 +27,15 @@ cdef extern from "x264lib.h":
     void* xmemalign(size_t size)
     void xmemfree(void* ptr)
 
-    x264lib_ctx* init_encoder(int width, int height)
+    x264lib_ctx* init_encoder(int width, int height, int initial_quality, int supports_csc_option)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
     int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override) nogil
+    int get_encoder_pixel_format(x264lib_ctx *ctx)
+    int get_encoder_quality(x264lib_ctx *ctx)
 
-    x264lib_ctx* init_decoder(int width, int height)
+    x264lib_ctx* init_decoder(int width, int height, int csc_fmt)
+    void set_decoder_csc_format(x264lib_ctx *context, int csc_fmt)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]) nogil
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
@@ -53,8 +56,6 @@ cdef class xcoder:
     cdef int height
 
     def init(self, width, height):
-        self.init_context(width, height)
-        assert self.context, "failed to initialize context"
         self.width = width
         self.height = height
 
@@ -74,8 +75,10 @@ cdef class xcoder:
 cdef class Decoder(xcoder):
     cdef uint8_t *last_image
 
-    def init_context(self, width, height):
-        self.context = init_decoder(width, height)
+    def init_context(self, width, height, options):
+        self.init(width, height)
+        csc_fmt = options.get("csc_pixel_format", -1)
+        self.context = init_decoder(width, height, csc_fmt)
 
     def clean(self):
         if self.context!=NULL:
@@ -83,7 +86,7 @@ cdef class Decoder(xcoder):
             free(self.context)
             self.context = NULL
 
-    def decompress_image_to_yuv(self, input):
+    def decompress_image_to_yuv(self, input, options):
         cdef uint8_t *dout[3]
         cdef int outsize
         cdef int outstrides[3]
@@ -97,6 +100,7 @@ cdef class Decoder(xcoder):
             return 1, [0, 0, 0], ["", "", ""]
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
+        set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         i = 0
         if NOGIL:
             with nogil:
@@ -113,7 +117,7 @@ cdef class Decoder(xcoder):
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
 
-    def decompress_image_to_rgb(self, input):
+    def decompress_image_to_rgb(self, input, options):
         cdef uint8_t *yuvplanes[3]
         cdef uint8_t *dout
         cdef int outsize
@@ -128,9 +132,10 @@ cdef class Decoder(xcoder):
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
         if padded_buf==NULL:
-            return 1, 0, ""
+            return 100, 0, ""
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
+        set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         if NOGIL:
             with nogil:
                 i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
@@ -155,8 +160,12 @@ cdef class Decoder(xcoder):
 
 cdef class Encoder(xcoder):
 
-    def init_context(self, width, height):
-        self.context = init_encoder(width, height)
+    cdef int supports_options
+
+    def init_context(self, width, height, supports_options):
+        self.init(width, height)
+        self.supports_options = supports_options
+        self.context = init_encoder(width, height, 70, int(supports_options))
 
     def clean(self):
         if self.context!=NULL:
@@ -164,10 +173,21 @@ cdef class Encoder(xcoder):
             free(self.context)
             self.context = NULL
 
-    def compress_image(self, input, rowstride, quality_override):
+    def get_client_options(self, options):
+        client_options = {"csc_pixel_format" : get_encoder_pixel_format(self.context)}
+        if "quality" in options:
+            #quality was overriden via options:
+            client_options["quality"] = options["quality"]
+        else:
+            #current quality settings:
+            client_options["quality"] = get_encoder_quality(self.context)
+        return  client_options
+
+    def compress_image(self, input, rowstride, options):
         cdef x264_picture_t *pic_in = NULL
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef int quality_override = options.get("quality", -1)
         assert self.context!=NULL
         #colourspace conversion with gil held:
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)

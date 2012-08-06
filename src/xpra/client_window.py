@@ -274,8 +274,8 @@ class ClientWindow(gtk.Window):
         #the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence):
-        success = self._backing.draw_region(x, y, width, height, coding, img_data, rowstride)
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options):
+        success = self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options)
         if success:
             queue_draw(self, x, y, width, height)
         #clear the auto refresh if enough pixels were sent (arbitrary limit..)
@@ -283,7 +283,9 @@ class ClientWindow(gtk.Window):
             gobject.source_remove(self._refresh_timer)
             self._refresh_timer = None
         #if we need to set a refresh timer, do it:
-        if self._refresh_timer is None and self._client.auto_refresh_delay and coding in ("jpeg", "vpx", "x264"):
+        is_hq = options.get("quality", 0)>=95
+        is_lossy = coding in ("jpeg", "vpx", "x264")
+        if self._refresh_timer is None and self._client.auto_refresh_delay>0 and is_lossy and not is_hq:
             #make sure our own refresh does not make us fire again
             #FIXME: this should be per-window!
             if self._refresh_ignore_sequence<packet_sequence:

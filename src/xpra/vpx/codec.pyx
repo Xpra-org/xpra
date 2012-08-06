@@ -39,8 +39,6 @@ cdef class xcoder:
     cdef int height
 
     def init(self, width, height):
-        self.init_context(width, height)
-        assert self.context, "failed to initialize context"
         self.width = width
         self.height = height
 
@@ -60,7 +58,8 @@ cdef class xcoder:
 cdef class Decoder(xcoder):
     cdef uint8_t *last_image
 
-    def init_context(self, width, height):
+    def init_context(self, width, height, options):
+        self.init(width, height)
         self.context = init_decoder(width, height)
 
     def clean(self):
@@ -87,7 +86,7 @@ cdef class Decoder(xcoder):
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
 
-    def decompress_image_to_rgb(self, input):
+    def decompress_image_to_rgb(self, input, options):
         cdef uint8_t *yuvplanes[3]
         cdef uint8_t *dout
         cdef int outsize
@@ -121,7 +120,8 @@ cdef class Decoder(xcoder):
 
 cdef class Encoder(xcoder):
 
-    def init_context(self, width, height):
+    def init_context(self, width, height, supports_options):
+        self.init(width, height)
         self.context = init_encoder(width, height)
 
     def clean(self):
@@ -129,7 +129,11 @@ cdef class Encoder(xcoder):
             clean_encoder(self.context)
             self.context = NULL
 
-    def compress_image(self, input, rowstride, quality_override):
+    def get_client_options(self, options):
+        #we don't use any..
+        return  {}
+
+    def compress_image(self, input, rowstride, options):
         cdef vpx_image_t *pic_in = NULL
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0

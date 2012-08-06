@@ -23,11 +23,20 @@ typedef void * x264_picture_t;
 /** Opaque structure - "context". You must have a context to encode images of a given size */
 struct x264lib_ctx;
 
+/** Expose the encoder pixel format so the decoder can use the same setting */
+int get_encoder_pixel_format(struct x264lib_ctx *ctx);
+
+/** Expose current quality setting so we can tell the client how good the frame was */
+int get_encoder_quality(struct x264lib_ctx *ctx);
+
 /** Create an encoding context for images of a given size.  */
-struct x264lib_ctx *init_encoder(int width, int height);
+struct x264lib_ctx *init_encoder(int width, int height, int initial_quality, int supports_csc_option);
 
 /** Create a decoding context for images of a given size. */
-struct x264lib_ctx *init_decoder(int width, int height);
+struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt);
+
+/** Call this before decoding, the decoder may need to be re-initialized with the new csc format */
+void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt);
 
 /** Cleanup encoding context. Must be freed after calling this function. */
 void clean_encoder(struct x264lib_ctx *);

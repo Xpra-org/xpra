@@ -536,6 +536,7 @@ class XpraClient(XpraClientBase):
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
+        capabilities["encoding_client_options"] = True
         return capabilities
 
     def send_ping(self):
@@ -726,11 +727,15 @@ class XpraClient(XpraClientBase):
 
     def _process_draw(self, packet):
         (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
+        options = {}
+        if len(packet)>10:
+            options = packet[10]
+        log("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         window = self._id_to_window.get(wid)
         decode_time = 0
         if window:
             start = time.time()
-            if window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence):
+            if window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options):
                 end = time.time()
                 self.pixel_counter.append((end, width*height))
                 decode_time = int(end*1000*1000-start*1000*1000)

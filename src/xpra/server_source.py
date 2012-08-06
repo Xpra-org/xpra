@@ -123,12 +123,13 @@ class ServerSource(object):
     The UI thread adds damage requests to a queue - see damage()
     """
 
-    def __init__(self, protocol, batch_config, encoding, encodings, mmap, mmap_size):
+    def __init__(self, protocol, batch_config, encoding, encodings, mmap, mmap_size, encoding_client_options):
         self._closed = False
         self._ordinary_packets = []
         self._protocol = protocol
         self._encoding = encoding                   #the default encoding for all windows
         self._encodings = encodings                 #all the encodings supported by the client
+        self._encoding_client_options = encoding_client_options #does the client support encoding options?
         self._default_batch_config = batch_config
         self._batch_configs = {}                    #batch config per window
         # mmap:
@@ -1042,17 +1043,18 @@ class ServerSource(object):
             #try with mmap (will change coding to "mmap" if it succeeds)
             coding, data = self.mmap_send(coding, data)
 
+        client_options = {}
         if coding in ("jpeg", "png"):
-            data = self.PIL_encode(w, h, coding, data, rowstride, options)
+            data, client_options = self.PIL_encode(w, h, coding, data, rowstride, options)
         elif coding=="x264":
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
             if w==0 or h==0:
                 return None
-            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
+            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="vpx":
-            data = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
+            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24":
             #use wrapper so network code will compress it with zlib:
             data = Compressible(coding, data)
@@ -1066,7 +1068,7 @@ class ServerSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         #actual network packet:
-        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
+        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
         end = time.time()
         self._damage_packet_sequence += 1
         self._encoding_stats.append((wid, coding, w*h, len(data), end-start))
@@ -1077,6 +1079,7 @@ class ServerSource(object):
         import Image
         im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
         buf = StringIO()
+        client_options = {}
         if coding=="jpeg":
             q = 50
             if options:
@@ -1084,12 +1087,13 @@ class ServerSource(object):
             q = min(99, max(1, q))
             log("sending with jpeg quality %s", q)
             im.save(buf, "JPEG", quality=q)
+            client_options["quality"] = q
         else:
             log("sending as %s", coding)
             im.save(buf, coding.upper())
         data = buf.getvalue()
         buf.close()
-        return data
+        return data, client_options
 
     def video_encoders(self, coding):
         assert coding in ENCODINGS
@@ -1119,13 +1123,13 @@ class ServerSource(object):
             self._video_encoder_lock.acquire()
             encoder = encoders.get(wid)
             if encoder and (encoder.get_width()!=w or encoder.get_height()!=h):
-                log("%s: window dimensions have changed from %s to %s", (coding, encoder.get_width(), encoder.get_height()), (w, h))
+                log("%s: window dimensions have changed from %sx%s to %sx%s", coding, encoder.get_width(), encoder.get_height(), w, h)
                 encoder.clean()
-                encoder.init(w, h)
+                encoder.init_context(w, h, self._encoding_client_options)
                 #if we had an encoding speed set, restore it:
                 encoding_speeds = self._video_encoder_speed.get(wid)
                 if encoding_speeds:
-                    _, recent_speed = calculate_time_weighted_average(encoding_speeds)
+                    _, recent_speed = calculate_time_weighted_average(list(encoding_speeds))
                     encoder.set_encoding_speed(recent_speed)
             if encoder is None:
                 #we could have an old encoder if we were using a different encoding
@@ -1134,22 +1138,22 @@ class ServerSource(object):
                 if old_encoder_cb:
                     old_encoder_cb()
                     del self._video_encoder_cleanup[wid]
-                log("%s: new encoder", coding)
+                log("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 encoder = factory()
-                encoder.init(w, h)
+                encoder.init_context(w, h, self._encoding_client_options)
                 encoders[wid] = encoder
                 def close_encoder():
-                    log("close_encoder: %s for wid=%s" % (coding, wid))
+                    log("close_encoder: %s for wid=%s", coding, wid)
                     encoder.clean()
                     del encoders[wid]
                 self._video_encoder_cleanup[wid] = close_encoder
-            quality = options.get("quality", -1)
-            log("%s: compress_image(%s bytes, %s) quality=%s", coding, len(data), rowstride, quality)
-            err, _, data = encoder.compress_image(data, rowstride, quality)
+            err, _, data = encoder.compress_image(data, rowstride, options)
             if err!=0:
                 log.error("%s: ouch, compression error %s", coding, err)
-                return None
-            return data
+                return None, None
+            client_options = encoder.get_client_options(options)
+            log("compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
+            return data, client_options
         finally:
             self._video_encoder_lock.release()
 

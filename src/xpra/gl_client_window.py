@@ -114,8 +114,8 @@ class GLClientWindow(ClientWindow):
         # Update window synchronously (fast).
         self.glarea.window.process_updates(False)
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride):
-        #log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s)", x, y, width, height, coding, len(img_data), rowstride)
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options):
+        #log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options)
         if coding == "mmap":
             # No GL output for mmap
             assert coding != "mmap"
@@ -128,27 +128,27 @@ class GLClientWindow(ClientWindow):
         elif coding == "x264":
             assert "x264" in ENCODINGS
             from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-            self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride)
+            self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride, options)
         elif coding == "vpx":
             assert "vpx" in ENCODINGS
             from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport    @Reimport
-            self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride)
+            self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
         else:
             raise Exception("** No JPEG/PNG support for OpenGL")
         queue_draw(self, x, y, width, height)
         return  True
 
     #FIXME: This is a copypaste from window_backing.py...
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride):
+    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
         decoder = decoders.get(self._id)
         if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
             log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
             decoder.clean()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
         if decoder is None:
             decoder = factory()
-            decoder.init(width, height)
+            decoder.init_context(width, height, options)
             decoders[self._id] = decoder
             def close_decoder():
                 log("closing %s decoder for window %s", coding, self._id)
@@ -163,7 +163,7 @@ class GLClientWindow(ClientWindow):
                 decompress = decoder.decompress_image_to_rgb
                 update_texture = self.update_texture_rgb24
 
-            err, outstride, data = decompress(img_data)
+            err, outstride, data = decompress(img_data, options)
             if err!=0:
                 log.error("paint_with_video_decoder: ouch, decompression error %s", err)
                 return
