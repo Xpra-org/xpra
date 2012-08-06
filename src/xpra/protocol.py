@@ -32,7 +32,7 @@ try:
     from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
     from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
 except Exception, e:
-    log.error("xpra.rencode is missing: %s" % e)
+    log.error("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None
 
 
