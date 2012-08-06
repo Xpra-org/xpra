@@ -52,10 +52,7 @@ try:
 except:
     from Queue import Queue         #@Reimport
 from collections import deque
-from math import log as mathlog, sqrt
-sqrt2 = sqrt(2)
-def logp(x):
-    return mathlog(1.0+x, sqrt2)/2.0
+from math import sqrt
 
 #it would be nice to be able to get rid of those 2 imports here:
 from wimpiggy.window import OverrideRedirectWindowModel
@@ -68,7 +65,7 @@ from xpra.deque import maxdeque
 from xpra.protocol import Compressible
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import dec1, dec2, add_list_stats, \
+from xpra.maths import dec1, dec2, add_list_stats, logp, \
         calculate_time_weighted_average, calculate_timesize_weighted_average, \
         calculate_for_target, calculate_for_average, queue_inspect
 
@@ -91,6 +88,7 @@ class DamageBatchConfig(object):
     MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5
+    START_DELAY = 100
     MAX_DELAY = 15000
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
     def __init__(self):
@@ -101,7 +99,7 @@ class DamageBatchConfig(object):
         self.time_unit = self.TIME_UNIT
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
-        self.delay = self.MIN_DELAY
+        self.delay = self.START_DELAY
         self.recalculate_delay = self.RECALCULATE_DELAY
         self.last_delays = maxdeque(64)
         self.last_updated = 0
@@ -556,14 +554,14 @@ class ServerSource(object):
 
         #damage "in" latency factor:
         if len(self._damage_in_latency)>0:
-            msg = "damage processing latency: avg=%s, recent=%s" % (dec1(1000*avg_damage_in_latency), dec1(1000*recent_damage_in_latency))
+            msg = "damage processing latency:"
             target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-            factors.append(calculate_for_target(msg, target_latency, avg_damage_in_latency, recent_damage_in_latency, aim=0.8, slope=0.005))
+            factors.append(calculate_for_target(msg, target_latency, avg_damage_in_latency, recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
         #damage "out" latency
         if len(self._damage_out_latency)>0:
-            msg = "damage send latency: avg=%s, recent=%s" % (dec1(1000*avg_damage_out_latency), dec1(1000*recent_damage_out_latency))
+            msg = "damage send latency:"
             target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
-            factors.append(calculate_for_target(msg, target_latency, avg_damage_out_latency, recent_damage_out_latency, aim=0.8, slope=0.010))
+            factors.append(calculate_for_target(msg, target_latency, avg_damage_out_latency, recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
         #send speed:
         if avg_send_speed is not None and recent_send_speed is not None:
             #our calculate methods aims for lower values, so invert speed
@@ -599,25 +597,24 @@ class ServerSource(object):
             factors.append((msg, 0, weight))
         #client latency: (we want to keep client latency as low as can be)
         if len(self._client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
-            target_latency = 0.010
+            target_latency = 0.005
             if self._min_client_latency:
                 target_latency = max(target_latency, self._min_client_latency)
-            msg = "client latency: lowest=%s, avg=%s, recent=%s" % \
-                    (dec1(1000*self._min_client_latency), dec1(1000*avg_client_latency), dec1(1000*recent_client_latency))
-            factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005))
+            msg = "client latency:"
+            factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=4.0))
         #damage packet queue size: (includes packets from all windows)
-        factors.append(queue_inspect("damage packet queue size:", self._damage_packet_qsizes))
+        factors.append(queue_inspect("damage packet queue size:", self._damage_packet_qsizes, smoothing=sqrt))
         #damage pixels waiting in the packet queue: (extract data for our window id only)
         time_values = [(event_time, value) for event_time, dwid, value in list(self._damage_packet_qpixels) if dwid==wid]
-        factors.append(queue_inspect("damage packet queue pixels:", time_values, div=low_limit))
+        factors.append(queue_inspect("damage packet queue pixels:", time_values, div=low_limit, smoothing=sqrt))
         #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
         msg, factor, weight = queue_inspect("damage data queue:", self._damage_data_qsizes)
         if factor>1.0:
             weight += (factor-1.0)/2
         #packet and pixels backlog:
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
-        factors.append(calculate_for_target("client packets backlog", 0, last_packets_backlog, packets_backlog, slope=1.0))
-        factors.append(calculate_for_target("client pixels backlog", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=1.0))
+        factors.append(calculate_for_target("client packets backlog:", 0, last_packets_backlog, packets_backlog, slope=1.0, smoothing=sqrt))
+        factors.append(calculate_for_target("client pixels backlog:", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=1.0, smoothing=sqrt))
         if self._mmap and self._mmap_size>0:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self._mmap_free_size)/self._mmap_size
@@ -627,6 +624,8 @@ class ServerSource(object):
         self.update_batch_delay(batch, factors)
         #***************************************************************
         #special hook for video encoders
+        if not AUTO_QUALITY and not AUTO_SPEED:
+            return
         coding = self.get_encoding(wid)
         if coding not in ("vpx", "x264") or self._mmap:
             return
@@ -635,30 +634,49 @@ class ServerSource(object):
             return              #not been used yet
 
         #***********************************************************
-        #encoding speed: minimize latency and client decode speed
+        # encoding speed:
+        #    0    for highest compression/slower
+        #    100  for lowest compression/fast
+        # here we try to minimize damage-latency and client decoding speed
         min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-        target_damage_latency = max(min_damage_latency, batch.delay/4.0)
+        target_damage_latency = min_damage_latency + batch.delay/1000.0
         dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
-        target_decode_speed = 1*1000*1000      #1MPixels/s
+        target_decode_speed = 1*1000*1000      #1 MPixels/s
         dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
-        target_speed = 100.0 * min(1.0, max(dam_lat, dec_lat))
+        target = max(dam_lat, dec_lat, 0.0)
+        target_speed = 100.0 * min(1.0, target)
         encoding_speeds = self._video_encoder_speed.setdefault(wid, maxdeque(NRECS))
         encoding_speeds.append((time.time(), target_speed))
         _, new_speed = calculate_time_weighted_average(encoding_speeds)
-        log("video encoder speed factors: dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s",
-                 dam_lat, dec_lat, target_speed, new_speed)
+        msg = "video encoder speed factors: min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
+                 dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
+        if DEBUG_DELAY:
+            self.add_DEBUG_DELAY_MESSAGE(msg)
+        log(*msg)
         #***********************************************************
-        #quality: minimize batch.delay and packet backlog
-        if not AUTO_QUALITY and not AUTO_SPEED:
-            return
-        packets_bl = logp(last_packets_backlog/low_limit)/2.0
-        batch_q = (batch.delay-batch.min_delay)/batch.min_delay/10.0    #if batch delay is 10 times the minimum, we also go to zero quality
-        target_quality = 100.0*(1.0 - min(1.0, max(0.0, packets_bl, batch_q)))
+        # quality:
+        #    0    for lowest quality (low bandwidth usage)
+        #    100  for best quality (high bandwidth usage)
+        # here we try minimize client-latency, packet-backlog and batch.delay
+        packets_bl = 1.0 - logp(last_packets_backlog/low_limit)
+        batch_q = 4.0 * batch.min_delay / batch.delay 
+        target = max(packets_bl, batch_q)
+        latency_q = 0.0
+        if len(self._client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
+            target_latency = 0.005
+            if self._min_client_latency:
+                target_latency = max(target_latency, self._min_client_latency)
+            latency_q = 4.0 * target_latency / recent_client_latency
+            target = min(target, latency_q)
+        target_quality = 100.0*(min(1.0, max(0.0, target)))
         encoding_qualities = self._video_encoder_quality.setdefault(wid, maxdeque(NRECS))
         encoding_qualities.append((time.time(), target_quality))
         new_quality, _ = calculate_time_weighted_average(encoding_qualities)
-        log("video encoder quality factors: packets_bl=%s, batch_q=%s, target=%s, new_quality=%s",
-                 dec2(packets_bl), dec2(batch_q), dec2(target_quality), dec2(new_quality))
+        msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
+                 dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
+        if DEBUG_DELAY:
+            self.add_DEBUG_DELAY_MESSAGE(msg)
+        log(*msg)
         try:
             self._video_encoder_lock.acquire()
             encoder = encoders.get(wid)
@@ -700,8 +718,12 @@ class ServerSource(object):
 
         valid_factors = [x for x in factors if x is not None]
         all_factors_weight = sum([w for _,_,w in valid_factors])
+        max_factor = max([f for _,f,_ in valid_factors])
+        #mitigate low factors if we have some really high ones:
+        factor_min_limit = min(0.5, max_factor/10.0)
         for _, factor, weight in valid_factors:
-            target_delay = max(batch.min_delay, min(batch.max_delay, current_delay*factor))
+            actual_factor = max(factor_min_limit, factor)
+            target_delay = max(batch.min_delay, min(batch.max_delay, current_delay*actual_factor))
             w = max(1, hist_w)*weight/all_factors_weight
             tw += w
             tv += target_delay*w
@@ -1152,7 +1174,10 @@ class ServerSource(object):
                 log.error("%s: ouch, compression error %s", coding, err)
                 return None, None
             client_options = encoder.get_client_options(options)
-            log("compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
+            msg = "compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options
+            if DEBUG_DELAY:
+                self.add_DEBUG_DELAY_MESSAGE(msg)
+            log(*msg)
             return data, client_options
         finally:
             self._video_encoder_lock.release()
