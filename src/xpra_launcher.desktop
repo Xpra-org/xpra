@@ -7,5 +7,5 @@ Icon=xpra
 Terminal=false
 Type=Application
 StartupNotify=false
-Categories=Network
+Categories=Network;
 MimeType=text/x-xpraconfig;
