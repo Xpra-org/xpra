@@ -32,22 +32,26 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
             debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s", target, datatype, dataformat, type(data), len(data), list(atoms))
             atom_names = [str(atom) for atom in atoms]
             debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atom_names=%s", target, datatype, dataformat, type(data), len(data), atom_names)
-            if target=="TARGET":
+            if target=="TARGETS":
                 otargets = list(atom_names)
-                atom_names.remove("SAVE_TARGETS")
-                atom_names.remove("COMPOUND_TEXT")
+                discard_targets = ("SAVE_TARGETS", "COMPOUND_TEXT")
+                #for qt:
+                #discard_targets = ("SAVE_TARGETS", "COMPOUND_TEXT", "TARGETS", "UTF8_STRING", "TEXT")
+                for x in discard_targets:
+                    if x in atom_names:
+                        atom_names.remove(x)
                 debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) filtered targets(%s)=%s", target, datatype, dataformat, type(data), len(data), otargets, atom_names)
             return "atoms", atom_names
         return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data):
-        debug("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)", encoding, datatype, dataformat, type(data), len(data or ""))
+        debug("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s:%s)", encoding, datatype, dataformat, type(data), len(data or ""), list(data or ""))
         if encoding == "atoms":
             import gtk.gdk
             gdk_atoms = [gtk.gdk.atom_intern(a) for a in data]
             atom_array = gdk_atom_array_from_gdk_atom_objects(gdk_atoms)
             bdata = struct.pack("=" + "L" * len(atom_array), *atom_array)
-            debug("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), atom_array, list(bdata))
+            debug("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), gdk_atoms, atom_array, list(bdata))
             return bdata
         return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data)
 
