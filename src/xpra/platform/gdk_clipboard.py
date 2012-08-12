@@ -24,7 +24,7 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
         if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):
-            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) using gdk atom code", target, datatype, dataformat, type(data), len(data))
+            debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s:%s) using gdk atom code", target, datatype, dataformat, type(data), len(data), list(data))
             # Convert to strings and send that. Bizarrely, the atoms are
             # not actual X atoms, but an array of GdkAtom's reinterpreted
             # as a byte buffer.
@@ -46,7 +46,9 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
             import gtk.gdk
             gdk_atoms = [gtk.gdk.atom_intern(a) for a in data]
             atom_array = gdk_atom_array_from_gdk_atom_objects(gdk_atoms)
-            return struct.pack("=" + "L" * len(atom_array), *atom_array)
+            bdata = struct.pack("=" + "L" * len(atom_array), *atom_array)
+            debug("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), atom_array, list(bdata))
+            return bdata
         return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data)
 
 
