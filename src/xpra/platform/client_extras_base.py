@@ -673,9 +673,11 @@ class ClientExtrasBase(object):
 
     def make_clipboard_togglemenuitem(self):
         def clipboard_toggled(*args):
-            self.client.clipboard_enabled = self.clipboard_menuitem.get_active()
-            log.debug("clipboard_toggled(%s) clipboard_enabled=%s", args, self.client.clipboard_enabled)
-            self.client.emit("clipboard-toggled")
+            new_state = self.clipboard_menuitem.get_active()
+            log.debug("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
+            if self.client.clipboard_enabled!=new_state:
+                self.client.clipboard_enabled = new_state
+                self.client.emit("clipboard-toggled")
         self.clipboard_menuitem = self.checkitem("Clipboard", clipboard_toggled)
         def set_clipboard_menuitem(*args):
             self.clipboard_menuitem.set_active(self.client.clipboard_enabled)
