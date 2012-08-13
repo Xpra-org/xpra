@@ -1990,7 +1990,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.format = e.xclient.format
                     # I am lazy.  Add this later if needed for some reason.
                     if pyev.format != 32:
-                        log.warn("FIXME: Ignoring ClientMessage with format != 32")
+                        log.warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
                         return GDK_FILTER_CONTINUE
                     pieces = []
                     for i in xrange(5):
