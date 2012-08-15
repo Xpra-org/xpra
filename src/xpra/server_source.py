@@ -313,7 +313,8 @@ class ServerSource(object):
         log("clearing stats for window %s", wid)
         #self._damage_delayed is cleared in cancel_damage
         #self._damage_cancelled is cleared automatically with a timer (also in cancel_damage)
-        for d in [self._damage_last_events, self._client_decode_time, self._batch_configs, self._damage_ack_pending]:
+        for d in [self._damage_last_events, self._client_decode_time, self._batch_configs,
+                  self._damage_ack_pending, self._video_encoder_speed, self._video_encoder_quality]:
             if wid in d:
                 del d[wid]
 
