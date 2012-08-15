@@ -68,6 +68,7 @@ struct x264lib_ctx {
 	//x264_preset_names[] = {
 	// "ultrafast", "superfast", "veryfast", "faster", "fast", "medium",
 	//"slow", "slower", "veryslow", "placebo", 0 }
+	int csc_algo;
 };
 
 int get_encoder_pixel_format(struct x264lib_ctx *ctx) {
@@ -113,6 +114,14 @@ int get_csc_format_for_x264_format(int i_csp)
 		printf("invalid pixel format: %i", i_csp);
 	}
 }
+
+int get_csc_algo_for_quality(int initial_quality) {
+	//always use best quality for now:
+	return SWS_SINC | SWS_ACCURATE_RND;
+	//return SWS_POINT | SWS_ACCURATE_RND;
+}
+
+
 const char* PROFILE_BASELINE = "baseline";
 const char* PROFILE_MAIN = "main";
 const char* PROFILE_HIGH = "high";
@@ -138,7 +147,7 @@ struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
 	}
-	return sws_getContext(ctx->width, ctx->height, PIX_FMT_RGB24, ctx->width, ctx->height, ctx->csc_format, SWS_POINT, NULL, NULL, NULL);
+	return sws_getContext(ctx->width, ctx->height, PIX_FMT_RGB24, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
 }
 
 void do_init_encoder(struct x264lib_ctx *ctx, int width, int height, int initial_quality, int supports_csc_option)
@@ -151,6 +160,7 @@ void do_init_encoder(struct x264lib_ctx *ctx, int width, int height, int initial
 	ctx->encoding_preset = 2;
 	ctx->preset = x264_preset_names[ctx->encoding_preset];
 	ctx->profile = get_profile_for_quality(initial_quality);
+	ctx->csc_algo = get_csc_algo_for_quality(initial_quality);
 	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, x264_quality=%f, profile=%s\n", ctx, width, height, initial_quality, supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
 
 	x264_param_t param;
@@ -208,7 +218,8 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc
 	ctx->width = width;
 	ctx->height = height;
 	ctx->csc_format = csc_fmt;
-	ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_format, ctx->width, ctx->height, PIX_FMT_RGB24, SWS_POINT | SWS_ACCURATE_RND, NULL, NULL, NULL);
+	ctx->csc_algo = get_csc_algo_for_quality(100);
+	ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_format, ctx->width, ctx->height, PIX_FMT_RGB24, ctx->csc_algo, NULL, NULL, NULL);
 
 	avcodec_register_all();
 
@@ -439,7 +450,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 	}
 	if ((ctx->quality & ~0x1)!=(pct & ~0x1)) {
 		float new_quality = get_x264_quality(pct);
-		float old_quality = ctx->x264_quality;
+		//float old_quality = ctx->x264_quality;
 		//printf("set_encoding_quality(%i) was %i, new x264 quality %f was %f\n", pct, ctx->quality, new_quality, old_quality);
 		//only f_rf_constant was changed,
 		//read new configuration is sufficient
@@ -450,6 +461,11 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 		ctx->x264_quality = new_quality;
 		param.rc.f_rf_constant = new_quality;
 		x264_encoder_reconfig(ctx->encoder, &param);
+	}
+	int old_csc_algo = ctx->csc_algo;
+	ctx->csc_algo = get_csc_algo_for_quality(pct);
+	if (old_csc_algo!=ctx->csc_algo) {
+		ctx->rgb2yuv = init_encoder_csc(ctx);
 	}
 }
 #else
