@@ -114,6 +114,7 @@ int get_csc_format_for_x264_format(int i_csp)
 		printf("invalid pixel format: %i", i_csp);
 	}
 }
+#endif
 
 int get_csc_algo_for_quality(int initial_quality) {
 	//always use best quality for now:
@@ -121,7 +122,7 @@ int get_csc_algo_for_quality(int initial_quality) {
 	//return SWS_POINT | SWS_ACCURATE_RND;
 }
 
-
+#ifndef _WIN32
 const char* PROFILE_BASELINE = "baseline";
 const char* PROFILE_MAIN = "main";
 const char* PROFILE_HIGH = "high";
