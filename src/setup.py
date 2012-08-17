@@ -26,11 +26,11 @@ assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
 print(" ".join(sys.argv))
 
-
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
 #There are 3 empty lines in between each var so patches
 #cannot cause further patches to fail to apply due to context changes.
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
@@ -228,7 +228,7 @@ if sys.platform.startswith("win"):
                    ('', ['COPYING']),
                    ('', ['README.xpra']),
                    ('', ['website.url']),
-                   ('', ['etc/xpra/xpra.conf']),
+                   ('', ['etc/xpra/client-only/xpra.conf']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
@@ -322,7 +322,9 @@ else:
                 XORG_BIN = xorg
                 break
         xorg_conf = "etc/xpra/Xvfb/xpra.conf"
-        if xdummy_ENABLED:
+        if not XPRA_LOCAL_SERVERS_SUPPORTED:
+            xorg_conf = "etc/xpra/client-only/xpra.conf"
+        elif xdummy_ENABLED:
             #enabled unconditionally via constant
             xorg_conf = "etc/xpra/Xdummy/xpra.conf"
         elif XORG_BIN:
@@ -398,7 +400,7 @@ PYGTK_PACKAGES = ["pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0"]
 if sys.platform.startswith("darwin"):
     PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
 X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+
 if XPRA_LOCAL_SERVERS_SUPPORTED:
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
