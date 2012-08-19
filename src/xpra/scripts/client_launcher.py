@@ -189,9 +189,6 @@ elif sys.platform.startswith("darwin"):
 			# We need to add it to a widget (otherwise it just does not work)
 			window.vbox.add(menu)
 			osxapp.set_menu_bar(menu)
-			menu = gtk.MenuBar()
-			menu.show()
-
 			osxapp.insert_app_menu_item(item, 0)
 			osxapp.ready()
 		prepare_window = prepare_window_osx
