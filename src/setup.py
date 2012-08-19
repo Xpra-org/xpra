@@ -126,7 +126,7 @@ if sys.platform.startswith("win"):
     for dll_file, md5sum in md5sums.items():
         filename = os.path.join(C_DLLs, *dll_file.split("/"))
         if not os.path.exists(filename) or not os.path.isfile(filename):
-            raise Exception("DLL file %s is missing or not a file!" % filename)
+            sys.exit("ERROR: DLL file %s is missing or not a file!" % filename)
         sys.stdout.write("verifying md5sum for %s: " % filename)
         f = open(filename, mode='rb')
         data = f.read()
@@ -198,7 +198,7 @@ if sys.platform.startswith("win"):
             #add_to_keywords(kw, 'libraries', "")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % gtk2_lib_dir)
         else:
-            raise Exception("unknown package config: %s" % str(packages))
+            sys.exit("ERROR: unknown package config: %s" % str(packages))
         return kw
 
     import py2exe    #@UnresolvedImport
@@ -264,7 +264,7 @@ else:
                     valid_option = option
                     break
             if not valid_option:
-                raise Exception("cannot find a valid pkg-config package for %s" % (options,))
+                sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
             packages.append(valid_option)
         print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, packages))
         flag_map = {'-I': 'include_dirs',
@@ -275,7 +275,7 @@ else:
         (output, _) = proc.communicate()
         status = proc.wait()
         if status!=0:
-            raise Exception("call to pkg-config ('%s') failed" % (cmd,))
+            sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
         kw = dict(ekw)
         if sys.version>='3':
             output = output.decode('utf-8')
@@ -368,12 +368,13 @@ else:
         description = "A window manager library, a window manager, and a 'screen for X' utility",
     )
 
-
-
 ext_modules = []
 cmdclass = {}
 def cython_version_check(min_version):
-    from Cython.Compiler.Version import version as cython_version
+    try:
+        from Cython.Compiler.Version import version as cython_version
+    except ImportError, e:
+        sys.exit("ERROR: Cannot find Cython: %s" % e)
     from distutils.version import LooseVersion
     if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
@@ -387,7 +388,6 @@ def cython_add(extension, min_version=(0, 14, 0)):
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
     cmdclass = {'build_ext': build_ext}
-
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #clean and sdist don't actually use cython,
