@@ -30,6 +30,12 @@ import socket
 from xpra.client import XpraClient
 
 APPLICATION_NAME = "Xpra Launcher"
+SITE_URL = "http://xpra.org/"
+SITE_DOMAIN = "xpra.org"
+SUBPROCESS_CREATION_FLAGS = 0
+APP_DIR = os.getcwd()
+ICONS_DIR = None
+GPL2 = "Your installation may be corrupted, the license text for GPL version 2 could not be found,\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
 
 
 def valid_dir(path):
@@ -38,14 +44,44 @@ def valid_dir(path):
 	except:
 		return False
 
+def get_icon_from_file(filename):
+	try:
+		if not os.path.exists(filename):
+			print("%s does not exist" % filename)
+			return	None
+		f = open(filename, mode='rb')
+		data = f.read()
+		f.close()
+		loader = gtk.gdk.PixbufLoader()
+		loader.write(data)
+		loader.close()
+	except Exception, e:
+		print("get_icon_from_file(%s) %s" % (filename, e))
+		return	None
+	pixbuf = loader.get_pixbuf()
+	return pixbuf
+
+def get_icon(name):
+	global ICONS_DIR
+	if not ICONS_DIR:
+		print("ICONS_DIR not defined!")
+		return	None
+	filename = os.path.join(ICONS_DIR, name)
+	if not os.path.exists(filename):
+		print("%s does not exist" % filename)
+		return	None
+	if not os.path.isfile(filename):
+		print("%s is not a file!" % filename)
+		return	None
+	return get_icon_from_file(filename)
+
+
+prepare_window = None
 """
 	Start of crappy platform workarounds
 	SUBPROCESS_CREATION_FLAGS is for win32 to avoid creating DOS windows for console applications
 	ICONS_DIR is for location the icons
 """
-SUBPROCESS_CREATION_FLAGS = 0
-APP_DIR = os.getcwd()
-ICONS_DIR = None
 if sys.platform.startswith("win"):
 	try:
 		import win32process			#@UnresolvedImport
@@ -72,14 +108,95 @@ elif sys.platform.startswith("darwin"):
 	try:
 		import gtk_osxapplication		#@UnresolvedImport
 		rsc = gtk_osxapplication.quartz_application_get_resource_path()
-	except:
-		pass
-	if rsc:
-		CONTENTS = "/Contents/"
-		i = rsc.rfind(CONTENTS)
-		if i>0:
-			APP_DIR = rsc[:i+len(CONTENTS)]
-		ICONS_DIR = os.path.join(rsc, "icons")
+		if rsc:
+			RESOURCES = "/Resources/"
+			CONTENTS = "/Contents/"
+			i = rsc.rfind(RESOURCES)
+			if i>0:
+				rsc = rsc[:i+len(RESOURCES)]
+			i = rsc.rfind(CONTENTS)
+			if i>0:
+				APP_DIR = rsc[:i+len(CONTENTS)]
+			ICONS_DIR = os.path.join(rsc, "share", "xpra", "icons")
+			gpl2_file = os.path.join(rsc, "share", "xpra", "COPYING")
+			if os.path.exists(gpl2_file):
+				try:
+					f = open(gpl2_file, mode='rb')
+					GPL2 = f.read()
+				finally:
+					if f:
+						f.close()
+
+		def prepare_window_osx(window):
+			def quit_launcher(*args):
+				gtk.main_quit()
+			osxapp = gtk_osxapplication.OSXApplication()
+			icon = get_icon("xpra.png")
+			if icon:
+				osxapp.set_dock_icon_pixbuf(icon)
+			#menu:
+			menu = gtk.MenuBar()
+
+			# Quit (will be hidden - see below)
+			quit_item = gtk.MenuItem("Quit")
+			quit_item.connect("activate", quit_launcher)
+			menu.add(quit_item)
+	
+			# Add to the application menu:
+			item = gtk.MenuItem("About")
+			item.show()
+			global about_dialog
+			about_dialog = None
+			def about(*args):
+				import webbrowser
+				global about_dialog, GPL2
+				if about_dialog:
+					about_dialog.show()
+					about_dialog.present()
+					return
+				dialog = gtk.AboutDialog()
+				def on_website_hook(dialog, web, *args):
+					''' called when the website item is selected '''
+					webbrowser.open(SITE_URL)
+				def on_email_hook(dialog, mail, *args):
+					webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
+				gtk.about_dialog_set_url_hook(on_website_hook)
+				gtk.about_dialog_set_email_hook(on_email_hook)
+				dialog.set_name("Xpra")
+				from xpra import __version__
+				dialog.set_version(__version__)
+				dialog.set_copyright('Copyright (c) 2012, Nagafix Ltd')
+				dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',''))
+				dialog.set_license(str(GPL2))
+				dialog.set_website(SITE_URL)
+				dialog.set_website_label(SITE_DOMAIN)
+				dialog.set_logo(get_icon("xpra.png"))
+				dialog.set_program_name(APPLICATION_NAME)
+				def response(*args):
+					dialog.destroy()
+					global about_dialog
+					about_dialog = None
+				dialog.connect("response", response)
+				about_dialog = dialog
+				dialog.show()
+			item.connect("activate", about)
+			item.show()
+			
+			#now set the dock/main menu
+			menu.show_all()
+			quit_item.hide()
+			menu.hide()
+			# We need to add it to a widget (otherwise it just does not work)
+			window.vbox.add(menu)
+			osxapp.set_menu_bar(menu)
+			menu = gtk.MenuBar()
+			menu.show()
+
+			osxapp.insert_app_menu_item(item, 0)
+			osxapp.ready()
+		prepare_window = prepare_window_osx
+	except Exception, e:
+		print("error setting up menu: %s" % e)
 if not ICONS_DIR or not os.path.exists(ICONS_DIR):
 	if not valid_dir(APP_DIR):
 		APP_DIR = os.path.dirname(inspect.getfile(sys._getframe(1)))
@@ -184,22 +301,6 @@ xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
 xpra_opts.autoconnect = False
 
 
-def get_icon_from_file(filename):
-	try:
-		if not os.path.exists(filename):
-			return	None
-		f = open(filename, mode='rb')
-		data = f.read()
-		f.close()
-		loader = gtk.gdk.PixbufLoader()
-		loader.write(data)
-		loader.close()
-	except Exception, e:
-		print("get_icon_from_file(%s) %s" % (filename, e))
-		return	None
-	pixbuf = loader.get_pixbuf()
-	return pixbuf
-
 def add_close_accel(window, callback):
 	# key accelerators
 	accel_group = gtk.AccelGroup()
@@ -225,7 +326,7 @@ class ApplicationWindow:
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
 		self.window.set_title(APPLICATION_NAME)
-		icon_pixbuf = get_icon_from_file(os.path.join(ICONS_DIR, "xpra.png"))
+		icon_pixbuf = get_icon("xpra.png")
 		if icon_pixbuf:
 			self.window.set_icon(icon_pixbuf)
 		self.window.set_position(gtk.WIN_POS_CENTER)
@@ -331,7 +432,7 @@ class ApplicationWindow:
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked, None)
-		connect_icon = get_icon_from_file(os.path.join(ICONS_DIR, "retry.png"))
+		connect_icon = get_icon("retry.png")
 		if connect_icon:
 			self.button.set_image(scaled_image(connect_icon, 24))
 		vbox.pack_start(self.button)
@@ -340,11 +441,18 @@ class ApplicationWindow:
 			gtk.main_quit()
 
 		add_close_accel(self.window, accel_close)
+		self.window.vbox = vbox
 
 		self.window.add(vbox)
+		self.window.show_all()
+
+		global prepare_window
+		if prepare_window:
+			prepare_window(self.window)
 
 	def show(self):
-		self.window.show_all()
+		self.window.show()
+		self.window.present()
 		self.encoding_changed()
 
 	def run(self):
