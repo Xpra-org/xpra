@@ -30,6 +30,7 @@ DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the tes
 
 TEST_XPRA = True
 TEST_VNC = True
+USE_IPTABLES = True         #this requires iptables to be setup so we can use it for accounting
 
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999         #to limit the total number of tests being run
@@ -276,6 +277,8 @@ def clean_sys_state():
     assert process.wait()==0, "failed to run %s" % str(cmd)
 
 def zero_iptables():
+    if not USE_IPTABLES:
+        return
     cmds = [IPTABLES_CMD+['-Z', 'INPUT'], IPTABLES_CMD+['-Z', 'OUTPUT']]
     for cmd in cmds:
         getoutput(cmd)
@@ -325,6 +328,8 @@ def getiptables_line(chain, pattern, setup_info):
     return line
 
 def parse_ipt(chain, pattern, setup_info):
+    if not USE_IPTABLES:
+        return  0, 0
     line = getiptables_line(chain, pattern, setup_info)
     parts = line.split()
     assert len(parts)>2
