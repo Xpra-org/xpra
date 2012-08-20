@@ -86,8 +86,26 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Jul 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
-- TODO
+* Mon Aug 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
+- new packet encoder written in C (much faster and data is now smaller too) 
+- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
+- support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
+- pass dpi to server and allow clients to specify dpi on the command line
+- fix xsettings endianness problems
+- fix clipboard tokens sent twice on start
+- new command line options and UI to disable notifications forwarding, cursors and bell
+- x264: adapt colourspace conversion, encoding speed and picture quality according to link and encoding/decoding performance
+- automatically change video encoding: handle small region updates (ie: blinking cursor or spinner) without doing a full video frame refresh
+- fairer window batching calculations, better performance over low latency links and bandwidth constrained links
+- lower tcp socket connection timeout (10 seconds)
+- better compression of cursor data
+- log date and time with messages, better log messages (ie: "Ignoring ClientMessage..")
+- send more client and server version information (python, gtk, etc)
+- build cleanups: let distutils clean take care of removing all generated .c files
+- code cleanups: move all win32 specific headers to win32 tree, fix vpx compilation warnings, whitespace, etc
+- removed old "--no-randr" option
+- drop compatibility with versions older than 0.3: we now assume the "raw_packets" feature is supported
+
 
 * Mon Jul 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.0-1
 - fix client application resizing its own window

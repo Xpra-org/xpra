@@ -1,11 +1,54 @@
-v0.5.0
-	-- TODO
+v0.5.0 (2012-08-16)
+======================
+	-- new packet encoder written in C (much faster and data is now smaller too) 
+	-- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
+	-- support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
+	-- pass dpi to server and allow clients to specify dpi on the command line
+	-- fix xsettings endianness problems
+	-- fix clipboard tokens sent twice on start
+	-- new command line options and UI to disable notifications forwarding, cursors and bell
+	-- MS Windows clients can now choose the remote clipboard they sync with ('clipboard', 'primary' or 'secondary')
+	-- x264: adapt colourspace conversion, encoding speed and picture quality according to link and encoding/decoding performance
+	-- automatically change video encoding: handle small region updates (ie: blinking cursor or spinner) without doing a full video frame refresh
+	-- fairer window batching calculations, better performance over low latency links and bandwidth constrained links
+	-- lower tcp socket connection timeout (10 seconds)
+	-- better compression of cursor data
+	-- log date and time with messages, better log messages (ie: "Ignoring ClientMessage..")
+	-- send more client and server version information (python, gtk, etc)
+	-- build cleanups: let distutils clean take care of removing all generated .c files
+	-- code cleanups: move all win32 specific headers to win32 tree, fix vpx compilation warnings, whitespace, etc
+	-- more reliable MS Windows build: detect missing/wrong DLLs and abort
+	-- removed old "--no-randr" option
+	-- drop compatibility with versions older than 0.3: we now assume the "raw_packets" feature is supported
+
+
+v0.4.2 (2012-08-16)
+======================
+
+	-- fix clipboard atom packing (was more noticeable with qt and Java applications)
+	-- fix clipboard selection for non X11 clients: only 'multiple' codepath requires X11 bindings
+	-- fix python3 build
+	-- fix potential double free in x264 error path
+	-- fix logging format error on "window dimensions have changed.." (parameter grouping was wrong)
+	-- fix colour bleeding with x264 (ie: green on black text)
+	-- remove incorrect and unnecessary callback to setup_xprops which may have caused the pulseaudio flag to use the wrong value
+	-- delay 'check packet size' to allow the limit to be raised - important over slower links where it triggers more easily
+
+
+v0.4.1 (2012-07-31)
+======================
+	-- fix clipboard bugs
+	-- fix batch delay calculations with multiple windows
+	-- fix tests (update import statements)
+	-- robustify cython version string parsing
+	-- fix source files changed detection during build
 
 
 v0.4.0 (2012-07-23)
+======================
 	-- fix client application resizing its own window
 	-- fix window dimensions hints not applied
-	-- fix memleak in x264 cleanup code
+	-- fix memleak in x264 cleanup code 
 	-- fix xpra command exit code (more complete fix)
 	-- fix latency bottleneck in processing of damage requests
 	-- fix free uninitialized pointers in video decoder initialization error codepath
@@ -18,7 +61,7 @@ v0.4.0 (2012-07-23)
 	-- release Python's GIL during vpx and x264 compression and colourspace conversion
 	-- better UI launcher: UI improvements, detect encodings, fix standalone/win32 usage, minimize window once the client has started
 	-- "xpra stop" disconnects all potential clients cleanly before exiting
-	-- use memory aligned buffer for better performance with x264
+	-- x264 used memory aligned buffer for better performance
 	-- avoid vpx/x264 overhead for very small damage regions
 	-- detect dead connection with ping packets: disconnect if echo not received
 	-- force a full refresh when the encoding is changed
