@@ -87,7 +87,7 @@ class ClientExtras(ClientExtrasBase):
             if not self.client.readonly:
                 add_item(self.make_layoutsmenuitem())
             add_item(self.make_jpegsubmenu())
-            add_item(self.make_compressionmenu())
+            #add_item(self.make_compressionmenu())
             add_item(self.make_refreshmenuitem())
             add_item(self.make_raisewindowsmenuitem())
             add_item(gtk.SeparatorMenuItem())
