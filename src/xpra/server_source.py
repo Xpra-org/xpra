@@ -25,7 +25,7 @@ AUTO_SPEED = env_bool("XPRA_AUTO_SPEED", True)
 AUTO_QUALITY = env_bool("XPRA_AUTO_QUALITY", True)
 MAX_NONVIDEO_PIXELS = 512
 try:
-    MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 512))
+    MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 2048))
 except:
     pass
 MAX_DEBUG_MESSAGES = 1000
@@ -930,11 +930,15 @@ class ServerSource(object):
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
         if current_encoding=="x264" and (ww==1 or wh==1):
+            #x264 cannot handle 1 pixel wide/high areas
             return  switch()
-        if pixel_count>MAX_NONVIDEO_PIXELS or pixel_count>=(ww*wh):
+        if pixel_count<ww*wh*0.01:
+            #less than one percent of total area
+            return  switch()
+        if pixel_count>MAX_NONVIDEO_PIXELS:
             #too many pixels, use current video encoder
             return current_encoding
-        if pixel_count>0.5*(ww*wh):
+        if pixel_count>0.5*ww*wh:
             #small, but over 50% of the full window
             return current_encoding
         return switch()
