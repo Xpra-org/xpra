@@ -34,6 +34,7 @@ USE_IPTABLES = True         #this requires iptables to be setup so we can use it
 
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999         #to limit the total number of tests being run
+MAX_ERRORS = 20             #allow this many tests to cause errors before aborting
 
 #some commands (games especially) may need longer to startup:
 TEST_COMMAND_SETTLE_TIME = {}
@@ -447,7 +448,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     traceback.print_exc()
                     errors += 1
                     print("error during client command run for %s: %s" % (name, e))
-                    if errors>10:
+                    if errors>MAX_ERRORS:
                         print("too many errors, aborting tests")
                         break
             finally:
@@ -603,10 +604,11 @@ def test_xpra():
                             cmd += ["-z", str(compression), "--readonly"]
                             if XPRA_VERSION_NO>=[0, 3]:
                                 cmd.append("--enable-pings")
-                                cmd.append("--no-cursors")
-                                cmd.append("--no-notifications")
                                 cmd.append("--no-clipboard")
                                 cmd.append("--no-bell")
+                            if XPRA_VERSION_NO>=[0, 5]:
+                                cmd.append("--no-cursors")
+                                cmd.append("--no-notifications")
                             if encoding=="jpeg":
                                 cmd.append("--jpeg-quality=%s" % jpeg_q)
                                 name = "%s-%s" % (encoding, jpeg_q)
