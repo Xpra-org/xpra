@@ -605,8 +605,8 @@ def test_xpra():
                             if XPRA_VERSION_NO>=[0, 3]:
                                 cmd.append("--enable-pings")
                                 cmd.append("--no-clipboard")
-                                cmd.append("--no-bell")
                             if XPRA_VERSION_NO>=[0, 5]:
+                                cmd.append("--no-bell")
                                 cmd.append("--no-cursors")
                                 cmd.append("--no-notifications")
                             if encoding=="jpeg":
