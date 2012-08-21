@@ -1,0 +1,13 @@
+Index: setup.py
+===================================================================
+--- setup.py	(revision 1346)
++++ setup.py	(working copy)
+@@ -34,7 +34,7 @@
+ 
+ 
+ 
+-clipboard_ENABLED = True
++clipboard_ENABLED = False
+ 
+ 
+ 

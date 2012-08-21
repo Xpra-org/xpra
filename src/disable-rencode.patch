@@ -1,0 +1,13 @@
+Index: setup.py
+===================================================================
+--- setup.py	(revision 1345)
++++ setup.py	(working copy)
+@@ -46,7 +46,7 @@
+ 
+ 
+ 
+-rencode_ENABLED = True
++rencode_ENABLED = False
+ 
+ 
+ 
