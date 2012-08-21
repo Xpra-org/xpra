@@ -66,7 +66,7 @@ file path=usr/lib/python2.6/site-packages/parti/trays/simpletab.py owner=root \
     group=bin mode=644
 file path=usr/lib/python2.6/site-packages/parti/world_organizer.py owner=root \
     group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti_all-0.5.0-py2.6.egg-info \
+file path=usr/lib/python2.6/site-packages/parti_all-0.6.0-py2.6.egg-info \
     owner=root group=bin mode=644
 dir  path=usr/lib/python2.6/site-packages/wimpiggy owner=root group=root mode=755
 file path=usr/lib/python2.6/site-packages/wimpiggy/__init__.py owner=root \

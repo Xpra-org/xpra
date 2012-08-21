@@ -1,3 +1,8 @@
+xpra (0.6.0-1) UNRELEASED; urgency=low
+  * TODO!
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 21 Aug 2012 16:23:07 +0700
+
 xpra (0.5.0-1) UNRELEASED; urgency=low
   * new packet encoder written in C (much faster and data is now smaller too) 
   * read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf

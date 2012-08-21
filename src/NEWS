@@ -1,4 +1,9 @@
-v0.5.0 (2012-08-16)
+v0.6.0 (2012-08-21)
+======================
+	-- TODO
+
+
+v0.5.0 (2012-08-20)
 ======================
 	-- new packet encoder written in C (much faster and data is now smaller too) 
 	-- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
