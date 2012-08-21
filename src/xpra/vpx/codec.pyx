@@ -3,6 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from libc.stdlib cimport free
 
 cdef extern from "Python.h":
@@ -26,7 +27,7 @@ cdef extern from "vpxlib.h":
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
 
-NOGIL = True
+NOGIL = os.environ.get("XPRA_VPX_NOGIL", "").lower() not in ("0", "no", "false")
 
 ENCODERS = {}
 DECODERS = {}

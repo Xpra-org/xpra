@@ -5,6 +5,7 @@
 
 #gcc -pthread -shared -O0 build/temp.linux-x86_64-2.7/xpra/x264/codec.o xpra/x264/x264lib.o -L/usr/lib64 -lx264 -lavcodec -lswscale -lpthread -lpython2.7 -o build/lib.linux-x86_64-2.7/xpra/x264/codec.so
 
+import os
 from libc.stdlib cimport free
 
 cdef extern from "string.h":
@@ -43,7 +44,7 @@ cdef extern from "x264lib.h":
     void set_encoding_quality(x264lib_ctx *context, int pct)
 
 
-NOGIL = True
+NOGIL = os.environ.get("XPRA_X264_NOGIL", "").lower() not in ("0", "no", "false")
 
 ENCODERS = {}
 DECODERS = {}
