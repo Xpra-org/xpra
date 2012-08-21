@@ -331,7 +331,7 @@ else:
             #do live detection
             xorg_stat = os.stat(XORG_BIN)
             if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                print("%s is suid, it cannot be used for Xdummy")
+                print("%s is suid, it cannot be used for Xdummy" % XORG_BIN)
             else:
                 cmd = ["Xorg", "-version"]
                 print("detecting Xorg version using: %s" % str(cmd))
