@@ -34,7 +34,7 @@ from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
-cliboard_ENABLED = True
+clipboard_ENABLED = True
 
 
 
@@ -63,7 +63,7 @@ for arg in sys.argv:
     elif arg == "--without-rencode":
         rencode_ENABLED = False
     elif arg == "--without-clipboard":
-        cliboard_ENABLED = False
+        clipboard_ENABLED = False
     elif arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
@@ -421,7 +421,7 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
 
 
 
-if cliboard_ENABLED:
+if clipboard_ENABLED:
     packages.append("wimpiggy.gdk")
     cython_add(Extension("wimpiggy.gdk.gdk_atoms",
                 ["wimpiggy/gdk/gdk_atoms.pyx"],
