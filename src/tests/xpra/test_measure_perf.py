@@ -34,7 +34,7 @@ USE_IPTABLES = True         #this requires iptables to be setup so we can use it
 
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999         #to limit the total number of tests being run
-MAX_ERRORS = 20             #allow this many tests to cause errors before aborting
+MAX_ERRORS = 100            #allow this many tests to cause errors before aborting
 
 #some commands (games especially) may need longer to startup:
 TEST_COMMAND_SETTLE_TIME = {}
@@ -43,6 +43,7 @@ TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (128, 32, 100), (32, 8, 200)]
 
 XPRA_SSH_OPTIONS = [True, False]
 
@@ -136,14 +137,14 @@ XPRA_SERVER_STOP_COMMANDS = [
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (IP, PORT)]
 XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
-XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
 XPRA_JPEG_OPTIONS = [40, 80, 90]
 XPRA_JPEG_OPTIONS = [40, 90]
 XPRA_JPEG_OPTIONS = [80]
 XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
 XPRA_COMPRESSION_OPTIONS = [0, 3]
-XPRA_COMPRESSION_OPTIONS = [3]
+XPRA_COMPRESSION_OPTIONS = [None]
 
 
 check = [TRICKLE_BIN]
@@ -517,12 +518,7 @@ def get_stats_headers():
              ]
 
 def no_stats(last_record=None):
-    return  ["", "", "", "",
-             "", "", "", "", "", "",
-             "", "", "",
-             "", "", "",
-             "", "", "",
-             ]
+    return  ["" for _ in xrange(21)]
 
 def xpra_get_stats(last_record=None):
     if XPRA_VERSION_NO<[0, 3]:
@@ -601,7 +597,9 @@ def test_xpra():
                                 cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
                             else:
                                 cmd.append("tcp:%s:%s" % (IP, PORT))
-                            cmd += ["-z", str(compression), "--readonly"]
+                            cmd.append("--readonly")
+                            if compression is not None:
+                                cmd += ["-z", str(compression)]
                             if XPRA_VERSION_NO>=[0, 3]:
                                 cmd.append("--enable-pings")
                                 cmd.append("--no-clipboard")
@@ -713,11 +711,7 @@ def get_vnc_stats(last_record=None):
                 parts = line.split()
                 regions_s = parts[-1]
                 print("Frames/sec=%s" % regions_s)
-    return  [regions_s, "", "", "",
-             "", "", "", "", "", "",
-             "", "", "",
-             "", "", ""
-             ]
+    return  [regions_s] + ["" for _ in xrange(20)]
 
 def test_vnc():
     print("")
