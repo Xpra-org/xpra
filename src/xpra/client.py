@@ -521,6 +521,7 @@ class XpraClient(XpraClientBase):
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
+        capabilities["screen_sizes"] = self.get_screen_sizes()
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat
@@ -697,9 +698,30 @@ class XpraClient(XpraClientBase):
     def _screen_size_changed(self, *args):
         root_w, root_h = get_root_size()
         log.debug("sending updated screen size to server: %sx%s", root_w, root_h)
-        self.send(["desktop_size", root_w, root_h])
+        self.send(["desktop_size", root_w, root_h, self.get_screen_sizes()])
         #update the max packet size (may have gone up):
         self.set_max_packet_size()
+
+    def get_screen_sizes(self):
+        screen_sizes = []
+        display = gdk.display_get_default()
+        i=0
+        while i<display.get_n_screens():
+            screen = display.get_screen(i)
+            j = 0
+            monitors = []
+            while j<screen.get_n_monitors():
+                geom = screen.get_monitor_geometry(j)
+                monitor = (screen.get_monitor_plug_name(j), geom.x, geom.y, geom.width, geom.height,
+                            screen.get_monitor_width_mm(j), screen.get_monitor_height_mm(j))
+                monitors.append(monitor)
+                j += 1
+            item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
+                        screen.get_width_mm(), screen.get_height_mm(),
+                        monitors)
+            screen_sizes.append(item)
+            i += 1
+        return screen_sizes
 
     def _process_new_common(self, packet, override_redirect):
         (wid, x, y, w, h, metadata) = packet[1:7]

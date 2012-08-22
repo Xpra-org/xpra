@@ -953,6 +953,9 @@ class XpraServer(gobject.GObject):
         (width, height) = packet[1:3]
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
+        if len(packet)>=4:
+            screen_sizes = packet[3]
+            log("client screen sizes: %s", screen_sizes)
 
     def _set_encoding(self, encoding, wids):
         if encoding:
