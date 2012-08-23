@@ -43,9 +43,7 @@ TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
 TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (128, 32, 100), (32, 8, 200)]
-
-XPRA_SSH_OPTIONS = [True, False]
+TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (256, 64, 50), (128, 32, 100), (32, 8, 200)]
 
 #tools we use:
 IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
@@ -145,6 +143,7 @@ XPRA_JPEG_OPTIONS = [80]
 XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
 XPRA_COMPRESSION_OPTIONS = [0, 3]
 XPRA_COMPRESSION_OPTIONS = [None]
+XPRA_CONNECT_OPTIONS = ["ssh", "tcp", "unix"]
 
 
 check = [TRICKLE_BIN]
@@ -581,7 +580,7 @@ def test_xpra():
     print("                Xpra tests")
     print("")
     tests = []
-    for SSH in XPRA_SSH_OPTIONS:
+    for connect_option in XPRA_CONNECT_OPTIONS:
         for down,up,latency in TRICKLE_SHAPING_OPTIONS:
             for x11_test_command in X11_TEST_COMMANDS:
                 for encoding in XPRA_TEST_ENCODINGS:
@@ -593,10 +592,12 @@ def test_xpra():
                         for compression in comp_options:
                             cmd = trickle_command(down, up, latency)
                             cmd += [XPRA_BIN, "attach"]
-                            if SSH:
+                            if connect_option=="ssh":
                                 cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
-                            else:
+                            elif connect_option=="tcp":
                                 cmd.append("tcp:%s:%s" % (IP, PORT))
+                            else:
+                                cmd.append(":%s" % (DISPLAY_NO))
                             cmd.append("--readonly")
                             if compression is not None:
                                 cmd += ["-z", str(compression)]
@@ -617,7 +618,7 @@ def test_xpra():
                                 cmd.append("--encoding=%s" % encoding)
                             command_name = get_command_name(x11_test_command)
                             test_name = "%s (%s - %s - %s)" % (name, command_name, compression, trickle_str(down, up, latency))
-                            tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, SSH, (down,up,latency), x11_test_command, cmd))
+                            tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, connect_option, (down,up,latency), x11_test_command, cmd))
         return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
@@ -774,7 +775,7 @@ def main():
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
                "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
                "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
-               "compression", "ssh", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+               "compression", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
