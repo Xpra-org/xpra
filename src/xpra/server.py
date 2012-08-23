@@ -265,6 +265,7 @@ class XpraServer(gobject.GObject):
 
         self.reset_statistics()
 
+        self.send_bell = False
         self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
