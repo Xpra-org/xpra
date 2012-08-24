@@ -27,8 +27,6 @@ cdef extern from "vpxlib.h":
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
 
-NOGIL = os.environ.get("XPRA_VPX_NOGIL", "").lower() not in ("0", "no", "false")
-
 ENCODERS = {}
 DECODERS = {}
 
@@ -102,10 +100,7 @@ cdef class Decoder(xcoder):
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:
             return i, 0, ""
-        if NOGIL:
-            with nogil:
-                i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
-        else:
+        with nogil:
             i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         if i!=0:
             return i, 0, ""
@@ -150,10 +145,7 @@ cdef class Encoder(xcoder):
         cdef int i
         cdef uint8_t *cout
         cdef int coutsz
-        if NOGIL:
-            with nogil:
-                i = compress_image(self.context, pic_in, &cout, &coutsz)
-        else:
+        with nogil:
             i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
             return i, 0, ""

@@ -44,8 +44,6 @@ cdef extern from "x264lib.h":
     void set_encoding_quality(x264lib_ctx *context, int pct)
 
 
-NOGIL = os.environ.get("XPRA_X264_NOGIL", "").lower() not in ("0", "no", "false")
-
 ENCODERS = {}
 DECODERS = {}
 
@@ -103,10 +101,7 @@ cdef class Decoder(xcoder):
         memset(padded_buf+buf_len, 0, 32)
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         i = 0
-        if NOGIL:
-            with nogil:
-                i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
-        else:
+        with nogil:
             i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         xmemfree(padded_buf)
         if i!=0:
@@ -137,12 +132,7 @@ cdef class Decoder(xcoder):
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
-        if NOGIL:
-            with nogil:
-                i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
-                if i==0:
-                    i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
-        else:
+        with nogil:
             i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
             if i==0:
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
@@ -201,10 +191,7 @@ cdef class Encoder(xcoder):
         cdef int i
         cdef uint8_t *cout
         cdef int coutsz
-        if NOGIL:
-            with nogil:
-                i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
-        else:
+        with nogil:
             i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
         if i!=0:
             return i, 0, ""
