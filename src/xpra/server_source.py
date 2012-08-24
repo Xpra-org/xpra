@@ -616,6 +616,7 @@ class ServerSource(object):
             weight += (factor-1.0)/2
         #packet and pixels backlog:
         last_packets_backlog, last_pixels_backlog = self._last_client_delta
+        self._last_client_delta = packets_backlog, pixels_backlog
         factors.append(calculate_for_target("client packets backlog:", 0, last_packets_backlog, packets_backlog, slope=1.0, smoothing=sqrt))
         factors.append(calculate_for_target("client pixels backlog:", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=1.0, smoothing=sqrt))
         if self._mmap and self._mmap_size>0:
