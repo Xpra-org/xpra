@@ -485,6 +485,8 @@ class ServerSource(object):
         if batch.last_updated+batch.recalculate_delay<now:
             #simple timeout
             self.calculate_batch_delay(wid, window, batch)
+        if batch.delay>batch.min_delay:
+            return
         last_events = self._damage_last_events.get(wid)
         if last_events:
             #work out if we have too many damage requests
