@@ -5,6 +5,7 @@ v0.6.0 (2012-08-21)
 
 v0.5.0 (2012-08-20)
 ======================
+	-- fix xpra_launcher
 	-- new packet encoder written in C (much faster and data is now smaller too) 
 	-- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 	-- support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)

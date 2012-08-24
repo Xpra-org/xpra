@@ -289,6 +289,7 @@ xpra_opts.compression_level = default_int("compression", 3)
 xpra_opts.send_pings = default_bool("pings", False)
 xpra_opts.dpi = default_int("dpi", 96)
 xpra_opts.cursors = default_bool("cursors", True)
+xpra_opts.bell = default_bool("bell", True)
 xpra_opts.notifications = default_bool("notifications", True)
 #these would need testing/work:
 xpra_opts.auto_refresh_delay = 0.0
@@ -493,7 +494,7 @@ class ApplicationWindow:
 		try:
 			from xpra.bytestreams import SocketConnection
 			global socket_wrapper
-			socket_wrapper = SocketConnection(sock, "xprahost")
+			socket_wrapper = SocketConnection(sock, sock.getsockname(), sock.getpeername())
 		except Exception, e:
 			self.info.set_text("Xpra Client error: %s" % e)
 			print("Xpra Client error: %s" % e)
@@ -524,10 +525,12 @@ class ApplicationWindow:
 		opts.readonly = xpra_opts.readonly
 		opts.session_name = "Xpra session"
 		opts.mmap = xpra_opts.mmap
+		opts.mmap_group = xpra_opts.mmap_group
 		opts.keyboard_sync = xpra_opts.keyboard_sync
 		opts.send_pings = xpra_opts.send_pings
 		opts.dpi = xpra_opts.dpi
 		opts.cursors = xpra_opts.cursors
+		opts.bell = xpra_opts.bell
 		opts.notifications = xpra_opts.notifications
 		import logging
 		logging.root.setLevel(logging.INFO)
