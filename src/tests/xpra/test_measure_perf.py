@@ -39,11 +39,12 @@ MAX_ERRORS = 100            #allow this many tests to cause errors before aborti
 #some commands (games especially) may need longer to startup:
 TEST_COMMAND_SETTLE_TIME = {}
 
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 1024, 20)]
+NO_SHAPING = (0, 0, 0)
+TRICKLE_SHAPING_OPTIONS = [NO_SHAPING]
+TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 1024, 20)]
 TRICKLE_SHAPING_OPTIONS = [(1024, 1024, 20), (128, 32, 40), (0, 0, 0)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
-TRICKLE_SHAPING_OPTIONS = [(0, 0, 0), (1024, 256, 20), (256, 64, 50), (128, 32, 100), (32, 8, 200)]
+TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 256, 20), (1024, 256, 300), (128, 32, 100), (32, 8, 200)]
+TRICKLE_SHAPING_OPTIONS = [NO_SHAPING, (1024, 256, 20), (256, 64, 50), (128, 32, 100), (32, 8, 200)]
 
 #tools we use:
 IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
@@ -581,7 +582,10 @@ def test_xpra():
     print("")
     tests = []
     for connect_option in XPRA_CONNECT_OPTIONS:
-        for down,up,latency in TRICKLE_SHAPING_OPTIONS:
+        shaping_options = TRICKLE_SHAPING_OPTIONS
+        if connect_option=="unix":
+            shaping_options = [NO_SHAPING]
+        for down,up,latency in shaping_options:
             for x11_test_command in X11_TEST_COMMANDS:
                 for encoding in XPRA_TEST_ENCODINGS:
                     QUALITY = [-1]
