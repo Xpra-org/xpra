@@ -619,7 +619,7 @@ def test_xpra():
                             command_name = get_command_name(x11_test_command)
                             test_name = "%s (%s - %s - %s - via %s)" % (name, command_name, compression, trickle_str(down, up, latency), connect_option)
                             tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, connect_option, (down,up,latency), x11_test_command, cmd))
-        return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
+    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
 def get_x11_client_window_info(display, *app_name_strings):
