@@ -45,7 +45,6 @@ cdef extern from "x264lib.h":
 
 
 ENCODERS = {}
-DECODERS = {}
 
 
 """ common superclass for Decoder and Encoder """

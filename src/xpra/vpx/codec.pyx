@@ -28,7 +28,6 @@ cdef extern from "vpxlib.h":
 
 
 ENCODERS = {}
-DECODERS = {}
 
 
 """ common superclass for Decoder and Encoder """

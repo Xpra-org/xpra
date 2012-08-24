@@ -72,7 +72,8 @@ class GLClientWindow(ClientWindow):
         self.glarea.set_size_request(w, h)
         self.glarea.show()
         self.add(self.glarea)
-        self._on_close = []
+        self._video_decoder = None
+        self._video_decoder_codec = None
         self.textures = None # OpenGL texture IDs
         self.current_mode = GLClientWindow.MODE_UNINITIALIZED
 
@@ -127,40 +128,38 @@ class GLClientWindow(ClientWindow):
             self.update_texture_rgb24(img_data, x, y, width, height, rowstride)
         elif coding == "x264":
             assert "x264" in ENCODINGS
-            from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-            self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride, options)
+            from xpra.x264.codec import Decoder     #@UnresolvedImport
+            self.paint_with_video_decoder(Decoder, "x264", img_data, x, y, width, height, rowstride, options)
         elif coding == "vpx":
             assert "vpx" in ENCODINGS
-            from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport    @Reimport
-            self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
+            from xpra.vpx.codec import Decoder     #@UnresolvedImport    @Reimport
+            self.paint_with_video_decoder(Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
         else:
             raise Exception("** No JPEG/PNG support for OpenGL")
         queue_draw(self, x, y, width, height)
         return  True
 
     #FIXME: This is a copypaste from window_backing.py...
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
+    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
-        decoder = decoders.get(self._id)
-        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
-            log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
-            decoder.clean()
-            decoder.init_context(width, height, options)
-        if decoder is None:
-            decoder = factory()
-            decoder.init_context(width, height, options)
-            decoders[self._id] = decoder
-            def close_decoder():
-                log("closing %s decoder for window %s", coding, self._id)
-                decoder.clean()
-                del decoders[self._id]
-            self._on_close.append(close_decoder)
+        if self._video_decoder:
+            if self._video_decoder_codec!=coding:
+                self._video_decoder.clean()
+                self._video_decoder = None
+            elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
+                log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                self._video_decoder.clean()
+                self._video_decoder.init_context(width, height, options)
+        if self._video_decoder is None:
+            self._video_decoder = factory()
+            self._video_decoder_codec = coding
+            self._video_decoder.init_context(width, height, options)
         try:
             if use_openGL_CSC:
-                decompress = decoder.decompress_image_to_yuv
+                decompress = self._video_decoder.decompress_image_to_yuv
                 update_texture = self.update_texture_yuv420
             else:
-                decompress = decoder.decompress_image_to_rgb
+                decompress = self._video_decoder.decompress_image_to_rgb
                 update_texture = self.update_texture_rgb24
 
             err, outstride, data = decompress(img_data, options)
@@ -174,7 +173,7 @@ class GLClientWindow(ClientWindow):
             update_texture(data, x, y, width, height, outstride)
         finally:
             if not use_openGL_CSC:
-                decoder.free_image()
+                self._video_decoder.free_image()
 
     def update_texture_rgb24(self, img_data, x, y, width, height, rowstride):
         drawable = self.glarea.get_gl_drawable()
@@ -326,10 +325,6 @@ class GLClientWindow(ClientWindow):
         self._unfocus()
         self.glarea.destroy()
         gtk.Window.destroy(self)
-        for cb in self._on_close:
-            try:
-                log("calling %s", cb)
-                cb()
-            except:
-                log.error("error on close callback %s", cb, exc_info=True)
-        self._on_close = []
+        if self._video_decoder:
+            self._video_decoder.clean()
+            self._video_decoder = None

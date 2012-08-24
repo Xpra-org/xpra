@@ -301,25 +301,23 @@ END
         #end=time.time()
         #log.info("Took %f ms" % (end - before))
 
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
+    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
-        decoder = decoders.get(self.wid)
-        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
-            log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
-            decoder.clean()
-            decoder.init_context(width, height, options)
-        if decoder is None:
-            decoder = factory()
-            decoder.init_context(width, height, options)
-            decoders[self.wid] = decoder
-            def close_decoder():
-                log("closing %s decoder for window %s", coding, self.wid)
-                decoder.clean()
-                del decoders[self.wid]
-            self._on_close.append(close_decoder)
+        if self._video_decoder:
+            if self._video_decoder_codec!=coding:
+                self._video_decoder.clean()
+                self._video_decoder = None
+            elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
+                log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                self._video_decoder.clean()
+                self._video_decoder.init_context(width, height, options)
+        if self._video_decoder is None:
+            self._video_decoder = factory()
+            self._video_decoder_codec = coding
+            self._video_decoder.init_context(width, height, options)
         try:
             if self.use_openGL_CSC == True:
-                err, outstride, data = decoder.decompress_image_to_yuv(img_data, options)
+                err, outstride, data = self._video_decoder.decompress_image_to_yuv(img_data, options)
                 if err!=0:
                     log.error("paint_with_video_decoder: ouch, decompression error %s", err)
                     return
@@ -329,7 +327,7 @@ END
                 log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
                 self.paint_yuv420(data, x, y, width, height, outstride)
             else:
-                err, outstride, data = decoder.decompress_image_to_rgb(img_data)
+                err, outstride, data = self._video_decoder.decompress_image_to_rgb(img_data)
                 if err!=0:
                     log.error("paint_with_video_decoder: ouch, decompression error %s", err)
                     return
@@ -340,5 +338,5 @@ END
                 self.paint_rgb24(data, x, y, width, height, outstride)
         finally:
             if self.use_openGL_CSC == False:
-                decoder.free_image()
+                self._video_decoder.free_image()
             log("done")

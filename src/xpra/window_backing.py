@@ -27,16 +27,13 @@ class Backing(object):
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = None
-        self._on_close = []
+        self._video_decoder = None
+        self._video_decoder_codec = None
 
     def close(self):
-        for cb in self._on_close:
-            try:
-                log("calling %s", cb)
-                cb()
-            except:
-                log.error("error on close callback %s", cb, exc_info=True)
-        self._on_close = []
+        if self._video_decoder:
+            self._video_decoder.clean()
+            self._video_decoder = None
 
     def jpegimage(self, img_data, width, height):
         import Image
@@ -64,32 +61,30 @@ class Backing(object):
 
     def paint_x264(self, img_data, x, y, width, height, rowstride, options):
         assert "x264" in ENCODINGS
-        from xpra.x264.codec import DECODERS, Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(DECODERS, Decoder, "x264", img_data, x, y, width, height, rowstride, options)
+        from xpra.x264.codec import Decoder     #@UnresolvedImport
+        return  self.paint_with_video_decoder(Decoder, "x264", img_data, x, y, width, height, rowstride, options)
 
     def paint_vpx(self, img_data, x, y, width, height, rowstride, options):
         assert "vpx" in ENCODINGS
-        from xpra.vpx.codec import DECODERS, Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(DECODERS, Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
+        from xpra.vpx.codec import Decoder     #@UnresolvedImport
+        return  self.paint_with_video_decoder(Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
 
-    def paint_with_video_decoder(self, decoders, factory, coding, img_data, x, y, width, height, rowstride, options):
+    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
-        decoder = decoders.get(self.wid)
-        if decoder and (decoder.get_width()!=width or decoder.get_height()!=height):
-            log("paint_with_video_decoder: window dimensions have changed from %s to %s", (decoder.get_width(), decoder.get_height()), (width, height))
-            decoder.clean()
-            decoder.init_context(width, height, options)
-        if decoder is None:
-            decoder = factory()
-            decoder.init_context(width, height, options)
-            decoders[self.wid] = decoder
-            def close_decoder():
-                log("closing %s decoder for window %s", coding, self.wid)
-                decoder.clean()
-                del decoders[self.wid]
-            self._on_close.append(close_decoder)
+        if self._video_decoder:
+            if self._video_decoder_codec!=coding:
+                self._video_decoder.clean()
+                self._video_decoder = None
+            elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
+                log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                self._video_decoder.clean()
+                self._video_decoder.init_context(width, height, options)
+        if self._video_decoder is None:
+            self._video_decoder = factory()
+            self._video_decoder_codec = coding
+            self._video_decoder.init_context(width, height, options)
         log("paint_with_video_decoder: options=%s", options)
-        err, outstride, data = decoder.decompress_image_to_rgb(img_data, options)
+        err, outstride, data = self._video_decoder.decompress_image_to_rgb(img_data, options)
         if err!=0:
             log.error("paint_with_video_decoder: ouch, decompression error %s", err)
             return  False
@@ -101,7 +96,7 @@ class Backing(object):
             self.paint_rgb24(data, x, y, width, height, outstride)
             return  True
         finally:
-            decoder.free_image()
+            self._video_decoder.free_image()
 
 
 """
