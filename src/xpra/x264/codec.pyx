@@ -44,9 +44,6 @@ cdef extern from "x264lib.h":
     void set_encoding_quality(x264lib_ctx *context, int pct)
 
 
-ENCODERS = {}
-
-
 """ common superclass for Decoder and Encoder """
 cdef class xcoder:
     cdef x264lib_ctx *context

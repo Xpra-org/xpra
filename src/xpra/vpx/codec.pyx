@@ -27,9 +27,6 @@ cdef extern from "vpxlib.h":
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
 
-ENCODERS = {}
-
-
 """ common superclass for Decoder and Encoder """
 cdef class xcoder:
     cdef vpx_codec_ctx_t *context

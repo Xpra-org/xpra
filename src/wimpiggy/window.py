@@ -356,8 +356,12 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def do_wimpiggy_unmap_event(self, event):
         self.unmanage()
 
-    def prop_get(self, key, type):
-        return prop_get(self.client_window, key, type, ignore_errors=False)
+    def prop_get(self, key, ptype):
+        return prop_get(self.client_window, key, ptype, ignore_errors=False)
+
+    def get_dimensions(self):
+        _, _, ww, wh = self.get_property("geometry")
+        return ww, wh
 
 
 gobject.type_register(OverrideRedirectWindowModel)
@@ -535,12 +539,15 @@ class WindowModel(BaseWindowModel):
             raise Unmanageable(e)
         self._setup_done = True
 
-    def prop_get(self, key, type, ignore_errors=False):
+    def get_dimensions(self):
+        return  self.get_property("actual-size")
+
+    def prop_get(self, key, ptype, ignore_errors=False):
         # Utility wrapper for prop_get on the client_window
         # also allows us to ignore property errors during setup_client
         if not self._setup_done:
             ignore_errors = True
-        return prop_get(self.client_window, key, type, ignore_errors=ignore_errors)
+        return prop_get(self.client_window, key, ptype, ignore_errors=ignore_errors)
 
     def do_wimpiggy_xkb_event(self, event):
         log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)

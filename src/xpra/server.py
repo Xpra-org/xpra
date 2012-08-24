@@ -63,7 +63,8 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.server_source import DamageBatchConfig, ServerSource
+from xpra.server_source import ServerSource
+from xpra.window_source import DamageBatchConfig
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
@@ -1131,7 +1132,6 @@ class XpraServer(gobject.GObject):
         batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", batch_config.START_DELAY)))
-        batch_config.encoding = self.encoding
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size, self.encoding_client_options)
         self.send_hello(capabilities)
         #send_hello will take care of sending the current and max screen resolutions,

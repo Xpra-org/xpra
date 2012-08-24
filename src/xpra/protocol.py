@@ -16,6 +16,10 @@ import socket # for socket.error
 import zlib
 import errno
 import struct
+import time
+import os
+
+NOYIELD = os.environ.get("XPRA_YIELD") is None
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -99,6 +103,14 @@ class Protocol(object):
 
     def __str__(self):
         return "Protocol(%s)" % self._conn
+
+    def add_stats(self, info):
+        info["input_bytecount"] = self.input_bytecount
+        info["input_packetcount"] = self.input_packetcount
+        info["input_raw_packetcount"] = self.input_raw_packetcount
+        info["output_bytecount"] = self.output_bytecount
+        info["output_packetcount"] = self.output_packetcount
+        info["output_raw_packetcount"] = self.output_raw_packetcount
 
     def start(self):
         self._write_thread.start()
@@ -273,6 +285,7 @@ class Protocol(object):
                     raise
                 if self._write_queue.empty():
                     gobject.idle_add(self._maybe_queue_more_writes)
+                NOYIELD or time.sleep(0)
         finally:
             log("write thread: ended, closing socket")
             self.close()
@@ -434,6 +447,7 @@ class Protocol(object):
                         packet[index] = raw_data
                     raw_packets = {}
                 gobject.idle_add(self._process_packet, packet)
+                NOYIELD or time.sleep(0)
 
     def _process_packet(self, decoded):
         if self._closed:

@@ -68,7 +68,7 @@ def add_list_stats(info, basename, in_values):
     if avg!=0:
         #coefficient of variation
         info["%s.cv_pct" % basename] = int(100.0*std/avg)
-    if counter>0:
+    if counter>0 and p<float('inf'):
         #geometric mean
         try:
             v = int(pow(p, 1.0/counter))
