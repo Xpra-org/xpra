@@ -16,6 +16,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.nested_main import NestedMainLoop
+from xpra.protocol import zlib_compress
 
 #debug = log.info
 debug = log.debug
@@ -23,6 +24,7 @@ debug = log.debug
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, clipboards=["CLIPBOARD"]):
         self.send = send_packet_cb
+        self.max_clipboard_packet_size = 32*1024 - 1024
         self._clipboard_proxies = {}
         for clipboard in clipboards:
             proxy = ClipboardProxy(clipboard)
@@ -151,6 +153,12 @@ class ClipboardProtocolHelperBase(object):
                 if wire_encoding is None:
                     no_contents()
                     return
+                if len(wire_encoding)>256:
+                    wire_encoding = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_encoding)
+                    if len(wire_encoding)>self.max_clipboard_packet_size:
+                        log.warn("clipboard contents are too big and have not been sent: %s bytes dropped" % len(wire_encoding))
+                        no_contents()
+                        return
                 self.send(["clipboard-contents", request_id, selection,
                            dtype, dformat, wire_encoding, wire_data])
             proxy.get_contents(target, got_contents)
