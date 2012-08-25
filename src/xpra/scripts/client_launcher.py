@@ -194,6 +194,9 @@ elif sys.platform.startswith("darwin"):
 		prepare_window = prepare_window_osx
 	except Exception, e:
 		print("error setting up menu: %s" % e)
+else:
+	#/usr/share/xpra
+	APP_DIR = os.path.join(sys.exec_prefix, "share", "xpra")
 if not ICONS_DIR or not os.path.exists(ICONS_DIR):
 	if not valid_dir(APP_DIR):
 		APP_DIR = os.path.dirname(inspect.getfile(sys._getframe(1)))
