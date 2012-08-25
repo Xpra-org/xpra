@@ -1123,15 +1123,16 @@ class XpraServer(gobject.GObject):
             self.init_mmap(mmap_file, mmap_token)
         if capabilities.get("rencode") and has_rencode:
             proto.enable_rencode()
-        self._protocol = proto
-        #max packet size from client (the biggest we can get are clipboard packets)
-        self._protocol.max_packet_size = 1024*1024  #1MB
         batch_config = DamageBatchConfig()
         batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
         batch_config.always = bool(capabilities.get("batch.always", False))
         batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
+        #now we can hook the network layer to ServerSource:
+        self._protocol = proto
+        #max packet size from client (the biggest we can get are clipboard packets)
+        self._protocol.max_packet_size = 1024*1024  #1MB
         self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size, self.encoding_client_options)
         self.send_hello(capabilities)
         #send_hello will take care of sending the current and max screen resolutions,
