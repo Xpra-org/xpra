@@ -219,10 +219,13 @@ class Protocol(object):
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
-            elif level>0 and type(item)==Compressible:
-                #this is binary, and we *DO* want to compress it:
-                packets.append((i, level, zlib.compress(item.data, level)))
-                packet[i] = ''
+            elif type(item)==Compressible:
+                #this is binary, and we *DO* want to compress it if we can:
+                if level>0:
+                    packets.append((i, level, zlib.compress(item.data, level)))
+                    packet[i] = ''
+                else:
+                    packet[i] = item.data
             elif level>0 and type(item)==str and len(item)>=4096:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
@@ -268,7 +271,7 @@ class Protocol(object):
             self._write_lock.release()
 
     def set_compression_level(self, level):
-        #we just clear it, and let _add_packet_to_queue re-initialize it
+        #this may be used next time encode() is called
         self._compression_level = level
 
     def _write_thread_loop(self):
