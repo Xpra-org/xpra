@@ -65,6 +65,19 @@ class Compressible(object):
     def __len__(self):
         return len(self.data)
 
+class ZLibCompressed(object):
+    def __init__(self, datatype, data, level):
+        self.datatype = datatype
+        self.data = data
+        self.level = level
+    def __len__(self):
+        return len(self.data)
+
+def zlib_compress(datatype, data, level=5):
+    cdata = zlib.compress(data, level)
+    return ZLibCompressed(datatype, cdata, level)
+
+
 class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
@@ -89,8 +102,6 @@ class Protocol(object):
         self.max_packet_size = 32*1024
         self._closed = False
         self._encoder = self.bencode
-        self._compressor = None
-        self._decompressor = zlib.decompressobj()
         self._compression_level = 0
         def make_daemon_thread(target, name):
             daemon_thread = Thread(target=target, name=name)
@@ -178,29 +189,36 @@ class Protocol(object):
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
-        (index, may_compress, binary_data)
+        (index, compression_level, binary_data)
         The index, if positive indicates the item to populate in the packet
         whose index is zero.
         ie: ["blah", [large binary data], "hello", 200]
         may get converted to:
         [
-            (1, False, [large binary data]),
-            (0, True, bencoded/rencoded(["blah", '', "hello", 200]))
+            (1, compression_level, [large binary data now zlib compressed]),
+            (0,                 0, bencoded/rencoded(["blah", '', "hello", 200]))
         ]
         """
         packets = []
+        level = self._compression_level
         for i in range(len(packet)):
             item = packet[i]
-            if type(item)==str and len(item)>=4096:
+            if level>0 and type(item)==str and len(item)>=4096:
+                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 if sys.version>='3':
                     item = item.encode("latin1")
-                packets.append((i, False, item))
+                packets.append((i, level, zlib.compress(item, level)))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
-            elif type(item)==Compressible:
-                #this is binary, but we *DO* want to compress it since it isn't compressed yet!
-                packets.append((i, True, item.data))
+            elif type(item)==ZLibCompressed:
+                #already compressed data, use it as-is:
+                assert item.level>0
+                packets.append((i, item.level, item.data))
+                packet[i] = ''
+            elif level>0 and type(item)==Compressible:
+                #this is binary, and we *DO* want to compress it:
+                packets.append((i, level, zlib.compress(item.data, level)))
                 packet[i] = ''
         #now the main packet (or what is left of it):
         try:
@@ -212,7 +230,7 @@ class Protocol(object):
             raise e
         if sys.version>='3':
             main_packet = main_packet.encode("latin1")
-        packets.append((0, True, main_packet))
+        packets.append((0, 0, main_packet))
         return packets, proto_version
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
@@ -220,20 +238,8 @@ class Protocol(object):
         try:
             self._write_lock.acquire()
             counter = 0
-            for index,compress,udata in packets:
-                if compress and self._compression_level>0:
-                    #make a reference copy
-                    #(as another thread could clear it - see set_compression)
-                    compressor = self._compressor
-                    level = self._compression_level
-                    if compressor is None:
-                        self._compressor = zlib.compressobj(level)
-                        compressor = self._compressor
-                    cdata = compressor.compress(udata)+compressor.flush(zlib.Z_SYNC_FLUSH)
-                else:
-                    level = 0
-                    cdata = udata
-                l = len(cdata)
+            for index,level,data in packets:
+                l = len(data)
                 #'p' + protocol-version + compression_level + packet_index + packet_size
                 header = struct.pack('!BBBBL', ord("P"), proto_version, level, index, l)
                 scb, ecb = None, None
@@ -244,7 +250,7 @@ class Protocol(object):
                 if index==0:
                     ecb = end_send_cb
                 self._write_queue.put((header, scb, None))
-                self._write_queue.put((cdata, None, ecb))
+                self._write_queue.put((data, None, ecb))
                 counter += 1
         finally:
             self.output_packetcount += 1
@@ -252,7 +258,6 @@ class Protocol(object):
 
     def set_compression_level(self, level):
         #we just clear it, and let _add_packet_to_queue re-initialize it
-        self._compressor = None
         self._compression_level = level
 
     def _write_thread_loop(self):
@@ -321,6 +326,13 @@ class Protocol(object):
         return False
 
     def _read_parse_thread_loop(self):
+        try:
+            self.do_read_parse_thread_loop()
+        except Exception, e:
+            log.error("error in read parse loop", exc_info=True)
+            self._call_connection_lost("error in network packet reading/parsing: %s" % e)
+
+    def do_read_parse_thread_loop(self):
         """
             Process the individual network packets placed in _read_queue.
             We concatenate them, then try to parse them.
@@ -397,7 +409,7 @@ class Protocol(object):
                     raw_string = read_buffer[:current_packet_size]
                     read_buffer = read_buffer[current_packet_size:]
                 if compression_level>0:
-                    raw_string = self._decompressor.decompress(raw_string)
+                    raw_string = zlib.decompress(raw_string)
                 if sys.version>='3':
                     raw_string = raw_string.decode("latin1")
 
@@ -419,7 +431,7 @@ class Protocol(object):
                         packet, l = result
                         assert l==len(raw_string)
                     elif protocol_version==1:
-                        assert has_rencode, "we don't support rencode mode but the other end sent us an rencoded packet!"
+                        assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet!"
                         packet = list(rencode_loads(raw_string))
                     else:
                         raise Exception("unsupported protocol version: %s" % protocol_version)

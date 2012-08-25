@@ -38,7 +38,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.deque import maxdeque
-from xpra.protocol import Compressible
+from xpra.protocol import Compressible, zlib_compress
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import dec1, add_list_stats, calculate_time_weighted_average
@@ -523,8 +523,8 @@ class WindowSource(object):
         elif coding=="vpx":
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24":
-            #use wrapper so network code will compress it with zlib:
-            data = Compressible(coding, data)
+            #compress here and return a wrapper so network code knows it is already zlib compressed:
+            data = zlib_compress(coding, data)
         elif coding=="mmap":
             pass        #already handled via mmap_send
         else:
