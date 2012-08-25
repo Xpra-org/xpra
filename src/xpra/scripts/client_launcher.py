@@ -469,6 +469,14 @@ class ApplicationWindow:
 			self.jpeg_combo.hide()
 			self.jpeg_label.hide()
 
+	def set_info_text(self, text):
+		if self.info:
+			gobject.idle_add(self.info.set_text, text)
+
+	def connect_clicked(self, *args):
+		self.update_options_from_gui()
+		self.do_connect()
+
 	def do_connect(self):
 		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
 			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
@@ -476,33 +484,38 @@ class ApplicationWindow:
 		else:
 			self.launch_xpra()
 
-	def connect_clicked(self, *args):
-		self.update_options_from_gui()
-		self.do_connect()
-
 	def connect_tcp(self):
-		self.info.set_text("Connecting.")
+		thread.start_new_thread(self.do_connect_tcp, ())
+	
+	def do_connect_tcp(self):
+		def set_sensitive(s):
+			gobject.idle_add(self.window.set_sensitive, s)
+		set_sensitive(False)
+		self.set_info_text("Connecting.")
 		host = xpra_opts.host
 		port = xpra_opts.port
-		self.info.set_text("Connecting..")
+		self.set_info_text("Connecting..")
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.info.set_text("Connecting...")
+			sock.settimeout(10)
+			self.set_info_text("Connecting...")
 			sock.connect((host, int(port)))
 		except Exception, e:
-			self.info.set_text("Socket error: %s" % e)
+			self.set_info_text("Socket error: %s" % e)
+			set_sensitive(True)
 			print("error %s" % e)
 			return
-		self.info.set_text("Connection established")
+		self.set_info_text("Connection established")
 		try:
 			from xpra.bytestreams import SocketConnection
 			global socket_wrapper
 			socket_wrapper = SocketConnection(sock, sock.getsockname(), sock.getpeername())
 		except Exception, e:
-			self.info.set_text("Xpra Client error: %s" % e)
+			self.set_info_text("Xpra Client error: %s" % e)
+			set_sensitive(True)
 			print("Xpra Client error: %s" % e)
 			return
-		self.window.hide()
+		gobject.idle_add(self.window.hide)
 		# launch Xpra client in the same gtk.main():
 		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 		gtk_main_quit_on_fatal_exceptions_enable()
@@ -539,17 +552,15 @@ class ApplicationWindow:
 		logging.root.setLevel(logging.INFO)
 		logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
-		self.window.hide()
-		app = XpraClient(socket_wrapper, opts)
-		app.run()
-		self.window.show()
+		def start_XpraClient():
+			app = XpraClient(socket_wrapper, opts)
+			app.run()
+			self.window.show()
+			self.window.set_sensitive(True)
+		gobject.idle_add(start_XpraClient)
 
 	def launch_xpra(self):
 		thread.start_new_thread(self.do_launch_xpra, ())
-
-	def set_info_text(self, text):
-		if self.info:
-			gobject.idle_add(self.info.set_text, text)
 
 	def do_launch_xpra(self):
 		""" Launches Xpra in a new process """
