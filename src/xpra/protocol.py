@@ -65,6 +65,13 @@ class Compressible(object):
     def __len__(self):
         return len(self.data)
 
+class Compressed(object):
+    def __init__(self, datatype, data):
+        self.datatype = datatype
+        self.data = data
+    def __len__(self):
+        return len(self.data)
+
 class ZLibCompressed(object):
     def __init__(self, datatype, data, level):
         self.datatype = datatype
@@ -203,22 +210,26 @@ class Protocol(object):
         level = self._compression_level
         for i in range(len(packet)):
             item = packet[i]
-            if level>0 and type(item)==str and len(item)>=4096:
-                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
-                #add new binary packet with large item:
-                if sys.version>='3':
-                    item = item.encode("latin1")
-                packets.append((i, level, zlib.compress(item, level)))
-                #replace this item with an empty string placeholder:
+            if type(item)==Compressed:
+                #already compressed data (but not using zlib), send as-is
+                packets.append((i, 0, item.data))
                 packet[i] = ''
             elif type(item)==ZLibCompressed:
-                #already compressed data, use it as-is:
+                #already compressed data as zlib, send as-is with zlib level marker
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
             elif level>0 and type(item)==Compressible:
                 #this is binary, and we *DO* want to compress it:
                 packets.append((i, level, zlib.compress(item.data, level)))
+                packet[i] = ''
+            elif level>0 and type(item)==str and len(item)>=4096:
+                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
+                #add new binary packet with large item:
+                if sys.version>='3':
+                    item = item.encode("latin1")
+                packets.append((i, level, zlib.compress(item, level)))
+                #replace this item with an empty string placeholder:
                 packet[i] = ''
         #now the main packet (or what is left of it):
         try:
