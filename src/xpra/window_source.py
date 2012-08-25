@@ -38,10 +38,10 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.deque import maxdeque
-from xpra.protocol import Compressible, zlib_compress
+from xpra.protocol import zlib_compress
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import dec1, add_list_stats, calculate_time_weighted_average
+from xpra.maths import dec1, add_list_stats, add_weighted_list_stats, calculate_time_weighted_average
 from xpra.batch_delay_calculator import calculate_batch_delay
 
 
@@ -108,14 +108,22 @@ class WindowPerformanceStatistics(object):
         #encoding stats:
         if len(self.encoding_stats)>0:
             estats = list(self.encoding_stats)
+            encodings_used = [x[0] for x in estats]
             comp_ratios_pct = []
             comp_times_ns = []
-            for _, pixels, compressed_size, compression_time in estats:
-                if compressed_size>0 and pixels>0:
-                    comp_ratios_pct.append(int(100*compressed_size/(pixels*3)))
-                    comp_times_ns.append(int(1000*1000*1000*compression_time/pixels))
-            add_list_stats(info, "compression_ratio_pct"+suffix, comp_ratios_pct)
-            add_list_stats(info, "compression_pixels_per_ns"+suffix, comp_times_ns)
+            def add_compression_stats(enc_stats, suffix):
+                for _, pixels, compressed_size, compression_time in enc_stats:
+                    if compressed_size>0 and pixels>0:
+                        osize = pixels*3
+                        comp_ratios_pct.append((100.0*compressed_size/osize, pixels))
+                        comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
+                add_weighted_list_stats(info, "compression_ratio_pct"+suffix, comp_ratios_pct)
+                add_weighted_list_stats(info, "compression_pixels_per_ns"+suffix, comp_times_ns)
+            add_compression_stats(estats, suffix=suffix)
+            for encoding in encodings_used:
+                enc_stats = [x for x in estats if x[0]==encoding]
+                add_compression_stats(enc_stats, suffix="%s[%s]" % (suffix, encoding))
+
         latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]
         add_list_stats(info, "damage_in_latency",  latencies)
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
@@ -125,10 +133,10 @@ class WindowPerformanceStatistics(object):
 class WindowSource(object):
     """
     We create a Window Source for each window we send pixels for.
-    
+
     The UI thread calls 'damage' and we eventually
     call ServerSource.queue_damage to queue the damage compression,
-    
+
     """
 
     def __init__(self, queue_damage, queue_packet, statistics,

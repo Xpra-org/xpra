@@ -41,6 +41,29 @@ def find_invpow(x, n):
             return mid
     return mid + 1
 
+def add_weighted_list_stats(info, basename, weighted_values, show_percentile=False):
+    values = [x for x, _ in weighted_values]
+    if len(values)==0:
+        return
+    info["%s.min" % basename] = int(min(values))
+    info["%s.max" % basename] = int(max(values))
+    #weighted mean:
+    tw = 0
+    tv = 0
+    for v, w in weighted_values:
+        tw += w
+        tv += v * w
+    avg = tv/tw
+    info["%s.avg" % basename] = int(avg)
+    if show_percentile:
+        #percentile
+        svalues = sorted(values)
+        for i in range(1,10):
+            pct = i*10
+            index = len(values)*i//10
+            info["%s.%sp" % (basename, pct)] = int(svalues[index])
+
+
 def add_list_stats(info, basename, in_values):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
