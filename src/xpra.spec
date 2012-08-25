@@ -18,7 +18,7 @@
 %define requires_x264 , libx264
 
 # distro-specific creative land of wonderness
-%if %{defined fedora}
+%if %{defined Fedora}
 %define requires_x264 , x264-libs
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric
