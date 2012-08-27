@@ -77,6 +77,7 @@ Patch1: disable-x264.patch
 Patch2: disable-vpx.patch
 Patch3: use-static-x264lib.patch
 Patch4: use-static-vpxlib.patch
+Patch5: x264-limited-csc.patch
 
 
 %description
@@ -415,6 +416,9 @@ cd parti-all-%{version}
 %endif
 %if 0%{?static_vpx}
 %patch4 -p1
+%endif
+%if 0%{?limited_csc}
+%patch5 -p1
 %endif
 
 %build
