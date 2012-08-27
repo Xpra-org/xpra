@@ -314,7 +314,7 @@ class ServerSource(object):
         cl = -1
         #and the last client ping latency we measured (if any):
         if len(self.statistics.client_ping_latency)>0:
-            cl = self.client_ping_latency[-1]
+            cl = self.statistics.client_ping_latency[-1]
         self.send(["ping_echo", time_to_echo, l1, l2, l3, cl])
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
