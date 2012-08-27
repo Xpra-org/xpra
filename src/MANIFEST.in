@@ -7,6 +7,7 @@ include xpra/vpx/*.h
 include *.desktop
 include *.png
 include *.1
+recursive-include patches *
 recursive-include etc *
 recursive-include icons *
 global-include *.py *.txt

@@ -47,12 +47,12 @@ DEPEND="${COMMON_DEPEND}
 
 src_prepare() {
 	if ! use server; then
-		epatch disable-posix-server.patch
+		epatch patches/disable-posix-server.patch
 	fi
 	if ! use x264; then
-		epatch disable-x264.patch
+		epatch patches/disable-x264.patch
 	fi
 	if ! use vpx; then
-		epatch disable-vpx.patch
+		epatch patches/disable-vpx.patch
 	fi
 }
