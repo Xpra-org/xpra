@@ -69,7 +69,7 @@ from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import add_list_stats
 from xpra.deque import maxdeque
 from xpra.bytestreams import SocketConnection
-from xpra.protocol import Protocol, Compressible, dump_packet, has_rencode
+from xpra.protocol import Protocol, zlib_compress, dump_packet, has_rencode
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
@@ -503,9 +503,9 @@ class XpraServer(gobject.GObject):
         if self.cursor_image:
             log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
             pixels = self.cursor_image[7]
-            if pixels:
+            if pixels is not None:
                 if self.compressible_cursors:
-                    self.cursor_image[7] = Compressible("cursor", pixels)
+                    self.cursor_image[7] = zlib_compress("cursor", pixels)
                 else:
                     self.cursor_image[7] = pixels.tostring()
                 log("do_wimpiggy_cursor_event(%s) pixels=%s", event, self.cursor_image[7])

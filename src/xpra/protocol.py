@@ -58,13 +58,6 @@ def untilConcludes(f, *a, **kw):
                 continue
             raise
 
-class Compressible(object):
-    def __init__(self, datatype, data):
-        self.datatype = datatype
-        self.data = data
-    def __len__(self):
-        return len(self.data)
-
 class Compressed(object):
     def __init__(self, datatype, data):
         self.datatype = datatype
@@ -219,13 +212,6 @@ class Protocol(object):
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
-            elif type(item)==Compressible:
-                #this is binary, and we *DO* want to compress it if we can:
-                if level>0:
-                    packets.append((i, level, zlib.compress(item.data, level)))
-                    packet[i] = ''
-                else:
-                    packet[i] = item.data
             elif level>0 and type(item)==str and len(item)>=4096:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
