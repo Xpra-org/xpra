@@ -17,6 +17,9 @@
 #define MEMALIGN 1
 //not honoured on OSX:
 #define MEMALIGN_ALIGNMENT 32
+//comment this out to turn off csc 422 and 444 colourspace modes
+//(ie: when not supported by the library we build against)
+#define SUPPORT_CSC_MODES 1
 
 #ifdef _WIN32
 #include <malloc.h>
@@ -93,11 +96,15 @@ float get_x264_quality(int pct) {
 // as not all pixel formats are supported by all profiles.
 int get_x264_colour_sampling(struct x264lib_ctx *ctx, int pct)
 {
+#ifdef SUPPORT_CSC_MODES
 	if (!ctx->supports_csc_option || pct<I422_MIN_QUALITY)
 		return	X264_CSP_I420;
 	else if (pct<I444_MIN_QUALITY)
 		return	X264_CSP_I422;
 	return	X264_CSP_I444;
+#else
+	return	X264_CSP_I420;
+#endif
 }
 //Given an x264 colour sampling constant,
 //return the corresponding csc constant.
@@ -105,10 +112,12 @@ int get_csc_format_for_x264_format(int i_csp)
 {
 	if (i_csp == X264_CSP_I420)
 		return	PIX_FMT_YUV420P;
+#ifdef SUPPORT_CSC_MODES
 	else if (i_csp == X264_CSP_I422)
 		return	PIX_FMT_YUV422P;
 	else if (i_csp == X264_CSP_I444)
 		return	PIX_FMT_YUV444P;
+#endif
 	else {
 		return -1;
 		printf("invalid pixel format: %i", i_csp);
