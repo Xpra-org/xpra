@@ -112,13 +112,18 @@ class WindowPerformanceStatistics(object):
             comp_ratios_pct = []
             comp_times_ns = []
             def add_compression_stats(enc_stats, suffix):
+                total_pixels = 0
+                total_time = 0.0
                 for _, pixels, compressed_size, compression_time in enc_stats:
                     if compressed_size>0 and pixels>0:
                         osize = pixels*3
                         comp_ratios_pct.append((100.0*compressed_size/osize, pixels))
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
+                        total_pixels += pixels
+                        total_time += compression_time
                 add_weighted_list_stats(info, "compression_ratio_pct"+suffix, comp_ratios_pct)
                 add_weighted_list_stats(info, "compression_pixels_per_ns"+suffix, comp_times_ns)
+                info["pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats, suffix=suffix)
             for encoding in encodings_used:
                 enc_stats = [x for x in estats if x[0]==encoding]
