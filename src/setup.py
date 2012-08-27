@@ -227,7 +227,7 @@ if sys.platform.startswith("win"):
     data_files=[
                    ('', ['COPYING']),
                    ('', ['README.xpra']),
-                   ('', ['website.url']),
+                   ('', ['win32/website.url']),
                    ('', ['etc/xpra/client-only/xpra.conf']),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
