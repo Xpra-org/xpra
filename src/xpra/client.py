@@ -538,6 +538,7 @@ class XpraClient(XpraClientBase):
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
+        capabilities["share"] = False
         return capabilities
 
     def send_ping(self):

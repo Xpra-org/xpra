@@ -23,9 +23,7 @@ try:
     from StringIO import StringIO   #@UnusedImport
 except:
     from io import StringIO         #@UnresolvedImport @Reimport
-import os
 import time
-import ctypes
 from math import log as mathlog
 def logp2(x):
     return mathlog(1+max(1, x), 2)
@@ -64,12 +62,9 @@ log = Logger()
 
 import xpra
 from xpra.server_source import ServerSource
-from xpra.window_source import DamageBatchConfig
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import add_list_stats
-from xpra.deque import maxdeque
 from xpra.bytestreams import SocketConnection
-from xpra.protocol import Protocol, zlib_compress, dump_packet, has_rencode
+from xpra.protocol import Protocol, zlib_compress, has_rencode
 from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
 from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
@@ -204,14 +199,12 @@ class XpraServer(gobject.GObject):
         self.dpi = self.default_dpi
 
         # This must happen early, before loading in windows at least:
-        self._protocol = None
         self._potential_protocols = []
-        self._server_source = None
-        self.default_damage_options = {}
+        self._server_sources = {}
 
         self.supports_mmap = opts.mmap
-        self.encoding = opts.encoding
-        assert self.encoding in ENCODINGS
+        self.default_encoding = opts.encoding
+        assert self.default_encoding in ENCODINGS
         self.png_window_icons = False
         self.session_name = opts.session_name
         try:
@@ -259,17 +252,9 @@ class XpraServer(gobject.GObject):
         self.keyboard_sync = True
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.encodings = []
-        self.mmap = None
-        self.mmap_size = 0
-        self.encoding_client_options = False
 
-        self.reset_statistics()
-
-        self.send_bell = False
-        self.send_notifications = False
         self.last_cursor_serial = None
-        self.cursor_image = None
+        self.cursor_data = None
         #store list of currently pressed keys
         #(using a dict only so we can display their names in debug messages)
         self.keys_pressed = {}
@@ -288,15 +273,9 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
 
         ### Clipboard handling:
-        self.clipboard_enabled = opts.clipboard
         self._clipboard_helper = None
-        if self.clipboard_enabled:
-            def send_clipboard(packet):
-                if self.clipboard_enabled:
-                    self._send(packet)
-                else:
-                    log("clipboard is disabled, dropping packet")
-            self._clipboard_helper = GDKClipboardProtocolHelper(send_clipboard)
+        if opts.clipboard:
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet)
 
         ### Misc. state:
         self._settings = {}
@@ -321,7 +300,6 @@ class XpraServer(gobject.GObject):
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
         log("randr enabled: %s", self.randr)
-        self.randr_notify = False
 
         self.pulseaudio = opts.pulseaudio
 
@@ -362,11 +340,6 @@ class XpraServer(gobject.GObject):
                           "_NET_WM_WINDOW_TYPE_NORMAL"
                           ]:
             get_xatom(atom_name)
-
-    def reset_statistics(self):
-        self.client_latency = maxdeque(maxlen=100)
-        self.server_latency = maxdeque(maxlen=100)
-        self.client_load = None
 
     def clean_keyboard_state(self):
         try:
@@ -458,7 +431,8 @@ class XpraServer(gobject.GObject):
                 self.notifications_forwarder.release()
             except Exception, e:
                 log.error("failed to release dbus notification forwarder: %s", e)
-        self.disconnect("shutting down")
+        for proto in self._server_sources.keys():
+            self.disconnect(proto, "shutting down")
 
     def _new_connection(self, listener, *args):
         sock, address = listener.accept()
@@ -472,7 +446,7 @@ class XpraServer(gobject.GObject):
         self._potential_protocols.append(protocol)
         protocol.start()
         def verify_connection_accepted(protocol):
-            if not protocol._closed and protocol in self._potential_protocols and protocol!=self._protocol:
+            if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
                 log.error("connection timedout: %s", protocol)
                 self.send_disconnect(protocol, "login timeout")
         gobject.timeout_add(10*1000, verify_connection_accepted, protocol)
@@ -487,37 +461,33 @@ class XpraServer(gobject.GObject):
         geom = self._desktop_manager.window_geometry(window)
         log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", wm, window, nw, nh, geom)
         geom[2:4] = nw,nh
-        if self.server_window_resize:
-            self._send(["window-resized", self._window_to_id[window], nw, nh])
+        for ss in self._server_sources.values():
+            ss.resize_window(self._window_to_id[window], nw, nh)
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
 
     def do_wimpiggy_cursor_event(self, event):
+        if not self.cursors:
+            return
         if self.last_cursor_serial==event.cursor_serial:
             log("ignoring cursor event with the same serial number")
             return
         self.last_cursor_serial = event.cursor_serial
-        self.cursor_image = get_cursor_image()
-        if self.cursor_image:
-            log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
-            pixels = self.cursor_image[7]
+        self.cursor_data = get_cursor_image()
+        if self.cursor_data:
+            log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_data[:7])
+            pixels = self.cursor_data[7]
             if pixels is not None:
-                self.cursor_image[7] = zlib_compress("cursor", pixels)
+                self.cursor_data[7] = zlib_compress("cursor", pixels)
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
-        if self.send_cursors:
-            self.send_cursor()
-
-    def send_cursor(self):
-        if self.cursor_image:
-            self._send(["cursor"] + self.cursor_image)
-        else:
-            self._send(["cursor", ""])
+        for ss in self._server_sources.values():
+            ss.send_cursor(self.cursor_data)
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)
-        if not self.send_bell:
+        if not self.bell:
             return
         wid = 0
         if event.window!=gtk.gdk.get_default_root_window() and event.window_model is not None:
@@ -526,17 +496,24 @@ class XpraServer(gobject.GObject):
             except:
                 pass
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
-        self._send(["bell", wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or ""])
+        for ss in self._server_sources.values():
+            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
+
+    def send_clipboard_packet(self, packet):
+        for ss in self._server_sources.values():
+            ss.send(packet)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+        assert self.notifications_forwarder
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s) send_notifications=%s", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, self.send_notifications)
-        if self.send_notifications:
-            self._send(["notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout)])
+        for ss in self._server_sources.values():
+            ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
 
     def notify_close_callback(self, nid):
+        assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
-        if self.send_notifications:
-            self._send(["notify_close", int(nid)])
+        for ss in self._server_sources.values():
+            ss.notify_close(int(nid))
 
     def do_wimpiggy_child_map_event(self, event):
         raw_window = event.window
@@ -574,7 +551,8 @@ class XpraServer(gobject.GObject):
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
         wid = self._window_to_id[window]
-        self._send(["configure-override-redirect", wid, x, y, w, h])
+        for ss in self._server_sources.values():
+            ss.or_window_geometry(wid, x, y, w, h)
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
@@ -818,21 +796,14 @@ class XpraServer(gobject.GObject):
         display = gtk.gdk.display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
-    def _send(self, packet):
-        if self._protocol is not None:
-            log("Queuing packet: %s", dump_packet(packet))
-            self._protocol.source.queue_ordinary_packet(packet)
-
     def _damage(self, window, x, y, width, height, options=None):
-        if self._protocol is not None and self._protocol.source is not None:
-            wid = self._window_to_id[window]
-            if options is None:
-                options = self.default_damage_options
-            self._protocol.source.damage(wid, window, x, y, width, height, options)
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.damage(wid, window, x, y, width, height, options)
 
     def _cancel_damage(self, wid):
-        if self._protocol is not None and self._protocol.source is not None:
-            self._protocol.source.cancel_damage(wid)
+        for ss in self._server_sources.values():
+            ss.cancel_damage(wid)
 
     def _send_new_window_packet(self, window):
         geometry = self._desktop_manager.window_geometry(window)
@@ -851,21 +822,23 @@ class XpraServer(gobject.GObject):
         metadata = {}
         for propname in properties:
             metadata.update(self._make_metadata(window, propname))
-        self._send([ptype, wid, x, y, w, h, metadata])
+        for ss in self._server_sources.values():
+            ss.new_window(ptype, wid, x, y, w, h, metadata)
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
         metadata = self._make_metadata(window, pspec.name)
-        self._send(["window-metadata", wid, metadata])
+        for ss in self._server_sources.values():
+            ss.window_metadata(wid, metadata)
 
     def _lost_window(self, window, wm_exiting):
         wid = self._window_to_id[window]
-        self._send(["lost-window", wid])
-        self._cancel_damage(wid)
+        for ss in self._server_sources.values():
+            ss.lost_window(wid)
         del self._window_to_id[window]
         del self._id_to_window[wid]
-        if self._server_source:
-            self._server_source.remove_window(wid)
+        for ss in self._server_sources.values():
+            ss.remove_window(wid)
 
     def _contents_changed(self, window, event):
         if (isinstance(window, OverrideRedirectWindowModel)
@@ -875,13 +848,12 @@ class XpraServer(gobject.GObject):
     def _screen_size_changed(self, *args):
         log("_screen_size_changed(%s)", args)
         #randr has resized the screen, tell the client (if it supports it)
-        if not self.randr_notify:
-            return
         def send_updated_screen_size():
             max_w, max_h = self.get_max_screen_size()
             root_w, root_h = gtk.gdk.get_default_root_window().get_size()
             log("sending updated screen size to client: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
-            self._send(["desktop_size", root_w, root_h, max_w, max_h])
+            for ss in self._server_sources.values():
+                ss.desktop_size(root_w, root_h, max_w, max_h)
         gobject.idle_add(send_updated_screen_size)
 
     def get_max_screen_size(self):
@@ -951,28 +923,6 @@ class XpraServer(gobject.GObject):
             screen_sizes = packet[3]
             log("client screen sizes: %s", screen_sizes)
 
-    def _set_encoding(self, encoding, wids):
-        if encoding:
-            assert encoding in self.encodings, "encoding %s is not supported, client supplied list: %s" % (encoding, self.encodings)
-            if encoding not in ENCODINGS:
-                log.error("encoding %s is not supported by this server! " \
-                         "Will use the first commonly supported encoding instead", encoding)
-                encoding = None
-        else:
-            log("encoding not specified, will use the first match")
-        if not encoding:
-            #not specified or not supported, find intersection of supported encodings:
-            common = [e for e in self.encodings if e in ENCODINGS]
-            log("encodings supported by both ends: %s", common)
-            if not common:
-                raise Exception("cannot find compatible encoding between "
-                                "client (%s) and server (%s)" % (self.encodings, ENCODINGS))
-            encoding = common[0]
-        self.encoding = encoding
-        if self._server_source is not None:
-            self._server_source.set_new_encoding(encoding, wids)
-        log.info("encoding set to %s, client supports %s, server supports %s", encoding, self.encodings, ENCODINGS)
-
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
         if len(packet)>=3:
@@ -989,9 +939,8 @@ class XpraServer(gobject.GObject):
             #apply to all windows:
             wids = None
             wid_windows = self._id_to_window
-        self._set_encoding(encoding, wids)
-        opts = self.default_damage_options.copy()
-        self.refresh_windows(opts, wid_windows)
+        self._server_sources.get(proto).set_encoding(encoding, wids)
+        self.refresh_windows(proto, wid_windows)
 
     def _send_password_challenge(self, proto):
         self.salt = "%s" % uuid.uuid4()
@@ -1032,28 +981,27 @@ class XpraServer(gobject.GObject):
         info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
-        info["clipboard"] = self.clipboard_enabled
         info["password_file"] = self.password_file or ""
         info["randr"] = self.randr
+        info["clipboard"] = self._clipboard_helper is not None
+        info["cursors"] = self.cursors
+        info["bell"] = self.bell
+        info["notifications"] = self.notifications_forwarder is not None
         info["pulseaudio"] = self.pulseaudio
         info["start_time"] = int(self.start_time)
         info["encodings"] = ",".join(ENCODINGS)
         info["platform"] = sys.platform
         info["windows"] = len(self._id_to_window)
-        info["potential_clients"] = len([p for p in self._potential_protocols if (p is not proto and p is not self._protocol)])
-        if self._protocol is None or self._protocol._closed or self._protocol.source is None or self._protocol.source._closed:
-            info["clients"] = 0
+        info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
+        info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
+        if proto.source is None or proto.source.closed:
             return  info
-        self.send_ping()
-        add_list_stats(info, "server_latency", self.server_latency)
-        add_list_stats(info, "client_latency", self.client_latency)
         info["clients"] = 1
-        info["client_encodings"] = ",".join(self.encodings)
         info["keyboard_sync"] = self.keyboard_sync
         info["keyboard"] = self.keyboard
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
-        self._protocol.source.add_stats(info, self._id_to_window.keys())
+        proto.source.add_stats(info, self._id_to_window.keys())
         return info
 
     def _process_hello(self, proto, packet):
@@ -1095,43 +1043,28 @@ class XpraServer(gobject.GObject):
 
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
-        if self._protocol is not None:
-            self.disconnect("new valid connection received")
-        self.reset_statistics()
-        self.encoding_client_options = capabilities.get("encoding_client_options", False)
-        self.encodings = capabilities.get("encodings", [])
-        self._set_encoding(capabilities.get("encoding", None), None)
+        share = capabilities.get("share", False)
+        if not share:
+            for p in self._server_sources.keys():
+                self.disconnect(p, "new valid connection received")
+        else:
+            log.info("share mode is on... I hope you know what you're doing!")
         self.dpi = capabilities.get("dpi", self.default_dpi)
         if self.dpi>0:
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
         #mmap:
-        self.close_mmap()
-        mmap_file = capabilities.get("mmap_file")
-        mmap_token = capabilities.get("mmap_token")
-        log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
-        if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
-            self.init_mmap(mmap_file, mmap_token)
         if capabilities.get("rencode") and has_rencode:
             proto.enable_rencode()
-        batch_config = DamageBatchConfig()
-        batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
-        batch_config.always = bool(capabilities.get("batch.always", False))
-        batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
-        batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
-        batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
-        #now we can hook the network layer to ServerSource:
-        self._protocol = proto
         #max packet size from client (the biggest we can get are clipboard packets)
-        self._protocol.max_packet_size = 1024*1024  #1MB
-        self._server_source = ServerSource(self._protocol, batch_config, self.encoding, self.encodings, self.mmap, self.mmap_size, self.encoding_client_options)
-        self.send_hello(capabilities)
+        proto.max_packet_size = 1024*1024  #1MB
+        ss = ServerSource(proto, self.supports_mmap)
+        ss.parse_hello(capabilities)
+        self._server_sources[proto] = ss
+        self.send_hello(capabilities, ss)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
-        self.randr_notify = self.randr and capabilities.get("randr_notify", False)
-        if "jpeg" in capabilities:
-            self.default_damage_options["jpegquality"] = capabilities["jpeg"]
         self.keyboard = bool(capabilities.get("keyboard", True))
         self.keyboard_sync = self.keyboard and bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
@@ -1150,17 +1083,11 @@ class XpraServer(gobject.GObject):
         self.xkbmap_layout = capabilities.get("xkbmap_layout")
         self.xkbmap_variant = capabilities.get("xkbmap_variant")
         self.assign_keymap_options(capabilities)
-
         #always clear modifiers before setting a new keymap
         self._make_keymask_match([])
         self.set_keymap()
-        self.send_cursors = self.cursors and capabilities.get("cursors", False)
-        self.send_bell = self.bell and capabilities.get("bell", False)
-        self.send_notifications = self.notifications_forwarder is not None and capabilities.get("notifications", False)
-        self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
-        log("cursors=%s, bell=%s, notifications=%s, clipboard=%s", self.send_cursors, self.send_bell, self.send_notifications, self.clipboard_enabled)
-        self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
-        self.server_window_resize = capabilities.get("server-window-resize", False)
+
+        self.png_window_icons = "png" in capabilities.get("encodings") and "png" in ENCODINGS
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
@@ -1168,32 +1095,9 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match(modifiers)
         #important: call send_windows_and_cursors via idle_add
         #so send_hello's do_send_hello can fire first!
-        gobject.idle_add(self.send_windows_and_cursors)
+        gobject.idle_add(self.send_windows_and_cursors, ss)
 
-    def init_mmap(self, mmap_file, mmap_token):
-        import mmap
-        try:
-            f = open(mmap_file, "r+b")
-            self.mmap_size = os.path.getsize(mmap_file)
-            self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
-            if mmap_token:
-                #verify the token:
-                v = 0
-                for i in range(0,16):
-                    v = v<<8
-                    peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
-                    v += peek.value
-                log("mmap_token=%s, verification=%s", mmap_token, v)
-                if v!=mmap_token:
-                    log.error("WARNING: mmap token verification failed, not using mmap area!")
-                    self.close_mmap()
-            if self.mmap:
-                log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
-        except Exception, e:
-            log.error("cannot use mmap file '%s': %s", mmap_file, e)
-            self.close_mmap()
-
-    def send_windows_and_cursors(self):
+    def send_windows_and_cursors(self, ss):
         # We send the new-window packets sorted by id because this sorts them
         # from oldest to newest -- and preserving window creation order means
         # that the earliest override-redirect windows will be on the bottom,
@@ -1206,26 +1110,21 @@ class XpraServer(gobject.GObject):
             else:
                 self._desktop_manager.hide_window(window)
                 self._send_new_window_packet(window)
-        if self.send_cursors:
-            self.send_cursor()
+        ss.send_cursor(self.cursor_data)
 
-    def send_hello(self, client_capabilities):
+    def send_hello(self, client_capabilities, server_source):
         capabilities = {}
         capabilities["version"] = xpra.__version__
         capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["platform"] = sys.platform
-        capabilities["clipboard"] = self.clipboard_enabled
         capabilities["encodings"] = ENCODINGS
-        capabilities["encoding"] = self.encoding
         capabilities["resize_screen"] = self.randr
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat"] = client_capabilities.get("key_repeat")
         if self.session_name:
             capabilities["session_name"] = self.session_name
-        if self.mmap_size>0:
-            capabilities["mmap_enabled"] = True
         capabilities["start_time"] = int(self.start_time)
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["toggle_keyboard_sync"] = True
@@ -1245,41 +1144,26 @@ class XpraServer(gobject.GObject):
         #for the actual root window size!
         def do_send_hello():
             capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
-            self._send(["hello", capabilities])
+            server_source.hello(capabilities)
         gobject.idle_add(do_send_hello)
 
     def send_ping(self):
-        self._send(["ping", int(1000*time.time())])
+        for ss in self._server_sources.values():
+            ss.ping()
 
     def _process_ping_echo(self, proto, packet):
-        echoedtime, l1, l2, l3, sl = packet[1:6]
-        diff = int(1000*time.time()-echoedtime)
-        self.client_latency.append(diff)
-        self.client_load = (l1, l2, l3)
-        if sl>=0:
-            self.server_latency.append(sl)
-        log("ping echo client load=%s, measured server latency=%s", self.client_load, sl)
+        echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
+        client_ping_latency = int(1000*time.time()-echoedtime)
+        load = l1, l2, l3
+        self._server_sources.get(proto).process_ping_echo(client_ping_latency, server_ping_latency, load)
 
     def _process_ping(self, proto, packet):
-        echotime = packet[1]
-        try:
-            (fl1, fl2, fl3) = os.getloadavg()
-            l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-        except:
-            l1,l2,l3 = 0,0,0
-        cl = -1
-        if len(self.client_latency)>0:
-            cl = self.client_latency[-1]
-        self._send(["ping_echo", echotime, l1, l2, l3, cl])
-        #if the client is pinging us, ping it too:
-        gobject.timeout_add(500, self.send_ping)
+        time_to_echo = packet[1]
+        self._server_sources.get(proto).process_ping(time_to_echo)
 
     def _process_screenshot(self, proto, packet):
-        self.send_screenshot()
-
-    def send_screenshot(self):
         packet = self.make_screenshot_packet()
-        self._send(packet)
+        self._server_sources.get(proto).send(packet)
 
     def make_screenshot_packet(self):
         log("grabbing screenshot")
@@ -1325,33 +1209,34 @@ class XpraServer(gobject.GObject):
 
     def _process_set_notify(self, proto, packet):
         assert self.notifications_forwarder is not None, "cannot toggle notifications: the feature is disabled"
-        self.send_notifications = bool(packet[1])
+        self._server_sources.get(proto).send_notifications = bool(packet[1])
 
     def _process_set_cursors(self, proto, packet):
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        self.send_cursors = bool(packet[1])
+        self._server_sources.get(proto).send_cursors = bool(packet[1])
 
     def _process_set_bell(self, proto, packet):
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        self.send_bell = bool(packet[1])
+        self._server_sources.get(proto).send_bell = bool(packet[1])
 
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
         log("client has requested compression level=%s", level)
-        self._protocol.set_compression_level(level)
+        proto.set_compression_level(level)
         #echo it back to the client:
-        self._send(["set_deflate", level])
+        self._server_sources.get(proto).set_deflate(level)
 
-    def disconnect(self, reason):
-        if self._protocol:
-            log.info("Disconnecting existing client, reason is: %s", reason)
+    def disconnect(self, protocol, reason):
+        if protocol:
+            log.info("Disconnecting existing client %s, reason is: %s", protocol, reason)
             # send message asking client to disconnect (politely):
-            self._protocol.flush_then_close(["disconnect", reason])
+            protocol.flush_then_close(["disconnect", reason])
             #this ensures that from now on we ignore any incoming packets coming
             #from this connection as these could potentially set some keys pressed, etc
-            if self._server_source and (self._server_source is self._protocol.source):
-                self._server_source.close()
-                self._server_source = None
+            ss = self._server_sources.get(protocol)
+            if ss:
+                ss.close()
+                del self._server_sources[protocol]
         #so it is now safe to clear them:
         #(this may fail during shutdown - which is ok)
         try:
@@ -1360,16 +1245,10 @@ class XpraServer(gobject.GObject):
             pass
         self._focus(0, [])
         log.info("Connection lost")
-        self.close_mmap()
 
-    def close_mmap(self):
-        if self.mmap:
-            self.mmap.close()
-            self.mmap = None
-        self.mmap_size = 0
 
     def _process_disconnect(self, proto, packet):
-        self.disconnect("on client request")
+        self.disconnect(proto, "on client request")
 
     def _process_clipboard_enabled_status(self, proto, packet):
         clipboard_enabled = packet[1]
@@ -1675,12 +1554,11 @@ class XpraServer(gobject.GObject):
         log("received sequence: %s", packet_sequence)
         if len(packet)>=6:
             wid, width, height, decode_time = packet[2:6]
-            self._server_source.client_ack_damage(packet_sequence, wid, width, height, decode_time)
+            self._server_sources.get(proto).client_ack_damage(packet_sequence, wid, width, height, decode_time)
 
     def _process_buffer_refresh(self, proto, packet):
         [wid, _, qual] = packet[1:4]
-        opts = self.default_damage_options.copy()
-        opts["quality"] = qual
+        opts = {"quality" : qual}
         if self.encoding=="jpeg":
             opts["jpegquality"] = qual
         if wid==-1:
@@ -1691,41 +1569,35 @@ class XpraServer(gobject.GObject):
             return
         log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
         opts["batching"] = False
-        self.refresh_windows(opts, wid_windows)
+        self.refresh_windows(proto, wid_windows, opts)
 
-    def refresh_windows(self, opts, wid_windows):
+    def refresh_windows(self, proto, wid_windows, opts=None):
         for wid, window in wid_windows.items():
             if window is None:
                 continue
-            if self._server_source is not None:
-                self._server_source.cancel_damage(wid)
-            if (isinstance(window, OverrideRedirectWindowModel)):
-                (_, _, w, h) = window.get_property("geometry")
-            else:
+            if not isinstance(window, OverrideRedirectWindowModel):
                 if not self._desktop_manager._models[window].shown:
                     log("window is no longer shown, ignoring buffer refresh which would fail")
-                    return
-                w, h = window.get_property("actual-size")
-            self._damage(window, 0, 0, w, h, opts)
+                    continue
+            self._server_sources.get(proto).refresh(wid, window, opts)
 
     def _process_jpeg_quality(self, proto, packet):
         quality = packet[1]
-        log("Setting JPEG quality to ", quality)
-        self.default_damage_options["jpegquality"] = quality
-        opts = self.default_damage_options.copy()
-        self.refresh_windows(opts, self._id_to_window)
+        log("Setting quality to ", quality)
+        self._server_sources.get(proto).set_default_quality(quality)
+        self.refresh_windows(proto, self._id_to_window)
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
-        if proto.source and (proto.source is self._server_source):
-            self._server_source.close()
-            self._server_source = None
-        if proto is self._protocol:
+        source = self._server_sources.get(proto)
+        if source:
+            del self._server_sources[proto]
+            source.close()
+        if len(self._server_sources)==0:
             log.info("xpra client disconnected.")
             self._clear_keys_pressed()
-            self._protocol = None
             self._focus(0, [])
         sys.stdout.flush()
 
@@ -1782,14 +1654,14 @@ class XpraServer(gobject.GObject):
             if self.clipboard_enabled:
                 self._clipboard_helper.process_clipboard_packet(packet)
             return
-        if proto is self._protocol:
+        if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers
         else:
             handlers = self._default_packet_handlers
         handler = handlers.get(packet_type)
         if not handler:
             log.error("unknown or invalid packet type: %s", packet_type)
-            if proto is not self._protocol:
+            if proto not in self._server_sources:
                 proto.close()
             return
         handler(self, proto, packet)

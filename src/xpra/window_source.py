@@ -176,6 +176,7 @@ class WindowSource(object):
         self._damage_packet_sequence = 1                #increase with every damage packet created
 
     def cleanup(self):
+        self.cancel_damage()
         self.video_encoder_cleanup()
 
     def video_encoder_cleanup(self):

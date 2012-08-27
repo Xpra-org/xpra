@@ -513,12 +513,13 @@ def get_stats_headers():
              "Min Batch Delay (ms)", "Max Batch Delay (ms)", "Avg Batch Delay (ms)",
              "Application packets in/s", "Application bytes in/s", "Application packets out/s", "Application bytes out/s", "mmap bytes/s",
              "Min Client Latency (ms)", "Max Client Latency (ms)", "Avg Client Latency (ms)",
-             "Min Server Latency (ms)", "Max Server Latency (ms)", "Avg Server Latency (ms)",
+             "Min Client Ping Latency (ms)", "Max Client Ping Latency (ms)", "Avg Client Ping Latency (ms)",
+             "Min Server Ping Latency (ms)", "Max Server Ping Latency (ms)", "Avg Server Ping Latency (ms)",
              "Min Damage Latency (ms)", "Max Damage Latency (ms)", "Avg Damage Latency (ms)",
              ]
 
 def no_stats(last_record=None):
-    return  ["" for _ in xrange(21)]
+    return  ["" for _ in xrange(24)]
 
 def xpra_get_stats(last_record=None):
     if XPRA_VERSION_NO<[0, 3]:
@@ -543,11 +544,12 @@ def xpra_get_stats(last_record=None):
         last_output_packetcount = last_record[index+2]
         last_output_bytecount = last_record[index+3]
         last_mmap_bytes = last_record[index+4]
-    def get(old_var_name, new_var_name=None, default_value=""):
+    def get(names, default_value=""):
         """ some of the fields got renamed, try both old and new names """
-        v = d.get(old_var_name)
-        if not v and new_var_name is not None:
-            v = d.get(new_var_name)
+        for n in names:
+            v = d.get(n)
+            if v is not None:
+                break
         if not v:
             v = default_value
         return v
@@ -556,20 +558,23 @@ def xpra_get_stats(last_record=None):
             get("pixels_per_second"),
             get("pixels_encoded_per_second"),
             get("pixels_decoded_per_second"),
-            get("min_batch_delay", "batch_delay.min"),
-            get("max_batch_delay", "batch_delay.max"),
-            get("avg_batch_delay", "batch_delay.avg"),
-            (int(get("input_packetcount", None, 0))-last_input_packetcount)/MEASURE_TIME,
-            (int(get("input_bytecount", None, 0))-last_input_bytecount)/MEASURE_TIME,
-            (int(get("output_packetcount", None, 0))-last_output_packetcount)/MEASURE_TIME,
-            (int(get("output_bytecount", None, 0))-last_output_bytecount)/MEASURE_TIME,
-            (int(get("output_mmap_bytecount", None, 0))-last_mmap_bytes)/MEASURE_TIME,
-            get("min_client_latency", "client_latency.min"),
-            get("max_client_latency", "client_latency.max"),
-            get("avg_client_latency", "client_latency.avg"),
-            get("min_server_latency", "server_latency.min"),
-            get("max_server_latency", "server_latency.max"),
-            get("avg_server_latency", "server_latency.avg"),
+            get(["batch_delay.min", "min_batch_delay"]),
+            get(["batch_delay.max", "max_batch_delay"]),
+            get(["batch_delay.avg", "avg_batch_delay"]),
+            (int(get(["input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
+            (int(get(["input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
+            (int(get(["output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
+            (int(get(["output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
+            (int(get(["output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
+            get(["client_latency.min", "min_client_latency"]),
+            get(["client_latency.max", "max_client_latency"]),
+            get(["client_latency.avg", "avg_client_latency"]),
+            get(["client_ping_latency.min"]),
+            get(["client_ping_latency.max"]),
+            get(["client_ping_latency.avg"]),
+            get(["server_ping_latency.min", "server_latency.min", "min_server_latency"]),
+            get(["server_ping_latency.max", "server_latency.max", "max_server_latency"]),
+            get(["server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
             get("damage_in_latency.min"),
             get("damage_in_latency.max"),
             get("damage_in_latency.avg"),

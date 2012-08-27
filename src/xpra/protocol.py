@@ -115,13 +115,13 @@ class Protocol(object):
     def __str__(self):
         return "Protocol(%s)" % self._conn
 
-    def add_stats(self, info):
-        info["input_bytecount"] = self.input_bytecount
-        info["input_packetcount"] = self.input_packetcount
-        info["input_raw_packetcount"] = self.input_raw_packetcount
-        info["output_bytecount"] = self.output_bytecount
-        info["output_packetcount"] = self.output_packetcount
-        info["output_raw_packetcount"] = self.output_raw_packetcount
+    def add_stats(self, info,  suffix=""):
+        info["input_bytecount%s" % suffix] = self.input_bytecount
+        info["input_packetcount%s" % suffix] = self.input_packetcount
+        info["input_raw_packetcount%s" % suffix] = self.input_raw_packetcount
+        info["output_bytecount%s" % suffix] = self.output_bytecount
+        info["output_packetcount%s" % suffix] = self.output_packetcount
+        info["output_raw_packetcount%s" % suffix] = self.output_raw_packetcount
 
     def start(self):
         self._write_thread.start()
