@@ -270,7 +270,6 @@ class XpraServer(gobject.GObject):
         self.send_notifications = False
         self.last_cursor_serial = None
         self.cursor_image = None
-        self.compressible_cursors = False
         #store list of currently pressed keys
         #(using a dict only so we can display their names in debug messages)
         self.keys_pressed = {}
@@ -504,11 +503,7 @@ class XpraServer(gobject.GObject):
             log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_image[:7])
             pixels = self.cursor_image[7]
             if pixels is not None:
-                if self.compressible_cursors:
-                    self.cursor_image[7] = zlib_compress("cursor", pixels)
-                else:
-                    self.cursor_image[7] = pixels.tostring()
-                log("do_wimpiggy_cursor_event(%s) pixels=%s", event, self.cursor_image[7])
+                self.cursor_image[7] = zlib_compress("cursor", pixels)
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         if self.send_cursors:
@@ -516,10 +511,7 @@ class XpraServer(gobject.GObject):
 
     def send_cursor(self):
         if self.cursor_image:
-            if self.compressible_cursors:
-                self._send(["cursor"] + self.cursor_image)  #new format
-            else:
-                self._send(["cursor", self.cursor_image])   #old format
+            self._send(["cursor"] + self.cursor_image)
         else:
             self._send(["cursor", ""])
 
@@ -1163,7 +1155,6 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
         self.set_keymap()
         self.send_cursors = self.cursors and capabilities.get("cursors", False)
-        self.compressible_cursors = capabilities.get("compressible_cursors", False)
         self.send_bell = self.bell and capabilities.get("bell", False)
         self.send_notifications = self.notifications_forwarder is not None and capabilities.get("notifications", False)
         self.clipboard_enabled = capabilities.get("clipboard", True) and self._clipboard_helper is not None
