@@ -88,7 +88,19 @@ So basically it's screen for remote X apps.
 
 %changelog
 * Tue Aug 21 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
-- TODO
+- fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
+- fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big
+- x264 or vpx are now the default encodings (if available)
+- compress rgb24 pixel data with zlib from the damage thread (rather than later in the network layer)
+- better build environment detection
+- partial multi-user support (see --enable-sharing)
+- better, more accurate "xpra info" statistics (per encoding, etc)
+- irrecoverable errors in the network parsing code will now disconnect
+- tidy up main source directory
+- simplify video encoders/decoders setup and cleanup code
+- Fedora RPMs have been switched to using the rpmfusion repository for the media libraries dependencies
+- remove 'nogil' switch (as 'nogil' is much faster)
+- test all socket types with automated tests
 
 * Mon Aug 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
 - new packet encoder written in C (much faster and data is now smaller too) 

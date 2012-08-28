@@ -1,13 +1,36 @@
-v0.6.0 (2012-08-21)
+v0.6.0 (2012-08-28)
 ======================
-	-- fix for missing tray icon on some *nix desktop themes
+	-- fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
+	-- fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big
+	-- x264 or vpx are now the default encodings (if available)
+	-- compress rgb24 pixel data with zlib from the damage thread (rather than later in the network layer)
 	-- better build environment detection
+	-- partial multi-user support (see --enable-sharing)
+	-- better, more accurate "xpra info" statistics (per encoding, etc)
+	-- irrecoverable errors in the network parsing code will now disconnect
 	-- tidy up main source directory
+	-- simplify video encoders/decoders setup and cleanup code
+	-- Fedora RPMs have been switched to using the rpmfusion repository for the media libraries dependencies
+	-- remove 'nogil' switch (as 'nogil' is much faster)
+	-- test all socket types with automated tests
+
+
+v0.5.1 (2012-08-25)
+======================
+	-- fix xpra_launcher
+	-- fix DPI issue with Xdummy: set virtual screen to 96dpi by default
+	-- avoid looping forever doing maths on 'infinity' value
+	-- fix incomplete cloning of attributes causing default values to be used for batch configuration
+	-- damage data queue batch factor was being calculated but not used
+	-- ensure we update the data we use for calculations (was always using zero value)
+	-- ensure "send_bell" is initialized before use
+	-- add missing path string in warning message
+	-- fix test code compatibility with older xpra versions
+	-- statistics shown for 'damage_packet_queue_pixels' were incorrect
 
 
 v0.5.0 (2012-08-20)
 ======================
-	-- fix xpra_launcher
 	-- new packet encoder written in C (much faster and data is now smaller too) 
 	-- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 	-- support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)

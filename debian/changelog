@@ -1,7 +1,20 @@
-xpra (0.6.0-1) UNRELEASED; urgency=low
-  * TODO!
+xpra (0.6.0-2) UNRELEASED; urgency=low
+  * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
+  	fix icon lookup on *nix
+  * fix clipboard contents too big (was causing connection drops):
+    try to compress them and just drop them if they are still too big
+  * x264 or vpx are now the default encodings (if available)
+  * compress rgb24 pixel data with zlib from the damage thread
+  * better build environment detection
+  * partial multi-user support (see --enable-sharing)
+  * better, more accurate "xpra info" statistics (per encoding, etc)
+  * irrecoverable errors in the network parsing code will now disconnect
+  * tidy up main source directory
+  * simplify video encoders/decoders setup and cleanup code
+  * remove 'nogil' switch (as 'nogil' is much faster)
+  * test all socket types with automated tests
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 21 Aug 2012 16:23:07 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Aug 2012 15:12:22 +0700
 
 xpra (0.5.0-1) UNRELEASED; urgency=low
   * new packet encoder written in C (much faster and data is now smaller too) 
