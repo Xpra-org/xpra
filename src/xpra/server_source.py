@@ -385,7 +385,7 @@ class ServerSource(object):
         add_list_stats(info, "damage_packet_queue_pixels%s" % suffix,  qpixels)
         if len(qpixels)>0:
             info["damage_packet_queue_pixels%s.current" % suffix] = qpixels[-1]
-        self.send_ping()
+        self.ping()
 
         self.protocol.add_stats(info, suffix=suffix)
         self.statistics.add_stats(info, suffix=suffix)

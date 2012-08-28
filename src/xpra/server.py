@@ -1007,14 +1007,19 @@ class XpraServer(gobject.GObject):
         info["windows"] = len(self._id_to_window)
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
-        if proto.source is None or proto.source.closed:
-            return  info
-        info["clients"] = 1
         info["keyboard_sync"] = self.keyboard_sync
         info["keyboard"] = self.keyboard
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
-        proto.source.add_stats(info, self._id_to_window.keys())
+        #find the source to report on:
+        n = len(self._server_sources)
+        if n==1:
+            self._server_sources.values()[0].add_stats(info, self._id_to_window.keys())
+        elif n>1:
+            i = 0
+            for ss in self._server_sources.values():
+                ss.add_stats(info, self._id_to_window.keys(), suffix="{%s}" % i)
+                i += 1
         return info
 
     def _process_hello(self, proto, packet):
