@@ -159,6 +159,7 @@ class ServerSource(object):
         self.randr_notify = False
         self.clipboard_enabled = False
         self.share = False
+        self.desktop_size = None
 
         # the queues of damage requests we work through:
         self.damage_data_queue = Queue()           #holds functions to call to process damage data
@@ -197,6 +198,7 @@ class ServerSource(object):
         self.randr_notify = capabilities.get("randr_notify", False)
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
+        self.desktop_size = capabilities.get("desktop_size")
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.encodings = capabilities.get("encodings", [])
@@ -328,7 +330,7 @@ class ServerSource(object):
             self.statistics.server_ping_latency.append(server_ping_latency)
         log("ping echo client load=%s, measured server latency=%s", load, server_ping_latency)
 
-    def desktop_size(self, root_w, root_h, max_w, max_h):
+    def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         if self.randr_notify:
             self.send(["desktop_size", root_w, root_h, max_w, max_h])
 

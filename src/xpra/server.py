@@ -848,13 +848,15 @@ class XpraServer(gobject.GObject):
     def _screen_size_changed(self, *args):
         log("_screen_size_changed(%s)", args)
         #randr has resized the screen, tell the client (if it supports it)
-        def send_updated_screen_size():
-            max_w, max_h = self.get_max_screen_size()
-            root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-            log("sending updated screen size to client: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
-            for ss in self._server_sources.values():
-                ss.desktop_size(root_w, root_h, max_w, max_h)
-        gobject.idle_add(send_updated_screen_size)
+        gobject.idle_add(self.send_updated_screen_size)
+
+    def send_updated_screen_size(self, skip_ss=None):
+        max_w, max_h = self.get_max_screen_size()
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        log.info("sending updated screen size to clients: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
+        for ss in self._server_sources.values():
+            if skip_ss!=ss:
+                ss.updated_desktop_size(root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
         max_w, max_h = gtk.gdk.get_default_root_window().get_size()
@@ -865,58 +867,70 @@ class XpraServer(gobject.GObject):
                 max_h = max(max_h, h)
         return max_w, max_h
 
-    def _get_desktop_size_capability(self, client_capabilities):
+    def _get_desktop_size_capability(self, server_source):
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        client_size = client_capabilities.get("desktop_size")
-        log.info("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
+        client_size = server_source.desktop_size
+        log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
             """ client did not specify size, just return what we have """
             return    root_w, root_h
         client_w, client_h = client_size
-        if not self.randr:
-            """ server does not support randr - return minimum of the client/server dimensions """
-            w = min(client_w, root_w)
-            h = min(client_h, root_h)
-            return    w, h
-        log("client resolution is %sx%s, current server resolution is %sx%s", client_w, client_h, root_w, root_h)
-        return self.set_screen_size(client_w, client_h)
+        w = min(client_w, root_w)
+        h = min(client_h, root_h)
+        return    w, h
 
-    def set_screen_size(self, client_w, client_h):
+    def set_best_screen_size(self):
+        """ sets the screen size to use the largest width and height used by any of the clients """
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        if client_w==root_w and client_h==root_h:
+        max_w, max_h = 0, 0
+        sizes = []
+        for ss in self._server_sources.values():
+            client_size = ss.desktop_size
+            if not client_size:
+                continue
+            sizes.append(client_size)
+            w, h = client_size
+            max_w = max(max_w, w)
+            max_h = max(max_h, h)
+        log.info("max client resolution is %sx%s (from %s), current server resolution is %sx%s", max_w, max_h, sizes, root_w, root_h)
+        if max_w>0 and max_h>0:
+            return self.set_screen_size(max_w, max_h)
+        return  root_w, root_h
+
+    def set_screen_size(self, desired_w, desired_h):
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        if desired_w==root_w and desired_h==root_h:
             return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
         new_size = None
         for w,h in get_screen_sizes():
-            if w<client_w or h<client_h:
+            if w<desired_w or h<desired_h:
                 continue            #size is too small for client
             if new_size:
                 ew,eh = new_size
                 if ew*eh<w*h:
                     continue        #we found a better (smaller) candidate already
             new_size = w,h
-        log("best resolution for client(%sx%s) is: %s", client_w, client_h, new_size)
-        if new_size:
-            w, h = new_size
-            if w==root_w and h==root_h:
-                log.info("best resolution for client %sx%s is unchanged: %sx%s", client_w, client_h, w, h)
+        log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
+        if not new_size:
+            return
+        w, h = new_size
+        if w==root_w and h==root_h:
+            log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
+            return
+        try:
+            set_screen_size(w, h)
+            root_w, root_h = get_screen_size()
+            if root_w!=w or root_h!=h:
+                log.error("odd, failed to set the new resolution, "
+                          "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
             else:
-                try:
-                    set_screen_size(w, h)
-                    (root_w, root_h) = get_screen_size()
-                    if root_w!=w or root_h!=h:
-                        log.error("odd, failed to set the new resolution, "
-                                  "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
-                    else:
-                        log.info("new resolution set for client %sx%s : screen now set to %sx%s", client_w, client_h, root_w, root_h)
-                except Exception, e:
-                    log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
-        w = min(client_w, root_w)
-        h = min(client_h, root_h)
-        return w, h
+                log.info("new resolution matching %sx%s : screen now set to %sx%s", desired_w, desired_h, root_w, root_h)
+        except Exception, e:
+            log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
 
     def _process_desktop_size(self, proto, packet):
-        (width, height) = packet[1:3]
+        width, height = packet[1:3]
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
         if len(packet)>=4:
@@ -1069,6 +1083,8 @@ class XpraServer(gobject.GObject):
         ss = ServerSource(proto, self.supports_mmap)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
+        if self.randr:
+            self.set_best_screen_size()
         self.send_hello(capabilities, ss)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
@@ -1129,7 +1145,7 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         capabilities["version"] = xpra.__version__
         capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
-        capabilities["desktop_size"] = self._get_desktop_size_capability(client_capabilities)
+        capabilities["desktop_size"] = self._get_desktop_size_capability(server_source)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["platform"] = sys.platform
         capabilities["encodings"] = ENCODINGS
