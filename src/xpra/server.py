@@ -205,7 +205,6 @@ class XpraServer(gobject.GObject):
         self.supports_mmap = opts.mmap
         self.default_encoding = opts.encoding
         assert self.default_encoding in ENCODINGS
-        self.png_window_icons = False
         self.session_name = opts.session_name
         try:
             import glib
@@ -560,7 +559,7 @@ class XpraServer(gobject.GObject):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property:
-    def _make_metadata(self, window, propname):
+    def _make_metadata(self, window, propname, png_window_icons):
         assert propname in self._all_metadata
         if propname == "title":
             if window.get_property("title") is not None:
@@ -594,8 +593,8 @@ class XpraServer(gobject.GObject):
             if surf is not None:
                 w = surf.get_width()
                 h = surf.get_height()
-                log("found new window icon: %sx%s, sending as png=%s", w,h,self.png_window_icons)
-                if self.png_window_icons:
+                log("found new window icon: %sx%s, sending as png=%s", w, h, png_window_icons)
+                if png_window_icons:
                     import Image
                     img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "BGRA", 0, 1)
                     MAX_SIZE = 64
@@ -819,16 +818,16 @@ class XpraServer(gobject.GObject):
     def _do_send_new_window_packet(self, ptype, window, geometry, properties):
         wid = self._window_to_id[window]
         (x, y, w, h) = geometry
-        metadata = {}
-        for propname in properties:
-            metadata.update(self._make_metadata(window, propname))
         for ss in self._server_sources.values():
+            metadata = {}
+            for propname in properties:
+                metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
             ss.new_window(ptype, wid, x, y, w, h, metadata)
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
-        metadata = self._make_metadata(window, pspec.name)
         for ss in self._server_sources.values():
+            metadata = self._make_metadata(window, pspec.name, ss.png_window_icons)
             ss.window_metadata(wid, metadata)
 
     def _lost_window(self, window, wm_exiting):
@@ -1110,7 +1109,6 @@ class XpraServer(gobject.GObject):
         self._make_keymask_match([])
         self.set_keymap()
 
-        self.png_window_icons = "png" in capabilities.get("encodings") and "png" in ENCODINGS
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
         modifiers = capabilities.get("modifiers", [])
@@ -1137,7 +1135,7 @@ class XpraServer(gobject.GObject):
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 metadata = {}
                 for propname in self._all_metadata:
-                    metadata.update(self._make_metadata(window, propname))
+                    metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
                 ss.new_window("new-window", wid, x, y, w, h, metadata)
         ss.send_cursor(self.cursor_data)
 

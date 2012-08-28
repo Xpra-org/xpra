@@ -146,6 +146,7 @@ class ServerSource(object):
         self.encoding = None                       #the default encoding for all windows
         self.encodings = []                        #all the encodings supported by the client
         self.encoding_client_options = False       #does the client support encoding options?
+        self.png_window_icons = False
         self.default_batch_config = DamageBatchConfig()
         self.default_damage_options = {}
 
@@ -205,6 +206,7 @@ class ServerSource(object):
         self.set_encoding(capabilities.get("encoding", None), None)
         if "jpeg" in capabilities:
             self.default_damage_options["jpegquality"] = capabilities["jpeg"]
+        self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         #mmap:
         mmap_file = capabilities.get("mmap_file")
         mmap_token = capabilities.get("mmap_token")
