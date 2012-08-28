@@ -213,7 +213,7 @@ def main(script_file, cmdline):
         parser.add_option_group(group)
 
     group = OptionGroup(parser, "Server Controlled Features",
-                "These options can be used to turn off certain features, "
+                "These options can be used to turn on or off certain features, "
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     group.add_option("--no-clipboard", action="store_false",
@@ -237,6 +237,9 @@ def main(script_file, cmdline):
     group.add_option("--readonly", action="store_true",
                       dest="readonly", default=bool_default("readonly", False),
                       help="Ignore all keyboard input and mouse events from the clients")
+    group.add_option("--enable-sharing", action="store_true",
+                      dest="sharing", default=bool_default("sharing", False),
+                      help="Allow more than one client to connect to the same session")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",

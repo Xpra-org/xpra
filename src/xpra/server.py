@@ -302,7 +302,7 @@ class XpraServer(gobject.GObject):
         log("randr enabled: %s", self.randr)
 
         self.pulseaudio = opts.pulseaudio
-
+        self.sharing = opts.sharing
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.notifications_forwarder = None
@@ -1043,12 +1043,19 @@ class XpraServer(gobject.GObject):
 
         # Okay, things are okay, so let's boot out any existing connection and
         # set this as our new one:
-        share = capabilities.get("share", False)
-        if not share:
-            for p in self._server_sources.keys():
-                self.disconnect(p, "new valid connection received")
-        else:
-            log.info("share mode is on... I hope you know what you're doing!")
+        share_count = 0
+        for p,ss in self._server_sources.items():
+            #check existing sessions are willing to share:
+            if not self.sharing:
+                self.disconnect(p, "new valid connection received, this session does not allow sharing")
+            elif not capabilities.get("share", False):
+                self.disconnect(p, "new valid connection received, the new client does not wish to share")
+            elif not ss.share:
+                self.disconnect(p, "new valid connection received, this client had not enabled sharing ")
+            else:
+                share_count += 1
+        if share_count>0:
+            log.info("sharing with %s other session(s)", share_count)
         self.dpi = capabilities.get("dpi", self.default_dpi)
         if self.dpi>0:
             #some non-posix clients never send us 'resource-manager' settings

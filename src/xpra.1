@@ -24,6 +24,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-enable-sharing\fP]
 [\fB\-\-bind\-tcp=[HOST]:PORT\fP]
 [\fB\-\-password\-file=filename\fP]
 [\fB\-\-dpi=VALUE\fP]
@@ -46,6 +47,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-max\-bandwidth=BW\fP]
 [\fB\-\-key\-shortcut=key:action\fP]
 [\fB\-\-readonly\fP]
+[\fB\-\-enable-sharing\fP]
 [\fB\-\-title\-suffix=VALUE\fP]
 [\fB\-\-title=VALUE\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
@@ -454,6 +456,11 @@ the following default one will be used:
 \fB\-\-readonly\fP
 Read only mode prevents all keyboard and mouse activity from being sent
 to the server.
+.TP
+\fB\-\-enable-sharing\fP
+Allow more than one client to connect to the same session.
+This must be enabled on both the server and all co-operating clients
+to function.
 .TP
 \fB\-\-no\-keyboard\-sync\fP
 Disables keyboard state synchronization. Normally the key presses

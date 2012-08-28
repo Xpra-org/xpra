@@ -158,6 +158,7 @@ class ServerSource(object):
         self.send_notifications = False
         self.randr_notify = False
         self.clipboard_enabled = False
+        self.share = False
 
         # the queues of damage requests we work through:
         self.damage_data_queue = Queue()           #holds functions to call to process damage data
@@ -195,6 +196,7 @@ class ServerSource(object):
         self.send_notifications = capabilities.get("notifications", False)
         self.randr_notify = capabilities.get("randr_notify", False)
         self.clipboard_enabled = capabilities.get("clipboard", True)
+        self.share = capabilities.get("share", False)
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.encodings = capabilities.get("encodings", [])

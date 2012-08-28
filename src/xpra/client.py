@@ -116,6 +116,7 @@ class XpraClient(XpraClientBase):
         self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
+        self.client_supports_sharing = opts.sharing
         self.notifications_enabled = self.client_supports_notifications
         self.clipboard_enabled = self.client_supports_clipboard
         self.cursors_enabled = self.client_supports_cursors
@@ -538,7 +539,7 @@ class XpraClient(XpraClientBase):
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
-        capabilities["share"] = False
+        capabilities["share"] = self.client_supports_sharing
         return capabilities
 
     def send_ping(self):
