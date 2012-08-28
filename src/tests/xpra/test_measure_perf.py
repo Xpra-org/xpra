@@ -23,7 +23,7 @@ START_SERVER = True         #if False, you are responsible for starting it
                             #and the data will not be available
 
 SETTLE_TIME = 3             #how long to wait before we start measuring
-MEASURE_TIME = 120           #run for N seconds
+MEASURE_TIME = 120          #run for N seconds
 SERVER_SETTLE_TIME = 3      #how long we wait for the server to start
 DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the test command
                             #this is the default value, some tests may override this below
@@ -549,15 +549,13 @@ def xpra_get_stats(last_record=None):
         for n in names:
             v = d.get(n)
             if v is not None:
-                break
-        if not v:
-            v = default_value
-        return v
+                return v
+        return default_value
     return [
-            get("regions_per_second"),
-            get("pixels_per_second"),
-            get("pixels_encoded_per_second"),
-            get("pixels_decoded_per_second"),
+            get(["regions_per_second"]),
+            get(["pixels_per_second"]),
+            get(["pixels_encoded_per_second"]),
+            get(["pixels_decoded_per_second"]),
             get(["batch_delay.min", "min_batch_delay"]),
             get(["batch_delay.max", "max_batch_delay"]),
             get(["batch_delay.avg", "avg_batch_delay"]),
@@ -575,9 +573,9 @@ def xpra_get_stats(last_record=None):
             get(["server_ping_latency.min", "server_latency.min", "min_server_latency"]),
             get(["server_ping_latency.max", "server_latency.max", "max_server_latency"]),
             get(["server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
-            get("damage_in_latency.min"),
-            get("damage_in_latency.max"),
-            get("damage_in_latency.avg"),
+            get(["damage_in_latency.min"]),
+            get(["damage_in_latency.max"]),
+            get(["damage_in_latency.avg"]),
            ]
 
 def test_xpra():
