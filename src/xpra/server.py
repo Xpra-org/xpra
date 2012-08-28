@@ -1109,7 +1109,13 @@ class XpraServer(gobject.GObject):
                 self._send_new_or_window_packet(window)
             else:
                 self._desktop_manager.hide_window(window)
-                self._send_new_window_packet(window)
+                #code more or less duplicated from send_new_window_packet:
+                #so we can send it just to the new client:
+                x, y, w, h = self._desktop_manager.window_geometry(window)
+                metadata = {}
+                for propname in self._all_metadata:
+                    metadata.update(self._make_metadata(window, propname))
+                ss.new_window("new-window", wid, x, y, w, h, metadata)
         ss.send_cursor(self.cursor_data)
 
     def send_hello(self, client_capabilities, server_source):

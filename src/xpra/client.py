@@ -726,6 +726,7 @@ class XpraClient(XpraClientBase):
 
     def _process_new_common(self, packet, override_redirect):
         (wid, x, y, w, h, metadata) = packet[1:7]
+        assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=0 or h<=0:
             log.error("window dimensions are wrong: %sx%s", w, h)
             w = 10
