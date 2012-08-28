@@ -713,7 +713,7 @@ class XpraClient(XpraClientBase):
             monitors = []
             while j<screen.get_n_monitors():
                 geom = screen.get_monitor_geometry(j)
-                monitor = (screen.get_monitor_plug_name(j), geom.x, geom.y, geom.width, geom.height,
+                monitor = (screen.get_monitor_plug_name(j) or "", geom.x, geom.y, geom.width, geom.height,
                             screen.get_monitor_width_mm(j), screen.get_monitor_height_mm(j))
                 monitors.append(monitor)
                 j += 1
