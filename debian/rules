@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 export DEB_BUILD_HARDENING=1
-export LDFLAGS=-Wl,--as-needed
+export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 %:
 	dh $@ --with python2 --with quilt
 
