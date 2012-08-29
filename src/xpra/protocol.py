@@ -102,6 +102,7 @@ class Protocol(object):
         self.max_packet_size = 32*1024
         self._closed = False
         self._encoder = self.bencode
+        self._decompressor = zlib.decompressobj()
         self._compression_level = 0
         def make_daemon_thread(target, name):
             daemon_thread = Thread(target=target, name=name)
@@ -409,7 +410,7 @@ class Protocol(object):
                     raw_string = read_buffer[:current_packet_size]
                     read_buffer = read_buffer[current_packet_size:]
                 if compression_level>0:
-                    raw_string = zlib.decompress(raw_string)
+                    raw_string = self._decompressor.decompress(raw_string)
                 if sys.version>='3':
                     raw_string = raw_string.decode("latin1")
 
