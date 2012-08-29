@@ -182,6 +182,12 @@ class ClientWindow(gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def do_realize(self):
+        if not has_wimpiggy_prop or self._override_redirect:
+            #don't bother trying: OR windows always show up where we are
+            #and if prop_get/prop_set is missing, we have nothing special to do
+            gtk.Window.do_realize(self)
+            return
+
         ndesktops = 0
         try:
             root = gtk.gdk.screen_get_default().get_root_window()
@@ -191,9 +197,11 @@ class ClientWindow(gtk.Window):
         workspace = self._client_properties.get("workspace", -1)
         log("do_realize() ndesktops=%s, workspace=%s", ndesktops, workspace)
 
-        if not has_wimpiggy_prop or ndesktops<2 or workspace<0:
+        if ndesktops<2 or workspace<0:
+            #nothing to restore
             gtk.Window.do_realize(self)
             return
+
         #below we duplicate gtk.Widget.do_realize() code
         #just so we can insert the property code at the right place:
         #after the gdk.Window is created, but before it gets positionned.
