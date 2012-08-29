@@ -24,11 +24,6 @@ try:
 except:
     from io import StringIO         #@UnresolvedImport @Reimport
 import time
-from math import log as mathlog
-def logp2(x):
-    return mathlog(1+max(1, x), 2)
-def logp10(x):
-    return mathlog(9+max(1, x), 10)
 
 from wimpiggy.wm import Wm
 from wimpiggy.util import (AdHocStruct,
