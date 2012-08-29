@@ -393,9 +393,16 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_pid is not None and not opts.use_display:
         _cleanups.append(kill_xvfb)
 
-    from xpra.server import can_run_server, XpraServer
-    if not can_run_server():
-        return  1
+    try:
+        from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
+        from xpra.server import XpraServer
+    except ImportError, e:
+        print("Failed to load Xpra server components, check your installation: %s" % e)
+        return 1
+    root = gtk.gdk.get_default_root_window()
+    if not displayHasXComposite(root):
+        print("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
+        return 1
 
     # This import is delayed because the module depends on gtk:
     app = XpraServer(clobber, sockets, opts)

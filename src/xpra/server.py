@@ -30,8 +30,7 @@ from wimpiggy.util import (AdHocStruct,
                            one_arg_signal,
                            gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from wimpiggy.lowlevel import (displayHasXComposite,       #@UnresolvedImport
-                               xtest_fake_key,              #@UnresolvedImport
+from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                xtest_fake_button,           #@UnresolvedImport
                                set_key_repeat_rate,         #@UnresolvedImport
                                ungrab_all_keys,             #@UnresolvedImport
@@ -155,15 +154,6 @@ class DesktopManager(gtk.Widget):
         return x, y
 
 gobject.type_register(DesktopManager)
-
-
-
-def can_run_server():
-    root = gtk.gdk.get_default_root_window()
-    if not displayHasXComposite(root):
-        log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
-        return False
-    return True
 
 
 class XpraServer(gobject.GObject):
