@@ -290,6 +290,9 @@ else:
         if WARN_ALL:
             add_to_keywords(kw, 'extra_compile_args', "-Wall")
             add_to_keywords(kw, 'extra_link_args', "-Wall")
+        PIC = True
+        if PIC:
+            add_to_keywords(kw, 'extra_compile_args', "-fPIC")
         print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
         return kw
 
