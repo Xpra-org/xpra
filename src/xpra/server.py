@@ -202,6 +202,9 @@ class XpraServer(gobject.GObject):
         self._potential_protocols = []
         self._server_sources = {}
 
+        #so clients can store persistent attributes on windows:
+        self.client_properties = {}
+
         self.supports_mmap = opts.mmap
         self.default_encoding = opts.encoding
         assert self.default_encoding in ENCODINGS
@@ -817,12 +820,12 @@ class XpraServer(gobject.GObject):
 
     def _do_send_new_window_packet(self, ptype, window, geometry, properties):
         wid = self._window_to_id[window]
-        (x, y, w, h) = geometry
+        x, y, w, h = geometry
         for ss in self._server_sources.values():
             metadata = {}
             for propname in properties:
                 metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
-            ss.new_window(ptype, wid, x, y, w, h, metadata)
+            ss.new_window(ptype, wid, x, y, w, h, metadata, self.client_properties)
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
@@ -849,13 +852,12 @@ class XpraServer(gobject.GObject):
         #randr has resized the screen, tell the client (if it supports it)
         gobject.idle_add(self.send_updated_screen_size)
 
-    def send_updated_screen_size(self, skip_ss=None):
+    def send_updated_screen_size(self):
         max_w, max_h = self.get_max_screen_size()
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         log.info("sending updated screen size to clients: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         for ss in self._server_sources.values():
-            if skip_ss!=ss:
-                ss.updated_desktop_size(root_w, root_h, max_w, max_h)
+            ss.updated_desktop_size(root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
         max_w, max_h = gtk.gdk.get_default_root_window().get_size()
@@ -1141,7 +1143,7 @@ class XpraServer(gobject.GObject):
                 metadata = {}
                 for propname in self._all_metadata:
                     metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
-                ss.new_window("new-window", wid, x, y, w, h, metadata)
+                ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties)
         ss.send_cursor(self.cursor_data)
 
     def send_hello(self, client_capabilities, server_source):
@@ -1169,6 +1171,7 @@ class XpraServer(gobject.GObject):
         capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
+        capabilities["client_window_properties"] = True
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         #_get_desktop_size_capability may cause an asynchronous root window resize event
@@ -1353,6 +1356,14 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
+        if len(packet)>=7:
+            client_properties = packet[6]
+            self.update_client_properties(wid, client_properties)
+
+    def update_client_properties(self, wid, props):
+        for k,v in props.items():
+            log("update_client_properties setting %s=%s", k, v)
+            self.client_properties[k] = v
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
@@ -1365,13 +1376,13 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.hide_window(window)
 
     def _process_configure_window(self, proto, packet):
-        (wid, x, y, w, h) = packet[1:6]
+        wid, x, y, w, h = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
-        (owx, owy, oww, owh) = self._desktop_manager.window_geometry(window)
+        owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
         log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
         self._desktop_manager.configure_window(window, x, y, w, h)
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):

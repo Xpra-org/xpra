@@ -342,8 +342,8 @@ class ServerSource(object):
     def window_metadata(self, wid, metadata):
         self.send(["window-metadata", wid, metadata])
 
-    def new_window(self, ptype, wid, x, y, w, h, metadata):
-        self.send([ptype, wid, x, y, w, h, metadata])
+    def new_window(self, ptype, wid, x, y, w, h, metadata, client_properties):
+        self.send([ptype, wid, x, y, w, h, metadata, client_properties])
 
     def lost_window(self, wid):
         self.send(["lost-window", wid])

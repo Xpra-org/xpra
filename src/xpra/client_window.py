@@ -128,6 +128,11 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.window_backing import new_backing
+try:
+    from wimpiggy.prop import prop_set, prop_get
+    has_wimpiggy_prop = True
+except ImportError, e:
+    has_wimpiggy_prop = False
 
 if sys.version < '3':
     import codecs
@@ -140,7 +145,7 @@ else:
 
 
 class ClientWindow(gtk.Window):
-    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect):
+    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties):
         if override_redirect:
             init_window(self, WINDOW_POPUP)
         else:
@@ -153,6 +158,7 @@ class ClientWindow(gtk.Window):
         self.new_backing(w, h)
         self._metadata = {}
         self._override_redirect = override_redirect
+        self._client_properties = client_properties
         self._refresh_timer = None
         self._refresh_ignore_sequence = -1
         # used for only sending focus events *after* the window is mapped:
@@ -174,6 +180,69 @@ class ClientWindow(gtk.Window):
             if transient_for is not None and transient_for.window is not None and type_hint in OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
+
+    def do_realize(self):
+        ndesktops = 0
+        try:
+            root = gtk.gdk.screen_get_default().get_root_window()
+            ndesktops = root.property_get("_NET_NUMBER_OF_DESKTOPS")[2][0]
+        except Exception, e:
+            log.error("failed to get workspace count: %s", e)
+        workspace = self._client_properties.get("workspace", -1)
+        log("do_realize() ndesktops=%s, workspace=%s", ndesktops, workspace)
+
+        if not has_wimpiggy_prop or ndesktops<2 or workspace<0:
+            gtk.Window.do_realize(self)
+            return
+        #below we duplicate gtk.Widget.do_realize() code
+        #just so we can insert the property code at the right place:
+        #after the gdk.Window is created, but before it gets positionned.
+
+        self.set_flags(gtk.REALIZED)
+
+        # Create a new gdk.Window which we can draw on.
+        # Also say that we want to receive exposure events by setting
+        # the event_mask
+        self.window = gdk.Window(
+            self.get_parent_window(),
+            width=self.allocation.width,
+            height=self.allocation.height,
+            window_type=gdk.WINDOW_CHILD,
+            wclass=gdk.INPUT_OUTPUT,
+            event_mask=self.get_events() | gdk.EXPOSURE_MASK)
+
+        try:
+            prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", workspace)
+        except Exception, e:
+            log.error("failed to set workspace: %s", e)
+
+        # Associate the gdk.Window with ourselves, Gtk+ needs a reference
+        # between the widget and the gdk window
+        self.window.set_user_data(self)
+
+        # Attach the style to the gdk.Window, a style contains colors and
+        # GC contextes used for drawing
+        self.style.attach(self.window)
+
+        # The default color of the background should be what
+        # the style (theme engine) tells us.
+        self.style.set_background(self.window, gtk.STATE_NORMAL)
+        self.window.move_resize(*self.allocation)        
+
+    def get_workspace(self):
+        try:
+            if not has_wimpiggy_prop:
+                prop = self.window.get_screen().get_root_window().property_get("_NET_CURRENT_DESKTOP")
+                if not prop or len(prop)!=3 or len(prop[2])!=1:
+                    return  -1
+                return prop[2][0]
+            v = prop_get(self.get_window(), "_NET_WM_DESKTOP", "u32", ignore_errors=True)
+            if type(v)==int:
+                return  v
+        except Exception, e:
+            log.error("failed to detect workspace: %s", e)
+        return  -1
+
 
     def new_backing(self, w, h):
         self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
@@ -315,7 +384,8 @@ class ClientWindow(gtk.Window):
         gtk.Window.do_map_event(self, event)
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
-            self._client.send(["map-window", self._id, x, y, w, h])
+            client_properties = {"workspace" : self.get_workspace()}
+            self._client.send(["map-window", self._id, x, y, w, h, client_properties])
             self._pos = (x, y)
             self._size = (w, h)
         self._been_mapped = True
