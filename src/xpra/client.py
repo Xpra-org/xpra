@@ -726,13 +726,16 @@ class XpraClient(XpraClientBase):
         return screen_sizes
 
     def _process_new_common(self, packet, override_redirect):
-        (wid, x, y, w, h, metadata) = packet[1:7]
+        wid, x, y, w, h, metadata = packet[1:7]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=0 or h<=0:
             log.error("window dimensions are wrong: %sx%s", w, h)
             w = 10
             h = 5
-        window = ClientWindowClass(self, wid, x, y, w, h, metadata, override_redirect)
+        client_properties = {}
+        if len(packet)>=8:
+            client_properties = packet[7]
+        window = ClientWindowClass(self, wid, x, y, w, h, metadata, override_redirect, client_properties)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show_all()
