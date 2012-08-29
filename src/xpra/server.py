@@ -261,6 +261,7 @@ class XpraServer(gobject.GObject):
 
         ### Clipboard handling:
         self._clipboard_helper = None
+        self._clipboard_client = None
         if opts.clipboard:
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet)
 
@@ -487,8 +488,8 @@ class XpraServer(gobject.GObject):
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
     def send_clipboard_packet(self, packet):
-        for ss in self._server_sources.values():
-            ss.send(packet)
+        if self._clipboard_client:
+            self._clipboard_client.send(packet)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         assert self.notifications_forwarder
@@ -1046,8 +1047,7 @@ class XpraServer(gobject.GObject):
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
             return
 
-        # Okay, things are okay, so let's boot out any existing connection and
-        # set this as our new one:
+        # Things are okay, we accept this connection, and may disconnect previous one(s)
         share_count = 0
         for p,ss in self._server_sources.items():
             #check existing sessions are willing to share:
@@ -1066,7 +1066,6 @@ class XpraServer(gobject.GObject):
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
-        #mmap:
         if capabilities.get("rencode") and has_rencode:
             proto.enable_rencode()
         #max packet size from client (the biggest we can get are clipboard packets)
@@ -1076,6 +1075,9 @@ class XpraServer(gobject.GObject):
         self._server_sources[proto] = ss
         if self.randr:
             self.set_best_screen_size()
+        #take the clipboard if no-one else has yet:
+        if ss.clipboard_enabled and self._clipboard_client is None:
+            self._clipboard_client = ss
         self.send_hello(capabilities, ss)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
@@ -1148,6 +1150,7 @@ class XpraServer(gobject.GObject):
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["toggle_keyboard_sync"] = True
         capabilities["notifications"] = self.notifications_forwarder is not None
+        capabilities["clipboard"] = self._clipboard_client == server_source
         capabilities["bell"] = self.bell
         capabilities["cursors"] = self.cursors
         if "key_repeat" in client_capabilities:
@@ -1273,7 +1276,9 @@ class XpraServer(gobject.GObject):
     def _process_clipboard_enabled_status(self, proto, packet):
         clipboard_enabled = packet[1]
         if self._clipboard_helper:
-            self.clipboard_enabled = clipboard_enabled
+            assert self._clipboard_client==self._server_sources.get(proto), \
+                    "the request to change the clipboard enabled status does not come from the clipboard owner!"
+            self._clipboard_client.clipboard_enabled = clipboard_enabled
             log("toggled clipboard to %s", self.clipboard_enabled)
         else:
             log.warn("client toggled clipboard-enabled but we do not support clipboard at all! ignoring it")
@@ -1621,6 +1626,8 @@ class XpraServer(gobject.GObject):
             self._potential_protocols.remove(proto)
         source = self._server_sources.get(proto)
         if source:
+            if self._clipboard_client==source:
+                self._clipboard_client = None
             del self._server_sources[proto]
             source.close()
         if len(self._server_sources)==0:
@@ -1679,9 +1686,11 @@ class XpraServer(gobject.GObject):
         packet_type = packet[0]
         assert isinstance(packet_type, str) or isinstance(packet_type, unicode), "packet_type is not a string: %s" % type(packet_type)
         if packet_type.startswith("clipboard-"):
-            if self.clipboard_enabled:
-                self._clipboard_helper.process_clipboard_packet(packet)
-            return
+            ss = self._server_sources.get(proto)
+            assert self._clipboard_client==ss, \
+                    "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
+            assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
+            self._clipboard_helper.process_clipboard_packet(packet)
         if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers
         else:
