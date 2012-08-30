@@ -15,3 +15,6 @@ GOT_PASSWORD_PROMPT_SUGGESTION = \
 def add_client_options(parser):
     from xpra.platform import add_notray_option
     add_notray_option(parser, ", this will also disable notifications!")
+
+def get_machine_id():
+    return  ""

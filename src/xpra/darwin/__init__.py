@@ -14,3 +14,6 @@ GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 
 def add_client_options(parser):
     pass
+
+def get_machine_id():
+    return  ""

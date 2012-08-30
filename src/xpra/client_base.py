@@ -6,6 +6,7 @@
 
 import os
 import sys
+import sha
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 
@@ -15,9 +16,8 @@ log = Logger()
 
 from xpra.protocol import Protocol, has_rencode
 from xpra.scripts.main import ENCODINGS
-from xpra.version_util import is_compatible_with
-
-from xpra.version_util import add_version_info
+from xpra.version_util import is_compatible_with, add_version_info
+from xpra.platform import get_machine_id
 
 def nn(x):
     if x is None:
@@ -121,6 +121,8 @@ class XpraClientBase(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
+        uuid_src = "%s/%s/%s" % (get_machine_id(), os.getuid(), os.getgid())
+        capabilities["uuid"] = sha.new(uuid_src).hexdigest()
         try:
             from wimpiggy.prop import set_xsettings_format
             assert set_xsettings_format
@@ -193,6 +195,7 @@ class XpraClientBase(gobject.GObject):
             return False
         if capabilities.get("rencode") and has_rencode:
             self._protocol.enable_rencode()
+        self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
         return True
 
     def _process_set_deflate(self, packet):

@@ -813,7 +813,7 @@ class XpraServer(gobject.GObject):
             metadata = {}
             for propname in properties:
                 metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
-            ss.new_window(ptype, wid, x, y, w, h, metadata, self.client_properties)
+            ss.new_window(ptype, wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
@@ -1132,7 +1132,7 @@ class XpraServer(gobject.GObject):
                 metadata = {}
                 for propname in self._all_metadata:
                     metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
-                ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties)
+                ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 
     def send_hello(self, client_capabilities, server_source):
@@ -1349,13 +1349,12 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            client_properties = packet[6]
-            self.update_client_properties(wid, client_properties)
-
-    def update_client_properties(self, wid, props):
-        for k,v in props.items():
-            log("update_client_properties setting %s=%s", k, v)
-            self.client_properties[k] = v
+            new_client_properties = packet[6]
+            ss = self._server_sources.get(proto)
+            client_properties = self.client_properties.setdefault(ss.uuid, {})
+            for k,v in new_client_properties.items():
+                log("update_client_properties setting %s=%s", k, v)
+                client_properties[k] = v
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]

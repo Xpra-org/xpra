@@ -152,6 +152,7 @@ class ServerSource(object):
 
         self.window_sources = {}                    #WindowSource for each Window ID
 
+        self.uuid = None
         # client capabilities:
         self.server_window_resize = False
         self.send_cursors = False
@@ -191,6 +192,8 @@ class ServerSource(object):
         self.default_batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         self.default_batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
         self.default_batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
+        #client uuid:
+        self.uuid = capabilities.get("uuid", "")
         #general features:
         self.server_window_resize = capabilities.get("server-window-resize", False)
         self.send_cursors = capabilities.get("cursors", False)
@@ -343,7 +346,7 @@ class ServerSource(object):
         self.send(["window-metadata", wid, metadata])
 
     def new_window(self, ptype, wid, x, y, w, h, metadata, client_properties):
-        self.send([ptype, wid, x, y, w, h, metadata, client_properties])
+        self.send([ptype, wid, x, y, w, h, metadata, client_properties or {}])
 
     def lost_window(self, wid):
         self.send(["lost-window", wid])
