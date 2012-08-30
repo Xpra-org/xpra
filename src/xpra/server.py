@@ -464,10 +464,12 @@ class XpraServer(gobject.GObject):
         self.last_cursor_serial = event.cursor_serial
         self.cursor_data = get_cursor_image()
         if self.cursor_data:
-            log("do_wimpiggy_cursor_event(%s) new_cursor=%s", event, self.cursor_data[:7])
             pixels = self.cursor_data[7]
             if pixels is not None:
-                self.cursor_data[7] = zlib_compress("cursor", pixels)
+                if len(pixels)<64:
+                    self.cursor_data[7] = str(pixels)
+                else:
+                    self.cursor_data[7] = zlib_compress("cursor", pixels)
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         for ss in self._server_sources.values():
@@ -1691,6 +1693,7 @@ class XpraServer(gobject.GObject):
                     "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
             assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
             self._clipboard_helper.process_clipboard_packet(packet)
+            return
         if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers
         else:
