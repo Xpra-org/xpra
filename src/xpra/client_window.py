@@ -182,60 +182,76 @@ class ClientWindow(gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def do_realize(self):
-        if not has_wimpiggy_prop or self._override_redirect:
-            #don't bother trying: OR windows always show up where we are
-            #and if prop_get/prop_set is missing, we have nothing special to do
-            gtk.Window.do_realize(self)
-            return
-
-        ndesktops = 0
         try:
             root = gtk.gdk.screen_get_default().get_root_window()
             ndesktops = root.property_get("_NET_NUMBER_OF_DESKTOPS")[2][0]
         except Exception, e:
             log.error("failed to get workspace count: %s", e)
+            ndesktops = 0
         workspace = self._client_properties.get("workspace", -1)
-        log("do_realize() ndesktops=%s, workspace=%s", ndesktops, workspace)
 
-        if ndesktops<2 or workspace<0:
-            #nothing to restore
-            gtk.Window.do_realize(self)
-            return
-
-        #below we duplicate gtk.Widget.do_realize() code
+        #below we duplicate gtk.window.realize() code
         #just so we can insert the property code at the right place:
         #after the gdk.Window is created, but before it gets positionned.
+        allocation = self.get_allocation()
+        if allocation.x==-1 and allocation.y==-1 and allocation.width==1 and allocation.height==1:
+            w, h = self.size_request()
+            if w>0 or h>0:
+                allocation.width = w
+                allocation.height = h
+            self.size_allocate(w, h)
+            self.queue_resize()
+            if self.flags() & gtk.REALIZED:
+                log.error("window is already realized!")
+                return
 
         self.set_flags(gtk.REALIZED)
+        if self.is_toplevel():
+            window_type = gtk.gdk.WINDOW_TOPLEVEL
+        else:
+            window_type = gtk.gdk.WINDOW_TEMP
+        if self.get_has_frame():
+            #TODO: duplicate gtk code here too..
+            pass
 
-        # Create a new gdk.Window which we can draw on.
-        # Also say that we want to receive exposure events by setting
-        # the event_mask
+        events = self.get_events() | gdk.EXPOSURE_MASK | gdk.STRUCTURE_MASK | \
+                    gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK
         self.window = gdk.Window(
-            self.get_parent_window(),
-            width=self.allocation.width,
-            height=self.allocation.height,
-            window_type=gdk.WINDOW_CHILD,
+            self.get_root_window(),
+            x=allocation.x, y=allocation.y, width=allocation.width, height=allocation.height,
+            window_type=window_type,
             wclass=gdk.INPUT_OUTPUT,
-            event_mask=self.get_events() | gdk.EXPOSURE_MASK)
+            event_mask=events,
+            )
 
-        try:
-            prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", workspace)
-        except Exception, e:
-            log.error("failed to set workspace: %s", e)
+        if has_wimpiggy_prop and not self._override_redirect and ndesktops>1 and workspace>=0:
+            try:
+                prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", workspace)
+            except Exception, e:
+                log.error("failed to set workspace: %s", e)
 
-        # Associate the gdk.Window with ourselves, Gtk+ needs a reference
-        # between the widget and the gdk window
+        self.window.set_opacity(1.0)
+        #self.window.enable_synchronized_configure().. not used?
         self.window.set_user_data(self)
-
-        # Attach the style to the gdk.Window, a style contains colors and
-        # GC contextes used for drawing
         self.style.attach(self.window)
-
-        # The default color of the background should be what
-        # the style (theme engine) tells us.
         self.style.set_background(self.window, gtk.STATE_NORMAL)
-        self.window.move_resize(*self.allocation)        
+        #self.paint() does not exist in pygtk..
+        transient_for = self.get_transient_for()
+        if transient_for and transient_for.flags() & gtk.REALIZED:
+            self.window.set_transient_for(transient_for.get_window())
+        if not self.get_decorated():
+            self.window.set_decorations(0)
+        if not self.get_deletable():
+            #should ne ~FUNC_CLOSE?
+            self.window.set_functions(gtk.gdk.FUNC_ALL | gtk.gdk.FUNC_CLOSE)
+        if self.get_skip_pager_hint():
+            self.window.set_skip_pager_hint(True)
+        if self.get_skip_taskbar_hint():
+            self.window.set_skip_taskbar_hint(True)
+        self.window.set_accept_focus(self.get_accept_focus())
+        self.window.set_focus_on_map(self.get_focus_on_map())
+        self.window.set_modal_hint(self.get_modal())
+        #cannot access startup id...
 
     def get_workspace(self):
         try:
@@ -388,7 +404,7 @@ class ClientWindow(gtk.Window):
         self._backing.cairo_draw(context, x, y)
 
     def do_map_event(self, event):
-        log("Got map event")
+        log("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
