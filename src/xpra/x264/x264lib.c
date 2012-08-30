@@ -128,7 +128,7 @@ int get_csc_format_for_x264_format(int i_csp)
 int get_csc_algo_for_quality(int initial_quality) {
 	//always use the best quality as lower quality options
 	//do not offer a significant speed improvement
-	return SWS_SINC | SWS_ACCURATE_RND;
+	return SWS_BICUBLIN | SWS_ACCURATE_RND;
 }
 
 #ifndef _WIN32
