@@ -17,7 +17,7 @@ Build-Depends: debhelper (>= 7.0.50~)
               ,python-gobject-dev
               ,python-gtk2-dev
 X-Python-Version: all
-Standards-Version: 3.9.1
+Standards-Version: 3.9.3
 Homepage: http://xpra.org/
 Vcs-Svn: http://xpra.org/svn/Xpra/
 Vcs-Browser: http://xpra.org/trac/browser/
