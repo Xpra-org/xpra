@@ -5,6 +5,6 @@ usr/bin/xpra
 usr/bin/xpra_launcher
 usr/share/xpra
 usr/share/applications/xpra_launcher.desktop
-usr/share/icons/xpra.png
+usr/share/xpra/icons/*.png
 etc/xpra/xorg.conf
 etc/xpra/xpra.conf
