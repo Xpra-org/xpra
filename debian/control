@@ -1,10 +1,17 @@
 Source: xpra
 Section: x11
 Priority: optional
-Maintainer: Python Applications Packaging Team <python-apps-team@lists.alioth.debian.org>
-Uploaders: أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>,
- Miguel Landaeta <miguel@miguel.cc>
-Build-Depends: hardening-wrapper, debhelper (>= 7.0.50~), libx11-dev, libxtst-dev, libxcomposite-dev, libxdamage-dev, python-all-dev, cython (>= 0.16), python-gobject-dev, python-gtk2-dev
+Maintainer: Antoine Martin <antoine@nagafix.co.uk>
+Build-Depends: debhelper (>= 7.0.50~)
+              ,cython (>= 0.16)
+              ,hardening-wrapper
+              ,libx11-dev
+              ,libxcomposite-dev
+              ,libxdamage-dev
+              ,libxtst-dev
+              ,python-all-dev
+              ,python-gobject-dev
+              ,python-gtk2-dev
 X-Python-Version: all
 Standards-Version: 3.9.1
 Homepage: http://xpra.org/
