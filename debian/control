@@ -28,8 +28,17 @@ Description: tabbing/tiling window manager using GTK+
 
 Package: xpra
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-wimpiggy (=${binary:Version}), python-gtk2, xvfb, x11-xserver-utils
-Recommends: python-imaging, python-gtkglext1, python-opengl
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
+        ,python-wimpiggy (=${binary:Version})
+        ,python-gtk2
+        ,x11-xserver-utils
+        ,xvfb | xserver-xorg-video-dummy
+Recommends: python-gtkglext1
+           ,python-imaging
+           ,python-opengl
+# keyboard-configuration (>= 1.82) is workaround for #180 to fix keypad keys forwarding.
+           ,keyboard-configuration (>= 1.82)
+           ,xserver-xorg-video-dummy
 Suggests: openssh-client, openssh-server, python-dbus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
