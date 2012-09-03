@@ -221,6 +221,7 @@ class ClientWindow(gtk.Window):
             x=allocation.x, y=allocation.y, width=allocation.width, height=allocation.height,
             window_type=window_type,
             wclass=gdk.INPUT_OUTPUT,
+            title=self.get_title(),
             event_mask=events,
             )
 
