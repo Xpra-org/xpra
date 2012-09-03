@@ -11,3 +11,6 @@ override_dh_auto_install:
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
+
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
