@@ -3,9 +3,13 @@ Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@nagafix.co.uk>
 Build-Depends: debhelper (>= 7.0.50~)
-              ,cython (>= 0.16)
               ,hardening-wrapper
+              ,cython (>= 0.16)
+              ,libavcodec-dev
+              ,libswscale-dev
+              ,libvpx-dev
               ,libx11-dev
+              ,libx264-dev
               ,libxcomposite-dev
               ,libxdamage-dev
               ,libxtst-dev
