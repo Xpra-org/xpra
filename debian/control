@@ -2,8 +2,7 @@ Source: xpra
 Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@nagafix.co.uk>
-Build-Depends: debhelper (>= 7.0.50~)
-              ,hardening-wrapper
+Build-Depends: debhelper (>= 8)
               ,cython (>= 0.16)
               ,libavcodec-dev
               ,libswscale-dev
