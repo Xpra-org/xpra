@@ -1,4 +1,3 @@
 version=3
-opts="dversionmangle=s/\+dfsg//,uversionmangle=s/$/\+dfsg/," \
-  http://xpra.org/src/ xpra-(.*)\.tar\.bz2 \
-  debian ./debian/repack
+
+http://xpra.org/src/xpra-([0-9.]+)\.tar\.(?:bz2|xz)
