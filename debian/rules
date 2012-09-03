@@ -4,5 +4,10 @@ export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 %:
 	dh $@ --with python2 --with quilt
 
+override_dh_auto_install:
+	dh_auto_install
+	## install xpra files to private location in /usr/lib/xpra
+	dh_auto_install -- --install-lib=/usr/lib
+
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS

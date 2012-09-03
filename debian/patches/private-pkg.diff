@@ -1,7 +1,10 @@
-Description: Add /usr/lib/xpra to sys.path for xpra script and /usr/lib/parti 
- to sys.path for parti script.
+Last-Update: 2012-09-01
 Author: أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>
+Reviewed-by: Dmitry Smirnov <onlyjob@member.fsf.org>
 Forwarded: not-needed
+Description: Add /usr/lib to sys.path for xpra script and /usr/lib/parti
+ to sys.path for parti script.
+
 --- a/scripts/parti
 +++ b/scripts/parti
 @@ -1,6 +1,7 @@
@@ -28,7 +31,7 @@ Forwarded: not-needed
  #!/usr/bin/env python
  
  import sys
-+sys.path.append("/usr/lib/xpra")
++sys.path.append("/usr/lib")
  import xpra.scripts.main
  
  sys.exit(xpra.scripts.main.main(__file__, sys.argv))
@@ -38,21 +41,7 @@ Forwarded: not-needed
  #!/usr/bin/env python
  
 +import sys
-+sys.path.append("/usr/lib/xpra")
++sys.path.append("/usr/lib")
  from xpra.scripts.client_launcher import main
  
  main()
---- a/add_build_info.py
-+++ b/add_build_info.py
-@@ -14,7 +14,9 @@
- import re
- 
- IGNORED_CHANGED_FILES = ["xpra/build_info.py",
--						 "tests/*"]
-+						 "tests/*",
-+						 "add_build_info.py",
-+						 "scripts/*"]
- 
- def get_svn_props():
-     props = {
-
