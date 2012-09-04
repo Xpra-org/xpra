@@ -350,7 +350,7 @@ else:
                             break
                     if not xorg_version:
                         print("Xorg version could not be detected, Xdummy support unavailable")
-                    elif xorg_version>=[0, 12]:
+                    elif xorg_version>=[1, 12]:
                         print("found valid Xorg server version %s" % v_str)
                         print("using Xdummy config file")
                         xorg_conf = "etc/xpra/Xdummy/xpra.conf"
