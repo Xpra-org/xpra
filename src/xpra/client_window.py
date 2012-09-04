@@ -219,6 +219,7 @@ class ClientWindow(gtk.Window):
         self.window = gdk.Window(
             self.get_root_window(),
             x=allocation.x, y=allocation.y, width=allocation.width, height=allocation.height,
+            wmclass_name=self.wmclass_name, wmclass_class=self.wmclass_class,
             window_type=window_type,
             wclass=gdk.INPUT_OUTPUT,
             title=self.get_title(),
