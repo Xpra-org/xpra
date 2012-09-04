@@ -1355,7 +1355,7 @@ class XpraServer(gobject.GObject):
         ss = self._server_sources.get(proto)
         client_properties = self.client_properties.setdefault(ss.uuid, {})
         for k,v in new_client_properties.items():
-            log.info("update_client_properties setting %s=%s", k, v)
+            log("update_client_properties setting %s=%s", k, v)
             client_properties[k] = v
 
     def _process_unmap_window(self, proto, packet):
@@ -1515,13 +1515,7 @@ class XpraServer(gobject.GObject):
         if not self.keyboard:
             log.info("ignoring key repeat packet since keyboard is turned off")
             return
-        if len(packet)<6:
-            #don't bother trying to make it work with old clients
-            if self.keyboard_sync:
-                log.info("key repeat data is too small (client is too old), disabling keyboard sync")
-                self.keyboard_sync = False
-            return
-        (wid, keyname, keyval, client_keycode, modifiers) = packet[1:6]
+        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         keycode = self.keycode_translation.get(client_keycode, client_keycode)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
