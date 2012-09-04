@@ -1339,7 +1339,7 @@ class XpraServer(gobject.GObject):
                         root_set("PULSE_SERVER")
 
     def _process_map_window(self, proto, packet):
-        (wid, x, y, width, height) = packet[1:6]
+        wid, x, y, width, height = packet[1:6]
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
@@ -1349,12 +1349,14 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            new_client_properties = packet[6]
-            ss = self._server_sources.get(proto)
-            client_properties = self.client_properties.setdefault(ss.uuid, {})
-            for k,v in new_client_properties.items():
-                log("update_client_properties setting %s=%s", k, v)
-                client_properties[k] = v
+            self._set_client_properties(proto, packet[6])
+    
+    def _set_client_properties(self, proto, new_client_properties):
+        ss = self._server_sources.get(proto)
+        client_properties = self.client_properties.setdefault(ss.uuid, {})
+        for k,v in new_client_properties.items():
+            log.info("update_client_properties setting %s=%s", k, v)
+            client_properties[k] = v
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
@@ -1378,20 +1380,22 @@ class XpraServer(gobject.GObject):
         self._desktop_manager.configure_window(window, x, y, w, h)
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
             self._damage(window, 0, 0, w, h)
+        if len(packet)>=7:
+            self._set_client_properties(proto, packet[6])
 
     def _process_move_window(self, proto, packet):
-        (wid, x, y) = packet[1:4]
+        wid, x, y = packet[1:4]
         window = self._id_to_window.get(wid)
         log("_process_move_window(%s)", packet[1:])
         if not window:
             log("cannot move window %s: already removed!", wid)
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
-        (_, _, w, h) = self._desktop_manager.window_geometry(window)
+        _, _, w, h = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
 
     def _process_resize_window(self, proto, packet):
-        (wid, w, h) = packet[1:4]
+        wid, w, h = packet[1:4]
         window = self._id_to_window.get(wid)
         log("_process_resize_window(%s)", packet[1:])
         if not window:
@@ -1399,9 +1403,9 @@ class XpraServer(gobject.GObject):
             return
         assert not isinstance(window, OverrideRedirectWindowModel)
         self._cancel_damage(wid)
-        (x, y, _, _) = self._desktop_manager.window_geometry(window)
+        x, y, _, _ = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
-        (_, _, ww, wh) = self._desktop_manager.window_geometry(window)
+        _, _, ww, wh = self._desktop_manager.window_geometry(window)
         visible = self._desktop_manager.visible(window)
         log("resize_window to %sx%s, desktop manager set it to %sx%s, visible=%s", w, h, ww, wh, visible)
         if visible:

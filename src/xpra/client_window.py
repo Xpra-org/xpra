@@ -189,6 +189,7 @@ class ClientWindow(gtk.Window):
             log.error("failed to get workspace count: %s", e)
             ndesktops = 0
         workspace = self._client_properties.get("workspace", -1)
+        log("do_realize() workspace=%s (ndesktops=%s)", workspace, ndesktops)
 
         #below we duplicate gtk.window.realize() code
         #just so we can insert the property code at the right place:
@@ -226,9 +227,9 @@ class ClientWindow(gtk.Window):
             event_mask=events,
             )
 
-        if has_wimpiggy_prop and not self._override_redirect and ndesktops>1 and workspace>=0:
+        if has_wimpiggy_prop and not self._override_redirect and ndesktops>workspace and workspace>=0:
             try:
-                prop_set(self.get_window(), "_NET_WM_DESKTOP", "u32", workspace)
+                prop_set(self.window, "_NET_WM_DESKTOP", "u32", workspace)
             except Exception, e:
                 log.error("failed to set workspace: %s", e)
 
@@ -244,7 +245,6 @@ class ClientWindow(gtk.Window):
         if not self.get_decorated():
             self.window.set_decorations(0)
         if not self.get_deletable():
-            #should ne ~FUNC_CLOSE?
             self.window.set_functions(gtk.gdk.FUNC_ALL | gtk.gdk.FUNC_CLOSE)
         if self.get_skip_pager_hint():
             self.window.set_skip_pager_hint(True)
@@ -428,7 +428,8 @@ class ClientWindow(gtk.Window):
         self._pos = (x, y)
         if self._client.window_configure:
             #if we support configure-window, send that first
-            self._client.send(["configure-window", self._id, x, y, w, h])
+            client_properties = {"workspace" : self.get_workspace()}
+            self._client.send(["configure-window", self._id, x, y, w, h, client_properties])
         if dx!=0 or dy!=0:
             #window has moved
             if not self._client.window_configure:
