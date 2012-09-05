@@ -1,0 +1,2 @@
+xpra/build_info.py
+tests/*

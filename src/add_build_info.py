@@ -13,8 +13,21 @@ import platform
 import os.path
 import re
 
-IGNORED_CHANGED_FILES = ["xpra/build_info.py",
-						 "tests/*"]
+
+def load_ignored_changed_files():
+    ignored = []
+    try:
+        f = open("./ignored_changed_files.txt", "rU")
+        for line in f:
+            s = line.strip()
+            if len(s)==0:
+                continue
+            if s[0] in ('!', '#'):
+                continue
+            ignored.append(s)
+    finally:
+        f.close()
+    return ignored
 
 def get_svn_props():
     props = {
@@ -64,7 +77,7 @@ def get_svn_props():
             continue
         filename = parts[1].strip()
         ignore = False
-        for x in IGNORED_CHANGED_FILES:
+        for x in load_ignored_changed_files():
             #use a normalized path ("/") that does not interfere with regexp:
             norm_path = filename.replace(os.path.sep, "/")
             if norm_path==x:
