@@ -404,6 +404,7 @@ class XpraServer(gobject.GObject):
         gtk_main_quit_really()
 
     def run(self):
+        log.info("xpra server version %s" % xpra.__version__)
         gtk_main_quit_on_fatal_exceptions_enable()
         def print_ready():
             log.info("xpra is ready.")

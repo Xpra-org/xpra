@@ -49,6 +49,7 @@ from wimpiggy.util import (n_arg_signal,
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra import __version__
 from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
@@ -148,6 +149,7 @@ class XpraClient(XpraClientBase):
             self._keymap = None
         self._do_keys_changed()
         self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
+        log.info("xpra client version %s" % __version__)
         self.send_hello()
 
         if self._keymap:
