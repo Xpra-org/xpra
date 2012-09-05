@@ -418,7 +418,7 @@ class ServerSource(object):
     def refresh(self, wid, window, opts):
         self.cancel_damage(wid)
         w, h = window.get_dimensions()
-        self.damage(window, 0, 0, w, h, opts)
+        self.damage(wid, window, 0, 0, w, h, opts)
 
     def damage(self, wid, window, x, y, w, h, options=None):
         """
