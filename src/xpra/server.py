@@ -399,18 +399,18 @@ class XpraServer(gobject.GObject):
 
     def quit(self, upgrading):
         self._upgrading = upgrading
-        log.info("\nxpra is terminating.")
+        log.info("xpra is terminating.")
         sys.stdout.flush()
         gtk_main_quit_really()
 
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         def print_ready():
-            log.info("\nxpra is ready.")
+            log.info("xpra is ready.")
             sys.stdout.flush()
         gobject.idle_add(print_ready)
         gtk.main()
-        log.info("\nxpra end of gtk.main().")
+        log.info("xpra end of gtk.main().")
         return self._upgrading
 
     def cleanup(self, *args):
