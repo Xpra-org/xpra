@@ -109,9 +109,9 @@ class WindowPerformanceStatistics(object):
         if len(self.encoding_stats)>0:
             estats = list(self.encoding_stats)
             encodings_used = [x[0] for x in estats]
-            comp_ratios_pct = []
-            comp_times_ns = []
             def add_compression_stats(enc_stats, suffix):
+                comp_ratios_pct = []
+                comp_times_ns = []
                 total_pixels = 0
                 total_time = 0.0
                 for _, pixels, compressed_size, compression_time in enc_stats:
