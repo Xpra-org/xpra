@@ -400,7 +400,7 @@ class ServerSource(object):
                 ws = self.window_sources.get(wid)
                 if ws:
                     #per-window stats:
-                    ws.add_stats(info)
+                    ws.add_stats(info, suffix=suffix)
                     #collect stats for global averages:
                     for _, pixels, _, encoding_time in ws.statistics.encoding_stats:
                         total_pixels += pixels

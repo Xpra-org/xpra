@@ -64,7 +64,7 @@ def add_weighted_list_stats(info, basename, weighted_values, show_percentile=Fal
             info["%s.%sp" % (basename, pct)] = int(svalues[index])
 
 
-def add_list_stats(info, basename, in_values):
+def add_list_stats(info, basename, in_values, show_percentile=True):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
     values = list(in_values)
@@ -101,12 +101,13 @@ def add_list_stats(info, basename, in_values):
     if h!=0:
         #harmonic mean
         info["%s.h" % basename] = int(counter/h)
-    #percentile
-    svalues = sorted(values)
-    for i in range(1,10):
-        pct = i*10
-        index = len(values)*i//10
-        info["%s.%sp" % (basename, pct)] = int(svalues[index])
+    if show_percentile:
+        #percentile
+        svalues = sorted(values)
+        for i in range(1,10):
+            pct = i*10
+            index = len(values)*i//10
+            info["%s.%sp" % (basename, pct)] = int(svalues[index])
 
 
 def calculate_time_weighted_average(data):

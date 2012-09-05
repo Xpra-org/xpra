@@ -219,17 +219,22 @@ class WindowSource(object):
         """ See cancel_damage(wid) """
         return sequence>=0 and self._damage_cancelled>=sequence
 
-    def add_stats(self, info):
+    def add_stats(self, info, suffix=""):
         """
             Add window specific stats
         """
-        suffix = "[%s]" % self.wid
+        suffix += "[%s]" % self.wid
         info["encoding"+suffix] = self.encoding
         self.statistics.add_stats(info, suffix)
         #batch stats:
         if len(self.batch_config.last_delays)>0:
             batch_delays = [x for _,x in self.batch_config.last_delays]
             add_list_stats(info, "batch_delay"+suffix, batch_delays)
+        if self._video_encoder is not None:
+            quality_list = [x for _, x in self._video_encoder_quality]
+            add_list_stats(info, self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
+            speed_list = [x for _, x in self._video_encoder_speed]
+            add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
 
 
     def may_calculate_batch_delay(self, window):
