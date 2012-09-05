@@ -305,10 +305,9 @@ class PixmapBacking(Backing):
         if coding == "mmap":
             return self.paint_mmap(img_data, x, y, width, height, rowstride)
         elif coding == "rgb24":
-            if rowstride>0:
-                assert len(img_data) == rowstride * height
-            else:
-                assert len(img_data) == width * 3 * height
+            if rowstride==0:
+                rowstride = width * 3
+            assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
             return self.paint_rgb24(img_data, x, y, width, height, rowstride)
         elif coding == "x264":
             return self.paint_x264(img_data, x, y, width, height, rowstride, options)
