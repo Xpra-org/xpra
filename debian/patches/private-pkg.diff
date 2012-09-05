@@ -45,10 +45,3 @@ Description: Add /usr/lib to sys.path for xpra script and /usr/lib/parti
  from xpra.scripts.client_launcher import main
  
  main()
---- a/ignored_changed_files.txt
-+++ b/ignored_changed_files.txt
-@@ -1,2 +1,4 @@
- xpra/build_info.py
- tests/*
-+ignored_changed_files.txt
-+scripts/*

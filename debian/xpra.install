@@ -1,4 +1,4 @@
-usr/lib/xpra/
+usr/lib/*/*/xpra usr/lib
 usr/bin/xpra
 usr/bin/xpra_launcher
 usr/share/applications/xpra_launcher.desktop
