@@ -28,7 +28,6 @@ class Backing(object):
         self.mmap = mmap
         self._backing = None
         self._video_decoder = None
-        self._video_decoder_codec = None
 
     def close(self):
         if self._video_decoder:
@@ -72,7 +71,7 @@ class Backing(object):
     def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options):
         assert x==0 and y==0
         if self._video_decoder:
-            if self._video_decoder_codec!=coding:
+            if self._video_decoder.get_type()!=coding:
                 self._video_decoder.clean()
                 self._video_decoder = None
             elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
@@ -81,7 +80,6 @@ class Backing(object):
                 self._video_decoder.init_context(width, height, options)
         if self._video_decoder is None:
             self._video_decoder = factory()
-            self._video_decoder_codec = coding
             self._video_decoder.init_context(width, height, options)
         log("paint_with_video_decoder: options=%s", options)
         err, outstride, data = self._video_decoder.decompress_image_to_rgb(img_data, options)
@@ -171,7 +169,7 @@ class CairoBacking(Backing):
         return  True
 
     def paint_rgb24(self, img_data, x, y, width, height, rowstride):
-        log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s)" % (x, y, width, height, rowstride))
+        log("cairo_paint_rgb24(..,%s,%s,%s,%s,%s)", x, y, width, height, rowstride)
         gc = cairo.Context(self._backing)
         if rowstride==0:
             rowstride = width*3

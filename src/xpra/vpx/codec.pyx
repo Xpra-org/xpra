@@ -26,7 +26,6 @@ cdef extern from "vpxlib.h":
     void clean_decoder(vpx_codec_ctx_t *context)
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
-
 """ common superclass for Decoder and Encoder """
 cdef class xcoder:
     cdef vpx_codec_ctx_t *context
@@ -56,6 +55,9 @@ cdef class Decoder(xcoder):
     def init_context(self, width, height, options):
         self.init(width, height)
         self.context = init_decoder(width, height)
+
+    def get_type(self):
+        return  "vpx"
 
     def clean(self):
         if self.context!=NULL:
@@ -115,6 +117,9 @@ cdef class Encoder(xcoder):
     def init_context(self, width, height, supports_options):
         self.init(width, height)
         self.context = init_encoder(width, height)
+
+    def get_type(self):
+        return  "vpx"
 
     def clean(self):
         if self.context!=NULL:

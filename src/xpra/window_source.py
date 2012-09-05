@@ -601,17 +601,21 @@ class WindowSource(object):
         #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()
-            if self._video_encoder and (self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h):
-                log("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
-                old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
-                new_pc = w * h
-                self._video_encoder.clean()
-                self._video_encoder.init_context(w, h, self.encoding_client_options)
-                #if we had an encoding speed set, restore it (also scaled):
-                if len(self._video_encoder_speed):
-                    _, recent_speed = calculate_time_weighted_average(list(self._video_encoder_speed))
-                    new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
-                    self._video_encoder.set_encoding_speed(new_speed)
+            if self._video_encoder:
+                if self._video_encoder.get_type()!=coding:
+                    log("video_encode: switching from %s to %s", self._video_encoder.get_type(), coding)
+                    self.video_encoder_cleanup()
+                elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
+                    log("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
+                    old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
+                    self._video_encoder.clean()
+                    self._video_encoder.init_context(w, h, self.encoding_client_options)
+                    #if we had an encoding speed set, restore it (also scaled):
+                    if len(self._video_encoder_speed):
+                        _, recent_speed = calculate_time_weighted_average(list(self._video_encoder_speed))
+                        new_pc = w * h
+                        new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
+                        self._video_encoder.set_encoding_speed(new_speed)
             if self._video_encoder is None:
                 log("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 self._video_encoder = self.make_video_encoder(coding)
