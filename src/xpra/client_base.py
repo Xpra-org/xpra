@@ -119,6 +119,7 @@ class XpraClientBase(gobject.GObject):
             capabilities["jpeg"] = self.jpegquality
         capabilities["platform"] = sys.platform
         capabilities["raw_packets"] = True
+        capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
         uuid_src = "%s/%s/%s" % (get_machine_id(), os.getuid(), os.getgid())

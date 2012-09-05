@@ -100,6 +100,7 @@ class Protocol(object):
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
+        self.chunked_compression = True
         self._closed = False
         self._encoder = self.bencode
         self._decompressor = zlib.decompressobj()
@@ -410,7 +411,10 @@ class Protocol(object):
                     raw_string = read_buffer[:current_packet_size]
                     read_buffer = read_buffer[current_packet_size:]
                 if compression_level>0:
-                    raw_string = self._decompressor.decompress(raw_string)
+                    if self.chunked_compression:
+                        raw_string = zlib.decompress(raw_string)
+                    else:
+                        raw_string = self._decompressor.decompress(raw_string)
                 if sys.version>='3':
                     raw_string = raw_string.decode("latin1")
 

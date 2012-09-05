@@ -1072,6 +1072,7 @@ class XpraServer(gobject.GObject):
             proto.enable_rencode()
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
+        proto.chunked_compression = capabilities.get("chunked_compression", False)
         ss = ServerSource(proto, self.supports_mmap)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
@@ -1158,6 +1159,7 @@ class XpraServer(gobject.GObject):
         if "key_repeat" in client_capabilities:
             capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
+        capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
