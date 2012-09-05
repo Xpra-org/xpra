@@ -45,17 +45,10 @@ Description: Add /usr/lib to sys.path for xpra script and /usr/lib/parti
  from xpra.scripts.client_launcher import main
  
  main()
---- a/add_build_info.py
-+++ b/add_build_info.py
-@@ -14,7 +14,9 @@
- import re
- 
- IGNORED_CHANGED_FILES = ["xpra/build_info.py",
--						 "tests/*"]
-+						 "tests/*",
-+						 "add_build_info.py",
-+						 "scripts/*"]
- 
- def get_svn_props():
-     props = {
-
+--- a/ignored_changed_files.txt
++++ b/ignored_changed_files.txt
+@@ -1,2 +1,4 @@
+ xpra/build_info.py
+ tests/*
++ignored_changed_files.txt
++scripts/*
