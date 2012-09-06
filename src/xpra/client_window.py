@@ -207,7 +207,10 @@ class ClientWindow(gtk.Window):
                 return
 
         self.set_flags(gtk.REALIZED)
-        if self.is_toplevel():
+        is_toplevel = self.get_parent() is None
+        if hasattr(self, "is_toplevel"):
+            is_toplevel = self.is_toplevel()
+        if is_toplevel:
             window_type = gtk.gdk.WINDOW_TOPLEVEL
         else:
             window_type = gtk.gdk.WINDOW_TEMP
