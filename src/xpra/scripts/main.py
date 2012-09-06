@@ -452,7 +452,7 @@ def parse_display_name(parser, opts, display_name):
         remote_xpra = opts.remote_xpra.split()
         if opts.sockdir:
             #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
-            remote_xpra.insert(0, "XPRA_SOCKET_DIR=%s" % opts.sockdir)
+            remote_xpra.append("--socket-dir=%s" % opts.sockdir)
         desc["remote_xpra"] = remote_xpra
         desc["full_remote_xpra"] = desc["full_ssh"] + desc["remote_xpra"]
         return desc
