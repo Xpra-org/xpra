@@ -6,12 +6,12 @@ Build-Depends: debhelper (>= 8)
               ,cython (>= 0.16)
               ,libavcodec-dev
               ,libswscale-dev
-              ,libvpx-dev
               ,libx11-dev
-              ,libx264-dev
+              ,libvpx-dev
               ,libxcomposite-dev
               ,libxdamage-dev
               ,libxtst-dev
+              ,libx264-dev
               ,python-all-dev
               ,python-gobject-dev
               ,python-gtk2-dev
