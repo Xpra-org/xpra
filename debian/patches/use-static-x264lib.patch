@@ -17,12 +17,11 @@ Description: Build x264 codec as a static library.
                  ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
 --- a/debian/control
 +++ b/debian/control
-@@ -8,7 +8,6 @@
+@@ -8,6 +8,5 @@
+               ,libavcodec-dev
                ,libswscale-dev
-               ,libvpx-dev
                ,libx11-dev
 -              ,libx264-dev
                ,libxcomposite-dev
                ,libxdamage-dev
                ,libxtst-dev
-
