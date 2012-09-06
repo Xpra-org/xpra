@@ -182,12 +182,14 @@ class ClientWindow(gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def do_realize(self):
+        ndesktops = 0
         try:
             root = gtk.gdk.screen_get_default().get_root_window()
-            ndesktops = root.property_get("_NET_NUMBER_OF_DESKTOPS")[2][0]
+            prop = root.property_get("_NET_NUMBER_OF_DESKTOPS")
+            if prop is not None and len(prop)==3 and len(prop[2])==1:
+                ndesktops = prop[2][0]
         except Exception, e:
             log.error("failed to get workspace count: %s", e)
-            ndesktops = 0
         workspace = self._client_properties.get("workspace", -1)
         log("do_realize() workspace=%s (ndesktops=%s)", workspace, ndesktops)
 
