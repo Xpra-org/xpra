@@ -544,6 +544,8 @@ def connect_or_fail(display_desc):
 
 def run_client(parser, opts, extra_args, mode):
     if mode=="screenshot":
+        if len(extra_args)==0:
+            parser.error("invalid number of arguments for screenshot mode")
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
