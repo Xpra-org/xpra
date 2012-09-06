@@ -5,6 +5,19 @@
 # later version. See the file COPYING for details.
 
 import os
+import errno
+
+#on some platforms (ie: OpenBSD), reading and writing from sockets
+#raises an IOError but we should continue if the error code is EINTR
+#this wrapper takes care of it.
+def untilConcludes(f, *a, **kw):
+    while True:
+        try:
+            return f(*a, **kw)
+        except (IOError, OSError), e:
+            if e.args[0] == errno.EINTR:
+                continue
+            raise
 
 # A simple, portable abstraction for a blocking, low-level
 # (os.read/os.write-style interface) two-way byte stream:

@@ -14,7 +14,6 @@ gobject.threads_init()
 import sys
 import socket # for socket.error
 import zlib
-import errno
 import struct
 import time
 import os
@@ -30,6 +29,7 @@ from threading import Thread, Lock
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra.bytestreams import untilConcludes
 from xpra.bencode import bencode, bdecode
 rencode_dumps, rencode_loads = None, None
 try:
@@ -48,15 +48,6 @@ def repr_ellipsized(obj, limit=100):
 
 def dump_packet(packet):
     return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
-
-def untilConcludes(f, *a, **kw):
-    while True:
-        try:
-            return f(*a, **kw)
-        except (IOError, OSError), e:
-            if e.args[0] == errno.EINTR:
-                continue
-            raise
 
 class Compressed(object):
     def __init__(self, datatype, data):

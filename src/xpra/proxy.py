@@ -7,6 +7,7 @@ import threading
 
 from wimpiggy.log import Logger
 log = Logger()
+from xpra.bytestreams import untilConcludes
 
 class XpraProxy(object):
     def __init__(self, client_conn, server_conn):
@@ -32,14 +33,15 @@ class XpraProxy(object):
     def _copy_loop(self, log_name, from_conn, to_conn):
         while True:
             log("%s: waiting for data", log_name)
-            buf = from_conn.read(4096)
+            buf = untilConcludes(from_conn.read, 4096)
             if not buf:
                 log("%s: connection lost", log_name)
                 self._quit()
                 return
             while buf:
                 log("%s: writing %s bytes", log_name, len(buf))
-                buf = buf[to_conn.write(buf):]
+                written = untilConcludes(to_conn.write, buf)
+                buf = buf[written:]
 
     def _quit(self):
         log("closing proxy connections")
