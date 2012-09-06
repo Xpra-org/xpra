@@ -1632,8 +1632,8 @@ class XpraServer(gobject.GObject):
                 self._clipboard_client = None
             del self._server_sources[proto]
             source.close()
-        if len(self._server_sources)==0:
             log.info("xpra client disconnected.")
+        if len(self._server_sources)==0:
             self._clear_keys_pressed()
             self._focus(0, [])
         sys.stdout.flush()
