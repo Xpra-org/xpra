@@ -288,6 +288,9 @@ class ScreenshotXpraClient(GLibXpraClient):
     def _process_screenshot(self, packet):
         (w, h, encoding, _, img_data) = packet[1:6]
         assert encoding=="png"
+        if len(img_data)==0:
+            log.info("screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
+            self.quit(0)
         f = open(self.screenshot_filename, 'wb')
         f.write(img_data)
         f.close()
