@@ -11,8 +11,9 @@ DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 
 def add_client_options(parser):
-    from xpra.platform import add_notray_option
+    from xpra.platform import add_notray_option, add_delaytray_option
     add_notray_option(parser)
+    add_delaytray_option(parser)
 
 def get_machine_id():
     for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:

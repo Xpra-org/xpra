@@ -86,6 +86,7 @@ class XpraClient(XpraClientBase):
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
+        self._ui_events = 0
         self.title = opts.title
         self.readonly = opts.readonly
         self.session_name = opts.session_name
@@ -727,7 +728,13 @@ class XpraClient(XpraClientBase):
             i += 1
         return screen_sizes
 
+    def _ui_event(self):
+        if self._ui_events==0:
+            self.emit("first-ui-received")
+        self._ui_events += 1
+
     def _process_new_common(self, packet, override_redirect):
+        self._ui_event()
         wid, x, y, w, h, metadata = packet[1:7]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=0 or h<=0:
@@ -817,7 +824,8 @@ class XpraClient(XpraClientBase):
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
             return
-        (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout) = packet[1:9]
+        self._ui_event()
+        dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
         log("_process_notify_show(%s)", packet)
         self._client_extras.show_notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
 

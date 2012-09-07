@@ -40,7 +40,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
-[\fB\-\-no-tray\fP]
+[\fB\-\-no\-tray\fP]
+[\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding=ENCODING\fP]
 [\fB\-\-jpeg\-quality=VALUE\fP]
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
@@ -490,9 +491,12 @@ Path to the default image which will be used for all windows.
 This icon may be shown in the window's bar, its iconified
 state or task switchers. This depends on the operating system,
 the window manage and the application may override this too.
-\fB\-\-no-tray\fP
+\fB\-\-no\-tray\fP
 Disables the system tray. Not available on OSX since the dock
 icon is always shown.
+\fB\-\-delay\-tray\fP
+Waits for the first window or notification to appear before
+showing the system tray. (posix only)
 \fB\-\-tray\-icon\fP=\fIFILENAME\fP
 Specifies the icon shown in the dock/tray.
 By default it uses a simple default 'xpra' icon.

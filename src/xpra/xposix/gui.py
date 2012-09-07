@@ -32,7 +32,7 @@ class ClientExtras(ClientExtrasBase):
             log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu(True)
-        self.setup_tray(opts.no_tray, opts.tray_icon)
+        self.setup_tray(opts.no_tray, opts.delay_tray, opts.tray_icon)
         self.setup_xprops(opts.pulseaudio)
         self.setup_x11_bell()
         self.has_dbusnotify = False
@@ -75,10 +75,23 @@ class ClientExtras(ClientExtrasBase):
             return  f
         return  None
 
-    def setup_statusicon(self, tray_icon_filename):
+    def setup_statusicon(self, delay_tray, tray_icon_filename):
         self.tray_widget = None
         try:
             self.tray_widget = gtk.StatusIcon()
+            def hide_tray(*args):
+                self.tray_widget.set_visible(False)
+            self.hide_tray = hide_tray
+            if delay_tray:
+                self.hide_tray()
+            def show_tray(*args):
+                log.info("showing tray")
+                #session_name will get set during handshake
+                self.tray_widget.set_visible(True)
+                if hasattr(self.tray_widget, "set_tooltip_text"):
+                    self.tray_widget.set_tooltip_text(self.client.session_name)
+                else:
+                    self.tray_widget.set_tooltip(self.client.session_name)
             self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)
@@ -88,28 +101,25 @@ class ClientExtras(ClientExtrasBase):
                 else:
                     pixbuf = gdk.pixbuf_new_from_file(filename)
                     self.tray_widget.set_from_pixbuf(pixbuf)
-            def hide_tray(*args):
-                self.tray_widget.set_visible(False)
-            self.hide_tray = hide_tray
-            def show_tray(*args):
-                log.debug("showing tray")
-                #session_name will get set during handshake
-                self.tray_widget.set_visible(True)
-                if hasattr(self.tray_widget, "set_tooltip_text"):
-                    self.tray_widget.set_tooltip_text(self.client.session_name)
-                else:
-                    self.tray_widget.set_tooltip(self.client.session_name)
-            self.client.connect("handshake-complete", show_tray)
+            if delay_tray:
+                self.client.connect("first-ui-received", show_tray)
             return True
         except Exception, e:
             log.debug("could not setup gtk.StatusIcon: %s", e)
             return False
 
-    def setup_appindicator(self, tray_icon_filename):
+    def setup_appindicator(self, delay_tray, tray_icon_filename):
         try:
             import appindicator            #@UnresolvedImport
             filename = self.get_tray_icon_filename(tray_icon_filename)
             self.tray_widget = appindicator.Indicator("Xpra", filename, appindicator.CATEGORY_APPLICATION_STATUS)
+            def hide_appindicator(*args):
+                self.tray_widget.set_status(appindicator.STATUS_PASSIVE)
+            self.hide_tray = hide_appindicator
+            if delay_tray:
+                self.hide_tray()
+            def show_appindicator(*args):
+                self.tray_widget.set_status(appindicator.STATUS_ACTIVE)
             if hasattr(self.tray_widget, "set_icon_theme_path"):
                 self.tray_widget.set_icon_theme_path(self.get_icons_dir())
             self.tray_widget.set_attention_icon("xpra.png")
@@ -117,13 +127,9 @@ class ClientExtras(ClientExtrasBase):
                 self.tray_widget.set_icon(filename)
             else:
                 self.tray_widget.set_label("Xpra")
-            def hide_appindicator(*args):
-                self.tray_widget.set_status(appindicator.STATUS_PASSIVE)
-            self.hide_tray = hide_appindicator
-            def show_appindicator(*args):
-                self.tray_widget.set_status(appindicator.STATUS_ACTIVE)
             self.tray_widget.set_menu(self.menu)
-            self.client.connect("handshake-complete", show_appindicator)
+            if delay_tray:
+                self.client.connect("first-ui-received", show_appindicator)
             return  True
         except Exception, e:
             log.debug("could not setup appindicator: %s", e)
@@ -158,7 +164,7 @@ class ClientExtras(ClientExtrasBase):
         except:
             return False
 
-    def setup_tray(self, no_tray, tray_icon_filename):
+    def setup_tray(self, no_tray, delay_tray, tray_icon_filename):
         """ choose the most appropriate tray implementation
             Ubuntu is a disaster in this area, see:
             http://xpra.org/trac/ticket/43#comment:8
@@ -167,9 +173,9 @@ class ClientExtras(ClientExtrasBase):
         self.hide_tray = None
         if no_tray:
             return
-        if self._is_ubuntu_11_10_or_later() and self.setup_appindicator(tray_icon_filename):
+        if self._is_ubuntu_11_10_or_later() and self.setup_appindicator(delay_tray, tray_icon_filename):
             return
-        if not self.setup_statusicon(tray_icon_filename):
+        if not self.setup_statusicon(delay_tray, tray_icon_filename):
             log.error("failed to setup system-tray")
 
     def setup_dbusnotify(self):

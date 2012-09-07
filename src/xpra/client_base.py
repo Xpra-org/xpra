@@ -73,6 +73,7 @@ class XpraClientBase(gobject.GObject):
 
     __gsignals__ = {
         "handshake-complete": n_arg_signal(0),
+        "first-ui-received" : n_arg_signal(0),
         "received-gibberish": n_arg_signal(1),
         }
 
@@ -184,7 +185,7 @@ class XpraClientBase(gobject.GObject):
         self.parse_server_capabilities(self.server_capabilities)
 
     def parse_server_capabilities(self, capabilities):
-        self._remote_version = capabilities.get("version") or capabilities.get("__prerelease_version")
+        self._remote_version = capabilities.get("version")
         try:
             from wimpiggy.prop import set_xsettings_format
             set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
