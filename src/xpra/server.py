@@ -1016,7 +1016,6 @@ class XpraServer(gobject.GObject):
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
         log("process_hello: capabilities=%s", capabilities)
-        log.info("Handshake complete; enabling connection")
         if capabilities.get("version_request", False):
             response = {"version" : xpra.__version__}
             packet = ["hello", response]
@@ -1024,7 +1023,12 @@ class XpraServer(gobject.GObject):
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
 
-        remote_version = capabilities.get("__prerelease_version") or capabilities.get("version")
+        screenshot_req = capabilities.get("screenshot_request", False)
+        info_req = capabilities.get("info_request", False)
+        if not screenshot_req and not info_req:
+            log.info("Handshake complete; enabling connection")
+
+        remote_version = capabilities.get("version")
         if not is_compatible_with(remote_version):
             proto.close()
             return
@@ -1038,13 +1042,13 @@ class XpraServer(gobject.GObject):
             if not self._verify_password(proto, client_hash):
                 return
 
-        if capabilities.get("screenshot_request", False):
+        if screenshot_req:
             #this is a screenshot request, handle it and disconnect
             packet = self.make_screenshot_packet()
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
             return
-        if capabilities.get("info_request", False):
+        if info_req:
             packet = ["hello", self.get_info(proto)]
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
