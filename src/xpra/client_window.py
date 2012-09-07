@@ -5,6 +5,9 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#disabled for now as this causes bugs:
+PRESERVE_WORSPACE = False
+
 #pygtk3 vs pygtk2 (sigh)
 from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
@@ -182,6 +185,9 @@ class ClientWindow(gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
     def do_realize(self):
+        if not PRESERVE_WORSPACE:
+            gtk.Window.do_realize(self)
+            return
         ndesktops = 0
         try:
             root = gtk.gdk.screen_get_default().get_root_window()
