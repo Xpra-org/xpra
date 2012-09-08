@@ -1,3 +1,8 @@
+v0.7.0 (2012-09-08)
+======================
+	-- TODO
+
+
 v0.6.0 (2012-09-08)
 ======================
 	-- fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix

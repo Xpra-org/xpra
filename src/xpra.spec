@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.6.0
+%define version 0.7.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -87,6 +87,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
+- TODO
+
 * Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
 - fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
 - fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big

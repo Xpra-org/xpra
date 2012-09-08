@@ -1,3 +1,8 @@
+xpra (0.7.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Sep 2012 14:08:42 +0700
+
 xpra (0.6.0-5) UNRELEASED; urgency=low
   * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
   	fix icon lookup on *nix
