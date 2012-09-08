@@ -1,4 +1,4 @@
-xpra (0.6.0-2) UNRELEASED; urgency=low
+xpra (0.6.0-5) UNRELEASED; urgency=low
   * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
   	fix icon lookup on *nix
   * fix clipboard contents too big (was causing connection drops):
@@ -6,15 +6,60 @@ xpra (0.6.0-2) UNRELEASED; urgency=low
   * x264 or vpx are now the default encodings (if available)
   * compress rgb24 pixel data with zlib from the damage thread
   * better build environment detection
-  * partial multi-user support (see --enable-sharing)
+  * experimental multi-user support (see --enable-sharing)
   * better, more accurate "xpra info" statistics (per encoding, etc)
-  * irrecoverable errors in the network parsing code will now disconnect
   * tidy up main source directory
   * simplify video encoders/decoders setup and cleanup code
   * remove 'nogil' switch (as 'nogil' is much faster)
   * test all socket types with automated tests
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Aug 2012 15:12:22 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Sep 2012 11:33:52 +0700
+
+xpra (0.5.4-1) UNRELEASED; urgency=low
+  * fix man page typo
+  * fix non bash login shell compatibility
+  * fix xpra screenshot argument parsing error handling
+  * fix video encoding mismatch when switching encoding
+  * fix ssh mode on OpenBSD
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Sep 2012 11:07:55 +0700
+
+xpra (0.5.3-1) UNRELEASED; urgency=low
+  * zlib compatibility fix: use chunked decompression when supported
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 05 Sep 2012 12:17:25 +0700
+
+xpra (0.5.2-1) UNRELEASED; urgency=low
+  * fix xpra launcher icon lookup on *nix
+  * fix big clipboard packets causing disconnection: just drop them instead
+  * force disconnection after irrecoverable network parsing error
+  * fix zlib compression in raw packet mode: always flush the buffer
+  * fix window refresh: do not skip all windows after a hidden one!
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 29 Aug 2012 10:31:27 +0700
+
+xpra (0.5.1-2) UNRELEASED; urgency=low
+  * fix xpra_launcher
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 25 Aug 2012 04:29:56 +0700
+
+xpra (0.5.1-1) UNRELEASED; urgency=low
+  * fix DPI issue with Xdummy: set virtual screen to 96dpi by default
+  * avoid looping forever doing maths on 'infinity' value
+  * fix incomplete cloning of attributes causing default values to be used 
+  * damage data queue batch factor was being calculated but not used
+  * ensure we update the data we use for calculations (was using zero value)
+  * ensure "send_bell" is initialized before use
+  * add missing path string in warning message
+  * fix test code compatibility with older xpra versions
+  * statistics shown for 'damage_packet_queue_pixels' were incorrect
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 25 Aug 2012 00:50:35 +0700
+
+xpra (0.5.0-2) UNRELEASED; urgency=low
+  * fix font size by setting a default DPI for Xdummy
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 22 Aug 2012 01:38:24 +0700
 
 xpra (0.5.0-1) UNRELEASED; urgency=low
   * new packet encoder written in C (much faster and data is now smaller too) 

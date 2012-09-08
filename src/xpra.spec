@@ -87,20 +87,50 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Aug 21 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
+* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
 - fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
 - fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big
 - x264 or vpx are now the default encodings (if available)
 - compress rgb24 pixel data with zlib from the damage thread (rather than later in the network layer)
 - better build environment detection
-- partial multi-user support (see --enable-sharing)
+- experimental multi-user support (see --enable-sharing)
 - better, more accurate "xpra info" statistics (per encoding, etc)
-- irrecoverable errors in the network parsing code will now disconnect
 - tidy up main source directory
 - simplify video encoders/decoders setup and cleanup code
-- Fedora RPMs have been switched to using the rpmfusion repository for the media libraries dependencies
 - remove 'nogil' switch (as 'nogil' is much faster)
 - test all socket types with automated tests
+
+* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.4-1
+- fix man page typo
+- fix non bash login shell compatibility
+- fix xpra screenshot argument parsing error handling
+- fix video encoding mismatch when switching encoding
+- fix ssh mode on OpenBSD
+
+* Wed Sep 05 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.3-1
+- zlib compatibility fix: use chunked decompression when supported (newer versions)
+
+* Wed Aug 29 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.2-1
+- fix xpra launcher icon lookup on *nix
+- fix big clipboard packets causing disconnection: just drop them instead
+- fix zlib compression in raw packet mode: ensure we always flush the buffer for each chunk
+- force disconnection after irrecoverable network parsing error
+- fix window refresh: do not skip all windows after a hidden one!
+
+* Mon Aug 27 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.1-6
+- fix xpra_launcher
+- build against rpmfusion repository, with build fix for Fedora 16
+
+* Sat Aug 25 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.1-1
+- fix DPI issue with Xdummy: set virtual screen to 96dpi by default
+- avoid looping forever doing maths on 'infinity' value
+- fix incomplete cloning of attributes causing default values to be used for batch configuration
+- damage data queue batch factor was being calculated but not used
+- ensure we update the data we use for calculations (was always using zero value)
+- ensure "send_bell" is initialized before use
+- add missing path string in warning message
+- fix test code compatibility with older xpra versions
+- statistics shown for 'damage_packet_queue_pixels' were incorrect
 
 * Mon Aug 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
 - new packet encoder written in C (much faster and data is now smaller too) 
