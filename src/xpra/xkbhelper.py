@@ -97,8 +97,9 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         for setting in ["rules", "model", "layout"]:
             if setting in settings:
                 args += ["-%s" % setting, settings.get(setting)]
-        if len(args)>0:
-            exec_keymap_command(args)
+        if len(args)==1:
+            log.info("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
+        exec_keymap_command(args)
         #try to set the options:
         if "options" in settings:
             exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
