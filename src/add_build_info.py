@@ -154,6 +154,7 @@ def main():
     set_prop(props, "BUILD_DATE", date.today().isoformat())
     set_prop(props, "BUILD_CPU", get_cpuinfo())
     set_prop(props, "BUILD_BIT", platform.architecture()[0])
+    set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     for k,v in get_svn_props().items():
         set_prop(props, k, v)
     save_properties_to_file(props)
