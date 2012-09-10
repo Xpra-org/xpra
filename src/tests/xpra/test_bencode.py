@@ -7,15 +7,15 @@ from xpra.bencode import bencode, bdecode
 
 def test_decoding():
 
-    def t(str, value, remainder):
-        print(str)
+    def t(s, value, remainder):
+        print(s)
         # Test "one-shot":
-        rv, rr = bdecode(str)
+        rv, rr = bdecode(s)
         assert rv == value, "expected value %s but got %s" % (rv, value)
-        rrstr = str[rr:]
+        rrstr = s[rr:]
         assert rrstr == remainder, "expected remainder value %s but got %s" % (remainder, rrstr)
         # With gibberish added:
-        g_str = str + "asdf"
+        g_str = s + "asdf"
         rv, rr = bdecode(g_str)
         assert rv == value, "expected value %s but got %s" % (rv, value)
         rrstr = g_str[rr:]
@@ -36,10 +36,10 @@ def test_decoding():
     t("l0:e", [""], "")
 
     print("------")
-    def te(str, exc):
-        print(str)
+    def te(s, exc):
+        print(s)
         try:
-            bdecode(str)
+            bdecode(s)
         except exc:
             pass
         else:
@@ -76,24 +76,23 @@ def test_encoding():
             assert be==encstr
         restored = bdecode(be)
         print("decode(%s)=%s" % (be, restored))
-        list = restored[0]
-        if len(list)!=len(v):
+        rlist = restored[0]
+        if len(rlist)!=len(v):
             print("MISMATCH!")
             print("v=%s" % v)
-            print("l=%s" % list)
-        assert len(list)==2
-        assert list[0]==v[0]
+            print("l=%s" % rlist)
+        assert len(rlist)==2
+        assert rlist[0]==v[0]
         for ok,ov in v[1].items():
-            d = list[1]
+            d = rlist[1]
             if ok not in d:
                 print("restored dict is missing %s" % ok)
-                return list
+                return rlist
             rv = d.get(ok)
             if rv!=ov:
                 print("value for %s does not match: %s vs %s" % (ok, ov, rv))
-                return list
-
-        return list
+                return rlist
+        return rlist
 
     def test_hello():
         d = {}
