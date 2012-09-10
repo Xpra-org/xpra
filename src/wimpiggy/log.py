@@ -23,22 +23,22 @@ class Logger(object):
             base = sys._getframe(1).f_globals["__name__"]
         self._base = base
 
-    def getLogger(self, type=None):
+    def getLogger(self, ltype=None):
         name = self._base
-        if type:
-            name += ". " + type
+        if ltype:
+            name += ". " + ltype
         return logging.getLogger(name)
 
     def log(self, level, msg, *args, **kwargs):
         if kwargs.get("exc_info") is True:
             kwargs["exc_info"] = sys.exc_info()
-        type = None
+        ltype = None
         if "type" in kwargs:
-            type = kwargs["type"]
+            ltype = kwargs["type"]
             del kwargs["type"]
-        self.getLogger(type).log(level, msg, *args, **kwargs)
+        self.getLogger(ltype).log(level, msg, *args, **kwargs)
 
-    def _method_maker(level):
+    def _method_maker(level):           #@NoSelf
         return (lambda self, msg, *args, **kwargs:
                 self.log(level, msg, *args, **kwargs))
 

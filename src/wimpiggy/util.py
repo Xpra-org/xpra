@@ -112,17 +112,17 @@ def gtk_main_quit_really():
 # called with such exceptions.
 def gtk_main_quit_on_fatal_exceptions_enable():
     oldhook = sys.excepthook
-    def gtk_main_quit_on_fatal_exception(type, val, tb):
-        if issubclass(type, (KeyboardInterrupt, SystemExit)):
+    def gtk_main_quit_on_fatal_exception(etype, val, tb):
+        if issubclass(etype, (KeyboardInterrupt, SystemExit)):
             print("Shutting down main-loop")
             gtk_main_quit_really()
-        if issubclass(type, RuntimeError) and "recursion" in val.message:
+        if issubclass(etype, RuntimeError) and "recursion" in val.message:
             # We weren't getting tracebacks from this -- maybe calling oldhook
             # was hitting the limit again or something? -- so try this
             # instead. (I don't know why print_exception wouldn't trigger the
             # same problem as calling oldhook, though.)
-            print(traceback.print_exception(type, val, tb))
+            print(traceback.print_exception(etype, val, tb))
             print("Maximum recursion depth exceeded")
         else:
-            return oldhook(type, val, tb)
+            return oldhook(etype, val, tb)
     sys.excepthook = gtk_main_quit_on_fatal_exception
