@@ -15,8 +15,8 @@ from xpra.win32.win32_NotifyIcon import win32NotifyIcon
 
 class Win32Tray:
 
-	def __init__(self, name, activate_menu, exit, icon_filename):
-		self.tray_widget = win32NotifyIcon(name, activate_menu, exit, None, icon_filename)
+	def __init__(self, name, activate_menu, exit_cb, icon_filename):
+		self.tray_widget = win32NotifyIcon(name, activate_menu, exit_cb, None, icon_filename)
 		#now let's try to hook the session notification
 		self.detect_win32_session_events(self.getHWND())
 		self.balloon_click_callback = None

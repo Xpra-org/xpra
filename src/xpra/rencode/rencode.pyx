@@ -319,7 +319,7 @@ cdef decode_char(char *data, int *pos):
     return c
 
 cdef decode_short(char *data, int *pos):
-    cdef short s
+    cdef short s        #@DuplicatedSignature
     memcpy(&s, &data[pos[0]+1], 2)
     pos[0] += 3
     if not big_endian:
@@ -327,7 +327,7 @@ cdef decode_short(char *data, int *pos):
     return s
 
 cdef decode_int(char *data, int *pos):
-    cdef int i
+    cdef int i          #@DuplicatedSignature
     memcpy(&i, &data[pos[0]+1], 4)
     pos[0] += 5
     if not big_endian:
@@ -335,7 +335,7 @@ cdef decode_int(char *data, int *pos):
     return i
 
 cdef decode_long_long(char *data, int *pos):
-    cdef long long l
+    cdef long long l    #@DuplicatedSignature
     memcpy(&l, &data[pos[0]+1], 8)
     pos[0] += 9
     if not big_endian:
@@ -364,7 +364,7 @@ cdef decode_big_number(char *data, int *pos):
     return big_number
 
 cdef decode_float32(char *data, int *pos):
-    cdef float f
+    cdef float f        #@DuplicatedSignature
     memcpy(&f, &data[pos[0]+1], 4)
     pos[0] += 5
     if not big_endian:
@@ -372,7 +372,7 @@ cdef decode_float32(char *data, int *pos):
     return f
 
 cdef decode_float64(char *data, int *pos):
-    cdef double d
+    cdef double d       #@DuplicatedSignature
     memcpy(&d, &data[pos[0]+1], 8)
     pos[0] += 9
     if not big_endian:
@@ -400,7 +400,7 @@ cdef decode_fixed_list(char *data, int *pos):
     l = []
     size = <unsigned char>data[pos[0]] - LIST_FIXED_START
     pos[0] += 1
-    cdef int i
+    cdef int i      #@DuplicatedSignature
     for i in range(size):
         l.append(decode(data, pos))
     return tuple(l)
@@ -417,7 +417,7 @@ cdef decode_fixed_dict(char *data, int *pos):
     d = {}
     size = <unsigned char>data[pos[0]] - DICT_FIXED_START
     pos[0] += 1
-    cdef int i
+    cdef int i      #@DuplicatedSignature
     for i in range(size):
         key = decode(data, pos)
         value = decode(data, pos)
@@ -487,7 +487,7 @@ def loads(data):
     :type data: string
 
     """
-    cdef int pos = 0
+    cdef int pos = 0        #@DuplicatedSignature
     global data_length
     data_length = len(data)
     return decode(data, &pos)

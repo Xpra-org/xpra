@@ -63,8 +63,8 @@ cdef class xcoder:
     def get_height(self):
         return self.height
 
-    def init_context(self, width, height):
-        self.context = NULL
+    def get_type(self):
+        return  "x264"
 
 
 cdef class Decoder(xcoder):
@@ -74,9 +74,6 @@ cdef class Decoder(xcoder):
         self.init(width, height)
         csc_fmt = options.get("csc_pixel_format", -1)
         self.context = init_decoder(width, height, csc_fmt)
-
-    def get_type(self):
-        return  "x264"
 
     def clean(self):
         if self.context!=NULL:
@@ -115,12 +112,12 @@ cdef class Decoder(xcoder):
     def decompress_image_to_rgb(self, input, options):
         cdef uint8_t *yuvplanes[3]
         cdef uint8_t *dout
-        cdef int outsize
+        cdef int outsize                        #@DuplicatedSignature
         cdef int yuvstrides[3]
         cdef int outstride
-        cdef unsigned char * padded_buf = NULL
-        cdef unsigned char * buf = NULL
-        cdef Py_ssize_t buf_len = 0
+        cdef unsigned char * padded_buf = NULL  #@DuplicatedSignature
+        cdef unsigned char * buf = NULL         #@DuplicatedSignature
+        cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
         cdef int i = 0
         assert self.context!=NULL
         assert self.last_image==NULL
@@ -152,15 +149,12 @@ cdef class Encoder(xcoder):
 
     cdef int supports_options
 
-    def init_context(self, width, height, supports_options):
+    def init_context(self, width, height, supports_options):    #@DuplicatedSignature
         self.init(width, height)
         self.supports_options = supports_options
         self.context = init_encoder(width, height, 70, int(supports_options))
 
-    def get_type(self):
-        return  "x264"
-
-    def clean(self):
+    def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
             clean_encoder(self.context)
             free(self.context)
@@ -178,13 +172,13 @@ cdef class Encoder(xcoder):
 
     def compress_image(self, input, rowstride, options):
         cdef x264_picture_t *pic_in = NULL
-        cdef uint8_t *buf = NULL
-        cdef Py_ssize_t buf_len = 0
+        cdef uint8_t *pic_buf = NULL
+        cdef Py_ssize_t pic_buf_len = 0
         cdef int quality_override = options.get("quality", -1)
         assert self.context!=NULL
         #colourspace conversion with gil held:
-        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        pic_in = csc_image_rgb2yuv(self.context, buf, rowstride)
+        PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
+        pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
         return self.do_compress_image(pic_in, quality_override)
 
