@@ -586,18 +586,18 @@ def is_mapped(pywindow):
 
 # Override-redirect status
 def is_override_redirect(pywindow):
-    cdef XWindowAttributes attrs
+    cdef XWindowAttributes or_attrs
     XGetWindowAttributes(get_xdisplay_for(pywindow),
                          get_xwindow(pywindow),
-                         &attrs)
-    return attrs.override_redirect
+                         &or_attrs)
+    return or_attrs.override_redirect
 
 def geometry_with_border(pywindow):
-    cdef XWindowAttributes attrs
+    cdef XWindowAttributes geom_attrs
     XGetWindowAttributes(get_xdisplay_for(pywindow),
                          get_xwindow(pywindow),
-                         &attrs)
-    return (attrs.x, attrs.y, attrs.width, attrs.height, attrs.border_width)
+                         &geom_attrs)
+    return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
 
 # Focus management
 def XSetInputFocus(pywindow, time=None):
@@ -773,12 +773,12 @@ cdef _parse_keycode(Display* display, keycode_str):
     return keycode
 
 def parse_keycode(display_source, keycode_str):
-    cdef Display * display
+    cdef Display * display                  #@DuplicatedSignature
     display = get_xdisplay_for(display_source)
     return _parse_keycode(display, keycode_str)
 
 cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
-    cdef KeySym keysym
+    cdef KeySym keysym                      #@DuplicatedSignature
     cdef KeySym* ckeysyms
     cdef int num_codes
     cdef int keysyms_per_keycode
@@ -845,7 +845,7 @@ def get_keycodes(display_source, keyname):
     keysym = _parse_keysym(keyname)
     if not keysym:
         return  codes
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     display = get_xdisplay_for(display_source)
     return KeysymToKeycodes(display, keysym)
 
@@ -879,10 +879,10 @@ cdef _get_raw_modifier_mappings(Display * display):
         returns a dict: {modifier_index, [keycodes]}
         for all keycodes (see above for list)
     """
-    cdef int keysyms_per_keycode
+    cdef int keysyms_per_keycode                    #@DuplicatedSignature
     cdef XModifierKeymap* keymap
     cdef KeySym * keyboard_map
-    cdef KeySym keysym
+    cdef KeySym keysym                              #@DuplicatedSignature
     cdef KeyCode keycode
     min_keycode,max_keycode = _get_minmax_keycodes(display)
     keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
@@ -912,7 +912,7 @@ cdef _get_modifier_mappings(Display * display):
     the mappings from _get_raw_modifier_mappings are in raw format
     (index and keycode), so here we convert into names:
     """
-    cdef KeySym keysym
+    cdef KeySym keysym                      #@DuplicatedSignature
     keysyms_per_keycode, raw_mappings = _get_raw_modifier_mappings(display)
     mappings = {}
     for mod, keycodes in raw_mappings.items():
@@ -937,13 +937,13 @@ cdef _get_modifier_mappings(Display * display):
     return mappings
 
 def get_modifier_mappings():
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     return _get_modifier_mappings(display)
 
 cdef xmodmap_clearmodifier(Display * display, int modifier):
     cdef KeyCode* keycode
-    cdef XModifierKeymap* keymap
+    cdef XModifierKeymap* keymap                    #@DuplicatedSignature
     keymap = get_keymap(display, True)
     keycode = <KeyCode*> keymap.modifiermap
     log("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
@@ -951,9 +951,9 @@ cdef xmodmap_clearmodifier(Display * display, int modifier):
         keycode[modifier*keymap.max_keypermod+i] = 0
 
 cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
-    cdef XModifierKeymap* keymap
-    cdef KeyCode keycode
-    cdef KeySym keysym
+    cdef XModifierKeymap* keymap                    #@DuplicatedSignature
+    cdef KeyCode keycode                            #@DuplicatedSignature
+    cdef KeySym keysym                              #@DuplicatedSignature
     keymap = get_keymap(display, True)
     success = True
     log("add modifier: modifier %s=%s", modifier, keysyms)
@@ -993,7 +993,7 @@ cdef _get_keycodes_down(Display * display):
     return down
 
 def get_keycodes_down(display_source):
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     cdef char* key
     display = get_xdisplay_for(display_source)
     keycodes = _get_keycodes_down(display)
@@ -1005,15 +1005,15 @@ def get_keycodes_down(display_source):
     return keys
 
 def unpress_all_keys(display_source):
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     display = get_xdisplay_for(display_source)
     keycodes = _get_keycodes_down(display)
     for keycode in keycodes:
         xtest_fake_key(display_source, keycode, False)
 
 cdef native_xmodmap(display_source, instructions):
-    cdef Display * display
-    cdef XModifierKeymap* keymap
+    cdef Display * display                          #@DuplicatedSignature
+    cdef XModifierKeymap* keymap                    #@DuplicatedSignature
     cdef int modifier
     set_keymap(NULL)
     display = get_xdisplay_for(display_source)
@@ -1298,7 +1298,7 @@ def has_randr():
         return False
 
 cdef _get_screen_sizes(display_source):
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     display = get_xdisplay_for(display_source)
     cdef int num_sizes = 0
     cdef XRRScreenSize * xrrs
@@ -1314,10 +1314,10 @@ def get_screen_sizes():
     return _get_screen_sizes(gtk.gdk.display_get_default())
 
 cdef _set_screen_size(display_source, pywindow, width, height):
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     cdef Window window
     cdef XRRScreenConfiguration *config
-    cdef int num_sizes = 0
+    cdef int num_sizes = 0                          #@DuplicatedSignature
     cdef int num_rates = 0
     cdef short* rates = <short*> 0
     cdef short rate = 0
@@ -1325,7 +1325,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
     cdef Time time = 0
     cdef int sizeID = 0
     cdef XRRScreenSize *xrrs
-    cdef XRRScreenSize xrr
+    cdef XRRScreenSize xrr                          #@DuplicatedSignature
 
     display = get_xdisplay_for(display_source)
     window = get_xwindow(pywindow)
@@ -1357,15 +1357,15 @@ def get_screen_size():
     return _get_screen_size(gtk.gdk.get_default_root_window())
 
 def _get_screen_size(pywindow):
-    cdef Display * display
-    cdef Window window
-    cdef XRRScreenSize *xrrs
+    cdef Display * display                          #@DuplicatedSignature
+    cdef Window window                              #@DuplicatedSignature
+    cdef XRRScreenSize *xrrs                        #@DuplicatedSignature
     cdef Rotation original_rotation
-    cdef int num_sizes = 0
+    cdef int num_sizes = 0                          #@DuplicatedSignature
     cdef SizeID size_id
     display = get_xdisplay_for(pywindow)
     window = get_xwindow(pywindow)
-    cdef XRRScreenConfiguration *config
+    cdef XRRScreenConfiguration *config             #@DuplicatedSignature
     try:
         config = XRRGetScreenInfo(display, window)
         xrrs = XRRConfigSizes(config, &num_sizes)
@@ -1424,7 +1424,7 @@ cdef extern from "X11/XKBlib.h":
     Bool XkbGetAutoRepeatRate(Display *, unsigned int deviceSpec, unsigned int *delayRtrn, unsigned int *intervalRtrn)
 
 def get_key_repeat_rate():
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     cdef unsigned int deviceSpec = XkbUseCoreKbd
     cdef unsigned int delay = 0
     cdef unsigned int interval = 0
@@ -1434,8 +1434,8 @@ def get_key_repeat_rate():
     return (delay, interval)
 
 def set_key_repeat_rate(delay, interval):
-    cdef Display * display
-    cdef unsigned int deviceSpec = XkbUseCoreKbd
+    cdef Display * display                          #@DuplicatedSignature
+    cdef unsigned int deviceSpec = XkbUseCoreKbd    #@DuplicatedSignature
     cdef unsigned int cdelay = delay
     cdef unsigned int cinterval = interval
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
@@ -1447,13 +1447,13 @@ def get_XKB_event_base():
     cdef int error_base = 0
     cdef int major = 0
     cdef int minor = 0
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     XkbQueryExtension(display, &opcode, &event_base, &error_base, &major, &minor)
     return int(event_base)
 
 def selectBellNotification(pywindow, on):
-    cdef Display * display
+    cdef Display * display                          #@DuplicatedSignature
     cdef int bits = XkbBellNotifyMask
     display = get_xdisplay_for(pywindow)
     if not on:
@@ -1461,8 +1461,8 @@ def selectBellNotification(pywindow, on):
     XkbSelectEvents(display, XkbUseCoreKbd, XkbBellNotifyMask, bits)
 
 def device_bell(pywindow, deviceSpec, bellClass, bellID, percent, name):
-    cdef Display * display
-    cdef Window window
+    cdef Display * display                          #@DuplicatedSignature
+    cdef Window window                              #@DuplicatedSignature
     display = get_xdisplay_for(pywindow)
     window = get_xwindow(pywindow)
     name_atom = get_xatom(name)
@@ -1536,7 +1536,7 @@ cdef argbdata_to_pixdata(unsigned long* data, len):
     return b
 
 def get_cursor_image():
-    cdef Display * display
+    cdef Display * display                              #@DuplicatedSignature
     cdef XFixesCursorImage* image
     #cdef char* pixels
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
@@ -1552,17 +1552,17 @@ def get_cursor_image():
         XFree(image)
 
 def get_XFixes_event_base():
-    cdef int event_base = 0
-    cdef int error_base = 0
-    cdef Display * display
+    cdef int event_base = 0                             #@DuplicatedSignature
+    cdef int error_base = 0                             #@DuplicatedSignature
+    cdef Display * display                              #@DuplicatedSignature
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     XFixesQueryExtension(display, &event_base, &error_base)
     return int(event_base)
 
 def selectCursorChange(pywindow, on):
-    cdef Display * display
+    cdef Display * display                              #@DuplicatedSignature
     display = get_xdisplay_for(pywindow)
-    cdef Window window
+    cdef Window window                                  #@DuplicatedSignature
     window = get_xwindow(pywindow)
     if on:
         v = XFixesDisplayCursorNotifyMask
@@ -1650,7 +1650,7 @@ def sendClientMessage(target, propagate, event_mask,
     # data0 etc. are passed through get_xatom, so they can be integers, which
     # are passed through directly, or else they can be strings, which are
     # converted appropriately.
-    cdef Display * display
+    cdef Display * display                              #@DuplicatedSignature
     display = get_xdisplay_for(target)
     cdef Window w
     w = get_xwindow(target)
@@ -1672,13 +1672,13 @@ def sendClientMessage(target, propagate, event_mask,
         raise ValueError, "failed to serialize ClientMessage"
 
 def sendConfigureNotify(pywindow):
-    cdef Display * display
+    cdef Display * display              #@DuplicatedSignature
     display = get_xdisplay_for(pywindow)
-    cdef Window window
+    cdef Window window                  #@DuplicatedSignature
     window = get_xwindow(pywindow)
 
     # Get basic attributes
-    cdef XWindowAttributes attrs
+    cdef XWindowAttributes attrs        #@DuplicatedSignature
     XGetWindowAttributes(display, window, &attrs)
 
     # Figure out where the window actually is in root coordinate space
@@ -1693,7 +1693,7 @@ def sendConfigureNotify(pywindow):
         return
 
     # Send synthetic ConfigureNotify (ICCCM 4.2.3, for example)
-    cdef XEvent e
+    cdef XEvent e                       #@DuplicatedSignature
     e.type = ConfigureNotify
     e.xconfigure.event = window
     e.xconfigure.window = window
@@ -1705,15 +1705,15 @@ def sendConfigureNotify(pywindow):
     e.xconfigure.above = XNone
     e.xconfigure.override_redirect = attrs.override_redirect
 
-    cdef Status s
+    cdef Status s                       #@DuplicatedSignature
     s = XSendEvent(display, window, False, StructureNotifyMask, &e)
     if s == 0:
         raise ValueError, "failed to serialize ConfigureNotify"
 
 def configureAndNotify(pywindow, x, y, width, height, fields=None):
-    cdef Display * display
+    cdef Display * display              #@DuplicatedSignature
     display = get_xdisplay_for(pywindow)
-    cdef Window window
+    cdef Window window                  #@DuplicatedSignature
     window = get_xwindow(pywindow)
 
     # Reconfigure the window.  We have to use XConfigureWindow directly
