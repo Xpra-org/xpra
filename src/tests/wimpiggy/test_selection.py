@@ -3,10 +3,11 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.test import *
+from tests.wimpiggy.test import TestWithSession, MockEventReceiver, assert_raises
 from wimpiggy.selection import ManagerSelection, AlreadyOwned
 import wimpiggy.lowlevel
 
+import gtk
 import struct
 
 class TestSelection(TestWithSession, MockEventReceiver):
@@ -42,7 +43,6 @@ class TestSelection(TestWithSession, MockEventReceiver):
         gtk.main_quit()
     def test_notification(self):
         m = ManagerSelection(self.display, "WM_S0")
-        root1 = self.display.get_default_screen().get_root_window()
         d2 = self.clone_display()
         root2 = d2.get_default_screen().get_root_window()
         root2.set_events(gtk.gdk.STRUCTURE_MASK)

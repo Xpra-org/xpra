@@ -237,7 +237,9 @@ class Runner(object):
         # of Cython.  FIXME: file nose bug
         try:
             details = inspect_traceback(exc_info[2])
-        except SystemExit, KeyboardInterrupt:
+        except SystemExit:
+            raise
+        except KeyboardInterrupt:
             raise
         except Exception:
             details = ("(failed to extract details;\n"
