@@ -610,7 +610,7 @@ class WindowSource(object):
                 if self._video_encoder.get_type()!=coding:
                     log("video_encode: switching from %s to %s", self._video_encoder.get_type(), coding)
                     self.video_encoder_cleanup()
-                elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
+                if self._video_encoder and (self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h):
                     log("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
                     self._video_encoder.clean()
