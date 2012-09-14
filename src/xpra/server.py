@@ -1704,18 +1704,20 @@ class XpraServer(gobject.GObject):
             handlers = self._authenticated_packet_handlers
             ui_handlers = self._authenticated_ui_packet_handlers
         else:
-            handlers = self._default_packet_handlers
-            ui_handlers = {}
+            handlers = {}
+            ui_handlers = self._default_packet_handlers
         handler = handlers.get(packet_type)
         if handler:
+            log("process non-ui packet %s", packet_type)
             handler(self, proto, packet)
             return
         handler = ui_handlers.get(packet_type)
-        if not handler:
-            log.error("unknown or invalid packet type: %s", packet_type)
-            if proto not in self._server_sources:
-                proto.close()
+        if handler:
+            log("will process ui packet %s", packet_type)
+            gobject.idle_add(handler, self, proto, packet)
             return
-        gobject.idle_add(handler, self, proto, packet)
+        log.error("unknown or invalid packet type: %s", packet_type)
+        if proto not in self._server_sources:
+            proto.close()
 
 gobject.type_register(XpraServer)
