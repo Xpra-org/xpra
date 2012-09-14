@@ -262,6 +262,11 @@ struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
 
 void clean_decoder(struct x264lib_ctx *ctx)
 {
+	do_clean_decoder(ctx);
+	free(ctx);
+}
+void do_clean_decoder(struct x264lib_ctx *ctx)
+{
 	if (ctx->codec_ctx) {
 		avcodec_close(ctx->codec_ctx);
 		av_free(ctx->codec_ctx);
@@ -271,7 +276,6 @@ void clean_decoder(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->yuv2rgb);
 		ctx->yuv2rgb = NULL;
 	}
-	free(ctx);
 }
 
 #ifndef _WIN32
@@ -369,7 +373,7 @@ void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt)
 		csc_fmt = PIX_FMT_YUV420P;
 	if (ctx->csc_format!=csc_fmt) {
 		//we need to re-initialize with the new format:
-		clean_decoder(ctx);
+		do_clean_decoder(ctx);
 		if (init_decoder_context(ctx, ctx->width, ctx->height, csc_fmt)) {
 			fprintf(stderr, "Failed to reconfigure decoder\n");
 		}
