@@ -153,10 +153,10 @@ class ClipboardProtocolHelperBase(object):
                 if wire_encoding is None:
                     no_contents()
                     return
-                if len(wire_encoding)>256:
-                    wire_encoding = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_encoding)
-                    if len(wire_encoding)>self.max_clipboard_packet_size:
-                        log.warn("clipboard contents are too big and have not been sent: %s bytes dropped" % len(wire_encoding))
+                if len(wire_data)>256:
+                    wire_data = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_data)
+                    if len(wire_data)>self.max_clipboard_packet_size:
+                        log.warn("even compressed, clipboard contents are too big and have not been sent: %s compressed bytes dropped" % len(wire_data))
                         no_contents()
                         return
                 self.send(["clipboard-contents", request_id, selection,
