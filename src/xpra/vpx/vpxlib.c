@@ -148,7 +148,7 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
 
 int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
 {
-	uint8_t *dst[4] = { malloc(ctx->height * ctx->width * 3), NULL, NULL, NULL };
+	uint8_t *dst[4] = { xmemalign(ctx->height * ctx->width * 3), NULL, NULL, NULL };
 	int dststride[4] = { ctx->width * 3, 0, 0, 0 };
 
 	if (!ctx->yuv2rgb)
@@ -190,4 +190,35 @@ int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*
 	}
 
 	return 0;
+}
+
+
+void* xmemalign(size_t size)
+{
+#ifdef MEMALIGN
+#ifdef _WIN32
+	//_aligned_malloc and _aligned_free lead to a memleak
+	//well done Microsoft, I didn't think you could screw up this badly
+	//and thank you for wasting my time once again
+	return malloc(size);
+#elif defined(__APPLE__) || defined(__OSX__)
+	//Crapple version: "all memory allocations are 16-byte aligned"
+	//no choice, this is what you get
+	return malloc(size);
+#else
+	//not WIN32 and not APPLE/OSX, assume POSIX:
+	void* memptr=NULL;
+	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
+		return	NULL;
+	return	memptr;
+#endif
+//MEMALIGN not set:
+#else
+	return	malloc(size);
+#endif
+}
+
+void xmemfree(void *ptr)
+{
+	free(ptr);
 }

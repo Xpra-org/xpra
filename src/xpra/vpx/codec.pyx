@@ -16,6 +16,9 @@ ctypedef unsigned char uint8_t
 ctypedef void vpx_codec_ctx_t
 ctypedef void vpx_image_t
 cdef extern from "vpxlib.h":
+    void* xmemalign(size_t size)
+    void xmemfree(void* ptr)
+
     vpx_codec_ctx_t* init_encoder(int width, int height)
     void clean_encoder(vpx_codec_ctx_t *context)
     vpx_image_t* csc_image_rgb2yuv(vpx_codec_ctx_t *ctx, uint8_t *input, int stride)
@@ -105,7 +108,7 @@ cdef class Decoder(xcoder):
 
     def free_image(self):
         assert self.last_image!=NULL
-        free(self.last_image)
+        xmemfree(self.last_image)
         self.last_image = NULL
 
 

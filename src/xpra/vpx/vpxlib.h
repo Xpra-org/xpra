@@ -62,3 +62,15 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
  @param outstride: Output strides (3 planes).
 */
 int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]);
+
+/**
+ * Define our own memalign function so we can more easily
+ * workaround platforms that lack posix_memalign.
+ * It does its best to provide sse compatible memory allocation.
+ */
+void* xmemalign(size_t size);
+
+/**
+ * Frees memory allocated with xmemalign
+ */
+void xmemfree(void *ptr);
