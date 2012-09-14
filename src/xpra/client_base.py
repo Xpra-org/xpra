@@ -94,7 +94,8 @@ class XpraClientBase(gobject.GObject):
         self._protocol.start()
 
     def init_packet_handlers(self):
-        self._packet_handlers = {
+        self._packet_handlers = {}
+        self._ui_packet_handlers = {
             "challenge": self._process_challenge,
             "disconnect": self._process_disconnect,
             "hello": self._process_hello,
@@ -214,10 +215,14 @@ class XpraClientBase(gobject.GObject):
     def process_packet(self, proto, packet):
         packet_type = packet[0]
         handler = self._packet_handlers.get(packet_type)
+        if handler:
+            handler(packet)
+            return
+        handler = self._ui_packet_handlers.get(packet_type)
         if not handler:
             log.error("unknown packet type: %s", packet_type)
             return
-        handler(packet)
+        gobject.idle_add(handler, packet)
 
 gobject.type_register(XpraClientBase)
 
@@ -302,7 +307,7 @@ class ScreenshotXpraClient(GLibXpraClient):
 
     def init_packet_handlers(self):
         GLibXpraClient.init_packet_handlers(self)
-        self._packet_handlers["screenshot"] = self._process_screenshot
+        self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
         capabilities = GLibXpraClient.make_hello(self, challenge_response)

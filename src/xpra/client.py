@@ -235,13 +235,17 @@ class XpraClient(XpraClientBase):
             "bell":                 self._process_bell,
             "notify_show":          self._process_notify_show,
             "notify_close":         self._process_notify_close,
-            "ping":                 self._process_ping,
-            "ping_echo":            self._process_ping_echo,
             "window-metadata":      self._process_window_metadata,
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
             # "clipboard-*" packets are handled by a special case below.
+            }.items():
+            self._ui_packet_handlers[k] = v
+        #these handlers can run directly from the network thread:
+        for k,v in {
+            "ping":                 self._process_ping,
+            "ping_echo":            self._process_ping_echo,
             }.items():
             self._packet_handlers[k] = v
 

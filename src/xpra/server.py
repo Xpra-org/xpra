@@ -1652,6 +1652,17 @@ class XpraServer(gobject.GObject):
         Protocol.GIBBERISH: _process_gibberish,
         }
     _authenticated_packet_handlers = {
+        "set-clipboard-enabled": _process_clipboard_enabled_status,
+        "set-keyboard-sync-enabled": _process_keyboard_sync_enabled_status,
+        "damage-sequence": _process_damage_sequence,
+        "ping": _process_ping,
+        "ping_echo": _process_ping_echo,
+        "set_deflate": _process_set_deflate,
+        "set-cursors": _process_set_cursors,
+        "set-notify": _process_set_notify,
+        "set-bell": _process_set_bell,
+                                      }
+    _authenticated_ui_packet_handlers = {
         "hello": _process_hello,
         "server-settings": _process_server_settings,
         "map-window": _process_map_window,
@@ -1664,24 +1675,15 @@ class XpraServer(gobject.GObject):
         "key-repeat": _process_key_repeat,
         "layout-changed": _process_layout,
         "keymap-changed": _process_keymap,
-        "set-clipboard-enabled": _process_clipboard_enabled_status,
-        "set-keyboard-sync-enabled": _process_keyboard_sync_enabled_status,
         "button-action": _process_button_action,
         "pointer-position": _process_pointer_position,
         "close-window": _process_close_window,
         "shutdown-server": _process_shutdown_server,
         "jpeg-quality": _process_jpeg_quality,
-        "damage-sequence": _process_damage_sequence,
         "buffer-refresh": _process_buffer_refresh,
         "screenshot": _process_screenshot,
         "desktop_size": _process_desktop_size,
         "encoding": _process_encoding,
-        "ping": _process_ping,
-        "ping_echo": _process_ping_echo,
-        "set_deflate": _process_set_deflate,
-        "set-cursors": _process_set_cursors,
-        "set-notify": _process_set_notify,
-        "set-bell": _process_set_bell,
         "disconnect": _process_disconnect,
         # "clipboard-*" packets are handled below:
         Protocol.CONNECTION_LOST: _process_connection_lost,
@@ -1700,14 +1702,20 @@ class XpraServer(gobject.GObject):
             return
         if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers
+            ui_handlers = self._authenticated_ui_packet_handlers
         else:
             handlers = self._default_packet_handlers
+            ui_handlers = {}
         handler = handlers.get(packet_type)
+        if handler:
+            handler(self, proto, packet)
+            return
+        handler = ui_handlers.get(packet_type)
         if not handler:
             log.error("unknown or invalid packet type: %s", packet_type)
             if proto not in self._server_sources:
                 proto.close()
             return
-        handler(self, proto, packet)
+        gobject.idle_add(handler, self, proto, packet)
 
 gobject.type_register(XpraServer)

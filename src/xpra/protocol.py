@@ -454,24 +454,15 @@ class Protocol(object):
                         #replace placeholder with the raw_data packet data:
                         packet[index] = raw_data
                     raw_packets = {}
-                gobject.idle_add(self._process_packet, packet)
+                try:
+                    self._process_packet_cb(self, packet)
+                    self.input_packetcount += 1
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    log.warn("Unhandled error while processing packet from peer",
+                             exc_info=True)
                 NOYIELD or time.sleep(0)
-
-    def _process_packet(self, decoded):
-        if self._closed:
-            log.warn("Ignoring stray packet read after connection"
-                     " allegedly closed (%s)", dump_packet(decoded))
-            return
-        try:
-            self._process_packet_cb(self, decoded)
-            self.input_packetcount += 1
-        except KeyboardInterrupt:
-            raise
-        except:
-            log.warn("Unhandled error while processing packet from peer",
-                     exc_info=True)
-            # Ignore and continue, maybe things will work out anyway
-        return False
 
     def flush_then_close(self, last_packet):
         self._add_packet_to_queue(last_packet)
