@@ -207,6 +207,7 @@ void clean_encoder(struct x264lib_ctx *ctx)
 		x264_encoder_close(ctx->encoder);
 		ctx->encoder = NULL;
 	}
+	free(self.context);
 }
 
 #else
@@ -270,6 +271,7 @@ void clean_decoder(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->yuv2rgb);
 		ctx->yuv2rgb = NULL;
 	}
+	free(ctx);
 }
 
 #ifndef _WIN32
@@ -349,7 +351,7 @@ int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[
 	if (!ctx->yuv2rgb)
 		return 1;
 
-	avpicture_fill(&pic, malloc(ctx->height * ctx->width * 3), PIX_FMT_RGB24, ctx->width, ctx->height);
+	avpicture_fill(&pic, xmemalign(ctx->height * ctx->width * 3), PIX_FMT_RGB24, ctx->width, ctx->height);
 
 	sws_scale(ctx->yuv2rgb, (const uint8_t * const*) in, stride, 0, ctx->height, pic.data, pic.linesize);
 

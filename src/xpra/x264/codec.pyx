@@ -78,7 +78,6 @@ cdef class Decoder(xcoder):
     def clean(self):
         if self.context!=NULL:
             clean_decoder(self.context)
-            free(self.context)
             self.context = NULL
 
     def decompress_image_to_yuv(self, input, options):
@@ -157,7 +156,6 @@ cdef class Encoder(xcoder):
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
             clean_encoder(self.context)
-            free(self.context)
             self.context = NULL
 
     def get_client_options(self, options):
