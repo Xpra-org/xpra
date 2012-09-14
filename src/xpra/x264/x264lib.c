@@ -207,7 +207,7 @@ void clean_encoder(struct x264lib_ctx *ctx)
 		x264_encoder_close(ctx->encoder);
 		ctx->encoder = NULL;
 	}
-	free(self.context);
+	free(ctx);
 }
 
 #else
