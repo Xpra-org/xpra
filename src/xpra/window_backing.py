@@ -9,6 +9,7 @@ gdk = import_gdk()
 
 import ctypes
 import cairo
+import gobject
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -53,22 +54,27 @@ class Backing(object):
             assert len(img_data) == width * 3 * height
         return Image.fromstring("RGB", (width, height), img_data, 'raw', 'RGB', rowstride, 1)
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
-        raise Exception("override me!")
-    def paint_png(self, img_data, x, y, width, height):
+    def fire_paint_callbacks(self, callbacks, success):
+        for x in callbacks:
+            try:
+                x(success)
+            except:
+                log.error("error calling %s(%s)", x, success, exc_info=True)
+
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         raise Exception("override me!")
 
-    def paint_x264(self, img_data, x, y, width, height, rowstride, options):
+    def paint_x264(self, img_data, x, y, width, height, rowstride, options, callbacks):
         assert "x264" in ENCODINGS
         from xpra.x264.codec import Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(Decoder, "x264", img_data, x, y, width, height, rowstride, options)
+        self.paint_with_video_decoder(Decoder, "x264", img_data, x, y, width, height, rowstride, options, callbacks)
 
-    def paint_vpx(self, img_data, x, y, width, height, rowstride, options):
+    def paint_vpx(self, img_data, x, y, width, height, rowstride, options, callbacks):
         assert "vpx" in ENCODINGS
         from xpra.vpx.codec import Decoder     #@UnresolvedImport
-        return  self.paint_with_video_decoder(Decoder, "vpx", img_data, x, y, width, height, rowstride, options)
+        self.paint_with_video_decoder(Decoder, "vpx", img_data, x, y, width, height, rowstride, options, callbacks)
 
-    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options):
+    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options, callbacks):
         assert x==0 and y==0
         if self._video_decoder:
             if self._video_decoder.get_type()!=coding:
@@ -82,19 +88,12 @@ class Backing(object):
             self._video_decoder = factory()
             self._video_decoder.init_context(width, height, options)
         log("paint_with_video_decoder: options=%s", options)
-        err, outstride, data = self._video_decoder.decompress_image_to_rgb(img_data, options)
-        if err!=0:
+        err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
+        if err!=0 or rgb_image is None or rgb_image.get_size()==0:
             log.error("paint_with_video_decoder: ouch, decompression error %s", err)
             return  False
-        if not data:
-            log.error("paint_with_video_decoder: ouch, no data from %s decoder", coding)
-            return  False
-        try:
-            log("paint_with_video_decoder: decompressed %s to %s bytes (%s%%) of rgb24 (%s*%s*3=%s) (outstride: %s)", len(img_data), len(data), int(100*len(img_data)/len(data)),width, height, width*height*3, outstride)
-            self.paint_rgb24(data, x, y, width, height, outstride)
-            return  True
-        finally:
-            self._video_decoder.free_image()
+        gobject.idle_add(self.paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
+        return  False
 
 
 """
@@ -136,7 +135,8 @@ class CairoBacking(Backing):
         Backing.close(self)
         self._backing.finish()
 
-    def paint_png(self, img_data, x, y, width, height):
+    def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
         try:
             from io import BytesIO          #@Reimport
             import sys
@@ -153,9 +153,10 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
-        return  True
+        self.fire_paint_callbacks(callbacks, True)
+        return  False
 
-    def paint_pil_image(self, pil_image, width, height):
+    def paint_pil_image(self, pil_image, width, height, rowstride, options, callbacks):
         try:
             from io import BytesIO
             buf = BytesIO()
@@ -165,11 +166,11 @@ class CairoBacking(Backing):
         pil_image.save(buf, format="PNG")
         png_data = buf.getvalue()
         buf.close()
-        self.cairo_paint_png(png_data, 0, 0, width, height)
-        return  True
+        gobject.idle_add(self.paint_png, png_data, 0, 0, width, height, rowstride, options, callbacks)
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
-        log("cairo_paint_rgb24(..,%s,%s,%s,%s,%s)", x, y, width, height, rowstride)
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
+        log("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
         gc = cairo.Context(self._backing)
         if rowstride==0:
             rowstride = width*3
@@ -177,9 +178,11 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
-        return  True
+        self.fire_paint_callbacks(callbacks, True)
+        del img_data
+        return  False
 
-    def paint_mmap(self, img_data, x, y, width, height, rowstride):
+    def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ see _mmap_send() in server.py for details """
         assert "rgb24" in ENCODINGS
         assert self.mmap_enabled
@@ -200,22 +203,27 @@ class CairoBacking(Backing):
                 data += self.mmap.read(length)
                 data_start.value = offset+length
             image = self.rgb24image(data, width, height, rowstride)
-        return  self.paint_pil_image(image, width, height)
+        self.paint_pil_image(image, width, height, rowstride, options, callbacks)
+        return  False
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options):
-        log.debug("draw_region(%s,%s,%s,%s,%s,..,%s,%s)", x, y, width, height, coding, rowstride, options)
+    def draw_region(self, *args):
+        #FIXME: I am lazy and gtk3 support is lagging anyway:
+        gobject.idle_add(self.do_draw_region, *args)
+
+    def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+        log.debug("do_draw_region(%s,%s,%s,%s,%s,..,%s,%s,%s)", x, y, width, height, coding, rowstride, options, callbacks)
         if coding == "mmap":
-            return  self.paint_mmap(img_data, x, y, width, height, rowstride)
+            return  self.paint_mmap(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding in ["rgb24", "jpeg"]:
             assert coding in ENCODINGS
             if coding=="rgb24":
-                image = self.rgb24image(img_data, width, height, rowstride)
+                image = self.rgb24image(img_data, width, height, rowstride, options, callbacks)
             else:   #if coding=="jpeg":
-                image = self.jpegimage(img_data, width, height)
-            return  self.paint_pil_image(image, width, height)
+                image = self.jpegimage(img_data, width, height, rowstride, options, callbacks)
+            return  self.paint_pil_image(image, width, height, rowstride, options, callbacks)
         elif coding == "png":
             assert coding in ENCODINGS
-            return  self.paint_png(img_data, x, y, width, height)
+            gobject.idle_add(self.paint_png, img_data, x, y, width, height, rowstride, options, callbacks)
         raise Exception("invalid picture encoding: %s" % coding)
 
     def cairo_draw(self, context, x, y):
@@ -257,13 +265,16 @@ class PixmapBacking(Backing):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride):
+    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
         assert "rgb24" in ENCODINGS
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
-        return  True
+        self.fire_paint_callbacks(callbacks, True)
+        return  False
 
-    def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride):
+    def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
         assert coding in ENCODINGS
         loader = gdk.PixbufLoader(coding)
         loader.write(img_data, len(img_data))
@@ -271,12 +282,18 @@ class PixmapBacking(Backing):
         pixbuf = loader.get_pixbuf()
         if not pixbuf:
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-            return  False
-        gc = self._backing.new_gc()
-        self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
-        return  True
+            self.fire_paint_callbacks(callbacks, False)
+        else:
+            gc = self._backing.new_gc()
+            self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+            self.fire_paint_callbacks(callbacks, True)
+        return  False
 
-    def paint_mmap(self, img_data, x, y, width, height, rowstride):
+    def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
+        #we could run just paint_rgb24 from the UI thread,
+        #but this would not make much of a difference
+        #and would complicate the code (add a callback to free mmap area)
         """ see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
@@ -285,7 +302,7 @@ class PixmapBacking(Backing):
             offset, length = img_data[0]
             arraytype = ctypes.c_char * length
             data = arraytype.from_buffer(self.mmap, offset)
-            success = self.paint_rgb24(data, x, y, width, height, rowstride)
+            self.paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
             data_start.value = offset+length
         else:
             #re-construct the buffer from discontiguous chunks:
@@ -295,24 +312,24 @@ class PixmapBacking(Backing):
                 self.mmap.seek(offset)
                 data += self.mmap.read(length)
                 data_start.value = offset+length
-            success = self.paint_rgb24(data, x, y, width, height, rowstride)
-        return  success
+            self.paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+        return  False
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options):
-        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options)
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         if coding == "mmap":
-            return self.paint_mmap(img_data, x, y, width, height, rowstride)
+            gobject.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
             if rowstride==0:
                 rowstride = width * 3
             assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
-            return self.paint_rgb24(img_data, x, y, width, height, rowstride)
+            gobject.idle_add(self.paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
-            return self.paint_x264(img_data, x, y, width, height, rowstride, options)
+            self.paint_x264(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "vpx":
-            return self.paint_vpx(img_data, x, y, width, height, rowstride, options)
+            self.paint_vpx(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
-            return self.paint_pixbuf(coding, img_data, x, y, width, height, rowstride)
+            gobject.idle_add(self.paint_pixbuf, coding, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def cairo_draw(self, context, x, y):
         try:

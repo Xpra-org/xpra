@@ -41,6 +41,12 @@ else:
 import os
 import time
 import ctypes
+from threading import Thread
+try:
+    from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
+except:
+    from Queue import Queue     #@Reimport
+
 
 from wimpiggy.util import (n_arg_signal,
                            gtk_main_quit_really,
@@ -97,6 +103,12 @@ class XpraClient(XpraClientBase):
             """ jpegquality was not set, use a better start value """
             self.jpegquality = 50
         self.dpi = int(opts.dpi)
+
+        #draw thread:
+        self._draw_queue = Queue(maxsize=1)
+        self._draw_thread = Thread(target=self._draw_thread_loop, name="draw_loop")
+        self._draw_thread.setDaemon(True)
+        self._draw_thread.start()
 
         #statistics:
         self.server_start_time = -1
@@ -767,28 +779,53 @@ class XpraClient(XpraClientBase):
             window.resize(w, h)
 
     def _process_draw(self, packet):
-        (wid, x, y, width, height, coding, data, packet_sequence, rowstride) = packet[1:10]
-        options = {}
-        if len(packet)>10:
-            options = packet[10]
-        log("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        wid = packet[1]
         window = self._id_to_window.get(wid)
-        decode_time = 0
-        if window:
-            start = time.time()
-            if window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options):
-                end = time.time()
-                self.pixel_counter.append((end, width*height))
-                decode_time = int(end*1000*1000-start*1000*1000)
-        else:
+        if not window:
             #window is gone
+            width, height, coding, data, packet_sequence = packet[4:9]
             if coding=="mmap":
                 #we need to ack the data to free the space!
                 assert self.mmap_enabled
                 data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
                 offset, length = data[-1]
                 data_start.value = offset+length
+            self.send_damage_sequence(wid, packet_sequence, width, height, -1)
+            return
+        self._draw_queue.put(packet)
+
+    def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time):
         self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
+
+    def _draw_thread_loop(self):
+        while self.exit_code is None:
+            packet = self._draw_queue.get()
+            try:
+                self._do_draw(packet)
+            except:
+                log.error("error processing draw packet", exc_info=True)
+
+    def _do_draw(self, packet):
+        """ this runs from the draw thread above """
+        wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
+        window = self._id_to_window.get(wid)
+        if not window:
+            return
+        options = {}
+        if len(packet)>10:
+            options = packet[10]
+        log("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        start = time.time()
+        def record_decode_time(success):
+            if success:
+                end = time.time()
+                decode_time = int(end*1000*1000-start*1000*1000)
+                self.pixel_counter.append((end, width*height))
+            else:
+                decode_time = -1
+            log("record_decode_time(%s) wid=%s, %s: %sx%s, %sms", success, wid, coding, width, height, int(decode_time/100)/10.0)
+            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
+        window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
 
     def _process_cursor(self, packet):
         if not self.cursors_enabled:

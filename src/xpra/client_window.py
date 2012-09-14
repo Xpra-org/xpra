@@ -380,24 +380,26 @@ class ClientWindow(gtk.Window):
         #the "ClientWindow"
         self._client.send_refresh_all()
 
-    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options):
-        success = self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options)
-        if success:
-            queue_draw(self, x, y, width, height)
-        #clear the auto refresh if enough pixels were sent (arbitrary limit..)
-        if success and self._refresh_timer and width*height>16*16:
-            gobject.source_remove(self._refresh_timer)
-            self._refresh_timer = None
-        #if we need to set a refresh timer, do it:
-        is_hq = options.get("quality", 0)>=95
-        is_lossy = coding in ("jpeg", "vpx", "x264")
-        if self._refresh_timer is None and self._client.auto_refresh_delay>0 and is_lossy and not is_hq:
-            #make sure our own refresh does not make us fire again
-            #FIXME: this should be per-window!
-            if self._refresh_ignore_sequence<packet_sequence:
-                self._refresh_ignore_sequence = packet_sequence+1
-                self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
-        return success
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
+        def after_draw_refresh(success):
+            log("after_draw_refresh(%s)", success)
+            if success:
+                queue_draw(self, x, y, width, height)
+            #clear the auto refresh if enough pixels were sent (arbitrary limit..)
+            if success and self._refresh_timer and width*height>16*16:
+                gobject.source_remove(self._refresh_timer)
+                self._refresh_timer = None
+            #if we need to set a refresh timer, do it:
+            is_hq = options.get("quality", 0)>=95
+            is_lossy = coding in ("jpeg", "vpx", "x264")
+            if self._refresh_timer is None and self._client.auto_refresh_delay>0 and is_lossy and not is_hq:
+                #make sure our own refresh does not make us fire again
+                #FIXME: this should be per-window!
+                if self._refresh_ignore_sequence<packet_sequence:
+                    self._refresh_ignore_sequence = packet_sequence+1
+                    self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
+        callbacks.append(after_draw_refresh)
+        self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     """ gtk3 """
     def do_draw(self, context):

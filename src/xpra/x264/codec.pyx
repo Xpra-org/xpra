@@ -66,9 +66,35 @@ cdef class xcoder:
     def get_type(self):
         return  "x264"
 
+cdef class RGBImage:
+    cdef uint8_t *data
+    cdef int size
+    cdef int rowstride
+
+    cdef init(self, uint8_t *data, int size, int rowstride):
+        self.data = data
+        self.size = size
+        self.rowstride = rowstride
+
+    cdef free(self):
+        assert self.data!=NULL
+        xmemfree(self.data)
+        self.data = NULL
+
+    def get_data(self):
+        return (<char *>self.data)[:self.size]
+
+    def get_size(self):
+        return self.size
+
+    def get_rowstride(self):
+        return self.rowstride
+
+    def __dealloc__(self):                  #@DuplicatedSignature
+        self.free()
+
 
 cdef class Decoder(xcoder):
-    cdef uint8_t *last_image
 
     def init_context(self, width, height, options):
         self.init(width, height)
@@ -119,11 +145,10 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
         cdef int i = 0
         assert self.context!=NULL
-        assert self.last_image==NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
         if padded_buf==NULL:
-            return 100, 0, ""
+            return 100, None
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
@@ -133,15 +158,10 @@ cdef class Decoder(xcoder):
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         xmemfree(padded_buf)
         if i!=0:
-            return i, 0, ""
-        self.last_image = dout
-        doutv = (<char *>dout)[:outsize]
-        return  i, outstride, doutv
-
-    def free_image(self):
-        assert self.last_image!=NULL
-        xmemfree(self.last_image)
-        self.last_image = NULL
+            return i, None
+        rgb_image = RGBImage()
+        rgb_image.init(dout, outsize, outstride)
+        return  i, rgb_image
 
 
 cdef class Encoder(xcoder):
