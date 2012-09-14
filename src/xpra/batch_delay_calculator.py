@@ -236,6 +236,8 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
              dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
     log(*msg)
+    if DEBUG_DELAY:
+        add_DEBUG_DELAY_MESSAGE(msg)
     try:
         video_encoder_lock.acquire()
         if AUTO_SPEED:
