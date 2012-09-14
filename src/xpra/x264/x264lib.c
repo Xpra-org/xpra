@@ -199,6 +199,11 @@ struct x264lib_ctx *init_encoder(int width, int height, int initial_quality, int
 
 void clean_encoder(struct x264lib_ctx *ctx)
 {
+	do_clean_encoder(ctx);
+	free(ctx);
+}
+void do_clean_encoder(struct x264lib_ctx *ctx)
+{
 	if (ctx->rgb2yuv) {
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
@@ -207,7 +212,6 @@ void clean_encoder(struct x264lib_ctx *ctx)
 		x264_encoder_close(ctx->encoder);
 		ctx->encoder = NULL;
 	}
-	free(ctx);
 }
 
 #else
@@ -459,7 +463,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 		if (ctx->colour_sampling!=new_colour_sampling) {
 			//pixel encoding has changed, we must re-init everything:
 			//printf("set_encoding_quality(%i) old colour_sampling=%i, new colour_sampling %i\n", pct, ctx->colour_sampling, new_colour_sampling);
-			clean_encoder(ctx);
+			do_clean_encoder(ctx);
 			do_init_encoder(ctx, ctx->width , ctx->height, pct, ctx->supports_csc_option);
 			return;
 		}
