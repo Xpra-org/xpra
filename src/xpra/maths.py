@@ -194,6 +194,6 @@ def queue_inspect(msg_header, time_values, target=1.0, div=1.0, smoothing=logp):
     """
     #inspect a queue size history: figure out if things are better or worse than before
     if len(time_values)==0:
-        return  "(empty)", 1.0, 0.0
+        return  "%s (empty)" % msg_header, 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
     return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing)

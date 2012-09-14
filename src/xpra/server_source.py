@@ -464,6 +464,7 @@ class ServerSource(object):
             This is used by WindowSource to queue damage processing to be done in the 'data_to_packet' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'damage_packet_queue' via 'queue_packet'.
         """
+        self.statistics.damage_data_qsizes.append((time.time(), self.damage_data_queue.qsize()))
         self.damage_data_queue.put(encode_and_send_cb)
 
     def queue_packet(self, packet, wid, pixels, start_send_cb, end_send_cb):
