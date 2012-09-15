@@ -108,6 +108,9 @@ class Protocol(object):
     def __str__(self):
         return "Protocol(%s)" % self._conn
 
+    def get_threads(self):
+        return  [self._write_thread, self._read_thread, self._read_parser_thread]
+
     def add_stats(self, info,  suffix=""):
         info["input_bytecount%s" % suffix] = self.input_bytecount
         info["input_packetcount%s" % suffix] = self.input_packetcount

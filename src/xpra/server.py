@@ -14,6 +14,7 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 
+import threading
 import gobject
 import cairo
 import sys
@@ -1010,6 +1011,21 @@ class XpraServer(gobject.GObject):
             i = 0
             for ss in self._server_sources.values():
                 ss.add_stats(info, self._id_to_window.keys(), suffix="{%s}" % i)
+                i += 1
+        #threads:
+        info_threads = proto.get_threads()
+        info["threads"] = threading.active_count() - len(info_threads)
+        info["info_threads"] = len(info_threads)
+        i = 0
+        #threads used by the "info" client:
+        for t in info_threads:
+            info["info_thread[%s]" % i] = t.name
+            i += 1
+        i = 0
+        #all non-info threads:
+        for t in threading.enumerate():
+            if t not in info_threads:
+                info["thread[%s]" % i] = t.name
                 i += 1
         return info
 
