@@ -3,8 +3,6 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#gcc -pthread -shared -O0 build/temp.linux-x86_64-2.7/xpra/x264/codec.o xpra/x264/x264lib.o -L/usr/lib64 -lx264 -lavcodec -lswscale -lpthread -lpython2.7 -o build/lib.linux-x86_64-2.7/xpra/x264/codec.so
-
 import os
 from libc.stdlib cimport free
 
