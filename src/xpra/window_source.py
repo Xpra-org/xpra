@@ -146,16 +146,18 @@ class WindowSource(object):
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config,
-                    encoding, encodings, encoding_client_options,
+                    encoding, encodings,
+                    encoding_client_options, supports_rgb24zlib,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.wid = wid
         self.global_statistics = statistics             #shared/global statistics from ServerSource
         self.statistics = WindowPerformanceStatistics()
-        self.encoding = encoding                       #the current encoding
-        self.encodings = encodings                     #all the encodings supported by the client
+        self.encoding = encoding                        #the current encoding
+        self.encodings = encodings                      #all the encodings supported by the client
         self.encoding_client_options = encoding_client_options #does the client support encoding options?
+        self.supports_rgb24zlib = supports_rgb24zlib    #supports rgb24 compression outside network layer (unwrapped)
         self.batch_config = batch_config
         # mmap:
         self._mmap = mmap
@@ -544,8 +546,7 @@ class WindowSource(object):
         elif coding=="vpx":
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24":
-            #compress here and return a wrapper so network code knows it is already zlib compressed:
-            data = zlib_compress(coding, data)
+            data, client_options = self.rgb24_encode(data)
         elif coding=="mmap":
             pass        #already handled via mmap_send
         else:
@@ -561,6 +562,15 @@ class WindowSource(object):
         self._damage_packet_sequence += 1
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
         return packet
+
+    def rgb24_encode(self, data):
+        #compress here and return a wrapper so network code knows it is already zlib compressed:
+        zlib = zlib_compress("rgb24", data)
+        if not self.encoding_client_options or not self.supports_rgb24zlib:
+            return  zlib, {}
+        #wrap it using "Compressed" so the network layer receiving it
+        #won't decompress it (leave it to the client's draw thread)
+        return Compressed("rgb24", zlib.data), {"zlib" : zlib.level}
 
     def PIL_encode(self, w, h, coding, data, rowstride, options):
         assert coding in ENCODINGS

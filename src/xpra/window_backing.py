@@ -10,6 +10,7 @@ gdk = import_gdk()
 import ctypes
 import cairo
 import gobject
+import zlib
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -61,7 +62,14 @@ class Backing(object):
             except:
                 log.error("error calling %s(%s)", x, success, exc_info=True)
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
+        img_data = raw_data
+        if options and options.get("zlib", 0)>0:
+            img_data = zlib.decompress(raw_data)
+        assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
+        gobject.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+
+    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         raise Exception("override me!")
 
     def paint_x264(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -92,7 +100,7 @@ class Backing(object):
         if err!=0 or rgb_image is None or rgb_image.get_size()==0:
             log.error("paint_with_video_decoder: ouch, decompression error %s", err)
             return  False
-        gobject.idle_add(self.paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
+        gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
         return  False
 
 
@@ -168,7 +176,7 @@ class CairoBacking(Backing):
         buf.close()
         gobject.idle_add(self.paint_png, png_data, 0, 0, width, height, rowstride, options, callbacks)
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
         log("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
         gc = cairo.Context(self._backing)
@@ -265,7 +273,7 @@ class PixmapBacking(Backing):
         cr.set_source_rgb(1, 1, 1)
         cr.fill()
 
-    def paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
         assert "rgb24" in ENCODINGS
         gc = self._backing.new_gc()
@@ -302,7 +310,7 @@ class PixmapBacking(Backing):
             offset, length = img_data[0]
             arraytype = ctypes.c_char * length
             data = arraytype.from_buffer(self.mmap, offset)
-            self.paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
             data_start.value = offset+length
         else:
             #re-construct the buffer from discontiguous chunks:
@@ -312,7 +320,7 @@ class PixmapBacking(Backing):
                 self.mmap.seek(offset)
                 data += self.mmap.read(length)
                 data_start.value = offset+length
-            self.paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
         return  False
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
@@ -322,8 +330,7 @@ class PixmapBacking(Backing):
         elif coding == "rgb24":
             if rowstride==0:
                 rowstride = width * 3
-            assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
-            gobject.idle_add(self.paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
             self.paint_x264(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "vpx":

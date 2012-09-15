@@ -558,6 +558,7 @@ class XpraClient(XpraClientBase):
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
+        capabilities["rgb24zlib"] = True
         capabilities["share"] = self.client_supports_sharing
         return capabilities
 

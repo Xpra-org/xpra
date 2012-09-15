@@ -138,6 +138,7 @@ class ServerSource(object):
         self.closed = False
         self.ordinary_packets = []
         self.protocol = protocol
+        self.supports_rgb24zlib = False
         # mmap:
         self.supports_mmap = supports_mmap
         self.mmap = None
@@ -205,6 +206,7 @@ class ServerSource(object):
         self.desktop_size = capabilities.get("desktop_size")
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
+        self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
         self.encodings = capabilities.get("encodings", [])
         self.set_encoding(capabilities.get("encoding", None), None)
         if "jpeg" in capabilities:
@@ -437,8 +439,9 @@ class ServerSource(object):
         if ws is None:
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, self.default_batch_config.clone(),
-                              self.encoding, self.encodings, self.encoding_client_options,
-                              self.mmap, self.mmap_size)
+                              self.encoding, self.encodings,
+                              self.encoding_client_options, self.supports_rgb24zlib,
+                              self.mmap, self.mmap_size, )
             self.window_sources[wid] = ws
         ws.damage(window, x, y, w, h, options)
 
