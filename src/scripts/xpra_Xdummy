@@ -1,0 +1,11 @@
+#!/bin/sh
+
+DOTXPRA_DIR="${HOME}/.xpra"
+NOSUID_XORG="${DOTXPRA_DIR}/Xorg"
+if [ ! -d "${DOTXPRA_DIR}" ]; then
+    mkdir "${DOTXPRA_DIR}"
+    chmod 700 "${DOTXPRA_DIR}"
+fi
+XORG_BIN=`which Xorg`
+cp -f "${XORG_BIN}" "${NOSUID_XORG}"
+exec "${NOSUID_XORG}" "$@"
