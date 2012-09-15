@@ -2,11 +2,11 @@ Description: For building the client only.
  Author: Antoine Martin <antoine@nagafix.co.uk>
  Forwarded: not-needed
  
---- a/xpra/xposix/__init__.py	2011-06-01 23:33:40.538800840 +0700
-+++ b/xpra/xposix/__init__.py	2011-06-09 17:54:14.550290554 +0700
-@@ -5,7 +5,7 @@
- 
+--- a/xpra/xposix/__init__.py	(revision 1510)
++++ b/xpra/xposix/__init__.py	(working copy)
+@@ -6,7 +6,7 @@
  # Platform-specific code for Posix systems with X11 display.
+ import os.path
  
 -XPRA_LOCAL_SERVERS_SUPPORTED = True
 +XPRA_LOCAL_SERVERS_SUPPORTED = False
