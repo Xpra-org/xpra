@@ -127,14 +127,12 @@ VNC_JPEG_OPTIONS = [-1, 4]
 
 
 XPRA_BIN = "/usr/bin/xpra"
-XPRA_SERVER_START_COMMAND = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT,
-                       "start", ":%s" % DISPLAY_NO,
-                       "--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG)]
 XPRA_SERVER_STOP_COMMANDS = [
                              [XPRA_BIN, "stop", ":%s" % DISPLAY_NO],
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (IP, PORT)]
+XPRA_USE_XDUMMY = True
 XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
@@ -578,6 +576,15 @@ def xpra_get_stats(last_record=None):
             get(["damage_in_latency.avg"]),
            ]
 
+def get_xpra_start_server_command():
+    cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT]
+    if XPRA_USE_XDUMMY:
+        cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG))
+    if XPRA_VERSION_NO>=[0, 5]:
+        cmd.append("--no-notifications")
+    cmd += ["start", ":%s" % DISPLAY_NO]
+    return cmd
+
 def test_xpra():
     print("")
     print("*********************************************************")
@@ -626,7 +633,7 @@ def test_xpra():
                             command_name = get_command_name(x11_test_command)
                             test_name = "%s (%s - %s - %s - via %s)" % (name, command_name, compression, trickle_str(down, up, latency), connect_option)
                             tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, connect_option, (down,up,latency), x11_test_command, cmd))
-    return with_server(XPRA_SERVER_START_COMMAND, XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
+    return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
 def get_x11_client_window_info(display, *app_name_strings):
