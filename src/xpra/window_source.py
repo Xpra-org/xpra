@@ -416,8 +416,10 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(current_encoding)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
-        if current_encoding=="x264" and (ww==1 or wh==1):
+        if ww==1 or wh==1:
             #x264 cannot handle 1 pixel wide/high areas
+            #(as dimensions are rounded to an even number)
+            #vpx can, but swscale has problems
             return  switch()
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
