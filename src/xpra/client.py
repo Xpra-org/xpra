@@ -105,7 +105,7 @@ class XpraClient(XpraClientBase):
         self.dpi = int(opts.dpi)
 
         #draw thread:
-        self._draw_queue = Queue(maxsize=1)
+        self._draw_queue = Queue()
         self._draw_thread = Thread(target=self._draw_thread_loop, name="draw_loop")
         self._draw_thread.setDaemon(True)
         self._draw_thread.start()
