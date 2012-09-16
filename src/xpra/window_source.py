@@ -357,11 +357,11 @@ class WindowSource(object):
             return
         regions = []
         ww,wh = window.get_dimensions()
-        def send_full_screen_update():
+        def send_full_screen_update(actual_encoding):
             log("send_delayed_regions: using full screen update")
             pixmap = self.get_window_pixmap(window, sequence)
             if pixmap:
-                self.process_damage_region(damage_time, pixmap, 0, 0, ww, wh, coding, sequence, options)
+                self.process_damage_region(damage_time, pixmap, 0, 0, ww, wh, actual_encoding, sequence, options)
 
         try:
             count_threshold = 60
@@ -381,7 +381,7 @@ class WindowSource(object):
                     pixel_count += w*h
                     #favor full screen updates over many regions:
                     if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
-                        send_full_screen_update()
+                        send_full_screen_update(coding)
                         return
                     regions.append((x, y, w, h))
                     rect = gtk.gdk.Rectangle(x, y, w, h)
@@ -396,7 +396,7 @@ class WindowSource(object):
 
         actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
-            send_full_screen_update()
+            send_full_screen_update(actual_encoding)
             return
 
         pixmap = self.get_window_pixmap(window, sequence)
