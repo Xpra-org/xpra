@@ -578,7 +578,7 @@ def run_client(parser, opts, extra_args, mode):
             sys.stdout.write("handshake-complete: detaching")
             app.quit(0)
         elif mode=="attach":
-            sys.stdout.write("Attached (press Control-C to detach)\n")
+            sys.stdout.write("Attached to %s (press Control-C to detach)\n" % conn.target)
             sys.stdout.flush()
     app.connect("handshake-complete", handshake_complete)
     def client_SIGINT(*args):
