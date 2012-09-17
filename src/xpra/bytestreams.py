@@ -65,10 +65,10 @@ class SocketConnection(object):
             self.filename = None
 
     def read(self, n):
-        return self._s.recv(n)
+        return untilConcludes(self._s.recv, n)
 
     def write(self, buf):
-        return self._s.send(buf)
+        return untilConcludes(self._s.send, buf)
 
     def close(self):
         return self._s.close()
