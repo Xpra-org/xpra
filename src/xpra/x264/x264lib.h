@@ -38,10 +38,13 @@ struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt);
 /** Call this before decoding, the decoder may need to be re-initialized with the new csc format */
 void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt);
 
-/** Cleanup encoding context. Must be freed after calling this function. */
+/** Cleanup encoding context. Also frees the memory. */
 void clean_encoder(struct x264lib_ctx *);
 
-/** Cleanup decoding context. Must be freed after calling this function. */
+/** Cleanup decoding context. Without freeing the memory. */
+void do_clean_decoder(struct x264lib_ctx *ctx);
+
+/** Cleanup decoding context. Also frees the memory. */
 void clean_decoder(struct x264lib_ctx *);
 
 /** Colorspace conversion.

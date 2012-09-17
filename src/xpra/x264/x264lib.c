@@ -264,11 +264,6 @@ struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
 	return ctx;
 }
 
-void clean_decoder(struct x264lib_ctx *ctx)
-{
-	do_clean_decoder(ctx);
-	free(ctx);
-}
 void do_clean_decoder(struct x264lib_ctx *ctx)
 {
 	if (ctx->codec_ctx) {
@@ -280,6 +275,11 @@ void do_clean_decoder(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->yuv2rgb);
 		ctx->yuv2rgb = NULL;
 	}
+}
+void clean_decoder(struct x264lib_ctx *ctx)
+{
+	do_clean_decoder(ctx);
+	free(ctx);
 }
 
 #ifndef _WIN32
