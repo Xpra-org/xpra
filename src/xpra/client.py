@@ -244,7 +244,6 @@ class XpraClient(XpraClientBase):
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "window-resized":       self._process_window_resized,
-            "draw":                 self._process_draw,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
             "notify_show":          self._process_notify_show,
@@ -258,6 +257,7 @@ class XpraClient(XpraClientBase):
             self._ui_packet_handlers[k] = v
         #these handlers can run directly from the network thread:
         for k,v in {
+            "draw":                 self._process_draw,
             "ping":                 self._process_ping,
             "ping_echo":            self._process_ping_echo,
             }.items():
