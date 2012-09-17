@@ -130,7 +130,7 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
     #when it is specified, but the client may override it:
     if socket_dir:
         script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then\n');
-        script.append('    XPRA_SOCKET_DIR=%s; export XPRA_SOCKET_DIR\n' % sh_quotemeta(socket_dir))
+        script.append('    XPRA_SOCKET_DIR=%s; export XPRA_SOCKET_DIR\n' % sh_quotemeta(os.path.expanduser(socket_dir)))
         script.append('fi\n');
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
