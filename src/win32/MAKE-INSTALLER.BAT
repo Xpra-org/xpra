@@ -75,7 +75,7 @@ if %errorlevel% NEQ 0 (
 
 ECHO ***************************************************************
 ECHO ****** py2exe
-%PYTHON_EXE% -OO setup.py py2exe > py2exe-xpra.log
+%PYTHON_EXE% -OO setup.py py2exe %BUILD_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
 	GOTO:EOF
