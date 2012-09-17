@@ -179,7 +179,6 @@ class WindowSource(object):
 
     def cleanup(self):
         self.cancel_damage()
-        self.video_encoder_cleanup()
 
     def video_encoder_cleanup(self):
         """ Video encoders (x264 and vpx) require us to run
@@ -212,6 +211,9 @@ class WindowSource(object):
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
         log("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
+        #we must clean the video encoder to ensure
+        #we will resend key frames
+        self.video_encoder_cleanup()
         #if a region was delayed, we can just drop it now:
         self._damage_delayed = None
         #for those in flight, being processed in separate threads, drop by sequence:
