@@ -904,11 +904,11 @@ class XpraServer(gobject.GObject):
             new_size = w,h
         log("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
         if not new_size:
-            return
+            return  root_w, root_h
         w, h = new_size
         if w==root_w and h==root_h:
             log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
-            return
+            return  root_w, root_h
         try:
             set_screen_size(w, h)
             root_w, root_h = get_screen_size()
@@ -919,6 +919,7 @@ class XpraServer(gobject.GObject):
                 log.info("new resolution matching %sx%s : screen now set to %sx%s", desired_w, desired_h, root_w, root_h)
         except Exception, e:
             log.error("ouch, failed to set new resolution: %s", e, exc_info=True)
+        return  root_w, root_h
 
     def _process_desktop_size(self, proto, packet):
         width, height = packet[1:3]
@@ -1098,11 +1099,13 @@ class XpraServer(gobject.GObject):
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
-            self.set_best_screen_size()
+            root_w, root_h = self.set_best_screen_size()
+        else:
+            root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         #take the clipboard if no-one else has yet:
         if ss.clipboard_enabled and (self._clipboard_client is None or self._clipboard_client.closed):
             self._clipboard_client = ss
-        self.send_hello(capabilities, ss)
+        self.send_hello(capabilities, ss, root_w, root_h)
         #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
         self.keyboard = bool(capabilities.get("keyboard", True))
@@ -1157,9 +1160,10 @@ class XpraServer(gobject.GObject):
                 ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 
-    def send_hello(self, client_capabilities, server_source):
+    def send_hello(self, client_capabilities, server_source, root_w, root_h):
         capabilities = {}
         capabilities["version"] = xpra.__version__
+        capabilities["actual_desktop_size"] = root_w, root_h
         capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = self._get_desktop_size_capability(server_source)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
@@ -1188,13 +1192,7 @@ class XpraServer(gobject.GObject):
         capabilities["client_window_properties"] = True
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
-        #_get_desktop_size_capability may cause an asynchronous root window resize event
-        #so we must give the gtk event loop a chance to run before we query
-        #for the actual root window size!
-        def do_send_hello():
-            capabilities["actual_desktop_size"] = gtk.gdk.get_default_root_window().get_size()
-            server_source.hello(capabilities)
-        gobject.idle_add(do_send_hello)
+        server_source.hello(capabilities)
 
     def send_ping(self):
         for ss in self._server_sources.values():
