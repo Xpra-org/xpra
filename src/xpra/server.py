@@ -1100,7 +1100,7 @@ class XpraServer(gobject.GObject):
         if self.randr:
             self.set_best_screen_size()
         #take the clipboard if no-one else has yet:
-        if ss.clipboard_enabled and self._clipboard_client is None:
+        if ss.clipboard_enabled and (self._clipboard_client is None or self._clipboard_client.closed):
             self._clipboard_client = ss
         self.send_hello(capabilities, ss)
         #send_hello will take care of sending the current and max screen resolutions,
@@ -1647,10 +1647,10 @@ class XpraServer(gobject.GObject):
         log.info("Connection lost")
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
+        if self._clipboard_client and self._clipboard_client.protocol==proto:
+            self._clipboard_client = None
         source = self._server_sources.get(proto)
         if source:
-            if self._clipboard_client==source:
-                self._clipboard_client = None
             del self._server_sources[proto]
             source.close()
             log.info("xpra client disconnected.")
