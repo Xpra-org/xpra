@@ -1,4 +1,4 @@
-include COPYING NEWS README*
+include COPYING NEWS *README
 include do-build parti/try-parti
 include install.sh
 include wimpiggy/lowlevel/constants.pxi

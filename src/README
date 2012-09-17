@@ -15,4 +15,4 @@ parti: The above-mentioned window manager, currently in
 xpra: "X Persistent Remote Applications" -- think 'screen for X'.
   Currently beta status.
 
-See the README.<project> for more details about each.
+See the <project>.README for more details about each.

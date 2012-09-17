@@ -1,6 +1,13 @@
-v0.7.0 (2012-09-08)
+v0.7.0 (2012-09-15)
 ======================
 	-- TODO
+
+
+v0.6.1 (2012-09-14)
+======================
+	-- fix compress clipboard data (previous fix was ineffectual)
+	-- fix missing damage data queue statistics (was causing latency issues)
+	-- use memory aligned allocations for colourspace conversion
 
 
 v0.6.0 (2012-09-08)

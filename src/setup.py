@@ -226,7 +226,7 @@ if sys.platform.startswith("win"):
               }
     data_files=[
                    ('', ['COPYING']),
-                   ('', ['README.xpra']),
+                   ('', ['xpra.README']),
                    ('', ['win32/website.url']),
                    ('', ['etc/xpra/client-only/xpra.conf']),
                    ('icons', glob.glob('icons\\*.*')),
@@ -301,9 +301,9 @@ else:
              ]
     data_files=[
                 ("share/man/man1", ["xpra.1", "xpra_launcher.1", "parti.1"]),
-                ("share/parti", ["README", "README.parti"]),
-                ("share/xpra", ["README.xpra", "COPYING"]),
-                ("share/wimpiggy", ["README.wimpiggy"]),
+                ("share/parti", ["README", "parti.README"]),
+                ("share/xpra", ["xpra.README", "COPYING"]),
+                ("share/wimpiggy", ["wimpiggy.README"]),
                 ("share/xpra/icons", glob.glob("icons/*")),
                 ("share/applications", ["xpra_launcher.desktop"]),
                 ("share/icons", ["xpra.png"])

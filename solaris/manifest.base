@@ -244,13 +244,13 @@ file path=usr/share/man/man1/xpra.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra_launcher.1 owner=root group=bin mode=644
 dir  path=usr/share/parti owner=root group=root mode=755
 file path=usr/share/parti/README owner=root group=bin mode=644
-file path=usr/share/parti/README.parti owner=root group=bin mode=644
+file path=usr/share/parti/parti.README owner=root group=bin mode=644
 dir  path=usr/share/wimpiggy owner=root group=root mode=755
-file path=usr/share/wimpiggy/README.wimpiggy owner=root group=bin mode=644
+file path=usr/share/wimpiggy/wimpiggy.README owner=root group=bin mode=644
 dir  path=usr/share/xpra owner=root group=root mode=755
 file path=usr/share/xpra/COPYING owner=root group=bin mode=644
-file path=usr/share/xpra/README.xpra owner=root group=bin mode=644
-file path=usr/share/xpra/README.Solaris owner=root group=bin mode=644
+file path=usr/share/xpra/xpra.README owner=root group=bin mode=644
+file path=usr/share/xpra/Solaris.README owner=root group=bin mode=644
 dir  path=usr/share/xpra/icons owner=root group=root mode=755
 file path=usr/share/xpra/icons/close.png owner=root group=bin mode=644
 file path=usr/share/xpra/icons/compressed.png owner=root group=bin mode=644
