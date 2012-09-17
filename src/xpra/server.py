@@ -430,7 +430,7 @@ class XpraServer(gobject.GObject):
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
             return  True
-        sc = SocketConnection(sock, sock.getsockname(), address)
+        sc = SocketConnection(sock, sock.getsockname(), address, sock.getsockname())
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
         self._potential_protocols.append(protocol)

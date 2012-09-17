@@ -99,8 +99,9 @@ def CheckMenuItem(label):
 
 class ClientExtrasBase(object):
 
-    def __init__(self, client, opts):
+    def __init__(self, client, opts, conn):
         self.client = client
+        self.connection = conn
         self.license_text = None
         self.session_info_window = None
         self.about_dialog = None
@@ -188,6 +189,12 @@ class ClientExtrasBase(object):
     def get_keyboard_repeat(self):
         """ (delay_ms,interval_ms) or None"""
         return None
+
+    def get_tray_tooltip(self):
+        if self.client.session_name:
+            return "%s\non %s" % (self.client.session_name, self.connection.target)
+        return self.connection.target
+
 
     def about(self, *args):
         if self.about_dialog:
@@ -319,6 +326,7 @@ class ClientExtrasBase(object):
             row = new_row(row, "PyGTK version", label(make_version_info("pygtk_version")))
             row = new_row(row, "GTK version", label(make_version_info("gtk_version")))
 
+        row = new_row(row, "Server Endpoint", label(self.connection.target))
         if self.client.server_platform:
             row = new_row(row, "Server Platform", label(self.client.server_platform))
         self.server_randr_label = label()

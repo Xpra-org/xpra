@@ -13,8 +13,8 @@ log = Logger()
 
 
 class ClientExtras(ClientExtrasBase):
-    def __init__(self, client, opts):
-        ClientExtrasBase.__init__(self, client, opts)
+    def __init__(self, client, opts, conn):
+        ClientExtrasBase.__init__(self, client, opts, conn)
         self.locate_icon_filename(opts.tray_icon)
         self.setup_growl(opts.notifications)
         self.setup_macdock()

@@ -54,10 +54,11 @@ class TwoFileConnection(object):
 
 
 class SocketConnection(object):
-    def __init__(self, s, local, remote):
+    def __init__(self, s, local, remote, target):
         self._s = s
         self.local = local
         self.remote = remote
+        self.target = target
         if type(remote)==str:
             self.filename = remote
         else:

@@ -32,7 +32,7 @@ def test_DoS(client_class_constructor, args):
     print("will attempt to connect to socket: %s" % target)
     sock = socket.socket(socket.AF_UNIX)
     sock.connect(target)
-    conn = SocketConnection(sock)
+    conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), "test_DoS")
     print("socket connection=%s" % conn)
     app = client_class_constructor(conn, opts)
     try:

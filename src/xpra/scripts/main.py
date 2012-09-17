@@ -431,12 +431,11 @@ def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
 
 def parse_display_name(parser, opts, display_name):
+    desc = {"display_name" : display_name}
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
-        desc = {
-            "type": "ssh",
-            "local": False
-            }
+        desc["type"] = "ssh"
+        desc["local"] = False
         parts = display_name.split(separator)
         if len(parts)>2:
             desc["host"] = separator.join(parts[1:-1])
@@ -457,19 +456,15 @@ def parse_display_name(parser, opts, display_name):
         desc["full_remote_xpra"] = desc["full_ssh"] + desc["remote_xpra"]
         return desc
     elif display_name.startswith(":"):
-        desc = {
-            "type": "unix-domain",
-            "local": True,
-            "display": display_name,
-            "sockdir": opts.sockdir or get_default_socket_dir(),
-            }
+        desc["type"] = "unix-domain"
+        desc["local"] = True
+        desc["display"] = display_name
+        desc["sockdir"] = opts.sockdir or get_default_socket_dir()
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
         separator = display_name[3] # ":" or "/"
-        desc = {
-            "type": "tcp",
-            "local": False,
-            }
+        desc["type"] = "tcp"
+        desc["local"] = False
         parts = display_name.split(separator)
         desc["port"] = int(parts[-1])
         desc["host"] = separator.join(parts[1:-1])
@@ -498,17 +493,18 @@ def pick_display(parser, opts, extra_args):
     else:
         parser.error("too many arguments")
 
-def _socket_connect(sock, target):
+def _socket_connect(sock, endpoint, description):
     try:
         sock.settimeout(10)
-        sock.connect(target)
+        sock.connect(endpoint)
     except socket.error, e:
         sys.exit("Connection failed: %s" % (e,))
         return
     sock.settimeout(None)
-    return SocketConnection(sock, sock.getsockname(), sock.getpeername())
+    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description)
 
 def connect_or_fail(display_desc):
+    display_name = display_desc["display_name"]
     if display_desc["type"] == "ssh":
         cmd = (display_desc["full_remote_xpra"]
                + ["_proxy"] + display_desc["display_as_args"])
@@ -525,18 +521,18 @@ def connect_or_fail(display_desc):
                 from wimpiggy.util import gtk_main_quit_really
                 gtk_main_quit_really()
                 raise IOError(error_message)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=cmd)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name)
 
     elif display_desc["type"] == "unix-domain":
         sockdir = DotXpra(display_desc["sockdir"])
         sock = socket.socket(socket.AF_UNIX)
         sockfile = sockdir.socket_path(display_desc["display"])
-        return _socket_connect(sock, sockfile)
+        return _socket_connect(sock, sockfile, display_name)
 
     elif display_desc["type"] == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
-        return _socket_connect(sock, tcp_endpoint)
+        return _socket_connect(sock, tcp_endpoint, display_name)
 
     else:
         assert False, "unsupported display type in connect"

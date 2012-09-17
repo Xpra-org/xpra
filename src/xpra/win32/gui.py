@@ -17,8 +17,8 @@ log = Logger()
 
 
 class ClientExtras(ClientExtrasBase):
-    def __init__(self, client, opts):
-        ClientExtrasBase.__init__(self, client, opts)
+    def __init__(self, client, opts, conn):
+        ClientExtrasBase.__init__(self, client, opts, conn)
         try:
             from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
             self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
@@ -61,7 +61,7 @@ class ClientExtras(ClientExtrasBase):
 
         try:
             from xpra.win32.win32_tray import Win32Tray
-            self.tray = Win32Tray(self.client.session_name, self.activate_menu, self.quit, tray_icon_filename)
+            self.tray = Win32Tray(self.get_tray_tooltip(), self.activate_menu, self.quit, tray_icon_filename)
         except Exception, e:
             log.error("failed to load native Windows NotifyIcon: %s", e)
 

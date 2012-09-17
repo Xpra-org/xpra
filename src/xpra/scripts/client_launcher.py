@@ -509,7 +509,7 @@ class ApplicationWindow:
 		try:
 			from xpra.bytestreams import SocketConnection
 			global socket_wrapper
-			socket_wrapper = SocketConnection(sock, sock.getsockname(), sock.getpeername())
+			socket_wrapper = SocketConnection(sock, sock.getsockname(), sock.getpeername(), "%s %s" % (host, port))
 		except Exception, e:
 			self.set_info_text("Xpra Client error: %s" % e)
 			set_sensitive(True)

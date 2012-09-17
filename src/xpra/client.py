@@ -125,7 +125,7 @@ class XpraClient(XpraClientBase):
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
-        self._client_extras = ClientExtras(self, opts)
+        self._client_extras = ClientExtras(self, opts, conn)
         self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
         self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
         self.client_supports_cursors = opts.cursors

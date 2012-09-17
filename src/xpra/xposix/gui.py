@@ -23,8 +23,8 @@ log = Logger()
 
 
 class ClientExtras(ClientExtrasBase):
-    def __init__(self, client, opts):
-        ClientExtrasBase.__init__(self, client, opts)
+    def __init__(self, client, opts, conn):
+        ClientExtrasBase.__init__(self, client, opts, conn)
         try:
             from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
             self.setup_clipboard_helper(GDKClipboardProtocolHelper)
@@ -88,10 +88,10 @@ class ClientExtras(ClientExtrasBase):
                 log.info("showing tray")
                 #session_name will get set during handshake
                 self.tray_widget.set_visible(True)
-                if hasattr(self.tray_widget, "set_tooltip_text"):
-                    self.tray_widget.set_tooltip_text(self.client.session_name)
-                else:
-                    self.tray_widget.set_tooltip(self.client.session_name)
+            if hasattr(self.tray_widget, "set_tooltip_text"):
+                self.tray_widget.set_tooltip_text(self.get_tray_tooltip())
+            else:
+                self.tray_widget.set_tooltip(self.get_tray_tooltip())
             self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)
@@ -105,7 +105,7 @@ class ClientExtras(ClientExtrasBase):
                 self.client.connect("first-ui-received", show_tray)
             return True
         except Exception, e:
-            log.debug("could not setup gtk.StatusIcon: %s", e)
+            log.info("could not setup gtk.StatusIcon: %s", e)
             return False
 
     def setup_appindicator(self, delay_tray, tray_icon_filename):
