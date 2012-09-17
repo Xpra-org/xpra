@@ -110,10 +110,12 @@ class XpraClient(XpraClientBase):
         self._draw_thread.setDaemon(True)
         self._draw_thread.start()
 
-        #statistics:
+        #statistics and server info:
         self.server_start_time = -1
         self.server_platform = ""
         self.server_actual_desktop_size = None
+        self.server_max_desktop_size = None
+        self.server_display = None
         self.server_randr = False
         self.pixel_counter = maxdeque(maxlen=100)
         self.server_latency = maxdeque(maxlen=100)
@@ -624,6 +626,7 @@ class XpraClient(XpraClientBase):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.set_max_packet_size()
         self.server_max_desktop_size = capabilities.get("max_desktop_size")
+        self.server_display = capabilities.get("display")
         server_desktop_size = capabilities.get("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         assert server_desktop_size

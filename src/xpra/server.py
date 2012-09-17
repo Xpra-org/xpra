@@ -1163,6 +1163,7 @@ class XpraServer(gobject.GObject):
         capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         capabilities["desktop_size"] = self._get_desktop_size_capability(server_source)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
+        capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["platform"] = sys.platform
         capabilities["encodings"] = ENCODINGS
         capabilities["resize_screen"] = self.randr

@@ -327,6 +327,8 @@ class ClientExtrasBase(object):
             row = new_row(row, "GTK version", label(make_version_info("gtk_version")))
 
         row = new_row(row, "Server Endpoint", label(self.connection.target))
+        if self.client.server_display:
+            row = new_row(row, "Server Display", label(self.client.server_display))
         if self.client.server_platform:
             row = new_row(row, "Server Platform", label(self.client.server_platform))
         self.server_randr_label = label()
