@@ -268,6 +268,8 @@ class ClientWindow(gtk.Window):
 
     def get_workspace(self):
         try:
+            if sys.platform.startswith("win"):
+                return  -1              #windows does not have workspaces
             if not has_wimpiggy_prop:
                 prop = self.window.get_screen().get_root_window().property_get("_NET_CURRENT_DESKTOP")
                 if not prop or len(prop)!=3 or len(prop[2])!=1:
