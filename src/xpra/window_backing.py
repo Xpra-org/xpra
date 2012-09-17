@@ -15,6 +15,7 @@ import zlib
 from wimpiggy.log import Logger
 log = Logger()
 
+from threading import Lock
 from xpra.scripts.main import ENCODINGS
 
 PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
@@ -30,11 +31,16 @@ class Backing(object):
         self.mmap = mmap
         self._backing = None
         self._video_decoder = None
+        self._video_decoder_lock = Lock()
 
     def close(self):
         if self._video_decoder:
-            self._video_decoder.clean()
-            self._video_decoder = None
+            try:
+                self._video_decoder_lock.acquire()
+                self._video_decoder.clean()
+                self._video_decoder = None
+            finally:
+                self._video_decoder_lock.release()
 
     def jpegimage(self, img_data, width, height):
         import Image
@@ -84,23 +90,28 @@ class Backing(object):
 
     def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options, callbacks):
         assert x==0 and y==0
-        if self._video_decoder:
-            if self._video_decoder.get_type()!=coding:
-                self._video_decoder.clean()
-                self._video_decoder = None
-            elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
-                log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
-                self._video_decoder.clean()
+        try:
+            self._video_decoder_lock.acquire()
+            if self._video_decoder:
+                if self._video_decoder.get_type()!=coding:
+                    self._video_decoder.clean()
+                    self._video_decoder = None
+                elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
+                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                    self._video_decoder.clean()
+                    self._video_decoder.init_context(width, height, options)
+            if self._video_decoder is None:
+                self._video_decoder = factory()
                 self._video_decoder.init_context(width, height, options)
-        if self._video_decoder is None:
-            self._video_decoder = factory()
-            self._video_decoder.init_context(width, height, options)
-        log("paint_with_video_decoder: options=%s", options)
-        err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
-        if err!=0 or rgb_image is None or rgb_image.get_size()==0:
-            log.error("paint_with_video_decoder: ouch, decompression error %s", err)
-            return  False
+            log("paint_with_video_decoder: options=%s", options)
+            err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
+            if err!=0 or rgb_image is None or rgb_image.get_size()==0:
+                log.error("paint_with_video_decoder: ouch, decompression error %s", err)
+                return  False
+        finally:
+            self._video_decoder_lock.release()
         gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
+        del rgb_image
         return  False
 
 
