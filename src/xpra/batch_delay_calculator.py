@@ -116,6 +116,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
                 continue
             packets_backlog += 1
             pixels_backlog += pixels
+        statistics.last_client_delta = packets_backlog, pixels_backlog
     max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
 
     #for each indicator: (description, factor, weight)
@@ -179,7 +180,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
     factors.append(queue_inspect("damage data queue:", global_statistics.damage_data_qsizes))
     last_packets_backlog, last_pixels_backlog = 0, 0
-    if statistics.last_packet_send_stats is not None:
+    if statistics.last_client_delta is not None:
         #packet and pixels backlog:
         last_packets_backlog, last_pixels_backlog = statistics.last_client_delta
         factors.append(calculate_for_target("client packets backlog:", 0, last_packets_backlog, packets_backlog, slope=1.0, smoothing=sqrt))
