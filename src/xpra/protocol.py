@@ -302,7 +302,7 @@ class Protocol(object):
                 except TypeError:
                     assert self._closed
                     return
-                log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
+                #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
                 self._read_queue.put(buf)
                 if not buf:
                     log("read thread: eof")
