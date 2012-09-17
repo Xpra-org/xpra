@@ -491,8 +491,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_bindir}/xpra
-%{_bindir}/xpra_launcher
+%{_bindir}/xpra*
 %{python_sitelib}/xpra
 %{python_sitelib}/wimpiggy
 %if %{include_egg}
