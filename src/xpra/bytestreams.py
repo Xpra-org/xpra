@@ -19,11 +19,11 @@ def untilConcludes(f, *a, **kw):
                 continue
             raise
 
+
 # A simple, portable abstraction for a blocking, low-level
 # (os.read/os.write-style interface) two-way byte stream:
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
-
 class TwoFileConnection(object):
     def __init__(self, writeable, readable, abort_test=None, target=None):
         self._writeable = writeable
@@ -39,11 +39,11 @@ class TwoFileConnection(object):
 
     def read(self, n):
         self.may_abort("read")
-        return os.read(self._readable.fileno(), n)
+        return untilConcludes(os.read, self._readable.fileno(), n)
 
     def write(self, buf):
         self.may_abort("write")
-        return os.write(self._writeable.fileno(), buf)
+        return untilConcludes(os.write, self._writeable.fileno(), buf)
 
     def close(self):
         self._writeable.close()
@@ -51,6 +51,7 @@ class TwoFileConnection(object):
 
     def __str__(self):
         return "TwoFileConnection(%s)" % str(self.target)
+
 
 class SocketConnection(object):
     def __init__(self, s, local, remote):
