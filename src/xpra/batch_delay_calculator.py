@@ -206,7 +206,9 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     target_damage_latency = min_damage_latency + batch.delay/1000.0
     dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
     target_decode_speed = 1*1000*1000      #1 MPixels/s
-    dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
+    dec_lat = 0.0
+    if avg_decode_speed:
+        dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
     target = max(dam_lat, dec_lat, 0.0)
     target_speed = 100.0 * min(1.0, target)
     video_encoder_speed.append((time.time(), target_speed))
