@@ -350,9 +350,9 @@ class WindowSource(object):
                 log("window %s already removed from delayed list?", self.wid)
                 return False
             damage_time = self._damage_delayed[0]
-            packets_backlog, _, _ = self.statistics.get_backlog(self.global_statistics.avg_client_latency)
+            packets_backlog, pixels_backlog, _ = self.statistics.get_backlog(self.global_statistics.avg_client_latency)
             if packets_backlog>0:
-                log.info("send_delayed for wid %s, delaying again because of backlog, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+                log("send_delayed for wid %s, delaying again because of backlog: %s packets / %s pixels, batch delay is %s, elapsed time is %s ms", self.wid, packets_backlog, pixels_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
                 return True
             log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
             delayed = self._damage_delayed
