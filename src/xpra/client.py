@@ -680,6 +680,7 @@ class XpraClient(XpraClientBase):
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
+        self.send_ping()
 
     def send_notify_enabled(self):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"

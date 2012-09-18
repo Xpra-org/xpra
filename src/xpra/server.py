@@ -1135,9 +1135,8 @@ class XpraServer(gobject.GObject):
         modifiers = capabilities.get("modifiers", [])
         log("setting modifiers to %s", modifiers)
         self._make_keymask_match(modifiers)
-        #important: call send_windows_and_cursors via idle_add
-        #so send_hello's do_send_hello can fire first!
-        gobject.idle_add(self.send_windows_and_cursors, ss)
+        ss.ping()
+        self.send_windows_and_cursors(ss)
 
     def send_windows_and_cursors(self, ss):
         # We send the new-window packets sorted by id because this sorts them
