@@ -89,7 +89,8 @@ class WindowPerformanceStatistics(object):
         self.reset()
 
     def reset(self):
-        self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames: (ack_time, no of pixels, decoding_time)
+        self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
+                                                        #(ack_time, no of pixels, decoding_time*1000*1000)
         self.encoding_stats = maxdeque(NRECS)           #encoding: (coding, pixels, compressed_size, encoding_time)
         # statistics:
         self.damage_in_latency = maxdeque(NRECS)        #records how long it took for a damage request to be sent
@@ -133,6 +134,18 @@ class WindowPerformanceStatistics(object):
         add_list_stats(info, "damage_in_latency",  latencies)
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
         add_list_stats(info, "damage_out_latency",  latencies)
+
+    def get_backlog(self, latency):
+        packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
+        if len(self.damage_ack_pending)>0:
+            sent_before = time.time()-latency
+            for start_send_at, start_bytes, end_send_at, end_bytes, pixels in list(self.damage_ack_pending.values()):
+                if end_send_at==0 or start_send_at>sent_before:
+                    continue
+                packets_backlog += 1
+                pixels_backlog += pixels
+                bytes_backlog += (end_bytes - start_bytes)
+        return packets_backlog, pixels_backlog, bytes_backlog
 
 
 class WindowSource(object):
@@ -334,14 +347,18 @@ class WindowSource(object):
         self._damage_delayed = (now, window, region, coding, self._sequence, options)
         def send_delayed():
             """ move the delayed rectangles to the expired list """
-            if self._damage_delayed:
-                damage_time = self._damage_delayed[0]
-                log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
-                delayed = self._damage_delayed
-                self._damage_delayed = None
-                self.send_delayed_regions(*delayed)
-            else:
+            if not self._damage_delayed:
                 log("window %s already removed from delayed list?", self.wid)
+                return False
+            damage_time = self._damage_delayed[0]
+            packets_backlog, _, _ = self.statistics.get_backlog(self.global_statistics.avg_client_latency)
+            if packets_backlog>0:
+                log.info("send_delayed for wid %s, delaying again because of backlog, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+                return True
+            log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+            delayed = self._damage_delayed
+            self._damage_delayed = None
+            self.send_delayed_regions(*delayed)
             return False
         log("damage(%s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))

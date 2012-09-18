@@ -88,6 +88,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     if len(global_statistics.client_latency)>0:
         data = [(when, latency) for _, when, _, latency in list(global_statistics.client_latency)]
         avg_client_latency, recent_client_latency = calculate_time_weighted_average(data)
+        global_statistics.avg_client_latency = avg_client_latency
     #client ping latency: from ping packets
     avg_client_ping_latency, recent_client_ping_latency = 0.1, 0.1    #assume 100ms until we get some data
     if len(global_statistics.client_ping_latency)>0:
@@ -116,17 +117,10 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     if len(statistics.damage_send_speed)>0:
         avg_send_speed, recent_send_speed = calculate_timesize_weighted_average(list(statistics.damage_send_speed))
     #client backlog: (packets and pixels that should have been processed by now - taking into account latency)
-    packets_backlog, pixels_backlog = 0, 0
+    packets_backlog, pixels_backlog, _ = statistics.get_backlog(avg_client_latency)
     last_packets_backlog, last_pixels_backlog = None, None
     if statistics.last_client_delta is not None:
         last_packets_backlog, last_pixels_backlog = statistics.last_client_delta
-    if len(statistics.damage_ack_pending)>0:
-        sent_before = time.time()-avg_client_latency
-        for sent_at, pixels in statistics.damage_ack_pending.values():
-            if sent_at>sent_before:
-                continue
-            packets_backlog += 1
-            pixels_backlog += pixels
     statistics.last_client_delta = packets_backlog, pixels_backlog
     max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
 
