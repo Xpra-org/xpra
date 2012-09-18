@@ -83,7 +83,7 @@ class DamageBatchConfig(object):
 
 class WindowPerformanceStatistics(object):
     """
-    Statistics which are shared by all WindowSources
+    Statistics which belong to a specific WindowSource
     """
     def __init__(self):
         self.reset()
