@@ -437,8 +437,10 @@ class ServerSource(object):
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
         ws = self.window_sources.get(wid)
         if ws is None:
+            batch_config = self.default_batch_config.clone()
+            batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
-                              wid, self.default_batch_config.clone(),
+                              wid, batch_config,
                               self.encoding, self.encodings,
                               self.encoding_client_options, self.supports_rgb24zlib,
                               self.mmap, self.mmap_size, )
