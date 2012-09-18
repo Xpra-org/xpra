@@ -60,11 +60,10 @@ class GlobalPerformanceStatistics(object):
         self.damage_last_events = maxdeque(NRECS)       #records the x11 damage requests as they are received:
                                                         #(wid, event time, no of pixels)
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
-                                                        #(wid, event_time, no of pixels, decoding_time)
+                                                        #(wid, event_time, no of pixels, decoding_time*1000*1000)
         self.min_client_latency = None                  #The lowest client latency ever recorded
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
-
         self.client_ping_latency = maxdeque(NRECS)
         self.server_ping_latency = maxdeque(NRECS)
         self.client_load = None
@@ -85,8 +84,8 @@ class GlobalPerformanceStatistics(object):
         latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
         add_list_stats(info, "client_latency%s" % suffix,  latencies)
 
-        add_list_stats(info, "server_ping_latency%s" % suffix, self.server_ping_latency)
-        add_list_stats(info, "client_ping_latency%s" % suffix, self.client_ping_latency)
+        add_list_stats(info, "server_ping_latency%s" % suffix, [x for _, x in self.server_ping_latency])
+        add_list_stats(info, "client_ping_latency%s" % suffix, [x for _, x in self.client_ping_latency])
 
         #client pixels per second:
         now = time.time()
@@ -325,16 +324,16 @@ class ServerSource(object):
         cl = -1
         #and the last client ping latency we measured (if any):
         if len(self.statistics.client_ping_latency)>0:
-            cl = self.statistics.client_ping_latency[-1]
+            _, cl = self.statistics.client_ping_latency[-1]
         self.send(["ping_echo", time_to_echo, l1, l2, l3, cl])
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 
     def process_ping_echo(self, client_ping_latency, server_ping_latency, load):
-        self.statistics.client_ping_latency.append(client_ping_latency)
+        self.statistics.client_ping_latency.append((time.time(), client_ping_latency/1000.0))
         self.client_load = load
         if server_ping_latency>=0:
-            self.statistics.server_ping_latency.append(server_ping_latency)
+            self.statistics.server_ping_latency.append((time.time(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", load, server_ping_latency)
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
