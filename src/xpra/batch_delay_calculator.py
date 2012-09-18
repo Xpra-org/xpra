@@ -109,6 +109,9 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         avg_send_speed, recent_send_speed = calculate_timesize_weighted_average(list(statistics.damage_send_speed))
     #client backlog: (packets and pixels that should have been processed by now - taking into account latency)
     packets_backlog, pixels_backlog = 0, 0
+    last_packets_backlog, last_pixels_backlog = None, None
+    if statistics.last_client_delta is not None:
+        last_packets_backlog, last_pixels_backlog = statistics.last_client_delta
     if len(statistics.damage_ack_pending)>0:
         sent_before = time.time()-avg_client_latency
         for sent_at, pixels in statistics.damage_ack_pending.values():
@@ -116,7 +119,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
                 continue
             packets_backlog += 1
             pixels_backlog += pixels
-        statistics.last_client_delta = packets_backlog, pixels_backlog
+    statistics.last_client_delta = packets_backlog, pixels_backlog
     max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
 
     #for each indicator: (description, factor, weight)
@@ -179,10 +182,8 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     factors.append(queue_inspect("damage packet queue pixels:", time_values, div=low_limit, smoothing=sqrt))
     #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
     factors.append(queue_inspect("damage data queue:", global_statistics.damage_data_qsizes))
-    last_packets_backlog, last_pixels_backlog = 0, 0
-    if statistics.last_client_delta is not None:
+    if last_packets_backlog is not None and last_pixels_backlog is not None:
         #packet and pixels backlog:
-        last_packets_backlog, last_pixels_backlog = statistics.last_client_delta
         factors.append(calculate_for_target("client packets backlog:", 0, last_packets_backlog, packets_backlog, slope=1.0, smoothing=sqrt))
         factors.append(calculate_for_target("client pixels backlog:", 0, last_pixels_backlog, pixels_backlog, div=low_limit, slope=1.0, smoothing=sqrt))
     if global_statistics.mmap_size>0:
