@@ -20,7 +20,7 @@ log = Logger()
 
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
-from xpra.maths import add_list_stats
+from xpra.maths import add_list_stats, dec1
 from xpra.scripts.main import ENCODINGS
 
 
@@ -69,10 +69,17 @@ class GlobalPerformanceStatistics(object):
         self.server_ping_latency = maxdeque(NRECS)
         self.client_load = None
 
-    def record_latency(self, wid, pixels, latency):
-        if self.min_client_latency is None or self.min_client_latency>latency:
-            self.min_client_latency = latency
-        self.client_latency.append((wid, time.time(), pixels, latency))
+    def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
+        now = time.time()
+        send_diff = now-start_send_at
+        echo_diff = now-end_send_at
+        send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
+        echo_latency = max(0, echo_diff-decode_time/1000.0/1000.0)
+        log("record_latency: took %s ms round trip (%s just for echo), %s for decoding of %s pixels, %s bytes sent over the network in %s ms (%s ms for echo)",
+                dec1(send_diff*1000), dec1(echo_diff*1000), dec1(decode_time/1000.0), pixels, bytecount, dec1(send_latency*1000), dec1(echo_latency*1000))
+        if self.min_client_latency is None or self.min_client_latency>send_latency:
+            self.min_client_latency = send_latency
+        self.client_latency.append((wid, time.time(), pixels, send_latency))
 
     def add_stats(self, info, suffix=""):
         info["output_mmap_bytecount%s" % suffix] = self.mmap_bytes_sent

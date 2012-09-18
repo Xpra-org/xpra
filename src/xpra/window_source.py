@@ -102,7 +102,6 @@ class WindowPerformanceStatistics(object):
         self.damage_ack_pending = {}                    #records when damage packets are sent
                                                         #so we can calculate the "client_latency" when the client sends
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.last_packet_send_stats = None              #used by _damage_send_speed
         self.last_client_delta = None                   #records how far behind the client was last time we checked
 
     def add_stats(self, info, suffix=""):
@@ -484,24 +483,21 @@ class WindowSource(object):
             - number of pixels in damage packet queue
             - damage latency (via a callback once the packet is actually sent)
         """
-        #log("queue_damage_packet: damage elapsed time=%s ms, queue size=%s", dec1(1000*(time.time()-damage_time)), len(self._damage_packet_queue))
+        #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
         width = packet[4]
         height = packet[5]
+        damage_packet_sequence = packet[8]
         actual_batch_delay = process_damage_time-damage_time
         def start_send(bytecount):
-            self.last_packet_send_stats = time.time(), bytecount
+            now = time.time()
+            self.statistics.damage_ack_pending[damage_packet_sequence] = [now, bytecount, 0, 0, width*height]
         def damage_packet_sent(bytecount):
             now = time.time()
-            if self.last_packet_send_stats:
-                start_send_time, start_bytecount = self.last_packet_send_stats
-                self.statistics.damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
-            #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
-            damage_packet_sequence = packet[8]
+            stats = self.statistics.damage_ack_pending[damage_packet_sequence]
+            stats[2] = now
+            stats[3] = bytecount
             damage_out_latency = now-process_damage_time
             self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
-            self.statistics.damage_ack_pending[damage_packet_sequence] = now, width*height
-            #log("damage_packet_sent: took %s ms for %s pixels of packet_sequence %s, %s ns per pixel",
-            #         dec1(1000*damage_latency), width*height, packet_sequence, dec1(1000*1000*1000*damage_latency/(width*height)))
         now = time.time()
         damage_in_latency = now-process_damage_time
         self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
@@ -522,12 +518,9 @@ class WindowSource(object):
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
         if decode_time:
-            sent_at, pixels = pending
-            now = time.time()
-            diff = now-sent_at
-            latency = max(0, diff-decode_time/1000/1000)
-            log("client_ack_damage: took %s ms round trip, %s for decoding of %s pixels, %s for network", dec1(diff*1000), dec1(decode_time/1000), pixels, dec1(latency*1000))
-            self.global_statistics.record_latency(self.wid, pixels, latency)
+            start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
+            bytecount = end_bytes-start_bytes
+            self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         """
