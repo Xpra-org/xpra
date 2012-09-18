@@ -807,6 +807,7 @@ class XpraClient(XpraClientBase):
             packet = self._draw_queue.get()
             try:
                 self._do_draw(packet)
+                time.sleep(0)
             except:
                 log.error("error processing draw packet", exc_info=True)
 
