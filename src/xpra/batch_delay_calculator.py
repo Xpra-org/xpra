@@ -88,6 +88,14 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     if len(global_statistics.client_latency)>0:
         data = [(when, latency) for _, when, _, latency in list(global_statistics.client_latency)]
         avg_client_latency, recent_client_latency = calculate_time_weighted_average(data)
+    #client ping latency: from ping packets
+    avg_client_ping_latency, recent_client_ping_latency = 0.1, 0.1    #assume 100ms until we get some data
+    if len(global_statistics.client_ping_latency)>0:
+        avg_client_ping_latency, recent_client_ping_latency = calculate_time_weighted_average(list(global_statistics.client_ping_latency))
+    #server ping latency: from ping packets
+    avg_server_ping_latency, recent_server_ping_latency = 0.1, 0.1    #assume 100ms until we get some data
+    if len(global_statistics.server_ping_latency)>0:
+        avg_server_ping_latency, recent_server_ping_latency = calculate_time_weighted_average(list(global_statistics.server_ping_latency))
     #damage "in" latency: (the time it takes for damage requests to be processed only)
     avg_damage_in_latency, recent_damage_in_latency = 0, 0
     if len(statistics.damage_in_latency)>0:
@@ -168,13 +176,20 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         weight = logp(max(0, n_skipped_calcs-ignore_count))
         msg = "delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*max_latency))
         factors.append((msg, 0, weight))
-    #client latency: (we want to keep client latency as low as can be)
+
+    target_latency = 0.010
+    if global_statistics.min_client_latency is not None:
+        target_latency = max(target_latency, global_statistics.min_client_latency)
     if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
-        target_latency = 0.005
-        if global_statistics.min_client_latency:
-            target_latency = max(target_latency, global_statistics.min_client_latency)
+        #client latency: (we want to keep client latency as low as can be)
         msg = "client latency:"
         factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=4.0))
+    if len(global_statistics.client_ping_latency)>0:
+        msg = "client ping latency:"
+        factors.append(calculate_for_target(msg, target_latency, avg_client_ping_latency, recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
+    if len(global_statistics.server_ping_latency)>0:
+        msg = "server ping latency:"
+        factors.append(calculate_for_target(msg, target_latency, avg_server_ping_latency, recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
     #damage packet queue size: (includes packets from all windows)
     factors.append(queue_inspect("damage packet queue size:", global_statistics.damage_packet_qsizes, smoothing=sqrt))
     #damage pixels waiting in the packet queue: (extract data for our window id only)
