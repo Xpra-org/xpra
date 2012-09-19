@@ -30,6 +30,7 @@ except:
 import time
 import ctypes
 from threading import Lock
+from math import sqrt
 
 #it would be nice to be able to get rid of this import here:
 from wimpiggy.lowlevel import get_rectangle_from_region   #@UnresolvedImport
@@ -133,6 +134,16 @@ class WindowPerformanceStatistics(object):
         add_list_stats(info, "damage_in_latency",  latencies)
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
         add_list_stats(info, "damage_out_latency",  latencies)
+
+    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.005):
+        """ geometric mean of the minimum (+20%) and average latency
+            but not higher than 60% above the minimum,
+            and not lower than abs_min.
+            """
+        min_latency = (min_client_latency or abs_min)*1.2
+        avg_latency = avg_client_latency or abs_min
+        max_latency = 1.6*min_latency
+        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency)))
 
     def get_backlog(self, latency):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
@@ -344,24 +355,27 @@ class WindowSource(object):
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._sequence += 1
         self._damage_delayed = (now, window, region, coding, self._sequence, options)
-        def send_delayed():
-            """ move the delayed rectangles to the expired list """
-            if not self._damage_delayed:
-                log("window %s already removed from delayed list?", self.wid)
-                return False
-            damage_time = self._damage_delayed[0]
-            packets_backlog, pixels_backlog, _ = self.statistics.get_backlog(self.global_statistics.avg_client_latency)
-            if packets_backlog>0:
-                log("send_delayed for wid %s, delaying again because of backlog: %s packets / %s pixels, batch delay is %s, elapsed time is %s ms", self.wid, packets_backlog, pixels_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
-                return True
-            log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
-            delayed = self._damage_delayed
-            self._damage_delayed = None
-            self.send_delayed_regions(*delayed)
-            return False
         log("damage(%s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
-        gobject.timeout_add(int(self.batch_config.delay), send_delayed)
+        gobject.timeout_add(int(self.batch_config.delay), self.may_send_delayed)
+
+    def may_send_delayed(self):
+        """ move the delayed rectangles to the expired list """
+        if not self._damage_delayed:
+            log("window %s already removed from delayed list?", self.wid)
+            return False
+        damage_time = self._damage_delayed[0]
+        target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
+        packets_backlog, pixels_backlog, _ = self.statistics.get_backlog(target_latency)
+        if packets_backlog>0:
+            log("send_delayed for wid %s, delaying again because of backlog: %s packets / %s pixels, batch delay is %s, elapsed time is %s ms", self.wid, packets_backlog, pixels_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+            #this method will get fired again damage_packet_acked
+            return False
+        log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+        delayed = self._damage_delayed
+        self._damage_delayed = None
+        self.send_delayed_regions(*delayed)
+        return False
 
     def send_delayed_regions(self, damage_time, window, damage, coding, sequence, options):
         """ Called by 'send_delayed' when we expire a delayed region,
@@ -521,6 +535,8 @@ class WindowSource(object):
             start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
             self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
+        if self._damage_delayed is not None:
+            gobject.idle_add(self.may_send_delayed)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         """

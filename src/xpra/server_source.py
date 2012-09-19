@@ -65,7 +65,7 @@ class GlobalPerformanceStatistics(object):
                                                         #from the moment the damage packet got sent until we got the ack packet
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
-        self.avg_client_latency = 0.1
+        self.avg_client_latency = None
         self.client_ping_latency = maxdeque(NRECS)
         self.server_ping_latency = maxdeque(NRECS)
         self.client_load = None
