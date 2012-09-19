@@ -61,7 +61,8 @@ class GlobalPerformanceStatistics(object):
                                                         #(wid, event time, no of pixels)
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
                                                         #(wid, event_time, no of pixels, decoding_time*1000*1000)
-        self.min_client_latency = None                  #The lowest client latency ever recorded
+        self.min_client_latency = None                  #The lowest client latency ever recorded: the time it took
+                                                        #from the moment the damage packet got sent until we got the ack packet
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
         self.avg_client_latency = 0.1
@@ -83,7 +84,7 @@ class GlobalPerformanceStatistics(object):
 
     def add_stats(self, info, suffix=""):
         info["output_mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
-        if self.min_client_latency:
+        if self.min_client_latency is not None:
             info["client_latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
         qsizes = [x for _,x in list(self.damage_data_qsizes)]
         add_list_stats(info, "damage_data_queue_size%s" % suffix,  qsizes)

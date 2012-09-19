@@ -171,9 +171,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         msg = "delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*max_latency))
         factors.append((msg, 0, weight))
 
-    target_latency = 0.010
-    if global_statistics.min_client_latency is not None:
-        target_latency = max(target_latency, global_statistics.min_client_latency)
+    target_latency = global_statistics.min_client_latency or 0.010
     if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
         #client latency: (we want to keep client latency as low as can be)
         msg = "client latency:"
@@ -238,9 +236,6 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     target = max(packets_bl, batch_q)
     latency_q = 0.0
     if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
-        target_latency = 0.005
-        if global_statistics.min_client_latency:
-            target_latency = max(target_latency, global_statistics.min_client_latency)
         latency_q = 4.0 * target_latency / recent_client_latency
         target = min(target, latency_q)
     target_quality = 100.0*(min(1.0, max(0.0, target)))
