@@ -381,11 +381,11 @@ class ClientExtrasBase(object):
             if self.client.server_load:
                 self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
             if len(self.client.server_latency)>0:
-                avg = int(10*sum(self.client.server_latency)/len(self.client.server_latency))/10
-                self.server_latency_label.set_text("%sms  (%sms)" % (self.client.server_latency[-1], avg))
+                avg = int(sum(self.client.server_latency)/len(self.client.server_latency))
+                self.server_latency_label.set_text("%sms  (%sms)" % (int(self.client.server_latency[-1]), int(avg)))
             if len(self.client.client_latency)>0:
-                avg = int(10*sum(self.client.client_latency)/len(self.client.client_latency))/10
-                self.client_latency_label.set_text("%sms  (%sms)" % (self.client.client_latency[-1], avg))
+                avg = int(1000*sum(self.client.client_latency)/len(self.client.client_latency))
+                self.client_latency_label.set_text("%sms  (%sms)" % (int(1000*self.client.client_latency[-1]), int(avg)))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             else:
