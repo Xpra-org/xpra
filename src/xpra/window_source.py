@@ -300,6 +300,11 @@ class WindowSource(object):
             log.error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
         return pixmap
 
+    def get_packets_backlog(self):
+        target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
+        packets_backlog, _, _ = self.statistics.get_backlog(target_latency)
+        return packets_backlog
+
     def damage(self, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
             * send it now (if not congested or batch.enabled is off)
@@ -348,7 +353,9 @@ class WindowSource(object):
             return
 
         if not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
-            return damage_now("delay (%s) is at the minimum threshold (%s)" % (self.batch_config.delay, self.batch_config.min_delay))
+            packets_backlog = self.get_packets_backlog()
+            if packets_backlog==0:
+                return damage_now("delay (%s) is at the minimum threshold (%s)" % (self.batch_config.delay, self.batch_config.min_delay))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
@@ -360,15 +367,15 @@ class WindowSource(object):
         gobject.timeout_add(int(self.batch_config.delay), self.may_send_delayed)
 
     def may_send_delayed(self):
-        """ move the delayed rectangles to the expired list """
+        """ send the delayed region for processing if there is no client backlog """
         if not self._damage_delayed:
             log("window %s already removed from delayed list?", self.wid)
             return False
         damage_time = self._damage_delayed[0]
-        target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
-        packets_backlog, pixels_backlog, _ = self.statistics.get_backlog(target_latency)
+        packets_backlog = self.get_packets_backlog()
         if packets_backlog>0:
-            log("send_delayed for wid %s, delaying again because of backlog: %s packets / %s pixels, batch delay is %s, elapsed time is %s ms", self.wid, packets_backlog, pixels_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %s ms",
+                    self.wid, packets_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
             #this method will get fired again damage_packet_acked
             return False
         log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
