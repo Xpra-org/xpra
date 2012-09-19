@@ -103,7 +103,6 @@ class WindowPerformanceStatistics(object):
         self.damage_ack_pending = {}                    #records when damage packets are sent
                                                         #so we can calculate the "client_latency" when the client sends
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.last_client_delta = None                   #records how far behind the client was last time we checked
 
     def add_stats(self, info, suffix=""):
         #encoding stats:
