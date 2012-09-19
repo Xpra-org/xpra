@@ -169,7 +169,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
         #client latency: (we want to keep client latency as low as can be)
         msg = "client latency:"
-        factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=4.0))
+        factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt))
     if len(global_statistics.client_ping_latency)>0:
         msg = "client ping latency:"
         factors.append(calculate_for_target(msg, target_latency, avg_client_ping_latency, recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
@@ -261,16 +261,20 @@ def update_batch_delay(batch, factors):
     avg = 0
     tv, tw = 0.0, 0.0
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
-    if len(batch.last_delays)>0:
-        #get the weighted average
-        #older values matter less, we decay them according to how much we batch already
-        #(older values matter more when we batch a lot)
-        for when, delay in batch.last_delays:
-            #newer matter more:
-            w = 1.0/(1.0+((now-when)/decay)**2)
-            d = max(batch.min_delay, min(batch.max_delay, delay))
-            tv += d*w
-            tw += w
+    min_delay = batch.min_delay
+    max_delay = batch.max_delay
+    for delays in (batch.last_delays, batch.last_actual_delays):
+        if len(delays)>0:
+            #get the weighted average
+            #older values matter less, we decay them according to how much we batch already
+            #(older values matter more when we batch a lot)
+            for when, delay in delays:
+                #newer matter more:
+                w = 1.0/(1.0+((now-when)/decay)**2)
+                d = max(min_delay, min(max_delay, delay))
+                tv += d*w
+                tw += w
+    if tw>0:
         avg = tv / tw
     hist_w = tw
 
@@ -279,16 +283,12 @@ def update_batch_delay(batch, factors):
     if all_factors_weight==0:
         log("update_batch_delay: no weights yet!")
         return
-    max_factor = max([f for _,f,_ in valid_factors])
-    #mitigate low factors if we have some really high ones:
-    factor_min_limit = min(0.5, max_factor/10.0)
     for _, factor, weight in valid_factors:
-        actual_factor = max(factor_min_limit, factor)
-        target_delay = max(batch.min_delay, min(batch.max_delay, current_delay*actual_factor))
+        target_delay = max(min_delay, min(max_delay, current_delay*factor))
         w = max(1, hist_w)*weight/all_factors_weight
         tw += w
         tv += target_delay*w
-    batch.delay = max(batch.min_delay, min(batch.max_delay, tv / tw))
+    batch.delay = max(min_delay, min(max_delay, tv / tw))
     batch.last_updated = now
     if DEBUG_DELAY:
         decimal_delays = [dec1(x) for _,x in batch.last_delays]

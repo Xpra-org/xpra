@@ -55,7 +55,7 @@ class DamageBatchConfig(object):
     MAX_EVENTS = min(50, NRECS)         #maximum number of damage events
     MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
     TIME_UNIT = 1                       #per second
-    MIN_DELAY = 5
+    MIN_DELAY = 5                       #lower than 5 milliseconds does not make sense, just don't batch
     START_DELAY = 100
     MAX_DELAY = 15000
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
@@ -70,14 +70,15 @@ class DamageBatchConfig(object):
         self.max_delay = self.MAX_DELAY
         self.delay = self.START_DELAY
         self.recalculate_delay = self.RECALCULATE_DELAY
-        self.last_delays = maxdeque(64)
+        self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
+        self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
         self.last_updated = 0
         self.wid = 0
 
     def clone(self):
         c = DamageBatchConfig()
         for x in ["enabled", "always", "max_events", "max_pixels", "time_unit",
-                  "min_delay", "max_delay", "delay", "last_delays"]:
+                  "min_delay", "max_delay", "delay", "last_delays", "last_actual_delays"]:
             setattr(c, x, getattr(self, x))
         return c
 
@@ -195,6 +196,8 @@ class WindowSource(object):
         self._video_encoder_speed = maxdeque(NRECS)     #keep track of the target encoding_speed: (event time, encoding speed)
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
+        self._damage_delayed_expired = False            #when this is True, the region should have expired
+                                                        #but it is now waiting for the backlog to clear
         self._sequence = 1                              #increase with every region we process or delay
         self._damage_cancelled = 0                      #stores the highest _sequence cancelled
         self._damage_packet_sequence = 1                #increase with every damage packet created
@@ -238,6 +241,7 @@ class WindowSource(object):
         self.video_encoder_cleanup()
         #if a region was delayed, we can just drop it now:
         self._damage_delayed = None
+        self._damage_delayed_expired = False
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
 
@@ -253,7 +257,7 @@ class WindowSource(object):
         info["encoding"+suffix] = self.encoding
         self.statistics.add_stats(info, suffix)
         #batch stats:
-        if len(self.batch_config.last_delays)>0:
+        if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in self.batch_config.last_delays]
             add_list_stats(info, "batch_delay"+suffix, batch_delays)
         if self._video_encoder is not None:
@@ -333,6 +337,7 @@ class WindowSource(object):
                 else:
                     self.process_damage_region(now, pixmap, x, y, w, h, actual_encoding, self._sequence, options)
                 self.batch_config.last_delays.append((now, 0))
+                self.batch_config.last_actual_delays.append((now, 0))
                 self.batch_config.last_updated = time.time()
         #record this damage event in the damage_last_events queue
         #note: we may actually end up sending more pixels than this value (ie: full screen update)
@@ -360,10 +365,15 @@ class WindowSource(object):
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._sequence += 1
+        self._damage_delayed_expired = False
         self._damage_delayed = (now, window, region, coding, self._sequence, options)
         log("damage(%s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
-        gobject.timeout_add(int(self.batch_config.delay), self.may_send_delayed)
+        gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
+
+    def expire_delayed_region(self):
+        self._damage_delayed_expired = True
+        self.may_send_delayed()
 
     def may_send_delayed(self):
         """ send the delayed region for processing if there is no client backlog """
@@ -377,7 +387,10 @@ class WindowSource(object):
                     self.wid, packets_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
             #this method will get fired again damage_packet_acked
             return False
-        log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+        log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, dec1(self.batch_config.delay), dec1(1000*(time.time()-damage_time)))
+        now = time.time()
+        actual_delay = 1000*(time.time()-damage_time)
+        self.batch_config.last_actual_delays.append((now, actual_delay))
         delayed = self._damage_delayed
         self._damage_delayed = None
         self.send_delayed_regions(*delayed)
@@ -541,7 +554,7 @@ class WindowSource(object):
             start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
             self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
-        if self._damage_delayed is not None:
+        if self._damage_delayed is not None and self._damage_delayed_expired:
             gobject.idle_add(self.may_send_delayed)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
