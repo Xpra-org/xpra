@@ -784,19 +784,6 @@ class XpraClient(XpraClientBase):
             window.resize(w, h)
 
     def _process_draw(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        if not window:
-            #window is gone
-            width, height, coding, data, packet_sequence = packet[4:9]
-            if coding=="mmap":
-                #we need to ack the data to free the space!
-                assert self.mmap_enabled
-                data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
-                offset, length = data[-1]
-                data_start.value = offset+length
-            self.send_damage_sequence(wid, packet_sequence, width, height, -1)
-            return
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time):
@@ -816,6 +803,18 @@ class XpraClient(XpraClientBase):
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
         window = self._id_to_window.get(wid)
         if not window:
+            #window is gone
+            if coding=="mmap":
+                assert self.mmap_enabled
+                def free_mmap_area():
+                    #we need to ack the data to free the space!
+                    data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
+                    offset, length = data[-1]
+                    data_start.value = offset+length
+                #clear the mmap area via idle_add so any pending draw requests
+                #will get a chance to run first
+                gobject.idle_add(free_mmap_area)
+            self.send_damage_sequence(wid, packet_sequence, width, height, -1)
             return
         options = {}
         if len(packet)>10:
