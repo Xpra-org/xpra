@@ -20,6 +20,7 @@ from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.deque import maxdeque
 from xpra.keys import get_gtk_keymap
+from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -281,14 +282,26 @@ class ClientExtrasBase(object):
         table = gtk.Table(1, columns=2)
         table.set_col_spacings(3)
         table.set_row_spacings(3)
+        #hbox: data table on left, graph box on right:
         hbox = gtk.HBox(False, 10)
-        hbox.add(table)
-        graph = gtk.Image()
-        graph.set_size_request(0, 0)
-        net_in_data = maxdeque(22)
-        net_out_data = maxdeque(22)
-        hbox.add(graph)
         vbox.add(hbox)
+        hbox.add(table)
+        #graph box:
+        graph_box = gtk.VBox(False, 10)
+        hbox.add(graph_box)
+        #bandwidth graph:
+        bandwidth_graph = gtk.Image()
+        bandwidth_graph.set_size_request(0, 0)
+        N_SAMPLES = 20
+        pixel_in_data = maxdeque(N_SAMPLES+3)
+        net_in_data = maxdeque(N_SAMPLES+3)
+        net_out_data = maxdeque(N_SAMPLES+2)
+        graph_box.add(bandwidth_graph)
+        #latency graph:
+        latency_graph = gtk.Image()
+        latency_graph.set_size_request(0, 0)
+        graph_box.add(latency_graph)
+
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)
@@ -413,14 +426,7 @@ class ClientExtrasBase(object):
                 def pixelstr(v):
                     if v<0:
                         return  "n/a"
-                    if v>1000*1000*1000:
-                        return "%sG" % (int(v/1000/1000/100)/10.0)
-                    elif v>1000*1000:
-                        return "%sM" % (int(v/1000/100)/10.0)
-                    elif v>1000:
-                        return "%sK" % (int(v/100)/10.0)
-                    else:
-                        return str(v)
+                    return std_unit(v)
                 def fpsstr(v):
                     if v<0:
                         return  "n/a"
@@ -433,7 +439,7 @@ class ClientExtrasBase(object):
                     avgs = 0
                     mint = now-seconds      #ignore records older than N seconds
                     startt = now            #when we actually start counting from
-                    for (t, count) in self.client.pixel_counter:
+                    for t, count in self.client.pixel_counter:
                         if t>=mint:
                             total += count
                             total_n += 1
@@ -467,43 +473,33 @@ class ClientExtrasBase(object):
             #record bytecount every second:
             net_in_data.append(self.connection.input_bytecount)
             net_out_data.append(self.connection.output_bytecount)
+            #count pixels in the last second:
+            since = time.time()-1
+            decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
+            pixel_in_data.append(sum(decoded))
             _, h = hbox.size_request()
             if h>0:
-                def bytecount_to_scaled_bandwidth(net_data):
-                    #first convert absolute values into bytes/s:
-                    last_value = None
-                    data = []
-                    for x in net_data:
-                        if last_value is not None:
-                            bytecount = x-last_value
-                            data.append(bytecount)
-                        last_value = x
-                    if len(data)<=1:
-                        return  0, None
-                    #FIXME: skip first record:
-                    data = data[1:]
-                    if len(data)<20:
-                        for _ in range(20-len(data)):
-                            data.insert(0, None)
-                    max_v = max(data)
-                    scale = 1
-                    while scale*100<max_v:
-                        scale *= 10
-                    sdata = []
-                    for x in data:
-                        if x is None:
-                            sdata.append(None)
-                        else:
-                            sdata.append(x/scale)
-                    return scale, sdata
-
-                in_scale, in_data = bytecount_to_scaled_bandwidth(net_in_data)
-                out_scale, out_data = bytecount_to_scaled_bandwidth(net_out_data)
+                h = max(100, h-20)
+                #bandwidth graph:
+                #FIXME: we skip the first record because the timing isn't right so the values aren't either..:
+                in_scale, in_data = values_to_diff_scaled_values(list(net_in_data)[1:N_SAMPLES+1])
+                out_scale, out_data = values_to_diff_scaled_values(list(net_out_data)[1:N_SAMPLES+1])
+                pixel_scale, in_pixels = values_to_scaled_values(list(pixel_in_data)[:N_SAMPLES])
                 if in_data and out_data:
-                    labels = ["recv x%sB/s" % in_scale, "sent x%sB/s" % out_scale]
-                    pixmap = make_graph_pixmap([in_data, out_data], labels=labels, width=320, height=h, title="Bandwidth")
-                    graph.set_size_request(*pixmap.get_size())
-                    graph.set_from_pixmap(pixmap, None)
+                    labels = ["recv x%sB/s" % std_unit(in_scale), "sent x%sB/s" % std_unit(out_scale), "x%s pixels/s" % std_unit(pixel_scale)]
+                    pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=320, height=h/2, title="Bandwidth")
+                    bandwidth_graph.set_size_request(*pixmap.get_size())
+                    bandwidth_graph.set_from_pixmap(pixmap, None)
+                #latency graph:
+                server_latency = list(self.client.server_latency)[-20:]
+                client_latency = [1000*x for x in self.client.client_latency][-20:]
+                for l in (server_latency, client_latency):
+                    if len(l)<20:
+                        for _ in range(20-len(l)):
+                            l.insert(0, None)
+                pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"], width=320, height=h/2, title="Latency (ms)")
+                latency_graph.set_size_request(*pixmap.get_size())
+                latency_graph.set_from_pixmap(pixmap, None)
             return True
 
         window.set_border_width(15)

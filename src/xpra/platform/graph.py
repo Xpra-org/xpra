@@ -16,7 +16,7 @@ def round_up_unit(i):
             return v*x
     return v * 10
 
-DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0, 1, 1), (1, 0, 0)]
+DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6)]
 
 def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show_y_scale=True, show_x_scale=False, colours=DEFAULT_COLOURS):
     pixmap = gtk.gdk.Pixmap(None, width, height, 24)
@@ -132,7 +132,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show
             label = labels[i]
             context.select_font_face('Serif')
             context.set_font_size(12)
-            context.move_to(2*offset+(width-offset*3)*i/len(labels), height-4)
+            context.move_to(offset/2+(width-offset)*i/len(labels), height-4)
             context.show_text(label)
             context.stroke()
         i += 1

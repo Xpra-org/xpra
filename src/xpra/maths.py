@@ -23,6 +23,21 @@ def dec3(x):
     #for pretty debug output of numbers with three decimals
     return int(1000.0*x)/1000.0
 
+def to_std_unit(v):
+    if v>1000*1000*1000:
+        return "G", v/1000.0/1000.0/1000.0
+    elif v>1000*1000:
+        return "M", v/1000.0/1000.0
+    elif v>1000:
+        return "K", v/1000.0
+    else:
+        return "", v
+
+def std_unit(v):
+    unit, value = to_std_unit(v)
+    return "%s%s" % (int(value), unit)
+
+
 def find_invpow(x, n):
     """Finds the integer component of the n'th root of x,
     an integer such that y ** n <= x < (y + 1) ** n.
@@ -40,6 +55,42 @@ def find_invpow(x, n):
         else:
             return mid
     return mid + 1
+
+def absolute_to_diff_values(in_data):
+    """ Given a list of values, return a new list
+        containing the incremental diff between each value
+        ie: [0,2,2,10] -> [2,0,8]
+    """
+    last_value = None
+    data = []
+    for x in in_data:
+        if last_value is not None:
+            data.append(x-last_value)
+        last_value = x
+    return data
+
+def values_to_scaled_values(data):
+    if data is None or len(data)==0:
+        return  0, data
+    if len(data)<20:
+        for _ in range(20-len(data)):
+            data.insert(0, None)
+    max_v = max(data)
+    scale = 1
+    while scale*100<max_v:
+        scale *= 10
+    if scale==1:
+        return scale, data
+    sdata = []
+    for x in data:
+        if x is None:
+            sdata.append(None)
+        else:
+            sdata.append(x/scale)
+    return scale, sdata
+
+def values_to_diff_scaled_values(data):
+    return values_to_scaled_values(absolute_to_diff_values(data))
 
 def add_weighted_list_stats(info, basename, weighted_values, show_percentile=False):
     values = [x for x, _ in weighted_values]
