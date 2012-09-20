@@ -86,7 +86,12 @@ else:
         gtkwindow.set_geometry_hints(None, **hints)
 
     def queue_draw(gtkwindow, x, y, width, height):
-        gtkwindow.get_window().invalidate_rect(gdk.Rectangle(x, y, width, height), False)
+        window = gtkwindow.get_window()
+        if window:
+            window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
+        else:
+            log.warn("ignoring draw received for a window which is not realized yet!")
+
     WINDOW_POPUP = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
     WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK
