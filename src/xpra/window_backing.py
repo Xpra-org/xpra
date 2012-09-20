@@ -25,13 +25,22 @@ Generic superclass for Backing code,
 see CairoBacking and PixmapBacking for implementations
 """
 class Backing(object):
-    def __init__(self, wid, mmap_enabled, mmap):
+    def __init__(self, wid, old_backing, mmap_enabled, mmap):
         self.wid = wid
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = None
-        self._video_decoder = None
-        self._video_decoder_lock = Lock()
+        #keep the same video decoder for now
+        #it will be updated once we start receiving frames
+        #with the new dimensions
+        if old_backing:
+            self._video_decoder = old_backing._video_decoder
+            self._video_decoder_lock = old_backing._video_decoder_lock
+            #make sure we don't close it via the old one:
+            old_backing._video_decoder = None
+        else:
+            self._video_decoder = None
+            self._video_decoder_lock = Lock()
 
     def close(self):
         if self._video_decoder:
@@ -129,7 +138,7 @@ This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(Backing):
     def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        Backing.__init__(self, wid, mmap_enabled, mmap)
+        Backing.__init__(self, wid, old_backing, mmap_enabled, mmap)
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
         if old_backing is not None and old_backing._backing is not None:
@@ -265,7 +274,7 @@ Works much better than gtk3!
 class PixmapBacking(Backing):
 
     def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        Backing.__init__(self, wid, mmap_enabled, mmap)
+        Backing.__init__(self, wid, old_backing, mmap_enabled, mmap)
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
         if old_backing is not None and old_backing._backing is not None:
@@ -363,10 +372,15 @@ class PixmapBacking(Backing):
 
 
 def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
-    if is_gtk3() or PREFER_CAIRO:
-        b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
-    else:
-        b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
-    if old_backing:
-        old_backing.close()
+    try:
+        if old_backing:
+            old_backing._video_decoder_lock.acquire()
+        if is_gtk3() or PREFER_CAIRO:
+            b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+        else:
+            b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+    finally:
+        if old_backing:
+            old_backing._video_decoder_lock.release()        
+            old_backing.close()
     return b
