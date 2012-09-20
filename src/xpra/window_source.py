@@ -325,7 +325,7 @@ class WindowSource(object):
         coding = self.encoding
         def damage_now(reason):
             self._sequence += 1
-            logrec = "damage(%s, %s, %s, %s) %s, wid=%s, sending now with sequence %s", x, y, w, h, reason, self.wid, self._sequence
+            logrec = "damage(%s, %s, %s, %s, %s) %s, wid=%s, sending now with sequence %s", x, y, w, h, options, reason, self.wid, self._sequence
             log(*logrec)
             pixmap = self.get_window_pixmap(window, self._sequence)
             if pixmap:
@@ -353,7 +353,7 @@ class WindowSource(object):
         if self._damage_delayed:
             region = self._damage_delayed[2]
             region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-            log("damage(%s, %s, %s, %s) wid=%s, using existing delayed region: %s", x, y, w, h, self.wid, self._damage_delayed)
+            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed region: %s", x, y, w, h, options, self.wid, self._damage_delayed)
             return
 
         if not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
@@ -367,7 +367,7 @@ class WindowSource(object):
         self._sequence += 1
         self._damage_delayed_expired = False
         self._damage_delayed = (now, window, region, coding, self._sequence, options)
-        log("damage(%s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, self.wid, self._sequence, dec1(self.batch_config.delay))
+        log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
         gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
 
