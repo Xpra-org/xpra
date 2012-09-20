@@ -172,7 +172,7 @@ class XpraClient(XpraClientBase):
 
         self._focused = None
         def compute_receive_bandwidth(delay):
-            bytecount = self._protocol.input_bytecount
+            bytecount = conn.input_bytecount
             bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay
             self.last_input_bytecount = bytecount;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")

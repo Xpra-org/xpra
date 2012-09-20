@@ -83,10 +83,8 @@ class Protocol(object):
         self.source = None
         self._source_has_more = False
         #counters:
-        self.input_bytecount = 0
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
-        self.output_bytecount = 0
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
@@ -112,10 +110,10 @@ class Protocol(object):
         return  [self._write_thread, self._read_thread, self._read_parser_thread]
 
     def add_stats(self, info,  suffix=""):
-        info["input_bytecount%s" % suffix] = self.input_bytecount
+        info["input_bytecount%s" % suffix] = self._conn.input_bytecount
         info["input_packetcount%s" % suffix] = self.input_packetcount
         info["input_raw_packetcount%s" % suffix] = self.input_raw_packetcount
-        info["output_bytecount%s" % suffix] = self.output_bytecount
+        info["output_bytecount%s" % suffix] = self._conn.output_bytecount
         info["output_packetcount%s" % suffix] = self.output_packetcount
         info["output_raw_packetcount%s" % suffix] = self.output_raw_packetcount
 
@@ -258,7 +256,7 @@ class Protocol(object):
 
     def _write_thread_loop(self):
         try:
-            while True:
+            while not self._closed:
                 item = self._write_queue.get()
                 # Used to signal that we should exit:
                 if item is None:
@@ -266,16 +264,15 @@ class Protocol(object):
                     break
                 buf, start_cb, end_cb = item
                 try:
-                    if start_cb:
-                        start_cb(self.output_bytecount)
+                    if start_cb and not self._closed:
+                        start_cb(self._conn.output_bytecount)
                     while buf and not self._closed:
                         written = untilConcludes(self._conn.write, buf)
                         if written:
                             buf = buf[written:]
                             self.output_raw_packetcount += 1
-                            self.output_bytecount += written
-                    if end_cb:
-                        end_cb(self.output_bytecount)
+                    if end_cb and not self._closed:
+                        end_cb(self._conn.output_bytecount)
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
@@ -284,7 +281,7 @@ class Protocol(object):
                     if self._closed:
                         break
                     raise
-                if self._write_queue.empty():
+                if self._write_queue.empty() and not self._closed:
                     gobject.idle_add(self._maybe_queue_more_writes)
                 NOYIELD or time.sleep(0)
         finally:
@@ -308,7 +305,6 @@ class Protocol(object):
                     log("read thread: eof")
                     break
                 self.input_raw_packetcount += 1
-                self.input_bytecount += len(buf)
         finally:
             log("read thread: ended, closing socket")
             self.close()
