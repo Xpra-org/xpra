@@ -163,13 +163,14 @@ cdef class Decoder(xcoder):
 
 
 cdef class Encoder(xcoder):
-
+    cdef int frames
     cdef int supports_options
 
     def init_context(self, width, height, supports_options):    #@DuplicatedSignature
         self.init(width, height)
         self.supports_options = supports_options
         self.context = init_encoder(width, height, 70, int(supports_options))
+        self.frames = 0
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
@@ -177,7 +178,10 @@ cdef class Encoder(xcoder):
             self.context = NULL
 
     def get_client_options(self, options):
-        client_options = {"csc_pixel_format" : get_encoder_pixel_format(self.context)}
+        client_options = {
+                "csc_pixel_format" : get_encoder_pixel_format(self.context),
+                "frame" : self.frames
+                }
         if "quality" in options:
             #quality was overriden via options:
             client_options["quality"] = options["quality"]
@@ -208,6 +212,7 @@ cdef class Encoder(xcoder):
         if i!=0:
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
+        self.frames += 1
         return  i, coutsz, coutv
 
     def set_encoding_speed(self, pct):

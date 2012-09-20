@@ -133,10 +133,12 @@ cdef class Decoder(xcoder):
 
 
 cdef class Encoder(xcoder):
+    cdef int frames
 
     def init_context(self, width, height, supports_options):    #@DuplicatedSignature
         self.init(width, height)
         self.context = init_encoder(width, height)
+        self.frames = 0
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
@@ -144,8 +146,7 @@ cdef class Encoder(xcoder):
             self.context = NULL
 
     def get_client_options(self, options):
-        #we don't use any..
-        return  {}
+        return  {"frame" : self.frames}
 
     def compress_image(self, input, rowstride, options):
         cdef vpx_image_t *pic_in = NULL
@@ -168,6 +169,7 @@ cdef class Encoder(xcoder):
         if i!=0:
             return i, 0, ""
         coutv = (<char *>cout)[:coutsz]
+        self.frames += 1
         return  i, coutsz, coutv
 
     def set_encoding_speed(self, pct):
