@@ -240,7 +240,7 @@ class ClientExtrasBase(object):
             info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
             if BUILD_DATE:
                 info.append(BUILD_DATE)
-            if LOCAL_MODIFICATIONS==0:
+            if int(LOCAL_MODIFICATIONS)==0:
                 info.append("revision %s" % REVISION)
             else:
                 info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
