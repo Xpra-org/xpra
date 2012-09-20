@@ -1611,16 +1611,16 @@ class XpraServer(gobject.GObject):
 
     def _process_buffer_refresh(self, proto, packet):
         [wid, _, qual] = packet[1:4]
-        opts = {"quality" : qual,
-                "jpegquality" : qual}
         if wid==-1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
             wid_windows = {wid : self._id_to_window.get(wid)}
         else:
             return
+        opts = {"quality" : qual,
+                "jpegquality" : qual,
+                "batching" : False}
         log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
-        opts["batching"] = False
         self.refresh_windows(proto, wid_windows, opts)
 
     def refresh_windows(self, proto, wid_windows, opts=None):
