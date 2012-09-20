@@ -13,6 +13,7 @@ from optparse import OptionParser, OptionGroup
 import logging
 from subprocess import Popen, PIPE
 import signal
+import shlex
 
 import xpra
 from xpra.dotxpra import DotXpra
@@ -446,7 +447,7 @@ def parse_display_name(parser, opts, display_name):
             desc["host"] = parts[1]
             desc["display"] = None
             desc["display_as_args"] = []
-        desc["ssh"] = opts.ssh.split()
+        desc["ssh"] = shlex.split(opts.ssh)
         desc["full_ssh"] = desc["ssh"] + ["-T", desc["host"]]
         remote_xpra = opts.remote_xpra.split()
         if opts.sockdir:
