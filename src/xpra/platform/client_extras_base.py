@@ -482,8 +482,8 @@ class ClientExtrasBase(object):
                 h = max(100, h-20)
                 #bandwidth graph:
                 #FIXME: we skip the first record because the timing isn't right so the values aren't either..:
-                in_scale, in_data = values_to_diff_scaled_values(list(net_in_data)[1:N_SAMPLES+1])
-                out_scale, out_data = values_to_diff_scaled_values(list(net_out_data)[1:N_SAMPLES+1])
+                in_scale, in_data = values_to_diff_scaled_values(list(net_in_data)[1:N_SAMPLES+2])
+                out_scale, out_data = values_to_diff_scaled_values(list(net_out_data)[1:N_SAMPLES+2])
                 pixel_scale, in_pixels = values_to_scaled_values(list(pixel_in_data)[:N_SAMPLES])
                 if in_data and out_data:
                     def unit(scale):
