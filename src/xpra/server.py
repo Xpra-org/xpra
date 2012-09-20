@@ -1611,9 +1611,8 @@ class XpraServer(gobject.GObject):
 
     def _process_buffer_refresh(self, proto, packet):
         [wid, _, qual] = packet[1:4]
-        opts = {"quality" : qual}
-        if self.encoding=="jpeg":
-            opts["jpegquality"] = qual
+        opts = {"quality" : qual,
+                "jpegquality" : qual}
         if wid==-1:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
