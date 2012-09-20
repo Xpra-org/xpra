@@ -107,6 +107,7 @@ class Backing(object):
             err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
             if err!=0 or rgb_image is None or rgb_image.get_size()==0:
                 log.error("paint_with_video_decoder: ouch, decompression error %s", err)
+                self.fire_paint_callbacks(callbacks, False)
                 return  False
         finally:
             self._video_decoder_lock.release()
