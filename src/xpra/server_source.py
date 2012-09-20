@@ -440,7 +440,7 @@ class ServerSource(object):
             options = self.default_damage_options
         else:
             options = self.default_damage_options.copy()
-            for k,v in options:
+            for k,v in options.items():
                 options[k] = v
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
         ws = self.window_sources.get(wid)
