@@ -437,11 +437,11 @@ class ServerSource(object):
             (creating a new one if needed)
         """
         if options is None:
-            options = self.default_damage_options
+            damage_options = self.default_damage_options
         else:
-            options = self.default_damage_options.copy()
+            damage_options = self.default_damage_options.copy()
             for k,v in options.items():
-                options[k] = v
+                damage_options[k] = v
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
         ws = self.window_sources.get(wid)
         if ws is None:
@@ -451,9 +451,9 @@ class ServerSource(object):
                               wid, batch_config,
                               self.encoding, self.encodings,
                               self.encoding_client_options, self.supports_rgb24zlib,
-                              self.mmap, self.mmap_size, )
+                              self.mmap, self.mmap_size)
             self.window_sources[wid] = ws
-        ws.damage(window, x, y, w, h, options)
+        ws.damage(window, x, y, w, h, damage_options)
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):
         """
