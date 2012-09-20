@@ -486,7 +486,12 @@ class ClientExtrasBase(object):
                 out_scale, out_data = values_to_diff_scaled_values(list(net_out_data)[1:N_SAMPLES+1])
                 pixel_scale, in_pixels = values_to_scaled_values(list(pixel_in_data)[:N_SAMPLES])
                 if in_data and out_data:
-                    labels = ["recv x%sB/s" % std_unit(in_scale), "sent x%sB/s" % std_unit(out_scale), "x%s pixels/s" % std_unit(pixel_scale)]
+                    def unit(scale):
+                        if scale==1:
+                            return ""
+                        else:
+                            return "x%s" % std_unit(in_scale)
+                    labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale), "%s pixels/s" % unit(pixel_scale)]
                     pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=320, height=h/2, title="Bandwidth")
                     bandwidth_graph.set_size_request(*pixmap.get_size())
                     bandwidth_graph.set_from_pixmap(pixmap, None)
