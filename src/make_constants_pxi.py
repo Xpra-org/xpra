@@ -5,6 +5,12 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+"""
+This tool is called by ./setup.py automatically for you
+and you should not need to call it directly.
+It is used to generate the wimpiggy/lowlevel/constants.pxi file.
+"""
+
 import sys
 
 def main(progname, args):
