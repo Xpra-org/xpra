@@ -81,11 +81,12 @@ def set_checkeditems(submenu, is_match_func):
             if a!=v:
                 x.set_active(v)
 
-def set_tooltip_text(widget, text):
-    if hasattr(gtk, "pygtk_version") and gtk.pygtk_version<(2,12):
-        #not available!
-        return
-    widget.set_tooltip_text(text)
+if hasattr(gtk, "pygtk_version") and gtk.pygtk_version<(2,12):
+    def set_tooltip_text(widget, text):
+        pass
+else:
+    def set_tooltip_text(widget, text):
+        widget.set_tooltip_text(text)
 
 def CheckMenuItem(label):
     """ adds a get_label() method for older versions of gtk which do not have it
@@ -289,18 +290,58 @@ class ClientExtrasBase(object):
         #graph box:
         graph_box = gtk.VBox(False, 10)
         hbox.add(graph_box)
+        def save_graph(itype, image):
+            log.info("save_graph(%s,%s)", itype, image)
+            chooser = gtk.FileChooserDialog("Save %s Graph" % itype,
+                                        parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+            chooser.set_select_multiple(False)
+            chooser.set_default_response(gtk.RESPONSE_OK)
+            file_filter = gtk.FileFilter()
+            file_filter.set_name("PNG")
+            file_filter.add_pattern("*.png")
+            chooser.add_filter(file_filter)
+            response = chooser.run()
+            filenames = chooser.get_filenames()
+            chooser.hide()
+            chooser.destroy()
+            if response == gtk.RESPONSE_OK:
+                if len(filenames)==1:
+                    filename = filenames[0]
+                    pixmap, _ = image.get_pixmap()
+                    log("saving %s pixmap %s to %s", itype, pixmap, filename)
+                    w, h = pixmap.get_size()
+                    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                    pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
+                    pixbuf.save(filename, "png")
+            elif response == gtk.RESPONSE_CANCEL:
+                log("cancelled")
+            else:
+                log.error("unknown chooser response: %d" % response)
+        def add_graph_button(tooltip, click_cb):
+            button = gtk.EventBox()
+            def set_cursor(widget):
+                button.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.BASED_ARROW_DOWN))
+            button.connect("realize", set_cursor)
+            graph = gtk.Image()
+            graph.set_size_request(0, 0)
+            button.connect("button_press_event", click_cb)
+            button.add(graph)
+            set_tooltip_text(graph, tooltip)
+            graph_box.add(button)
+            return graph
         #bandwidth graph:
-        bandwidth_graph = gtk.Image()
-        bandwidth_graph.set_size_request(0, 0)
+        def save_bandwidth(*args):
+            save_graph("bandwidth", bandwidth_graph)
+        bandwidth_graph = add_graph_button("The time it takes to send an echo packet and get the reply", save_bandwidth)
         N_SAMPLES = 20
         pixel_in_data = maxdeque(N_SAMPLES+3)
         net_in_data = maxdeque(N_SAMPLES+3)
         net_out_data = maxdeque(N_SAMPLES+2)
-        graph_box.add(bandwidth_graph)
         #latency graph:
-        latency_graph = gtk.Image()
-        latency_graph.set_size_request(0, 0)
-        graph_box.add(latency_graph)
+        def save_latency(*args):
+            save_graph("latency", latency_graph)
+        latency_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", save_latency)
 
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
