@@ -9,7 +9,8 @@ RUN=$WM_CMD
 #RUN="xterm -display $DISPLAY -e 'gdb --args python $WM_CMD --display=$USE_DISPLAY'"
 #RUN="xtrace -n | tee xtrace.out & (sleep 1; python $WM_CMD --display=:9)"
 
-. ./do-build
+./setup.py install --home=install
+
 # The library path may be named lib, lib64, etc.:
 LIBPATH=$(echo $PWD/install/lib*/python)
 # NB Xephyr has a segfault bug in its reset logic -- shouldn't come up

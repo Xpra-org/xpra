@@ -1,8 +1,8 @@
-To install globally (preferred), simply run this script as root:
-./install.sh
+To install globally:
+./setup.py install
 
 To install locally, just run:
-./do-build
+./setup.py install --home=install
 The resulting installation can be found in
 ./install
 You will need to adjust your PYTHONPATH to use it.

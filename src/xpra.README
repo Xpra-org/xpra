@@ -114,7 +114,7 @@ or whatever, please send it in.)
 Build it:
   tar xvzf parti-all-<whatever>.tar.gz
   cd parti-all-<whatever>
-  ./do-build
+  ./setup.py install --home=install
   export PYTHONPATH=$PWD/install/lib/python:$PYTHONPATH
 Note 1: If running and displaying apps on two different machines, then
   you'll need to do this on both of them, obviously.

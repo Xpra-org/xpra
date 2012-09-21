@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. ./do-build
+./setup.py install --home=install
 
 #gdb --args /usr/bin/python
 #/usr/bin/nosetests -w install/lib/python/parti "$@"

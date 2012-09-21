@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./do-build
+./setup.py install --home=install
 
 #RUNNER="valgrind python"
 #RUNNER="gdb --args python"

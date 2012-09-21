@@ -53,8 +53,10 @@ class ClientExtras(ClientExtrasBase):
         if sys.executable.startswith("/usr/local"):
             options.reverse()
         try:
-            # test for a local install (from do-build):
-            options.insert(0, os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra"))
+            # test for a local installation path (run from source tree):
+            local_share_path = os.path.join(os.path.dirname(sys.argv[0]), "..", "share", "xpra")
+            if os.path.exists(local_share_path):
+                options.insert(0, local_share_path)
         except:
             pass
         for x in options:
