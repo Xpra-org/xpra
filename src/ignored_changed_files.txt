@@ -1,2 +1,6 @@
-xpra/build_info.py
+# when building, we record how many source files were modified,
+# this file can contain filenames with wildcards of the files
+# we want to exclude from this count.
+# This is used by
+
 tests/*
