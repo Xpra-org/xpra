@@ -1619,7 +1619,7 @@ class XpraServer(gobject.GObject):
             return
         opts = {"quality" : qual,
                 "jpegquality" : qual,
-                "batching" : False}
+                "override_options" : True}
         log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
         self.refresh_windows(proto, wid_windows, opts)
 

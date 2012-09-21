@@ -196,7 +196,6 @@ class ServerSource(object):
     def parse_hello(self, capabilities):
         #batch options:
         self.default_batch_config = DamageBatchConfig()
-        self.default_batch_config.enabled = bool(capabilities.get("batch.enabled", DamageBatchConfig.ENABLED))
         self.default_batch_config.always = bool(capabilities.get("batch.always", False))
         self.default_batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
         self.default_batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))

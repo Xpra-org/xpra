@@ -50,7 +50,6 @@ class DamageBatchConfig(object):
     """
     Encapsulate all the damage batching configuration into one object.
     """
-    ENABLED = True
     ALWAYS = False
     MAX_EVENTS = min(50, NRECS)         #maximum number of damage events
     MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
@@ -61,7 +60,6 @@ class DamageBatchConfig(object):
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
                                         #(this theoretical limit is never achieved since calculations take time + scheduling also does)
     def __init__(self):
-        self.enabled = self.ENABLED
         self.always = self.ALWAYS
         self.max_events = self.MAX_EVENTS
         self.max_pixels = self.MAX_PIXELS
@@ -77,7 +75,7 @@ class DamageBatchConfig(object):
 
     def clone(self):
         c = DamageBatchConfig()
-        for x in ["enabled", "always", "max_events", "max_pixels", "time_unit",
+        for x in ["always", "max_events", "max_pixels", "time_unit",
                   "min_delay", "max_delay", "delay", "last_delays", "last_actual_delays"]:
             setattr(c, x, getattr(self, x))
         return c
@@ -310,23 +308,40 @@ class WindowSource(object):
 
     def damage(self, window, x, y, w, h, options=None):
         """ decide what to do with the damage area:
-            * send it now (if not congested or batch.enabled is off)
+            * send it now (if not congested)
             * add it to an existing delayed region
             * create a new delayed region if we find the client needs it
             Also takes care of updating the batch-delay in case of congestion.
             The options dict is currently used for carrying the
-            "jpegquality" value, it could also be used for other purposes.
-            Be aware though that when multiple
-            damage requests are delayed and bundled together,
-            the options may get quashed! So, specify a "batching"=False
-            option to ensure no batching will occur for this request.
+            "jpegquality" / "quality" values, and potentially others.
+            When damage requests are delayed and bundled together,
+            specify an option of "override_options"=True to
+            force the current options to override the old ones,
+            otherwise they are only merged.
         """
+        self.may_calculate_batch_delay(window)
+
+        if self._damage_delayed:
+            #use existing delayed region:
+            region = self._damage_delayed[2]
+            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+            #merge/override options
+            if options is not None:
+                override = options.get("override_options", False)
+                existing_options = self._damage_delayed[5]
+                for k,v in options.items():
+                    if override or k not in existing_options:
+                        existing_options[k] = v
+            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed region: %s", x, y, w, h, options, self.wid, self._damage_delayed)
+            return
+
         now = time.time()
         coding = self.encoding
-        def damage_now(reason):
+        packets_backlog = self.get_packets_backlog()
+        if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
+            #send without batching:
             self._sequence += 1
-            logrec = "damage(%s, %s, %s, %s, %s) %s, wid=%s, sending now with sequence %s", x, y, w, h, options, reason, self.wid, self._sequence
-            log(*logrec)
+            log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             pixmap = self.get_window_pixmap(window, self._sequence)
             if pixmap:
                 ww,wh = window.get_dimensions()
@@ -338,35 +353,14 @@ class WindowSource(object):
                     self.process_damage_region(now, pixmap, x, y, w, h, actual_encoding, self._sequence, options)
                 self.batch_config.last_delays.append((now, 0))
                 self.batch_config.last_actual_delays.append((now, 0))
-                self.batch_config.last_updated = time.time()
-        #record this damage event in the damage_last_events queue
-        #note: we may actually end up sending more pixels than this value (ie: full screen update)
-        now = time.time()
-
-        if not self.batch_config.enabled:
-            return damage_now("batching disabled")
-        if options and options.get("batching", True) is False:
-            return damage_now("batching option is off")
-
-        self.may_calculate_batch_delay(window)
-
-        if self._damage_delayed:
-            region = self._damage_delayed[2]
-            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed region: %s", x, y, w, h, options, self.wid, self._damage_delayed)
             return
-
-        if not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
-            packets_backlog = self.get_packets_backlog()
-            if packets_backlog==0:
-                return damage_now("delay (%s) is at the minimum threshold (%s)" % (self.batch_config.delay, self.batch_config.min_delay))
 
         #create a new delayed region:
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._sequence += 1
         self._damage_delayed_expired = False
-        self._damage_delayed = (now, window, region, coding, self._sequence, options)
+        self._damage_delayed = (now, window, region, coding, self._sequence, options or {})
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
         gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
@@ -689,8 +683,7 @@ class WindowSource(object):
                 log.error("%s: ouch, compression error %s", coding, err)
                 return None, None
             client_options = self._video_encoder.get_client_options(options)
-            msg = "compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options
-            log(*msg)
+            log("compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
             return Compressed(coding, data), client_options
         finally:
             self._video_encoder_lock.release()
