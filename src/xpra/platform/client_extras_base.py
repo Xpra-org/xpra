@@ -313,12 +313,12 @@ class ClientExtrasBase(object):
         def label(text="", tooltip=None):
             l = gtk.Label(text)
             if tooltip:
-                l.set_tooltip_text(tooltip)
+                set_tooltip_text(l, tooltip)
             return l
         def new_row(row, row_label_text, value_label, tooltip_text=None):
             row_label = label(row_label_text, tooltip_text)
             if tooltip_text:
-                value_label.set_tooltip_text(tooltip_text)
+                set_tooltip_text(value_label, tooltip_text)
             return add_row(row, row_label, value_label)
 
         # now add some rows with info:
