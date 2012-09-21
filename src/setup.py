@@ -74,7 +74,6 @@ sys.argv = filtered_args
 packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
           "xpra", "xpra.scripts", "xpra.platform",
-          "xpra.xposix", "xpra.win32", "xpra.darwin",
           ]
 
 # Add build info to build_info.py file:
@@ -211,6 +210,7 @@ if sys.platform.startswith("win"):
     console = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
               ]
+    packages.append("xpra.win32")
     includes = ['cairo', 'pango', 'pangocairo', 'atk', 'glib', 'gobject', 'gio', 'gtk.keysyms',
                 "Crypto", "Crypto.Cipher",
                 "hashlib",
@@ -296,9 +296,14 @@ else:
         print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
         return kw
 
+    if sys.platform.startswith("darwin"):
+        packages.append("xpra.darwin")
+    else:
+        packages.append("xpra.xposix")
+
     scripts=["scripts/parti", "scripts/parti-repl",
-             "scripts/xpra", "scripts/xpra_launcher",
-             ]
+             "scripts/xpra", "scripts/xpra_launcher"]
+
     data_files=[
                 ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
                 ("share/parti", ["README", "parti.README"]),
@@ -467,6 +472,8 @@ if rencode_ENABLED:
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
+    #always include all platform code in this case:
+    packages += ["xpra.xposix", "xpra.win32", "xpra.darwin"]
     #ensure we remove the files we generate:
     CLEAN_FILES = ["xpra/wait_for_x_server.c",
                    "xpra/vpx/codec.c",
