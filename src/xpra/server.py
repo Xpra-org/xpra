@@ -1189,6 +1189,7 @@ class XpraServer(gobject.GObject):
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
         capabilities["client_window_properties"] = True
+        capabilities["auto_refresh_delay"] = client_capabilities.get("auto_refresh_delay", 0)/1000
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         server_source.hello(capabilities)

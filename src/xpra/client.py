@@ -562,6 +562,7 @@ class XpraClient(XpraClientBase):
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
         capabilities["share"] = self.client_supports_sharing
+        capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         return capabilities
 
     def send_ping(self):
@@ -662,6 +663,7 @@ class XpraClient(XpraClientBase):
         self.server_supports_clipboard = capabilities.get("clipboard", False)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
+        self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
         #the server will have a handle on the mmap file by now, safe to delete:
@@ -765,7 +767,11 @@ class XpraClient(XpraClientBase):
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
-        window = ClientWindowClass(self, wid, x, y, w, h, metadata, override_redirect, client_properties)
+        if self.server_auto_refresh_delay>0:
+            auto_refresh_delay = 0                          #server takes care of it
+        else:
+            auto_refresh_delay = self.auto_refresh_delay    #we do it
+        window = ClientWindowClass(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show_all()

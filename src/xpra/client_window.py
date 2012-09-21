@@ -153,7 +153,7 @@ else:
 
 
 class ClientWindow(gtk.Window):
-    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties):
+    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         if override_redirect:
             init_window(self, WINDOW_POPUP)
         else:
@@ -167,6 +167,7 @@ class ClientWindow(gtk.Window):
         self._metadata = {}
         self._override_redirect = override_redirect
         self._client_properties = client_properties
+        self._auto_refresh_delay = auto_refresh_delay
         self._refresh_timer = None
         self._refresh_min_pixels = -1
         self._refresh_ignore_sequence = -1
@@ -400,7 +401,7 @@ class ClientWindow(gtk.Window):
             #if we need to set a refresh timer, do it:
             is_hq = options.get("quality", 0)>=95
             is_lossy = coding in ("jpeg", "vpx", "x264")
-            if self._refresh_timer is None and self._client.auto_refresh_delay>0 and is_lossy and not is_hq:
+            if self._refresh_timer is None and self._auto_refresh_delay>0 and is_lossy and not is_hq:
                 #make sure our own refresh does not make us fire again
                 #FIXME: this should be per-window!
                 if self._refresh_ignore_sequence<packet_sequence:
@@ -408,7 +409,7 @@ class ClientWindow(gtk.Window):
                     #this is not the case with jpeg but since jpeg does not switch the encoding on the fly, we're ok
                     self._refresh_min_pixels = width*height
                     self._refresh_ignore_sequence = packet_sequence+1
-                    self._refresh_timer = gobject.timeout_add(int(1000 * self._client.auto_refresh_delay), self.refresh_window)
+                    self._refresh_timer = gobject.timeout_add(int(1000 * self._auto_refresh_delay), self.refresh_window)
         callbacks.append(after_draw_refresh)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 

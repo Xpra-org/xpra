@@ -64,8 +64,8 @@ class GLClientWindow(ClientWindow):
     MODE_RGB = 1
     MODE_YUV = 2
 
-    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties):
-        ClientWindow.__init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties)
+    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+        ClientWindow.__init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
         self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)

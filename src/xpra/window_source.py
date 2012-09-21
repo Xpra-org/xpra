@@ -166,7 +166,7 @@ class WindowSource(object):
     """
 
     def __init__(self, queue_damage, queue_packet, statistics,
-                    wid, batch_config,
+                    wid, batch_config, auto_refresh_delay,
                     encoding, encodings,
                     encoding_client_options, supports_rgb24zlib,
                     mmap, mmap_size):
@@ -180,6 +180,10 @@ class WindowSource(object):
         self.encoding_client_options = encoding_client_options #does the client support encoding options?
         self.supports_rgb24zlib = supports_rgb24zlib    #supports rgb24 compression outside network layer (unwrapped)
         self.batch_config = batch_config
+        #auto-refresh:
+        self.auto_refresh_delay = auto_refresh_delay
+        self.refresh_timer = None
+        
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -242,6 +246,7 @@ class WindowSource(object):
         self._damage_delayed_expired = False
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
+        self.cancel_refresh_timer()
 
     def is_cancelled(self, sequence):
         """ See cancel_damage(wid) """
@@ -328,7 +333,7 @@ class WindowSource(object):
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
-                existing_options = self._damage_delayed[5]
+                existing_options = self._damage_delayed[4]
                 for k,v in options.items():
                     if override or k not in existing_options:
                         existing_options[k] = v
@@ -336,36 +341,28 @@ class WindowSource(object):
             return
 
         now = time.time()
-        coding = self.encoding
         packets_backlog = self.get_packets_backlog()
         if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
             #send without batching:
-            self._sequence += 1
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            pixmap = self.get_window_pixmap(window, self._sequence)
-            if pixmap:
-                ww,wh = window.get_dimensions()
-                actual_encoding = self.get_best_encoding(w*h, ww, wh, coding)
-                if actual_encoding in ("x264", "vpx"):
-                    #always fullscreen
-                    self.process_damage_region(now, pixmap, 0, 0, ww, wh, actual_encoding, self._sequence, options)
-                else:
-                    self.process_damage_region(now, pixmap, x, y, w, h, actual_encoding, self._sequence, options)
-                self.batch_config.last_delays.append((now, 0))
-                self.batch_config.last_actual_delays.append((now, 0))
+            self.process_damage_region(now, window, x, y, w, h, self.encoding, options)
+            self.batch_config.last_delays.append((now, 0))
+            self.batch_config.last_actual_delays.append((now, 0))
             return
 
         #create a new delayed region:
         region = gtk.gdk.Region()
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
-        self._sequence += 1
         self._damage_delayed_expired = False
-        self._damage_delayed = (now, window, region, coding, self._sequence, options or {})
+        self._damage_delayed = now, window, region, self.encoding, options or {}
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
         gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
 
     def expire_delayed_region(self):
+        """ mark the region as expired so damage_packet_acked can send it later,
+            and try to send it now.
+        """
         self._damage_delayed_expired = True
         self.may_send_delayed()
 
@@ -390,23 +387,21 @@ class WindowSource(object):
         self.send_delayed_regions(*delayed)
         return False
 
-    def send_delayed_regions(self, damage_time, window, damage, coding, sequence, options):
+    def send_delayed_regions(self, damage_time, window, damage, coding, options):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
             just send one full screen update instead.
         """
-        log("send_delayed_regions: processing sequence=%s", sequence)
-        if self.is_cancelled(sequence):
-            log("send_delayed_regions: dropping request with sequence=%s", sequence)
-            return
         regions = []
         ww,wh = window.get_dimensions()
         def send_full_screen_update(actual_encoding):
             log("send_delayed_regions: using full screen update")
-            pixmap = self.get_window_pixmap(window, sequence)
-            if pixmap:
-                self.process_damage_region(damage_time, pixmap, 0, 0, ww, wh, actual_encoding, sequence, options)
+            self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+
+        if coding in ("x264", "vpx"):
+            send_full_screen_update(coding)
+            return
 
         try:
             count_threshold = 60
@@ -420,9 +415,7 @@ class WindowSource(object):
             pixel_count = 0
             while not damage.empty():
                 try:
-                    if self.is_cancelled(sequence):
-                        return
-                    (x, y, w, h) = get_rectangle_from_region(damage)
+                    x, y, w, h = get_rectangle_from_region(damage)
                     pixel_count += w*h
                     #favor full screen updates over many regions:
                     if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
@@ -444,15 +437,9 @@ class WindowSource(object):
             send_full_screen_update(actual_encoding)
             return
 
-        pixmap = self.get_window_pixmap(window, sequence)
-        if pixmap is None:
-            return
-        log("send_delayed_regions: pixmap size=%s, window size=%s", pixmap.get_size(), (ww, wh))
         for region in regions:
             x, y, w, h = region
-            if self.is_cancelled(sequence):
-                return
-            self.process_damage_region(damage_time, pixmap, x, y, w, h, actual_encoding, sequence, options)
+            self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
     def get_best_encoding(self, pixel_count, ww, wh, current_encoding):
         #decide whether we send a full screen update
@@ -485,23 +472,81 @@ class WindowSource(object):
                 return e
         return fallback
 
-    def process_damage_region(self, damage_time, pixmap, x, y, w, h, coding, sequence, options):
+    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         """
-            Called by 'damage_now' or 'send_delayed_regions' to process a damage region,
+            Called by 'damage' or 'send_delayed_regions' to process a damage region,
             we extract the rgb data from the pixmap and place it on the damage queue.
+            This runs in the UI thread.
         """
+        self._sequence += 1
+        pixmap = self.get_window_pixmap(window, self._sequence)
+        if not pixmap:
+            return
+        ww, wh = window.get_dimensions()
+        actual_encoding = self.get_best_encoding(w*h, ww, wh, coding)
+        if actual_encoding in ("x264", "vpx"):
+            w, h = ww, wh
         process_damage_time = time.time()
-        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options)
-        if data:
-            log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
-            def make_data_packet(*args):
-                #NOTE: this function is called from the damage data thread!
-                packet = self.make_data_packet(*data)
-                if packet:
-                    self.queue_damage_packet(packet, damage_time, process_damage_time)
-            self.queue_damage(make_data_packet)
+        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, self._sequence, options)
+        if not data:
+            return
+        log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
+        def make_data_packet(*args):
+            #NOTE: this function is called from the damage data thread!
+            packet = self.make_data_packet(*data)
+            if packet:
+                self.queue_damage_packet(pixmap, packet, damage_time, process_damage_time)
+            #auto-refresh:
+            if self.auto_refresh_delay>0:
+                client_options = packet[10]     #info about this packet from the encoder
+                gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
+        self.queue_damage(make_data_packet)
 
-    def queue_damage_packet(self, packet, damage_time, process_damage_time):
+    def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
+        """ Must be called from the UI thread: this makes it easier
+            to prevent races, and we can call window.get_dimensions() safely
+        """
+        #NOTE: there is a small potential race here:
+        #if the damage packet queue is congested, new damage requests could come in,
+        #in between the time we schedule the new refresh timer and the time it fires,
+        #and if not batching,
+        #we would then do a full_quality_refresh when we should not...
+        actual_quality = client_options.get("quality")
+        if actual_quality is None:
+            log("schedule_auto_refresh: was a lossless %s packet, ignoring", coding)
+            #lossless already: small region sent lossless or encoding is lossless
+            #don't change anything: if we have a timer, keep it
+            return
+        ww, wh = window.get_dimensions()
+        if actual_quality>=90 and w*h>=ww*wh:
+            log("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
+            #got enough pixels at high quality, cancel timer:
+            self.cancel_refresh_timer()
+            return
+        def full_quality_refresh():
+            if self._damage_delayed:
+                #there is already a new damage region pending
+                return
+            self.refresh_timer = None
+            new_options = damage_options.copy()
+            new_options["quality"] = 95
+            log("full_quality_refresh() with options=%s", new_options)
+            self.damage(window, 0, 0, ww, wh, options=new_options)
+            #self.process_damage_region(time.time(), window, 0, 0, ww, wh, coding, new_options)
+        self.cancel_refresh_timer()
+        if self._damage_delayed:
+            #there is already a new damage region pending, let it re-schedule when it gets sent
+            return
+        delay = max(self.auto_refresh_delay, int(1000*self.batch_config.delay))
+        log("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
+        self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
+
+    def cancel_refresh_timer(self):
+        if self.refresh_timer:
+            gobject.source_remove(self.refresh_timer)
+            self.refresh_timer = None
+
+    def queue_damage_packet(self, pixmap, packet, damage_time, process_damage_time):
         """
             Adds the given packet to the damage_packet_queue,
             (warning: this runs from the non-UI thread 'data_to_packet')
@@ -510,7 +555,7 @@ class WindowSource(object):
             - number of pixels in damage packet queue
             - damage latency (via a callback once the packet is actually sent)
         """
-        #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride]
+        #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
         width = packet[4]
         height = packet[5]
         damage_packet_sequence = packet[8]
@@ -653,7 +698,6 @@ class WindowSource(object):
             has changed.
             Since this runs in the non-UI thread 'data_to_packet', we must
             use the 'video_encoder_lock' to prevent races.
-
         """
         assert x==0 and y==0, "invalid position: %sx%s" % (x,y)
         #time_before = time.clock()

@@ -162,7 +162,8 @@ class ServerSource(object):
         self.window_sources = {}                    #WindowSource for each Window ID
 
         self.uuid = None
-        # client capabilities:
+        # client capabilities/options:
+        self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
         self.send_bell = False
@@ -219,6 +220,7 @@ class ServerSource(object):
         if "jpeg" in capabilities:
             self.default_damage_options["jpegquality"] = capabilities["jpeg"]
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
+        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000)
         #mmap:
         mmap_file = capabilities.get("mmap_file")
         mmap_token = capabilities.get("mmap_token")
@@ -447,7 +449,7 @@ class ServerSource(object):
             batch_config = self.default_batch_config.clone()
             batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
-                              wid, batch_config,
+                              wid, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings,
                               self.encoding_client_options, self.supports_rgb24zlib,
                               self.mmap, self.mmap_size)
