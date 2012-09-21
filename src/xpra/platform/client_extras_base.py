@@ -333,7 +333,7 @@ class ClientExtrasBase(object):
         #bandwidth graph:
         def save_bandwidth(*args):
             save_graph("bandwidth", bandwidth_graph)
-        bandwidth_graph = add_graph_button("The time it takes to send an echo packet and get the reply", save_bandwidth)
+        bandwidth_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", save_bandwidth)
         N_SAMPLES = 20
         pixel_in_data = maxdeque(N_SAMPLES+3)
         net_in_data = maxdeque(N_SAMPLES+3)
@@ -341,7 +341,7 @@ class ClientExtrasBase(object):
         #latency graph:
         def save_latency(*args):
             save_graph("latency", latency_graph)
-        latency_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", save_latency)
+        latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", save_latency)
 
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
