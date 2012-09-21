@@ -300,7 +300,7 @@ else:
              "scripts/xpra", "scripts/xpra_launcher",
              ]
     data_files=[
-                ("share/man/man1", ["xpra.1", "xpra_launcher.1", "parti.1"]),
+                ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
                 ("share/parti", ["README", "parti.README"]),
                 ("share/xpra", ["xpra.README", "COPYING"]),
                 ("share/wimpiggy", ["wimpiggy.README"]),
