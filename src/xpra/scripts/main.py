@@ -141,27 +141,32 @@ def main(script_file, cmdline):
     ## NOTE NOTE NOTE
     #################################################################
     defaults = read_xpra_defaults()
-    def bool_default(varname, default_value):
-        v = defaults.get(varname)
-        if not v:
-            return default_value
-        if type(v)==str:
-            v = v.lower()
-        if v in ["yes", "true", "1"]:
-            return  True
-        if v in ["no", "false", "0"]:
-            return  False
-        print("invalid value for '%s': %s, using default value %s instead" % (varname, v, default_value))
-        return default_value
-    def int_default(varname, default_value):
+    def parse_or_use_default(varname, default_value, parse_function):
+        """ Utility method for parsing defaults """
         v = defaults.get(varname)
         if not v:
             return default_value
         try:
-            return int(v)
-        except:
-            return default_value
-
+            pv = parse_function(v)
+            if pv is not None:
+                return pv
+        except Exception, e:
+            print("invalid value '%s' for %s: %s, using default value %s instead" % (v, varname, e, default_value))
+        return default_value
+    def bool_default(varname, default_value):
+        def bool_parse(v):
+            if type(v)==str:
+                v = v.lower()
+            if v in ["yes", "true", "1"]:
+                return  True
+            if v in ["no", "false", "0"]:
+                return  False
+        return parse_or_use_default(varname, default_value, bool_parse)
+    def int_default(varname, default_value):
+        return parse_or_use_default(varname, default_value, int)
+    def float_default(varname, default_value):
+        return parse_or_use_default(varname, default_value, float)
+        
     if XPRA_LOCAL_SERVERS_SUPPORTED:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
@@ -259,9 +264,9 @@ def main(script_file, cmdline):
                           dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
     group.add_option("--auto-refresh-delay", action="store",
-                      dest="auto_refresh_delay", type="float", default=0.0,
+                      dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 1.0),
                       metavar="DELAY",
-                      help="Idle delay in seconds before doing automatic lossless refresh."
+                      help="Idle delay in seconds before doing an automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
     DEFAULT_COMPRESS = 1
