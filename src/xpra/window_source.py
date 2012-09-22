@@ -496,10 +496,10 @@ class WindowSource(object):
             packet = self.make_data_packet(*data)
             if packet:
                 self.queue_damage_packet(pixmap, packet, damage_time, process_damage_time)
-            #auto-refresh:
-            if self.auto_refresh_delay>0:
-                client_options = packet[10]     #info about this packet from the encoder
-                gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
+                #auto-refresh:
+                if self.auto_refresh_delay>0:
+                    client_options = packet[10]     #info about this packet from the encoder
+                    gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
         self.queue_damage(make_data_packet)
 
     def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
