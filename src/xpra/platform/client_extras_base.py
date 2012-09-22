@@ -288,50 +288,9 @@ class ClientExtrasBase(object):
         vbox.add(hbox)
         hbox.add(table)
         #graph box:
+        graphs = []
         graph_box = gtk.VBox(False, 10)
         hbox.add(graph_box)
-        bandwidth_graph = None
-        latency_graph = None
-        def save_graphs(image1, image2):
-            log("save_graph(%s,%s)", image1, image2)
-            chooser = gtk.FileChooserDialog("Save Graphs",
-                                        parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                                        buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-            chooser.set_select_multiple(False)
-            chooser.set_default_response(gtk.RESPONSE_OK)
-            file_filter = gtk.FileFilter()
-            file_filter.set_name("PNG")
-            file_filter.add_pattern("*.png")
-            chooser.add_filter(file_filter)
-            response = chooser.run()
-            filenames = chooser.get_filenames()
-            chooser.hide()
-            chooser.destroy()
-            if response == gtk.RESPONSE_OK:
-                if len(filenames)==1:
-                    filename = filenames[0]
-                    pixmap1, _ = image1.get_pixmap()
-                    pixmap2, _ = image2.get_pixmap()
-                    log("saving pixmaps %s and %s to %s", pixmap1, pixmap2, filename)
-                    w, h = 0, 0
-                    for pixmap in (pixmap1, pixmap2):
-                        if pixmap:
-                            pw, ph = pixmap.get_size()
-                            w = max(w, pw)
-                            h += ph
-                    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
-                    pixbuf.fill(0x00000000)
-                    x, y = 0, 0
-                    for pixmap in (pixmap1, pixmap2):
-                        if pixmap:
-                            pw, ph = pixmap.get_size()
-                            pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
-                            y += ph
-                    pixbuf.save(filename, "png")
-            elif response == gtk.RESPONSE_CANCEL:
-                log("cancelled")
-            else:
-                log.error("unknown chooser response: %d" % response)
         def add_graph_button(tooltip, click_cb):
             button = gtk.EventBox()
             def set_cursor(widget):
@@ -346,17 +305,19 @@ class ClientExtrasBase(object):
             return graph
         #bandwidth graph:
         def bandwidth_graph_clicked(*args):
-            save_graphs(bandwidth_graph, latency_graph)
+            self.save_graphs(*graphs)
         bandwidth_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", bandwidth_graph_clicked)
+        graphs.append(bandwidth_graph)
         N_SAMPLES = 20
         pixel_in_data = maxdeque(N_SAMPLES+3)
         net_in_data = maxdeque(N_SAMPLES+3)
         net_out_data = maxdeque(N_SAMPLES+2)
         #latency graph:
         def latency_graph_clicked(*args):
-            save_graphs(bandwidth_graph, latency_graph)
+            self.save_graphs(*graphs)
         latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", latency_graph_clicked)
-
+        graphs.append(latency_graph)
+              
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)
@@ -577,6 +538,47 @@ class ClientExtrasBase(object):
         gobject.timeout_add(1000, populate_info)
         window.show_all()
         window.present()
+
+    def save_graphs(self, *images):
+        log("save_graph(%s)", images)
+        chooser = gtk.FileChooserDialog("Save Graphs",
+                                    parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                                    buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        chooser.set_select_multiple(False)
+        chooser.set_default_response(gtk.RESPONSE_OK)
+        file_filter = gtk.FileFilter()
+        file_filter.set_name("PNG")
+        file_filter.add_pattern("*.png")
+        chooser.add_filter(file_filter)
+        response = chooser.run()
+        filenames = chooser.get_filenames()
+        chooser.hide()
+        chooser.destroy()
+        if response == gtk.RESPONSE_OK:
+            if len(filenames)==1:
+                filename = filenames[0]
+                pixmaps = [image.get_pixmap()[0] for image in images]
+                log("saving pixmaps %s and %s to %s", pixmaps, filename)
+                w, h = 0, 0
+                for pixmap in pixmaps:
+                    if pixmap:
+                        pw, ph = pixmap.get_size()
+                        w = max(w, pw)
+                        h += ph
+                pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                pixbuf.fill(0x00000000)
+                x, y = 0, 0
+                for pixmap in pixmaps:
+                    if pixmap:
+                        pw, ph = pixmap.get_size()
+                        pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
+                        y += ph
+                pixbuf.save(filename, "png")
+        elif response in (gtk.RESPONSE_CANCEL, gtk.RESPONSE_CLOSE):
+            log("closed/cancelled")
+        else:
+            log.warn("unknown chooser response: %d" % response)
+
 
     def close_session_info(self, *args):
         try:
