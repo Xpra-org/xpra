@@ -290,9 +290,9 @@ class ClientExtrasBase(object):
         #graph box:
         graph_box = gtk.VBox(False, 10)
         hbox.add(graph_box)
-        def save_graph(itype, image):
-            log.info("save_graph(%s,%s)", itype, image)
-            chooser = gtk.FileChooserDialog("Save %s Graph" % itype,
+        def save_graphs(image1, image2):
+            log.info("save_graph(%s,%s)", image1, image2)
+            chooser = gtk.FileChooserDialog("Save Graphs",
                                         parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
             chooser.set_select_multiple(False)
@@ -308,11 +308,23 @@ class ClientExtrasBase(object):
             if response == gtk.RESPONSE_OK:
                 if len(filenames)==1:
                     filename = filenames[0]
-                    pixmap, _ = image.get_pixmap()
-                    log("saving %s pixmap %s to %s", itype, pixmap, filename)
-                    w, h = pixmap.get_size()
+                    pixmap1, _ = image1.get_pixmap()
+                    pixmap2, _ = image2.get_pixmap()
+                    log("saving pixmaps %s and %s to %s", pixmap1, pixmap2, filename)
+                    w, h = 0, 0
+                    for pixmap in (pixmap1, pixmap2):
+                        if pixmap:
+                            pw, ph = pixmap.get_size()
+                            w = max(w, pw)
+                            h += ph
                     pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
-                    pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, 0, 0, w, h)
+                    pixbuf.fill(0x00000000)
+                    x, y = 0, 0
+                    for pixmap in (pixmap1, pixmap2):
+                        if pixmap:
+                            pw, ph = pixmap.get_size()
+                            pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
+                            y += ph
                     pixbuf.save(filename, "png")
             elif response == gtk.RESPONSE_CANCEL:
                 log("cancelled")
@@ -331,17 +343,17 @@ class ClientExtrasBase(object):
             graph_box.add(button)
             return graph
         #bandwidth graph:
-        def save_bandwidth(*args):
-            save_graph("bandwidth", bandwidth_graph)
-        bandwidth_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", save_bandwidth)
+        def bandwidth_graph_clicked(*args):
+            save_graphs(bandwidth_graph, latency_graph)
+        bandwidth_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", bandwidth_graph_clicked)
         N_SAMPLES = 20
         pixel_in_data = maxdeque(N_SAMPLES+3)
         net_in_data = maxdeque(N_SAMPLES+3)
         net_out_data = maxdeque(N_SAMPLES+2)
         #latency graph:
-        def save_latency(*args):
-            save_graph("latency", latency_graph)
-        latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", save_latency)
+        def latency_graph_clicked(*args):
+            save_graphs(bandwidth_graph, latency_graph)
+        latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", latency_graph_clicked)
 
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
@@ -432,7 +444,7 @@ class ClientExtrasBase(object):
             size_info = ""
             if self.client.server_actual_desktop_size:
                 w,h = self.client.server_actual_desktop_size
-                size_info = " - %sx%s" % (w,h)
+                size_info = " - %s*%s" % (w,h)
                 if self.client.server_randr and self.client.server_max_desktop_size:
                     size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
             if self.client.server_randr:
