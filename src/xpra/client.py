@@ -118,9 +118,9 @@ class XpraClient(XpraClientBase):
         self.server_display = None
         self.server_randr = False
         self.pixel_counter = maxdeque(maxlen=100)
-        self.server_latency = maxdeque(maxlen=100)
+        self.server_ping_latency = maxdeque(maxlen=100)
         self.server_load = None
-        self.client_latency = maxdeque(maxlen=100)
+        self.client_ping_latency = maxdeque(maxlen=100)
         self.last_ping_echoed_time = 0
 
         #features:
@@ -580,12 +580,12 @@ class XpraClient(XpraClientBase):
     def _process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
-        diff = int(1000*time.time()-echoedtime)
-        self.server_latency.append(diff)
-        self.server_load = (l1, l2, l3)
+        server_ping_latency = time.time()-echoedtime/1000.0
+        self.server_ping_latency.append((time.time(), server_ping_latency))
+        self.server_load = l1, l2, l3
         if cl>=0:
-            self.client_latency.append(cl)
-        log("ping echo server load=%s, measured client latency=%s", self.server_load, cl)
+            self.client_ping_latency.append((time.time(), cl/1000.0))
+        log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet):
         echotime = packet[1]
@@ -595,9 +595,9 @@ class XpraClient(XpraClientBase):
         except:
             l1,l2,l3 = 0,0,0
         sl = -1
-        if len(self.server_latency)>0:
-            sl = self.server_latency[-1]
-        self.send(["ping_echo", echotime, l1, l2, l3, sl])
+        if len(self.server_ping_latency)>0:
+            _, sl = self.server_ping_latency[-1]
+        self.send(["ping_echo", echotime, l1, l2, l3, int(1000.0*sl)])
 
     def send_jpeg_quality(self, q):
         assert q>0 and q<100

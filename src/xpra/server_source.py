@@ -66,8 +66,10 @@ class GlobalPerformanceStatistics(object):
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
         self.avg_client_latency = None
-        self.client_ping_latency = maxdeque(NRECS)
-        self.server_ping_latency = maxdeque(NRECS)
+        self.client_ping_latency = maxdeque(NRECS)      #time it took to get a ping_echo back from the client:
+                                                        #(event_time, elapsed_time_in_seconds)
+        self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
+                                                        #(event_time, elapsed_time_in_seconds)
         self.client_load = None
 
     def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
@@ -322,6 +324,7 @@ class ServerSource(object):
         self.send(["set_deflate", level])
 
     def ping(self):
+        #NOTE: all ping time/echo time/load avg values are in milliseconds
         self.send(["ping", int(1000*time.time())])
 
     def process_ping(self, time_to_echo):
@@ -335,16 +338,18 @@ class ServerSource(object):
         #and the last client ping latency we measured (if any):
         if len(self.statistics.client_ping_latency)>0:
             _, cl = self.statistics.client_ping_latency[-1]
-        self.send(["ping_echo", time_to_echo, l1, l2, l3, cl])
+        self.send(["ping_echo", time_to_echo, l1, l2, l3, int(1000.0*cl)])
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 
-    def process_ping_echo(self, client_ping_latency, server_ping_latency, load):
-        self.statistics.client_ping_latency.append((time.time(), client_ping_latency/1000.0))
-        self.client_load = load
+    def process_ping_echo(self, packet):
+        echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
+        client_ping_latency = time.time()-echoedtime/1000.0
+        self.statistics.client_ping_latency.append((time.time(), client_ping_latency))
+        self.client_load = l1, l2, l3
         if server_ping_latency>=0:
             self.statistics.server_ping_latency.append((time.time(), server_ping_latency/1000.0))
-        log("ping echo client load=%s, measured server latency=%s", load, server_ping_latency)
+        log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         if self.randr_notify:

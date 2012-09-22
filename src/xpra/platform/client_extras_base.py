@@ -290,8 +290,10 @@ class ClientExtrasBase(object):
         #graph box:
         graph_box = gtk.VBox(False, 10)
         hbox.add(graph_box)
+        bandwidth_graph = None
+        latency_graph = None
         def save_graphs(image1, image2):
-            log.info("save_graph(%s,%s)", image1, image2)
+            log("save_graph(%s,%s)", image1, image2)
             chooser = gtk.FileChooserDialog("Save Graphs",
                                         parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                         buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
@@ -453,12 +455,14 @@ class ClientExtrasBase(object):
                 self.server_randr_label.set_text("No%s" % size_info)
             if self.client.server_load:
                 self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
-            if len(self.client.server_latency)>0:
-                avg = int(sum(self.client.server_latency)/len(self.client.server_latency))
-                self.server_latency_label.set_text("%sms  (%sms)" % (int(self.client.server_latency[-1]), int(avg)))
-            if len(self.client.client_latency)>0:
-                avg = int(1000*sum(self.client.client_latency)/len(self.client.client_latency))
-                self.client_latency_label.set_text("%sms  (%sms)" % (int(1000*self.client.client_latency[-1]), int(avg)))
+            if len(self.client.server_ping_latency)>0:
+                spl = [x for _,x in self.client.server_ping_latency]
+                avg = sum(spl)/len(spl)
+                self.server_latency_label.set_text("%sms  (%sms)" % (int(1000.0*spl[-1]), int(1000.0*avg)))
+            if len(self.client.client_ping_latency)>0:
+                cpl = [x for _,x in self.client.client_ping_latency]
+                avg = sum(cpl)/len(cpl)
+                self.client_latency_label.set_text("%sms  (%sms)" % (int(1000*cpl[-1]), int(1000.0*avg)))
             if self.client.server_start_time>0:
                 settimedeltastr(self.session_started_label, self.client.server_start_time)
             else:
@@ -549,8 +553,8 @@ class ClientExtrasBase(object):
                     bandwidth_graph.set_size_request(*pixmap.get_size())
                     bandwidth_graph.set_from_pixmap(pixmap, None)
                 #latency graph:
-                server_latency = list(self.client.server_latency)[-20:]
-                client_latency = [1000*x for x in self.client.client_latency][-20:]
+                server_latency = [1000.0*x for _,x in self.client.server_ping_latency][-20:]
+                client_latency = [1000.0*x for _,x in self.client.client_ping_latency][-20:]
                 for l in (server_latency, client_latency):
                     if len(l)<20:
                         for _ in range(20-len(l)):

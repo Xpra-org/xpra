@@ -1199,10 +1199,7 @@ class XpraServer(gobject.GObject):
             ss.ping()
 
     def _process_ping_echo(self, proto, packet):
-        echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
-        client_ping_latency = int(1000*time.time()-echoedtime)
-        load = l1, l2, l3
-        self._server_sources.get(proto).process_ping_echo(client_ping_latency, server_ping_latency, load)
+        self._server_sources.get(proto).process_ping_echo(packet)
 
     def _process_ping(self, proto, packet):
         time_to_echo = packet[1]
