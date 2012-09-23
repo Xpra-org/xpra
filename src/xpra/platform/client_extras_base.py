@@ -495,9 +495,11 @@ class ClientExtrasBase(object):
             since = time.time()-1
             decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
             pixel_in_data.append(sum(decoded))
-            _, h = hbox.size_request()
+            w, h = hbox.size_request()
             if h>0:
-                h = max(100, h-20)
+                rect = hbox.get_allocation()
+                h = max(100, h-20, rect.height-20)
+                w = max(360, rect.width/2-40)
                 #bandwidth graph:
                 #FIXME: we skip the first record because the timing isn't right so the values aren't either..:
                 in_scale, in_data = values_to_diff_scaled_values(list(net_in_data)[1:N_SAMPLES+2])
@@ -510,7 +512,7 @@ class ClientExtrasBase(object):
                         else:
                             return "x%s" % std_unit(scale)
                     labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale), "%s pixels/s" % unit(pixel_scale)]
-                    pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=320, height=h/2, title="Bandwidth")
+                    pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=w, height=h/2, title="Bandwidth")
                     bandwidth_graph.set_size_request(*pixmap.get_size())
                     bandwidth_graph.set_from_pixmap(pixmap, None)
                 #latency graph:
@@ -520,7 +522,7 @@ class ClientExtrasBase(object):
                     if len(l)<20:
                         for _ in range(20-len(l)):
                             l.insert(0, None)
-                pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"], width=320, height=h/2, title="Latency (ms)")
+                pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"], width=w, height=h/2, title="Latency (ms)")
                 latency_graph.set_size_request(*pixmap.get_size())
                 latency_graph.set_from_pixmap(pixmap, None)
             return True
