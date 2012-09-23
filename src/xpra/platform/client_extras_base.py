@@ -400,6 +400,8 @@ class ClientExtrasBase(object):
                 delta = datetime.timedelta(seconds=(int(time.time())-int(from_time)))
                 label.set_text(str(delta))
             v = self.client._remote_version or "unknown"
+            if self.client._remote_revision:
+                v += " (revision %s)" % self.client._remote_revision
             if self.client.mmap_enabled:
                 self.server_version_label.set_text("%s (mmap in use)" % v)
             else:

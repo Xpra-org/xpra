@@ -189,6 +189,7 @@ class XpraClientBase(gobject.GObject):
 
     def parse_server_capabilities(self, capabilities):
         self._remote_version = capabilities.get("version")
+        self._remote_revision = capabilities.get("revision")
         try:
             from wimpiggy.prop import set_xsettings_format
             set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
