@@ -183,7 +183,7 @@ class WindowSource(object):
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.refresh_timer = None
-        
+
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -261,12 +261,12 @@ class WindowSource(object):
         self.statistics.add_stats(info, suffix)
         #batch stats:
         if len(self.batch_config.last_actual_delays)>0:
-            batch_delays = [x for _,x in self.batch_config.last_delays]
+            batch_delays = [x for _,x in list(self.batch_config.last_delays)]
             add_list_stats(info, "batch_delay"+suffix, batch_delays)
         if self._video_encoder is not None:
-            quality_list = [x for _, x in self._video_encoder_quality]
+            quality_list = [x for _, x in list(self._video_encoder_quality)]
             add_list_stats(info, self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
-            speed_list = [x for _, x in self._video_encoder_speed]
+            speed_list = [x for _, x in list(self._video_encoder_speed)]
             add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
 
 

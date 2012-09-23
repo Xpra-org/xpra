@@ -268,7 +268,7 @@ def update_batch_delay(batch, factors):
             #get the weighted average
             #older values matter less, we decay them according to how much we batch already
             #(older values matter more when we batch a lot)
-            for when, delay in delays:
+            for when, delay in list(delays):
                 #newer matter more:
                 w = 1.0/(1.0+((now-when)/decay)**2)
                 d = max(min_delay, min(max_delay, delay))
