@@ -24,11 +24,11 @@ def dec3(x):
     return int(1000.0*x)/1000.0
 
 def to_std_unit(v):
-    if v>1000*1000*1000:
+    if v>=1000*1000*1000:
         return "G", v/1000.0/1000.0/1000.0
-    elif v>1000*1000:
+    elif v>=1000*1000:
         return "M", v/1000.0/1000.0
-    elif v>1000:
+    elif v>=1000:
         return "K", v/1000.0
     else:
         return "", v
