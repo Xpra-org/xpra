@@ -106,7 +106,7 @@ class GlobalPerformanceStatistics(object):
         total_time = 0                  #total decoding time
         start_time = None               #when we start counting from (oldest record)
         region_sizes = []
-        for _, event_time, pixels, decode_time in self.client_decode_time:
+        for _, event_time, pixels, decode_time in list(self.client_decode_time):
             #time filter and ignore failed decoding (decode_time==0)
             if event_time<time_limit or decode_time<=0:
                 continue
@@ -418,7 +418,7 @@ class ServerSource(object):
                     #per-window stats:
                     ws.add_stats(info, suffix=suffix)
                     #collect stats for global averages:
-                    for _, pixels, _, encoding_time in ws.statistics.encoding_stats:
+                    for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels
                         total_time += encoding_time
                     info["pixels_encoded_per_second%s" % suffix] = int(total_pixels / total_time)
