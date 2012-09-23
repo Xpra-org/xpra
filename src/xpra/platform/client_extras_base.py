@@ -288,7 +288,7 @@ class ClientExtrasBase(object):
         vbox.add(hbox)
         hbox.add(table)
         #graph box:
-        graphs = []
+        self.graphs = []
         graph_box = gtk.VBox(False, 10)
         hbox.add(graph_box)
         def add_graph_button(tooltip, click_cb):
@@ -305,18 +305,18 @@ class ClientExtrasBase(object):
             return graph
         #bandwidth graph:
         def bandwidth_graph_clicked(*args):
-            self.save_graphs(*graphs)
+            self.save_graphs()
         bandwidth_graph = add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", bandwidth_graph_clicked)
-        graphs.append(bandwidth_graph)
+        self.graphs.append(bandwidth_graph)
         N_SAMPLES = 20
         pixel_in_data = maxdeque(N_SAMPLES+3)
         net_in_data = maxdeque(N_SAMPLES+3)
         net_out_data = maxdeque(N_SAMPLES+2)
         #latency graph:
         def latency_graph_clicked(*args):
-            self.save_graphs(*graphs)
+            self.save_graphs()
         latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", latency_graph_clicked)
-        graphs.append(latency_graph)
+        self.graphs.append(latency_graph)
               
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
@@ -539,8 +539,8 @@ class ClientExtrasBase(object):
         window.show_all()
         window.present()
 
-    def save_graphs(self, *images):
-        log("save_graph(%s)", images)
+    def save_graphs(self):
+        log("save_graph() %s", self.graphs)
         chooser = gtk.FileChooserDialog("Save Graphs",
                                     parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                     buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
@@ -557,7 +557,7 @@ class ClientExtrasBase(object):
         if response == gtk.RESPONSE_OK:
             if len(filenames)==1:
                 filename = filenames[0]
-                pixmaps = [image.get_pixmap()[0] for image in images]
+                pixmaps = [image.get_pixmap()[0] for image in self.graphs]
                 log("saving pixmaps %s and %s to %s", pixmaps, filename)
                 w, h = 0, 0
                 for pixmap in pixmaps:
