@@ -195,8 +195,8 @@ def main(script_file, cmdline):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
         group.add_option("--start-child", action="append",
-                          dest="children", metavar="CMD",
-                          help="program to spawn in new server (may be repeated)")
+                          dest="children", metavar="CMD", default=defaults.get("start-child", ""),
+                          help="program to spawn in new server (may be repeated) (default: '%default')")
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=False,
                           help="Terminate server when --start-child command(s) exit")
