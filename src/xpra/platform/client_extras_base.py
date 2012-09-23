@@ -508,7 +508,7 @@ class ClientExtrasBase(object):
                         if scale==1:
                             return ""
                         else:
-                            return "x%s" % std_unit(in_scale)
+                            return "x%s" % std_unit(scale)
                     labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale), "%s pixels/s" % unit(pixel_scale)]
                     pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=320, height=h/2, title="Bandwidth")
                     bandwidth_graph.set_size_request(*pixmap.get_size())
