@@ -294,7 +294,7 @@ class ClientExtrasBase(object):
         def add_graph_button(tooltip, click_cb):
             button = gtk.EventBox()
             def set_cursor(widget):
-                button.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.BASED_ARROW_DOWN))
+                widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.BASED_ARROW_DOWN))
             button.connect("realize", set_cursor)
             graph = gtk.Image()
             graph.set_size_request(0, 0)
@@ -545,7 +545,7 @@ class ClientExtrasBase(object):
 
     def save_graphs(self):
         log("save_graph() %s", self.graphs)
-        chooser = gtk.FileChooserDialog("Save Graphs",
+        chooser = gtk.FileChooserDialog("Save graphs as a PNG image",
                                     parent=self.session_info_window, action=gtk.FILE_CHOOSER_ACTION_SAVE,
                                     buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         chooser.set_select_multiple(False)
@@ -578,7 +578,7 @@ class ClientExtrasBase(object):
                         pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
                         y += ph
                 pixbuf.save(filename, "png")
-        elif response in (gtk.RESPONSE_CANCEL, gtk.RESPONSE_CLOSE):
+        elif response in (gtk.RESPONSE_CANCEL, gtk.RESPONSE_CLOSE, gtk.RESPONSE_DELETE_EVENT):
             log("closed/cancelled")
         else:
             log.warn("unknown chooser response: %d" % response)
