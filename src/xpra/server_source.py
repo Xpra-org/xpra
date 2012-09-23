@@ -95,8 +95,8 @@ class GlobalPerformanceStatistics(object):
         latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
         add_list_stats(info, "client_latency%s" % suffix,  latencies)
 
-        add_list_stats(info, "server_ping_latency%s" % suffix, [x for _, x in self.server_ping_latency])
-        add_list_stats(info, "client_ping_latency%s" % suffix, [x for _, x in self.client_ping_latency])
+        add_list_stats(info, "server_ping_latency%s" % suffix, [1000.0*x for _, x in self.server_ping_latency])
+        add_list_stats(info, "client_ping_latency%s" % suffix, [1000.0*x for _, x in self.client_ping_latency])
 
         #client pixels per second:
         now = time.time()
