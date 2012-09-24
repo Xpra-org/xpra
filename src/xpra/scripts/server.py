@@ -331,13 +331,13 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return  1
         raw_cookie = os.urandom(16)
         baked_cookie = raw_cookie.encode("hex")
+        xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", baked_cookie]
         try:
-            code = subprocess.call(["xauth", "add", display_name,
-                                "MIT-MAGIC-COOKIE-1", baked_cookie])
+            code = subprocess.call(xauth_cmd)
             if code != 0:
                 raise OSError("non-zero exit code: %s" % code)
         except OSError, e:
-            sys.stderr.write("Error running xauth: %s\n" % e)
+            sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
 
     def xvfb_error(instance_exists=False):
         if clobber:
