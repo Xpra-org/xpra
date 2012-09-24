@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -144,8 +146,10 @@ public abstract class AbstractClient implements Runnable, Client {
 		ByteArrayOutputStream readBuffer = null;
 		byte[] header = new byte[8];
 		byte[] buffer = new byte[4096];
+		byte[] inflate_buffer = new byte[4096];
 		Map<Integer, byte[]> raw_packets = new HashMap<Integer, byte[]>(5);
 		int packet_index = 0;
+		int compression_level = 0;
 		while (!this.exit) {
 			try {
 				int bytes = this.inputStream.read(buffer);
@@ -178,7 +182,7 @@ public abstract class AbstractClient implements Runnable, Client {
 						// we now have a complete header, parse it:
 						assert header[0] == 'P';
 						assert header[1] == 0;		//version
-						assert header[2] == 0;		//compression level
+						compression_level = header[2];
 						packet_index = header[3];
 						packetSize = 0;
 						for (int b=0; b<4; b++) {
@@ -210,10 +214,22 @@ public abstract class AbstractClient implements Runnable, Client {
 					// clear size for next packet (so we parse the header again):
 					packetSize = 0;
 					// extract the packet:
-					this.debug("run() parsing packet of size "+readBuffer.size()+" with index="+packet_index+", remains " + bytes + " bytes at " + pos);
+					this.debug("run() parsing packet of size "+readBuffer.size()+" with compression level="+compression_level+", with index="+packet_index+", remains " + bytes + " bytes at " + pos);
 					byte[] packet = readBuffer.toByteArray();
 					readBuffer.close();
 					readBuffer = null;
+					if (compression_level>0) {
+						Inflater decompresser = new Inflater();
+						decompresser.setInput(packet, 0, packet.length);
+						ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+						while (decompresser.getRemaining()>0) {
+							int dec_len = decompresser.inflate(inflate_buffer);
+							tmp.write(inflate_buffer, 0, dec_len);
+						}
+						decompresser.end();
+						packet = tmp.toByteArray();
+						tmp.close();
+					}
 					if (packet_index>0) {
 						//byte[] data to patch into main packet later: store it
 						raw_packets.put(packet_index, packet);
@@ -234,6 +250,9 @@ public abstract class AbstractClient implements Runnable, Client {
 				this.error("run() ", e);
 				this.exit = true;
 			} catch (IOException e) {
+				this.error("run()", e);
+				this.exit = true;
+			} catch (DataFormatException e) {
 				this.error("run()", e);
 				this.exit = true;
 			}
@@ -280,9 +299,11 @@ public abstract class AbstractClient implements Runnable, Client {
 	public void connectionBroken(Exception exception) {
 		log("connectionBroken(" + exception + ")");
 		exception.printStackTrace(System.out);
-		this.exit = true;
-		for (ClientWindow w : this.id_to_window.values())
-			w.destroy();
+		if (!this.exit) {
+			this.exit = true;
+			for (ClientWindow w : this.id_to_window.values())
+				w.destroy();
+		}
 	}
 
 	protected String dump(Object in) {
@@ -467,13 +488,19 @@ public abstract class AbstractClient implements Runnable, Client {
 		dims.add(this.getScreenWidth());
 		dims.add(this.getScreenHeight());
 		caps.put("desktop_size", dims);
+		Vector<Vector<Integer>> ss = new Vector<Vector<Integer>>(2);
+		ss.add(dims);
+		caps.put("dpi", 100);
+		caps.put("screen_sizes", dims);
 		caps.put("encodings", ENCODINGS);
 		caps.put("clipboard", false); // not supported
 		caps.put("notifications", true);
+		caps.put("keyboard", true);
 		caps.put("keyboard_sync", true);
-		caps.put("cursors", false); // not shown!
-		caps.put("bell", true); // uses vibrate on Android
-		caps.put("dynamic_compression", false); // not supported
+		caps.put("cursors", false);		// not shown!
+		caps.put("bell", true);			// uses vibrate on Android
+		caps.put("rencode", false);		// would need porting to Java (unlikely)
+		caps.put("chunked_compression", true);
 		if (this.encoding != null) {
 			caps.put("encoding", this.encoding);
 			if (this.encoding.equals("jpeg") && this.jpeg > 0)
@@ -557,6 +584,11 @@ public abstract class AbstractClient implements Runnable, Client {
 				this.warnUser("The server's virtual screen is too big! It should be using Xdummy, this client may crash and/or misbehave.");
 			}
 		}
+		this.send_deflate(3);
+	}
+
+	protected void send_deflate(int level) {
+		this.send("set_deflate", level);
 	}
 
 	protected void process_new_common(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
