@@ -23,7 +23,7 @@ public class AWTClient extends AbstractClient {
 	@Override
 	public void run(String[] args) {
 		this.toolkit = Toolkit.getDefaultToolkit();
-		new Thread(this).start();
+		this.run();
 	}
 
 	@Override
