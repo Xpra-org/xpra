@@ -13,6 +13,9 @@ SET RENCODE=1
 SET CLIPBOARD=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
+REM support double-click on BAT file, so run from parent directory:
+set WORKING_DIRECTORY=%cd%
+IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 ECHO ****** Clearing build directory
 RMDIR /S /Q %BUILD_DIR% dist Output
