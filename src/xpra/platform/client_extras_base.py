@@ -624,7 +624,10 @@ class ClientExtrasBase(object):
         return  os.path.dirname(sys.executable) or os.getcwd()
 
     def get_icon_filename(self, icon_name):
-        filename = os.path.join(self.get_data_dir(), 'icons', icon_name)
+        dd = self.get_data_dir()
+        if dd is None:
+            return None
+        filename = os.path.join(dd, 'icons', icon_name)
         if os.path.exists(filename):
             return  filename
         log.error("get_icon_filename(%s) %s does not exists!" % (icon_name, filename))
