@@ -444,7 +444,7 @@ class Protocol(object):
                         return
                     def gibberish(buf):
                         # Peek at the data we got, in case we can make sense of it:
-                        self._process_packet_cb([Protocol.GIBBERISH, buf])
+                        self._process_packet_cb(self, [Protocol.GIBBERISH, buf])
                         # Then hang up:
                         return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(raw_string), packet_index, current_packet_size, bl, e))
                     gobject.idle_add(gibberish, raw_string)
