@@ -85,6 +85,8 @@ class XpraClientBase(gobject.GObject):
         self.jpegquality = opts.jpegquality
         self._protocol = None
         self.server_capabilities = {}
+        self._remote_version = None
+        self._remote_revision = None
         self.init_packet_handlers()
 
     def ready(self, conn):
