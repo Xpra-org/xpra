@@ -29,6 +29,13 @@ public class SwingClient extends AbstractClient {
 	}
 
 	@Override
+	public Map<String, Object> make_hello(String enc_pass) {
+		Map<String, Object> caps = super.make_hello(enc_pass);
+		caps.put("client_type", "Java/swing");
+		return caps;
+	}
+
+	@Override
 	public Object getLock() {
 		return this;
 	}

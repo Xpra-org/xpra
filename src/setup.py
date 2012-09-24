@@ -46,6 +46,10 @@ vpx_ENABLED = True
 
 
 
+webm_ENABLED = True
+
+
+
 rencode_ENABLED = True
 
 
@@ -60,6 +64,8 @@ for arg in sys.argv:
         x264_ENABLED = False
     elif arg == "--without-vpx":
         vpx_ENABLED = False
+    elif arg == "--without-webm":
+        webm_ENABLED = False
     elif arg == "--without-rencode":
         rencode_ENABLED = False
     elif arg == "--without-clipboard":
@@ -75,6 +81,8 @@ packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
           "xpra", "xpra.scripts", "xpra.platform",
           ]
+if webm_ENABLED:
+    packages.append("xpra.webm")
 
 # Add build info to build_info.py file:
 import add_build_info

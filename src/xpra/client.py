@@ -544,6 +544,7 @@ class XpraClient(XpraClientBase):
         root_w, root_h = get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         capabilities["screen_sizes"] = self.get_screen_sizes()
+        capabilities["client_type"] = "Python/Gtk"
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat

@@ -149,6 +149,9 @@ public class AndroidXpraClient extends AbstractClient {
 			this.loadCharacterMap(KeyCharacterMap.BUILT_IN_KEYBOARD); // VIRTUAL_KEYBOARD);
 			this.add_keymap_props(caps);
 		}
+		caps.put("keyboard", false);		//isn't working yet
+		caps.put("client_type", "android");
+
 		//always batch:
 		caps.put("batch.enabled", true);
 		caps.put("batch.always", true);

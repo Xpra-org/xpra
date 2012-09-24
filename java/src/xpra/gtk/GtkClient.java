@@ -40,6 +40,13 @@ public class GtkClient extends AbstractClient {
 	}
 
 	@Override
+	public Map<String, Object> make_hello(String enc_pass) {
+		Map<String, Object> caps = super.make_hello(enc_pass);
+		caps.put("client_type", "Java/Gtk");
+		return caps;
+	}
+
+	@Override
 	protected GtkWindow createWindow(int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
 		GtkWindow window = new GtkWindow(this, id, x, y, w, h, metadata, override_redirect);
 		window.showAll();

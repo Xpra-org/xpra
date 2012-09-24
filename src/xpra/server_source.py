@@ -165,6 +165,7 @@ class ServerSource(object):
 
         self.uuid = None
         # client capabilities/options:
+        self.client_type = None
         self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
@@ -205,6 +206,7 @@ class ServerSource(object):
         self.default_batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
+        self.client_type = capabilities.get("client_type", "PyGTK")
         #general features:
         self.server_window_resize = capabilities.get("server-window-resize", False)
         self.send_cursors = capabilities.get("cursors", False)

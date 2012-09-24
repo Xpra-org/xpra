@@ -122,6 +122,7 @@ class XpraClientBase(gobject.GObject):
         if self.jpegquality:
             capabilities["jpeg"] = self.jpegquality
         capabilities["platform"] = sys.platform
+        capabilities["client_type"] = "Python/Gobject"
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
@@ -272,6 +273,7 @@ class GLibXpraClient(XpraClientBase):
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
         capabilities["keyboard"] = False
+        capabilities["client_type"] = "Python/Glib"
         return capabilities
 
     def quit(self, exit_code):

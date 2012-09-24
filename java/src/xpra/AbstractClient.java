@@ -491,6 +491,7 @@ public abstract class AbstractClient implements Runnable, Client {
 		Vector<Vector<Integer>> ss = new Vector<Vector<Integer>>(2);
 		ss.add(dims);
 		caps.put("dpi", 100);
+		caps.put("client_type", "Java");
 		caps.put("screen_sizes", dims);
 		caps.put("encodings", ENCODINGS);
 		caps.put("clipboard", false); // not supported
