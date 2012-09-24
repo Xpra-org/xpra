@@ -174,7 +174,7 @@ class Protocol(object):
         self._encoder = self.rencode
 
     def bencode(self, data):
-        return  bencode(data), 0
+        return  bencode(data).encode('latin1'), 0
 
     def rencode(self, data):
         return  rencode_dumps(data), 1
@@ -222,9 +222,11 @@ class Protocol(object):
             traceback.print_exc()
             self.verify_packet(packet)
             raise e
-        if sys.version>='3':
-            main_packet = main_packet.encode("latin1")
-        packets.append((0, 0, main_packet))
+        if level>0:
+            data = zlib.compress(main_packet, level)
+            packets.append((0, level, data))
+        else:
+            packets.append((0, 0, main_packet))
         return packets, proto_version
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
@@ -234,8 +236,6 @@ class Protocol(object):
             counter = 0
             for index,level,data in packets:
                 l = len(data)
-                #'p' + protocol-version + compression_level + packet_index + packet_size
-                header = struct.pack('!BBBBL', ord("P"), proto_version, level, index, l)
                 scb, ecb = None, None
                 #fire the start_send_callback just before the first packet is processed:
                 if counter==0:
@@ -243,8 +243,14 @@ class Protocol(object):
                 #fire the end_send callback when the last packet (index==0) makes it out:
                 if index==0:
                     ecb = end_send_cb
-                self._write_queue.put((header, scb, None))
-                self._write_queue.put((data, None, ecb))
+                if l<16384:
+                    #'p' + protocol-version + compression_level + packet_index + packet_size
+                    header_and_data = struct.pack('!BBBBL%ss' % l, ord("P"), proto_version, level, index, l, data)
+                    self._write_queue.put((header_and_data, scb, ecb))
+                else:
+                    header = struct.pack('!BBBBL', ord("P"), proto_version, level, index, l)
+                    self._write_queue.put((header, scb, None))
+                    self._write_queue.put((data, None, ecb))
                 counter += 1
         finally:
             self.output_packetcount += 1
