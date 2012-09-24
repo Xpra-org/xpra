@@ -1484,6 +1484,9 @@ class XpraServer(gobject.GObject):
         if pressed and (wid is not None) and (wid not in self._id_to_window):
             log("window %s is gone, ignoring key press", wid)
             return
+        if keycode<=0:
+            log.warn("ignoring invalid keycode=%s", keycode)
+            return
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
         def press():
