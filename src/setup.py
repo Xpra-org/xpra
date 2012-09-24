@@ -121,7 +121,7 @@ if sys.platform.startswith("win"):
                "Microsoft.VC90.MFC/mfcm90u.dll"                 : "371226b8346f29011137c7aa9e93f2f6",
                }
     # This is where I keep them, you will obviously need to change this value:
-    C_DLLs="E:\\"
+    C_DLLs="C:\\"
     for dll_file, md5sum in md5sums.items():
         filename = os.path.join(C_DLLs, *dll_file.split("/"))
         if not os.path.exists(filename) or not os.path.isfile(filename):
@@ -142,13 +142,13 @@ if sys.platform.startswith("win"):
     # ffmpeg-git-4082198-win32-dev
     # ffmpeg-20120708-git-299387e-win32-dev
     # This is where I keep them, you will obviously need to change this value:
-    ffmpeg_path="E:\\ffmpeg-win32-shared"
+    ffmpeg_path="C:\\ffmpeg-win32-shared"
     ffmpeg_include_dir = "%s\\include" % ffmpeg_path
     ffmpeg_lib_dir = "%s\\lib" % ffmpeg_path
     ffmpeg_bin_dir = "%s\\bin" % ffmpeg_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
-    vpx_PATH="E:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
+    vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
     # Same for PyGTK:
