@@ -469,7 +469,7 @@ class ServerSource(object):
             (since it knows when the "draw" packet was sent)
         """
         log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
-        if decode_time:
+        if decode_time>0:
             self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
         ws = self.window_sources.get(wid)
         if ws:

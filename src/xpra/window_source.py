@@ -582,7 +582,7 @@ class WindowSource(object):
             and the "client latency".
         """
         log("packet decoding for window %s %sx%s took %s µs", self.wid, width, height, decode_time)
-        if decode_time:
+        if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
         if pending is None:
