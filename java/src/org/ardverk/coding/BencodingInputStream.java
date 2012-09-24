@@ -316,7 +316,7 @@ public class BencodingInputStream extends FilterInputStream implements DataInput
 	/**
 	 * Reads and returns a {@link List}.
 	 */
-	public List<?> readList() throws IOException {
+	public List<Object> readList() throws IOException {
 		return readList(Object.class);
 	}
 

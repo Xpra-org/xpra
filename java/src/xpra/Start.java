@@ -11,6 +11,7 @@ public abstract class Start {
 	public static final int DEFAULT_PORT = 10000;
 
 	public void run(String[] args) throws IOException {
+		@SuppressWarnings("resource")
 		Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT);
 		socket.setKeepAlive(true);
 		InputStream is = socket.getInputStream();

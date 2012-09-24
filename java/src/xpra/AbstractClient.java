@@ -30,7 +30,7 @@ import org.ardverk.coding.BencodingOutputStream;
 public abstract class AbstractClient implements Runnable, Client {
 
 	public static final String[] ENCODINGS = new String[] { "png", "jpeg" };
-	public static final String VERSION = "0.1.0";
+	public static final String VERSION = "0.7.0";
 	public static boolean DEBUG = false;
 
 	protected boolean ended = false;
@@ -142,20 +142,23 @@ public abstract class AbstractClient implements Runnable, Client {
 		int headerSize = 0;
 		int packetSize = 0;
 		ByteArrayOutputStream readBuffer = null;
-		byte[] header = new byte[16];
+		byte[] header = new byte[8];
 		byte[] buffer = new byte[4096];
+		Map<Integer, byte[]> raw_packets = new HashMap<Integer, byte[]>(5);
+		int packet_index = 0;
 		while (!this.exit) {
 			try {
 				int bytes = this.inputStream.read(buffer);
 				int pos = 0;
-				this.debug("run() read " + bytes);
+				this.debug("run() read "+bytes+" bytes");
 				while (bytes > 0) {
-					if (headerSize < 16) {
-						assert packetSize < 0;
-						// how much we need for a full header:
-						int missHeader = 16 - headerSize;
+					if (packetSize<=0) {
+						// we don't have the packet size, so we must still be parsing the header
+						assert headerSize<8;
+						// copy up to 8 chars into header
+						int missHeader = 8 - headerSize;
 						if (bytes < missHeader) {
-							// copy what we have to the header:
+							//partial header: copy what we have and wait for next chunk
 							for (int i = 0; i < bytes; i++)
 								header[headerSize + i] = buffer[pos + i];
 							pos += bytes;
@@ -164,22 +167,24 @@ public abstract class AbstractClient implements Runnable, Client {
 							this.debug("run() only got " + headerSize + " of header, continuing");
 							break; // we need more data
 						}
-						// copy all the missing bits to the header
+						// we have the full header
 						for (int i = 0; i < missHeader; i++)
 							header[headerSize + i] = buffer[pos + i];
-						headerSize += missHeader;
+						//clear it for next header:
+						headerSize = 0;
 						pos += missHeader;
 						bytes -= missHeader;
-						this.debug("run() got full header: " + new String(header));
+						this.debug("run() got full header: 0x" + hexlify_raw(header));
 						// we now have a complete header, parse it:
 						assert header[0] == 'P';
-						assert header[1] == 'S';
+						assert header[1] == 0;		//version
+						assert header[2] == 0;		//compression level
+						packet_index = header[3];
 						packetSize = 0;
-						for (int i = 2; i < 16; i++) {
-							int decimal_value = header[i] - '0';
-							assert decimal_value >= 0 && decimal_value < 10;
-							packetSize *= 10;
-							packetSize += decimal_value;
+						for (int b=0; b<4; b++) {
+							packetSize = packetSize<<8;
+							//this.debug("run() header["+(4+b)+"]="+(header[4+b] & 0xFF));
+							packetSize += header[4+b] & 0xFF;
 						}
 						this.debug("run() got packet size=" + packetSize + ", pos=" + pos + ", bytes=" + bytes);
 						assert packetSize > 0;
@@ -202,20 +207,35 @@ public abstract class AbstractClient implements Runnable, Client {
 					readBuffer.write(buffer, pos, missBuffer);
 					bytes -= missBuffer;
 					pos += missBuffer;
-					// clear sizes for next packet:
-					headerSize = 0;
+					// clear size for next packet (so we parse the header again):
 					packetSize = 0;
 					// extract the packet:
-					this.debug("run() parsing packet, remains " + bytes + " bytes at " + pos);
+					this.debug("run() parsing packet of size "+readBuffer.size()+" with index="+packet_index+", remains " + bytes + " bytes at " + pos);
 					byte[] packet = readBuffer.toByteArray();
+					readBuffer.close();
 					readBuffer = null;
-					this.parsePacket(packet);
+					if (packet_index>0) {
+						//byte[] data to patch into main packet later: store it
+						raw_packets.put(packet_index, packet);
+						continue;
+					}
+					//patch raw packets into main packet:
+					List<Object> lpacket = this.parsePacket(packet);
+					if (raw_packets.size()>0) {
+						for (Map.Entry<Integer, byte[]> me : raw_packets.entrySet())
+							lpacket.set(me.getKey().intValue(), me.getValue());
+						//now safe to clear for the next packet:
+						raw_packets = new HashMap<Integer, byte[]>(5);
+					}
+					//process current packet:
+					this.processPacket(lpacket);
 				}
 			} catch (EOFException e) {
 				this.error("run() ", e);
 				this.exit = true;
 			} catch (IOException e) {
 				this.error("run()", e);
+				this.exit = true;
 			}
 		}
 		this.log("run() loop ended");
@@ -225,16 +245,22 @@ public abstract class AbstractClient implements Runnable, Client {
 			this.onExit.run();
 	}
 
-	public void parsePacket(byte[] packetBytes) {
-		List<?> packet = null;
+	public List<Object>	parsePacket(byte[] packetBytes) {
+		List<Object> packet = null;
 		try {
 			BencodingInputStream bis = new BencodingInputStream(new ByteArrayInputStream(packetBytes));
 			packet = bis.readList();
+			bis.close();
+			return packet;
 		} catch (IOException e) {
-			this.error("parsePacket(" + packetBytes.length + " bytes) trying to continue..", e);
+			byte[] dump = packetBytes;
+			if (packetBytes.length>200) {
+				dump = new byte[200];
+				System.arraycopy(packetBytes, 0, dump, 0, 200);
+			}
+			this.error("parsePacket(" + packetBytes.length + " bytes) packet header: "+new String(dump), e);
+			throw new IllegalStateException("cannot continue after parsing error: "+e);
 		}
-		if (packet != null)
-			this.processPacket(packet);
 	}
 
 	public void cleanup() {
@@ -328,6 +354,8 @@ public abstract class AbstractClient implements Runnable, Client {
 			return (T) in;
 		if ((desiredType.equals(int.class) || desiredType.equals(Integer.class)) && t.equals(BigInteger.class))
 			return (T) new Integer(((BigInteger) in).intValue());
+		if ((desiredType.equals(long.class) || desiredType.equals(Integer.class)) && t.equals(BigInteger.class))
+			return (T) new Long(((BigInteger) in).longValue());
 		if (desiredType.equals(String.class) && t.isArray() && t.getComponentType().equals(byte.class))
 			try {
 				return (T) new String((byte[]) in, "UTF-8");
@@ -371,14 +399,17 @@ public abstract class AbstractClient implements Runnable, Client {
 			bos.writeCollection(packet);
 			bos.flush();
 			byte[] bytes = baos.toByteArray();
-			byte[] header = new byte[16];
-			header[0] = 'P';
-			header[1] = 'S';
+			bos.close();
+			byte[] header = new byte[8];
 			int packetSize = bytes.length;
-			for (int i = 15; i >= 2; i--) {
-				header[i] = (byte) ('0' + (packetSize % 10));
-				packetSize /= 10;
-			}
+			//(_, protocol_version, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
+			header[0] = 'P';
+			header[1] = 0;
+			header[2] = 0;
+			//big endian size as 4 bytes:
+			for (int b=0; b<4; b++)
+				header[4+b] = (byte) ((packetSize >>> (24-b*8)) % 256);
+			this.log("send(...) header=0x"+hexlify_raw(header)+", payload is "+packetSize+" bytes");
 			this.outputStream.write(header);
 			this.outputStream.write(bytes);
 			this.outputStream.flush();
@@ -545,7 +576,7 @@ public abstract class AbstractClient implements Runnable, Client {
 		ClientWindow window = this.id_to_window.get(id);
 		window.draw(x, y, w, h, coding, data);
         if (packet_sequence>0)
-            this.send("damage-sequence", packet_sequence);
+            this.send("damage-sequence", packet_sequence, id, w, h, 0);
 	}
 
 	protected void process_window_metadata(int id, Map<String, Object> metadata) {

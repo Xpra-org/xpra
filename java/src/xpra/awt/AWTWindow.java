@@ -33,13 +33,12 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import xpra.Client;
 import xpra.ClientWindow;
 
 public class AWTWindow extends Frame implements ClientWindow {
 	private static final long serialVersionUID = 1L;
 
-	protected Client client = null;
+	protected AWTClient client = null;
 	protected int id = -1;
 	protected int x = -1;
 	protected int y = -1;
@@ -58,7 +57,7 @@ public class AWTWindow extends Frame implements ClientWindow {
 	public static boolean save_backing = false;
 	public static boolean save_paint = false;
 
-	public AWTWindow(Client client, int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
+	public AWTWindow(AWTClient client, int id, int x, int y, int w, int h, Map<String, Object> metadata, boolean override_redirect) {
 		this.log("<init>(" + client + ", " + id + ", " + x + ", " + y + ", " + w + ", " + h + ", " + metadata + ", " + override_redirect + ")");
 		/*
 		 * if (override_redirect) this.setTypeHint(WindowTypeHint.UTILITY); else
@@ -299,7 +298,7 @@ public class AWTWindow extends Frame implements ClientWindow {
 		for (Map.Entry<String, Object> me : newMetadata.entrySet())
 			this.metadata.put(me.getKey(), me.getValue());
 
-		String title = (String) newMetadata.get("title");
+		String title = this.client.cast(newMetadata.get("title"), String.class);
 		if (title == null)
 			title = "unknown";
 		this.setTitle(title);
