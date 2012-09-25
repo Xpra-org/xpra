@@ -243,6 +243,11 @@ if sys.platform.startswith("win"):
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
                ]
 
+    if webm_ENABLED:
+        #add the webm DLL to the output:
+        webm_DLL = "C:\\libwebp-0.2.0-windows-x86\\bin\\libwebp_a.dll"
+        data_files.append(('', [webm_DLL]))
+
     extra_options = dict(
         windows = windows,
         console = console,
