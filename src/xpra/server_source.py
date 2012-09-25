@@ -166,6 +166,7 @@ class ServerSource(object):
         self.uuid = None
         # client capabilities/options:
         self.client_type = None
+        self.client_version = None
         self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
@@ -207,6 +208,7 @@ class ServerSource(object):
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
+        self.client_version = capabilities.get("version", None)
         #general features:
         self.server_window_resize = capabilities.get("server-window-resize", False)
         self.send_cursors = capabilities.get("cursors", False)
@@ -400,6 +402,7 @@ class ServerSource(object):
             via the 'xpra info' command.
         """
         info["client_type%s" % suffix] = self.client_type
+        info["client_version%s" % suffix] = self.client_version or "unknown"
         try:
             info["client_connection%s" % suffix] = str(self.protocol._conn.target)
         except:
