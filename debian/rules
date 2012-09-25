@@ -7,7 +7,7 @@ DPKG_EXPORT_BUILDFLAGS = 1
 
 export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 %:
-	dh $@ --with python2
+	dh $@ --with python2 --with quilt
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
