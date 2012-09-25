@@ -158,7 +158,7 @@ class WindowPerformanceStatistics(object):
                     packets_backlog += 1
                     pixels_backlog += pixels
                     bytes_backlog += (end_bytes - start_bytes)
-            log.info("get_backlog missing acks: %s", drop_missing_acks)
+            log("get_backlog missing acks: %s", drop_missing_acks)
             #this should never happen...
             if len(drop_missing_acks)>0:
                 log.error("get_backlog found some damage acks that have been pending for too long, expiring them: %s", drop_missing_acks)
