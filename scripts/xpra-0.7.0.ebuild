@@ -56,4 +56,7 @@ src_prepare() {
 	if ! use vpx; then
 		epatch patches/disable-vpx.patch
 	fi
+	if ! use webp; then
+		epatch patches/disable-webp.patch
+	fi
 }

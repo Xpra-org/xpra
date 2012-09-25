@@ -78,9 +78,10 @@ BuildRequires: python, setuptool
 Patch0: disable-posix-server.patch
 Patch1: disable-x264.patch
 Patch2: disable-vpx.patch
-Patch3: use-static-x264lib.patch
-Patch4: use-static-vpxlib.patch
-Patch5: x264-limited-csc.patch
+Patch3: disable-webp.patch
+Patch4: use-static-x264lib.patch
+Patch5: use-static-vpxlib.patch
+Patch6: x264-limited-csc.patch
 
 
 %description
@@ -459,14 +460,17 @@ cd parti-all-%{version}
 %patch1 -p1
 %patch2 -p1
 %endif
-%if 0%{?static_x264}
+%if 0%{?requires_webp}
 %patch3 -p1
 %endif
-%if 0%{?static_vpx}
+%if 0%{?static_x264}
 %patch4 -p1
 %endif
-%if 0%{?limited_csc}
+%if 0%{?static_vpx}
 %patch5 -p1
+%endif
+%if 0%{?limited_csc}
+%patch6 -p1
 %endif
 
 %build
