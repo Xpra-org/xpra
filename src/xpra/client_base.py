@@ -82,7 +82,7 @@ class XpraClientBase(gobject.GObject):
         self.exit_code = None
         self.password_file = opts.password_file
         self.encoding = opts.encoding
-        self.jpegquality = opts.jpegquality
+        self.quality = opts.quality
         self._protocol = None
         self.server_capabilities = {}
         self._remote_version = None
@@ -119,8 +119,9 @@ class XpraClientBase(gobject.GObject):
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = ENCODINGS
-        if self.jpegquality:
-            capabilities["jpeg"] = self.jpegquality
+        if self.quality>=0:
+            capabilities["jpeg"] = self.quality
+            capabilities["quality"] = self.quality
         capabilities["platform"] = sys.platform
         capabilities["client_type"] = "Python/Gobject"
         capabilities["raw_packets"] = True

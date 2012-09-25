@@ -31,8 +31,6 @@ def env_bool(varname, defaultvalue=False):
     return  defaultvalue
 
 
-AUTO_SPEED = env_bool("XPRA_AUTO_SPEED", True)
-AUTO_QUALITY = env_bool("XPRA_AUTO_QUALITY", True)
 MAX_NONVIDEO_PIXELS = 512
 try:
     MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 2048))
@@ -67,7 +65,8 @@ else:
 
 
 def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
-                          video_encoder=None, video_encoder_lock=None, video_encoder_speed=None, video_encoder_quality=None):
+                          video_encoder=None, video_encoder_lock=None, video_encoder_speed=None, video_encoder_quality=None,
+                          fixed_quality=-1, fixed_speed=-1):
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -192,7 +191,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     update_batch_delay(batch, factors)
     #***************************************************************
     #special hook for video encoders
-    if (not AUTO_QUALITY and not AUTO_SPEED) or video_encoder is None:
+    if video_encoder is None:
         return
 
     #***********************************************************
@@ -200,19 +199,23 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     #    0    for highest compression/slower
     #    100  for lowest compression/fast
     # here we try to minimize damage-latency and client decoding speed
-    min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-    target_damage_latency = min_damage_latency + batch.delay/1000.0
-    dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
-    target_decode_speed = 1*1000*1000      #1 MPixels/s
-    dec_lat = 0.0
-    if avg_decode_speed:
-        dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
-    target = max(dam_lat, dec_lat, 0.0)
-    target_speed = 100.0 * min(1.0, target)
-    video_encoder_speed.append((time.time(), target_speed))
-    _, new_speed = calculate_time_weighted_average(video_encoder_speed)
-    msg = "video encoder speed factors: min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
-             dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
+    if fixed_speed>=0:
+        new_speed = fixed_speed
+        msg = "video encoder using fixed speed: %s" % fixed_speed
+    else:
+        min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
+        target_damage_latency = min_damage_latency + batch.delay/1000.0
+        dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
+        target_decode_speed = 1*1000*1000      #1 MPixels/s
+        dec_lat = 0.0
+        if avg_decode_speed:
+            dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
+        target = max(dam_lat, dec_lat, 0.0)
+        target_speed = 100.0 * min(1.0, target)
+        video_encoder_speed.append((time.time(), target_speed))
+        _, new_speed = calculate_time_weighted_average(video_encoder_speed)
+        msg = "video encoder speed factors: min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
+                 dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
     log(*msg)
     if DEBUG_DELAY:
         add_DEBUG_DELAY_MESSAGE(msg)
@@ -221,28 +224,30 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     #    0    for lowest quality (low bandwidth usage)
     #    100  for best quality (high bandwidth usage)
     # here we try minimize client-latency, packet-backlog and batch.delay
-    packets_backlog, _, _ = statistics.get_backlog(target_latency)
-    packets_bl = 1.0 - logp(packets_backlog/low_limit)
-    batch_q = 4.0 * batch.min_delay / batch.delay
-    target = max(packets_bl, batch_q)
-    latency_q = 0.0
-    if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
-        latency_q = 4.0 * target_latency / recent_client_latency
-        target = min(target, latency_q)
-    target_quality = 100.0*(min(1.0, max(0.0, target)))
-    video_encoder_quality.append((time.time(), target_quality))
-    new_quality, _ = calculate_time_weighted_average(video_encoder_quality)
-    msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
-             dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
+    if fixed_quality>=0:
+        new_quality = fixed_quality
+        msg = "video encoder using fixed quality: %s" % fixed_quality
+    else:
+        packets_backlog, _, _ = statistics.get_backlog(target_latency)
+        packets_bl = 1.0 - logp(packets_backlog/low_limit)
+        batch_q = 4.0 * batch.min_delay / batch.delay
+        target = max(packets_bl, batch_q)
+        latency_q = 0.0
+        if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
+            latency_q = 4.0 * target_latency / recent_client_latency
+            target = min(target, latency_q)
+        target_quality = 100.0*(min(1.0, max(0.0, target)))
+        video_encoder_quality.append((time.time(), target_quality))
+        new_quality, _ = calculate_time_weighted_average(video_encoder_quality)
+        msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
+                 dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
     log(*msg)
     if DEBUG_DELAY:
         add_DEBUG_DELAY_MESSAGE(msg)
     try:
         video_encoder_lock.acquire()
-        if AUTO_SPEED:
-            video_encoder.set_encoding_speed(new_speed)
-        if AUTO_QUALITY:
-            video_encoder.set_encoding_quality(new_quality)
+        video_encoder.set_encoding_speed(new_speed)
+        video_encoder.set_encoding_quality(new_quality)
     finally:
         video_encoder_lock.release()
 

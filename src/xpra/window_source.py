@@ -168,6 +168,7 @@ class WindowSource(object):
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
                     encoding, encodings,
+                    default_damage_options,
                     encoding_client_options, supports_rgb24zlib,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
@@ -177,7 +178,9 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        self.encoding_client_options = encoding_client_options #does the client support encoding options?
+        self.default_damage_options = default_damage_options    #default encoding options, like "quality"
+                                                        #may change at runtime (ie: see ServerSource.set_quality)
+        self.encoding_client_options = encoding_client_options  #does the client support encoding options?
         self.supports_rgb24zlib = supports_rgb24zlib    #supports rgb24 compression outside network layer (unwrapped)
         self.batch_config = batch_config
         #auto-refresh:
@@ -280,7 +283,8 @@ class WindowSource(object):
         if self.batch_config.last_updated+self.batch_config.recalculate_delay<now:
             #simple timeout
             calculate_batch_delay(window, self.wid, self.batch_config, self.global_statistics, self.statistics,
-                                  self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality)
+                                  self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
+                                  fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)
         if self.batch_config.delay>self.batch_config.min_delay:
             #already above batching threshold
             return
@@ -318,7 +322,7 @@ class WindowSource(object):
             * create a new delayed region if we find the client needs it
             Also takes care of updating the batch-delay in case of congestion.
             The options dict is currently used for carrying the
-            "jpegquality" / "quality" values, and potentially others.
+            "quality" and "override_options" values, and potentially others.
             When damage requests are delayed and bundled together,
             specify an option of "override_options"=True to
             force the current options to override the old ones,
@@ -655,11 +659,11 @@ class WindowSource(object):
         from xpra.webm.encode import EncodeRGB
         from xpra.webm.handlers import BitmapHandler
         image = BitmapHandler(data, BitmapHandler.RGB, w, h, rowstride)
-        q = 50
+        q = 80
         if options:
             q = options.get("quality", 80)
         q = min(99, max(1, q))
-        return Compressed("webp", str(EncodeRGB(image).data)), {"quality" : q}
+        return Compressed("webp", str(EncodeRGB(image, quality=q).data)), {"quality" : q}
 
     def rgb24_encode(self, data):
         #compress here and return a wrapper so network code knows it is already zlib compressed:
@@ -677,9 +681,9 @@ class WindowSource(object):
         buf = StringIO()
         client_options = {}
         if coding=="jpeg":
-            q = 50
+            q = 80
             if options:
-                q = options.get("jpegquality", 50)
+                q = options.get("quality", 80)
             q = min(99, max(1, q))
             log("sending with jpeg quality %s", q)
             im.save(buf, "JPEG", quality=q)

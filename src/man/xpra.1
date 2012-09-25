@@ -43,6 +43,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-tray\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding=ENCODING\fP]
+[\fB\-\-quality=VALUE\fP]
 [\fB\-\-jpeg\-quality=VALUE\fP]
 [\fB\-\-auto\-refresh\-delay=DELAY\fP]
 [\fB\-\-max\-bandwidth=BW\fP]
@@ -277,11 +278,12 @@ there are a number of encodings supported:
 \fBjpeg\fP, \fBpng\fP, \fBrgb24\fP, \fBvpx\fP and \fBx264\fP
 (some may not be available in your environment).
 The default is generally \fBpng\fP, if available.
-\fBpng\fP is compressed and lossless, it is more efficient than
-\fBrgb24\fP (rather inefficient, it is compressed with zlib,
-see the \fB\-\-compress\fP option).
-\fBjpeg\fP can be useful for graphical applications
-(see \fB\-\-jpeg\-quality\fP below).
+\fBpng\fP is compressed and lossless, the most efficient lossless
+encoding.
+\fBrgb24\fP (rather inefficient, it is compressed with zlib).
+\fBwebp\fP can be useful for graphical applications, and is
+generally better than jpeg.
+\fBjpeg\fP can be useful for graphical applications.
 \fBvpx\fP and \fBx264\fP are both lossy and are
 very efficient with graphics or high framerate applications,
 \fBx264\fP is also very usable with text.
@@ -408,20 +410,27 @@ This compression is not used on pixel data (except
 when using the \fBrgb24\fP encoding).
 .TP
 \fB\-\-jpeg\-quality\fP=\fIVALUE\fP
-This option sets the JPEG compression quality of pixel data sent by
-the server, jpeg must first be enabled with \fB\-\-encoding=jpeg\fP.
-The valid values range from 0 (lowest quality, high compression -
+Deprecated, use \fB\-\-quality\fP:
+.TP
+
+\fB\-\-quality\fP=\fIVALUE\fP
+This option sets the image compression quality of pixel data sent by
+the server when using some lossy encodings (\fBjpeg\fP, \fBwebp\fP or \fBx264\fP),
+First, one of those lossy encodings must be enabled with \fB\-\-encoding=\fP.
+The valid values range from 1 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
-particularly useful). (requires \fBjpeg\fP encoding)
+particularly useful).
+Note that the x264 encoding normally use a variable quality
+determined by the connection's performance, this option forces
+a fixed quality setting. 
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically
-refreshed.
+refreshed using a high quality picture setting (95%).
 The delay is a floating-point number and is in seconds.
-This option is disabled by default.
-If using the \fBjpeg\fP encoding, for which this switch was designed,
-the refresh will override the current jpeg quality encoding and it
-will use an almost lossless quality setting of 95%.
+This option is enabled by default with a delay of 1 second.
+This option is only relevant when using a lossy encoding
+(\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP).
 .TP
 \fB\-\-max\-bandwidth\fP=\fIBW\fP
 Specify the link's maximal receive bandwidth. Xpra will adjust the

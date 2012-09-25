@@ -13,6 +13,19 @@ from wimpiggy.log import Logger
 log = Logger()
 HOME = os.path.expanduser("~/")
 
+def getoutput(cmd, env=None):
+    try:
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, close_fds=True)
+    except Exception, e:
+        print("error running %s: %s" % (cmd, e))
+        raise e
+    (out,err) = process.communicate()
+    code = process.poll()
+    if code!=0:
+        raise Exception("command '%s' returned error code %s, out=%s, err=%s" % (cmd, code, out, err))
+    return out
+
+
 #You will probably need to change those:
 IP = "127.0.0.1"            #this is your IP
 PORT = 10000                #the port to test on
@@ -133,16 +146,25 @@ XPRA_SERVER_STOP_COMMANDS = [
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (IP, PORT)]
 XPRA_USE_XDUMMY = True
-XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
-XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
-XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
-XPRA_JPEG_OPTIONS = [40, 80, 90]
-XPRA_JPEG_OPTIONS = [40, 90]
-XPRA_JPEG_OPTIONS = [80]
+XPRA_QUALITY_OPTIONS = [40, 90]
+XPRA_QUALITY_OPTIONS = [80]
+XPRA_QUALITY_OPTIONS = [10, 40, 80, 90]
 XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
 XPRA_COMPRESSION_OPTIONS = [0, 3]
 XPRA_COMPRESSION_OPTIONS = [None]
 XPRA_CONNECT_OPTIONS = ["ssh", "tcp", "unix"]
+XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
+XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
+print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
+XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
+XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
+XPRA_TEST_ENCODINGS = ["png", "rgb24", "jpeg", "x264", "vpx", "mmap"]
+if XPRA_VERSION_NO>=[0, 7]:
+    XPRA_TEST_ENCODINGS.append("webp")
+XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
+                                 "webp" : XPRA_QUALITY_OPTIONS,
+                                 "x264" : XPRA_QUALITY_OPTIONS+[-1],
+                                 }
 
 
 check = [TRICKLE_BIN]
@@ -176,18 +198,6 @@ def try_to_kill(process, grace=0):
             process.kill()
         except Exception, e:
             print("could not stop process %s: %s" % (process, e))
-
-def getoutput(cmd, env=None):
-    try:
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env, close_fds=True)
-    except Exception, e:
-        print("error running %s: %s" % (cmd, e))
-        raise e
-    (out,err) = process.communicate()
-    code = process.poll()
-    if code!=0:
-        raise Exception("command '%s' returned error code %s, out=%s, err=%s" % (cmd, code, out, err))
-    return out
 
 def find_matching_lines(out, pattern):
     lines = []
@@ -261,10 +271,6 @@ if err:
     if len(v_lines)==1:
         VNCVIEWER_VERSION = "TigerVNC Viewer %s" % (v_lines[0].split()[5])
 print ("VNCVIEWER_VERSION=%s" % VNCVIEWER_VERSION)
-
-XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
-XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
-print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 
 SVN_VERSION = getoutput(["svnversion", "-n"])
 
@@ -598,10 +604,8 @@ def test_xpra():
         for down,up,latency in shaping_options:
             for x11_test_command in X11_TEST_COMMANDS:
                 for encoding in XPRA_TEST_ENCODINGS:
-                    QUALITY = [-1]
-                    if encoding=="jpeg":
-                        QUALITY = XPRA_JPEG_OPTIONS
-                    for jpeg_q in QUALITY:
+                    quality_options = XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
+                    for quality in quality_options:
                         comp_options = XPRA_COMPRESSION_OPTIONS
                         for compression in comp_options:
                             cmd = trickle_command(down, up, latency)
@@ -622,9 +626,12 @@ def test_xpra():
                                 cmd.append("--no-bell")
                                 cmd.append("--no-cursors")
                                 cmd.append("--no-notifications")
-                            if encoding=="jpeg":
-                                cmd.append("--jpeg-quality=%s" % jpeg_q)
-                                name = "%s-%s" % (encoding, jpeg_q)
+                            if encoding in ("jpeg", "webp"):
+                                if XPRA_VERSION_NO>=[0, 7]:
+                                    cmd.append("--quality=%s" % quality)
+                                else:
+                                    cmd.append("--jpeg-quality=%s" % quality)
+                                name = "%s-%s" % (encoding, quality)
                             else:
                                 name = encoding
                             if encoding!="mmap":

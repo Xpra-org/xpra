@@ -271,8 +271,12 @@ def main(script_file, cmdline):
     if "jpeg" in ENCODINGS:
         group.add_option("--jpeg-quality", action="store",
                           metavar="LEVEL",
-                          dest="jpegquality", type="int", default="80",
-                          help="Use jpeg compression with given quality (1-100). Default: 80")
+                          dest="quality", type="int", default=None,
+                          help="Deprecated - use 'quality'")
+        group.add_option("--quality", action="store",
+                          metavar="LEVEL",
+                          dest="quality", type="int", default=int_default("quality", -1),
+                          help="Use image compression with the given quality - only relevant to lossy encodings (1-100, -1 to disable). Default: %default.")
         group.add_option("-b", "--max-bandwidth", action="store",
                           dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
@@ -367,7 +371,7 @@ def main(script_file, cmdline):
     if "jpeg" not in ENCODINGS:
         #ensure the default values are set even though
         #the option is not shown to the user as it is not available
-        options.jpegquality = 80
+        options.quality = 80
         options.max_bandwidth = 0
     try:
         int(options.dpi)
@@ -567,8 +571,8 @@ def run_client(parser, opts, extra_args, mode):
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
-    if opts.jpegquality < 0 or opts.jpegquality > 100:
-        parser.error("Jpeg quality must be between 0 and 100 inclusive.")
+    if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
+        parser.error("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     if mode=="screenshot":
         from xpra.client_base import ScreenshotXpraClient

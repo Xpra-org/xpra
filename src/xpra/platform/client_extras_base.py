@@ -907,7 +907,7 @@ class ClientExtrasBase(object):
                     if self.client.encoding!=enc:
                         self.client.set_encoding(enc)
                         log.debug("setting encoding to %s", enc)
-                        self.set_jpegmenu()
+                        self.set_qualitymenu()
                         self.updated_menus()
                 encoding_item.set_active(encoding==self.client.encoding)
                 encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
@@ -918,39 +918,54 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_encodingsmenuitem)
         return encodings
 
-    def make_jpegsubmenu(self):
-        self.jpeg_quality = self.menuitem("JPEG Quality", "slider.png", "Change JPEG quality setting", None)
-        self.jpeg_submenu = gtk.Menu()
-        self.jpeg_quality.set_submenu(self.jpeg_submenu)
-        self.popup_menu_workaround(self.jpeg_submenu)
-        jpeg_options = [10, 50, 80, 95]
-        if self.client.jpegquality>0 and self.client.jpegquality not in jpeg_options:
+    def make_qualitysubmenu(self):
+        self.quality = self.menuitem("Quality", "slider.png", "Change quality setting", None)
+        self.quality_submenu = gtk.Menu()
+        self.quality.set_submenu(self.quality_submenu)
+        self.popup_menu_workaround(self.quality_submenu)
+        quality_options = [-1, 10, 50, 80, 95]
+        if self.client.quality>0 and self.client.quality not in quality_options:
             """ add the current value to the list of options """
             i = 0
-            for x in jpeg_options:
-                if self.client.jpegquality<x:
-                    jpeg_options.insert(i, self.client.jpegquality)
+            for x in quality_options:
+                if self.client.quality<x:
+                    quality_options.insert(i, self.client.quality)
                     break
                 i += 1
-        def set_jpeg_quality(item):
-            item = ensure_item_selected(self.jpeg_submenu, item)
-            q = int(item.get_label().replace("%", ""))
-            if q!=self.client.jpegquality:
-                log.debug("setting jpeg quality to %s", q)
-                self.client.send_jpeg_quality(q)
-        for q in jpeg_options:
-            qi = CheckMenuItem("%s%%" % q)
+        def set_quality(item):
+            item = ensure_item_selected(self.quality_submenu, item)
+            q = -1
+            try:
+                q = int(item.get_label().replace("%", ""))
+            except:
+                pass
+            if q!=self.client.quality:
+                log.debug("setting quality to %s", q)
+                self.client.send_quality(q)
+        self.auto_quality = None
+        for q in quality_options:
+            if q>=0:
+                qi = CheckMenuItem("%s%%" % q)
+            else:
+                self.auto_quality = CheckMenuItem("Auto")
+                qi = self.auto_quality
             qi.set_draw_as_radio(True)
-            qi.set_active(q==self.client.jpegquality)
-            qi.connect('activate', set_jpeg_quality)
-            self.jpeg_submenu.append(qi)
-        self.jpeg_submenu.show_all()
-        self.client.connect("handshake-complete", self.set_jpegmenu)
-        return self.jpeg_quality
+            qi.set_active(q==self.client.quality)
+            qi.connect('activate', set_quality)
+            self.quality_submenu.append(qi)
+        self.quality_submenu.show_all()
+        self.client.connect("handshake-complete", self.set_qualitymenu)
+        return self.quality
 
-    def set_jpegmenu(self, *args):
-        if self.jpeg_quality:
-            self.jpeg_quality.set_sensitive("jpeg"==self.client.encoding)
+    def set_qualitymenu(self, *args):
+        if self.quality:
+            self.quality.set_sensitive(self.client.encoding in ("jpeg", "webp", "x264"))
+            is_x264 = self.client.encoding in ("x264")
+            self.auto_quality.set_sensitive(is_x264)
+            if is_x264:
+                self.auto_quality.set_label("Auto")
+            else:
+                self.auto_quality.set_label("Default")
             self.updated_menus()
 
     def make_layoutsmenuitem(self):
@@ -1084,11 +1099,12 @@ class ClientExtrasBase(object):
             menu.append(self.make_encodingsmenuitem())
         else:
             self.encodings_submenu = None
-        if "jpeg" in ENCODINGS:
-            menu.append(self.make_jpegsubmenu())
+        lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
+        if len(lossy_encodings)>0:
+            menu.append(self.make_qualitysubmenu())
         else:
-            self.jpeg_quality = None
-            self.jpeg_submenu = None
+            self.quality = None
+            self.quality_submenu = None
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
         if not self.client.readonly:

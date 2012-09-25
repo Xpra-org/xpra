@@ -99,9 +99,9 @@ class XpraClient(XpraClientBase):
         self.compression_level = opts.compression_level
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
-        if self.max_bandwidth>0.0 and self.jpegquality==0:
-            """ jpegquality was not set, use a better start value """
-            self.jpegquality = 50
+        if self.max_bandwidth>0.0 and self.quality==0:
+            """ quality was not set, use a better start value """
+            self.quality = 80
         self.dpi = int(opts.dpi)
 
         #draw thread:
@@ -127,6 +127,7 @@ class XpraClient(XpraClientBase):
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
+        self.change_quality = False
         self._client_extras = ClientExtras(self, opts, conn)
         self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
         self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
@@ -176,13 +177,13 @@ class XpraClient(XpraClientBase):
             bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay
             self.last_input_bytecount = bytecount;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
-            q = self.jpegquality
+            q = self.quality
             if bw > self.max_bandwidth:
                 q -= 10
             elif bw < self.max_bandwidth:
                 q += 5
             q = max(10, min(95 ,q))
-            self.send_jpeg_quality(q)
+            self.send_quality(q)
             return True
         if (self.max_bandwidth):
             self.last_input_bytecount = 0
@@ -600,10 +601,13 @@ class XpraClient(XpraClientBase):
             _, sl = self.server_ping_latency[-1]
         self.send(["ping_echo", echotime, l1, l2, l3, int(1000.0*sl)])
 
-    def send_jpeg_quality(self, q):
+    def send_quality(self, q):
         assert q>0 and q<100
-        self.jpegquality = q
-        self.send(["jpeg-quality", self.jpegquality])
+        self.quality = q
+        if self.change_quality:
+            self.send(["quality", self.quality])
+        else:
+            self.send(["jpeg-quality", self.quality])
 
     def send_refresh(self, wid):
         self.send(["buffer-refresh", wid, True, 95])
@@ -665,6 +669,7 @@ class XpraClient(XpraClientBase):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
+        self.change_quality = capabilities.get("change-quality", False)
         if self.mmap_enabled:
             log.info("mmap enabled using %s", self.mmap_file)
         #the server will have a handle on the mmap file by now, safe to delete:

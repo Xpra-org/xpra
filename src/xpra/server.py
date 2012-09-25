@@ -290,6 +290,7 @@ class XpraServer(gobject.GObject):
                 i += 1
         log("randr enabled: %s", self.randr)
 
+        self.default_quality = opts.quality
         self.pulseaudio = opts.pulseaudio
         self.sharing = opts.sharing
         self.bell = opts.bell
@@ -1095,7 +1096,7 @@ class XpraServer(gobject.GObject):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
-        ss = ServerSource(proto, self.supports_mmap)
+        ss = ServerSource(proto, self.supports_mmap, self.default_quality)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
@@ -1188,6 +1189,7 @@ class XpraServer(gobject.GObject):
         capabilities["rencode"] = has_rencode
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
+        capabilities["change-quality"] = True
         capabilities["client_window_properties"] = True
         capabilities["auto_refresh_delay"] = client_capabilities.get("auto_refresh_delay", 0)/1000
         add_version_info(capabilities)
@@ -1619,7 +1621,6 @@ class XpraServer(gobject.GObject):
         else:
             return
         opts = {"quality" : qual,
-                "jpegquality" : qual,
                 "override_options" : True}
         log("process_buffer_refresh for windows: %s, with options=%s", wid_windows, opts)
         self.refresh_windows(proto, wid_windows, opts)
@@ -1634,10 +1635,10 @@ class XpraServer(gobject.GObject):
                     continue
             self._server_sources.get(proto).refresh(wid, window, opts)
 
-    def _process_jpeg_quality(self, proto, packet):
+    def _process_quality(self, proto, packet):
         quality = packet[1]
         log("Setting quality to ", quality)
-        self._server_sources.get(proto).set_default_quality(quality)
+        self._server_sources.get(proto).set_quality(quality)
         self.refresh_windows(proto, self._id_to_window)
 
     def _process_connection_lost(self, proto, packet):
@@ -1693,7 +1694,8 @@ class XpraServer(gobject.GObject):
         "pointer-position": _process_pointer_position,
         "close-window": _process_close_window,
         "shutdown-server": _process_shutdown_server,
-        "jpeg-quality": _process_jpeg_quality,
+        "jpeg-quality": _process_quality,
+        "quality": _process_quality,
         "buffer-refresh": _process_buffer_refresh,
         "screenshot": _process_screenshot,
         "desktop_size": _process_desktop_size,

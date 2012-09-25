@@ -144,7 +144,7 @@ class ServerSource(object):
     damage_packet_queue.
     """
 
-    def __init__(self, protocol, supports_mmap):
+    def __init__(self, protocol, supports_mmap, default_quality):
         self.closed = False
         self.ordinary_packets = []
         self.protocol = protocol
@@ -154,9 +154,10 @@ class ServerSource(object):
         self.mmap = None
         self.mmap_size = 0
 
-        self.encoding = None                       #the default encoding for all windows
-        self.encodings = []                        #all the encodings supported by the client
-        self.encoding_client_options = False       #does the client support encoding options?
+        self.default_quality = default_quality      #default encoding quality for lossless encodings
+        self.encoding = None                        #the default encoding for all windows
+        self.encodings = []                         #all the encodings supported by the client
+        self.encoding_client_options = False        #does the client support encoding options?
         self.png_window_icons = False
         self.default_batch_config = DamageBatchConfig()
         self.default_damage_options = {}
@@ -223,8 +224,13 @@ class ServerSource(object):
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
         self.encodings = capabilities.get("encodings", [])
         self.set_encoding(capabilities.get("encoding", None), None)
-        if "jpeg" in capabilities:
-            self.default_damage_options["jpegquality"] = capabilities["jpeg"]
+        q = self.default_quality
+        if "jpeg" in capabilities:      #pre 0.7 versions
+            q = capabilities["jpeg"]
+        if "quality" in capabilities:   #0.7 onwards:
+            q = capabilities["quality"]
+        if q>=0:
+            self.default_damage_options["quality"] = q
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000)
         #mmap:
@@ -439,8 +445,11 @@ class ServerSource(object):
         if len(batch_delays)>0:
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
-    def set_default_quality(self, quality):
-        self.default_damage_options["jpegquality"] = quality
+    def set_quality(self, quality):
+        if quality==-1:
+            del self.default_damage_options["quality"]
+        else:
+            self.default_damage_options["quality"] = quality
 
     def refresh(self, wid, window, opts):
         self.cancel_damage(wid)
@@ -467,6 +476,7 @@ class ServerSource(object):
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings,
+                              self.default_damage_options,
                               self.encoding_client_options, self.supports_rgb24zlib,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws
