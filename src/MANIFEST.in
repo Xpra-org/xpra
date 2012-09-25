@@ -5,7 +5,7 @@ include xpra/x264/*.h
 include xpra/vpx/*.h
 include *.desktop
 include *.png
-include *.1
+recursive-include man *
 recursive-include patches *
 recursive-include etc *
 recursive-include icons *
