@@ -30,6 +30,7 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define no_webp 1
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
@@ -43,6 +44,7 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define no_webp 1
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
 %if 0%{?static_video_libs}
@@ -54,6 +56,10 @@
 %if %is_suse
 %define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
 %define requires_extra %{nil}
+%endif
+
+%if 0%{?no_webp}
+%define requires_webp %{nil}
 %endif
 
 
@@ -460,7 +466,7 @@ cd parti-all-%{version}
 %patch1 -p1
 %patch2 -p1
 %endif
-%if 0%{?requires_webp}
+%if 0%{?no_webp}
 %patch3 -p1
 %endif
 %if 0%{?static_x264}
