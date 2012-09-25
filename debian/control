@@ -33,6 +33,7 @@ Package: xpra
 Architecture: any
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
         ,python-wimpiggy (=${binary:Version})
+        ,libwebp2
         ,python-gtk2
         ,x11-xserver-utils
         ,xvfb | xserver-xorg-video-dummy
