@@ -46,7 +46,7 @@ vpx_ENABLED = True
 
 
 
-webm_ENABLED = True
+webp_ENABLED = False
 
 
 
@@ -65,7 +65,7 @@ for arg in sys.argv:
     elif arg == "--without-vpx":
         vpx_ENABLED = False
     elif arg == "--without-webm":
-        webm_ENABLED = False
+        webp_ENABLED = False
     elif arg == "--without-rencode":
         rencode_ENABLED = False
     elif arg == "--without-clipboard":
@@ -81,7 +81,7 @@ packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
           "xpra", "xpra.scripts", "xpra.platform",
           ]
-if webm_ENABLED:
+if webp_ENABLED:
     packages.append("xpra.webm")
 
 # Add build info to build_info.py file:
@@ -243,7 +243,7 @@ if sys.platform.startswith("win"):
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
                ]
 
-    if webm_ENABLED:
+    if webp_ENABLED:
         #add the webm DLL to the output:
         webm_DLL = "C:\\libwebp-0.2.0-windows-x86\\bin\\libwebp_a.dll"
         data_files.append(('', [webm_DLL]))

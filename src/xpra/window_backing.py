@@ -303,8 +303,8 @@ class PixmapBacking(Backing):
         self.fire_paint_callbacks(callbacks, True)
         return  False
 
-    def paint_webm(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        assert "webm" in ENCODINGS
+    def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        assert "webp" in ENCODINGS
         from xpra.webm.decode import DecodeRGB
         rgb24 = DecodeRGB(img_data)
         gobject.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, width*3, options, callbacks)
@@ -364,8 +364,8 @@ class PixmapBacking(Backing):
             self.paint_x264(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "vpx":
             self.paint_vpx(img_data, x, y, width, height, rowstride, options, callbacks)
-        elif coding == "webm":
-            self.paint_webm(img_data, x, y, width, height, rowstride, options, callbacks)
+        elif coding == "webp":
+            self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
             gobject.idle_add(self.paint_pixbuf, coding, img_data, x, y, width, height, rowstride, options, callbacks)
 

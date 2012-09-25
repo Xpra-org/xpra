@@ -224,7 +224,7 @@ except:
 
 # find the default encoding (below list is in our hard-coded preferred order):
 DEFAULT_ENCODING = ENCODING_OPTIONS[0]
-for enc in [ "png", "x264", "vpx", "webm", "jpeg", "rgb24" ]:
+for enc in [ "png", "x264", "vpx", "webp", "jpeg", "rgb24" ]:
 	if enc in ENCODING_OPTIONS:
 		DEFAULT_ENCODING = enc
 		break

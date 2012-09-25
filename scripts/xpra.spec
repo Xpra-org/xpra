@@ -16,6 +16,7 @@
 %define requires_extra %{nil}
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
+%define requires_webp , libwebp
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
@@ -28,6 +29,7 @@
 %if 0%{?el6}
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
+%define requires_webp %{nil}
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
@@ -40,6 +42,7 @@
 %if 0%{?el5}
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
+%define requires_webp %{nil}
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
 %if 0%{?static_video_libs}
@@ -60,7 +63,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_opengl}
+Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
 URL: http://xpra.org/

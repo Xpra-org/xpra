@@ -633,8 +633,8 @@ class WindowSource(object):
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24":
             data, client_options = self.rgb24_encode(data)
-        elif coding=="webm":
-            data, client_options = self.webm_encode(w, h, data, rowstride, options)
+        elif coding=="webp":
+            data, client_options = self.webp_encode(w, h, data, rowstride, options)
         elif coding=="mmap":
             pass        #already handled via mmap_send
         else:
@@ -651,7 +651,7 @@ class WindowSource(object):
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
         return packet
 
-    def webm_encode(self, w, h, data, rowstride, options):
+    def webp_encode(self, w, h, data, rowstride, options):
         from xpra.webm.encode import EncodeRGB
         from xpra.webm.handlers import BitmapHandler
         image = BitmapHandler(data, BitmapHandler.RGB, w, h, rowstride)
@@ -659,7 +659,7 @@ class WindowSource(object):
         if options:
             q = options.get("quality", 80)
         q = min(99, max(1, q))
-        return Compressed("webm", str(EncodeRGB(image).data)), {"quality" : q}
+        return Compressed("webp", str(EncodeRGB(image).data)), {"quality" : q}
 
     def rgb24_encode(self, data):
         #compress here and return a wrapper so network code knows it is already zlib compressed:
