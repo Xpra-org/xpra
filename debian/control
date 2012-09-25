@@ -27,7 +27,7 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
         ,python-wimpiggy (>=${source:Version})
         ,python-gtk2
-        ,xserver-xorg-video-dummy, xserver-xorg-input-void
+        ,xvfb
         ,ipython
 Description: tabbing/tiling window manager using GTK+
  Parti is a tabbing/tiling (one might say "partitioning") window manager.  Its
@@ -41,13 +41,11 @@ Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
         ,libwebp2
         ,python-gtk2
         ,x11-xserver-utils
-        ,xvfb | xserver-xorg-video-dummy
-Recommends: python-gtkglext1
-           ,python-imaging
-           ,python-opengl
+        ,xserver-xorg-video-dummy, xserver-xorg-input-void
+Recommends: python-imaging
+        ,python-gtkglext1, python-opengl
 # keyboard-configuration (>= 1.82) is workaround for #180 to fix keypad keys forwarding.
-           ,keyboard-configuration (>= 1.82)
-           ,xserver-xorg-video-dummy
+        ,keyboard-configuration (>= 1.82)
 Suggests: openssh-client, openssh-server, python-dbus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
