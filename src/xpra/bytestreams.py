@@ -21,6 +21,8 @@ def untilConcludes(f, *a, **kw):
 
 class Connection(object):
     def __init__(self, target):
+        if type(target)==tuple:
+            target = ":".join([str(x) for x in target])
         self.target = target
         self.input_bytecount = 0
         self.output_bytecount = 0

@@ -399,6 +399,11 @@ class ServerSource(object):
             This is used by server.py to provide those statistics to clients
             via the 'xpra info' command.
         """
+        info["client_type%s" % suffix] = self.client_type
+        try:
+            info["client_connection%s" % suffix] = str(self.protocol._conn.target)
+        except:
+            pass
         info["client_encodings%s" % suffix] = ",".join(self.encodings)
         info["damage_data_queue_size%s.current" % suffix] = self.damage_data_queue.qsize()
         info["damage_packet_queue_size%s.current" % suffix] = len(self.damage_packet_queue)
