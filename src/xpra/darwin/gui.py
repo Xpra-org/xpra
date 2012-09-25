@@ -86,7 +86,7 @@ class ClientExtras(ClientExtrasBase):
             add_item(self.make_encodingsmenuitem())
             if not self.client.readonly:
                 add_item(self.make_layoutsmenuitem())
-            add_item(self.make_jpegsubmenu())
+            add_item(self.make_qualitysubmenu())
             #add_item(self.make_compressionmenu())
             add_item(self.make_refreshmenuitem())
             add_item(self.make_raisewindowsmenuitem())
