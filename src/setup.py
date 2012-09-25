@@ -46,7 +46,7 @@ vpx_ENABLED = True
 
 
 
-webp_ENABLED = False
+webp_ENABLED = True
 
 
 
@@ -64,7 +64,7 @@ for arg in sys.argv:
         x264_ENABLED = False
     elif arg == "--without-vpx":
         vpx_ENABLED = False
-    elif arg == "--without-webm":
+    elif arg == "--without-webp":
         webp_ENABLED = False
     elif arg == "--without-rencode":
         rencode_ENABLED = False
