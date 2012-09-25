@@ -241,6 +241,7 @@ if sys.platform.startswith("win"):
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
+                   ('webm', ["xpra/webm/LICENSE"])
                ]
 
     if webp_ENABLED:
@@ -321,6 +322,7 @@ else:
                 ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
                 ("share/parti", ["README", "parti.README"]),
                 ("share/xpra", ["xpra.README", "COPYING"]),
+                ("share/xpra/webm", ["xpra/webm/LICENSE"]),
                 ("share/wimpiggy", ["wimpiggy.README"]),
                 ("share/xpra/icons", glob.glob("icons/*")),
                 ("share/applications", ["xpra_launcher.desktop"]),
