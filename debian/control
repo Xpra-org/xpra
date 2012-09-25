@@ -3,6 +3,7 @@ Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@nagafix.co.uk>
 Build-Depends: debhelper (>= 8)
+              ,quilt
               ,cython (>= 0.16)
               ,libavcodec-dev
               ,libswscale-dev
