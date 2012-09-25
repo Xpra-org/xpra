@@ -23,7 +23,11 @@ Vcs-Browser: http://xpra.org/trac/browser/
 
 Package: parti
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-wimpiggy (>=${source:Version}), python-gtk2, xvfb, ipython
+Depends: ${python:Depends}, ${misc:Depends}
+        ,python-wimpiggy (>=${source:Version})
+        ,python-gtk2
+        ,xserver-xorg-video-dummy, xserver-xorg-input-void
+        ,ipython
 Description: tabbing/tiling window manager using GTK+
  Parti is a tabbing/tiling (one might say "partitioning") window manager.  Its
  goal is to bring this superior window management interface to modern,
