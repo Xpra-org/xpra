@@ -147,12 +147,26 @@ class WindowPerformanceStatistics(object):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
             sent_before = time.time()-latency
-            for start_send_at, start_bytes, end_send_at, end_bytes, pixels in list(self.damage_ack_pending.values()):
+            dropped_acks_time = time.time()-60      #1 minute
+            drop_missing_acks = []
+            for sequence, (start_send_at, start_bytes, end_send_at, end_bytes, pixels) in list(self.damage_ack_pending.items()):
                 if end_send_at==0 or start_send_at>sent_before:
                     continue
-                packets_backlog += 1
-                pixels_backlog += pixels
-                bytes_backlog += (end_bytes - start_bytes)
+                if start_send_at<dropped_acks_time:
+                    drop_missing_acks.append(sequence)
+                else:
+                    packets_backlog += 1
+                    pixels_backlog += pixels
+                    bytes_backlog += (end_bytes - start_bytes)
+            log.info("get_backlog missing acks: %s", drop_missing_acks)
+            #this should never happen...
+            if len(drop_missing_acks)>0:
+                log.error("get_backlog found some damage acks that have been pending for too long, expiring them: %s", drop_missing_acks)
+                for sequence in drop_missing_acks:
+                    try:
+                        del self.damage_ack_pending[sequence]
+                    except:
+                        pass
         return packets_backlog, pixels_backlog, bytes_backlog
 
 
@@ -369,6 +383,21 @@ class WindowSource(object):
         """
         self._damage_delayed_expired = True
         self.may_send_delayed()
+        if self._damage_delayed:
+            #NOTE: this should never happen
+            #the region has not been sent and it should now get sent
+            #when we eventually receive the pending ACKs
+            #but if somehow they go missing... try with a timer:
+            delayed_region_time = self._damage_delayed[0]
+            def delayed_region_timeout():
+                if self._damage_delayed:
+                    region_time = self._damage_delayed[0]
+                    if region_time==delayed_region_time:
+                        #same region!
+                        log.warn("delayed_region_timeout: sending now - something is wrong!")
+                        self.do_send_delayed_region()
+                return False
+            gobject.timeout_add(self.batch_config.max_delay, delayed_region_timeout)
 
     def may_send_delayed(self):
         """ send the delayed region for processing if there is no client backlog """
@@ -382,14 +411,18 @@ class WindowSource(object):
         if packets_backlog>0:
             if actual_delay<self.batch_config.max_delay:
                 log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %s ms",
-                        self.wid, packets_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+                        self.wid, packets_backlog, self.batch_config.delay, dec1(actual_delay))
                 #this method will get fired again damage_packet_acked
                 return False
             else:
                 log.warn("send_delayed for wid %s, elapsed time %s is above limit of %s - sending now", self.wid, dec1(actual_delay), dec1(self.batch_config.max_delay))
         else:
             log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, dec1(self.batch_config.delay), dec1(actual_delay))
-        self.batch_config.last_actual_delays.append((now, actual_delay*1000.0))
+        self.batch_config.last_actual_delays.append((now, actual_delay))
+        self.do_send_delayed_region()
+        return False
+    
+    def do_send_delayed_region(self):
         delayed = self._damage_delayed
         self._damage_delayed = None
         self.send_delayed_regions(*delayed)
@@ -586,7 +619,6 @@ class WindowSource(object):
             we record the 'client decode time' (provided by the client itself)
             and the "client latency".
         """
-        log("packet decoding for window %s %sx%s took %s µs", self.wid, width, height, decode_time)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
