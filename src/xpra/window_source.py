@@ -292,7 +292,7 @@ class WindowSource(object):
         #or too many pixels in those requests
         #for the last time_unit:
         event_min_time = now-self.batch_config.time_unit
-        all_pixels = [pixels for event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
+        all_pixels = [pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
         if len(all_pixels)>self.batch_config.max_events or sum(all_pixels)>self.batch_config.max_pixels:
             #force batching: set it just above min_delay
             self.batch_config.delay = max(self.batch_config.min_delay+0.01, self.batch_config.delay)
@@ -377,15 +377,19 @@ class WindowSource(object):
             return False
         damage_time = self._damage_delayed[0]
         packets_backlog = self.get_packets_backlog()
-        if packets_backlog>0:
-            log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %s ms",
-                    self.wid, packets_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
-            #this method will get fired again damage_packet_acked
-            return False
-        log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, dec1(self.batch_config.delay), dec1(1000*(time.time()-damage_time)))
         now = time.time()
-        actual_delay = 1000*(time.time()-damage_time)
-        self.batch_config.last_actual_delays.append((now, actual_delay))
+        actual_delay = 1000.0*(time.time()-damage_time)
+        if packets_backlog>0:
+            if actual_delay<self.batch_config.max_delay:
+                log("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %s ms",
+                        self.wid, packets_backlog, self.batch_config.delay, dec1(1000*(time.time()-damage_time)))
+                #this method will get fired again damage_packet_acked
+                return False
+            else:
+                log.warn("send_delayed for wid %s, elapsed time %s is above limit of %s - sending now", self.wid, dec1(actual_delay), dec1(self.batch_config.max_delay))
+        else:
+            log("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, dec1(self.batch_config.delay), dec1(actual_delay))
+        self.batch_config.last_actual_delays.append((now, actual_delay*1000.0))
         delayed = self._damage_delayed
         self._damage_delayed = None
         self.send_delayed_regions(*delayed)
@@ -402,10 +406,6 @@ class WindowSource(object):
         def send_full_screen_update(actual_encoding):
             log("send_delayed_regions: using full screen update")
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
-
-        if coding in ("x264", "vpx"):
-            send_full_screen_update(coding)
-            return
 
         try:
             count_threshold = 60
@@ -489,9 +489,10 @@ class WindowSource(object):
         ww, wh = window.get_dimensions()
         actual_encoding = self.get_best_encoding(w*h, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
+            x, y = 0, 0
             w, h = ww, wh
         process_damage_time = time.time()
-        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, self._sequence, options)
+        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, actual_encoding, self._sequence, options)
         if not data:
             return
         log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
@@ -715,7 +716,7 @@ class WindowSource(object):
             Since this runs in the non-UI thread 'data_to_packet', we must
             use the 'video_encoder_lock' to prevent races.
         """
-        assert x==0 and y==0, "invalid position: %sx%s" % (x,y)
+        assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
         #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()
