@@ -42,7 +42,7 @@ ECHO %PYTHON_EXE% -OO setup.py build %BUILD_ARGS%
 %PYTHON_EXE% -OO setup.py build %BUILD_ARGS% > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
-	GOTO:EOF
+	GOTO:ERROR
 )
 
 IF %X264% NEQ 1 GOTO:NO_X264
@@ -50,7 +50,7 @@ SET X264_CODEC_PYD=build\lib.win32-2.7\xpra\x264\codec.pyd
 COPY %X264_CODEC_PYD% xpra\x264\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled x264 codec.pyd"
-	GOTO:EOF
+	GOTO:ERROR
 )
 :NO_X264
 IF %VPX% NEQ 1 GOTO:NO_VPX
@@ -58,7 +58,7 @@ SET VPX_CODEC_PYD=build\lib.win32-2.7\xpra\vpx\codec.pyd
 COPY %VPX_CODEC_PYD% xpra\vpx\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled vpx codec.pyd"
-	GOTO:EOF
+	GOTO:ERROR
 )
 :NO_VPX
 IF %RENCODE% NEQ 1 GOTO:NO_RENCODE
@@ -66,7 +66,7 @@ SET RENCODE_PYD=build\lib.win32-2.7\xpra\rencode\_rencode.pyd
 COPY %RENCODE_PYD% xpra\rencode\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled _rencode.pyd"
-	GOTO:EOF
+	GOTO:ERROR
 )
 :NO_RENCODE
 IF %CLIPBOARD% NEQ 1 GOTO:NO_CLIPBOARD
@@ -74,7 +74,7 @@ SET CLIPBOARD_PYD=build\lib.win32-2.7\wimpiggy\gdk\gdk_atoms.pyd
 COPY %CLIPBOARD_PYD% wimpiggy\gdk\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled gdk_atoms.pyd"
-	GOTO:EOF
+	GOTO:ERROR
 )
 :NO_CLIPBOARD
 
@@ -83,7 +83,7 @@ ECHO ****** py2exe
 %PYTHON_EXE% -OO setup.py py2exe %BUILD_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
-	GOTO:EOF
+	GOTO:ERROR
 )
 
 ECHO ***************************************************************
@@ -93,10 +93,15 @@ COPY win32\xpra.iss xpra.iss
 ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (
 	ECHO "InnoSetup error"
-	GOTO:EOF
+	GOTO:ERROR
 )
 dir Output
 MOVE /Y Output\Xpra_Setup.exe Xpra_Setup.exe
 RMDIR Output
 
 Xpra_Setup.exe
+GOTO:END
+
+:ERROR
+pause
+:END
