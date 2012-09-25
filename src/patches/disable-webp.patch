@@ -4,8 +4,8 @@ Description: Disable webp encoding support.
  
 Index: setup.py
 ===================================================================
---- setup.py	(revision 1656)
-+++ setup.py	(working copy)
+--- a/setup.py	(revision 1656)
++++ b/setup.py	(working copy)
 @@ -46,7 +46,7 @@
  
  
