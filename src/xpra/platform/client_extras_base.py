@@ -268,7 +268,7 @@ class ClientExtrasBase(object):
         window.set_resizable(True)
         window.set_decorated(True)
         pixbuf = self.get_pixbuf("statistics.png")
-        if not pixbuf:
+        if not pixbuf and self.tray_icon:
             pixbuf = self.get_pixbuf(self.tray_icon)
         if pixbuf:
             window.set_icon(pixbuf)
@@ -627,10 +627,11 @@ class ClientExtrasBase(object):
         dd = self.get_data_dir()
         if dd is None:
             return None
-        filename = os.path.join(dd, 'icons', icon_name)
-        if os.path.exists(filename):
-            return  filename
-        log.error("get_icon_filename(%s) %s does not exists!" % (icon_name, filename))
+        for icons_path in ("icons", "xpra/icons"):
+            filename = os.path.join(dd, icons_path, icon_name)
+            if os.path.exists(filename):
+                return  filename
+        log.error("get_icon_filename(%s) could not be found!", icon_name)
         return  None
 
     def get_license_text(self):
@@ -652,6 +653,8 @@ class ClientExtrasBase(object):
 
     def get_pixbuf(self, icon_name):
         try:
+            if not icon_name:
+                return None
             icon_filename = self.get_icon_filename(icon_name)
             if icon_filename:
                 if is_gtk3():
