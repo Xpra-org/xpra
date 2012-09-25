@@ -201,7 +201,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     # here we try to minimize damage-latency and client decoding speed
     if fixed_speed>=0:
         new_speed = fixed_speed
-        msg = "video encoder using fixed speed: %s" % fixed_speed
+        msg = "video encoder using fixed speed: %s", fixed_speed
     else:
         min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
         target_damage_latency = min_damage_latency + batch.delay/1000.0
@@ -226,7 +226,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     # here we try minimize client-latency, packet-backlog and batch.delay
     if fixed_quality>=0:
         new_quality = fixed_quality
-        msg = "video encoder using fixed quality: %s" % fixed_quality
+        msg = "video encoder using fixed quality: %s", fixed_quality
     else:
         packets_backlog, _, _ = statistics.get_backlog(target_latency)
         packets_bl = 1.0 - logp(packets_backlog/low_limit)
