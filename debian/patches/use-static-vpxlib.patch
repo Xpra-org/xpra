@@ -4,8 +4,8 @@ Description: Build vpx codec as a static library.
  
 --- a/setup.py
 +++ b/setup.py
-@@ -438,6 +438,10 @@
-
+@@ -465,6 +465,10 @@
+ 
  
  if vpx_ENABLED:
 +    def pkgconfig(*args):
@@ -17,7 +17,7 @@ Description: Build vpx codec as a static library.
                  ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
 --- a/debian/control
 +++ b/debian/control
-@@ -7,7 +7,6 @@
+@@ -8,7 +8,6 @@
                ,libavcodec-dev
                ,libswscale-dev
                ,libx11-dev

@@ -4,8 +4,8 @@ Description: Build x264 codec as a static library.
  
 --- a/setup.py
 +++ b/setup.py
-@@ -429,6 +429,10 @@
-
+@@ -456,6 +456,10 @@
+ 
  
  if x264_ENABLED:
 +    def pkgconfig(*args):
