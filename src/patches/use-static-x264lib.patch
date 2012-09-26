@@ -2,10 +2,10 @@ Description: Build x264 codec as a static library.
  Author: Arthur Huillet <ahuillet@serviware.com>
  Forwarded: not-needed
  
---- a/setup.py	(revision 1274)
-+++ b/setup.py	(working copy)
-@@ -429,6 +429,10 @@
-
+--- a/setup.py
++++ b/setup.py
+@@ -456,6 +456,10 @@
+ 
  
  if x264_ENABLED:
 +    def pkgconfig(*args):
@@ -15,3 +15,13 @@ Description: Build x264 codec as a static library.
      packages.append("xpra.x264")
      cython_add(Extension("xpra.x264.codec",
                  ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
+--- a/debian/control
++++ b/debian/control
+@@ -11,7 +11,6 @@
+               ,libxcomposite-dev
+               ,libxdamage-dev
+               ,libxtst-dev
+-              ,libx264-dev
+               ,python-all-dev
+               ,python-gobject-dev
+               ,python-gtk2-dev
