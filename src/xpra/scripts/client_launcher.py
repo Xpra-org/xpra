@@ -578,6 +578,7 @@ class ApplicationWindow:
 			set_sensitive(True)
 			print("error %s" % e)
 			return
+		sock.settimeout(None)
 		self.set_info_text("Connection established")
 		try:
 			from xpra.bytestreams import SocketConnection
