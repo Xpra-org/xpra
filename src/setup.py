@@ -326,12 +326,13 @@ else:
                 ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
                 ("share/parti", ["README", "parti.README"]),
                 ("share/xpra", ["xpra.README", "COPYING"]),
-                ("share/xpra/webm", ["xpra/webm/LICENSE"]),
                 ("share/wimpiggy", ["wimpiggy.README"]),
                 ("share/xpra/icons", glob.glob("icons/*")),
                 ("share/applications", ["xpra_launcher.desktop"]),
                 ("share/icons", ["xpra.png"])
                 ]
+    if webp_ENABLED:
+        data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
 
     if 'install' in sys.argv and sys.platform not in ["win32", "darwin"]:
         #prepare default [/usr/local]/etc configuration files:
