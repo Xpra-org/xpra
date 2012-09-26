@@ -20,11 +20,14 @@ except:
 	import thread					#@Reimport
 import subprocess
 
-import pygtk
-pygtk.require('2.0')
-import gtk
+
+from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+gtk = import_gtk()
+gdk = import_gdk()
+gobject = import_gobject()
 import pango
 import gobject
+import webbrowser
 
 import socket
 from xpra.client import XpraClient
@@ -35,7 +38,7 @@ SITE_DOMAIN = "xpra.org"
 SUBPROCESS_CREATION_FLAGS = 0
 APP_DIR = os.getcwd()
 ICONS_DIR = None
-GPL2 = "Your installation may be corrupted, the license text for GPL version 2 could not be found,\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt"
+GPL2 = None
 
 
 def valid_dir(path):
@@ -75,6 +78,52 @@ def get_icon(name):
 		return	None
 	return get_icon_from_file(filename)
 
+global about_dialog
+about_dialog = None
+def about(*args):
+	global about_dialog, GPL2
+	if about_dialog:
+		about_dialog.show()
+		about_dialog.present()
+		return
+	dialog = gtk.AboutDialog()
+	def on_website_hook(dialog, web, *args):
+		''' called when the website item is selected '''
+		webbrowser.open(SITE_URL)
+	def on_email_hook(dialog, mail, *args):
+		webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
+	gtk.about_dialog_set_url_hook(on_website_hook)
+	gtk.about_dialog_set_email_hook(on_email_hook)
+	dialog.set_name("Xpra")
+	from xpra import __version__
+	dialog.set_version(__version__)
+	dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',
+						'Nathaniel Smith <njs@pobox.com>',
+						'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
+	dialog.set_license(GPL2 or "Your installation may be corrupted, the license text for GPL version 2 could not be found,\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
+	dialog.set_website(SITE_URL)
+	dialog.set_website_label(SITE_DOMAIN)
+	dialog.set_logo(get_icon("xpra.png"))
+	dialog.set_program_name(APPLICATION_NAME)
+	def response(*args):
+		dialog.destroy()
+		global about_dialog
+		about_dialog = None
+	dialog.connect("response", response)
+	about_dialog = dialog
+	dialog.show()
+
+def load_license(gpl2_file):
+	global GPL2
+	if os.path.exists(gpl2_file):
+		try:
+			f = open(gpl2_file, mode='rb')
+			GPL2 = f.read()
+		finally:
+			if f:
+				f.close()
+	return GPL2 is not None
+	
 
 prepare_window = None
 """
@@ -103,6 +152,8 @@ if sys.platform.startswith("win"):
 		sys.stderr = sys.stdout
 		APP_DIR = os.path.dirname(sys.executable)
 		ICONS_DIR = os.path.join(APP_DIR, "icons")
+		gpl2_file = os.path.join(APP_DIR, "COPYING")
+		load_license(gpl2_file)
 elif sys.platform.startswith("darwin"):
 	rsc = None
 	try:
@@ -119,13 +170,7 @@ elif sys.platform.startswith("darwin"):
 				APP_DIR = rsc[:i+len(CONTENTS)]
 			ICONS_DIR = os.path.join(rsc, "share", "xpra", "icons")
 			gpl2_file = os.path.join(rsc, "share", "xpra", "COPYING")
-			if os.path.exists(gpl2_file):
-				try:
-					f = open(gpl2_file, mode='rb')
-					GPL2 = f.read()
-				finally:
-					if f:
-						f.close()
+			load_license(gpl2_file)
 
 		def prepare_window_osx(window):
 			def quit_launcher(*args):
@@ -145,40 +190,6 @@ elif sys.platform.startswith("darwin"):
 			# Add to the application menu:
 			item = gtk.MenuItem("About")
 			item.show()
-			global about_dialog
-			about_dialog = None
-			def about(*args):
-				import webbrowser
-				global about_dialog, GPL2
-				if about_dialog:
-					about_dialog.show()
-					about_dialog.present()
-					return
-				dialog = gtk.AboutDialog()
-				def on_website_hook(dialog, web, *args):
-					''' called when the website item is selected '''
-					webbrowser.open(SITE_URL)
-				def on_email_hook(dialog, mail, *args):
-					webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
-				gtk.about_dialog_set_url_hook(on_website_hook)
-				gtk.about_dialog_set_email_hook(on_email_hook)
-				dialog.set_name("Xpra")
-				from xpra import __version__
-				dialog.set_version(__version__)
-				dialog.set_copyright('Copyright (c) 2012, Nagafix Ltd')
-				dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',''))
-				dialog.set_license(str(GPL2))
-				dialog.set_website(SITE_URL)
-				dialog.set_website_label(SITE_DOMAIN)
-				dialog.set_logo(get_icon("xpra.png"))
-				dialog.set_program_name(APPLICATION_NAME)
-				def response(*args):
-					dialog.destroy()
-					global about_dialog
-					about_dialog = None
-				dialog.connect("response", response)
-				about_dialog = dialog
-				dialog.show()
 			item.connect("activate", about)
 			item.show()
 			
@@ -208,6 +219,15 @@ if not ICONS_DIR or not os.path.exists(ICONS_DIR):
 		if os.path.exists(x):
 			ICONS_DIR = x
 			break
+
+if not GPL2:
+	for x in [APP_DIR, "/usr/share/xpra", "/usr/local/share"]:
+		gpl2_file = os.path.join(x, "COPYING")
+		if load_license(gpl2_file):
+			break
+
+
+
 
 
 LOSSY_5 = "lowest quality"
@@ -310,6 +330,8 @@ def add_close_accel(window, callback):
 	accel_group = gtk.AccelGroup()
 	key, mod = gtk.accelerator_parse('<Alt>F4')
 	accel_group.connect_group(key, mod, gtk.ACCEL_LOCKED, callback)
+	escape_key, modifier = gtk.accelerator_parse('Escape')
+	accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
 	window.add_accel_group(accel_group)
 
 def scaled_image(pixbuf, icon_size):
@@ -430,13 +452,25 @@ class ApplicationWindow:
 			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
 		vbox.pack_start(self.info)
 
+		# Buttons:
+		hbox = gtk.HBox(False, 20)
+		vbox.pack_start(hbox)
+		# About button
+		about_button = gtk.Button("")
+		about_button.connect("clicked", about)
+		about_icon = get_icon("information.png")
+		if about_icon:
+			about_button.set_image(scaled_image(about_icon, 24))
+		else:
+			about_button.set_label("About")
+		hbox.pack_start(about_button, expand=False, fill=False)
 		# Connect button:
 		self.button = gtk.Button("Connect")
-		self.button.connect("clicked", self.connect_clicked, None)
+		self.button.connect("clicked", self.connect_clicked)
 		connect_icon = get_icon("retry.png")
 		if connect_icon:
 			self.button.set_image(scaled_image(connect_icon, 24))
-		vbox.pack_start(self.button)
+		hbox.pack_start(self.button)
 
 		def accel_close(*args):
 			gtk.main_quit()
@@ -459,6 +493,42 @@ class ApplicationWindow:
 	def run(self):
 		self.show()
 		gtk.main()
+
+	def about(self, *args):
+		if self.about_dialog:
+			self.about_dialog.present()
+			return
+		dialog = gtk.AboutDialog()
+		if not is_gtk3():
+			def on_website_hook(dialog, web, *args):
+				webbrowser.open("http://xpra.org/")
+			def on_email_hook(dialog, mail, *args):
+				webbrowser.open("mailto://"+mail)
+			gtk.about_dialog_set_url_hook(on_website_hook)
+			gtk.about_dialog_set_email_hook(on_email_hook)
+			xpra_icon = self.get_pixbuf("xpra.png")
+			if xpra_icon:
+				dialog.set_icon(xpra_icon)
+		dialog.set_name("Xpra")
+		from xpra import __version__
+		dialog.set_version(__version__)
+		dialog.set_copyright('Copyright (c) 2009-2012')
+		dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',
+							'Nathaniel Smith <njs@pobox.com>',
+							'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
+		#dialog.set_artists ([""])
+		dialog.set_license(self.get_license_text())
+		dialog.set_website("http://xpra.org/")
+		dialog.set_website_label("xpra.org")
+		pixbuf = self.get_pixbuf("xpra.png")
+		if pixbuf:
+			dialog.set_logo(pixbuf)
+		dialog.set_program_name("Xpra")
+		dialog.set_comments("\n".join(self.get_build_info()))
+		dialog.connect("response", self.close_about)
+		self.about_dialog = dialog
+		dialog.show()
+		dialog.present()
 
 	def encoding_changed(self, *args):
 		is_jpeg = self.encoding_combo.get_active_text()=="jpeg"
