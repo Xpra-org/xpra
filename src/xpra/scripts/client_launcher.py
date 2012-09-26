@@ -318,7 +318,7 @@ xpra_opts.notifications = default_bool("notifications", True)
 xpra_opts.sharing = default_bool("sharing", False)
 xpra_opts.delay_tray = default_bool("delay-tray", False)
 #these would need testing/work:
-xpra_opts.auto_refresh_delay = 0.0
+xpra_opts.auto_refresh_delay = 1.0
 xpra_opts.max_bandwidth = 0.0
 xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
 #these cannot be set in the xpra.conf (would not make sense):
