@@ -26,11 +26,13 @@ assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
 
 print(" ".join(sys.argv))
 
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+#*******************************************************************************
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
 #There are 3 empty lines in between each var so patches
 #cannot cause further patches to fail to apply due to context changes.
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+#*******************************************************************************
 
 
 
@@ -58,6 +60,7 @@ xdummy_ENABLED = False
 
 
 
+#allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
     if arg == "--without-x264":
@@ -75,30 +78,26 @@ for arg in sys.argv:
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
-
 print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, force Xdummy=%s" %
       (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, xdummy_ENABLED))
 
-packages = ["wimpiggy", "wimpiggy.lowlevel",
-          "parti", "parti.trays", "parti.addons", "parti.scripts",
-          "xpra", "xpra.scripts", "xpra.platform",
-          ]
-if webp_ENABLED:
-    packages.append("xpra.webm")
 
-# Add build info to build_info.py file:
-import add_build_info
-try:
-    add_build_info.main()
-except:
-    traceback.print_exc()
-    print("failed to update build_info")
+#*******************************************************************************
+# build options, these may get modified further down..
+#
+setup_options = {}
+setup_options["name"] = "parti-all"
+setup_options["author"] = "Antoine Martin"
+setup_options["author_email"] = "antoine@nagafix.co.uk"
+setup_options["version"] = parti.__version__
+setup_options["url"] = "http://xpra.org/"
+setup_options["download_url"] = "http://xpra.org/src/"
+setup_options["description"] = "A window manager library, a window manager, and a 'screen for X' utility"
 
 wimpiggy_desc = "A library for writing window managers, using GTK+"
 parti_desc = "A tabbing/tiling window manager using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
-
-full_desc = """This package contains several sub-projects:
+setup_options["long_description"] = """This package contains several sub-projects:
   wimpiggy:
     %s
   parti:
@@ -106,12 +105,188 @@ full_desc = """This package contains several sub-projects:
   xpra:
     %s""" % (wimpiggy_desc, parti_desc, xpra_desc)
 
+data_files = []
+setup_options["data_files"] = data_files
+packages = ["wimpiggy", "wimpiggy.lowlevel",
+          "parti", "parti.trays", "parti.addons", "parti.scripts",
+          "xpra", "xpra.scripts", "xpra.platform",
+          ]
+setup_options["packages"] = packages
+if webp_ENABLED:
+    packages.append("xpra.webm")
+
+ext_modules = []
+cmdclass = {}
+
+
+#*******************************************************************************
+# Utility methods for building with Cython
+def cython_version_check(min_version):
+    try:
+        from Cython.Compiler.Version import version as cython_version
+    except ImportError, e:
+        sys.exit("ERROR: Cannot find Cython: %s" % e)
+    from distutils.version import LooseVersion
+    if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
+        sys.exit("ERROR: Your version of Cython is too old to build this package\n"
+                 "You have version %s\n"
+                 "Please upgrade to Cython %s or better"
+                 % (cython_version, ".".join([str(part) for part in min_version])))
+
+def cython_add(extension, min_version=(0, 14, 0)):
+    global ext_modules, cmdclass
+    cython_version_check(min_version)
+    from Cython.Distutils import build_ext
+    ext_modules.append(extension)
+    cmdclass = {'build_ext': build_ext}
+
 def add_to_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
         values.append(arg)
 
-extra_options = {}
+PYGTK_PACKAGES = ["pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0"]
+X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
+
+# Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
+def pkgconfig(*packages_options, **ekw):
+    package_names = []
+    #find out which package name to use from potentially many options
+    #and bail out early with a meaningful error if we can't find any valid options
+    for package_options in packages_options:
+        #for this package options, find the ones that work
+        valid_option = None
+        if type(package_options)==str:
+            options = [package_options]     #got given just one string
+        else:
+            assert type(package_options)==list
+            options = package_options       #got given a list of options
+        for option in options:
+            cmd = ["pkg-config", "--exists", option]
+            proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            status = proc.wait()
+            if status==0:
+                valid_option = option
+                break
+        if not valid_option:
+            sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
+        package_names.append(valid_option)
+    print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
+    flag_map = {'-I': 'include_dirs',
+                '-L': 'library_dirs',
+                '-l': 'libraries'}
+    cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, _) = proc.communicate()
+    status = proc.wait()
+    if status!=0:
+        sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
+    kw = dict(ekw)
+    if sys.version>='3':
+        output = output.decode('utf-8')
+    for token in output.split():
+        if token[:2] in flag_map:
+            add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+        else: # throw others to extra_link_args
+            add_to_keywords(kw, 'extra_link_args', token)
+        for k, v in kw.items(): # remove duplicates
+            kw[k] = list(set(v))
+    WARN_ALL = True
+    if WARN_ALL:
+        add_to_keywords(kw, 'extra_compile_args', "-Wall")
+        add_to_keywords(kw, 'extra_link_args', "-Wall")
+    PIC = True
+    if PIC:
+        add_to_keywords(kw, 'extra_compile_args', "-fPIC")
+    print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
+    return kw
+
+
+#*******************************************************************************
+def get_xorg_conf_and_script():
+    if not XPRA_LOCAL_SERVERS_SUPPORTED:
+        return "etc/xpra/client-only/xpra.conf"
+    if xdummy_ENABLED:
+        return "etc/xpra/Xdummy/xpra.conf", None
+    XORG_BIN = None
+    PATHS = os.environ.get("PATH").split(os.pathsep)
+    for x in PATHS:
+        xorg = os.path.join(x, "Xorg")
+        if os.path.isfile(xorg):
+            XORG_BIN = xorg
+            break
+    def Xvfb():
+        return "etc/xpra/Xvfb/xpra.conf", None
+    if not XORG_BIN:
+        print("Xorg not found, cannot detect version or Xdummy support")
+        return Xvfb()
+
+    #do live detection
+    cmd = ["Xorg", "-version"]
+    print("detecting Xorg version using: %s" % str(cmd))
+    try:
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, _ = proc.communicate()
+        V_LINE = "X.Org X Server "
+        xorg_version = None
+        for line in out.decode("utf8").splitlines():
+            if line.startswith(V_LINE):
+                v_str = line[len(V_LINE):]
+                xorg_version = [int(x) for x in v_str.split(".")[:2]]
+                break
+        if not xorg_version:
+            print("Xorg version could not be detected, Xdummy support unavailable")
+            return Xvfb()
+        if xorg_version<[1, 12]:
+            print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
+            return Xvfb()
+        print("found valid recent version of Xorg server: %s" % v_str)
+        xorg_stat = os.stat(XORG_BIN)
+        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+            print("%s is suid, using the xpra_Xdummy wrapper" % XORG_BIN)
+            return "etc/xpra/xpra_Xdummy/xpra.conf", "scripts/xpra_Xdummy"
+        else:
+            print("using Xdummy config file")
+            return "etc/xpra/xpra_Xdummy/xpra.conf", None
+    except Exception, e:
+        print("failed to detect Xorg version: %s" % e)
+        print("not installing Xdummy support")
+        traceback.print_exc()
+        return  Xvfb()
+
+
+#*******************************************************************************
+if 'clean' in sys.argv or 'sdist' in sys.argv:
+    #clean and sdist don't actually use cython,
+    #so skip this (and avoid errors)
+    def pkgconfig(*packages_options, **ekw):
+        return {}
+    #always include all platform code in this case:
+    packages += ["xpra.xposix", "xpra.win32", "xpra.darwin"]
+    #ensure we remove the files we generate:
+    CLEAN_FILES = ["xpra/wait_for_x_server.c",
+                   "xpra/vpx/codec.c",
+                   "xpra/x264/codec.c",
+                   "xpra/rencode/rencode.c",
+                   "etc/xpra/xpra.conf",
+                   "wimpiggy/lowlevel/constants.pxi",
+                   "wimpiggy/lowlevel/bindings.c"]
+    if 'clean' in sys.argv:
+        CLEAN_FILES.append("xpra/build_info.py")
+    for x in CLEAN_FILES:
+        filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
+        if os.path.exists(filename):
+            print("removing Cython/build generated file: %s" % x)
+            os.unlink(filename)
+
+if "clean" not in sys.argv:
+    # Add build info to build_info.py file:
+    import add_build_info
+    add_build_info.main()
+
+
+
+#*******************************************************************************
 if sys.platform.startswith("win"):
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
@@ -136,7 +311,7 @@ if sys.platform.startswith("win"):
         filename = os.path.join(C_DLLs, *dll_file.split("/"))
         if not os.path.exists(filename) or not os.path.isfile(filename):
             sys.exit("ERROR: DLL file %s is missing or not a file!" % filename)
-        sys.stdout.write("verifying md5sum for %s: " % filename)
+        sys.stdout.write("* verifying md5sum for %s: " % filename)
         f = open(filename, mode='rb')
         data = f.read()
         f.close()
@@ -167,7 +342,7 @@ if sys.platform.startswith("win"):
     python_include_PATH = "C:\\Python27\\include"
     gtk2runtime_PATH = "%s\\runtime" % gtk2_PATH
     gtk2_lib_dir = "%s\\bin" % gtk2runtime_PATH
-    
+
     pygtk_include_dir = "%s\\pygtk-2.0" % python_include_PATH
     atk_include_dir = "%s\\include\\atk-1.0" % gtk2runtime_PATH
     gtk2_include_dir = "%s\\include\\gtk-2.0" % gtk2runtime_PATH
@@ -212,29 +387,31 @@ if sys.platform.startswith("win"):
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
-    windows = [
+    packages.append("xpra.win32")
+    #UI applications (detached from shell: no text output if ran from cmd.exe)
+    setup_options["windows"] = [
                     {'script': 'win32/xpra_silent.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
                     {'script': 'xpra/gtk_view_keyboard.py',             'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
                     {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
-    console = [
+    #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
+    setup_options["console"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
               ]
-    packages.append("xpra.win32")
-    includes = ['cairo', 'pango', 'pangocairo', 'atk', 'glib', 'gobject', 'gio', 'gtk.keysyms',
-                "Crypto", "Crypto.Cipher",
-                "hashlib",
-                "PIL",
-                "win32con", "win32gui", "win32process", "win32api"]
-    options = {
-                    'py2exe': {
-                               'unbuffered'     : True,
-                               'packages'       : packages,
-                               'includes'       : includes,
-                               'dll_excludes'   : 'w9xpopen.exe',
-                            }
-              }
-    data_files=[
+    py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
+                        "Crypto", "Crypto.Cipher",
+                        "hashlib",
+                        "PIL",
+                        "win32con", "win32gui", "win32process", "win32api"]
+    setup_options["options"] = {
+                                "py2exe": {
+                                           "unbuffered"     : True,
+                                           "packages"       : packages,
+                                           "includes"       : py2exe_includes,
+                                           "dll_excludes"   : "w9xpopen.exe",
+                                        }
+                                }
+    data_files += [
                    ('', ['COPYING']),
                    ('', ['xpra.README']),
                    ('', ['win32/website.url']),
@@ -243,7 +420,7 @@ if sys.platform.startswith("win"):
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
-               ]
+                   ]
 
     if webp_ENABLED:
         #Note: confusingly, the python bindings are called webm...
@@ -253,88 +430,70 @@ if sys.platform.startswith("win"):
         #and its license:
         data_files.append(('webm', ["xpra/webm/LICENSE"]))
 
-    extra_options = dict(
-        windows = windows,
-        console = console,
-        options = options,
-        data_files = data_files,
-        description = "Screen for X utility, allows you to connect to remote seamless sessions",
-    )
-else:
-    # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
-    def pkgconfig(*packages_options, **ekw):
-        packages = []
-        #find out which package name to use from potentially many options
-        #and bail out early with a meaningful error if we can't find any valid options
-        for package_options in packages_options:
-            #for this package options, find the ones that work
-            valid_option = None
-            if type(package_options)==str:
-                options = [package_options]     #got given just one string
-            else:
-                assert type(package_options)==list
-                options = package_options       #got given a list of options
-            for option in options:
-                cmd = ["pkg-config", "--exists", option]
-                proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                status = proc.wait()
-                if status==0:
-                    valid_option = option
-                    break
-            if not valid_option:
-                sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
-            packages.append(valid_option)
-        print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, packages))
-        flag_map = {'-I': 'include_dirs',
-                    '-L': 'library_dirs',
-                    '-l': 'libraries'}
-        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(packages),)]
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (output, _) = proc.communicate()
-        status = proc.wait()
-        if status!=0:
-            sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
-        kw = dict(ekw)
-        if sys.version>='3':
-            output = output.decode('utf-8')
-        for token in output.split():
-            if token[:2] in flag_map:
-                add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
-            else: # throw others to extra_link_args
-                add_to_keywords(kw, 'extra_link_args', token)
-            for k, v in kw.items(): # remove duplicates
-                kw[k] = list(set(v))
-        WARN_ALL = True
-        if WARN_ALL:
-            add_to_keywords(kw, 'extra_compile_args', "-Wall")
-            add_to_keywords(kw, 'extra_link_args', "-Wall")
-        PIC = True
-        if PIC:
-            add_to_keywords(kw, 'extra_compile_args', "-fPIC")
-        print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
-        return kw
 
+#*******************************************************************************
+else:
     if sys.platform.startswith("darwin"):
+        #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
+        PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
+        #special case for py2app command:
+        if "py2app" in sys.argv:
+            import py2app    #@UnresolvedImport
+            assert py2app is not None
+            Plist = dict(CFBundleDocumentTypes=[dict(CFBundleTypeExtensions=["xpra"],
+                                                 CFBundleTypeName="Xpra Session Config File",
+                                                 CFBundleName="Xpra",
+                                                 CFBundleTypeRole="Viewer"),
+                                            ]
+                     )
+            setup_options["app"]= ["./xpra/scripts/main.py"]
+            py2app_options = {
+                'iconfile': '../osx/xpra.icns',
+                'plist': Plist,
+                'site_packages': False,
+                'argv_emulation': True,
+                'strip': False,
+                "includes":   ["glib", "gio", "cairo", "pango", "pangocairo", "atk", "gobject", "gtk.keysyms",
+                                "hashlib", "Image",
+                                "wimpiggy.lowlevel.bindings", "xpra", "xpra.scripts", "xpra.scripts.main", "xpra.scripts.client_launcher",
+                                "xpra.vpx", "xpra.x264",
+                                ],
+                "frameworks": ['CoreFoundation', 'Foundation', 'AppKit'],
+                }
+
+            print("")
+            print("py2app setup_options:")
+            for k,v in py2app_options.items():
+                print("%s : %s" % (k,v))
+            print("")
+            #do not run cython with py2app (won't work)
+            #you have to run that separately!
+            def cython_add(*args):
+                pass
+            ext_modules = None
+            cmdclass = None
+            setup_options["py2app"] = py2app_options
+
         packages.append("xpra.darwin")
     else:
         packages.append("xpra.xposix")
 
-    scripts=["scripts/parti", "scripts/parti-repl",
-             "scripts/xpra", "scripts/xpra_launcher"]
+    scripts = ["scripts/parti", "scripts/parti-repl",
+               "scripts/xpra", "scripts/xpra_launcher"]
 
-    data_files=[
-                ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
-                ("share/parti", ["README", "parti.README"]),
-                ("share/xpra", ["xpra.README", "COPYING"]),
-                ("share/wimpiggy", ["wimpiggy.README"]),
-                ("share/xpra/icons", glob.glob("icons/*")),
-                ("share/applications", ["xpra_launcher.desktop"]),
-                ("share/icons", ["xpra.png"])
-                ]
+    data_files += [
+                    ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
+                    ("share/parti", ["README", "parti.README"]),
+                    ("share/xpra", ["xpra.README", "COPYING"]),
+                    ("share/wimpiggy", ["wimpiggy.README"]),
+                    ("share/xpra/icons", glob.glob("icons/*")),
+                    ("share/applications", ["xpra_launcher.desktop"]),
+                    ("share/icons", ["xpra.png"])
+                  ]
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
 
-    if 'install' in sys.argv and sys.platform not in ["win32", "darwin"]:
+    if 'install' in sys.argv and sys.platform!="darwin":
         #prepare default [/usr/local]/etc configuration files:
         if sys.prefix == '/usr':
             etc_prefix = '/etc/xpra'
@@ -342,95 +501,16 @@ else:
             etc_prefix = sys.prefix + '/etc/xpra'
         etc_files = ["etc/xpra/xorg.conf"]
         #figure out the version of the Xorg server:
-        XORG_BIN = None
-        PATHS = os.environ.get("PATH").split(os.pathsep)
-        for x in PATHS:
-            xorg = os.path.join(x, "Xorg")
-            if os.path.isfile(xorg):
-                XORG_BIN = xorg
-                break
-        xorg_conf = "etc/xpra/Xvfb/xpra.conf"
-        if not XPRA_LOCAL_SERVERS_SUPPORTED:
-            xorg_conf = "etc/xpra/client-only/xpra.conf"
-        elif xdummy_ENABLED:
-            #enabled unconditionally via constant
-            xorg_conf = "etc/xpra/Xdummy/xpra.conf"
-        elif XORG_BIN:
-            #do live detection
-            xorg_stat = os.stat(XORG_BIN)
-            if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                print("%s is suid, using the xpra_Xdummy wrapper" % XORG_BIN)
-                scripts.append("scripts/xpra_Xdummy")
-                xorg_conf = "etc/xpra/xpra_Xdummy/xpra.conf"
-            else:
-                cmd = ["Xorg", "-version"]
-                print("detecting Xorg version using: %s" % str(cmd))
-                try:
-                    proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    out, _ = proc.communicate()
-                    V_LINE = "X.Org X Server "
-                    xorg_version = None
-                    for line in out.decode("utf8").splitlines():
-                        if line.startswith(V_LINE):
-                            v_str = line[len(V_LINE):]
-                            xorg_version = [int(x) for x in v_str.split(".")[:2]]
-                            break
-                    if not xorg_version:
-                        print("Xorg version could not be detected, Xdummy support unavailable")
-                    elif xorg_version>=[1, 12]:
-                        print("found valid Xorg server version %s" % v_str)
-                        print("using Xdummy config file")
-                        xorg_conf = "etc/xpra/Xdummy/xpra.conf"
-                    else:
-                        print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
-                except Exception, e:
-                    print("failed to detect Xorg version: %s" % e)
-                    print("not installing Xdummy support")
-                    traceback.print_exc()
-        else:
-            print("Xorg not found, cannot detect version or Xdummy support")
+        xorg_conf, extra_script = get_xorg_conf_and_script()
+        if extra_script:
+            #install an extra script for using Xdummy
+            scripts.append(extra_script)
         etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
-    extra_options = dict(
-        packages = packages,
-        scripts = scripts,
-        data_files = data_files,
-        description = "A window manager library, a window manager, and a 'screen for X' utility",
-    )
-
-ext_modules = []
-cmdclass = {}
-def cython_version_check(min_version):
-    try:
-        from Cython.Compiler.Version import version as cython_version
-    except ImportError, e:
-        sys.exit("ERROR: Cannot find Cython: %s" % e)
-    from distutils.version import LooseVersion
-    if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
-        sys.exit("ERROR: Your version of Cython is too old to build this package\n"
-                 "You have version %s\n"
-                 "Please upgrade to Cython %s or better"
-                 % (cython_version, ".".join([str(part) for part in min_version])))
-
-def cython_add(extension, min_version=(0, 14, 0)):
-    global ext_modules, cmdclass
-    cython_version_check(min_version)
-    from Cython.Distutils import build_ext
-    ext_modules.append(extension)
-    cmdclass = {'build_ext': build_ext}
-
-if 'clean' in sys.argv or 'sdist' in sys.argv:
-    #clean and sdist don't actually use cython,
-    #so skip this (and avoid errors)
-    def pkgconfig(*packages_options, **ekw):
-        return {}
+        setup_options["scripts"] = scripts
 
 
-PYGTK_PACKAGES = ["pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0"]
-if sys.platform.startswith("darwin"):
-    PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
-X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
-
+#*******************************************************************************
 if XPRA_LOCAL_SERVERS_SUPPORTED:
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
@@ -491,34 +571,15 @@ if rencode_ENABLED:
 
 
 
-if 'clean' in sys.argv or 'sdist' in sys.argv:
-    #always include all platform code in this case:
-    packages += ["xpra.xposix", "xpra.win32", "xpra.darwin"]
-    #ensure we remove the files we generate:
-    CLEAN_FILES = ["xpra/wait_for_x_server.c",
-                   "xpra/vpx/codec.c",
-                   "xpra/x264/codec.c",
-                   "xpra/rencode/rencode.c",
-                   "etc/xpra/xpra.conf",
-                   "wimpiggy/lowlevel/constants.pxi",
-                   "wimpiggy/lowlevel/bindings.c"]
-    if 'clean' in sys.argv:
-        CLEAN_FILES.append("xpra/build_info.py")
-    for x in CLEAN_FILES:
-        filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
-        if os.path.exists(filename):
-            print("removing Cython/build generated file: %s" % x)
-            os.unlink(filename)
+if ext_modules:
+    setup_options["ext_modules"] = ext_modules
+if cmdclass:
+    setup_options["cmdclass"] = cmdclass
 
-setup(
-    name="parti-all",
-    author="Antoine Martin",
-    author_email="antoine@nagafix.co.uk",
-    version=parti.__version__,
-    url="http://xpra.org/",
-    long_description=full_desc,
-    download_url="http://xpra.org/src/",
-    ext_modules=ext_modules,
-    cmdclass=cmdclass,
-    **extra_options
-    )
+print("")
+print("setup_options:")
+for k,v in setup_options.items():
+    print("%s : %s" % (k,v))
+print("")
+
+setup(**setup_options)
