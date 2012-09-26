@@ -1716,7 +1716,7 @@ class XpraServer(gobject.GObject):
             assert self._clipboard_client==ss, \
                     "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
             assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
-            self._clipboard_helper.process_clipboard_packet(packet)
+            gobject.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
             return
         if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers

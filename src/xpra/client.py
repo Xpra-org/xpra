@@ -941,7 +941,7 @@ class XpraClient(XpraClientBase):
         packet_type = str(packet[0])
         if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
-                self._client_extras.process_clipboard_packet(packet)
+                gobject.idle_add(self._client_extras.process_clipboard_packet, packet)
         else:
             XpraClientBase.process_packet(self, proto, packet)
 
