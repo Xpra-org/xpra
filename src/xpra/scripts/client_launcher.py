@@ -293,6 +293,7 @@ from wimpiggy.util import AdHocStruct
 xpra_opts = AdHocStruct()
 xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
 xpra_opts.jpegquality = default_int("jpegquality", 90)
+xpra_opts.quality = default_int("quality", 90)
 xpra_opts.host = defaults.get("host", "127.0.0.1")
 xpra_opts.port = default_int("port", 10000)
 xpra_opts.mode = default_str("mode", "tcp", ["tcp", "ssh"])
@@ -314,6 +315,8 @@ xpra_opts.dpi = default_int("dpi", 96)
 xpra_opts.cursors = default_bool("cursors", True)
 xpra_opts.bell = default_bool("bell", True)
 xpra_opts.notifications = default_bool("notifications", True)
+xpra_opts.sharing = default_bool("sharing", False)
+xpra_opts.delay_tray = default_bool("delay-tray", False)
 #these would need testing/work:
 xpra_opts.auto_refresh_delay = 0.0
 xpra_opts.max_bandwidth = 0.0
@@ -407,14 +410,14 @@ class ApplicationWindow:
 		# JPEG:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
-		self.jpeg_label = gtk.Label("JPEG Compression: ")
+		self.jpeg_label = gtk.Label("Compression: ")
 		hbox.pack_start(self.jpeg_label)
-		self.jpeg_combo = gtk.combo_box_new_text()
-		self.jpeg_combo.get_model().clear()
+		self.quality_combo = gtk.combo_box_new_text()
+		self.quality_combo.get_model().clear()
 		for option in XPRA_COMPRESSION_OPTIONS:
-			self.jpeg_combo.append_text(option)
-		self.jpeg_combo.set_active(2)
-		hbox.pack_start(self.jpeg_combo)
+			self.quality_combo.append_text(option)
+		self.quality_combo.set_active(2)
+		hbox.pack_start(self.quality_combo)
 		vbox.pack_start(hbox)
 		self.encoding_combo.connect("changed", self.encoding_changed)
 
@@ -531,12 +534,12 @@ class ApplicationWindow:
 		dialog.present()
 
 	def encoding_changed(self, *args):
-		is_jpeg = self.encoding_combo.get_active_text()=="jpeg"
-		if is_jpeg:
-			self.jpeg_combo.show()
+		uses_quality_option = self.encoding_combo.get_active_text() in ["jpeg", "webp", "x264"]
+		if uses_quality_option:
+			self.quality_combo.show()
 			self.jpeg_label.show()
 		else:
-			self.jpeg_combo.hide()
+			self.quality_combo.hide()
 			self.jpeg_label.hide()
 
 	def set_info_text(self, text):
@@ -595,6 +598,7 @@ class ApplicationWindow:
 		opts.password_file = xpra_opts.password_file
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
+		opts.quality = xpra_opts.quality
 		opts.jpegquality = xpra_opts.jpegquality
 		opts.max_bandwidth = xpra_opts.max_bandwidth
 		opts.auto_refresh_delay = xpra_opts.auto_refresh_delay
@@ -618,6 +622,8 @@ class ApplicationWindow:
 		opts.cursors = xpra_opts.cursors
 		opts.bell = xpra_opts.bell
 		opts.notifications = xpra_opts.notifications
+		opts.delay_tray = xpra_opts.delay_tray
+		opts.sharing = xpra_opts.sharing
 		import logging
 		logging.root.setLevel(logging.INFO)
 		logging.root.addHandler(logging.StreamHandler(sys.stderr))
@@ -683,8 +689,8 @@ class ApplicationWindow:
 		uri = "%s:%s:%s" % (xpra_opts.mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
 		args.append("--encoding=%s" % xpra_opts.encoding)
-		if xpra_opts.encoding=="jpeg":
-			args.append("--jpeg-quality=%s" % xpra_opts.jpegquality)
+		if xpra_opts.encoding in ["jpeg", "webp", "x264"]:
+			args.append("--quality=%s" % xpra_opts.quality)
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
 		print("Running %s" % args)
@@ -695,7 +701,7 @@ class ApplicationWindow:
 		xpra_opts.host = self.host_entry.get_text()
 		xpra_opts.port = self.port_entry.get_text()
 		xpra_opts.encoding = self.encoding_combo.get_active_text()
-		xpra_opts.jpegquality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.jpeg_combo.get_active_text())
+		xpra_opts.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
 		xpra_opts.mode = self.mode_combo.get_active_text()
 		password = self.password_entry.get_text()
 		if len(password) > 0:
