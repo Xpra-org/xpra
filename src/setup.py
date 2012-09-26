@@ -76,6 +76,8 @@ for arg in sys.argv:
         filtered_args.append(arg)
 sys.argv = filtered_args
 
+print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, force Xdummy=%s" %
+      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, xdummy_ENABLED))
 
 packages = ["wimpiggy", "wimpiggy.lowlevel",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
@@ -226,10 +228,10 @@ if sys.platform.startswith("win"):
                 "win32con", "win32gui", "win32process", "win32api"]
     options = {
                     'py2exe': {
-                               'unbuffered': True,
-                               'packages': packages,
-                               'includes': includes,
-                               'dll_excludes': 'w9xpopen.exe'
+                               'unbuffered'     : True,
+                               'packages'       : packages,
+                               'includes'       : includes,
+                               'dll_excludes'   : 'w9xpopen.exe',
                             }
               }
     data_files=[
@@ -241,13 +243,15 @@ if sys.platform.startswith("win"):
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
                    ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
-                   ('webm', ["xpra/webm/LICENSE"])
                ]
 
     if webp_ENABLED:
-        #add the webm DLL to the output:
+        #Note: confusingly, the python bindings are called webm...
+        #add the webp DLL to the output:
         webm_DLL = "C:\\libwebp-0.2.0-windows-x86\\bin\\libwebp_a.dll"
         data_files.append(('', [webm_DLL]))
+        #and its license:
+        data_files.append(('webm', ["xpra/webm/LICENSE"]))
 
     extra_options = dict(
         windows = windows,
