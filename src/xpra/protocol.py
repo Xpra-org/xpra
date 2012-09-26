@@ -174,7 +174,7 @@ class Protocol(object):
         self._encoder = self.rencode
 
     def bencode(self, data):
-        return  bencode(data).encode('latin1'), 0
+        return bencode(data), 0
 
     def rencode(self, data):
         return  rencode_dumps(data), 1
