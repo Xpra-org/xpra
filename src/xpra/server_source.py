@@ -210,7 +210,6 @@ class ServerSource(object):
         self.uuid = capabilities.get("uuid", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_version = capabilities.get("version", None)
-        log.info("%s client version %s with uuid %s", self.client_type, self.client_version, self.uuid)
         #general features:
         self.server_window_resize = capabilities.get("server-window-resize", False)
         self.send_cursors = capabilities.get("cursors", False)
@@ -241,6 +240,7 @@ class ServerSource(object):
         if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
             self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
+        log.info("%s client version %s with uuid %s, using %s encoding", self.client_type, self.client_version, self.uuid, self.encoding)
 
 #
 # Functions for interacting with the network layer:
