@@ -603,11 +603,13 @@ class WindowSource(object):
             self.statistics.damage_ack_pending[damage_packet_sequence] = [now, bytecount, 0, 0, width*height]
         def damage_packet_sent(bytecount):
             now = time.time()
-            stats = self.statistics.damage_ack_pending[damage_packet_sequence]
-            stats[2] = now
-            stats[3] = bytecount
-            damage_out_latency = now-process_damage_time
-            self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
+            stats = self.statistics.damage_ack_pending.get(damage_packet_sequence)
+            #if we timed it out, it may be gone already:
+            if stats:
+                stats[2] = now
+                stats[3] = bytecount
+                damage_out_latency = now-process_damage_time
+                self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
         now = time.time()
         damage_in_latency = now-process_damage_time
         self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
