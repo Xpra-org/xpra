@@ -433,6 +433,7 @@ if sys.platform.startswith("win"):
 
 #*******************************************************************************
 else:
+    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
     if sys.platform.startswith("darwin"):
         #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
@@ -440,24 +441,27 @@ else:
         if "py2app" in sys.argv:
             import py2app    #@UnresolvedImport
             assert py2app is not None
-            Plist = dict(CFBundleDocumentTypes=[dict(CFBundleTypeExtensions=["xpra"],
-                                                 CFBundleTypeName="Xpra Session Config File",
-                                                 CFBundleName="Xpra",
-                                                 CFBundleTypeRole="Viewer"),
-                                            ]
+            Plist = dict(CFBundleDocumentTypes=[
+                            dict(CFBundleTypeExtensions=["xpra"],
+                                 CFBundleTypeName="Xpra Session Config File",
+                                 CFBundleName="Xpra",
+                                 CFBundleTypeRole="Viewer"),
+                            ]
                      )
-            setup_options["app"]= ["./xpra/scripts/main.py"]
+            setup_options["app"]= ["./xpra/scripts/client_launcher.py"]
+            includes = ["glib", "gio", "cairo", "pango", "pangocairo", "atk", "gobject", "gtk.keysyms",
+                        "hashlib", "Image",
+                        "wimpiggy.lowlevel.bindings", "xpra", "xpra.scripts", "xpra.scripts.main", "xpra.scripts.client_launcher",
+                        "xpra.vpx", "xpra.x264",
+                        ]
             py2app_options = {
                 'iconfile': '../osx/xpra.icns',
                 'plist': Plist,
                 'site_packages': False,
                 'argv_emulation': True,
                 'strip': False,
-                "includes":   ["glib", "gio", "cairo", "pango", "pangocairo", "atk", "gobject", "gtk.keysyms",
-                                "hashlib", "Image",
-                                "wimpiggy.lowlevel.bindings", "xpra", "xpra.scripts", "xpra.scripts.main", "xpra.scripts.client_launcher",
-                                "xpra.vpx", "xpra.x264",
-                                ],
+                "includes": includes,
+                'packages': packages,
                 "frameworks": ['CoreFoundation', 'Foundation', 'AppKit'],
                 }
 
@@ -468,8 +472,10 @@ else:
             print("")
             #do not run cython with py2app (won't work)
             #you have to run that separately!
-            def cython_add(*args):
+            def cython_add(*args, **kwargs):
                 pass
+            def pkgconfig(*packages_options, **ekw):
+                return {}
             ext_modules = None
             cmdclass = None
             setup_options["py2app"] = py2app_options
@@ -477,9 +483,7 @@ else:
         packages.append("xpra.darwin")
     else:
         packages.append("xpra.xposix")
-
-    scripts = ["scripts/parti", "scripts/parti-repl",
-               "scripts/xpra", "scripts/xpra_launcher"]
+        scripts += ["scripts/parti", "scripts/parti-repl"]
 
     data_files += [
                     ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
@@ -507,7 +511,7 @@ else:
             scripts.append(extra_script)
         etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
-        setup_options["scripts"] = scripts
+    setup_options["scripts"] = scripts
 
 
 #*******************************************************************************
