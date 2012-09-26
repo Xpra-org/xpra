@@ -80,6 +80,7 @@ class XpraClientBase(gobject.GObject):
     def __init__(self, opts):
         gobject.GObject.__init__(self)
         self.exit_code = None
+        self.compression_level = opts.compression_level
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.quality = opts.quality
@@ -92,6 +93,7 @@ class XpraClientBase(gobject.GObject):
     def ready(self, conn):
         log.debug("ready(%s)", conn)
         self._protocol = Protocol(conn, self.process_packet)
+        self._protocol.set_compression_level(self.compression_level)
         ClientSource(self._protocol)
         self._protocol.start()
 

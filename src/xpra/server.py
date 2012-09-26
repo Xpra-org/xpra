@@ -272,6 +272,7 @@ class XpraServer(gobject.GObject):
         self._has_focus = 0
         self._upgrading = False
 
+        self.compression_level = opts.compression_level
         self.password_file = opts.password_file
         self.salt = None
 
@@ -434,6 +435,7 @@ class XpraServer(gobject.GObject):
         sc = SocketConnection(sock, sock.getsockname(), address, sock.getpeername())
         log.info("New connection received: %s, peer=%s", sc, sc.target)
         protocol = Protocol(sc, self.process_packet)
+        protocol.set_compression_level(self.compression_level)
         self._potential_protocols.append(protocol)
         protocol.start()
         def verify_connection_accepted(protocol):

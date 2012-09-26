@@ -96,7 +96,6 @@ class XpraClient(XpraClientBase):
         self.title = opts.title
         self.readonly = opts.readonly
         self.session_name = opts.session_name
-        self.compression_level = opts.compression_level
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
         if self.max_bandwidth>0.0 and self.quality==0:
