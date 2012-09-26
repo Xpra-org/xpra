@@ -210,6 +210,7 @@ class ServerSource(object):
         self.uuid = capabilities.get("uuid", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_version = capabilities.get("version", None)
+        log.info("%s client version %s with uuid %s", self.client_type, self.client_version, self.uuid)
         #general features:
         self.server_window_resize = capabilities.get("server-window-resize", False)
         self.send_cursors = capabilities.get("cursors", False)
