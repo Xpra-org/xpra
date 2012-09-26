@@ -271,14 +271,20 @@ class Protocol(object):
                 buf, start_cb, end_cb = item
                 try:
                     if start_cb and not self._closed:
-                        start_cb(self._conn.output_bytecount)
+                        try:
+                            start_cb(self._conn.output_bytecount)
+                        except:
+                            log.error("error on %s", start_cb, exc_info=True)
                     while buf and not self._closed:
                         written = untilConcludes(self._conn.write, buf)
                         if written:
                             buf = buf[written:]
                             self.output_raw_packetcount += 1
                     if end_cb and not self._closed:
-                        end_cb(self._conn.output_bytecount)
+                        try:
+                            end_cb(self._conn.output_bytecount)
+                        except:
+                            log.error("error on %s", end_cb, exc_info=True)
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
