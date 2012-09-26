@@ -245,6 +245,8 @@ class Protocol(object):
                     ecb = end_send_cb
                 if l<16384:
                     #'p' + protocol-version + compression_level + packet_index + packet_size
+                    if type(data)==unicode:
+                        data = str(data)
                     header_and_data = struct.pack('!BBBBL%ss' % l, ord("P"), proto_version, level, index, l, data)
                     self._write_queue.put((header_and_data, scb, ecb))
                 else:
