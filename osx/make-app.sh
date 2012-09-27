@@ -3,8 +3,8 @@
 echo "Building and installing"
 pushd ../src
 ./setup.py install
-./setup.py py2app
 popd
+./setup.py py2app
 
 PYTHON_PREFIX=`python-config --prefix`
 PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages`
@@ -68,8 +68,6 @@ cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/xpra"
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra_Launcher"
 #we dont need the wrapper installed by distutils:
 rm "${MACOS_DIR}/Xpra_Launcher-bin"
-#undo annoying py2app stuff:
-cp ${RSCDIR}/client_launcher.py ${LIBDIR}/python/xpra/scripts/
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 cp Xpra_Launcher ${MACOS_DIR}
@@ -79,6 +77,7 @@ cp ./*.icns ${RSCDIR}/
 # Add Xpra share (for icons)
 rsync -rplog $XDG_DATA_DIRS/xpra/* ${RSCDIR}/share/xpra/
 
+echo "Hacks"
 #HACKS
 #no idea why I have to do this by hand
 #add gtk .so
@@ -87,7 +86,6 @@ rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
 PYGTK_LIBDIR="$LIBDIR/pygtk/2.0/"
 rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
-
 
 echo "Clean unnecessary files"
 pwd

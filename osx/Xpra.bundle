@@ -59,7 +59,7 @@
   </binary>
 
   <data dest="${bundle}/Contents/Resources/">
-    ${project}/../src/dist/parti-all.app/Contents/Resources/
+    ${project}/dist/Xpra.app/Contents/Resources/
   </data>
 
   <data>
