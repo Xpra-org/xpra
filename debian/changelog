@@ -1,7 +1,48 @@
 xpra (0.7.0-1) UNRELEASED; urgency=low
-  * TODO
+  * many latency fixes and improvements: lower latency, congestion handling, etc
+  * lower client latency: decompress pictures in a dedicated thread
+  * support for Xdummy on platforms with only a suid binary installed
+  * support for 'webp' lossy picture encoding (better and faster than jpeg)
+  * support fixed picture quality with x264, webp and jpeg
+  * more reliable auto-refresh
+  * show performance statistics graphs on session info dialog (click to save)
+  * start with compression enabled, even for initial packet
+  * show more version and client information in logs and via "xpra info"
+  * client launcher improvements: prevent logging conflict, add version info
+  * large source layout cleanup
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Sep 2012 14:08:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Sep 2012 21:51:52 +0700
+
+xpra (0.6.3-1) UNRELEASED; urgency=low
+  * fix memory leak in server after client disconnection
+  * fix launcher: clear socket timeout once connected and add missing options
+  * fix potential bug in network code (prevent disconnection)
+  * enable auto-refresh by default since we now use a lossy encoder by default
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Sep 2012 21:40:40 +0700
+
+xpra (0.6.2-1) UNRELEASED; urgency=low
+  * fix missing key frames with x264/vpx: always reset the video encoder when
+    we skip some frames (forces a new key frame)
+  * fix server crash on invalid keycodes (zero or negative)
+  * fix latency: isolate per-window latency statistics from each other
+  * fix latency: ensure we never record zero or even negative decode time
+  * fix refresh: server error was causing refresh requests to be ignored
+  * fix window options handling: using it for more than one value would fail
+  * fix video encoder/windows dimensions mismatch causing missing key frames
+  * fix damage options merge code (options were being squashed)
+  * ensure that small lossless regions do not cancel the auto-refresh timer
+  * restore protocol main packet compression and single chunk sending
+  * drop unnecessary OpenGL dependencies from some deb/rpm packages
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 26 Sep 2012 00:09:55 +0700
+
+xpra (0.6.1-1) UNRELEASED; urgency=low
+  * fix compress clipboard data (previous fix was ineffectual)
+  * fix missing damage data queue statistics (was causing latency issues)
+  * use memory aligned allocations for colourspace conversion
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 14 Sep 2012 22:19:45 +0700
 
 xpra (0.6.0-5) UNRELEASED; urgency=low
   * fix launcher: don't block the UI whilst connecting, and use a lower timeout,

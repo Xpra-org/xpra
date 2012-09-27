@@ -96,9 +96,42 @@ Xpra gives you "persistent remote applications" for X. That is, unlike normal X 
 So basically it's screen for remote X apps.
 
 
+
 %changelog
-* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
-- TODO
+* Thu Sep 27 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
+- many latency fixes and improvements: lower latency, better line congestion handling, etc
+- lower client latency: decompress pictures in a dedicated thread (including rgb24+zlib)
+- support for Xdummy on platforms with only a suid binary installed
+- support for 'webp' lossy picture encoding (better and faster than jpeg)
+- support fixed picture quality with x264, webp and jpeg (via command line and tray menu)
+- more reliable auto-refresh
+- show performance statistics graphs on session info dialog (click to save)
+- start with compression enabled, even for initial packet
+- show more version and client information in logs and via "xpra info"
+- client launcher improvements: prevent logging conflict, add version info
+- large source layout cleanup
+
+* Thu Sep 27 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.3-1
+- fix memory leak in server after client disconnection
+- fix launcher: clear socket timeout once connected and add missing options
+- fix potential bug in network code (prevent disconnection)
+- enable auto-refresh by default since we now use a lossy encoder by default
+
+* Tue Sep 25 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.2-1
+- fix missing key frames with x264/vpx: always reset the video encoder when we skip some frames (forces a new key frame)
+- fix server crash on invalid keycodes (zero or negative)
+- fix latency: isolate per-window latency statistics from each other
+- fix latency: ensure we never record zero or even negative decode time
+- fix refresh: server error was causing refresh requests to be ignored
+- fix window options handling: using it for more than one value would fail
+- fix video encoder/windows dimensions mismatch causing missing key frames
+- fix damage options merge code (options were being squashed)
+- ensure that small lossless regions do not cancel the auto-refresh timer
+- restore protocol main packet compression and single chunk sending
+- drop unnecessary OpenGL dependencies from some deb/rpm packages
+
+* Fri Sep 14 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.1-1
+- fix compress clipboard data (previous fix was ineffectual)
 
 * Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
 - fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
