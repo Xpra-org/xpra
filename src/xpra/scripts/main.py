@@ -410,11 +410,9 @@ def main(script_file, cmdline):
     #configure default logging handler:
     mode = args.pop(0)
     if mode in ("start", "upgrade", "attach"):
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
-        logging.root.addHandler(handler)
+        logging.basicConfig(format="%(asctime)s %(message)s")
     else:
-        logging.root.addHandler(logging.StreamHandler(sys.stderr))
+        logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
     #set debug log on if required:
     if options.debug is not None:

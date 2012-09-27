@@ -13,6 +13,8 @@ import sys
 import os.path
 import tempfile
 import inspect
+import logging
+logging.basicConfig(format="%(asctime)s %(message)s")
 
 try:
 	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
@@ -590,9 +592,6 @@ class ApplicationWindow:
 			print("Xpra Client error: %s" % e)
 			return
 		gobject.idle_add(self.window.hide)
-		import logging
-		logging.root.setLevel(logging.INFO)
-		logging.root.addHandler(logging.StreamHandler(sys.stderr))
 		# launch Xpra client in the same gtk.main():
 		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 		gtk_main_quit_on_fatal_exceptions_enable()
