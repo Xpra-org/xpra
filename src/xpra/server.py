@@ -861,8 +861,7 @@ class XpraServer(gobject.GObject):
                 max_h = max(max_h, h)
         return max_w, max_h
 
-    def _get_desktop_size_capability(self, server_source):
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+    def _get_desktop_size_capability(self, server_source, root_w, root_h):
         client_size = server_source.desktop_size
         log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
         if not client_size:
@@ -1166,8 +1165,8 @@ class XpraServer(gobject.GObject):
         capabilities = {}
         capabilities["version"] = xpra.__version__
         capabilities["actual_desktop_size"] = root_w, root_h
-        capabilities["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
-        capabilities["desktop_size"] = self._get_desktop_size_capability(server_source)
+        capabilities["root_window_size"] = root_w, root_h
+        capabilities["desktop_size"] = self._get_desktop_size_capability(server_source, root_w, root_h)
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["platform"] = sys.platform
