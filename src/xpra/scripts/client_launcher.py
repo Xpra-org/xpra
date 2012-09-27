@@ -590,6 +590,9 @@ class ApplicationWindow:
 			print("Xpra Client error: %s" % e)
 			return
 		gobject.idle_add(self.window.hide)
+		import logging
+		logging.root.setLevel(logging.INFO)
+		logging.root.addHandler(logging.StreamHandler(sys.stderr))
 		# launch Xpra client in the same gtk.main():
 		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 		gtk_main_quit_on_fatal_exceptions_enable()
@@ -625,9 +628,6 @@ class ApplicationWindow:
 		opts.notifications = xpra_opts.notifications
 		opts.delay_tray = xpra_opts.delay_tray
 		opts.sharing = xpra_opts.sharing
-		import logging
-		logging.root.setLevel(logging.INFO)
-		logging.root.addHandler(logging.StreamHandler(sys.stderr))
 
 		def start_XpraClient():
 			app = XpraClient(socket_wrapper, opts)
