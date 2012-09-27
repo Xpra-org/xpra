@@ -198,6 +198,7 @@ class ServerSource(object):
             window_source.cleanup()
         self.window_sources = {}
         self.close_mmap()
+        self.protocol = None
 
     def parse_hello(self, capabilities):
         #batch options:
