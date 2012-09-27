@@ -200,7 +200,7 @@ class XpraClientBase(gobject.GObject):
             from wimpiggy.prop import set_xsettings_format
             set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         except Exception, e:
-            if os.name=="posix":
+            if os.name=="posix" and not sys.platform.startswith("darwin"):
                 log.error("failed to set xsettings format: %s", e)
         if not is_compatible_with(self._remote_version):
             self.quit(4)
