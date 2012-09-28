@@ -202,7 +202,7 @@ def pkgconfig(*packages_options, **ekw):
 #*******************************************************************************
 def get_xorg_conf_and_script():
     if not XPRA_LOCAL_SERVERS_SUPPORTED:
-        return "etc/xpra/client-only/xpra.conf"
+        return "etc/xpra/client-only/xpra.conf", None
     if xdummy_ENABLED:
         return "etc/xpra/Xdummy/xpra.conf", None
     XORG_BIN = None
