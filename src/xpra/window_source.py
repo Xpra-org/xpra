@@ -488,7 +488,7 @@ class WindowSource(object):
         if current_encoding not in ("x264", "vpx"):
             return current_encoding
         def switch():
-            coding = self.find_common_lossless_encoder(current_encoding)
+            coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
         if ww==1 or wh==1:
@@ -507,8 +507,12 @@ class WindowSource(object):
             return current_encoding
         return switch()
 
-    def find_common_lossless_encoder(self, fallback):
-        for e in ("png", "rgb24"):
+    def find_common_lossless_encoder(self, fallback, pixel_count):
+        if pixel_count<512:
+            encs = "rgb24", "png"
+        else:
+            encs = "png", "rgb24"
+        for e in encs:
             if e in ENCODINGS and e in self.encodings:
                 return e
         return fallback
