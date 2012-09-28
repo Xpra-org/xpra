@@ -42,7 +42,10 @@ for module in ${MODULE_DIRS}; do
 done
 
 tar -jcf ${DIR}.tar.bz2 ${DIR}
-md5sum ${DIR}.tar.bz2 > ${DIR}.tar.bz2.md5
-sha1sum ${DIR}.tar.bz2 > ${DIR}.tar.bz2.sha
-ls -al ${DIR}.tar.bz2*
+tar -Jcf ${DIR}.tar.xz ${DIR}
+for a in ${DIR}.tar.bz2 ${DIR}.tar.xz; do
+	md5sum ${a} > ${a}.md5
+	sha1sum ${a} > ${a}.sha
+done
+ls -al ${DIR}.tar.*
 rm -fr "${DIR}"
