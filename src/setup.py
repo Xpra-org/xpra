@@ -131,6 +131,8 @@ def cython_version_check(min_version):
                  % (cython_version, ".".join([str(part) for part in min_version])))
 
 def cython_add(extension, min_version=(0, 14, 0)):
+    if "--no-compile" in sys.argv:
+        return
     global ext_modules, cmdclass
     cython_version_check(min_version)
     from Cython.Distutils import build_ext
