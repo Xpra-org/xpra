@@ -11,6 +11,13 @@
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
 
+#if building a generic rpm: exclude anything that requires cython modules:
+%if 0%{?generic}
+%define no_server 1
+%define no_webp 1
+%define no_video 1
+%endif
+
 %define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
 %define requires_opengl %{nil}
 %define requires_extra %{nil}
@@ -80,7 +87,6 @@ BuildRequires: python, setuptool
 %endif
 
 ### Patches ###
-# if building a generic rpm (without .so) which works as client only
 Patch0: disable-posix-server.patch
 Patch1: disable-x264.patch
 Patch2: disable-vpx.patch
@@ -492,7 +498,7 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/parti-all-%{version}
 zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
 cd parti-all-%{version}
-%if %{defined generic_rpm}
+%if 0%{?no_server}
 %patch0 -p1
 %endif
 %if 0%{?no_video}
@@ -521,11 +527,24 @@ CFLAGS=-O2 python setup.py build
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
 %{__python} setup.py install -O1  --prefix /usr --skip-build --root %{buildroot}
-%if %{defined generic_rpm}
-# remove .so (not suitable for a generic RPM)
-rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/gdk/gdk_atoms.so"
-rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/wimpiggy/bindings.so"
-rm -f "${RPM_BUILD_ROOT}/usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so"
+%if 0%{?generic}
+# remove anything relying on dynamic libraries (not suitable for a generic RPM)
+# unless they're statically linked and enabled (static_vpx / static_x264):
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/gdk/gdk_atoms.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/wimpiggy/bindings.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/wait_for_x_server.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/rencode
+%if 0%{?static_x264}
+echo "Note: static x264 included in generic rpm"
+%else
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/x264
+%endif
+%if 0%{?static_vpx}
+echo "Note: static vpx included in generic rpm"
+%else
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/vpx
+%endif
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/webm
 %else
 %ifarch x86_64
 mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
