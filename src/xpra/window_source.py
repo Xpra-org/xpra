@@ -218,11 +218,13 @@ class WindowSource(object):
         self._damage_delayed_expired = False            #when this is True, the region should have expired
                                                         #but it is now waiting for the backlog to clear
         self._sequence = 1                              #increase with every region we process or delay
+        self._last_sequence_queued = 0                  #the latest sequence we queued for sending (after encoding it)
         self._damage_cancelled = 0                      #stores the highest _sequence cancelled
         self._damage_packet_sequence = 1                #increase with every damage packet created
 
     def cleanup(self):
         self.cancel_damage()
+        self.video_encoder_cleanup()
 
     def video_encoder_cleanup(self):
         """ Video encoders (x264 and vpx) require us to run
@@ -255,15 +257,17 @@ class WindowSource(object):
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
         log("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
-        #we must clean the video encoder to ensure
-        #we will resend key frames
-        self.video_encoder_cleanup()
-        #if a region was delayed, we can just drop it now:
-        self._damage_delayed = None
-        self._damage_delayed_expired = False
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_refresh_timer()
+        #if a region was delayed, we can just drop it now:
+        self._damage_delayed = None
+        self._damage_delayed_expired = False
+        if self._last_sequence_queued<self._sequence:
+            #we must clean the video encoder to ensure
+            #we will resend a key frame because it looks like we will
+            #drop a frame which is being processed
+            self.video_encoder_cleanup()
 
     def is_cancelled(self, sequence):
         """ See cancel_damage(wid) """
@@ -688,6 +692,7 @@ class WindowSource(object):
         end = time.time()
         self._damage_packet_sequence += 1
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
+        self._last_sequence_queued = sequence
         return packet
 
     def webp_encode(self, w, h, data, rowstride, options):
