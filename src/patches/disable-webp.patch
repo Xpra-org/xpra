@@ -2,11 +2,9 @@ Description: Disable webp encoding support.
  Author: Antoine Martin <antoine@nagafix.co.uk>
  Forwarded: not-needed
  
-Index: setup.py
-===================================================================
---- a/setup.py	(revision 1656)
-+++ b/setup.py	(working copy)
-@@ -46,7 +46,7 @@
+--- a/setup.py
++++ b/setup.py	
+@@ -44,11 +44,11 @@
  
  
  

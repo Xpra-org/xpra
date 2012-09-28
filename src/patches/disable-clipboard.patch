@@ -1,8 +1,12 @@
+Description: For disabling the extra clipboard code (in Cython).
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
 Index: setup.py
 ===================================================================
---- setup.py	(revision 1346)
-+++ setup.py	(working copy)
-@@ -34,7 +34,7 @@
+--- a/setup.py
++++ b/setup.py
+@@ -36,7 +36,7 @@
  
  
  

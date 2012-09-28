@@ -4,7 +4,7 @@ Description: Build vpx codec as a static library.
  
 --- a/setup.py
 +++ b/setup.py
-@@ -465,6 +465,10 @@
+@@ -508,6 +508,10 @@
  
  
  if vpx_ENABLED:
@@ -15,13 +15,3 @@ Description: Build vpx codec as a static library.
      packages.append("xpra.vpx")
      cython_add(Extension("xpra.vpx.codec",
                  ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
---- a/debian/control
-+++ b/debian/control
-@@ -8,7 +8,6 @@
-               ,libavcodec-dev
-               ,libswscale-dev
-               ,libx11-dev
--              ,libvpx-dev
-               ,libxcomposite-dev
-               ,libxdamage-dev
-               ,libxtst-dev

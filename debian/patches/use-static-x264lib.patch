@@ -4,7 +4,7 @@ Description: Build x264 codec as a static library.
  
 --- a/setup.py
 +++ b/setup.py
-@@ -456,6 +456,10 @@
+@@ -499,6 +499,10 @@
  
  
  if x264_ENABLED:
@@ -25,3 +25,7 @@ Description: Build x264 codec as a static library.
                ,python-all-dev
                ,python-gobject-dev
                ,python-gtk2-dev
+Description: Build x264 codec as a static library.
+ Author: Arthur Huillet <ahuillet@serviware.com>
+ Forwarded: not-needed
+ 

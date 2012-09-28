@@ -1,8 +1,10 @@
-Index: setup.py
-===================================================================
---- setup.py	(revision 1345)
-+++ setup.py	(working copy)
-@@ -46,7 +46,7 @@
+Description: For disabling the rencode packet encoder (in Cython).
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
+--- a/setup.py
++++ b/setup.py
+@@ -52,7 +52,7 @@
  
  
  
