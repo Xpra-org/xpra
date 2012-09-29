@@ -1372,13 +1372,12 @@ class XpraServer(gobject.GObject):
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, packet[6])
-    
+
     def _set_client_properties(self, proto, new_client_properties):
         ss = self._server_sources.get(proto)
         client_properties = self.client_properties.setdefault(ss.uuid, {})
-        for k,v in new_client_properties.items():
-            log("update_client_properties setting %s=%s", k, v)
-            client_properties[k] = v
+        log("set_client_properties updating %s with %s", client_properties, new_client_properties)
+        client_properties.update(new_client_properties)
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
