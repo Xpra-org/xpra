@@ -122,12 +122,23 @@ def test_encoding():
         d['some_new_feature_we_may_add'] = {"with_a_nested_dict" : {"containing_another_dict" : ["with", "nested", "arrays", ["in", ["it"]]]}}
         t(hello, "l5:hellod20:__prerelease_version8:0.0.7.3319:actual_desktop_sizeli3840ei2560ee4:belli1e9:clipboardi1e7:cursorsi1e15:damage_sequencei1e12:desktop_sizeli800ei600ee8:encoding5:rgb249:encodingsl5:rgb244:jpeg3:pnge23:focus_modifiers_featurei1e18:modifiers_nuisancei1e13:notificationsi1e11:packet_sizei1e4:pingi1e8:platform6:linux216:png_window_iconsi1e20:raw_keycodes_featurei1e13:resize_screeni0e27:some_new_feature_we_may_addd18:with_a_nested_dictd23:containing_another_dictl4:with6:nested6:arraysl2:inl2:iteeeee10:start_timei1325786122eee")
 
+
     test_hello()
     test_large_hello()
+
+def test_large_dict():
+    import gtk.gdk
+    from wimpiggy.lowlevel import get_keycode_mappings
+    mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
+    b = bencode(mappings)
+    print("bencode(%s)=%s" % (mappings, b))
+    d = bdecode(b)
+    print("bdecode(%s)=%s" % (b, d))
 
 def main():
     test_decoding()
     test_encoding()
+    test_large_dict()
 
 
 if __name__ == "__main__":
