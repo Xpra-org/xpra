@@ -219,6 +219,9 @@ class ClientExtrasBase(object):
     def get_gtk_keymap(self):
         return  get_gtk_keymap()
 
+    def get_x11_keymap(self):
+        return  {}
+
     def get_keymap_modifiers(self):
         return  {}, [], []
 

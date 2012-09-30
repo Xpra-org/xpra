@@ -145,26 +145,57 @@ def apply_xmodmap(instructions):
         unset = instructions
     return unset
 
-def set_all_keycodes(xkbmap_keycodes, preserve_server_keycodes, modifiers):
+def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers):
     """
-        Both xkbmap_keycodes and preserve_keycodes
-        should contain a list of:
-        (keyval, keyname, keycode, group, level)
-        The first one contains the desired keymap,
-        the second one the initial X11 server keycodes (or None).
-        We try to preserve the initial keycodes if asked.
+        Clients that have access to raw x11 keycodes should provide
+        an xkbmap_x11_keycodes map, we otherwise fallback to using
+        the xkbmap_keycodes gtk keycode list.
+        We try to preserve the initial keycodes if asked to do so,
+        we retrieve them from the current server keymap and combine
+        them with the given keycodes.
         The modifiers dict can be obtained by calling
         get_modifiers_from_meanings or get_modifiers_from_keycodes.
         We use it to ensure that two modifiers are not
         mapped to the same keycode (which is not allowed).
-        Returns a translation map for keycodes after setting them up,
-        the key is (keycode, keysym) and the value is the server keycode to use.
+        We return a translation map for keycodes after setting them up,
+        the key is (keycode, keysym) and the value is the server keycode.
     """
-    debug("set_all_keycodes(%s..., %s.., %s)", str(xkbmap_keycodes)[:120], preserve_server_keycodes, modifiers)
-    #first we convert the gtk keycode stuff into an x11-like structure:
-    #drop the keyval and turn group+level into an index
-    keycodes = []
-    for _, name, keycode, group, level in xkbmap_keycodes:
+    debug("set_all_keycodes(%s..., %s.., %s)", str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], preserve_server_keycodes, modifiers)
+    #get the list of keycodes (either from x11 keycodes or gtk keycodes):
+    if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
+        debug("using x11 keycodes: %s", xkbmap_x11_keycodes)
+        keycodes = x11_keycodes_to_list(xkbmap_x11_keycodes)
+    else:
+        debug("using gtk keycodes: %s", xkbmap_keycodes)
+        keycodes = gtk_keycodes_to_list(xkbmap_keycodes)
+    debug("x11 keycodes=%s", keycodes)
+
+    #now lookup the current keycodes (if we need to preserve them)
+    preserve_keycode_entries = []
+    if preserve_server_keycodes:
+        import gtk.gdk
+        x11_mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
+        debug("get_keycode_mappings=%s", x11_mappings)
+        preserve_keycode_entries = x11_keycodes_to_list(x11_mappings)
+        debug("preserve x11 mappings=%s", preserve_server_keycodes)
+
+    kcmin, kcmax = get_minmax_keycodes()
+    trans, new_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, modifiers)
+    instructions = keymap_to_xmodmap(new_keycodes)
+    unset = apply_xmodmap(instructions)
+    debug("unset=%s", unset)
+    return trans
+
+def gtk_keycodes_to_list(gtk_mappings):
+    """
+        Takes gtk keycodes as obtained by get_gtk_keymap, in the form:
+        #[(keyval, keyname, keycode, group, level), ..]
+        And returns a list of entries in the form:
+        [[keysym, keycode, index], ..]
+    """
+    #use the keycodes supplied by gtk:
+    entries = []
+    for _, name, keycode, group, level in gtk_mappings:
         if keycode<=0:
             continue            #ignore old 'add_if_missing' client side code
         if level in (2, 3):
@@ -172,26 +203,25 @@ def set_all_keycodes(xkbmap_keycodes, preserve_server_keycodes, modifiers):
             group = 1
             level -= 2
         index = group*4+level
-        keycodes.append([name, keycode, index])
-    kcmin, kcmax = get_minmax_keycodes()
-    #now lookup the current keycodes (if we need to preserve them)
-    preserve_keycode_entries = []
-    if preserve_server_keycodes:
-        import gtk.gdk
-        x11_mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
-        debug("get_keycode_mappings=%s", x11_mappings)
+        entries.append([name, keycode, index])
+    return entries
+
+def x11_keycodes_to_list(x11_mappings):
+    """
+        Takes x11 keycodes as obtained by get_keycode_mappings(), in the form:
+        #{keycode : [keysyms], ..}
+        And returns a list of entries in the form:
+        [[keysym, keycode, index], ..]
+    """
+    entries = []
+    if x11_mappings:
         for keycode, keysyms in x11_mappings.items():
             index = 0
             for keysym in keysyms:
                 if keysym:
-                    preserve_keycode_entries.append([keysym, keycode, index])
+                    entries.append([keysym, int(keycode), index])
                 index += 1
-        debug("x11 mappings=%s", preserve_server_keycodes)
-    trans, new_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, modifiers)
-    instructions = keymap_to_xmodmap(new_keycodes)
-    unset = apply_xmodmap(instructions)
-    debug("unset=%s", unset)
-    return trans
+    return entries
 
 
 def translate_keycodes(kcmin, kcmax, xkbmap_keycodes, preserve_keycode_entries=[], modifiers={}):

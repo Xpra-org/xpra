@@ -369,6 +369,14 @@ class ClientExtras(ClientExtrasBase):
         log.debug("get_keymap_modifiers parsed: meanings=%s", meanings)
         return  meanings, [], []
 
+    def get_x11_keymap(self):
+        try:
+            from wimpiggy.lowlevel import get_keycode_mappings
+            return get_keycode_mappings(gtk.gdk.get_default_root_window())
+        except Exception, e:
+            log.error("failed to use raw x11 keymap: %s", e)
+        return  ""
+
     def get_keymap_spec(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])
         if xkbmap_print is None:

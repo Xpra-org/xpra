@@ -229,12 +229,8 @@ class XpraServer(gobject.GObject):
                 self._add_new_or_window(window)
 
         ## These may get set by the client:
-        self.xkbmap_layout = None
-        self.xkbmap_variant = None
-        self.xkbmap_print = None
-        self.xkbmap_query = None
+        self.assign_keymap_options({})
         self.xkbmap_mod_meanings = {}
-        self.xkbmap_mod_managed = None
         self.keycode_translation = {}
         self.keymap_changing = False
         self.keyboard = True
@@ -364,7 +360,9 @@ class XpraServer(gobject.GObject):
                 self.keycode_translation = {}
                 self._keynames_for_mod = None
                 if self.keyboard:
-                    assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
+                    has_keycodes = (self.xkbmap_x11_keycodes and len(self.xkbmap_x11_keycodes)>0) or \
+                                    (self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0)
+                    assert has_keycodes, "client failed to provide any keycodes!"
                     #first compute the modifier maps as this may have an influence
                     #on the keycode mappings (at least for the from_keycodes case):
                     if self.xkbmap_mod_meanings:
@@ -380,7 +378,7 @@ class XpraServer(gobject.GObject):
                     #try to preserve the initial server keycodes
                     #(used by non X11 clients like osx,win32 or Android)
                     preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, preserve_server_keycodes, modifiers)
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, modifiers)
 
                     #now set the new modifier mappings:
                     self.clean_keyboard_state()
@@ -1476,7 +1474,8 @@ class XpraServer(gobject.GObject):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
+                  "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
             setattr(self, x, props.get(x))
 
     def _process_keymap(self, proto, packet):

@@ -221,7 +221,8 @@ class Protocol(object):
         #now the main packet (or what is left of it):
         try:
             main_packet, proto_version = self._encoder(packet)
-        except KeyError or TypeError, e:
+        except (KeyError, TypeError), e:
+            log.error("failed to encode packet: %s", packet)
             import traceback
             traceback.print_exc()
             self.verify_packet(packet)

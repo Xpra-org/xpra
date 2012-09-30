@@ -447,10 +447,12 @@ class XpraClient(XpraClientBase):
             self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
             self.xkbmap_print, self.xkbmap_query = self._client_extras.get_keymap_spec()
         self.xkbmap_keycodes = self._client_extras.get_gtk_keymap()
+        self.xkbmap_x11_keycodes = self._client_extras.get_x11_keymap()
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self._client_extras.get_keymap_modifiers()
         log.debug("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
         log.debug("print=%s, query=%s", self.xkbmap_print, self.xkbmap_query)
         log.debug("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
+        log.debug("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
         log.debug("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
 
     def _keys_changed(self, *args):
@@ -478,7 +480,7 @@ class XpraClient(XpraClientBase):
     def get_keymap_properties(self):
         props = {"modifiers" : self.get_current_modifiers()}
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-              "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes"]:
+              "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
             props[x] = nn(getattr(self, x))
         return  props
 
