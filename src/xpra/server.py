@@ -45,7 +45,7 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                set_screen_size,             #@UnresolvedImport
                                get_screen_size,             #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
-                               get_xatom                    #@UnresolvedImport
+                               get_xatom,                   #@UnresolvedImport
                                )
 from wimpiggy.prop import prop_set, set_xsettings_format
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
@@ -60,8 +60,8 @@ from xpra.server_source import ServerSource
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, zlib_compress, has_rencode
-from xpra.keys import mask_to_names, get_gtk_keymap, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
-from xpra.xkbhelper import do_set_keymap, set_all_keycodes, set_modifiers_from_meanings, clear_modifiers, set_modifiers_from_keycodes
+from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.xkbhelper import do_set_keymap, set_all_keycodes, get_modifiers_from_meanings, get_modifiers_from_keycodes, clear_modifiers, set_modifiers
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.scripts.main import ENCODINGS
@@ -250,7 +250,6 @@ class XpraServer(gobject.GObject):
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
         ### Set up keymap:
-        self.xkbmap_initial = get_gtk_keymap()
         self._keymap = gtk.gdk.keymap_get_default()
         self._keymap.connect("keys-changed", self._keys_changed)
         self._keys_changed()
@@ -365,25 +364,28 @@ class XpraServer(gobject.GObject):
                 self._keynames_for_mod = None
                 if self.keyboard:
                     assert self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0, "client failed to provide xkbmap_keycodes!"
+                    #first compute the modifier maps as this may have an influence
+                    #on the keycode mappings (at least for the from_keycodes case):
+                    if self.xkbmap_mod_meanings:
+                        #Unix-like OS provides modifier meanings:
+                        modifiers = get_modifiers_from_meanings(self.xkbmap_mod_meanings)
+                    elif self.xkbmap_keycodes:
+                        #non-Unix-like OS provides just keycodes for now:
+                        modifiers = get_modifiers_from_keycodes(self.xkbmap_keycodes)
+                    else:
+                        log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                        modifiers = {}
                     #if the client does not provide a full keymap,
                     #try to preserve the initial server keycodes
                     #(used by non X11 clients like osx,win32 or Android)
-                    preserve_keycodes = {}
-                    if not self.xkbmap_print:
-                        preserve_keycodes = self.xkbmap_initial
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, preserve_keycodes)
+                    preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
+                    self.keycode_translation = set_all_keycodes(self.xkbmap_keycodes, preserve_server_keycodes, modifiers)
 
                     #now set the new modifier mappings:
                     self.clean_keyboard_state()
                     log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
-                    if self.xkbmap_mod_meanings:
-                        #Unix-like OS provides modifier meanings:
-                        self._keynames_for_mod = set_modifiers_from_meanings(self.xkbmap_mod_meanings)
-                    elif self.xkbmap_keycodes:
-                        #non-Unix-like OS provides just keycodes for now:
-                        self._keynames_for_mod = set_modifiers_from_keycodes(self.xkbmap_keycodes)
-                    else:
-                        log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                    if modifiers:
+                        set_modifiers(modifiers)
                     log("keyname_for_mod=%s", self._keynames_for_mod)
             except:
                 log.error("error setting xmodmap", exc_info=True)
@@ -1467,8 +1469,9 @@ class XpraServer(gobject.GObject):
         if not self.keyboard:
             log.info("ignoring key action packet since keyboard is turned off")
             return
-        (wid, keyname, pressed, modifiers, keyval, _, client_keycode) = packet[1:8]
-        keycode = self.keycode_translation.get(client_keycode, client_keycode)
+        wid, keyname, pressed, modifiers, keyval, _, client_keycode = packet[1:8]
+        keycode = self.keycode_translation.get((client_keycode, keyname), client_keycode)
+        log("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(wid, None)
         self._make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
@@ -1540,7 +1543,7 @@ class XpraServer(gobject.GObject):
             log.info("ignoring key repeat packet since keyboard is turned off")
             return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
-        keycode = self.keycode_translation.get(client_keycode, client_keycode)
+        keycode = self.keycode_translation.get((client_keycode, keyname), client_keycode)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         self._make_keymask_match(modifiers, ignored_modifier_keynames=self.xkbmap_mod_pointermissing)
         if not self.keyboard_sync:
