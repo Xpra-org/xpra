@@ -12,8 +12,9 @@ from wimpiggy.lowlevel import set_xmodmap, parse_keysym, parse_modifier, get_min
 from wimpiggy.log import Logger
 log = Logger()
 
-debug = log.info
+#debug = log.info
 debug = log.debug
+verbose = log.debug
 
 def signal_safe_exec(cmd, stdin):
     """ this is a bit of a hack,
@@ -162,7 +163,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     """
     debug("set_all_keycodes(%s..., %s.., %s)", str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], preserve_server_keycodes, modifiers)
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
-    if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
+    if False and xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
         debug("using x11 keycodes: %s", xkbmap_x11_keycodes)
         keycodes = x11_keycodes_to_list(xkbmap_x11_keycodes)
     else:
@@ -283,11 +284,6 @@ def translate_keycodes(kcmin, kcmax, xkbmap_keycodes, preserve_keycode_entries=[
     keycode_trans = {}              #translation map from client keycode to our server keycode
     server_keycodes = []            #the new keycode definitions
 
-    def nolog(*args):
-        pass
-    #verbose = log.debug
-    verbose = nolog
-
     def do_assign(keycode, server_keycode, entries):
         """ may change the keycode if needed
             in which case we update the entries and populate 'keycode_trans'
@@ -348,12 +344,7 @@ def translate_keycodes(kcmin, kcmax, xkbmap_keycodes, preserve_keycode_entries=[
             if candidate:
                 server_keycode = 0
             return [do_assign(keycode, server_keycode, entries)]    #no matching keys to preserve were found
-        #FIXME: choose best entry to match, not first free one
         nokeycode_entries = [(name, index) for [name, _, index] in entries]
-        if len(nokeycode_entries)>1:
-            verbose = log.info
-        else:
-            verbose = nolog
         verbose("preserved keycodes for %s: %s", entries, preserve_keycodes)
         preserved_used = []
         for server_keycode in preserve_keycodes:
@@ -415,7 +406,7 @@ def translate_keycodes(kcmin, kcmax, xkbmap_keycodes, preserve_keycode_entries=[
     for modifier, keysyms in modifiers.items():
         for keysym in keysyms:
             if keysym not in all_keysyms:
-                log.error("found missing keysym %s for modifier %s, will add it", keysym, modifier)
+                debug("found missing keysym %s for modifier %s, will add it", keysym, modifier)
                 new_key = [[keysym, 0, 0], [keysym, 0, 2]]
                 new_keycode = assign(0, new_key)
                 debug("assigned keycode %s for key '%s' of modifier '%s'", new_keycode, keysym, modifier)
