@@ -163,7 +163,7 @@ class Protocol(object):
                 self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
     def _flush_one_packet_into_buffer(self):
-        if not self.source:
+        if not self.source or self._closed:
             return
         packet, start_send_cb, end_send_cb, self._source_has_more = self.source.next_packet()
         if packet is not None:
