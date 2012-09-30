@@ -87,7 +87,7 @@ class ClientExtras(ClientExtrasBase):
         return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
 
     def get_gtk_keymap(self):
-        return  get_gtk_keymap(add_if_missing=["Caps_Lock"])
+        return  get_gtk_keymap()
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
         modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)

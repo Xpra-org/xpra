@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This file is part of Parti.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
@@ -18,7 +19,7 @@ def nn(x):
         return ""
     return x
 
-def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
+def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -32,6 +33,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
         keymap = None
         return  []
     keycodes=[]
+    used_keycodes = []
     max_entries = 1
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
@@ -41,12 +43,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"], add_if_missing=[]):
                 name = gdk.keyval_name(keyval)
                 if name not in ignore_keys:
                     keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
-                if name in add_if_missing:
-                    add_if_missing.remove(name)
-    #TODO: do this server-side to ensure all modifiers can be set
-    if add_if_missing:
-        for name in add_if_missing:
-            keycodes.append((0, name, -1, 0, 0))
+                    used_keycodes.append(keycode)
     return keycodes
 
 

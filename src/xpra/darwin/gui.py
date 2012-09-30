@@ -134,7 +134,7 @@ class ClientExtras(ClientExtrasBase):
         Carbon.Snd.SysBeep(1)
 
     def get_gtk_keymap(self):
-        return  get_gtk_keymap(add_if_missing=["Control_L"])
+        return  get_gtk_keymap()
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
         modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)
