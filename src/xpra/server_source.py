@@ -63,6 +63,7 @@ class GlobalPerformanceStatistics(object):
                                                         #(wid, event_time, no of pixels, decoding_time*1000*1000)
         self.min_client_latency = None                  #The lowest client latency ever recorded: the time it took
                                                         #from the moment the damage packet got sent until we got the ack packet
+                                                        #(but not including time spent decoding on the client)
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
         self.avg_client_latency = None

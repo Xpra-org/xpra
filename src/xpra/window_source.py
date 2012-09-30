@@ -42,7 +42,7 @@ from xpra.deque import maxdeque
 from xpra.protocol import zlib_compress, Compressed
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import dec1, add_list_stats, add_weighted_list_stats, calculate_time_weighted_average
+from xpra.maths import dec1, add_list_stats, add_weighted_list_stats, calculate_time_weighted_average, calculate_timesize_weighted_average
 from xpra.batch_delay_calculator import calculate_batch_delay
 
 
@@ -133,15 +133,20 @@ class WindowPerformanceStatistics(object):
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
         add_list_stats(info, "damage_out_latency",  latencies)
 
-    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.005):
+    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency
-            but not higher than 60% above the minimum,
+            but not higher than twice more than the minimum,
             and not lower than abs_min.
+            Then we add the average decoding latency.
             """
+        decoding_latency = 0.010
+        if len(self.client_decode_time)>0:
+            decoding_latency, _ = calculate_timesize_weighted_average(list(self.client_decode_time))
+            decoding_latency /= 1000.0
         min_latency = (min_client_latency or abs_min)*1.2
         avg_latency = avg_client_latency or abs_min
-        max_latency = 1.6*min_latency
-        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency)))
+        max_latency = 2.0*min_latency
+        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
 
     def get_backlog(self, latency):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
