@@ -746,6 +746,15 @@ cdef _parse_keysym(symbol):
 def parse_keysym(symbol):
     return _parse_keysym(symbol)
 
+cdef _keysym_str(keysym_val):
+    cdef KeySym keysym                      #@DuplicatedSignature
+    keysym = int(keysym_val)
+    s = XKeysymToString(keysym)
+    return s
+
+def keysym_str(keysym_val):
+    return _keysym_str(keysym_val)
+
 def get_keysym_list(symbols):
     """ convert a list of key symbols into a list of KeySym values
         by calling parse_keysym on each one
@@ -809,7 +818,9 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
             else:
                 keysyms = []
                 for ks in keysyms_strs:
-                    if type(ks) in [long, int]:
+                    if ks is None:
+                        k = None
+                    elif type(ks) in [long, int]:
                         k = ks
                     else:
                         k = parse_keysym(ks)
@@ -817,7 +828,8 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
                         keysyms.append(k)
                     else:
                         keysyms.append(NoSymbol)
-                        missing_keysyms.append(k)
+                        if ks is not None:
+                            missing_keysyms.append(str(ks))
             for j in range(0, keysyms_per_keycode):
                 keysym = NoSymbol
                 if keysyms and j<len(keysyms):
@@ -839,6 +851,58 @@ cdef KeysymToKeycodes(Display *display, KeySym keysym):
                 keycodes.append(i)
                 break
     return keycodes
+
+cdef _get_raw_keycode_mappings(Display * display):
+    """
+        returns a dict: {keycode, [keysyms]}
+        for all the keycodes
+    """
+    cdef int keysyms_per_keycode                    #@DuplicatedSignature
+    cdef XModifierKeymap* keymap
+    cdef KeySym * keyboard_map
+    cdef KeySym keysym                              #@DuplicatedSignature
+    cdef KeyCode keycode
+    min_keycode,max_keycode = _get_minmax_keycodes(display)
+    keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
+    mappings = {}
+    i = 0
+    keycode = min_keycode
+    while keycode<max_keycode:
+        keysyms = []
+        for keysym_index in range(0, keysyms_per_keycode):
+            keysym = keyboard_map[i*keysyms_per_keycode + keysym_index]
+            keysyms.append(keysym)
+        i += 1
+        keycode += 1
+        mappings[keycode] = keysyms
+    XFree(keyboard_map)
+    return mappings
+
+def get_keycode_mappings(display_source):
+    """
+    the mappings from _get_raw_keycode_mappings are in raw format
+    (keysyms as numbers), so here we convert into names:
+    """
+    cdef Display * display                          #@DuplicatedSignature
+    cdef KeySym keysym                              #@DuplicatedSignature
+    display = get_xdisplay_for(display_source)
+    raw_mappings = _get_raw_keycode_mappings(display)
+    mappings = {}
+    for keycode, keysyms in raw_mappings.items():
+        keynames = []
+        for keysym in keysyms:
+            if keysym!=NoSymbol:
+                keyname = XKeysymToString(keysym)
+            else:
+                keyname = ""
+            keynames.append(keyname)
+        #now remove trailing empty entries:
+        while len(keynames)>0 and keynames[-1]=="":
+            keynames = keynames[:-1]
+        if len(keynames)>0:
+            mappings[keycode] = keynames
+    return mappings
+
 
 def get_keycodes(display_source, keyname):
     codes = []
@@ -880,10 +944,10 @@ cdef _get_raw_modifier_mappings(Display * display):
         for all keycodes (see above for list)
     """
     cdef int keysyms_per_keycode                    #@DuplicatedSignature
-    cdef XModifierKeymap* keymap
-    cdef KeySym * keyboard_map
+    cdef XModifierKeymap* keymap                    #@DuplicatedSignature
+    cdef KeySym * keyboard_map                      #@DuplicatedSignature
     cdef KeySym keysym                              #@DuplicatedSignature
-    cdef KeyCode keycode
+    cdef KeyCode keycode                            #@DuplicatedSignature
     min_keycode,max_keycode = _get_minmax_keycodes(display)
     keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
     mappings = {}
