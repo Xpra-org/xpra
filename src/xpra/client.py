@@ -379,7 +379,7 @@ class XpraClient(XpraClientBase):
         window = self._id_to_window[wid]
         if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
             return
-        log.info("do_handle_key(%s, %s, %s, %s, %s, %s, %s, %s, %s)", window, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
+        log("send_key_action(%s, %s, %s, %s, %s, %s, %s, %s, %s)", wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
         wid = self._window_to_id[window]
         self.send(["key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier])
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:

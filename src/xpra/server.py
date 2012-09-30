@@ -980,6 +980,8 @@ class XpraServer(gobject.GObject):
         proto._add_packet_to_queue(packet)
 
     def send_disconnect(self, proto, reason):
+        if proto._closed:
+            return
         def force_disconnect(*args):
             proto.close()
         proto._add_packet_to_queue(["disconnect", reason])

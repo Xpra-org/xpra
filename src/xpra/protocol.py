@@ -119,10 +119,13 @@ class Protocol(object):
         info["output_raw_packetcount%s" % suffix] = self.output_raw_packetcount
 
     def start(self):
-        self._write_thread.start()
-        self._read_thread.start()
-        self._read_parser_thread.start()
-        self._maybe_queue_more_writes()
+        def do_start():
+            if not self._closed:
+                self._write_thread.start()
+                self._read_thread.start()
+                self._read_parser_thread.start()
+                self._maybe_queue_more_writes()
+        gobject.idle_add(do_start)
 
     def source_has_more(self):
         assert self.source is not None
@@ -495,8 +498,11 @@ class Protocol(object):
             except:
                 log.error("error closing %s", self._conn, exc_info=True)
         self.terminate_io_threads()
-        self.source = None
+        gobject.idle_add(self.clean)
+    
+    def clean(self):
         #clear all references to ensure we can get garbage collected quickly:
+        self.source = None
         self._encoder = None
         self._write_thread = None
         self._read_thread = None
