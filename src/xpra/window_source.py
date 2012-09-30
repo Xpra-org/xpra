@@ -661,8 +661,9 @@ class WindowSource(object):
 
             * 'mmap' will use 'mmap_send' - always if available, otherwise:
             * 'jpeg' and 'png' are handled by 'PIL_encode'.
+            * 'webp' uses 'webp_encode'
             * 'x264' and 'vpx' use 'video_encode'
-            * 'rgb24' uses the 'Compressed' wrapper to tell the network layer it is already zlibbed
+            * 'rgb24' uses 'rgb24_encode' and the 'Compressed' wrapper to tell the network layer it is already zlibbed
         """
         if self.is_cancelled(sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
