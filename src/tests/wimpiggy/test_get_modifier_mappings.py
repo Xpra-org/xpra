@@ -4,7 +4,6 @@
 
 import pygtk
 pygtk.require('2.0')
-import gtk.gdk
 
 from wimpiggy.lowlevel import get_modifier_mappings		#@UnresolvedImport
 
