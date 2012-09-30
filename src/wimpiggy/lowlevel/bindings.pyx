@@ -932,7 +932,7 @@ cdef _get_modifier_mappings(Display * display):
                 continue
             keyname = XKeysymToString(keysym)
             if keyname not in keynames:
-                keynames.append(keyname)
+                keynames.append((keycode, keyname))
         mappings[modifier] = keynames
     return mappings
 

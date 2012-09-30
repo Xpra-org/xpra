@@ -339,8 +339,8 @@ class ClientExtras(ClientExtrasBase):
                 #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                 log.debug("modifier mappings=%s", mod_mappings)
                 meanings = {}
-                for modifier,keynames in mod_mappings.items():
-                    for keyname in keynames:
+                for modifier,keys in mod_mappings.items():
+                    for _,keyname in keys:
                         meanings[keyname] = modifier
                 return  meanings, [], []
         except ImportError, e:
