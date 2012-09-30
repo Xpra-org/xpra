@@ -58,7 +58,7 @@ log = Logger()
 from xpra import __version__
 from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase
-from xpra.keys import mask_to_names, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
+from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
@@ -367,31 +367,22 @@ class XpraClient(XpraClientBase):
             log.error("key_handled_as_shortcut(%s,%s,%s,%s) failed to execute shortcut=%s: %s", window, key_name, modifiers, depressed, shortcut, e)
         return  True
 
-    def handle_key_action(self, event, window, depressed):
+    def handle_key_action(self, event, window, pressed):
         if self.readonly:
             return
-        log.debug("handle_key_action(%s,%s,%s)", event, window, depressed)
-        modifiers = self.mask_to_names(event.state)
-        name = gdk.keyval_name(event.keyval)
-        keyval = nn(event.keyval)
-        keycode = event.hardware_keycode
-        group = event.group
-        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
-        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
-        translated = self._client_extras.translate_key(depressed, keyval, name, keycode, group, is_modifier, modifiers)
-        if translated is None:
-            return
-        depressed, keyval, name, keycode, group, is_modifier, modifiers = translated
-        if self.key_handled_as_shortcut(window, name, modifiers, depressed):
-            return
-        if keycode<0:
-            log.debug("key_action(%s,%s,%s) translated keycode is %s, ignoring it", event, window, depressed, keycode)
-            return
-        log.debug("key_action(%s,%s,%s) modifiers=%s, name=%s, state=%s, keyval=%s, string=%s, keycode=%s", event, window, depressed, modifiers, name, event.state, event.keyval, event.string, keycode)
+        #NOTE: handle_key_event may fire send_key_action more than once (see win32 AltGr)
         wid = self._window_to_id[window]
-        self.send(["key-action", wid, nn(name), depressed, modifiers, keyval, nn(event.string), nn(keycode), group, is_modifier])
+        self._client_extras.handle_key_event(self.send_key_action, event, wid, pressed)
+
+    def send_key_action(self, wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier):
+        window = self._id_to_window[wid]
+        if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
+            return
+        log.info("do_handle_key(%s, %s, %s, %s, %s, %s, %s, %s, %s)", window, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
+        wid = self._window_to_id[window]
+        self.send(["key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier])
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(wid, depressed, name, keyval, keycode)
+            self._key_repeat(wid, pressed, keyname, keyval, keycode)
 
     def _key_repeat(self, wid, depressed, name, keyval, keycode):
         """ this method takes care of scheduling the sending of
@@ -471,11 +462,7 @@ class XpraClient(XpraClientBase):
     def _do_keys_changed(self, sendkeymap=False):
         self._keymap_changing = False
         self.query_xkbmap()
-        try:
-            self._modifier_map = self._client_extras.grok_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
-        except:
-            self._modifier_map = {}
-        log.debug("do_keys_changed() modifier_map=%s" % self._modifier_map)
+        self._client_extras.update_modmap(self.xkbmap_mod_meanings)
         if sendkeymap and not self.readonly:
             if self.xkbmap_layout:
                 self.send_layout()
@@ -513,7 +500,7 @@ class XpraClient(XpraClientBase):
         return self.mask_to_names(modifiers_mask)
 
     def mask_to_names(self, mask):
-        return mask_to_names(mask, self._modifier_map)
+        return self._client_extras.mask_to_names(mask)
 
     def send_positional(self, packet):
         p = self._protocol

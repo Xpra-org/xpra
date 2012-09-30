@@ -19,7 +19,7 @@ from xpra.platform.graph import make_graph_pixmap
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.deque import maxdeque
-from xpra.keys import get_gtk_keymap
+from xpra.keys import get_gtk_keymap, mask_to_names
 from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit
 from wimpiggy.log import Logger
 log = Logger()
@@ -111,6 +111,7 @@ class ClientExtrasBase(object):
         self.session_name = opts.session_name
         self.clipboard_helper = None
         self.set_window_icon(opts.window_icon)
+        self.update_modmap()
 
     def set_window_icon(self, window_icon):
         if not window_icon:
@@ -175,8 +176,27 @@ class ClientExtrasBase(object):
         """ layout, variant, variants"""
         return None,None,None
 
-    def translate_key(self, depressed, keyval, name, keycode, group, is_modifier, modifiers):
-        return depressed, keyval, name, keycode, group, is_modifier, modifiers
+    def mask_to_names(self, mask):
+        return mask_to_names(mask, self._modifier_map)
+
+    def handle_key_event(self, send_key_action_cb, event, wid, pressed):
+        modifiers = self.mask_to_names(event.state)
+        keyname = gdk.keyval_name(event.keyval)
+        keyval = event.keyval
+        keycode = event.hardware_keycode
+        group = event.group
+        string = event.string
+        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
+        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
+        send_key_action_cb(wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
+
+    def update_modmap(self, xkbmap_mod_meanings={}):
+        try:
+            self._modifier_map = self.grok_modifier_map(gdk.display_get_default(), xkbmap_mod_meanings)
+        except Exception, e:
+            log.error("update_modmap(%s): %s" % (xkbmap_mod_meanings, e))
+            self._modifier_map = {}
+        log.debug("update_modmap(%s)=%s" % (xkbmap_mod_meanings, self._modifier_map))
 
     def get_gtk_keymap(self):
         return  get_gtk_keymap()

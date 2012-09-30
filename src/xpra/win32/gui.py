@@ -15,6 +15,9 @@ from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
+from wimpiggy.gobject_compat import import_gdk
+gdk = import_gdk()
+
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
@@ -73,18 +76,25 @@ class ClientExtras(ClientExtrasBase):
             except Exception, e:
                 log.error("failed to load native win32 balloon: %s", e)
 
-    def translate_key(self, pressed, keyval, keyname, keycode, group, is_modifier, modifiers):
+    def handle_key_event(self, send_key_action_cb, event, wid, pressed):
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
             So we set the keycode to -1 to tell the server to ignore the actual keypress
             Having the "modifiers" set ought to be enough.
         """
+        modifiers = self.mask_to_names(event.state)
+        keyname = gdk.keyval_name(event.keyval)
+        keyval = event.keyval
+        keycode = event.hardware_keycode
+        group = event.group
+        string = event.string
+        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
+        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
         if keyval==2**24-1 and keyname=="VoidSymbol":
-            keyname = "XCaps_Lock"
-            keycode = -1
+            return
         if keyname=="XNum_Lock":
-            keycode = -1
-        return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
+            return
+        send_key_action_cb(wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
 
     def get_gtk_keymap(self):
         return  get_gtk_keymap()
