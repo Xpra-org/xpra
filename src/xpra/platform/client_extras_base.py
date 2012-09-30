@@ -110,8 +110,26 @@ class ClientExtrasBase(object):
         self.tray_icon = opts.tray_icon
         self.session_name = opts.session_name
         self.clipboard_helper = None
+        #modifier bits:
+        self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
+        self.modifier_keys = {}             #{"Control_L" : "control", ...}
+        self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
         self.set_window_icon(opts.window_icon)
         self.update_modmap()
+
+    def set_modifier_mappings(self, mappings):
+        log("set_modifier_mappings(%s)", mappings)
+        self.modifier_mappings = mappings
+        self.modifier_keys = {}
+        self.modifier_keycodes = {}
+        for modifier, keys in mappings.items():
+            for keycode,keyname in keys:
+                self.modifier_keys[keyname] = modifier
+                keycodes = self.modifier_keycodes.setdefault(keyname, [])
+                if keycode not in keycodes:
+                    keycodes.append(keycode)
+        log("modifier_keys=%s", self.modifier_keys)
+        log("modifier_keycodes=%s", self.modifier_keycodes)
 
     def set_window_icon(self, window_icon):
         if not window_icon:

@@ -177,6 +177,7 @@ class ServerSource(object):
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
+        self.modifier_keycodes = False
 
         # the queues of damage requests we work through:
         self.damage_data_queue = Queue()           #holds functions to call to process damage data
@@ -220,6 +221,7 @@ class ServerSource(object):
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
+        self.modifier_keycodes =  capabilities.get("modifier_keycodes")
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -334,6 +336,10 @@ class ServerSource(object):
 
     def set_deflate(self, level):
         self.send(["set_deflate", level])
+
+    def send_modifier_keycodes(self, mappings):
+        if self.modifier_keycodes:
+            self.send(["set_modifiers", mappings])
 
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
