@@ -50,7 +50,7 @@ def decode_dict(x, f):
     r, f = {}, f+1
     lastkey = None
     while x[f] != 'e':
-        k, f = decode_string(x, f)
+        k, f = decode_func[x[f]](x, f)
         if lastkey is not None and lastkey >= k:
             raise ValueError
         lastkey = k
@@ -94,7 +94,7 @@ def encode_dict(x,r):
     ilist = list(x.items())
     ilist.sort()
     for k, v in ilist:
-        r.extend((str(len(k)), ':', k))
+        encode_func[type(k)](k, r)
         encode_func[type(v)](v, r)
     r.append('e')
 
