@@ -795,10 +795,9 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     first_keycode = min(keycodes.keys())
     last_keycode = max(keycodes.keys())
     num_codes = 1+last_keycode-first_keycode
-    keysyms_per_keycode = 1
-    for keysyms in keycodes.values():
-        keysyms_per_keycode = max(keysyms_per_keycode, len(keysyms))
-    keysyms_per_keycode = min(8, keysyms_per_keycode)
+    MAX_KEYSYMS_PER_KEYCODE = 8
+    keysyms_per_keycode = min(MAX_KEYSYMS_PER_KEYCODE, max([1]+[len(keysyms) for keysyms in keycodes.values()]))
+    log("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
     ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
     try:
         missing_keysyms = []
@@ -811,14 +810,14 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
                     #no keysyms for this keycode yet, assign one of the "new_keysyms"
                     keysyms = new_keysyms[:1]
                     new_keysyms = new_keysyms[1:]
-                    log("assigned keycode %s to %s", i, keysyms[0])
+                    log("assigned keycode %s to %s", keycode, keysyms[0])
                 else:
                     keysyms = []
-                    log("keycode %s is still free", i)
+                    log("keycode %s is still free", keycode)
             else:
                 keysyms = []
                 for ks in keysyms_strs:
-                    if ks is None:
+                    if ks in (None, ""):
                         k = None
                     elif type(ks) in [long, int]:
                         k = ks
@@ -832,7 +831,7 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
                             missing_keysyms.append(str(ks))
             for j in range(0, keysyms_per_keycode):
                 keysym = NoSymbol
-                if keysyms and j<len(keysyms):
+                if keysyms and j<len(keysyms) and keysyms[j] is not None:
                     keysym = keysyms[j]
                 ckeysyms[i*keysyms_per_keycode+j] = keysym
         if len(missing_keysyms)>0:
@@ -864,6 +863,7 @@ cdef _get_raw_keycode_mappings(Display * display):
     cdef KeyCode keycode
     min_keycode,max_keycode = _get_minmax_keycodes(display)
     keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
+    log("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
     mappings = {}
     i = 0
     keycode = min_keycode
@@ -872,9 +872,9 @@ cdef _get_raw_keycode_mappings(Display * display):
         for keysym_index in range(0, keysyms_per_keycode):
             keysym = keyboard_map[i*keysyms_per_keycode + keysym_index]
             keysyms.append(keysym)
+        mappings[keycode] = keysyms
         i += 1
         keycode += 1
-        mappings[keycode] = keysyms
     XFree(keyboard_map)
     return mappings
 
