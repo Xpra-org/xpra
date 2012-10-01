@@ -241,7 +241,7 @@ def indexed_mappings(raw_mappings):
             pairs.add((keysyms[i], i))
         indexed[keycode] = pairs
     return indexed
-    
+
 
 def gtk_keycodes_to_mappings(gtk_mappings):
     """
@@ -349,7 +349,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             keycodes = preserve_keysyms_map.get(keysym, [])
             for keycode in keycodes:
                 preserve_keycode_matches[keycode] = preserve_keycode_entries.get(keycode)
-        
+
         if len(preserve_keycode_matches)==0:
             debug("no preserve matches for %s", entries)
             return do_assign(client_keycode, 0, entries)         #nothing to preserve
@@ -523,15 +523,17 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
                 keynames.append(keyname)
             if keyname not in all_keynames:
                 all_keynames.append(keyname)
-    #add default missing ones if we can:
-    debug("get_modifiers_from_keycodes(...) matches=%s", matches)
+    #try to add missings ones (magic!)
     defaults = {}
     for keyname, modifier in DEFAULT_MODIFIER_MEANINGS.items():
         if keyname in all_keynames:
-            continue
-        if modifier in matches:
-            continue
-        defaults.setdefault(modifier, []).append(keyname)
+            continue            #aleady defined
+        if modifier not in matches:
+            #define it since it is completely missing
+            defaults.setdefault(modifier, []).append(keyname)
+        elif modifier in ["shift", "lock", "control", "mod1", "mod2"]:
+            #these ones we always add them, even if a record for this modifier already exists
+            matches.setdefault(modifier, []).append(keyname)
     debug("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
     matches.update(defaults)
     debug("get_modifiers_from_keycodes(...)=%s", matches)
