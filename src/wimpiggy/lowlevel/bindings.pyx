@@ -846,7 +846,7 @@ cdef KeysymToKeycodes(Display *display, KeySym keysym):
     keycodes = []
     for i in range(min_keycode, max_keycode+1):
         for j in range(0,8):
-            if XKeycodeToKeysym(display, <KeyCode> i, j) == keysym:
+            if XkbKeycodeToKeysym(display, <KeyCode> i, j//4, j%4) == keysym:
                 keycodes.append(i)
                 break
     return keycodes
@@ -989,7 +989,7 @@ cdef _get_modifier_mappings(Display * display):
             keysym = 0
             index = 0
             while (keysym==0 and index<keysyms_per_keycode):
-                keysym = XKeycodeToKeysym(display, keycode, index)
+                keysym = XkbKeycodeToKeysym(display, keycode, index//4, index%4)
                 index += 1
             if keysym==0:
                 log.info("no keysym found for keycode %s", keycode)
@@ -1063,7 +1063,7 @@ def get_keycodes_down(display_source):
     keycodes = _get_keycodes_down(display)
     keys = {}
     for keycode in keycodes:
-        keysym = XKeycodeToKeysym(display, keycode, 0)
+        keysym = XkbKeycodeToKeysym(display, keycode, 0, 0)
         key = XKeysymToString(keysym)
         keys[keycode] = str(key)
     return keys
@@ -1481,6 +1481,7 @@ cdef extern from "X11/extensions/XKBproto.h":
         Bool        event_only
 
 cdef extern from "X11/XKBlib.h":
+    KeySym XkbKeycodeToKeysym(Display *display, KeyCode kc, int group, int level)
     Bool XkbQueryExtension(Display *, int *opcodeReturn, int *eventBaseReturn, int *errorBaseReturn, int *majorRtrn, int *minorRtrn)
     Bool XkbSelectEvents(Display *, unsigned int deviceID, unsigned int affect, unsigned int values)
     Bool XkbDeviceBell(Display *, Window w, int deviceSpec, int bellClass, int bellID, int percent, Atom name)
