@@ -19,7 +19,7 @@ from xpra.platform.graph import make_graph_pixmap
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.deque import maxdeque
-from xpra.keys import get_gtk_keymap, mask_to_names
+from xpra.keys import get_gtk_keymap
 from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit
 from wimpiggy.log import Logger
 log = Logger()
@@ -110,26 +110,7 @@ class ClientExtrasBase(object):
         self.tray_icon = opts.tray_icon
         self.session_name = opts.session_name
         self.clipboard_helper = None
-        #modifier bits:
-        self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
-        self.modifier_keys = {}             #{"Control_L" : "control", ...}
-        self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
         self.set_window_icon(opts.window_icon)
-        self.update_modmap()
-
-    def set_modifier_mappings(self, mappings):
-        log("set_modifier_mappings(%s)", mappings)
-        self.modifier_mappings = mappings
-        self.modifier_keys = {}
-        self.modifier_keycodes = {}
-        for modifier, keys in mappings.items():
-            for keycode,keyname in keys:
-                self.modifier_keys[keyname] = modifier
-                keycodes = self.modifier_keycodes.setdefault(keyname, [])
-                if keycode not in keycodes:
-                    keycodes.append(keycode)
-        log("modifier_keys=%s", self.modifier_keys)
-        log("modifier_keycodes=%s", self.modifier_keycodes)
 
     def set_window_icon(self, window_icon):
         if not window_icon:
@@ -194,8 +175,8 @@ class ClientExtrasBase(object):
         """ layout, variant, variants"""
         return None,None,None
 
-    def mask_to_names(self, mask):
-        return mask_to_names(mask, self._modifier_map)
+    def translate_key(self, depressed, keyval, name, keycode, group, is_modifier, modifiers):
+        return depressed, keyval, name, keycode, group, is_modifier, modifiers
 
     def handle_key_event(self, send_key_action_cb, event, wid, pressed):
         modifiers = self.mask_to_names(event.state)
@@ -207,14 +188,6 @@ class ClientExtrasBase(object):
         #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
         is_modifier = hasattr(event, "is_modifier") and event.is_modifier
         send_key_action_cb(wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
-
-    def update_modmap(self, xkbmap_mod_meanings={}):
-        try:
-            self._modifier_map = self.grok_modifier_map(gdk.display_get_default(), xkbmap_mod_meanings)
-        except Exception, e:
-            log.error("update_modmap(%s): %s" % (xkbmap_mod_meanings, e))
-            self._modifier_map = {}
-        log.debug("update_modmap(%s)=%s" % (xkbmap_mod_meanings, self._modifier_map))
 
     def get_gtk_keymap(self):
         return  get_gtk_keymap()
@@ -358,7 +331,7 @@ class ClientExtrasBase(object):
             self.save_graphs()
         latency_graph = add_graph_button("The time it takes to send an echo packet and get the reply", latency_graph_clicked)
         self.graphs.append(latency_graph)
-              
+
         def add_row(row, label, widget):
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)

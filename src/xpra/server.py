@@ -46,7 +46,6 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_screen_size,             #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
-                               get_modifier_mappings,       #@UnresolvedImport
                                )
 from wimpiggy.prop import prop_set, set_xsettings_format
 from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
@@ -449,26 +448,6 @@ class XpraServer(gobject.GObject):
     def _keys_changed(self, *args):
         if not self.keymap_changing:
             self._modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
-            try:
-                server_mappings = get_modifier_mappings()
-                log("get_modifier_mappings=%s", server_mappings)
-                #update the mappings to use the keycodes the client knows about:
-                reverse_trans = {}
-                for k,v in self.keycode_translation.items():
-                    reverse_trans[v] = k
-                client_mappings = {}
-                for modifier, keys in server_mappings.items():
-                    client_keycodes = []
-                    for keycode,keyname in keys:
-                        client_keycode = reverse_trans.get(keycode, keycode)
-                        if client_keycode:
-                            client_keycodes.append((client_keycode, keyname))
-                    client_mappings[modifier] = client_keycodes
-                log("client translated modifier mappings=%s", client_mappings)
-                for ss in self._server_sources.values():
-                    ss.send_modifier_keycodes(server_mappings)
-            except Exception, e:
-                log.error("keys_changed: %s" % e, exc_info=True)
 
     def _window_resized_signaled(self, wm, window):
         nw,nh = window.get_property("actual-size")
