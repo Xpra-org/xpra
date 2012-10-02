@@ -29,6 +29,9 @@
 __all__ = ["XError", "trap"]
 
 import sys
+import os
+
+XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "")!=""
 
 import gtk.gdk
 
@@ -118,7 +121,10 @@ class _ErrorManager(object):
     def call_synced(self, fun, *args, **kwargs):
         return self._call(False, fun, args, kwargs)
 
-    call = call_unsynced
+    if XPRA_SYNCHRONIZE:
+        call = call_synced
+    else:
+        call = call_unsynced
 
     def swallow_unsynced(self, fun, *args, **kwargs):
         try:
@@ -136,7 +142,10 @@ class _ErrorManager(object):
             log("Ignoring X error: %s on %s", XErrorToName(e), fun)
             return False
 
-    swallow = swallow_unsynced
+    if XPRA_SYNCHRONIZE:
+        swallow = swallow_synced
+    else:
+        swallow = swallow_unsynced
 
     def assert_out(self):
         assert self.depth == 0
