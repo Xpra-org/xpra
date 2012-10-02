@@ -8,13 +8,13 @@ import re
 import subprocess
 
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import set_xmodmap, \
-                              parse_keysym, \
-                              parse_modifier, \
-                              get_minmax_keycodes, \
-                              ungrab_all_keys, \
-                              unpress_all_keys, \
-                              get_keycode_mappings         #@UnresolvedImport
+from wimpiggy.lowlevel import (set_xmodmap,                 #@UnresolvedImport
+                              parse_keysym,                 #@UnresolvedImport
+                              parse_modifier,               #@UnresolvedImport
+                              get_minmax_keycodes,          #@UnresolvedImport
+                              ungrab_all_keys,              #@UnresolvedImport
+                              unpress_all_keys,             #@UnresolvedImport
+                              get_keycode_mappings)         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -514,8 +514,7 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings):
     #first generate a {modifier : [keynames]} dict:
     modifiers = {}
     for keyname, modifier in xkbmap_mod_meanings.items():
-        keynames = modifiers.setdefault(modifier, [])
-        keynames.append(keyname)
+        modifiers.setdefault(modifier, set()).add(keyname)
     debug("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
     return modifiers
 
@@ -530,16 +529,14 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
     matches = {}
     debug("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes))
     debug("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
-    all_keynames = []
+    all_keynames = set()
     for entry in xkbmap_keycodes:
         _, keyname, _, _, _ = entry
         modifier = pref.get(keyname)
         if modifier:
-            keynames = matches.setdefault(modifier, [])
-            if keyname not in keynames:
-                keynames.append(keyname)
-            if keyname not in all_keynames:
-                all_keynames.append(keyname)
+            keynames = matches.setdefault(modifier, set())
+            keynames.add(keyname)
+            all_keynames.add(keyname)
     #try to add missings ones (magic!)
     defaults = {}
     for keyname, modifier in DEFAULT_MODIFIER_MEANINGS.items():
@@ -547,10 +544,10 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
             continue            #aleady defined
         if modifier not in matches:
             #define it since it is completely missing
-            defaults.setdefault(modifier, []).append(keyname)
+            defaults.setdefault(modifier, set()).add(keyname)
         elif modifier in ["shift", "lock", "control", "mod1", "mod2"]:
             #these ones we always add them, even if a record for this modifier already exists
-            matches.setdefault(modifier, []).append(keyname)
+            matches.setdefault(modifier, set()).add(keyname)
     debug("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
     matches.update(defaults)
     debug("get_modifiers_from_keycodes(...)=%s", matches)
