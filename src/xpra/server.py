@@ -299,7 +299,11 @@ class XpraServer(gobject.GObject):
                 if self.notifications_forwarder:
                     log.info("using notification forwarder: %s", self.notifications_forwarder)
             except Exception, e:
-                log.error("error loading or registering our dbus notifications forwarder: %s", e)
+                log.error("error loading or registering our dbus notifications forwarder:")
+                log.error("  %s", e)
+                log.info("if you do not have a dedicated dbus session for this xpra instance,")
+                log.info("  you should use the '--no-notifications' flag")
+                log.info("")
 
         ### All right, we're ready to accept customers:
         for sock in sockets:
