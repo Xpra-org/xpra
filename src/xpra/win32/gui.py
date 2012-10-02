@@ -29,6 +29,8 @@ class ClientExtras(ClientExtrasBase):
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu()
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
+        self.emulate_altgr = False
+        self.last_key_event_sent = None
 
     def exit(self):
         ClientExtrasBase.exit(self)
@@ -74,18 +76,65 @@ class ClientExtras(ClientExtrasBase):
             except Exception, e:
                 log.error("failed to load native win32 balloon: %s", e)
 
-    def translate_key(self, pressed, keyval, keyname, keycode, group, is_modifier, modifiers):
+    def mask_to_names(self, mask):
+        names = ClientExtrasBase.mask_to_names(self, mask)
+        log("mask_to_names(%s)=%s, emulate_altgr=%s", mask, names, self.emulate_altgr)
+        if self.emulate_altgr:
+            self.AltGr_modifiers(names)
+        return names
+
+    def AltGr_modifiers(self, modifiers, pressed=True):
+        clear = ["mod1", "mod2", "control"]
+        if pressed:
+            if "mod5" not in modifiers:
+                modifiers.append("mod5")
+            else:
+                clear.append("mod5")
+        for x in clear:
+            if x in modifiers:
+                modifiers.remove(x)
+
+    def handle_key_event(self, send_key_action_cb, event, wid, pressed):
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
             So we set the keycode to -1 to tell the server to ignore the actual keypress
             Having the "modifiers" set ought to be enough.
         """
+        modifiers = self.mask_to_names(event.state)
+        keyname = gdk.keyval_name(event.keyval)
+        keyval = event.keyval
+        keycode = event.hardware_keycode
+        group = event.group
+        string = event.string
+        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
+        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
         if keyval==2**24-1 and keyname=="VoidSymbol":
-            keyname = "XCaps_Lock"
-            keycode = -1
+            return
         if keyname=="XNum_Lock":
-            keycode = -1
-        return pressed, keyval, keyname, keycode, group, is_modifier, modifiers
+            return
+        #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
+        #self.modifier_keys = {}             #{"Control_L" : "control", ...}
+        #self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
+        #self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
+        #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
+        #if we have modifier_mappings
+        if keyname=="Alt_R" and len(self.modifier_mappings)>0:
+            keyname = "ISO_Level3_Shift"
+            altgr_keycodes = self.modifier_keycodes.get(keyname)
+            if len(altgr_keycodes)>0:
+                keycode = altgr_keycodes[0]         #FIXME: we just pick the first one..
+                self.emulate_altgr = pressed
+                if pressed and self.last_key_event_sent:
+                    #check for spurious control and undo it
+                    last_wid, last_keyname, last_pressed = self.last_key_event_sent[:3]
+                    if last_wid==wid and last_keyname=="Control_L" and last_pressed==True:
+                        #undo it:
+                        undo = self.last_key_event_sent[:]
+                        undo[2] = False
+                        send_key_action_cb(*undo)
+                self.AltGr_modifiers(modifiers, not pressed)
+        self.last_key_event_sent = [wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier]
+        send_key_action_cb(*self.last_key_event_sent)
 
     def get_gtk_keymap(self):
         return  get_gtk_keymap()

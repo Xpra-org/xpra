@@ -970,6 +970,7 @@ class XpraServer(gobject.GObject):
         self.xkbmap_variant = capabilities.get("xkbmap_variant")
         #always clear modifiers before setting a new keymap
         self.set_keymap(ss)
+        ss.send_modifier_keycodes()
 
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client

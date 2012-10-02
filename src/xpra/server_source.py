@@ -33,7 +33,7 @@ from xpra.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
-from wimpiggy.lowlevel import xtest_fake_key              #@UnresolvedImport
+from wimpiggy.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
 
 
 def start_daemon_thread(target, name):
@@ -70,6 +70,7 @@ class KeyboardConfig(object):
         self.keynames_for_mod = None
         self.keycode_translation = {}
         self.keycodes_for_modifier_keynames = {}
+        self.modifier_client_keycodes = {}
         self.compute_modifier_map()
 
     def get_hash(self):
@@ -95,9 +96,31 @@ class KeyboardConfig(object):
                         self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
         debug("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
+    def compute_client_modifier_keycodes(self):
+        """ The keycodes for all modifiers (those are *client* keycodes!) """
+        try:
+            server_mappings = get_modifier_mappings()
+            log("get_modifier_mappings=%s", server_mappings)
+            #update the mappings to use the keycodes the client knows about:
+            reverse_trans = {}
+            for k,v in self.keycode_translation.items():
+                reverse_trans[v] = k
+            self.modifier_client_keycodes = {}
+            for modifier, keys in server_mappings.items():
+                client_keycodes = []
+                for keycode,keyname in keys:
+                    client_keycode = reverse_trans.get(keycode, keycode)
+                    if client_keycode:
+                        client_keycodes.append((client_keycode, keyname))
+                self.modifier_client_keycodes[modifier] = client_keycodes
+            log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
+        except Exception, e:
+            log.error("do_set_keymap: %s" % e, exc_info=True)
+
     def compute_modifier_map(self):
         self.modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
         debug("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
+
 
     def set_keymap(self):
         if not self.enabled:
@@ -143,6 +166,7 @@ class KeyboardConfig(object):
             if self.keynames_for_mod:
                 set_modifiers(self.keynames_for_mod)
             self.compute_modifier_keynames()
+            self.compute_client_modifier_keycodes()
             log("keyname_for_mod=%s", self.keynames_for_mod)
         except:
             log.error("error setting xmodmap", exc_info=True)
@@ -395,6 +419,7 @@ class ServerSource(object):
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
+        self.modifier_keycodes = False
 
         self.keyboard_config = None
 
@@ -440,6 +465,7 @@ class ServerSource(object):
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
+        self.modifier_keycodes =  capabilities.get("modifier_keycodes")
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -503,6 +529,7 @@ class ServerSource(object):
             if current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
                 self.keyboard_config.set_keymap()
+                self.send_modifier_keycodes()
                 current_keyboard_config = self.keyboard_config
             else:
                 log.info("keyboard mapping already configured (skipped)")
@@ -515,6 +542,9 @@ class ServerSource(object):
             return -1
         return self.keyboard_config.keycode_translation.get((client_keycode, keyname), client_keycode)
 
+    def send_modifier_keycodes(self):
+        if self.modifier_keycodes:
+            self.send(["set_modifiers", self.keyboard_config.modifier_client_keycodes])
 
 #
 # Functions for interacting with the network layer:

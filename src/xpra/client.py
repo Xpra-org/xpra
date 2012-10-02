@@ -58,7 +58,7 @@ log = Logger()
 from xpra import __version__
 from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase
-from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES, mask_to_names
+from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
@@ -252,6 +252,7 @@ class XpraClient(XpraClientBase):
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
+            "set_modifiers":        self._process_set_modifiers,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._ui_packet_handlers[k] = v
@@ -371,22 +372,13 @@ class XpraClient(XpraClientBase):
         if self.readonly:
             return
         #NOTE: handle_key_event may fire send_key_action more than once (see win32 AltGr)
-        log("handle_key_action(%s,%s,%s)", event, window, pressed)
-        modifiers = self.mask_to_names(event.state)
-        keyname = gdk.keyval_name(event.keyval)
-        keyval = nn(event.keyval)
-        keycode = event.hardware_keycode
-        group = event.group
-        string = event.string
-        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
-        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
-        translated = self._client_extras.translate_key(pressed, keyval, keyname, keycode, group, is_modifier, modifiers)
-        if translated is None:
-            return
-        pressed, keyval, keyname, keycode, group, is_modifier, modifiers = translated
+        wid = self._window_to_id[window]
+        self._client_extras.handle_key_event(self.send_key_action, event, wid, pressed)
+
+    def send_key_action(self, wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier):
+        window = self._id_to_window[wid]
         if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
             return
-        wid = self._window_to_id[window]
         log("send_key_action(%s, %s, %s, %s, %s, %s, %s, %s, %s)", wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
         self.send(["key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier])
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
@@ -514,7 +506,7 @@ class XpraClient(XpraClientBase):
         return self.mask_to_names(modifiers_mask)
 
     def mask_to_names(self, mask):
-        return mask_to_names(mask, self._modifier_map)
+        return self._client_extras.mask_to_names(mask)
 
     def send_positional(self, packet):
         p = self._protocol
@@ -563,6 +555,7 @@ class XpraClient(XpraClientBase):
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
+        capabilities["modifier_keycodes"] = True
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         return capabilities
@@ -923,6 +916,10 @@ class XpraClient(XpraClientBase):
         log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h
+
+    def _process_set_modifiers(self, packet):
+        mappings = packet[1]
+        self._client_extras.set_modifier_mappings(mappings)
 
     def set_max_packet_size(self):
         root_w, root_h = get_root_size()
