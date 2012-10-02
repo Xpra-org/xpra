@@ -8,7 +8,13 @@ import re
 import subprocess
 
 from wimpiggy.error import trap
-from wimpiggy.lowlevel import set_xmodmap, parse_keysym, parse_modifier, get_minmax_keycodes, get_keycode_mappings         #@UnresolvedImport
+from wimpiggy.lowlevel import set_xmodmap, \
+                              parse_keysym, \
+                              parse_modifier, \
+                              get_minmax_keycodes, \
+                              ungrab_all_keys, \
+                              unpress_all_keys, \
+                              get_keycode_mappings         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -54,6 +60,17 @@ def exec_keymap_command(args, stdin=None):
         log.info("error calling '%s': %s" % (str(args), e))
         return -1
 
+
+def clean_keyboard_state():
+    import gtk.gdk
+    try:
+        ungrab_all_keys(gtk.gdk.get_default_root_window())
+    except:
+        log.error("error ungrabbing keys", exc_info=True)
+    try:
+        unpress_all_keys(gtk.gdk.get_default_root_window())
+    except:
+        log.error("error unpressing keys", exc_info=True)
 
 ################################################################################
 # keyboard layouts

@@ -6,6 +6,10 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gtk.gdk
+gtk.gdk.threads_init()
+
+import md5
 import time
 import gobject
 import ctypes
@@ -23,6 +27,14 @@ from xpra.window_source import WindowSource, DamageBatchConfig
 from xpra.maths import add_list_stats, dec1
 from xpra.scripts.main import ENCODINGS
 
+from wimpiggy.keys import grok_modifier_map
+from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.xkbhelper import do_set_keymap, set_all_keycodes, \
+                           get_modifiers_from_meanings, get_modifiers_from_keycodes, \
+                           clear_modifiers, set_modifiers, \
+                           clean_keyboard_state
+from wimpiggy.lowlevel import xtest_fake_key              #@UnresolvedImport
+
 
 def start_daemon_thread(target, name):
     from threading import Thread
@@ -36,6 +48,189 @@ import os
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 
 NRECS = 500
+
+
+class KeyboardConfig(object):
+    def __init__(self):
+        self.xkbmap_print = None
+        self.xkbmap_query = None
+        self.xkbmap_mod_meanings = {}
+        self.xkbmap_mod_pointermissing = []
+        self.xkbmap_keycodes = []
+        self.xkbmap_x11_keycodes = []
+        self.xkbmap_layout = None
+        self.xkbmap_variant = None
+
+        self.enabled = True
+        #these are derived by calling set_keymap:
+        self.keynames_for_mod = None
+        self.keycode_translation = {}
+        self.compute_modifier_map()
+
+    def get_hash(self):
+        m = md5.new()
+        for x in (self.xkbmap_print, self.xkbmap_query, \
+                  self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
+                  self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
+            m.update("/%s" % str(x))
+        return "%s/%s/%s" % (self.xkbmap_layout, self.xkbmap_variant, m.hexdigest())
+
+    def compute_modifier_map(self):
+        self.modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
+
+    def set_keymap(self):
+        if not self.enabled:
+            return
+        clean_keyboard_state()
+        try:
+            do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
+                          self.xkbmap_print, self.xkbmap_query)
+        except:
+            log.error("error setting new keymap", exc_info=True)
+        try:
+            #first clear all existing modifiers:
+            clean_keyboard_state()
+            modifiers = ALL_X11_MODIFIERS.keys()  #just clear all of them (set or not)
+            clear_modifiers(modifiers)
+
+            #now set all the keycodes:
+            clean_keyboard_state()
+            self.keycode_translation = {}
+            self.keynames_for_mod = None
+
+            has_keycodes = (self.xkbmap_x11_keycodes and len(self.xkbmap_x11_keycodes)>0) or \
+                            (self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0)
+            assert has_keycodes, "client failed to provide any keycodes!"
+            #first compute the modifier maps as this may have an influence
+            #on the keycode mappings (at least for the from_keycodes case):
+            if self.xkbmap_mod_meanings:
+                #Unix-like OS provides modifier meanings:
+                modifiers = get_modifiers_from_meanings(self.xkbmap_mod_meanings)
+            elif self.xkbmap_keycodes:
+                #non-Unix-like OS provides just keycodes for now:
+                modifiers = get_modifiers_from_keycodes(self.xkbmap_keycodes)
+            else:
+                log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                modifiers = {}
+            #if the client does not provide a full keymap,
+            #try to preserve the initial server keycodes
+            #(used by non X11 clients like osx,win32 or Android)
+            preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
+            self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, modifiers)
+
+            #now set the new modifier mappings:
+            clean_keyboard_state()
+            log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+            if modifiers:
+                set_modifiers(modifiers)
+            log("keyname_for_mod=%s", self.keynames_for_mod)
+        except:
+            log.error("error setting xmodmap", exc_info=True)
+
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+        """
+            Given a list of modifiers that should be set, try to press the right keys
+            to make the server's modifier list match it.
+            Things to take into consideration:
+            * xkbmap_mod_managed is a list of modifiers which are "server-managed":
+                these never show up in the client's modifier list as it is not aware of them,
+                so we just always leave them as they are and rely on some client key event to toggle them.
+                ie: "num" on win32, which is toggled by the "Num_Lock" key presses.
+            * when called from '_handle_key', we ignore the modifier key which may be pressed
+                or released as it should be set by that key press event.
+            * when called from mouse position/click events we ignore 'xkbmap_mod_pointermissing'
+                which is set by the client to indicate modifiers which are missing from mouse events.
+                ie: on win32, "lock" is missing.
+            * if the modifier is a "nuisance" one ("lock", "num", "scroll") then we must
+                simulate a full keypress (down then up).
+            * some modifiers can be set by multiple keys ("shift" by both "Shift_L" and "Shift_R" for example)
+                so we try to find the matching modifier in the currently pressed keys (keys_pressed)
+                to make sure we unpress the right one.
+        """
+        if not self.keynames_for_mod:
+            log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
+            return
+        if ignored_modifier_keynames is None:
+            ignored_modifier_keynames = self.xkbmap_mod_pointermissing
+
+        def get_keycodes(keyname):
+            keyval = gtk.gdk.keyval_from_name(keyname)
+            if keyval==0:
+                log.error("no keyval found for %s", keyname)
+                return  []
+            entries = self._keymap.get_entries_for_keyval(keyval)
+            keycodes = []
+            if entries:
+                for _keycode,_group,_level in entries:
+                    keycodes.append(_keycode)
+            return  keycodes
+
+        def get_current_mask():
+            (_, _, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
+            modifiers = mask_to_names(current_mask, self._modifier_map)
+            log("get_modifier_mask()=%s", modifiers)
+            return modifiers
+        current = set(get_current_mask())
+        wanted = set(modifier_list)
+        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+        display = gtk.gdk.display_get_default()
+
+        def change_mask(modifiers, press, info):
+            for modifier in modifiers:
+                if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
+                    log("modifier is server managed: %s", modifier)
+                    continue
+                keynames = self.keynames_for_mod.get(modifier)
+                if not keynames:
+                    log.error("unknown modifier: %s", modifier)
+                    continue
+                if ignored_modifier_keynames:
+                    for imk in ignored_modifier_keynames:
+                        if imk in keynames:
+                            log("modifier %s ignored (ignored keyname=%s)", modifier, imk)
+                            continue
+                keycodes = []
+                #log.info("keynames(%s)=%s", modifier, keynames)
+                for keyname in keynames:
+                    if keyname in self.keys_pressed.values():
+                        #found the key which was pressed to set this modifier
+                        for keycode, name in self.keys_pressed.items():
+                            if name==keyname:
+                                log("found the key pressed for %s: %s", modifier, name)
+                                keycodes.insert(0, keycode)
+                    kcs = get_keycodes(keyname)
+                    for kc in kcs:
+                        if kc not in keycodes:
+                            keycodes.append(kc)
+                if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
+                    log("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
+                    continue
+                #nuisance keys (lock, num, scroll) are toggled by a
+                #full key press + key release (so act accordingly in the loop below)
+                nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
+                log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
+                for keycode in keycodes:
+                    if nuisance:
+                        xtest_fake_key(display, keycode, True)
+                        xtest_fake_key(display, keycode, False)
+                    else:
+                        xtest_fake_key(display, keycode, press)
+                    new_mask = get_current_mask()
+                    #log("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
+                    if (modifier in new_mask)==press:
+                        break
+                    elif not nuisance:
+                        log("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
+                        xtest_fake_key(display, keycode, not press)
+                        new_mask = get_current_mask()
+                        #maybe doing the full keypress (down+up or u+down) worked:
+                        if (modifier in new_mask)==press:
+                            break
+
+        change_mask(current.difference(wanted), False, "remove")
+        change_mask(wanted.difference(current), True, "add")
+
+
 
 class GlobalPerformanceStatistics(object):
     """
@@ -179,6 +374,8 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
 
+        self.keyboard_config = None
+
         # the queues of damage requests we work through:
         self.damage_data_queue = Queue()           #holds functions to call to process damage data
                                                     #items placed in this queue are picked off by the "data_to_packet" thread,
@@ -235,6 +432,12 @@ class ServerSource(object):
             self.default_damage_options["quality"] = q
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000)
+        #keyboard:
+        self.keyboard_config = KeyboardConfig()
+        self.keyboard_config.enabled = bool(capabilities.get("keyboard", True))
+        self.assign_keymap_options(capabilities)
+        self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
+        self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
         #mmap:
         mmap_file = capabilities.get("mmap_file")
         mmap_token = capabilities.get("mmap_token")
@@ -243,6 +446,52 @@ class ServerSource(object):
             self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log.info("%s client version %s with uuid %s, using %s encoding", self.client_type, self.client_version, self.uuid, self.encoding)
+
+#
+# Keyboard magic
+#
+    def set_layout(self, layout, variant):
+        if layout!=self.keyboard_config.xkbmap_layout or variant!=self.keyboard_config.xkbmap_variant:
+            self.keyboard_config.xkbmap_layout = layout
+            self.keyboard_config.xkbmap_variant = variant
+            self.set_keymap()
+
+    def assign_keymap_options(self, props):
+        """ used by both process_hello and process_keymap
+            to set the keyboard attributes """
+        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
+                  "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
+                  "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
+            setattr(self.keyboard_config, x, props.get(x))
+
+    def keys_changed(self):
+        self.keyboard_config.compute_modifier_map()
+
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+        if self.keyboard_config.enabled:
+            self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
+
+    def set_keymap(self, current_keyboard_config):
+        if self.keyboard_config.enabled:
+            current_id = None
+            if current_keyboard_config:
+                current_id = current_keyboard_config.get_hash()
+            keymap_id = self.keyboard_config.get_hash()
+            log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
+            if current_id is None or keymap_id!=current_id:
+                self.keyboard_config.set_keymap()
+                current_keyboard_config = self.keyboard_config
+            else:
+                log.info("keyboard mapping already configured (skipped)")
+                self.keyboard_config = current_keyboard_config
+        return current_keyboard_config
+
+    def get_keycode(self, client_keycode, keyname, modifiers):
+        if not self.keyboard_config.enabled:
+            log.info("ignoring keycode since keyboard is turned off")
+            return -1
+        return self.keyboard_config.keycode_translation.get((client_keycode, keyname), client_keycode)
+
 
 #
 # Functions for interacting with the network layer:
