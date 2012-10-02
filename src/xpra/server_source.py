@@ -93,9 +93,11 @@ class KeyboardConfig(object):
                 if entries:
                     for keycode, _, _ in entries:
                         self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
+        debug("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
     def compute_modifier_map(self):
         self.modifier_map = grok_modifier_map(gtk.gdk.display_get_default(), self.xkbmap_mod_meanings)
+        debug("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
     def set_keymap(self):
         if not self.enabled:
@@ -165,11 +167,17 @@ class KeyboardConfig(object):
                 so we try to find the matching modifier in the currently pressed keys (keys_pressed)
                 to make sure we unpress the right one.
         """
+        def get_current_mask():
+            _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
+            modifiers = mask_to_names(current_mask, self.modifier_map)
+            debug("get_modifier_mask()=%s", modifiers)
+            return modifiers
+
         if not self.keynames_for_mod:
             debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
         if self.xkbmap_print=="" and self.xkbmap_query=="":
-            debug("make_keymask_match: ignored on non-posix platforms!")
+            debug("make_keymask_match: ignored on non-posix platforms! current mask=%s", get_current_mask())
             return
         if ignored_modifier_keynames is None:
             ignored_modifier_keynames = self.xkbmap_mod_pointermissing
@@ -183,11 +191,6 @@ class KeyboardConfig(object):
                     return True
             return False
 
-        def get_current_mask():
-            _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
-            modifiers = mask_to_names(current_mask, self.modifier_map)
-            debug("get_modifier_mask()=%s", modifiers)
-            return modifiers
 
         current = set(get_current_mask())
         wanted = set(modifier_list)
@@ -235,7 +238,7 @@ class KeyboardConfig(object):
                     else:
                         xtest_fake_key(display, keycode, press)
                     new_mask = get_current_mask()
-                    #log("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
+                    debug("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
                     if (modifier in new_mask)==press:
                         break
                     elif not nuisance:
@@ -484,6 +487,7 @@ class ServerSource(object):
 
     def keys_changed(self):
         self.keyboard_config.compute_modifier_map()
+        self.keyboard_config.compute_modifier_keynames()
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         if self.keyboard_config.enabled:
