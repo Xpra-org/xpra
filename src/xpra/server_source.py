@@ -50,6 +50,8 @@ NOYIELD = os.environ.get("XPRA_YIELD") is None
 NRECS = 500
 
 
+debug = log.debug
+
 class KeyboardConfig(object):
     def __init__(self):
         self.xkbmap_print = None
@@ -164,7 +166,10 @@ class KeyboardConfig(object):
                 to make sure we unpress the right one.
         """
         if not self.keynames_for_mod:
-            log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
+            debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
+            return
+        if self.xkbmap_print=="" and self.xkbmap_query=="":
+            debug("make_keymask_match: ignored on non-posix platforms!")
             return
         if ignored_modifier_keynames is None:
             ignored_modifier_keynames = self.xkbmap_mod_pointermissing
@@ -174,31 +179,32 @@ class KeyboardConfig(object):
                 return False
             for imk in ignored_modifier_keynames:
                 if imk in modifier_keynames:
-                    log("modifier ignored (ignored keyname=%s)", imk)
+                    debug("modifier ignored (ignored keyname=%s)", imk)
                     return True
             return False
 
         def get_current_mask():
             _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
             modifiers = mask_to_names(current_mask, self.modifier_map)
-            log("get_modifier_mask()=%s", modifiers)
+            debug("get_modifier_mask()=%s", modifiers)
             return modifiers
 
         current = set(get_current_mask())
         wanted = set(modifier_list)
-        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+        debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
         display = gtk.gdk.display_get_default()
 
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
                 if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
-                    log("modifier is server managed: %s", modifier)
+                    debug("modifier is server managed: %s", modifier)
                     continue
                 keynames = self.keynames_for_mod.get(modifier)
                 if not keynames:
                     log.error("unknown modifier: %s", modifier)
                     continue
                 if is_ignored(keynames):
+                    debug("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []
@@ -208,7 +214,7 @@ class KeyboardConfig(object):
                         #found the key which was pressed to set this modifier
                         for keycode, name in self.keys_pressed.items():
                             if name==keyname:
-                                log("found the key pressed for %s: %s", modifier, name)
+                                debug("found the key pressed for %s: %s", modifier, name)
                                 keycodes.insert(0, keycode)
                     keycodes_for_keyname = self.keycodes_for_modifier_keynames.get(keyname)
                     if keycodes_for_keyname:
@@ -216,12 +222,12 @@ class KeyboardConfig(object):
                             if keycode not in keycodes:
                                 keycodes.append(keycode)
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
-                    log("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
+                    debug("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
                 #nuisance keys (lock, num, scroll) are toggled by a
                 #full key press + key release (so act accordingly in the loop below)
                 nuisance = modifier in DEFAULT_MODIFIER_NUISANCE
-                log("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
+                debug("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 for keycode in keycodes:
                     if nuisance:
                         xtest_fake_key(display, keycode, True)
@@ -233,7 +239,7 @@ class KeyboardConfig(object):
                     if (modifier in new_mask)==press:
                         break
                     elif not nuisance:
-                        log("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
+                        debug("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
                         xtest_fake_key(display, keycode, not press)
                         new_mask = get_current_mask()
                         #maybe doing the full keypress (down+up or u+down) worked:
