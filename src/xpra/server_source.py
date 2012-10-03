@@ -712,6 +712,7 @@ class ServerSource(object):
         info["client_type%s" % suffix] = self.client_type
         info["client_version%s" % suffix] = self.client_version or "unknown"
         info["client_uuid%s" % suffix] = self.uuid
+        info["keyboard%s" % suffix] = self.keyboard
         try:
             info["client_connection%s" % suffix] = str(self.protocol._conn.target)
         except:

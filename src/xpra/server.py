@@ -845,7 +845,6 @@ class XpraServer(gobject.GObject):
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
         info["keyboard_sync"] = self.keyboard_sync
-        info["keyboard"] = self.keyboard
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
         #find the source to report on:
