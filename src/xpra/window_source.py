@@ -451,7 +451,8 @@ class WindowSource(object):
         regions = []
         ww,wh = window.get_dimensions()
         def send_full_screen_update(actual_encoding):
-            log("send_delayed_regions: using full screen update")
+            actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
+            log("send_delayed_regions: using full screen update with %s", actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         try:
@@ -485,9 +486,11 @@ class WindowSource(object):
 
         actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
-            send_full_screen_update(actual_encoding)
+            #use full screen dimensions:
+            self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
             return
 
+        #we're processing a number of regions with a non video encoding:
         for region in regions:
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
@@ -501,17 +504,15 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
-        if ww==1 or wh==1:
-            #x264 cannot handle 1 pixel wide/high areas
-            #(as dimensions are rounded to an even number)
-            #vpx can, but swscale has problems
-            return  switch()
-        if self.uses_swscale and ww<8:
-            #swscale cannot handle widths less than 8..
-            return  switch()
+        if current_encoding=="x264":
+            #x264 needs sizes divisible by 2:
+            ww = ww & 0xFFFE
+            wh = wh & 0xFFFE
+        if self.uses_swscale and (ww<8 or wh<=2):
+            return switch()
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
-            return  switch()
+            return switch()
         if pixel_count>MAX_NONVIDEO_PIXELS:
             #too many pixels, use current video encoder
             return current_encoding
@@ -540,13 +541,8 @@ class WindowSource(object):
         pixmap = self.get_window_pixmap(window, self._sequence)
         if not pixmap:
             return
-        ww, wh = window.get_dimensions()
-        actual_encoding = self.get_best_encoding(w*h, ww, wh, coding)
-        if actual_encoding in ("x264", "vpx"):
-            x, y = 0, 0
-            w, h = ww, wh
         process_damage_time = time.time()
-        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, actual_encoding, self._sequence, options)
+        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, self._sequence, options)
         if not data:
             return
         log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
@@ -687,8 +683,7 @@ class WindowSource(object):
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
-            if w==0 or h==0:
-                return None
+            assert w>0 and h>0
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="vpx":
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
