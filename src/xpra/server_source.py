@@ -419,6 +419,7 @@ class ServerSource(object):
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
+        self.uses_swscale = False
 
         self.keyboard_config = None
 
@@ -464,6 +465,7 @@ class ServerSource(object):
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
+        self.uses_swscale = capabilities.get("uses_swscale", True)
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -762,6 +764,7 @@ class ServerSource(object):
             we dispatch to the WindowSource for this window id
             (creating a new one if needed)
         """
+        assert window is not None
         if options is None:
             damage_options = self.default_damage_options
         else:
@@ -776,7 +779,7 @@ class ServerSource(object):
                               wid, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings,
                               self.default_damage_options,
-                              self.encoding_client_options, self.supports_rgb24zlib,
+                              self.encoding_client_options, self.supports_rgb24zlib, self.uses_swscale,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws
         ws.damage(window, x, y, w, h, damage_options)

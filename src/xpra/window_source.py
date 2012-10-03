@@ -188,7 +188,7 @@ class WindowSource(object):
                     wid, batch_config, auto_refresh_delay,
                     encoding, encodings,
                     default_damage_options,
-                    encoding_client_options, supports_rgb24zlib,
+                    encoding_client_options, supports_rgb24zlib, uses_swscale,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -201,6 +201,7 @@ class WindowSource(object):
                                                         #may change at runtime (ie: see ServerSource.set_quality)
         self.encoding_client_options = encoding_client_options  #does the client support encoding options?
         self.supports_rgb24zlib = supports_rgb24zlib    #supports rgb24 compression outside network layer (unwrapped)
+        self.uses_swscale = uses_swscale                #client uses uses_swscale (has extra limits on sizes)
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -479,7 +480,7 @@ class WindowSource(object):
                     break
             log("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
         except Exception, e:
-            log.error("send_delayed_regions: error processing region %s: %s", damage, e)
+            log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
             return
 
         actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
@@ -504,6 +505,9 @@ class WindowSource(object):
             #x264 cannot handle 1 pixel wide/high areas
             #(as dimensions are rounded to an even number)
             #vpx can, but swscale has problems
+            return  switch()
+        if self.uses_swscale and ww<8:
+            #swscale cannot handle widths less than 8..
             return  switch()
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
