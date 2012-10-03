@@ -776,24 +776,24 @@ class WindowModel(BaseWindowModel):
     _property_handlers["WM_NORMAL_HINTS"] = _handle_wm_normal_hints
 
     def _handle_title_change(self):
-        wm_name = self.prop_get("WM_NAME", "latin1", True)
         net_wm_name = self.prop_get("_NET_WM_NAME", "utf8", True)
         if net_wm_name is not None:
             self._internal_set_property("title", net_wm_name)
         else:
             # may be None
+            wm_name = self.prop_get("WM_NAME", "latin1", True)
             self._internal_set_property("title", wm_name)
 
     _property_handlers["WM_NAME"] = _handle_title_change
     _property_handlers["_NET_WM_NAME"] = _handle_title_change
 
     def _handle_icon_title_change(self):
-        wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
         net_wm_icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
         if net_wm_icon_name is not None:
             self._internal_set_property("icon-title", net_wm_icon_name)
         else:
             # may be None
+            wm_icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
             self._internal_set_property("icon-title", wm_icon_name)
 
     _property_handlers["WM_ICON_NAME"] = _handle_icon_title_change
