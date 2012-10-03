@@ -357,6 +357,10 @@ class WindowSource(object):
             otherwise they are only merged.
         """
         self.may_calculate_batch_delay(window)
+        if w==0 or h==0:
+            #we may fire damage ourselves,
+            #in which case the dimensions may be zero (if so configured by the client)
+            return
 
         if self._damage_delayed:
             #use existing delayed region:
@@ -377,7 +381,11 @@ class WindowSource(object):
         if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            self.process_damage_region(now, window, x, y, w, h, self.encoding, options)
+            actual_encoding = self.get_best_encoding(w*h, w, w, self.encoding)
+            if actual_encoding in ("x264", "vpx"):
+                w, h = window.get_dimensions()
+                x, y = 0, 0
+            self.process_damage_region(now, window, x, y, w, h, actual_encoding, options)
             self.batch_config.last_delays.append((now, 0))
             self.batch_config.last_actual_delays.append((now, 0))
             return
@@ -537,6 +545,8 @@ class WindowSource(object):
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
+        if w==0 or h==0:
+            return
         self._sequence += 1
         pixmap = self.get_window_pixmap(window, self._sequence)
         if not pixmap:
