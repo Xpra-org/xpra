@@ -378,10 +378,13 @@ def get_pywindow(display_source, xwindow):
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
+        log.warn("cannot get gdk window for %s : %s", display_source, xwindow)
         raise XError(BadWindow)
     return win
 
 def get_display_for(obj):
+    if obj is None:
+        raise TypeError("Cannot get a display: instance is None!")
     if isinstance(obj, gtk.gdk.Display):
         return obj
     elif isinstance(obj, (gtk.gdk.Drawable,
@@ -389,7 +392,7 @@ def get_display_for(obj):
                           gtk.Clipboard)):
         return obj.get_display()
     else:
-        raise TypeError, "Don't know how to get a display from %r" % (obj,)
+        raise TypeError("Don't know how to get a display from %r" % (obj,))
 
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
     return <cGdkDisplay*> unwrap(get_display_for(obj), gtk.gdk.Display)
@@ -556,7 +559,9 @@ def _query_tree(pywindow):
         return (None, [])
     pychildren = []
     for i from 0 <= i < nchildren:
-        pychildren.append(get_pywindow(pywindow, children[i]))
+        #we cannot get the gdk window for wid=0
+        if children[i]>0:
+            pychildren.append(get_pywindow(pywindow, children[i]))
     # Apparently XQueryTree sometimes returns garbage in the 'children'
     # pointer when 'nchildren' is 0, which then leads to a segfault when we
     # try to XFree the non-NULL garbage.
