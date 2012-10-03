@@ -33,7 +33,7 @@ import os
 #run xpra in synchronized mode to debug X11 errors:
 XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "1")=="1"
 #useful for debugging X11 errors that get swallowed:
-XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "")!=""
+XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 
 import gtk.gdk
 
