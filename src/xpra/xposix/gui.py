@@ -371,7 +371,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_x11_keymap(self):
         try:
-            from wimpiggy.lowlevel import get_keycode_mappings
+            from wimpiggy.lowlevel import get_keycode_mappings      #@UnresolvedImport
             return get_keycode_mappings(gtk.gdk.get_default_root_window())
         except Exception, e:
             log.error("failed to use raw x11 keymap: %s", e)

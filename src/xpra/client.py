@@ -252,7 +252,6 @@ class XpraClient(XpraClientBase):
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
-            "set_modifiers":        self._process_set_modifiers,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._ui_packet_handlers[k] = v
@@ -555,7 +554,6 @@ class XpraClient(XpraClientBase):
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
-        capabilities["modifier_keycodes"] = True
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         return capabilities
@@ -672,6 +670,10 @@ class XpraClient(XpraClientBase):
         self.server_platform = capabilities.get("platform")
         self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify", False)
         self.toggle_keyboard_sync = capabilities.get("toggle_keyboard_sync", False)
+        modifier_keycodes = capabilities.get("modifier_keycodes")
+        if modifier_keycodes:
+            self._client_extras.set_modifier_mappings(modifier_keycodes)
+
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
@@ -916,10 +918,6 @@ class XpraClient(XpraClientBase):
         log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h
-
-    def _process_set_modifiers(self, packet):
-        mappings = packet[1]
-        self._client_extras.set_modifier_mappings(mappings)
 
     def set_max_packet_size(self):
         root_w, root_h = get_root_size()

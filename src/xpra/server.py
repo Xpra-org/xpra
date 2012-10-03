@@ -949,8 +949,6 @@ class XpraServer(gobject.GObject):
         #take the clipboard if no-one else has yet:
         if ss.clipboard_enabled and (self._clipboard_client is None or self._clipboard_client.closed):
             self._clipboard_client = ss
-        self.send_hello(capabilities, ss, root_w, root_h)
-        #send_hello will take care of sending the current and max screen resolutions,
         #so only activate this feature afterwards:
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)
@@ -970,13 +968,14 @@ class XpraServer(gobject.GObject):
         self.xkbmap_variant = capabilities.get("xkbmap_variant")
         #always clear modifiers before setting a new keymap
         self.set_keymap(ss)
-        ss.send_modifier_keycodes()
+        ss.make_keymask_match(capabilities.get("modifiers", []))
 
+        #send_hello will take care of sending the current and max screen resolutions
+        self.send_hello(capabilities, ss, root_w, root_h)
+
+        #old clients used a network unsafe binary format..
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
-        modifiers = capabilities.get("modifiers", [])
-        log("setting modifiers to %s", modifiers)
-        ss.make_keymask_match(modifiers)
         ss.ping()
         self.send_windows_and_cursors(ss)
 

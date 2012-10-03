@@ -419,7 +419,6 @@ class ServerSource(object):
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
-        self.modifier_keycodes = False
 
         self.keyboard_config = None
 
@@ -465,7 +464,6 @@ class ServerSource(object):
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
-        self.modifier_keycodes =  capabilities.get("modifier_keycodes")
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -529,7 +527,6 @@ class ServerSource(object):
             if current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
                 self.keyboard_config.set_keymap()
-                self.send_modifier_keycodes()
                 current_keyboard_config = self.keyboard_config
             else:
                 log.info("keyboard mapping already configured (skipped)")
@@ -542,9 +539,6 @@ class ServerSource(object):
             return -1
         return self.keyboard_config.keycode_translation.get((client_keycode, keyname), client_keycode)
 
-    def send_modifier_keycodes(self):
-        if self.modifier_keycodes:
-            self.send(["set_modifiers", self.keyboard_config.modifier_client_keycodes])
 
 #
 # Functions for interacting with the network layer:
@@ -604,6 +598,7 @@ class ServerSource(object):
         capabilities = server_capabilities.copy()
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
+        capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
         self.send(["hello", capabilities])
 
     def add_info(self, info, suffix=""):
