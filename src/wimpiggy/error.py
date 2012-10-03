@@ -28,10 +28,12 @@
 
 __all__ = ["XError", "trap"]
 
-import sys
 import os
 
-XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "")!=""
+#run xpra in synchronized mode to debug X11 errors:
+XPRA_SYNCHRONIZE = os.environ.get("XPRA_SYNCHRONIZE", "1")=="1"
+#useful for debugging X11 errors that get swallowed:
+XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "")!=""
 
 import gtk.gdk
 
@@ -43,8 +45,6 @@ class XError(Exception):
         Exception.__init__(self)
         self.msg = message
 
-#useful for debugging X11 errors that get swallowed:
-LOG_ALL_X_ERRORS = False
 
 xerror_to_name = None
 def XErrorToName(xerror):
@@ -103,23 +103,24 @@ class _ErrorManager(object):
         try:
             self._enter()
             value = fun(*args, **kwargs)
-        except:
-            if LOG_ALL_X_ERRORS:
-                log.error("_call(%s,%s,%s,%s)", need_sync, fun, args, kwargs, exc_info=True)
-            exc_type, exc_value = sys.exc_info()[:2]
+        except Exception, e:
+            if XPRA_X11_DEBUG:
+                log.error("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e, exc_info=True)
+            else:
+                log("_call(%s,%s,%s,%s) %s", need_sync, fun, args, kwargs, e)
             try:
                 self._exit(need_sync)
             except XError:
                 log("XError detected while already in unwind; discarding")
-            raise exc_type(exc_value)
+            raise e
         self._exit(need_sync)
         return value
 
     def call_unsynced(self, fun, *args, **kwargs):
-        return self._call(True, fun, args, kwargs)
+        return self._call(False, fun, args, kwargs)
 
     def call_synced(self, fun, *args, **kwargs):
-        return self._call(False, fun, args, kwargs)
+        return self._call(True, fun, args, kwargs)
 
     if XPRA_SYNCHRONIZE:
         call = call_synced
