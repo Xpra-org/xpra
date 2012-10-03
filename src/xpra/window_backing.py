@@ -25,24 +25,16 @@ Generic superclass for Backing code,
 see CairoBacking and PixmapBacking for implementations
 """
 class Backing(object):
-    def __init__(self, wid, old_backing, mmap_enabled, mmap):
+    def __init__(self, wid, mmap_enabled, mmap):
         self.wid = wid
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = None
-        #keep the same video decoder for now
-        #it will be updated once we start receiving frames
-        #with the new dimensions
-        if old_backing:
-            self._video_decoder = old_backing._video_decoder
-            self._video_decoder_lock = old_backing._video_decoder_lock
-            #make sure we don't close it via the old one:
-            old_backing._video_decoder = None
-        else:
-            self._video_decoder = None
-            self._video_decoder_lock = Lock()
+        self._video_decoder = None
+        self._video_decoder_lock = Lock()
 
     def close(self):
+        log("%s.close() video_decoder=%s", type(self), self._video_decoder)
         if self._video_decoder:
             try:
                 self._video_decoder_lock.acquire()
@@ -103,6 +95,7 @@ class Backing(object):
             self._video_decoder_lock.acquire()
             if self._video_decoder:
                 if self._video_decoder.get_type()!=coding:
+                    log("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
                     self._video_decoder.clean()
                     self._video_decoder = None
                 elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
@@ -110,9 +103,10 @@ class Backing(object):
                     self._video_decoder.clean()
                     self._video_decoder.init_context(width, height, options)
             if self._video_decoder is None:
+                log("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, options)
                 self._video_decoder = factory()
                 self._video_decoder.init_context(width, height, options)
-            log("paint_with_video_decoder: options=%s", options)
+            log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
             err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
             if err!=0 or rgb_image is None or rgb_image.get_size()==0:
                 log.error("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
@@ -138,16 +132,19 @@ This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(Backing):
     def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        Backing.__init__(self, wid, old_backing, mmap_enabled, mmap)
+        Backing.__init__(self, wid, mmap_enabled, mmap)
+
+    def init(self, w, h):
+        old_backing = self._backing
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
-        if old_backing is not None and old_backing._backing is not None:
+        if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
             cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.set_source_surface(old_backing._backing, 0, 0)
+            cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
-            old_w = old_backing._backing.get_width()
-            old_h = old_backing._backing.get_height()
+            old_w = old_backing.get_width()
+            old_h = old_backing.get_height()
             cr.move_to(old_w, 0)
             cr.line_to(w, 0)
             cr.line_to(w, h)
@@ -155,7 +152,7 @@ class CairoBacking(Backing):
             cr.line_to(0, old_h)
             cr.line_to(old_w, old_h)
             cr.close_path()
-            old_backing._backing.finish()
+            old_backing.finish()
         else:
             cr.rectangle(0, 0, w, h)
         cr.set_source_rgb(1, 1, 1)
@@ -273,16 +270,19 @@ Works much better than gtk3!
 """
 class PixmapBacking(Backing):
 
-    def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
-        Backing.__init__(self, wid, old_backing, mmap_enabled, mmap)
+    def __init__(self, wid, w, h, mmap_enabled, mmap):
+        Backing.__init__(self, wid, mmap_enabled, mmap)
+
+    def init(self, w, h):
+        old_backing = self._backing
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
-        if old_backing is not None and old_backing._backing is not None:
+        if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
             cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.set_source_pixmap(old_backing._backing, 0, 0)
+            cr.set_source_pixmap(old_backing, 0, 0)
             cr.paint()
-            old_w, old_h = old_backing._backing.get_size()
+            old_w, old_h = old_backing.get_size()
             cr.move_to(old_w, 0)
             cr.line_to(w, 0)
             cr.line_to(w, h)
@@ -380,16 +380,20 @@ class PixmapBacking(Backing):
             return False
 
 
-def new_backing(wid, w, h, old_backing, mmap_enabled, mmap):
+def new_backing(wid, w, h, backing, mmap_enabled, mmap):
+    lock = None
+    if backing:
+        lock = backing._video_decoder_lock
     try:
-        if old_backing:
-            old_backing._video_decoder_lock.acquire()
-        if is_gtk3() or PREFER_CAIRO:
-            b = CairoBacking(wid, w, h, old_backing, mmap_enabled, mmap)
-        else:
-            b = PixmapBacking(wid, w, h, old_backing, mmap_enabled, mmap)
+        if lock:
+            lock.acquire()
+        if backing is None:
+            if is_gtk3() or PREFER_CAIRO:
+                backing = CairoBacking(wid, w, h, mmap_enabled, mmap)
+            else:
+                backing = PixmapBacking(wid, w, h, mmap_enabled, mmap)
+        backing.init(w, h)
     finally:
-        if old_backing:
-            old_backing._video_decoder_lock.release()        
-            old_backing.close()
-    return b
+        if lock:
+            lock.release()
+    return backing
