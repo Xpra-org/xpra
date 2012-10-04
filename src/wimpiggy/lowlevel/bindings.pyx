@@ -10,6 +10,7 @@
 # cimport stuff works yet.
 
 import struct
+import os
 
 import gobject
 import gtk
@@ -20,6 +21,8 @@ from wimpiggy.error import trap, XError
 
 from wimpiggy.log import Logger
 log = Logger("wimpiggy.lowlevel")
+
+XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 
 ###################################
 # Headers, python magic
@@ -2049,15 +2052,20 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         return GDK_FILTER_CONTINUE
     try:
         d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
-        my_events = dict(_x_event_signals)
+        my_events = _x_event_signals
         if d.get_data("DAMAGE-event-base") is not None:
             damage_type = d.get_data("DAMAGE-event-base") + XDamageNotify
+            my_events = _x_event_signals.copy()
             my_events[damage_type] = my_events["XDamageNotify"]
         else:
             damage_type = -1
         if e.type in my_events:
             event_args = my_events[e.type]
-            log("x_event_filter event=%s, %s", event_type_names.get(e.type), event_args)
+            msg = "x_event_filter event=%s/%s", event_args, event_type_names.get(e.type)
+            if XPRA_X11_DEBUG:
+                log.info(*msg)
+            else:
+                log(*msg)
             pyev = AdHocStruct()
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
@@ -2109,8 +2117,11 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.format = e.xclient.format
                     # I am lazy.  Add this later if needed for some reason.
                     if pyev.format != 32:
-                        log.warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
-                        return GDK_FILTER_CONTINUE
+                        #_KDE_SPLASH_PROGRESS can be ignored silently
+                        #we know about it and we don't care
+                        if pyev.message_type!="_KDE_SPLASH_PROGRESS":
+                            log.warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
+                        return GDK_FILTER_REMOVE
                     pieces = []
                     for i in xrange(5):
                         # Mask with 0xffffffff to prevent sign-extension on
@@ -2194,8 +2205,13 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.width = damage_e.area.width
                     pyev.height = damage_e.area.height
             except XError, ex:
-                log("Some window in our event disappeared before we could "
-                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev)
+                msg = "Some window in our event disappeared before we could " \
+                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
+                if XPRA_X11_DEBUG:
+                    log.error(*msg)
+                else:
+                    log(*msg)
+                return  GDK_FILTER_REMOVE
             else:
                 _route_event(pyev, *event_args)
     except (KeyboardInterrupt, SystemExit):
