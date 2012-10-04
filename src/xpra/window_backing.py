@@ -381,6 +381,8 @@ class PixmapBacking(Backing):
 
 
 def new_backing(wid, w, h, backing, mmap_enabled, mmap):
+    w = max(1, w)
+    h = max(1, h)
     lock = None
     if backing:
         lock = backing._video_decoder_lock

@@ -448,6 +448,8 @@ class ClientWindow(gtk.Window):
         if self._override_redirect:
             return
         x, y, w, h = get_window_geometry(self)
+        w = max(1, w)
+        h = max(1, h)
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
@@ -472,6 +474,8 @@ class ClientWindow(gtk.Window):
 
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
+        w = max(1, w)
+        h = max(1, h)
         self.window.move_resize(x, y, w, h)
         self.new_backing(w, h)
 
