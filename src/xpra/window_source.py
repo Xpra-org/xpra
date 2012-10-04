@@ -671,8 +671,7 @@ class WindowSource(object):
             bytecount = end_bytes-start_bytes
             self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         if self._damage_delayed is not None and self._damage_delayed_expired:
-            pass
-            #gobject.idle_add(self.may_send_delayed)
+            gobject.idle_add(self.may_send_delayed)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         """
