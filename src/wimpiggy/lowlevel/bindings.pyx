@@ -1363,7 +1363,7 @@ def has_randr():
                                  XRRQueryVersion)
         return True
     except Exception, e:
-        log.warn(str(e))
+        log.warn("Warning: %s", e)
         return False
 
 cdef _get_screen_sizes(display_source):
