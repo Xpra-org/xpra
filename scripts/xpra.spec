@@ -18,8 +18,13 @@
 %define no_video 1
 %endif
 
-%define requires pygtk2, xorg-x11-server-utils, xorg-x11-server-Xvfb, python-imaging, dbus-python
+#python and gtk bits:
+%define requires_python_gtk ,pygtk2, python-imaging, dbus-python
+#Vfb (Xvfb or Xdummy):
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb
+#OpenGL bits:
 %define requires_opengl %{nil}
+#Anything extra (distro specific):
 %define requires_extra %{nil}
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
@@ -28,6 +33,7 @@
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
 %define requires_x264 , x264-libs
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric
 %endif
@@ -61,7 +67,8 @@
 %endif
 
 %if %is_suse
-%define requires python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
+%define requires_python_gtk , python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
+%define requires_xorg , xorg-x11-server-utils, xf86-video-dummy, xf86-input-void
 %define requires_extra %{nil}
 %endif
 
@@ -76,7 +83,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
 URL: http://xpra.org/
