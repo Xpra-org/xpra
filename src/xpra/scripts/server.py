@@ -195,14 +195,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if len(extra_args) != 1:
         parser.error("need exactly 1 extra argument")
     display_name = extra_args.pop(0)
-    if display_name==":0":
-        print("WARNING:")
-        print("You are attempting to run the xpra server against the default X11 display '%s'." % display_name)
-        print("This is generally not what you want.")
-        print("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
+    if display_name==":0" or display_name.startswith(":0."):
+        sys.stderr.write("WARNING:")
+        sys.stderr.write("You are attempting to run the xpra server against the default X11 display '%s'." % display_name)
+        sys.stderr.write("This is generally not what you want.")
+        sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
 
     if opts.exit_with_children and not opts.children:
-        print("--exit-with-children specified without any children to spawn; exiting immediately")
+        sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
         return  1
 
     atexit.register(run_cleanups)
@@ -272,6 +272,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.sockdir))
     scriptfile.close()
 
+    from wimpiggy.log import Logger
+    log = Logger()
+
     # Initialize the sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
@@ -281,14 +284,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
             sockets.append(tcp_socket)
             def cleanup_tcp_socket():
-                print("closing tcp socket %s" % opts.bind_tcp)
+                log.info("closing tcp socket %s" % opts.bind_tcp)
                 try:
                     tcp_socket.close()
                 except:
                     pass
             _cleanups.append(cleanup_tcp_socket)
         except Exception, e:
-            print("cannot start - failed to create tcp socket at %s: %s" % (opts.bind_tcp, e))
+            log.error("cannot start - failed to create tcp socket at %s: %s" % (opts.bind_tcp, e))
             return  1
     #print("creating server socket %s" % sockpath)
     clobber = upgrading or opts.use_display
@@ -300,7 +303,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                      % (display_name,))
     sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
     def cleanup_socket():
-        print("removing socket %s" % sockpath)
+        log.info("removing socket %s", sockpath)
         try:
             os.unlink(sockpath)
         except:
@@ -344,14 +347,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return False
         if xvfb.poll() is None:
             return False
-        sys.stderr.write("\n")
-        sys.stderr.write("Xvfb command has terminated! xpra cannot continue\n")
-        sys.stderr.write("\n")
+        log.error("\n")
+        log.error("Xvfb command has terminated! xpra cannot continue\n")
+        log.error("\n")
         if instance_exists:
-            sys.stderr.write("There is an X11 server already running on display %s:\n" % display_name)
-            sys.stderr.write("You may want to use:\n")
-            sys.stderr.write("  'xpra upgrade' if an instance of xpra is still connected to it\n")
-            sys.stderr.write("  'xpra --use-display start' to connect xpra to an existing X11 server only\n")
+            log.error("There is an X11 server already running on display %s:\n" % display_name)
+            log.error("You may want to use:\n")
+            log.error("  'xpra upgrade' if an instance of xpra is still connected to it\n")
+            log.error("  'xpra --use-display start' to connect xpra to an existing X11 server only\n")
         return True
 
     if xvfb_error():
@@ -386,7 +389,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     def kill_xvfb():
         # Close our display(s) first, so the server dying won't kill us.
-        print("killing xvfb with pid %s" % xvfb_pid)
+        log.info("killing xvfb with pid %s" % xvfb_pid)
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
         os.kill(xvfb_pid, signal.SIGTERM)
@@ -397,11 +400,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
         from xpra.server import XpraServer
     except ImportError, e:
-        print("Failed to load Xpra server components, check your installation: %s" % e)
+        log.error("Failed to load Xpra server components, check your installation: %s" % e)
         return 1
     root = gtk.gdk.get_default_root_window()
     if not displayHasXComposite(root):
-        print("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
+        log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
         return 1
 
     # This import is delayed because the module depends on gtk:
@@ -432,7 +435,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     _cleanups.insert(0, app.cleanup)
     if app.run():
-        print("upgrading: not cleaning up Xvfb or socket")
+        log.info("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
         # and don't delete the new socket (not ours)
         _cleanups.remove(kill_xvfb)
