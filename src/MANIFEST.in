@@ -10,7 +10,7 @@ recursive-include patches *
 recursive-include etc *
 recursive-include icons *
 global-include *.py *.txt
-global-exclude *~ #*
+global-exclude *~ #* *.orig *.bak *.rej
 prune build
 prune dist
 prune install

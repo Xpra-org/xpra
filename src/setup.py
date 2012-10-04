@@ -204,9 +204,9 @@ def pkgconfig(*packages_options, **ekw):
 #*******************************************************************************
 def get_xorg_conf_and_script():
     if not XPRA_LOCAL_SERVERS_SUPPORTED:
-        return "etc/xpra/client-only/xpra.conf", None
+        return "etc/xpra/client-only/xpra.conf", False
     if xdummy_ENABLED:
-        return "etc/xpra/Xdummy/xpra.conf", None
+        return "etc/xpra/Xdummy/xpra.conf", False
     XORG_BIN = None
     PATHS = os.environ.get("PATH").split(os.pathsep)
     for x in PATHS:
@@ -215,7 +215,7 @@ def get_xorg_conf_and_script():
             XORG_BIN = xorg
             break
     def Xvfb():
-        return "etc/xpra/Xvfb/xpra.conf", None
+        return "etc/xpra/Xvfb/xpra.conf", False
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()
@@ -243,10 +243,10 @@ def get_xorg_conf_and_script():
         xorg_stat = os.stat(XORG_BIN)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
             print("%s is suid, using the xpra_Xdummy wrapper" % XORG_BIN)
-            return "etc/xpra/xpra_Xdummy/xpra.conf", "scripts/xpra_Xdummy"
+            return "etc/xpra/xpra_Xdummy/xpra.conf", True
         else:
             print("using Xdummy config file")
-            return "etc/xpra/xpra_Xdummy/xpra.conf", None
+            return "etc/xpra/Xdummy/xpra.conf", False
     except Exception, e:
         print("failed to detect Xorg version: %s" % e)
         print("not installing Xdummy support")
@@ -432,15 +432,6 @@ if sys.platform.startswith("win"):
 
 #*******************************************************************************
 else:
-    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
-    if sys.platform.startswith("darwin"):
-        #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
-        PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
-        packages.append("xpra.darwin")
-    else:
-        packages.append("xpra.xposix")
-        scripts += ["scripts/parti", "scripts/parti-repl"]
-
     data_files += [
                     ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
                     ("share/parti", ["README", "parti.README"]),
@@ -453,20 +444,30 @@ else:
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
 
-    if 'install' in sys.argv and sys.platform!="darwin":
-        #prepare default [/usr/local]/etc configuration files:
-        if sys.prefix == '/usr':
-            etc_prefix = '/etc/xpra'
-        else:
-            etc_prefix = sys.prefix + '/etc/xpra'
-        etc_files = ["etc/xpra/xorg.conf"]
-        #figure out the version of the Xorg server:
-        xorg_conf, extra_script = get_xorg_conf_and_script()
-        if extra_script:
-            #install an extra script for using Xdummy
-            scripts.append(extra_script)
-        etc_files.append(xorg_conf)
-        data_files.append((etc_prefix, etc_files))
+    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
+    if sys.platform.startswith("darwin"):
+        #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
+        PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
+        packages.append("xpra.darwin")
+    else:
+        packages.append("xpra.xposix")
+        scripts += ["scripts/parti", "scripts/parti-repl",
+                    "scripts/xpra_Xdummy"]  #always include the wrapper in case we need it later, we remove it during the 'install' below step if it isn't actually needed
+
+        if 'install' in sys.argv:
+            #prepare default [/usr/local]/etc configuration files:
+            if sys.prefix == '/usr':
+                etc_prefix = '/etc/xpra'
+            else:
+                etc_prefix = sys.prefix + '/etc/xpra'
+            etc_files = ["etc/xpra/xorg.conf"]
+            #figure out the version of the Xorg server:
+            xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
+            if not use_Xdummy_wrapper:
+                #if we're not using the wrapper, don't install it
+                scripts.remove("scripts/xpra_Xdummy")
+            etc_files.append(xorg_conf)
+            data_files.append((etc_prefix, etc_files))
     setup_options["scripts"] = scripts
 
 
