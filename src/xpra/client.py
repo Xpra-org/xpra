@@ -593,7 +593,7 @@ class XpraClient(XpraClientBase):
         self.send(["ping_echo", echotime, l1, l2, l3, int(1000.0*sl)])
 
     def send_quality(self, q):
-        assert q>0 and q<100
+        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
         self.quality = q
         if self.change_quality:
             self.send(["quality", self.quality])
