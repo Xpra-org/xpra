@@ -325,7 +325,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         xvfb_executable = xvfb_cmd[0]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         try:
-            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable)
+            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
             return  1
