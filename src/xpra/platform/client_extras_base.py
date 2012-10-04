@@ -20,7 +20,7 @@ from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.deque import maxdeque
 from xpra.keys import get_gtk_keymap, mask_to_names
-from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit
+from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit, std_unit_dec
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -487,11 +487,11 @@ class ClientExtrasBase(object):
                 def pixelstr(v):
                     if v<0:
                         return  "n/a"
-                    return std_unit(v)
+                    return std_unit_dec(v)
                 def fpsstr(v):
                     if v<0:
                         return  "n/a"
-                    return "%s" % (int(v*100)/100.0)
+                    return "%s" % (int(v*10)/10.0)
                 def average(seconds):
                     total = 0
                     total_n = 0

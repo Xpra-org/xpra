@@ -37,6 +37,10 @@ def std_unit(v):
     unit, value = to_std_unit(v)
     return "%s%s" % (int(value), unit)
 
+def std_unit_dec(v):
+    unit, value = to_std_unit(v*10.0)
+    return "%s%s" % (int(value)/10.0, unit)
+
 
 def find_invpow(x, n):
     """Finds the integer component of the n'th root of x,
