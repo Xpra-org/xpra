@@ -56,6 +56,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         add_event_receiver(self._window, self)
 
     def destroy(self):
+        if self._window is None:
+            log.warn("composite window %s already destroyed!", self)
+            return
         if not self._already_composited:
             trap.swallow(xcomposite_unredirect_window, self._window)
         trap.swallow(xdamage_stop, self._window, self._damage_handle)
@@ -126,7 +129,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         pass
                     raise
                 if handle is None:
-                    log("failed to name a window pixmap (expect an X error soon)",
+                    log.warn("failed to name a window pixmap (expect an X error soon)",
                         type="pixmap")
                     self._cleanup_listening(listening)
                 else:
