@@ -378,7 +378,7 @@ def get_pywindow(display_source, xwindow):
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
-        log.warn("cannot get gdk window for %s : %s", display_source, xwindow)
+        log("cannot get gdk window for %s : %s", display_source, xwindow)
         raise XError(BadWindow)
     return win
 
@@ -1937,6 +1937,53 @@ def _maybe_send_event(window, signal, event):
     else:
         log("  no handler registered for this window, ignoring event")
 
+event_type_names = {}
+#some events may not be defined in old versions,
+#so use try/except and we won't get pretty names on those
+try:
+    event_type_names.update({
+                    gtk.gdk.NOTHING         : "Nothing",
+                    gtk.gdk.DELETE          : "DELETE",
+                    gtk.gdk.DESTROY         : "DESTROY",
+                    gtk.gdk.EXPOSE          : "EXPOSE",
+                    gtk.gdk.MOTION_NOTIFY   : "MOTION_NOTIFY",
+                    gtk.gdk.BUTTON_PRESS    : "BUTTON_PRESS",
+                    gtk.gdk._2BUTTON_PRESS  : "2BUTTON_PRESS",
+                    gtk.gdk._3BUTTON_PRESS  : "3BUTTON_PRESS",
+                    gtk.gdk.BUTTON_RELEASE  : "BUTTON_RELEASE",
+                    gtk.gdk.KEY_PRESS       : "KEY_PRESS",
+                    gtk.gdk.KEY_RELEASE     : "KEY_RELEASE",
+                    gtk.gdk.ENTER_NOTIFY    : "ENTER_NOTIFY",
+                    gtk.gdk.LEAVE_NOTIFY    : "LEAVE_NOTIFY",
+                    gtk.gdk.FOCUS_CHANGE    : "FOCUS_CHANGE",
+                    gtk.gdk.CONFIGURE       : "CONFIGURE",
+                    gtk.gdk.MAP             : "MAP",
+                    gtk.gdk.UNMAP           : "UNMAP",
+                    gtk.gdk.PROPERTY_NOTIFY : "PROPERTY_NOTIFY",
+                    gtk.gdk.SELECTION_CLEAR : "SELECTION_CLEAR",
+                    gtk.gdk.SELECTION_REQUEST : "SELECTION_REQUEST",
+                    gtk.gdk.SELECTION_NOTIFY: "SELECTION_NOTIFY",
+                    gtk.gdk.PROXIMITY_IN    : "PROXIMITY_IN",
+                    gtk.gdk.PROXIMITY_OUT   : "PROXIMITY_OUT",
+                    gtk.gdk.DRAG_ENTER      : "DRAG_ENTER",
+                    gtk.gdk.DRAG_LEAVE      : "DRAG_LEAVE",
+                    gtk.gdk.DRAG_MOTION     : "DRAG_MOTION",
+                    gtk.gdk.DRAG_STATUS     : "DRAG_STATUS",
+                    gtk.gdk.DROP_START      : "DROP_START",
+                    gtk.gdk.DROP_FINISHED   : "DROP_FINISHED",
+                    gtk.gdk.CLIENT_EVENT    : "CLIENT_EVENT",
+                    gtk.gdk.VISIBILITY_NOTIFY : "VISIBILITY_NOTIFY",
+                    gtk.gdk.NO_EXPOSE       : "NO_EXPOSE",
+                    gtk.gdk.SCROLL          : "SCROLL",
+                    gtk.gdk.WINDOW_STATE    : "WINDOW_STATE",
+                    gtk.gdk.SETTING         : "SETTING",
+                    gtk.gdk.OWNER_CHANGE    : "OWNER_CHANGE",
+                    gtk.gdk.GRAB_BROKEN     : "GRAB_BROKEN",
+                    gtk.gdk.DAMAGE          : "DAMAGE"
+                    })
+except:
+    pass
+
 def _route_event(event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
     # for windows we have never created a GdkWindow object for, and GDK
@@ -1945,7 +1992,8 @@ def _route_event(event, signal, parent_signal):
     # care about those anyway.
     if event.window is None:
         log("  event.window is None, ignoring")
-        assert event.type in (gtk.gdk.UNMAP, gtk.gdk.DESTROY)
+        assert event.type in (gtk.gdk.UNMAP, gtk.gdk.DESTROY, gtk.gdk.SELECTION_CLEAR, gtk.gdk.SELECTION_REQUEST), \
+                "event window is None for %s!" % event_type_names.get(event.type, event.type)
         return
     if event.window is event.delivered_to:
         if signal is not None:
@@ -2008,7 +2056,8 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         else:
             damage_type = -1
         if e.type in my_events:
-            log("x_event_filter event=%s", str(my_events.get(e.type)))
+            event_args = my_events[e.type]
+            log("x_event_filter event=%s, %s", event_type_names.get(e.type), event_args)
             pyev = AdHocStruct()
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
@@ -2144,16 +2193,11 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.y = damage_e.area.y
                     pyev.width = damage_e.area.width
                     pyev.height = damage_e.area.height
-            except XError, e:
+            except XError, ex:
                 log("Some window in our event disappeared before we could "
-                    + "handle the event; so I'm just ignoring it instead.")
+                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev)
             else:
-                # Dispatch:
-                # The int() here forces a cast from a C integer to a Python
-                # integer, to work around a bug in some versions of Pyrex:
-                #   http://www.mail-archive.com/pygr-dev@googlegroups.com/msg00142.html
-                #   http://lists.partiwm.org/pipermail/parti-discuss/2009-January/000071.html
-                _route_event(pyev, *my_events[int(e.type)])
+                _route_event(pyev, *event_args)
     except (KeyboardInterrupt, SystemExit):
         log("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
