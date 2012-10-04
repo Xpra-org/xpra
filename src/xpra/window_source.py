@@ -206,6 +206,7 @@ class WindowSource(object):
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.refresh_timer = None
+        self.timeout_timer = None
 
         # mmap:
         self._mmap = mmap
@@ -266,6 +267,7 @@ class WindowSource(object):
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
         self.cancel_refresh_timer()
+        self.cancel_timeout_timer()
         #if a region was delayed, we can just drop it now:
         self._damage_delayed = None
         self._damage_delayed_expired = False
@@ -411,15 +413,17 @@ class WindowSource(object):
             #when we eventually receive the pending ACKs
             #but if somehow they go missing... try with a timer:
             delayed_region_time = self._damage_delayed[0]
-            def delayed_region_timeout():
-                if self._damage_delayed:
-                    region_time = self._damage_delayed[0]
-                    if region_time==delayed_region_time:
-                        #same region!
-                        log.warn("delayed_region_timeout: sending now - something is wrong!")
-                        self.do_send_delayed_region()
-                return False
-            gobject.timeout_add(self.batch_config.max_delay, delayed_region_timeout)
+            self.timeout_timer = gobject.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
+
+    def delayed_region_timeout(self, delayed_region_time):
+        self.timeout_timer = None
+        if self._damage_delayed:
+            region_time = self._damage_delayed[0]
+            if region_time==delayed_region_time:
+                #same region!
+                log.warn("delayed_region_timeout: sending now - something is wrong!")
+                self.do_send_delayed_region()
+        return False
 
     def may_send_delayed(self):
         """ send the delayed region for processing if there is no client backlog """
@@ -445,6 +449,7 @@ class WindowSource(object):
         return False
     
     def do_send_delayed_region(self):
+        self.cancel_timeout_timer()
         delayed = self._damage_delayed
         self._damage_delayed = None
         self.send_delayed_regions(*delayed)
@@ -545,6 +550,7 @@ class WindowSource(object):
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
+        assert window is not None
         if w==0 or h==0:
             return
         self._sequence += 1
@@ -611,6 +617,11 @@ class WindowSource(object):
             gobject.source_remove(self.refresh_timer)
             self.refresh_timer = None
 
+    def cancel_timeout_timer(self):
+        if self.timeout_timer:
+            gobject.source_remove(self.timeout_timer)
+            self.timeout_timer = None
+
     def queue_damage_packet(self, pixmap, packet, damage_time, process_damage_time):
         """
             Adds the given packet to the damage_packet_queue,
@@ -660,7 +671,8 @@ class WindowSource(object):
             bytecount = end_bytes-start_bytes
             self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         if self._damage_delayed is not None and self._damage_delayed_expired:
-            gobject.idle_add(self.may_send_delayed)
+            pass
+            #gobject.idle_add(self.may_send_delayed)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
         """
