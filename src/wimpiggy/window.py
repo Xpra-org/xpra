@@ -262,6 +262,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
             self._damage_forward_handle = h
             self._geometry = geometry_with_border(self.client_window)
+            self._managed = True
         try:
             trap.call(setup)
         except XError, e:
@@ -292,13 +293,16 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         return (x, y, w + 2*b, h + 2*b)
 
     def unmanage(self, exiting=False):
-        self.emit("unmanaged", exiting)
+        if self._managed:
+            self._managed = False
+            self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
         remove_event_receiver(self.client_window, self)
         if self._composite:
             self._composite.disconnect(self._damage_forward_handle)
             self._composite.destroy()
+            self._composite = None
 
     def _read_initial_properties(self):
         transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
@@ -568,7 +572,7 @@ class WindowModel(BaseWindowModel):
         pass
 
     def do_wimpiggy_unmap_event(self, event):
-        if event.delivered_to is self.corral_window:
+        if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
         # The client window got unmapped.  The question is, though, was that
@@ -588,7 +592,7 @@ class WindowModel(BaseWindowModel):
             self.unmanage()
 
     def do_wimpiggy_destroy_event(self, event):
-        if event.delivered_to is self.corral_window:
+        if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
         # This is somewhat redundant with the unmap signal, because if you
@@ -600,7 +604,7 @@ class WindowModel(BaseWindowModel):
         self.unmanage()
 
     def do_unmanaged(self, exiting):
-        log("unmanaging window")
+        log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
         self._internal_set_property("owner", None)
         def unmanageit():
             self._scrub_withdrawn_window()
@@ -616,8 +620,10 @@ class WindowModel(BaseWindowModel):
             sendConfigureNotify(self.client_window)
             if exiting:
                 self.client_window.show_unraised()
-        trap.swallow(unmanageit)
-        self.corral_window.destroy()
+        if self.corral_window:
+            trap.swallow(unmanageit)
+            self.corral_window.destroy()
+            self.corral_window = None
         BaseWindowModel.do_unmanaged(self, exiting)
 
     def ownership_election(self):
