@@ -12,5 +12,14 @@ export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
 
+## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
+override_dh_strip:
+	[ -d "$(CURDIR)/debian/xpra-dbg" ] \
+        && dh_strip -pxpra --dbg-package=xpra-dbg \
+        || dh_strip -pxpra
+	[ -d "$(CURDIR)/debian/python-wimpiggy-dbg" ] \
+        && dh_strip -ppython-wimpiggy --dbg-package=python-wimpiggy-dbg \
+        || dh_strip -ppython-wimpiggy
+
 override_dh_builddeb:
 	dh_builddeb -- -Zxz

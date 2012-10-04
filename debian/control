@@ -58,6 +58,24 @@ Description: tool to detach/reattach running X programs
  windows inside your window manager rather than being contained within a single
  window.
 
+#Package: xpra-dbg
+#Section: debug
+#Priority: extra
+#Architecture: any
+#Depends: xpra (= ${binary:Version}), ${misc:Depends}
+#Description: xpra -- debugging symbols
+# Xpra gives you the functionality of GNU Screen for X applications.
+# .
+# It allows the user to view remote X applications on their local machine, and
+# disconnect and reconnect from the remote machine without losing the state of
+# the running applications.
+# .
+# Unlike VNC, these applications are "rootless".  They appear as individual
+# windows inside your window manager rather than being contained within a single
+# window.
+# .
+# This package provides debugging symbols
+
 Package: python-wimpiggy
 Section: python
 Architecture: any
@@ -70,3 +88,17 @@ Description: library for writing window managers, using GTK+
  As the author says, wimpiggy is "a library to make writing fancypants,
  EWMH-compliant, compositing window managers just as easy as writing an app in
  PyGTK+."
+
+#Package: python-wimpiggy-dbg
+#Section: debug
+#Priority: extra
+#Architecture: any
+#Depends: python-wimpiggy (= ${binary:Version}), ${misc:Depends}
+#Description: python-wimpiggy -- debugging symbols
+# A helper library for writing window managers.
+# .
+# As the author says, wimpiggy is "a library to make writing fancypants,
+# EWMH-compliant, compositing window managers just as easy as writing an app in
+# PyGTK+."
+# .
+# This package provides debugging symbols
