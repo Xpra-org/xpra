@@ -1940,53 +1940,6 @@ def _maybe_send_event(window, signal, event):
     else:
         log("  no handler registered for this window, ignoring event")
 
-event_type_names = {}
-#some events may not be defined in old versions,
-#so use try/except and we won't get pretty names on those
-try:
-    event_type_names.update({
-                    gtk.gdk.NOTHING         : "Nothing",
-                    gtk.gdk.DELETE          : "DELETE",
-                    gtk.gdk.DESTROY         : "DESTROY",
-                    gtk.gdk.EXPOSE          : "EXPOSE",
-                    gtk.gdk.MOTION_NOTIFY   : "MOTION_NOTIFY",
-                    gtk.gdk.BUTTON_PRESS    : "BUTTON_PRESS",
-                    gtk.gdk._2BUTTON_PRESS  : "2BUTTON_PRESS",
-                    gtk.gdk._3BUTTON_PRESS  : "3BUTTON_PRESS",
-                    gtk.gdk.BUTTON_RELEASE  : "BUTTON_RELEASE",
-                    gtk.gdk.KEY_PRESS       : "KEY_PRESS",
-                    gtk.gdk.KEY_RELEASE     : "KEY_RELEASE",
-                    gtk.gdk.ENTER_NOTIFY    : "ENTER_NOTIFY",
-                    gtk.gdk.LEAVE_NOTIFY    : "LEAVE_NOTIFY",
-                    gtk.gdk.FOCUS_CHANGE    : "FOCUS_CHANGE",
-                    gtk.gdk.CONFIGURE       : "CONFIGURE",
-                    gtk.gdk.MAP             : "MAP",
-                    gtk.gdk.UNMAP           : "UNMAP",
-                    gtk.gdk.PROPERTY_NOTIFY : "PROPERTY_NOTIFY",
-                    gtk.gdk.SELECTION_CLEAR : "SELECTION_CLEAR",
-                    gtk.gdk.SELECTION_REQUEST : "SELECTION_REQUEST",
-                    gtk.gdk.SELECTION_NOTIFY: "SELECTION_NOTIFY",
-                    gtk.gdk.PROXIMITY_IN    : "PROXIMITY_IN",
-                    gtk.gdk.PROXIMITY_OUT   : "PROXIMITY_OUT",
-                    gtk.gdk.DRAG_ENTER      : "DRAG_ENTER",
-                    gtk.gdk.DRAG_LEAVE      : "DRAG_LEAVE",
-                    gtk.gdk.DRAG_MOTION     : "DRAG_MOTION",
-                    gtk.gdk.DRAG_STATUS     : "DRAG_STATUS",
-                    gtk.gdk.DROP_START      : "DROP_START",
-                    gtk.gdk.DROP_FINISHED   : "DROP_FINISHED",
-                    gtk.gdk.CLIENT_EVENT    : "CLIENT_EVENT",
-                    gtk.gdk.VISIBILITY_NOTIFY : "VISIBILITY_NOTIFY",
-                    gtk.gdk.NO_EXPOSE       : "NO_EXPOSE",
-                    gtk.gdk.SCROLL          : "SCROLL",
-                    gtk.gdk.WINDOW_STATE    : "WINDOW_STATE",
-                    gtk.gdk.SETTING         : "SETTING",
-                    gtk.gdk.OWNER_CHANGE    : "OWNER_CHANGE",
-                    gtk.gdk.GRAB_BROKEN     : "GRAB_BROKEN",
-                    gtk.gdk.DAMAGE          : "DAMAGE"
-                    })
-except:
-    pass
-
 def _route_event(event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
     # for windows we have never created a GdkWindow object for, and GDK
@@ -1995,8 +1948,8 @@ def _route_event(event, signal, parent_signal):
     # care about those anyway.
     if event.window is None:
         log("  event.window is None, ignoring")
-        assert event.type in (gtk.gdk.UNMAP, gtk.gdk.DESTROY, gtk.gdk.SELECTION_CLEAR, gtk.gdk.SELECTION_REQUEST), \
-                "event window is None for %s!" % event_type_names.get(event.type, event.type)
+        assert event.type in (UnmapNotify, DestroyNotify), \
+                "event window is None for event type %s!"
         return
     if event.window is event.delivered_to:
         if signal is not None:
@@ -2014,27 +1967,45 @@ def _route_event(event, signal, parent_signal):
 CursorNotify = 0
 XKBNotify = 0
 _x_event_signals = {}
+event_type_names = {}
 def init_x11_events():
-    global _x_event_signals, XKBNotify, CursorNotify
+    global _x_event_signals, event_type_names, XKBNotify, CursorNotify
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
     _x_event_signals = {
-        MapRequest: (None, "child-map-request-event"),
-        ConfigureRequest: (None, "child-configure-request-event"),
-        FocusIn: ("wimpiggy-focus-in-event", None),
-        FocusOut: ("wimpiggy-focus-out-event", None),
-        ClientMessage: ("wimpiggy-client-message-event", None),
-        MapNotify: ("wimpiggy-map-event", "wimpiggy-child-map-event"),
-        UnmapNotify: ("wimpiggy-unmap-event", "wimpiggy-child-unmap-event"),
-        DestroyNotify: ("wimpiggy-destroy-event", None),
-        ConfigureNotify: ("wimpiggy-configure-event", None),
-        ReparentNotify: ("wimpiggy-reparent-event", None),
-        PropertyNotify: ("wimpiggy-property-notify-event", None),
-        KeyPress: ("wimpiggy-key-press-event", None),
-        CursorNotify: ("wimpiggy-cursor-event", None),
-        XKBNotify: ("wimpiggy-xkb-event", None),
-        "XDamageNotify": ("wimpiggy-damage-event", None),
+        MapRequest          : (None, "child-map-request-event"),
+        ConfigureRequest    : (None, "child-configure-request-event"),
+        FocusIn             : ("wimpiggy-focus-in-event", None),
+        FocusOut            : ("wimpiggy-focus-out-event", None),
+        ClientMessage       : ("wimpiggy-client-message-event", None),
+        MapNotify           : ("wimpiggy-map-event", "wimpiggy-child-map-event"),
+        UnmapNotify         : ("wimpiggy-unmap-event", "wimpiggy-child-unmap-event"),
+        DestroyNotify       : ("wimpiggy-destroy-event", None),
+        ConfigureNotify     : ("wimpiggy-configure-event", None),
+        ReparentNotify      : ("wimpiggy-reparent-event", None),
+        PropertyNotify      : ("wimpiggy-property-notify-event", None),
+        KeyPress            : ("wimpiggy-key-press-event", None),
+        CursorNotify        : ("wimpiggy-cursor-event", None),
+        XKBNotify           : ("wimpiggy-xkb-event", None),
+        "XDamageNotify"     : ("wimpiggy-damage-event", None),
         }
+    event_type_names = {
+        MapRequest          : "MapRequest",
+        ConfigureRequest    : "ConfigureRequest",
+        FocusIn             : "FocusIn",
+        FocusOut            : "FocusOut",
+        ClientMessage       : "ClientMessage",
+        MapNotify           : "MapNotify",
+        UnmapNotify         : "UnmapNotify",
+        DestroyNotify       : "DestroyNotify",
+        ConfigureNotify     : "ConfigureNotify",
+        ReparentNotify      : "ReparentNotify",
+        PropertyNotify      : "PropertyNotify",
+        KeyPress            : "KeyPress",
+        CursorNotify        : "CursorNotify",
+        XKBNotify           : "XDamageNotify",    
+        }
+
 
 def _gw(display, xwin):
     return trap.call_synced(get_pywindow, display, xwin)
