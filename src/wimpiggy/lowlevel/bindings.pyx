@@ -2003,7 +2003,7 @@ def init_x11_events():
         PropertyNotify      : "PropertyNotify",
         KeyPress            : "KeyPress",
         CursorNotify        : "CursorNotify",
-        XKBNotify           : "XDamageNotify",    
+        XKBNotify           : "XKBNotify",    
         }
 
 
