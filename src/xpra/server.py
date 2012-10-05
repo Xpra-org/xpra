@@ -359,7 +359,7 @@ class XpraServer(gobject.GObject):
             sock.close()
             return  True
         sc = SocketConnection(sock, sock.getsockname(), address, sock.getpeername())
-        log.info("New connection received: %s, peer=%s", sc, sc.target)
+        log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
         protocol.set_compression_level(self.compression_level)
         self._potential_protocols.append(protocol)
