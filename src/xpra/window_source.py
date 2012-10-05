@@ -327,19 +327,6 @@ class WindowSource(object):
             #force batching: set it just above min_delay
             self.batch_config.delay = max(self.batch_config.min_delay+0.01, self.batch_config.delay)
 
-    def get_window_pixmap(self, window, sequence):
-        """ Grabs the window's context (pixels) as a pixmap """
-        # It's important to acknowledge changes *before* we extract them,
-        # to avoid a race condition.
-        window.acknowledge_changes()
-        if self.is_cancelled(sequence):
-            log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
-            return  None
-        pixmap = window.get_property("client-contents")
-        if pixmap is None and not self.is_cancelled(sequence):
-            log.error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
-        return pixmap
-
     def get_packets_backlog(self):
         target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
         packets_backlog, _, _ = self.statistics.get_backlog(target_latency)
@@ -550,12 +537,22 @@ class WindowSource(object):
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
-        assert window is not None
         if w==0 or h==0:
             return
+        # It's important to acknowledge changes *before* we extract them,
+        # to avoid a race condition.
+        if not window.is_managed():
+            log.warn("the window %s is not composited!?", window)
+            return
+        window.acknowledge_changes()
+
         self._sequence += 1
-        pixmap = self.get_window_pixmap(window, self._sequence)
-        if not pixmap:
+        pixmap = window.get_property("client-contents")
+        if self.is_cancelled(self._sequence):
+            log("get_window_pixmap: dropping damage request with sequence=%s", self._sequence)
+            return  None
+        if pixmap is None:
+            log.error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
             return
         process_damage_time = time.time()
         data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, self._sequence, options)
