@@ -1536,8 +1536,6 @@ class XpraServer(gobject.GObject):
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,
         }
-    _all_authenticated_handlers = _default_packet_handlers.copy()
-    _all_authenticated_handlers.update(_authenticated_ui_packet_handlers)
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
