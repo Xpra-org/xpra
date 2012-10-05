@@ -1990,20 +1990,40 @@ def init_x11_events():
         "XDamageNotify"     : ("wimpiggy-damage-event", None),
         }
     event_type_names = {
-        MapRequest          : "MapRequest",
-        ConfigureRequest    : "ConfigureRequest",
+        KeyPress            : "KeyPress",
+        KeyRelease          : "KeyRelease",
+        ButtonPress         : "ButtonPress",
+        ButtonRelease       : "ButtonRelease",
+        MotionNotify        : "MotionNotify",
+        EnterNotify         : "EnterNotify",
+        LeaveNotify         : "LeaveNotify",
         FocusIn             : "FocusIn",
         FocusOut            : "FocusOut",
-        ClientMessage       : "ClientMessage",
-        MapNotify           : "MapNotify",
-        UnmapNotify         : "UnmapNotify",
+        KeymapNotify        : "KeymapNotify",
+        Expose              : "Expose",
+        GraphicsExpose      : "GraphicsExpose",
+        NoExpose            : "NoExpose",
+        VisibilityNotify    : "VisibilityNotify",
+        CreateNotify        : "CreateNotify",
         DestroyNotify       : "DestroyNotify",
-        ConfigureNotify     : "ConfigureNotify",
+        UnmapNotify         : "UnmapNotify",
+        MapNotify           : "MapNotify",
+        MapRequest          : "MapRequest",
         ReparentNotify      : "ReparentNotify",
+        ConfigureNotify     : "ConfigureNotify",
+        ConfigureRequest    : "ConfigureRequest",
+        GravityNotify       : "GravityNotify",
+        ResizeRequest       : "ResizeRequest",
+        CirculateNotify     : "CirculateNotify",
+        CirculateRequest    : "CirculateRequest",
         PropertyNotify      : "PropertyNotify",
-        KeyPress            : "KeyPress",
-        CursorNotify        : "CursorNotify",
-        XKBNotify           : "XKBNotify",    
+        SelectionClear      : "SelectionClear",
+        SelectionRequest    : "SelectionRequest",
+        SelectionNotify     : "SelectionNotify",
+        ColormapNotify      : "ColormapNotify",
+        ClientMessage       : "ClientMessage",
+        MappingNotify       : "MappingNotify",
+        GenericEvent        : "GenericEvent",
         }
 
 
@@ -2030,13 +2050,13 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             my_events[damage_type] = my_events["XDamageNotify"]
         else:
             damage_type = -1
-        if e.type in my_events:
-            event_args = my_events[e.type]
-            msg = "x_event_filter event=%s/%s", event_args, event_type_names.get(e.type)
-            if XPRA_X11_DEBUG:
-                log.info(*msg)
-            else:
-                log(*msg)
+        event_args = my_events.get(e.type)
+        msg = "x_event_filter event=%s/%s", event_args, event_type_names.get(e.type, e.type)
+        if XPRA_X11_DEBUG:
+            log.info(*msg)
+        else:
+            log(*msg)
+        if event_args is not None:
             pyev = AdHocStruct()
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
