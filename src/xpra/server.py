@@ -1391,18 +1391,23 @@ class XpraServer(gobject.GObject):
                 xtest_fake_key(gtk.gdk.display_get_default(), keycode, True)
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
 
-    def _process_button_action(self, proto, packet):
-        (wid, button, pressed, pointer, modifiers) = packet[1:6]
+    def _process_mouse_common(self, proto, wid, pointer, modifiers):
         ss = self._server_sources.get(proto)
         ss.make_keymask_match(modifiers)
         window = self._id_to_window.get(wid)
         if not window:
-            log("_process_button_action() invalid window id: %s", wid)
+            log("_process_mouse_common() invalid window id: %s", wid)
             return
-        trap.swallow(self._desktop_manager.raise_window, window)
-        self._move_pointer(pointer)
+        def raise_and_move():
+            self._desktop_manager.raise_window(window)
+            self._move_pointer(pointer)
+        trap.call(raise_and_move)
+
+    def _process_button_action(self, proto, packet):
+        wid, button, pressed, pointer, modifiers = packet[1:6]
+        self._process_mouse_common(proto, wid, pointer, modifiers)
         try:
-            trap.call_unsynced(xtest_fake_button,
+            trap.call_synced(xtest_fake_button,
                                gtk.gdk.display_get_default(),
                                button, pressed)
         except XError:
@@ -1412,14 +1417,7 @@ class XpraServer(gobject.GObject):
 
     def _process_pointer_position(self, proto, packet):
         wid, pointer, modifiers = packet[1:4]
-        ss = self._server_sources.get(proto)
-        ss.make_keymask_match(modifiers)
-        window = self._id_to_window.get(wid)
-        if not window:
-            log("_process_pointer_position() invalid window id: %s", wid)
-            return
-        self._desktop_manager.raise_window(window)
-        self._move_pointer(pointer)
+        self._process_mouse_common(proto, wid, pointer, modifiers)
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
@@ -1538,6 +1536,8 @@ class XpraServer(gobject.GObject):
         Protocol.CONNECTION_LOST: _process_connection_lost,
         Protocol.GIBBERISH: _process_gibberish,
         }
+    _all_authenticated_handlers = _default_packet_handlers.copy()
+    _all_authenticated_handlers.update(_authenticated_ui_packet_handlers)
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
