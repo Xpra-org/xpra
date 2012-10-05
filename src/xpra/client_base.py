@@ -151,11 +151,11 @@ class XpraClientBase(gobject.GObject):
         return capabilities
 
     def send(self, packet):
-        if self._protocol:
+        if self._protocol and self._protocol.source:
             self._protocol.source.queue_ordinary_packet(packet)
 
     def send_now(self, packet):
-        if self._protocol:
+        if self._protocol and self._protocol.source:
             self._protocol.source.queue_priority_packet(packet)
 
     def cleanup(self):
