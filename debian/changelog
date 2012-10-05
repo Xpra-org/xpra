@@ -1,17 +1,37 @@
 xpra (0.7.0-1) UNRELEASED; urgency=low
-  * many latency fixes and improvements: lower latency, congestion handling, etc
+  * fix "AltGr" key handling with MS Windows clients (and others)
+  * many latency fixes and improvements: lower latency,
+    better line congestion handling, etc
   * lower client latency: decompress pictures in a dedicated thread
+  * better launcher command feedback
   * support for Xdummy on platforms with only a suid binary installed
   * support for 'webp' lossy picture encoding (better and faster than jpeg)
   * support fixed picture quality with x264, webp and jpeg
+  * support for multiple "start-child" options in config files or command line
   * more reliable auto-refresh
+  * performance optimizations: caching results, avoid unnecessary video encoder
+    re-initialization
+  * faster re-connection (skip keyboard re-configuration)
+  * better isolation of the virtual display process
   * show performance statistics graphs on session info dialog (click to save)
   * start with compression enabled, even for initial packet
   * show more version and client information in logs and via "xpra info"
   * client launcher improvements: prevent logging conflict, add version info
-  * large source layout cleanup
+  * large source layout cleanup, compilation warnings fixed
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 27 Sep 2012 21:51:52 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 06 Oct 2012 02:01:49 +0700
+
+xpra (0.6.4-1) UNRELEASED; urgency=low
+  * fix bencoder to properly handle dicts with non-string keys
+  * fix swscale bug with windows that are too small by switch encoding
+  * fix locking of video encoder resizing leading to missing video frames
+  * fix crash with compression turned off: fix unicode encoding
+  * fix lack of locking sometimes causing errors with "xpra info"
+  * fix password file handling: exceptions and ignore carriage returns
+  * prevent races during setup and cleanup of network connections
+  * take shortcut if there is nothing to send
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 05 Oct 2012 21:31:07 +0700
 
 xpra (0.6.3-1) UNRELEASED; urgency=low
   * fix memory leak in server after client disconnection
