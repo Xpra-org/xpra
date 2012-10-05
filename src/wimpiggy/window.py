@@ -370,6 +370,9 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         _, _, ww, wh = self.get_property("geometry")
         return ww, wh
 
+    def is_OR(self):
+        return  True
+
 
 gobject.type_register(OverrideRedirectWindowModel)
 
@@ -545,6 +548,9 @@ class WindowModel(BaseWindowModel):
         except XError, e:
             raise Unmanageable(e)
         self._setup_done = True
+
+    def is_OR(self):
+        return  False
 
     def get_dimensions(self):
         return  self.get_property("actual-size")

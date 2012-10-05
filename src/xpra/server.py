@@ -118,7 +118,7 @@ class DesktopManager(gtk.Widget):
         return self._models[model].shown
 
     def raise_window(self, model):
-        if isinstance(model, OverrideRedirectWindowModel):
+        if model.is_OR():
             model.get_property("client-window").raise_()
         else:
             window = self._models[model].window
@@ -676,8 +676,7 @@ class XpraServer(gobject.GObject):
             ss.remove_window(wid)
 
     def _contents_changed(self, window, event):
-        if (isinstance(window, OverrideRedirectWindowModel)
-            or self._desktop_manager.visible(window)):
+        if window.is_OR() or self._desktop_manager.visible(window):
             self._damage(window, event.x, event.y, event.width, event.height)
 
     def _screen_size_changed(self, *args):
@@ -990,7 +989,7 @@ class XpraServer(gobject.GObject):
         # about this kind of correctness at all, but hey, doesn't hurt.)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
-            if isinstance(window, OverrideRedirectWindowModel):
+            if window.is_OR():
                 self._send_new_or_window_packet(window)
             else:
                 self._desktop_manager.hide_window(window)
@@ -1209,7 +1208,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        assert not isinstance(window, OverrideRedirectWindowModel)
+        assert not window.is_OR()
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
@@ -1228,7 +1227,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        assert not isinstance(window, OverrideRedirectWindowModel)
+        assert not window.is_OR()
         self._cancel_damage(wid)
         self._desktop_manager.hide_window(window)
 
@@ -1238,7 +1237,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        assert not isinstance(window, OverrideRedirectWindowModel)
+        assert not window.is_OR()
         owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
         log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
         self._desktop_manager.configure_window(window, x, y, w, h)
@@ -1254,7 +1253,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("cannot move window %s: already removed!", wid)
             return
-        assert not isinstance(window, OverrideRedirectWindowModel)
+        assert not window.is_OR()
         _, _, w, h = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
 
@@ -1265,7 +1264,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("cannot resize window %s: already removed!", wid)
             return
-        assert not isinstance(window, OverrideRedirectWindowModel)
+        assert not window.is_OR()
         self._cancel_damage(wid)
         x, y, _, _ = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
@@ -1463,7 +1462,7 @@ class XpraServer(gobject.GObject):
         for wid, window in wid_windows.items():
             if window is None:
                 continue
-            if not isinstance(window, OverrideRedirectWindowModel):
+            if not window.is_OR():
                 if not self._desktop_manager._models[window].shown:
                     log("window is no longer shown, ignoring buffer refresh which would fail")
                     continue
