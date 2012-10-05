@@ -88,6 +88,7 @@ class XpraClient(XpraClientBase):
         }
 
     def __init__(self, conn, opts):
+        log.info("xpra client version %s" % __version__)
         XpraClientBase.__init__(self, opts)
         self.start_time = time.time()
         self._window_to_id = {}
@@ -164,7 +165,6 @@ class XpraClient(XpraClientBase):
             self._keymap = None
         self._do_keys_changed()
         self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
-        log.info("xpra client version %s" % __version__)
         self.send_hello()
 
         if self._keymap:
