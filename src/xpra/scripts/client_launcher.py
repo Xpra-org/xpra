@@ -727,7 +727,7 @@ class ApplicationWindow:
 
 def create_password_file(password):
 	pass_file = tempfile.NamedTemporaryFile(delete = False)
-	pass_file.write("%s\n" % password)
+	pass_file.write("%s" % password)
 	xpra_opts.password_file=pass_file.name
 	pass_file.close()
 	return pass_file.name
