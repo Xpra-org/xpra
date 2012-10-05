@@ -2112,7 +2112,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                         #we know about it and we don't care
                         if pyev.message_type!="_KDE_SPLASH_PROGRESS":
                             log.warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
-                        return GDK_FILTER_REMOVE
+                        return GDK_FILTER_CONTINUE
                     pieces = []
                     for i in xrange(5):
                         # Mask with 0xffffffff to prevent sign-extension on
@@ -2202,7 +2202,6 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     log.error(*msg)
                 else:
                     log(*msg)
-                return  GDK_FILTER_REMOVE
             else:
                 _route_event(pyev, *event_args)
     except (KeyboardInterrupt, SystemExit):

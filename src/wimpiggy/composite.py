@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import gobject
-from wimpiggy.util import one_arg_signal, no_arg_signal, AutoPropGObjectMixin
+from wimpiggy.util import one_arg_signal, AutoPropGObjectMixin
 from wimpiggy.error import trap
 from wimpiggy.lowlevel import (
            xcomposite_redirect_window,      #@UnresolvedImport
@@ -22,10 +22,10 @@ from wimpiggy.lowlevel import (
 from wimpiggy.log import Logger
 log = Logger()
 
+
 class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     __gsignals__ = {
         "contents-changed": one_arg_signal,
-        "composite-destroyed": no_arg_signal,
 
         "wimpiggy-damage-event": one_arg_signal,
         "wimpiggy-unmap-event": one_arg_signal,
@@ -68,7 +68,6 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self.invalidate_pixmap()
         remove_event_receiver(self._window, self)
         self._window = None
-        self.emit("composite-destroyed")
 
     def acknowledge_changes(self):
         if self._damage_handle is not None and self._window is not None:
