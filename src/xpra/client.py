@@ -57,7 +57,7 @@ log = Logger()
 
 from xpra import __version__
 from xpra.deque import maxdeque
-from xpra.client_base import XpraClientBase
+from xpra.client_base import XpraClientBase, EXIT_TIMEOUT
 from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
@@ -564,9 +564,7 @@ class XpraClient(XpraClientBase):
         wait = 60
         def check_echo_received(*args):
             if self.last_ping_echoed_time<now_ms:
-                log.error("check_echo_received: we sent a ping to the server %s seconds ago and we have not received its echo!", wait)
-                log.error("    assuming that the connection is dead and disconnecting")
-                self.quit(1)
+                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % wait)
         gobject.timeout_add(wait*1000, check_echo_received)
         return True
 

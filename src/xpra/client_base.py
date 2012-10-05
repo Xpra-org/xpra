@@ -24,6 +24,13 @@ def nn(x):
         return  ""
     return x
 
+EXIT_OK = 0
+EXIT_CONNECTION_LOST = 1
+EXIT_TIMEOUT = 2
+EXIT_PASSWORD_REQUIRED = 3
+EXIT_PASSWORD_FILE_ERROR = 4
+EXIT_INCOMPATIBLE_VERSION = 5
+
 class ClientSource(object):
     def __init__(self, protocol):
         self._priority_packets = []
@@ -164,27 +171,32 @@ class XpraClientBase(gobject.GObject):
             self.exit_code = exit_code
         raise Exception("override me!")
 
+    def warn_and_quit(self, exit_code, warning):
+        log.warn(warning)
+        self.quit(exit_code)
+
     def _process_disconnect(self, packet):
-        log.error("server requested disconnect: %s", packet[1:])
-        self.quit(0)
+        if len(packet)==2:
+            info = packet[1]
+        else:
+            info = packet[1:]
+        self.warn_and_quit(EXIT_OK, "server requested disconnect: %s" % info)
 
     def _process_connection_lost(self, packet):
-        log.error("Connection lost")
-        self.quit(1)
+        self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
         if not self.password_file:
-            log.error("password is required by the server")
-            self.quit(2)
+            self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "password is required by the server")
             return
         import hmac
         try:
             passwordFile = open(self.password_file, "rU")
             password = passwordFile.read()
         except IOError, e:
-            log.error("failed to open password file %s: %s", self.password_file, e)
-            self.quit(3)
+            self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
             return
+        log("password read from file %s is %s", self.password_file, password)
         salt = packet[1]
         challenge_response = hmac.HMAC(password, salt)
         self.send_hello(challenge_response.hexdigest())
@@ -203,7 +215,7 @@ class XpraClientBase(gobject.GObject):
             if os.name=="posix" and not sys.platform.startswith("darwin"):
                 log.error("failed to set xsettings format: %s", e)
         if not is_compatible_with(self._remote_version):
-            self.quit(4)
+            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version: %s" % self._remote_version)
             return False
         if capabilities.get("rencode") and has_rencode:
             self._protocol.enable_rencode()
@@ -295,9 +307,7 @@ class ScreenshotXpraClient(GLibXpraClient):
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
         def screenshot_timeout(*args):
-            self.exit_code = 1
-            log.error("timeout: did not receive the screenshot")
-            self.quit(5)
+            self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
         gobject.timeout_add(10*1000, screenshot_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
@@ -305,13 +315,12 @@ class ScreenshotXpraClient(GLibXpraClient):
         (w, h, encoding, _, img_data) = packet[1:6]
         assert encoding=="png"
         if len(img_data)==0:
-            log.info("screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
-            self.quit(0)
+            self.warn_and_quit(EXIT_OK, "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
+            return
         f = open(self.screenshot_filename, 'wb')
         f.write(img_data)
         f.close()
-        log.info("screenshot %sx%s saved to: %s", w, h, self.screenshot_filename)
-        self.quit(0)
+        self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):
         GLibXpraClient.init_packet_handlers(self)
@@ -330,9 +339,7 @@ class InfoXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts):
         def info_timeout(*args):
-            self.exit_code = 1
-            log.error("timeout: did not receive the info")
-            self.quit(5)
+            self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
         gobject.timeout_add(10*1000, info_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
@@ -367,8 +374,7 @@ class VersionXpraClient(GLibXpraClient):
     def _process_hello(self, packet):
         log.debug("process_hello: %s", packet)
         props = packet[1]
-        log.info("%s" % props.get("version"))
-        self.quit(0)
+        self.warn_and_quit(EXIT_OK, str(props.get("version")))
 
     def make_hello(self, challenge_response=None):
         capabilities = GLibXpraClient.make_hello(self, challenge_response)
@@ -382,8 +388,7 @@ class StopXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts):
         def stop_timeout(*args):
-            log.error("timeout: server did not disconnect us")
-            self.quit(5)
+            self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
         gobject.timeout_add(5*1000, stop_timeout)
         GLibXpraClient.__init__(self, conn, opts)
 
