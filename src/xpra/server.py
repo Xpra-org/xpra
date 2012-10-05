@@ -1310,6 +1310,9 @@ class XpraServer(gobject.GObject):
         if keycode>=0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
 
+    def fake_key(self, keycode, press):
+        trap.call(xtest_fake_key, gtk.gdk.display_get_default(), keycode, press)
+
     def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
         """
             Does the actual press/unpress for keys
@@ -1328,12 +1331,12 @@ class XpraServer(gobject.GObject):
             log("handle keycode pressing %s: key %s", keycode, name)
             if self.keyboard_sync:
                 self.keys_pressed[keycode] = name
-            xtest_fake_key(gtk.gdk.display_get_default(), keycode, True)
+            self.fake_key(keycode, True)
         def unpress():
             log("handle keycode unpressing %s: key %s", keycode, name)
             if self.keyboard_sync:
                 del self.keys_pressed[keycode]
-            xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+            self.fake_key(keycode, False)
         if pressed:
             if keycode not in self.keys_pressed:
                 press()
@@ -1388,7 +1391,7 @@ class XpraServer(gobject.GObject):
                 #not so long ago, just re-press it now:
                 log("key %s/%s, had timed out, re-pressing it", keycode, keyname)
                 self.keys_pressed[keycode] = keyname
-                xtest_fake_key(gtk.gdk.display_get_default(), keycode, True)
+                self.fake_key(keycode, True)
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
