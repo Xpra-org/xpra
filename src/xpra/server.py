@@ -812,6 +812,7 @@ class XpraServer(gobject.GObject):
             self.send_disconnect(proto, "invalid password file specified on server")
             return
         password  = passwordFile.read()
+        log("password from file %s is %s", self.password_file, password)
         password_hash = hmac.HMAC(password, self.salt)
         if client_hash != password_hash.hexdigest():
             def login_failed(*args):
