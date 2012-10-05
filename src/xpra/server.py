@@ -807,11 +807,14 @@ class XpraServer(gobject.GObject):
     def _verify_password(self, proto, client_hash):
         try:
             passwordFile = open(self.password_file, "rU")
+            password  = passwordFile.read()
+            passwordFile.close()
+            while password.endswith("\n") or password.endswith("\r"):
+                password = password[:-1]
         except IOError, e:
             log.error("cannot open password file %s: %s", self.password_file, e)
             self.send_disconnect(proto, "invalid password file specified on server")
             return
-        password  = passwordFile.read()
         log("password from file %s is %s", self.password_file, password)
         password_hash = hmac.HMAC(password, self.salt)
         if client_hash != password_hash.hexdigest():

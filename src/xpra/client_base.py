@@ -193,6 +193,9 @@ class XpraClientBase(gobject.GObject):
         try:
             passwordFile = open(self.password_file, "rU")
             password = passwordFile.read()
+            passwordFile.close()
+            while password.endswith("\n") or password.endswith("\r"):
+                password = password[:-1]
         except IOError, e:
             self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
             return
