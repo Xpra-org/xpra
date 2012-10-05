@@ -218,6 +218,8 @@ class KeyboardConfig(object):
 
         current = set(get_current_mask())
         wanted = set(modifier_list)
+        if current==wanted:
+            return
         debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
         display = gtk.gdk.display_get_default()
 
