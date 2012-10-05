@@ -487,7 +487,10 @@ def parse_display_name(parser, opts, display_name):
         desc["type"] = "tcp"
         desc["local"] = False
         parts = display_name.split(separator)
-        desc["port"] = int(parts[-1])
+        port = int(parts[-1])
+        if port<=0 or port>=65536:
+            parser.error("invalid port number: %s" % port)
+        desc["port"] = port
         desc["host"] = separator.join(parts[1:-1])
         if desc["host"] == "":
             desc["host"] = "127.0.0.1"
