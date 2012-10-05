@@ -276,8 +276,7 @@ class XpraClient(XpraClientBase):
 
     def cleanup(self):
         if self._client_extras:
-            self._client_extras.exit()
-            self._client_extras = None
+            self._client_extras.cleanup()
         XpraClientBase.cleanup(self)
         self.clean_mmap()
 
@@ -505,6 +504,8 @@ class XpraClient(XpraClientBase):
         return self.mask_to_names(modifiers_mask)
 
     def mask_to_names(self, mask):
+        if self._client_extras is None:
+            return []
         return self._client_extras.mask_to_names(mask)
 
     def send_positional(self, packet):

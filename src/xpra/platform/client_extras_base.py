@@ -147,7 +147,7 @@ class ClientExtrasBase(object):
     def quit(self, *args):
         self.client.quit(0)
 
-    def exit(self):
+    def cleanup(self):
         self.close_about()
         self.close_session_info()
 

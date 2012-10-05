@@ -42,7 +42,7 @@ class ClientExtras(ClientExtrasBase):
                 log.error("turning notifications off")
 
     def exit(self):
-        ClientExtrasBase.exit(self)
+        ClientExtrasBase.cleanup(self)
         if self.tray_widget:
             self.hide_tray()
             self.tray_widget = None

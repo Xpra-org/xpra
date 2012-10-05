@@ -32,8 +32,8 @@ class ClientExtras(ClientExtrasBase):
         self.emulate_altgr = False
         self.last_key_event_sent = None
 
-    def exit(self):
-        ClientExtrasBase.exit(self)
+    def cleanup(self):
+        ClientExtrasBase.cleanup(self)
         if self.tray:
             self.tray.close()
 
