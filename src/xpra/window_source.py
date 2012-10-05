@@ -232,6 +232,7 @@ class WindowSource(object):
     def cleanup(self):
         self.cancel_damage()
         self.video_encoder_cleanup()
+        self._damage_cancelled = float("inf")
 
     def video_encoder_cleanup(self):
         """ Video encoders (x264 and vpx) require us to run
@@ -266,6 +267,7 @@ class WindowSource(object):
         log("cancel_damage() wid=%s, dropping delayed region %s and all sequences up to %s", self.wid, self._damage_delayed, self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = self._sequence
+        self.cancel_expire_timer()
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
         #if a region was delayed, we can just drop it now:
@@ -276,6 +278,22 @@ class WindowSource(object):
             #we will resend a key frame because it looks like we will
             #drop a frame which is being processed
             self.video_encoder_cleanup()
+
+    def cancel_expire_timer(self):
+        if self.expire_timer:
+            gobject.source_remove(self.expire_timer)
+            self.expire_timer = None
+
+    def cancel_refresh_timer(self):
+        if self.refresh_timer:
+            gobject.source_remove(self.refresh_timer)
+            self.refresh_timer = None
+
+    def cancel_timeout_timer(self):
+        if self.timeout_timer:
+            gobject.source_remove(self.timeout_timer)
+            self.timeout_timer = None
+
 
     def is_cancelled(self, sequence):
         """ See cancel_damage(wid) """
@@ -386,12 +404,13 @@ class WindowSource(object):
         self._damage_delayed = now, window, region, self.encoding, options or {}
         log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(self.batch_config.delay))
         self.batch_config.last_delays.append((now, self.batch_config.delay))
-        gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
+        self.expire_timer = gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
 
     def expire_delayed_region(self):
         """ mark the region as expired so damage_packet_acked can send it later,
             and try to send it now.
         """
+        self.expire_timer = None
         self._damage_delayed_expired = True
         self.may_send_delayed()
         if self._damage_delayed:
@@ -547,15 +566,16 @@ class WindowSource(object):
         window.acknowledge_changes()
 
         self._sequence += 1
+        sequence = self._sequence
         pixmap = window.get_property("client-contents")
-        if self.is_cancelled(self._sequence):
-            log("get_window_pixmap: dropping damage request with sequence=%s", self._sequence)
+        if self.is_cancelled(sequence):
+            log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return  None
         if pixmap is None:
             log.error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
             return
         process_damage_time = time.time()
-        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, self._sequence, options)
+        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options)
         if not data:
             return
         log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
@@ -565,7 +585,7 @@ class WindowSource(object):
             if packet:
                 self.queue_damage_packet(pixmap, packet, damage_time, process_damage_time)
                 #auto-refresh:
-                if self.auto_refresh_delay>0:
+                if self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
                     gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
         self.queue_damage(make_data_packet)
@@ -608,16 +628,6 @@ class WindowSource(object):
         delay = max(self.auto_refresh_delay, int(1000*self.batch_config.delay))
         log("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
         self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
-
-    def cancel_refresh_timer(self):
-        if self.refresh_timer:
-            gobject.source_remove(self.refresh_timer)
-            self.refresh_timer = None
-
-    def cancel_timeout_timer(self):
-        if self.timeout_timer:
-            gobject.source_remove(self.timeout_timer)
-            self.timeout_timer = None
 
     def queue_damage_packet(self, pixmap, packet, damage_time, process_damage_time):
         """
