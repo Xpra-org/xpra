@@ -630,7 +630,18 @@ class ApplicationWindow:
 
 		def start_XpraClient():
 			app = XpraClient(socket_wrapper, opts)
+			warn_and_quit_save = app.warn_and_quit
+			def warn_and_quit_override(exit_code, warning):
+				app.warn_and_quit = warn_and_quit_save
+				self.set_info_color(exit_code!=0)
+				self.set_info_text(warning)
+				self.window.show()
+				self.window.set_sensitive(True)
+				if exit_code==0:
+					gtk.main_quit()
+			app.warn_and_quit = warn_and_quit_override
 			app.run()
+			app.warn_and_quit = warn_and_quit_save
 			self.window.show()
 			self.window.set_sensitive(True)
 		gobject.idle_add(start_XpraClient)
@@ -660,12 +671,7 @@ class ApplicationWindow:
 				if err:
 					info += ",\nerror:\n%s" % err
 				#red only for non-zero returncode:
-				if ret!=0:
-					color_obj = gtk.gdk.color_parse("red")
-				else:
-					color_obj = gtk.gdk.color_parse("black")
-				if color_obj:
-					self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
+				self.set_info_color(ret!=0)
 				self.set_info_text(info)
 				self.show()
 			gobject.idle_add(show_result, out, err)
@@ -673,6 +679,15 @@ class ApplicationWindow:
 			print("error: %s" % e)
 			gobject.idle_add(self.show)
 			self.set_info_text("Error launching: %s" % (e))
+
+	def set_info_color(self, is_error=False):
+		if is_error:
+			color_obj = gtk.gdk.color_parse("red")
+		else:
+			color_obj = gtk.gdk.color_parse("black")
+		if color_obj:
+			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
+
 
 	def start_xpra_process(self):
 		#ret = os.system(" ".join(args))
