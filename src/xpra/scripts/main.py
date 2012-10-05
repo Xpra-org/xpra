@@ -179,7 +179,14 @@ def main(script_file, cmdline):
         return parse_or_use_default(varname, default_value, int)
     def float_default(varname, default_value):
         return parse_or_use_default(varname, default_value, float)
-        
+    def string_list(varname, default_value):
+        v = defaults.get(varname)
+        if v is None:
+            return default_value
+        if type(v)==list:
+            return v
+        return [str(v)]
+
     if XPRA_LOCAL_SERVERS_SUPPORTED:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
@@ -208,7 +215,7 @@ def main(script_file, cmdline):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
         group.add_option("--start-child", action="append",
-                          dest="children", metavar="CMD", default=defaults.get("start-child", ""),
+                          dest="children", metavar="CMD", default=string_list("start-child", [""]),
                           help="program to spawn in new server (may be repeated) (default: '%default')")
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=False,
