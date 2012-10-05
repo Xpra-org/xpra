@@ -1399,7 +1399,7 @@ class XpraServer(gobject.GObject):
         if not window:
             log("_process_button_action() invalid window id: %s", wid)
             return
-        self._desktop_manager.raise_window(window)
+        trap.swallow(self._desktop_manager.raise_window, window)
         self._move_pointer(pointer)
         try:
             trap.call_unsynced(xtest_fake_button,
