@@ -268,6 +268,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         except XError, e:
             raise Unmanageable(e)
 
+    def is_managed(self):
+        return self._managed
+
     def _forward_contents_changed(self, obj, event):
         self.emit("client-contents-changed", event)
 
