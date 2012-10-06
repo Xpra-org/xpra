@@ -294,11 +294,11 @@ class Protocol(object):
                 except (OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error writing to connection: %s" % e)
                     break
-                except TypeError:
+                except Exception, e:
                     #can happen during close(), in which case we just ignore:
                     if self._closed:
                         break
-                    raise
+                    raise e
                 if self._write_queue.empty() and not self._closed:
                     gobject.idle_add(self._maybe_queue_more_writes)
                 NOYIELD or time.sleep(0)
@@ -314,9 +314,10 @@ class Protocol(object):
                 except (ValueError, OSError, IOError, socket.error), e:
                     self._call_connection_lost("Error reading from connection: %s" % e)
                     return
-                except TypeError:
-                    assert self._closed
-                    return
+                except Exception, e:
+                    if self._closed:
+                        return
+                    raise e
                 #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
                 self._read_queue.put(buf)
                 if not buf:
