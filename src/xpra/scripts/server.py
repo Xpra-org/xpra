@@ -420,7 +420,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         children_pids = set()
         for child_cmd in opts.children:
             try:
-                children_pids.add(subprocess.Popen(child_cmd, shell=True).pid)
+                children_pids.add(subprocess.Popen(child_cmd, shell=True, close_fds=True).pid)
             except OSError, e:
                 sys.stderr.write("Error spawning child '%s': %s\n"
                                  % (child_cmd, e))
