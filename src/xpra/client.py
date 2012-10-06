@@ -62,6 +62,7 @@ from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFA
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
+from xpra.maths import std_unit
 
 from xpra.client_window import ClientWindow
 ClientWindowClass = ClientWindow
@@ -95,7 +96,6 @@ class XpraClient(XpraClientBase):
         self._id_to_window = {}
         self._ui_events = 0
         self.title = opts.title
-        self.readonly = opts.readonly
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
         self.max_bandwidth = opts.max_bandwidth
@@ -128,6 +128,8 @@ class XpraClient(XpraClientBase):
         self.toggle_keyboard_sync = False
         self.window_configure = False
         self.change_quality = False
+        self.readonly = opts.readonly
+        self.windows_enabled = opts.windows_enabled
         self._client_extras = ClientExtras(self, opts, conn)
         self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
         self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
@@ -557,6 +559,7 @@ class XpraClient(XpraClientBase):
         capabilities["rgb24zlib"] = True
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
+        capabilities["windows"] = self.windows_enabled
         return capabilities
 
     def send_ping(self):
@@ -661,7 +664,7 @@ class XpraClient(XpraClientBase):
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
         self.change_quality = capabilities.get("change-quality", False)
         if self.mmap_enabled:
-            log.info("mmap enabled using %s", self.mmap_file)
+            log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), self.mmap_file)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         self.send_deflate_level()

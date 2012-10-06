@@ -319,6 +319,7 @@ xpra_opts.bell = default_bool("bell", True)
 xpra_opts.notifications = default_bool("notifications", True)
 xpra_opts.sharing = default_bool("sharing", False)
 xpra_opts.delay_tray = default_bool("delay-tray", False)
+xpra_opts.windows_enabled = default_bool("windows-enabled", True)
 #these would need testing/work:
 xpra_opts.auto_refresh_delay = 1.0
 xpra_opts.max_bandwidth = 0.0
@@ -627,6 +628,7 @@ class ApplicationWindow:
 		opts.notifications = xpra_opts.notifications
 		opts.delay_tray = xpra_opts.delay_tray
 		opts.sharing = xpra_opts.sharing
+		opts.windows_enabled = xpra_opts.windows_enabled
 
 		def start_XpraClient():
 			app = XpraClient(socket_wrapper, opts)

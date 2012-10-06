@@ -958,7 +958,7 @@ class XpraServer(gobject.GObject):
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
             if self.key_repeat_delay>0 and self.key_repeat_interval>0:
                 set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-                log.info("setting key repeat rate from client: %s / %s", self.key_repeat_delay, self.key_repeat_interval)
+                log.info("setting key repeat rate from client: %sms delay / %sms interval", self.key_repeat_delay, self.key_repeat_interval)
         else:
             #dont do any jitter compensation:
             self.key_repeat_delay = -1

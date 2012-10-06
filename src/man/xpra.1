@@ -34,6 +34,7 @@ xpra \- viewer for remote, persistent X applications
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress=LEVEL\fP]
 [\fB\-\-no\-mmap\fP]
+[\fB\-\-no\-windows\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-cursors\fP]
@@ -250,6 +251,10 @@ client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and context switches.
 .TP
+\fB\-\-no\-windows\fP
+Tells the server not to send any window data,
+only notifications and bell events will be forwarded - if they
+are enabled.
 \fB\-\-no\-clipboard\fP
 Disables clipboard synchronization.
 If used on the server, no clients will be able to use clipboard

@@ -24,7 +24,7 @@ log = Logger()
 
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
-from xpra.maths import add_list_stats, dec1
+from xpra.maths import add_list_stats, dec1, std_unit
 from xpra.scripts.main import ENCODINGS
 
 from wimpiggy.keys import grok_modifier_map
@@ -84,16 +84,17 @@ class KeyboardConfig(object):
     def compute_modifier_keynames(self):
         self.keycodes_for_modifier_keynames = {}
         keymap = gtk.gdk.keymap_get_default()
-        for modifier, keynames in self.keynames_for_mod.items():
-            for keyname in keynames:
-                keyval = gtk.gdk.keyval_from_name(keyname)
-                if keyval==0:
-                    log.error("no keyval found for keyname %s (modifier %s)", keyname, modifier)
-                    return  []
-                entries = keymap.get_entries_for_keyval(keyval)
-                if entries:
-                    for keycode, _, _ in entries:
-                        self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
+        if self.keynames_for_mod:
+            for modifier, keynames in self.keynames_for_mod.items():
+                for keyname in keynames:
+                    keyval = gtk.gdk.keyval_from_name(keyname)
+                    if keyval==0:
+                        log.error("no keyval found for keyname %s (modifier %s)", keyname, modifier)
+                        return  []
+                    entries = keymap.get_entries_for_keyval(keyval)
+                    if entries:
+                        for keycode, _, _ in entries:
+                            self.keycodes_for_modifier_keynames.setdefault(keyname, set()).add(keycode)
         debug("compute_modifier_keynames: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
 
     def compute_client_modifier_keycodes(self):
@@ -417,6 +418,7 @@ class ServerSource(object):
         self.send_cursors = False
         self.send_bell = False
         self.send_notifications = False
+        self.send_windows = True
         self.randr_notify = False
         self.clipboard_enabled = False
         self.share = False
@@ -459,8 +461,9 @@ class ServerSource(object):
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_version = capabilities.get("version", None)
         #general features:
+        self.send_windows = capabilities.get("windows", True)
         self.server_window_resize = capabilities.get("server-window-resize", False)
-        self.send_cursors = capabilities.get("cursors", False)
+        self.send_cursors = self.send_windows and capabilities.get("cursors", False)
         self.send_bell = capabilities.get("bell", False)
         self.send_notifications = capabilities.get("notifications", False)
         self.randr_notify = capabilities.get("randr_notify", False)
@@ -484,18 +487,27 @@ class ServerSource(object):
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000)
         #keyboard:
         self.keyboard_config = KeyboardConfig()
-        self.keyboard_config.enabled = bool(capabilities.get("keyboard", True))
+        self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
         self.assign_keymap_options(capabilities)
         self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
         self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
         #mmap:
-        mmap_file = capabilities.get("mmap_file")
-        mmap_token = capabilities.get("mmap_token")
-        log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
-        if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
-            self.init_mmap(mmap_file, mmap_token)
+        if self.send_windows:
+            #we don't need mmap if not sending pixels
+            mmap_file = capabilities.get("mmap_file")
+            mmap_token = capabilities.get("mmap_token")
+            log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
+            if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
+                self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
-        log.info("%s client version %s with uuid %s, using %s encoding", self.client_type, self.client_version, self.uuid, self.encoding)
+        log.info("%s client version %s with uuid %s", self.client_type, self.client_version, self.uuid)
+        if self.send_windows:
+            if self.mmap_size>0:
+                log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), mmap_file)
+            else:
+                log.info("using %s as primary encoding", self.encoding)
+        else:
+            log.info("windows forwarding is disabled")
 
 #
 # Keyboard magic
@@ -670,23 +682,27 @@ class ServerSource(object):
             self.send(["desktop_size", root_w, root_h, max_w, max_h])
 
     def or_window_geometry(self, wid, x, y, w, h):
-        self.send(["configure-override-redirect", wid, x, y, w, h])
+        if self.send_windows:
+            self.send(["configure-override-redirect", wid, x, y, w, h])
 
     def window_metadata(self, wid, metadata):
-        self.send(["window-metadata", wid, metadata])
+        if self.send_windows:
+            self.send(["window-metadata", wid, metadata])
 
     def new_window(self, ptype, wid, x, y, w, h, metadata, client_properties):
-        self.send([ptype, wid, x, y, w, h, metadata, client_properties or {}])
+        if self.send_windows:
+            self.send([ptype, wid, x, y, w, h, metadata, client_properties or {}])
 
     def lost_window(self, wid):
-        self.send(["lost-window", wid])
+        if self.send_windows:
+            self.send(["lost-window", wid])
 
     def resize_window(self, wid, ww, wh):
         """
         The server detected that the application window has been resized,
         we forward it if the client supports this type of event.
         """
-        if self.server_window_resize:
+        if self.server_window_resize and self.send_windows:
             self.send(["window-resized", wid, ww, wh])
 
     def cancel_damage(self, wid):
@@ -757,9 +773,10 @@ class ServerSource(object):
             self.default_damage_options["quality"] = quality
 
     def refresh(self, wid, window, opts):
-        self.cancel_damage(wid)
-        w, h = window.get_dimensions()
-        self.damage(wid, window, 0, 0, w, h, opts)
+        if self.send_windows:
+            self.cancel_damage(wid)
+            w, h = window.get_dimensions()
+            self.damage(wid, window, 0, 0, w, h, opts)
 
     def damage(self, wid, window, x, y, w, h, options=None):
         """
@@ -767,6 +784,8 @@ class ServerSource(object):
             we dispatch to the WindowSource for this window id
             (creating a new one if needed)
         """
+        if not self.send_windows:
+            return
         assert window is not None
         if options is None:
             damage_options = self.default_damage_options
@@ -794,6 +813,9 @@ class ServerSource(object):
             and WindowSource will calculate and record the "client latency".
             (since it knows when the "draw" packet was sent)
         """
+        if not self.send_windows:
+            log.error("client_ack_damage when we don't send any window data!?")
+            return
         log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
         if decode_time>0:
             self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
@@ -863,7 +885,7 @@ class ServerSource(object):
                     log.error("WARNING: mmap token verification failed, not using mmap area!")
                     self.close_mmap()
             if self.mmap:
-                log.info("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
+                log("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
                 self.statistics.mmap_size = self.mmap_size
         except Exception, e:
             log.error("cannot use mmap file '%s': %s", mmap_file, e)

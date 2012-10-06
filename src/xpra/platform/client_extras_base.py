@@ -420,18 +420,19 @@ class ClientExtrasBase(object):
         row = new_row(row, "Session Started", self.session_started_label)
         self.session_connected_label = label()
         row = new_row(row, "Session Connected", self.session_connected_label)
-        self.windows_managed_label = label()
-        row = new_row(row, "Windows Managed", self.windows_managed_label,
-                      "The number of windows forwarded, some may just be temporary widgets (usually transient ones)")
-        self.regions_sizes_label = label()
-        row = new_row(row, "Pixels/region", self.regions_sizes_label,
-                      "The number of pixels updated at a time: min/avg/max")
-        self.regions_per_second_label = label()
-        row = new_row(row, "Regions/s", self.regions_per_second_label,
-                      "The number of screen updates per second")
-        self.pixels_per_second_label = label()
-        row = new_row(row, "Pixels/s", self.pixels_per_second_label,
-                      "The number of pixels updated per second")
+        if self.client.windows_enabled:
+            self.windows_managed_label = label()
+            row = new_row(row, "Windows Managed", self.windows_managed_label,
+                          "The number of windows forwarded, some may just be temporary widgets (usually transient ones)")
+            self.regions_sizes_label = label()
+            row = new_row(row, "Pixels/region", self.regions_sizes_label,
+                          "The number of pixels updated at a time: min/avg/max")
+            self.regions_per_second_label = label()
+            row = new_row(row, "Regions/s", self.regions_per_second_label,
+                          "The number of screen updates per second")
+            self.pixels_per_second_label = label()
+            row = new_row(row, "Pixels/s", self.pixels_per_second_label,
+                          "The number of pixels updated per second")
 
         def populate_info(*args):
             if not self.session_info_window:
@@ -472,72 +473,74 @@ class ClientExtrasBase(object):
             else:
                 self.session_started_label.set_text("unknown")
             settimedeltastr(self.session_connected_label, self.client.start_time)
-            real, redirect = 0, 0
-            for w in self.client._window_to_id.keys():
-                if w._override_redirect:
-                    redirect +=1
-                else:
-                    real += 1
-            self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
-            regions_sizes = "n/a"
-            regions = "n/a"
-            pixels = "n/a"
-            if len(self.client.pixel_counter)>0:
-                now = time.time()
-                def pixelstr(v):
-                    if v<0:
-                        return  "n/a"
-                    return std_unit_dec(v)
-                def fpsstr(v):
-                    if v<0:
-                        return  "n/a"
-                    return "%s" % (int(v*10)/10.0)
-                def average(seconds):
-                    total = 0
-                    total_n = 0
-                    mins = None
-                    maxs = 0
-                    avgs = 0
-                    mint = now-seconds      #ignore records older than N seconds
-                    startt = now            #when we actually start counting from
-                    for t, count in self.client.pixel_counter:
-                        if t>=mint:
-                            total += count
-                            total_n += 1
-                            startt = min(t, startt)
-                            if mins:
-                                mins = min(mins,count)
-                            else:
-                                mins = count
-                            maxs = max(maxs, count)
-                            avgs += count
-                    if total==0 or startt==now:
-                        return  None
-                    avgs = avgs/total_n
-                    elapsed = now-startt
-                    return int(total/elapsed), total_n/elapsed, mins, avgs, maxs
-                p20 = average(20)
-                if p20:
-                    avg20,fps20,mins,avgs,maxs = p20
-                    p1 = average(1)
-                    if p1:
-                        avg1,fps1 = p1[:2]
-                    else:
-                        avg1,fps1 = -1, -1
-                    pixels = "%s  (%s)" % (pixelstr(avg1), pixelstr(avg20))
-                    regions = "%s  (%s)" % (fpsstr(fps1), fpsstr(fps20))
-                    regions_sizes = "%s  %s  %s" % (pixelstr(mins), pixelstr(avgs), pixelstr(maxs))
 
-            self.regions_sizes_label.set_text(regions_sizes)
-            self.regions_per_second_label.set_text(regions)
-            self.pixels_per_second_label.set_text(pixels)
+            if self.client.windows_enabled:
+                real, redirect = 0, 0
+                for w in self.client._window_to_id.keys():
+                    if w._override_redirect:
+                        redirect +=1
+                    else:
+                        real += 1
+                self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
+                regions_sizes = "n/a"
+                regions = "n/a"
+                pixels = "n/a"
+                if len(self.client.pixel_counter)>0:
+                    now = time.time()
+                    def pixelstr(v):
+                        if v<0:
+                            return  "n/a"
+                        return std_unit_dec(v)
+                    def fpsstr(v):
+                        if v<0:
+                            return  "n/a"
+                        return "%s" % (int(v*10)/10.0)
+                    def average(seconds):
+                        total = 0
+                        total_n = 0
+                        mins = None
+                        maxs = 0
+                        avgs = 0
+                        mint = now-seconds      #ignore records older than N seconds
+                        startt = now            #when we actually start counting from
+                        for t, count in self.client.pixel_counter:
+                            if t>=mint:
+                                total += count
+                                total_n += 1
+                                startt = min(t, startt)
+                                if mins:
+                                    mins = min(mins,count)
+                                else:
+                                    mins = count
+                                maxs = max(maxs, count)
+                                avgs += count
+                        if total==0 or startt==now:
+                            return  None
+                        avgs = avgs/total_n
+                        elapsed = now-startt
+                        return int(total/elapsed), total_n/elapsed, mins, avgs, maxs
+                    p20 = average(20)
+                    if p20:
+                        avg20,fps20,mins,avgs,maxs = p20
+                        p1 = average(1)
+                        if p1:
+                            avg1,fps1 = p1[:2]
+                        else:
+                            avg1,fps1 = -1, -1
+                        pixels = "%s  (%s)" % (pixelstr(avg1), pixelstr(avg20))
+                        regions = "%s  (%s)" % (fpsstr(fps1), fpsstr(fps20))
+                        regions_sizes = "%s  %s  %s" % (pixelstr(mins), pixelstr(avgs), pixelstr(maxs))
+
+                self.regions_sizes_label.set_text(regions_sizes)
+                self.regions_per_second_label.set_text(regions)
+                self.pixels_per_second_label.set_text(pixels)
+                #count pixels in the last second:
+                since = time.time()-1
+                decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
+                pixel_in_data.append(sum(decoded))
             #record bytecount every second:
             net_in_data.append(self.connection.input_bytecount)
             net_out_data.append(self.connection.output_bytecount)
-            #count pixels in the last second:
-            since = time.time()-1
-            decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
-            pixel_in_data.append(sum(decoded))
             w, h = hbox.size_request()
             if h>0:
                 rect = hbox.get_allocation()
@@ -547,15 +550,19 @@ class ClientExtrasBase(object):
                 #FIXME: we skip the first record because the timing isn't right so the values aren't either..:
                 in_scale, in_data = values_to_diff_scaled_values(list(net_in_data)[1:N_SAMPLES+2])
                 out_scale, out_data = values_to_diff_scaled_values(list(net_out_data)[1:N_SAMPLES+2])
-                pixel_scale, in_pixels = values_to_scaled_values(list(pixel_in_data)[:N_SAMPLES])
                 if in_data and out_data:
                     def unit(scale):
                         if scale==1:
                             return ""
                         else:
                             return "x%s" % std_unit(scale)
-                    labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale), "%s pixels/s" % unit(pixel_scale)]
-                    pixmap = make_graph_pixmap([in_data, out_data, in_pixels], labels=labels, width=w, height=h/2, title="Bandwidth")
+                    labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale)]
+                    datasets = [in_data, out_data]
+                    if self.client.windows_enabled:
+                        pixel_scale, in_pixels = values_to_scaled_values(list(pixel_in_data)[:N_SAMPLES])
+                        datasets.append(in_pixels)
+                        labels.append("%s pixels/s" % unit(pixel_scale))
+                    pixmap = make_graph_pixmap(datasets, labels=labels, width=w, height=h/2, title="Bandwidth")
                     bandwidth_graph.set_size_request(*pixmap.get_size())
                     bandwidth_graph.set_from_pixmap(pixmap, None)
                 #latency graph:
@@ -1135,16 +1142,17 @@ class ClientExtrasBase(object):
         menu.append(self.make_sessioninfomenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_bellmenuitem())
-        menu.append(self.make_cursorsmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_cursorsmenuitem())
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())
-        if len(ENCODINGS)>1:
+        if self.client.windows_enabled and len(ENCODINGS)>1:
             menu.append(self.make_encodingsmenuitem())
         else:
             self.encodings_submenu = None
         lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
-        if len(lossy_encodings)>0:
+        if self.client.windows_enabled and len(lossy_encodings)>0:
             menu.append(self.make_qualitysubmenu())
         else:
             self.quality = None
@@ -1153,9 +1161,11 @@ class ClientExtrasBase(object):
             menu.append(self.make_compressionmenu())
         if not self.client.readonly:
             menu.append(self.make_layoutsmenuitem())
-        menu.append(self.make_keyboardsyncmenuitem())
-        menu.append(self.make_refreshmenuitem())
-        menu.append(self.make_raisewindowsmenuitem())
+        if self.client.windows_enabled and not self.client.readonly:
+            menu.append(self.make_keyboardsyncmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_refreshmenuitem())
+            menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_disconnectmenuitem())

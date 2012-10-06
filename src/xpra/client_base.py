@@ -148,6 +148,7 @@ class XpraClientBase(gobject.GObject):
         except:
             pass
         capabilities["randr_notify"] = False    #only client.py cares about this
+        capabilities["windows"] = False         #only client.py cares about this
         return capabilities
 
     def send(self, packet):
