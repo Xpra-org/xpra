@@ -50,14 +50,14 @@ def exec_keymap_command(args, stdin=None):
             return stdin[:30].replace("\n", "\\n")+".."
         if returncode==0:
             if not stdin:
-                log.info("%s", args)
+                log("%s", args)
             else:
-                log.info("%s with stdin=%s", args, logstdin())
+                log("%s with stdin=%s", args, logstdin())
         else:
-            log.info("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
+            log.error("%s with stdin=%s, failed with exit code %s", args, logstdin(), returncode)
         return returncode
     except Exception, e:
-        log.info("error calling '%s': %s" % (str(args), e))
+        log.error("error calling '%s': %s" % (str(args), e))
         return -1
 
 
@@ -106,14 +106,19 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                 settings[m.group(1)] = m.group(2).strip()
         #construct the command line arguments for setxkbmap:
         args = ["setxkbmap"]
+        used_settings = {}
         for setting in ["rules", "model", "layout"]:
             if setting in settings:
-                args += ["-%s" % setting, settings.get(setting)]
+                value = settings.get(setting)
+                args += ["-%s" % setting, value]
+                used_settings[setting] = value
         if len(args)==1:
-            log.info("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
+            log.warn("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
+        log.info("setting keymap: %s", used_settings)
         exec_keymap_command(args)
         #try to set the options:
         if "options" in settings:
+            log.info("setting keymap options: %s", settings.get("options"))
             exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
     elif xkbmap_print:
         debug("do_set_keymap using xkbmap_print")
@@ -131,7 +136,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             log.info("error setting keymap: %s" % e)
     else:
         layout = xkbmap_layout or "us"
-        log.info("do_set_keymap using '%s' default layout", layout)
+        log.info("setting keyboard layout to '%s'", layout)
         set_layout = ["setxkbmap", "-layout", layout]
         if xkbmap_variant:
             set_layout += ["-variant", xkbmap_variant]
@@ -146,6 +151,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         pos = xkbmap_print.find("xkb_keymap {")
         if pos>0:
             xkbmap_print = xkbmap_print[pos:]
+        log.info("setting full keymap definition from client via xkbcomp")
         exec_keymap_command(["xkbcomp", "-", display], xkbmap_print)
 
 
