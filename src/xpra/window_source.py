@@ -102,6 +102,7 @@ class WindowPerformanceStatistics(object):
         self.damage_ack_pending = {}                    #records when damage packets are sent
                                                         #so we can calculate the "client_latency" when the client sends
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
+        self.encoding_totals = {}                       #for each encoding, how many frames we sent and how many pixels in total
 
     def add_stats(self, info, suffix=""):
         #encoding stats:
@@ -132,6 +133,10 @@ class WindowPerformanceStatistics(object):
         add_list_stats(info, "damage_in_latency",  latencies)
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
         add_list_stats(info, "damage_out_latency",  latencies)
+        #per encoding totals:
+        for encoding, totals in self.encoding_totals.items():
+            info["total_frames%s[%s]" % (suffix, encoding)] = totals[0] 
+            info["total_pixels%s[%s]" % (suffix, encoding)] = totals[1] 
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency
@@ -233,6 +238,7 @@ class WindowSource(object):
         self.cancel_damage()
         self.video_encoder_cleanup()
         self._damage_cancelled = float("inf")
+        log("encoding_totals=%s", self.statistics.encoding_totals)
 
     def video_encoder_cleanup(self):
         """ Video encoders (x264 and vpx) require us to run
@@ -733,6 +739,10 @@ class WindowSource(object):
         end = time.time()
         self._damage_packet_sequence += 1
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
+        #record number of frames and pixels:
+        totals = self.statistics.encoding_totals.setdefault(coding, [0, 0])
+        totals[0] = totals[0] + 1
+        totals[1] = totals[1] + w*h
         self._last_sequence_queued = sequence
         return packet
 
