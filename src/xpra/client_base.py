@@ -88,6 +88,7 @@ class XpraClientBase(gobject.GObject):
         gobject.GObject.__init__(self)
         self.exit_code = None
         self.compression_level = opts.compression_level
+        self.password = None
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.quality = opts.quality
@@ -187,23 +188,27 @@ class XpraClientBase(gobject.GObject):
         self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
     def _process_challenge(self, packet):
-        if not self.password_file:
+        if not self.password_file and not self.password:
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "password is required by the server")
             return
-        import hmac
+        if not self.password:
+            self.load_password()
+            log("password read from file %s is %s", self.password_file, self.password)
+        if self.password:
+            salt = packet[1]
+            import hmac
+            challenge_response = hmac.HMAC(self.password, salt)
+            self.send_hello(challenge_response.hexdigest())
+
+    def load_password(self):
         try:
             passwordFile = open(self.password_file, "rU")
-            password = passwordFile.read()
+            self.password = passwordFile.read()
             passwordFile.close()
-            while password.endswith("\n") or password.endswith("\r"):
-                password = password[:-1]
+            while self.password.endswith("\n") or self.password.endswith("\r"):
+                self.password = self.password[:-1]
         except IOError, e:
             self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
-            return
-        log("password read from file %s is %s", self.password_file, password)
-        salt = packet[1]
-        challenge_response = hmac.HMAC(password, salt)
-        self.send_hello(challenge_response.hexdigest())
 
     def _process_hello(self, packet):
         self.server_capabilities = packet[1]
