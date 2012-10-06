@@ -1404,7 +1404,7 @@ class XpraServer(gobject.GObject):
         def raise_and_move():
             self._desktop_manager.raise_window(window)
             self._move_pointer(pointer)
-        trap.call(raise_and_move)
+        trap.swallow(raise_and_move)
 
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
