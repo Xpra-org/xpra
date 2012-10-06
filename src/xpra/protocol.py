@@ -128,7 +128,6 @@ class Protocol(object):
         gobject.idle_add(do_start)
 
     def source_has_more(self):
-        assert self.source is not None
         self._source_has_more = True
         if self._write_queue.empty():
             self._flush_one_packet_into_buffer()
