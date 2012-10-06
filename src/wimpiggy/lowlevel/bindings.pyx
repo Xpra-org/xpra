@@ -2023,7 +2023,7 @@ def init_x11_events():
         ColormapNotify      : "ColormapNotify",
         ClientMessage       : "ClientMessage",
         MappingNotify       : "MappingNotify",
-        GenericEvent        : "GenericEvent",
+        #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it 
         }
 
 
