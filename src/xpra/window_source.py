@@ -8,8 +8,13 @@
 
 import os
 MAX_NONVIDEO_PIXELS = 512
+MAX_NONVIDEO_OR_INITIAL_PIXELS = 1024*64
 try:
     MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 2048))
+except:
+    pass
+try:
+    MAX_NONVIDEO_OR_INITIAL_PIXELS = int(os.environ.get("MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64))
 except:
     pass
 
@@ -238,7 +243,7 @@ class WindowSource(object):
         self.cancel_damage()
         self.video_encoder_cleanup()
         self._damage_cancelled = float("inf")
-        log("encoding_totals=%s", self.statistics.encoding_totals)
+        log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
 
     def video_encoder_cleanup(self):
         """ Video encoders (x264 and vpx) require us to run
@@ -394,7 +399,7 @@ class WindowSource(object):
         if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            actual_encoding = self.get_best_encoding(w*h, w, h, self.encoding)
+            actual_encoding = self.get_best_encoding(window.is_OR(), w*h, w, h, self.encoding)
             if actual_encoding in ("x264", "vpx"):
                 w, h = window.get_dimensions()
                 x, y = 0, 0
@@ -476,7 +481,7 @@ class WindowSource(object):
         regions = []
         ww,wh = window.get_dimensions()
         def send_full_screen_update(actual_encoding):
-            actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
+            actual_encoding = self.get_best_encoding(window.is_OR(), pixel_count, ww, wh, coding)
             log("send_delayed_regions: using full screen update with %s", actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
@@ -509,7 +514,7 @@ class WindowSource(object):
             log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
             return
 
-        actual_encoding = self.get_best_encoding(pixel_count, ww, wh, coding)
+        actual_encoding = self.get_best_encoding(window.is_OR(), pixel_count, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
@@ -520,15 +525,21 @@ class WindowSource(object):
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
-    def get_best_encoding(self, pixel_count, ww, wh, current_encoding):
-        #decide whether we send a full screen update
-        #using the video encoder or if small region(s) will do:
+    def get_best_encoding(self, is_OR, pixel_count, ww, wh, current_encoding):
+        """
+            decide whether we send a full screen update
+            using the video encoder or if a small lossless region(s) is a better choice
+        """
         if current_encoding not in ("x264", "vpx"):
             return current_encoding
         def switch():
             coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
+        if self._sequence==1 and is_OR and pixel_count<MAX_NONVIDEO_OR_INITIAL_PIXELS:
+            #first frame of a small-ish OR window, those are generally short lived
+            #so delay using a video encoder until the next frame:
+            return switch()
         if current_encoding=="x264":
             #x264 needs sizes divisible by 2:
             ww = ww & 0xFFFE
