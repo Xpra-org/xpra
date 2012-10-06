@@ -394,7 +394,7 @@ class WindowSource(object):
         if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            actual_encoding = self.get_best_encoding(w*h, w, w, self.encoding)
+            actual_encoding = self.get_best_encoding(w*h, w, h, self.encoding)
             if actual_encoding in ("x264", "vpx"):
                 w, h = window.get_dimensions()
                 x, y = 0, 0
