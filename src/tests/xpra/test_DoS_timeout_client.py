@@ -36,7 +36,10 @@ class TestTimeoutClient(GLibXpraClient):
         log.info("server correctly terminated the connection")
         GLibXpraClient.quit(self)
 
-if __name__ == "__main__":
+def main():
     import sys
     from tests.xpra.test_DoS_client import test_DoS
     test_DoS(TestTimeoutClient, sys.argv)
+
+if __name__ == "__main__":
+    main()

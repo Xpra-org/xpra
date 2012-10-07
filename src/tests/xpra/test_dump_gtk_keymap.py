@@ -4,14 +4,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-print("keysyms=%s" % dir(gtk.keysyms))
-
 keymap = gtk.gdk.keymap_get_default()
-print("keymap=%s" % keymap)
-print("keymap.get_caps_lock_state()=%s" % keymap.get_caps_lock_state())
-print("keymap.get_direction()=%s" % keymap.get_direction())
-print("keymap.have_bidi_layouts()=%s" % keymap.have_bidi_layouts())
-print("keymap=%s" % str(dir(keymap)))
 
 def print_keycodes():
 	keycodes={}
@@ -48,7 +41,18 @@ def print_keycodes_with_names():
 	print("keycodes=%s" % keycodes)
 	return keycodes
 
+def main():
+	print("keysyms=%s" % dir(gtk.keysyms))
+	print("keymap=%s" % keymap)
+	print("keymap.get_caps_lock_state()=%s" % keymap.get_caps_lock_state())
+	print("keymap.get_direction()=%s" % keymap.get_direction())
+	print("keymap.have_bidi_layouts()=%s" % keymap.have_bidi_layouts())
+	print("keymap=%s" % str(dir(keymap)))
+	
+	print_keycodes()
+	print("")
+	print_keycodes_with_names()
 
-print_keycodes()
-print("")
-print_keycodes_with_names()
+
+if __name__ == "__main__":
+	main()

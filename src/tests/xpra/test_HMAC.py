@@ -14,5 +14,6 @@ def main():
     print("hex(hash)=%s" % hmac_hash.hexdigest())
     assert hmac_hash.hexdigest()=="dc26a074c9378b1b5735a27563320a26"
 
+
 if __name__ == "__main__":
     main()

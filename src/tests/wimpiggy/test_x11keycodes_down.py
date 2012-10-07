@@ -15,5 +15,6 @@ def main():
 		print("down=%s" % down)
 		time.sleep(1)
 
+
 if __name__ == "__main__":
 	main()

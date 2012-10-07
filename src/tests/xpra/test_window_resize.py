@@ -26,8 +26,5 @@ def main():
 	return 0
 
 if __name__ == "__main__":
-	try:
-		main()
-	except Exception, e:
-		print("error: %s" % e)
+	main()
 

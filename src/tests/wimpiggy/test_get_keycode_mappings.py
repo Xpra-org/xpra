@@ -15,5 +15,6 @@ def main():
 	for k,v in mappings.items():
 		print("%s\t\t:\t%s" % (k, v))
 
+
 if __name__ == "__main__":
 	main()

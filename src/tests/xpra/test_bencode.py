@@ -128,7 +128,7 @@ def test_encoding():
 
 def test_large_dict():
     import gtk.gdk
-    from wimpiggy.lowlevel import get_keycode_mappings
+    from wimpiggy.lowlevel import get_keycode_mappings          #@UnresolvedImport
     mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
     b = bencode(mappings)
     print("bencode(%s)=%s" % (mappings, b))
