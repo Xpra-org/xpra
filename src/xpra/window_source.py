@@ -251,13 +251,15 @@ class WindowSource(object):
         """
         try:
             self._video_encoder_lock.acquire()
-            if self._video_encoder:
-                self._video_encoder.clean()
-                self._video_encoder = None
-                self._video_encoder_speed = maxdeque(NRECS)
-                self._video_encoder_quality = maxdeque(NRECS)
+            self.do_video_encoder_cleanup()
         finally:
             self._video_encoder_lock.release()
+
+    def do_video_encoder_cleanup(self):
+        self._video_encoder.clean()
+        self._video_encoder = None
+        self._video_encoder_speed = maxdeque(NRECS)
+        self._video_encoder_quality = maxdeque(NRECS)
 
     def set_new_encoding(self, encoding):
         """ Changes the encoder for the given 'window_ids',
@@ -824,7 +826,7 @@ class WindowSource(object):
             if self._video_encoder:
                 if self._video_encoder.get_type()!=coding:
                     log("video_encode: switching from %s to %s", self._video_encoder.get_type(), coding)
-                    self.video_encoder_cleanup()
+                    self.do_video_encoder_cleanup()
                 elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
                     log("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
