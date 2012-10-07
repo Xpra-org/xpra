@@ -318,10 +318,11 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 		// Retrieve current parameters and override quality for this frame
 		float new_q = get_x264_quality(quality_override);
 		if (new_q!=ctx->x264_quality) {
-			x264_param_t param;
-			x264_encoder_parameters(ctx->encoder, &param);
-			param.rc.f_rf_constant = new_q;
-			pic_in->param = &param;
+			x264_param_t *param = malloc(sizeof(x264_param_t));
+			x264_encoder_parameters(ctx->encoder, param);
+			param->rc.f_rf_constant = new_q;
+			pic_in->param = param;
+			pic_in->param->param_free = free;
 		}
 	}
 
