@@ -461,7 +461,7 @@ def keymap_to_xmodmap(trans_keycodes):
         #remove "duplicates":
         while len(keysyms)>=4 and keysyms[0]==keysyms[2] and keysyms[1]==keysyms[3]:
             keysyms = keysyms[2:]
-        while len(keysyms)>=0 and keysyms[0] is None:
+        while len(keysyms)>0 and keysyms[0] is None:
             keysyms = keysyms[1:]
         if len(set(keysyms))==1:
             keysyms = [keysyms[0]]
