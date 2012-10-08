@@ -1,5 +1,6 @@
 usr/lib/*/*/xpra
-usr/bin/xpra*
+usr/bin/xpra
+usr/bin/xpra_launcher
 usr/share/applications/xpra_launcher.desktop
 usr/share/xpra/icons/*.png
 etc/xpra/xorg.conf
