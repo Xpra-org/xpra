@@ -23,7 +23,7 @@ xpra (0.7.0-1) UNRELEASED; urgency=low
   * client launcher improvements: prevent logging conflict, add version info
   * large source layout cleanup, compilation warnings fixed
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 06 Oct 2012 02:01:49 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 08 Oct 2012 22:27:26 +0700
 
 xpra (0.6.4-1) UNRELEASED; urgency=low
   * fix bencoder to properly handle dicts with non-string keys

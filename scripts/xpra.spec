@@ -111,7 +111,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sat Oct 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
+* Mon Oct 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
 - fix crash with x264 encoding
 - fix crash with fast disappearing tooltip windows
