@@ -113,9 +113,13 @@ So basically it's screen for remote X apps.
 %changelog
 * Sat Oct 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
+- fix crash with x264 encoding
+- fix crash with fast disappearing tooltip windows
+- avoid storing password in a file when using the launcher (except on MS Windows) 
 - many latency fixes and improvements: lower latency, better line congestion handling, etc
 - lower client latency: decompress pictures in a dedicated thread (including rgb24+zlib)
 - better launcher command feedback
+- better automatic compression heuristics
 - support for Xdummy on platforms with only a suid binary installed
 - support for 'webp' lossy picture encoding (better and faster than jpeg)
 - support fixed picture quality with x264, webp and jpeg (via command line and tray menu)
@@ -123,7 +127,7 @@ So basically it's screen for remote X apps.
 - more reliable auto-refresh
 - performance optimizations: caching results, avoid unnecessary video encoder re-initialization
 - faster re-connection (skip keyboard re-configuration)
-- better isolation of the virtual display process
+- better isolation of the virtual display process and child processes
 - show performance statistics graphs on session info dialog (click to save)
 - start with compression enabled, even for initial packet
 - show more version and client information in logs and via "xpra info"

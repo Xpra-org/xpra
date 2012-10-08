@@ -1,9 +1,13 @@
 xpra (0.7.0-1) UNRELEASED; urgency=low
   * fix "AltGr" key handling with MS Windows clients (and others)
+  * fix crash with x264 encoding
+  * fix crash with fast disappearing tooltip windows
+  * avoid storing password in a file when using the launcher (except on MS Windows) 
   * many latency fixes and improvements: lower latency,
     better line congestion handling, etc
   * lower client latency: decompress pictures in a dedicated thread
   * better launcher command feedback
+  * better automatic compression heuristics
   * support for Xdummy on platforms with only a suid binary installed
   * support for 'webp' lossy picture encoding (better and faster than jpeg)
   * support fixed picture quality with x264, webp and jpeg
@@ -12,7 +16,7 @@ xpra (0.7.0-1) UNRELEASED; urgency=low
   * performance optimizations: caching results, avoid unnecessary video encoder
     re-initialization
   * faster re-connection (skip keyboard re-configuration)
-  * better isolation of the virtual display process
+  * better isolation of the virtual display process and child processes
   * show performance statistics graphs on session info dialog (click to save)
   * start with compression enabled, even for initial packet
   * show more version and client information in logs and via "xpra info"
