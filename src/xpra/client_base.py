@@ -6,7 +6,7 @@
 
 import os
 import sys
-import sha
+import hashlib
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 
@@ -138,10 +138,14 @@ class XpraClientBase(gobject.GObject):
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
-        uuid_src = str(get_machine_id())
+        u = hashlib.sha512()
+        u.update(str(get_machine_id()))
         if os.name=="posix":
-            uuid_src += "/%s/%s" % (os.getuid(), os.getgid())
-        capabilities["uuid"] = sha.new(uuid_src).hexdigest()
+            u.update("/")
+            u.update(str(os.getuid()))
+            u.update("/")
+            u.update(str(os.getgid()))
+        capabilities["uuid"] = u.hexdigest()
         try:
             from wimpiggy.prop import set_xsettings_format
             assert set_xsettings_format
