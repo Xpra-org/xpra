@@ -33,6 +33,7 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	public static final String[] ENCODINGS = new String[] { "png", "jpeg" };
 	public static final String VERSION = "0.7.0";
+	public static final String MIN_VERSION = "0.3";
 	public static boolean DEBUG = false;
 
 	protected boolean ended = false;
@@ -556,20 +557,39 @@ public abstract class AbstractClient implements Runnable, Client {
 		return hex.toString();
 	}
 
-	public String version_no_minor(String version) {
+	/**
+	 * To make it easier to compare version numbers,
+	 * returns the version number as a long.
+	 * Each part multiplied by 1000, no more than 3 parts.
+	 * ie: 0.3.11 -> 0003011
+	 * ie: 0.5.0  -> 0005000
+	 * ie: 1.3.2  -> 1003002
+	 */
+	public long version_as_number(String version) {
 		if (version == null || version.length() == 0)
-			return "";
+			return 0;
 		String[] parts = version.split("\\.");
-		if (parts.length == 1)
-			return parts[0];
-		return parts[0] + "." + parts[1];
+		long vno = 0;
+		for (int i=0; i<3; i++) {
+			vno *= 1000;
+			int pval = 0;
+			if (i<parts.length)
+				try {
+					pval = Integer.parseInt(parts[i]);
+				}
+				catch (NumberFormatException e) {
+					//ignore
+				}
+			vno += pval;
+		}
+		return vno;
 	}
 
 	protected void process_hello(Map<String, Object> capabilities) {
 		this.log("process_hello(" + capabilities + ")");
 		this.remote_version = this.cast(capabilities.get("version"), String.class);
-		if (!this.version_no_minor(this.remote_version).equals(this.version_no_minor(VERSION))) {
-			log("sorry, I only know how to talk to v" + this.version_no_minor(VERSION) + ".x servers, this one is " + this.remote_version);
+		if (this.version_as_number(this.remote_version)<this.version_as_number(MIN_VERSION)) {
+			log("sorry, I only know how to talk to server versions " + MIN_VERSION + " or newer, this one is " + this.remote_version);
 			this.warnUser("The server version is incompatible with this client");
 			this.exit = true;
 			return;
