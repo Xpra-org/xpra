@@ -1010,7 +1010,7 @@ class ClientExtrasBase(object):
 
     def set_qualitymenu(self, *args):
         if self.quality:
-            self.quality.set_sensitive(self.client.encoding in ("jpeg", "webp", "x264"))
+            self.quality.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264"))
             is_x264 = self.client.encoding in ("x264")
             self.auto_quality.set_sensitive(is_x264)
             if is_x264:
