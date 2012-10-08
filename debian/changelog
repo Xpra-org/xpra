@@ -2,7 +2,7 @@ xpra (0.7.0-1) UNRELEASED; urgency=low
   * fix "AltGr" key handling with MS Windows clients (and others)
   * fix crash with x264 encoding
   * fix crash with fast disappearing tooltip windows
-  * avoid storing password in a file when using the launcher (except on MS Windows) 
+  * avoid storing password in a file when using the launcher 
   * many latency fixes and improvements: lower latency,
     better line congestion handling, etc
   * lower client latency: decompress pictures in a dedicated thread
