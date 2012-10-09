@@ -33,7 +33,7 @@ License: MIT-X11
 
 Files: xpra/webm/*
 Copyright: 2011 Daniele Esposti <expo@expobrain.net>
-License: BSD-3-clause
+License: BSD-2-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
     * Redistributions of source code must retain the above copyright
