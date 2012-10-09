@@ -138,7 +138,7 @@ class XpraClientBase(gobject.GObject):
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
-        u = hashlib.sha512()
+        u = hashlib.sha1()
         u.update(str(get_machine_id()))
         if os.name=="posix":
             u.update("/")
