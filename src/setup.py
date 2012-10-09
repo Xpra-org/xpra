@@ -131,7 +131,10 @@ def cython_version_check(min_version):
                  % (cython_version, ".".join([str(part) for part in min_version])))
 
 def cython_add(extension, min_version=(0, 14, 0)):
-    if "--no-compile" in sys.argv:
+    #gentoo does weird things, calls --no-compile with build *and* install
+    #then expects to find the cython modules!? ie:
+    #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
+    if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     global ext_modules, cmdclass
     cython_version_check(min_version)
