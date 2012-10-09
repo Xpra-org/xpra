@@ -856,8 +856,8 @@ class WindowSource(object):
     def mmap_send(self, coding, data):
         start = time.time()
         mmap_data = self._mmap_send(data)
-        end = time.time()
-        log("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/(end-start)/1024/1024), len(data), dec1(1000*(end-start)))
+        elapsed = time.time()-start+0.000000001 #make sure never zero!
+        log("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/elapsed/1024/1024), len(data), dec1(1000*elapsed))
         if mmap_data is not None:
             self.global_statistics.mmap_bytes_sent += len(data)
             coding = "mmap"
