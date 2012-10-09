@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.7.0
+%define version 0.8.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -111,6 +111,9 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Tue Oct 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.8.0-1
+- TODO
+
 * Mon Oct 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
 - fix crash with x264 encoding

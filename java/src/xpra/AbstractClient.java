@@ -32,7 +32,7 @@ import org.ardverk.coding.BencodingOutputStream;
 public abstract class AbstractClient implements Runnable, Client {
 
 	public static final String[] ENCODINGS = new String[] { "png", "jpeg" };
-	public static final String VERSION = "0.7.0";
+	public static final String VERSION = "0.8.0";
 	public static final String MIN_VERSION = "0.3";
 	public static boolean DEBUG = false;
 

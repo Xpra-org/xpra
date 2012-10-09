@@ -1,3 +1,8 @@
+xpra (0.8.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 08 Oct 2012 19:52:38 +0700
+
 xpra (0.7.0-1) UNRELEASED; urgency=low
   * fix "AltGr" key handling with MS Windows clients (and others)
   * fix crash with x264 encoding
