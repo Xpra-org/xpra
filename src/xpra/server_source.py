@@ -9,7 +9,7 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 
-import md5
+import hashlib
 import time
 import gobject
 import ctypes
@@ -74,7 +74,7 @@ class KeyboardConfig(object):
         self.compute_modifier_map()
 
     def get_hash(self):
-        m = md5.new()
+        m = hashlib.md5()
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
