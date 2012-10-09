@@ -73,17 +73,15 @@ if "rgb24" in ENCODINGS:
         #xpra was probably built with --without-x264
         pass
     try:
-        from xpra import webm           #@UnusedImport
-        try:
-            from xpra.webm.decode import DecodeRGB      #@UnusedImport
-            from xpra.webm.encode import EncodeRGB      #@UnusedImport
-            ENCODINGS.append("webp")
-        except Exception, e:
-            print("cannot load webp: %s" % e)
+        from xpra.webm.decode import DecodeRGB      #@UnusedImport
+        from xpra.webm.encode import EncodeRGB      #@UnusedImport
+        ENCODINGS.append("webp")
     except ImportError, e:
         #the webm module does not exist
         #xpra was probably built with --without-webp
         pass
+    except Exception, e:
+        print("cannot load webp: %s" % e)
 
 
 def read_xpra_conf(conf_dir):
