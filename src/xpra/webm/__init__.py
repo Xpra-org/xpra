@@ -38,17 +38,24 @@ PIXEL_ALPHA_SZ = 4
 
 # Per-OS setup
 if sys.platform == "win32":
-    _LIBRARY = "libwebp_a.dll"
+    _LIBRARY_NAMES = ["libwebp_a.dll"]
 
 elif sys.platform == "linux2":
-    _LIBRARY = "libwebp.so.2"
+    _LIBRARY_NAMES = ["libwebp.so", "libwebp.so.2"]
 
 elif sys.platform == "darwin":
-    _LIBRARY = "libwebp.dylib"
+    _LIBRARY_NAMES = ["libwebp.dylib"]
 
 else:
     raise NotImplementedError(
         "Test non implemented under {0}".format(sys.platform))
 
 # Load library
-_LIBRARY = loader.LoadLibrary(_LIBRARY)
+for name in _LIBRARY_NAMES:
+    try:
+        _LIBRARY = loader.LoadLibrary(name)
+        break
+    except:
+        pass
+if _LIBRARY is None:
+    raise NotImplementedError("Could not find webp library from %s" % str(_LIBRARY_NAMES))
