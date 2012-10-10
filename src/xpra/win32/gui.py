@@ -8,9 +8,10 @@
 
 import os.path
 
-from xpra.platform.client_extras_base import ClientExtrasBase, WIN32_LAYOUTS
+from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.keys import get_gtk_keymap
+from xpra.platform.keyboard_layouts import WIN32_LAYOUTS
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -187,3 +188,7 @@ class ClientExtras(ClientExtrasBase):
 
     def popup_menu_workaround(self, menu):
         self.add_popup_menu_workaround(menu)
+
+    def setup_menu(self, show_close):
+        #override so we always show the close button
+        ClientExtrasBase.setup_menu(True)
