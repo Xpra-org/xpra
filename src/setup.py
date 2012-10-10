@@ -457,20 +457,25 @@ else:
         scripts += ["scripts/parti", "scripts/parti-repl",
                     "scripts/xpra_Xdummy"]  #always include the wrapper in case we need it later, we remove it during the 'install' below step if it isn't actually needed
 
-        if 'install' in sys.argv:
-            #prepare default [/usr/local]/etc configuration files:
-            if sys.prefix == '/usr':
-                etc_prefix = '/etc/xpra'
-            else:
-                etc_prefix = sys.prefix + '/etc/xpra'
-            etc_files = ["etc/xpra/xorg.conf"]
-            #figure out the version of the Xorg server:
-            xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
-            if not use_Xdummy_wrapper:
-                #if we're not using the wrapper, don't install it
-                scripts.remove("scripts/xpra_Xdummy")
-            etc_files.append(xorg_conf)
-            data_files.append((etc_prefix, etc_files))
+    #gentoo does weird things, calls --no-compile with build *and* install 
+    #then expects to find the cython modules!? ie: 
+    #python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7 
+    if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv): 
+        def pkgconfig(*packages_options, **ekw):
+            return {}
+        #prepare default [/usr/local]/etc configuration files:
+        if sys.prefix == '/usr':
+            etc_prefix = '/etc/xpra'
+        else:
+            etc_prefix = sys.prefix + '/etc/xpra'
+        etc_files = ["etc/xpra/xorg.conf"]
+        #figure out the version of the Xorg server:
+        xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
+        if not use_Xdummy_wrapper:
+            #if we're not using the wrapper, don't install it
+            scripts.remove("scripts/xpra_Xdummy")
+        etc_files.append(xorg_conf)
+        data_files.append((etc_prefix, etc_files))
     setup_options["scripts"] = scripts
 
 
