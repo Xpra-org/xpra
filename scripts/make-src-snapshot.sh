@@ -7,6 +7,12 @@ fi
 DIR=xpra-${VERSION}
 rm -fr "${DIR}"
 rm -f "src/xpra/build_info.py"
+#record current svn info into xpra/build_info.py:
+pushd src
+PYTHONPATH="." python -c "from add_build_info import record_info;record_info(False)"
+svn info > ./svn-info
+svnversion > ./svn-version
+popd
 cp -apr src ${DIR}
 rm -fr "${DIR}/dist"
 rm -fr "${DIR}/build"
@@ -24,9 +30,6 @@ rm -f "${DIR}/wimpiggy/lowlevel/bindings.c"
 rm -f "${DIR}/wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.dep"
 rm -f "${DIR}/wimpiggy/lowlevel/constants.pxi"
 rm -f "${DIR}/wimpiggy/gdk/gdk_atoms.c"
-pushd "${DIR}"
-svn info > ./svn-info
-popd
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 find ${DIR} -name "__pycache__" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"

@@ -16,6 +16,7 @@ import re
 
 def load_ignored_changed_files():
     ignored = []
+    f = None
     try:
         f = open("./ignored_changed_files.txt", "rU")
         for line in f:
@@ -26,7 +27,8 @@ def load_ignored_changed_files():
                 continue
             ignored.append(s)
     finally:
-        f.close()
+        if f:
+            f.close()
     return ignored
 
 def get_svn_props():
@@ -143,21 +145,26 @@ def get_cpuinfo():
         pass
     return "unknown"
 
-def main():
+def record_info(is_build=True):
     def set_prop(props, key, value):
         if value!="unknown" or props.get(key) is None:
             props[key] = value
 
     props = get_existing_properties()
-    set_prop(props, "BUILT_BY", getpass.getuser())
-    set_prop(props, "BUILT_ON", socket.gethostname())
-    set_prop(props, "BUILD_DATE", date.today().isoformat())
-    set_prop(props, "BUILD_CPU", get_cpuinfo())
-    set_prop(props, "BUILD_BIT", platform.architecture()[0])
+    if is_build:
+        set_prop(props, "BUILT_BY", getpass.getuser())
+        set_prop(props, "BUILT_ON", socket.gethostname())
+        set_prop(props, "BUILD_DATE", date.today().isoformat())
+        set_prop(props, "BUILD_CPU", get_cpuinfo())
+        set_prop(props, "BUILD_BIT", platform.architecture()[0])
     set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     for k,v in get_svn_props().items():
         set_prop(props, k, v)
     save_properties_to_file(props)
+
+def main():
+    record_info(True)
+
 
 if __name__ == "__main__":
     main()
