@@ -19,7 +19,7 @@ class TestMemoryClient(GLibXpraClient):
     def __init__(self, conn, opts):
         GLibXpraClient.__init__(self, conn, opts)
         def check_connection_dead(*args):
-            self.send(["irrelevant"])
+            self.send("irrelevant")
         gobject.timeout_add(1000, check_connection_dead)
         def check_connection_timeout(*args):
             log.error("BUG: packet size failsafe did not fire: we are still connected!")

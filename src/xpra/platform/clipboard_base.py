@@ -45,7 +45,7 @@ class ClipboardProtocolHelperBase(object):
         for selection in self._clipboard_proxies:
             name = self.local_to_remote(selection)
             debug("send_all_tokens selection=%s, exported as=%s", selection, name)
-            self.send(["clipboard-token", name])
+            self.send("clipboard-token", name)
 
     def _process_clipboard_token(self, packet):
         selection = packet[1]
@@ -60,7 +60,7 @@ class ClipboardProtocolHelperBase(object):
         debug("get clipboard from remote handler id=%s", request_id)
         loop = NestedMainLoop()
         self._clipboard_outstanding_requests[request_id] = loop
-        self.send(["clipboard-request", request_id, self.local_to_remote(selection), target])
+        self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
         result = loop.main(1 * 1000, 2 * 1000)
         debug("get clipboard from remote result(%s)=%s", request_id, result)
         del self._clipboard_outstanding_requests[request_id]
@@ -76,7 +76,7 @@ class ClipboardProtocolHelperBase(object):
 
     def _send_clipboard_token_handler(self, proxy, selection):
         debug("send clipboard token: %s", selection)
-        self.send(["clipboard-token", self.local_to_remote(selection)])
+        self.send("clipboard-token", self.local_to_remote(selection))
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         # Some types just cannot be marshalled:
@@ -143,7 +143,7 @@ class ClipboardProtocolHelperBase(object):
             def got_contents(dtype, dformat, data):
                 debug("got_contents(%s, %s, %s:%s) data=%s, str(data)=%s", dtype, dformat, type(data), len(data or ""), list(bytearray(data or "")[:200]), str(data)[:200])
                 def no_contents():
-                    self.send(["clipboard-contents-none", request_id, selection])
+                    self.send("clipboard-contents-none", request_id, selection)
                 if dtype is None or data is None:
                     no_contents()
                     return
@@ -159,11 +159,11 @@ class ClipboardProtocolHelperBase(object):
                         log.warn("even compressed, clipboard contents are too big and have not been sent: %s compressed bytes dropped" % len(wire_data))
                         no_contents()
                         return
-                self.send(["clipboard-contents", request_id, selection,
-                           dtype, dformat, wire_encoding, wire_data])
+                self.send("clipboard-contents", request_id, selection,
+                           dtype, dformat, wire_encoding, wire_data)
             proxy.get_contents(target, got_contents)
         else:
-            self.send(["clipboard-contents-none", request_id, selection])
+            self.send("clipboard-contents-none", request_id, selection)
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]

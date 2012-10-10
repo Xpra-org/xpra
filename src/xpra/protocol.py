@@ -182,7 +182,7 @@ class Protocol(object):
     def rencode(self, data):
         return  rencode_dumps(data), 1
 
-    def encode(self, packet):
+    def encode(self, packet_in):
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
@@ -197,6 +197,7 @@ class Protocol(object):
         ]
         """
         packets = []
+        packet = list(packet_in)
         level = self._compression_level
         for i in range(len(packet)):
             item = packet[i]

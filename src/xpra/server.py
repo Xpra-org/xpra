@@ -416,9 +416,9 @@ class XpraServer(gobject.GObject):
         for ss in self._server_sources.values():
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
-    def send_clipboard_packet(self, packet):
+    def send_clipboard_packet(self, *parts):
         if self._clipboard_client:
-            self._clipboard_client.send(packet)
+            self._clipboard_client.send(*parts)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         assert self.notifications_forwarder
@@ -1051,7 +1051,7 @@ class XpraServer(gobject.GObject):
 
     def _process_screenshot(self, proto, packet):
         packet = self.make_screenshot_packet()
-        self._server_sources.get(proto).send(packet)
+        self._server_sources.get(proto).send(*packet)
 
     def make_screenshot_packet(self):
         log("grabbing screenshot")
@@ -1542,7 +1542,7 @@ class XpraServer(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        assert isinstance(packet_type, str) or isinstance(packet_type, unicode), "packet_type is not a string: %s" % type(packet_type)
+        assert isinstance(packet_type, str) or isinstance(packet_type, unicode), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
         if packet_type.startswith("clipboard-"):
             ss = self._server_sources.get(proto)
             assert self._clipboard_client==ss, \

@@ -164,9 +164,9 @@ class ClientExtrasBase(object):
             log.warn("received a clipboard packet but clipboard is not supported!")
 
     def setup_clipboard_helper(self, helperClass):
-        def clipboard_send(data):
+        def clipboard_send(*parts):
             if self.client.clipboard_enabled:
-                self.client.send(data)
+                self.client.send(*parts)
             else:
                 log.info("clipboard is disabled, not sending clipboard packet")
         self.clipboard_helper = helperClass(clipboard_send)

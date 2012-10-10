@@ -380,7 +380,7 @@ class XpraClient(XpraClientBase):
         if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
             return
         log("send_key_action(%s, %s, %s, %s, %s, %s, %s, %s, %s)", wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
-        self.send(["key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier])
+        self.send("key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, keyname, keyval, keycode)
 
@@ -409,7 +409,7 @@ class XpraClient(XpraClientBase):
             log.debug("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", name, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
             def send_key_repeat():
                 modifiers = self.get_current_modifiers()
-                self.send_now(["key-repeat", wid, name, keyval, keycode, modifiers])
+                self.send_now("key-repeat", wid, name, keyval, keycode, modifiers)
             def continue_key_repeat(*args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
@@ -475,10 +475,10 @@ class XpraClient(XpraClientBase):
             self.send_keymap()
 
     def send_layout(self):
-        self.send(["layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant)])
+        self.send("layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant))
 
     def send_keymap(self):
-        self.send(["keymap-changed", self.get_keymap_properties()])
+        self.send("keymap-changed", self.get_keymap_properties())
 
     def get_keymap_properties(self):
         props = {"modifiers" : self.get_current_modifiers()}
@@ -488,7 +488,7 @@ class XpraClient(XpraClientBase):
         return  props
 
     def send_focus(self, wid):
-        self.send(["focus", wid, self.get_current_modifiers()])
+        self.send("focus", wid, self.get_current_modifiers())
 
     def update_focus(self, wid, gotit):
         log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
@@ -564,7 +564,7 @@ class XpraClient(XpraClientBase):
 
     def send_ping(self):
         now_ms = int(1000*time.time())
-        self.send(["ping", now_ms])
+        self.send("ping", now_ms)
         wait = 60
         def check_echo_received(*args):
             if self.last_ping_echoed_time<now_ms:
@@ -592,18 +592,18 @@ class XpraClient(XpraClientBase):
         sl = -1
         if len(self.server_ping_latency)>0:
             _, sl = self.server_ping_latency[-1]
-        self.send(["ping_echo", echotime, l1, l2, l3, int(1000.0*sl)])
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
 
     def send_quality(self, q):
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
         self.quality = q
         if self.change_quality:
-            self.send(["quality", self.quality])
+            self.send("quality", self.quality)
         else:
-            self.send(["jpeg-quality", self.quality])
+            self.send("jpeg-quality", self.quality)
 
     def send_refresh(self, wid):
-        self.send(["buffer-refresh", wid, True, 95])
+        self.send("buffer-refresh", wid, True, 95)
 
     def send_refresh_all(self):
         log.debug("Automatic refresh for all windows ")
@@ -691,19 +691,19 @@ class XpraClient(XpraClientBase):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
         assert self.server_supports_notifications, "cannot toggle notifications: the feature is disabled by the server"
         assert self.toggle_cursors_bell_notify, "cannot toggle notifications: server lacks the feature"
-        self.send(["set-notify", self.notifications_enabled])
+        self.send("set-notify", self.notifications_enabled)
 
     def send_bell_enabled(self):
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
         assert self.server_supports_bell, "cannot toggle bell: the feature is disabled by the server"
         assert self.toggle_cursors_bell_notify, "cannot toggle bell: server lacks the feature"
-        self.send(["set-bell", self.bell_enabled])
+        self.send("set-bell", self.bell_enabled)
 
     def send_cursors_enabled(self):
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
         assert self.server_supports_cursors, "cannot toggle cursors: the feature is disabled by the server"
         assert self.toggle_cursors_bell_notify, "cannot toggle cursors: server lacks the feature"
-        self.send(["set-cursors", self.cursors_enabled])
+        self.send("set-cursors", self.cursors_enabled)
 
     def set_deflate_level(self, level):
         self.compression_level = level
@@ -711,25 +711,25 @@ class XpraClient(XpraClientBase):
 
     def send_deflate_level(self):
         self._protocol.set_compression_level(self.compression_level)
-        self.send(["set_deflate", self.compression_level])
+        self.send("set_deflate", self.compression_level)
 
     def send_clipboard_enabled_status(self, *args):
-        self.send(["set-clipboard-enabled", self.clipboard_enabled])
+        self.send("set-clipboard-enabled", self.clipboard_enabled)
 
     def send_keyboard_sync_enabled_status(self, *args):
-        self.send(["set-keyboard-sync-enabled", self.keyboard_sync])
+        self.send("set-keyboard-sync-enabled", self.keyboard_sync)
 
     def set_encoding(self, encoding):
         assert encoding in ENCODINGS
         server_encodings = self.server_capabilities.get("encodings", [])
         assert encoding in server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, server_encodings)
         self.encoding = encoding
-        self.send(["encoding", encoding])
+        self.send("encoding", encoding)
 
     def _screen_size_changed(self, *args):
         root_w, root_h = get_root_size()
         log.debug("sending updated screen size to server: %sx%s", root_w, root_h)
-        self.send(["desktop_size", root_w, root_h, self.get_screen_sizes()])
+        self.send("desktop_size", root_w, root_h, self.get_screen_sizes())
         #update the max packet size (may have gone up):
         self.set_max_packet_size()
 
@@ -796,7 +796,7 @@ class XpraClient(XpraClientBase):
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time):
-        self.send_now(["damage-sequence", packet_sequence, wid, width, height, decode_time])
+        self.send_now("damage-sequence", packet_sequence, wid, width, height, decode_time)
 
     def _draw_thread_loop(self):
         while self.exit_code is None:

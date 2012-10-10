@@ -242,13 +242,13 @@ class ClientExtras(ClientExtrasBase):
         blob = self._xsettings_watcher.get_settings_blob()
         log("xsettings_changed new value=%s", blob)
         if blob is not None:
-            self.client.send(["server-settings", {"xsettings-blob": blob}])
+            self.client.send("server-settings", {"xsettings-blob": blob})
 
     def _handle_root_prop_changed(self, obj, prop, value):
         log("root_prop_changed: %s=%s", prop, value)
         assert prop in self.ROOT_PROPS
         if value is not None:
-            self.client.send(["server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")}])
+            self.client.send("server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")})
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if not self.has_x11_bell:

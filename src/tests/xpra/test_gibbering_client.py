@@ -26,7 +26,7 @@ class TestGiberringCommandClient(GLibXpraClient):
         gobject.timeout_add(5*1000, check_kicked_out)
 
     def try_sending_again(self):
-        self.send(["irrelevant: should be kicked out already"])
+        self.send("irrelevant: should be kicked out already")
 
     def _queue_write(self, data):
         self._protocol._write_queue.put((data, None, None))

@@ -570,9 +570,9 @@ class ServerSource(object):
             have_more = packet is not None and (bool(self.ordinary_packets) or len(self.damage_packet_queue)>0)
         return packet, start_send_cb, end_send_cb, have_more
 
-    def send(self, packet):
+    def send(self, *parts):
         """ This method queues non-damage packets (higher priority) """
-        self.ordinary_packets.append(packet)
+        self.ordinary_packets.append(parts)
         if self.protocol:
             self.protocol.source_has_more()
 
@@ -615,7 +615,7 @@ class ServerSource(object):
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
         capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
-        self.send(["hello", capabilities])
+        self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
         info["clipboard%s" % suffix] = self.clipboard_enabled
@@ -625,33 +625,33 @@ class ServerSource(object):
 
     def send_clipboard(self, packet):
         if self.clipboard_enabled:
-            self.send(packet)
+            self.send(*packet)
 
     def send_cursor(self, cursor_data):
         if self.send_cursors:
             if cursor_data:
-                self.send(["cursor"] + cursor_data)
+                self.send("cursor", *cursor_data)
             else:
-                self.send(["cursor", ""])
+                self.send("cursor", "")
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if self.send_bell:
-            self.send(["bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name])
+            self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         if self.send_notifications:
-            self.send(["notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout)])
+            self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
 
     def notify_close(self, nid):
         if self.send_notifications:
-            self.send(["notify_close", nid])
+            self.send("notify_close", nid)
 
     def set_deflate(self, level):
-        self.send(["set_deflate", level])
+        self.send("set_deflate", level)
 
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
-        self.send(["ping", int(1000*time.time())])
+        self.send("ping", int(1000*time.time()))
 
     def process_ping(self, time_to_echo):
         #send back the load average:
@@ -664,7 +664,7 @@ class ServerSource(object):
         #and the last client ping latency we measured (if any):
         if len(self.statistics.client_ping_latency)>0:
             _, cl = self.statistics.client_ping_latency[-1]
-        self.send(["ping_echo", time_to_echo, l1, l2, l3, int(1000.0*cl)])
+        self.send("ping_echo", time_to_echo, l1, l2, l3, int(1000.0*cl))
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 
@@ -679,23 +679,23 @@ class ServerSource(object):
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         if self.randr_notify:
-            self.send(["desktop_size", root_w, root_h, max_w, max_h])
+            self.send("desktop_size", root_w, root_h, max_w, max_h)
 
     def or_window_geometry(self, wid, x, y, w, h):
         if self.send_windows:
-            self.send(["configure-override-redirect", wid, x, y, w, h])
+            self.send("configure-override-redirect", wid, x, y, w, h)
 
     def window_metadata(self, wid, metadata):
         if self.send_windows:
-            self.send(["window-metadata", wid, metadata])
+            self.send("window-metadata", wid, metadata)
 
     def new_window(self, ptype, wid, x, y, w, h, metadata, client_properties):
         if self.send_windows:
-            self.send([ptype, wid, x, y, w, h, metadata, client_properties or {}])
+            self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
 
     def lost_window(self, wid):
         if self.send_windows:
-            self.send(["lost-window", wid])
+            self.send("lost-window", wid)
 
     def resize_window(self, wid, ww, wh):
         """
@@ -703,7 +703,7 @@ class ServerSource(object):
         we forward it if the client supports this type of event.
         """
         if self.server_window_resize and self.send_windows:
-            self.send(["window-resized", wid, ww, wh])
+            self.send("window-resized", wid, ww, wh)
 
     def cancel_damage(self, wid):
         """

@@ -26,7 +26,7 @@ class TestIllegalCommandClient(GLibXpraClient):
     def send_hello(self, challenge_response=None):
         #we should not be able to do this before hello:
         for i in range(1, 10):
-            self.send(["close-window", i])
+            self.send("close-window", i)
 
     def quit(self, *args):
         log.info("server correctly terminated the connection")

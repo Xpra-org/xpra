@@ -119,7 +119,7 @@ class XpraClientBase(gobject.GObject):
     def send_hello(self, challenge_response=None):
         hello = self.make_hello(challenge_response)
         log.debug("send_hello(%s) packet=%s", challenge_response, hello)
-        self.send(["hello", hello])
+        self.send("hello", hello)
 
     def make_hello(self, challenge_response=None):
         capabilities = {}
@@ -156,13 +156,13 @@ class XpraClientBase(gobject.GObject):
         capabilities["windows"] = False         #only client.py cares about this
         return capabilities
 
-    def send(self, packet):
+    def send(self, *parts):
         if self._protocol and self._protocol.source:
-            self._protocol.source.queue_ordinary_packet(packet)
+            self._protocol.source.queue_ordinary_packet(parts)
 
-    def send_now(self, packet):
+    def send_now(self, *parts):
         if self._protocol and self._protocol.source:
-            self._protocol.source.queue_priority_packet(packet)
+            self._protocol.source.queue_priority_packet(parts)
 
     def cleanup(self):
         if self._protocol:
@@ -406,4 +406,4 @@ class StopXpraClient(GLibXpraClient):
         GLibXpraClient.__init__(self, conn, opts)
 
     def _process_hello(self, packet):
-        self.send(["shutdown-server"])
+        self.send("shutdown-server")
