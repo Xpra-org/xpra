@@ -37,7 +37,7 @@ else:
         for gtkwindow in gtkwindows:
             gtkwindow.get_window().set_cursor(cursor)
 
-
+import sys
 import uuid
 import os
 import time
@@ -656,6 +656,12 @@ class XpraClient(XpraClientBase):
     def process_ui_capabilities(self, capabilities):
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
+        try:
+            from wimpiggy.prop import set_xsettings_format
+            set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
+        except Exception, e:
+            if os.name=="posix" and not sys.platform.startswith("darwin"):
+                log.error("failed to set xsettings format: %s", e)
         self.set_max_packet_size()
         self.send_deflate_level()
         server_desktop_size = capabilities.get("desktop_size")
