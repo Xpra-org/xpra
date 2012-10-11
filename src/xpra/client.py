@@ -560,6 +560,12 @@ class XpraClient(XpraClientBase):
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled
+        try:
+            from wimpiggy.prop import set_xsettings_format
+            assert set_xsettings_format
+            capabilities["xsettings-tuple"] = True
+        except:
+            pass
         return capabilities
 
     def send_ping(self):

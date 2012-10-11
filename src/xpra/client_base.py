@@ -162,12 +162,6 @@ class XpraClientBase(gobject.GObject):
             u.update("/")
             u.update(str(os.getgid()))
         capabilities["uuid"] = u.hexdigest()
-        try:
-            from wimpiggy.prop import set_xsettings_format
-            assert set_xsettings_format
-            capabilities["xsettings-tuple"] = True
-        except:
-            pass
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this
         return capabilities
