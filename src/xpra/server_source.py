@@ -72,6 +72,7 @@ class KeyboardConfig(object):
         self.keycodes_for_modifier_keynames = {}
         self.modifier_client_keycodes = {}
         self.compute_modifier_map()
+        self.make_modifiers_match = True
 
     def get_hash(self):
         m = hashlib.md5()
@@ -123,7 +124,7 @@ class KeyboardConfig(object):
         debug("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 
-    def set_keymap(self):
+    def set_keymap(self, client_plarform):
         if not self.enabled:
             return
         clean_keyboard_state()
@@ -132,6 +133,7 @@ class KeyboardConfig(object):
                           self.xkbmap_print, self.xkbmap_query)
         except:
             log.error("error setting new keymap", exc_info=True)
+        self.make_modifiers_match = (client_plarform and not client_plarform.startswith("win")) or (self.xkbmap_print!="" or self.xkbmap_query!="")
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
@@ -201,8 +203,8 @@ class KeyboardConfig(object):
         if not self.keynames_for_mod:
             debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
-        if self.xkbmap_print=="" and self.xkbmap_query=="":
-            debug("make_keymask_match: ignored on non-posix platforms! current mask=%s", get_current_mask())
+        if not self.make_modifiers_match:
+            debug("make_keymask_match: ignored - current mask=%s", get_current_mask())
             return
         if ignored_modifier_keynames is None:
             ignored_modifier_keynames = self.xkbmap_mod_pointermissing
@@ -265,8 +267,9 @@ class KeyboardConfig(object):
                     else:
                         xtest_fake_key(display, keycode, press)
                     new_mask = get_current_mask()
-                    debug("make_keymask_match(%s) %s modifier %s using %s: %s", info, modifier_list, modifier, keycode, (modifier not in new_mask))
-                    if (modifier in new_mask)==press:
+                    success = (modifier in new_mask)==press
+                    debug("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
+                    if success:
                         break
                     elif not nuisance:
                         debug("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
@@ -413,6 +416,7 @@ class ServerSource(object):
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
+        self.client_platform = None
         self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
@@ -543,7 +547,7 @@ class ServerSource(object):
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
             if current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
-                self.keyboard_config.set_keymap()
+                self.keyboard_config.set_keymap(self.client_platform)
                 current_keyboard_config = self.keyboard_config
             else:
                 log.info("keyboard mapping already configured (skipped)")
