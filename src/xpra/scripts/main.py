@@ -387,7 +387,9 @@ def main(script_file, cmdline):
                           help="Specifies the encryption cipher to use, only %s is currently supported. (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
     parser.add_option_group(group)
 
-    (options, args) = parser.parse_args(cmdline[1:])
+    options, args = parser.parse_args(cmdline[1:])
+    if not args:
+        parser.error("need a mode")
     if "jpeg" not in ENCODINGS:
         #ensure the default values are set even though
         #the option is not shown to the user as it is not available
@@ -397,9 +399,10 @@ def main(script_file, cmdline):
         int(options.dpi)
     except Exception, e:
         parser.error("invalid dpi: %s" % e)
-
-    if not args:
-        parser.error("need a mode")
+    if len(ENCRYPTION_CIPHERS)==0:
+        #if no encryption options are available the option is not shown
+        #but we still need to set a value to avoid errors later on:
+        options.encryption = ""
     if options.encoding and options.encoding not in ENCODINGS:
         parser.error("encoding %s is not supported, try: %s" % (options.encoding, ", ".join(ENCODINGS)))
     if options.encryption:
