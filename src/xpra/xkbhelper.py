@@ -276,7 +276,7 @@ def gtk_keycodes_to_mappings(gtk_mappings):
     #use the keycodes supplied by gtk:
     mappings = {}
     for _, name, keycode, group, level in gtk_mappings:
-        if keycode<=0:
+        if keycode<0:
             continue            #ignore old 'add_if_missing' client side code
         index = group*2+level
         mappings.setdefault(keycode, set()).add((name, index))
