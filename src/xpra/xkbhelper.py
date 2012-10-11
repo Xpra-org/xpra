@@ -347,7 +347,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 free_keycodes.remove(server_keycode)
             #record it in trans map:
             for name, _ in entries:
-                if keycode>0 and server_keycode!=keycode:
+                if keycode>=0 and server_keycode!=keycode:
                     keycode_trans[(keycode, name)] = server_keycode
                 keycode_trans[name] = server_keycode
             server_keycodes[server_keycode] = entries
