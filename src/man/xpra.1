@@ -15,24 +15,24 @@ xpra \- viewer for remote, persistent X applications
 .PD 0
 .HP \w'xpra\ 'u
 \fBxpra\fP \fBstart\fP \fI:DISPLAY\fP
-[\fB\-\-start\-child=CHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
-[\fB\-\-xvfb=CMD\fP]
+[\fB\-\-xvfb\fP=\fICMD\fP]
 [\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-enable-sharing\fP]
-[\fB\-\-bind\-tcp=[HOST]:PORT\fP]
-[\fB\-\-password\-file=filename\fP]
-[\fB\-\-dpi=VALUE\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+[\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBattach\fP
 [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
-[\fB\-zLEVEL | \-\-compress=LEVEL\fP]
+[\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
 [\fB\-\-no\-mmap\fP]
 [\fB\-\-no\-windows\fP]
 [\fB\-\-no\-clipboard\fP]
@@ -43,46 +43,47 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-keyboard\-sync\fP]
 [\fB\-\-no\-tray\fP]
 [\fB\-\-delay\-tray\fP]
-[\fB\-\-encoding=ENCODING\fP]
-[\fB\-\-quality=VALUE\fP]
-[\fB\-\-jpeg\-quality=VALUE\fP]
-[\fB\-\-auto\-refresh\-delay=DELAY\fP]
-[\fB\-\-max\-bandwidth=BW\fP]
-[\fB\-\-key\-shortcut=key:action\fP]
+[\fB\-\-encoding\fP=\fIENCODING\fP]
+[\fB\-\-quality\fP=\fIVALUE\fP]
+[\fB\-\-jpeg\-quality\fP=\fIVALUE\fP]
+[\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
+[\fB\-\-max\-bandwidth\fP=\fIBW\fP]
+[\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
 [\fB\-\-readonly\fP]
 [\fB\-\-enable-sharing\fP]
-[\fB\-\-title\-suffix=VALUE\fP]
-[\fB\-\-title=VALUE\fP]
+[\fB\-\-title\-suffix\fP=\fIVALUE\fP]
+[\fB\-\-title\fP=\fIVALUE\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
-[\fB\-\-tray\-icon=filename\fP]
-[\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-password\-file=filename\fP]
-[\fB\-\-dpi=VALUE\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+[\fB\-\-tray\-icon\fP=\fIfilename\fP]
+[\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-enable\-pings\fP]
+
 .HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
-\fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra=CMD\fP]
-[\fB\-\-socket\-dir=DIR\fP]
+\fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir=DIR\fP]
+\fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBupgrade\fP \fI:DISPLAY\fP [...any options accepted by
 \fBxpra start\fP...]
@@ -242,7 +243,7 @@ look something like \fBxpra.protocol.raw\fP or \fBwimpiggy\fP
 filter like \fBxpra.protocol.raw\fP is more specific than one like
 \fBxpra.protocol\fP. Additionally, logging can be disabled for a
 specific subsystem by prefixing a minus sign to its name, like so:
-\fB\-\-debug=all,-wimpiggy\fP.
+\fB\-\-debug\fP=\fIall,-wimpiggy\fP.
 .TP
 \fB\-\-no\-mmap\fP
 Disables memory mapped pixel data transfer.
@@ -375,7 +376,7 @@ file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
 .TP
-\fB\-\-dpi=VALUE\fP
+\fB\-\-dpi\fP=\fIVALUE\fP
 The 'dots per inch' value that client applications should try to honour.
 This numeric value should be in the range 10 to 500 to be useful.
 Many applications will only read this value when starting up,
@@ -421,7 +422,7 @@ Deprecated, use \fB\-\-quality\fP:
 \fB\-\-quality\fP=\fIVALUE\fP
 This option sets the image compression quality of pixel data sent by
 the server when using some lossy encodings (\fBjpeg\fP, \fBwebp\fP or \fBx264\fP),
-First, one of those lossy encodings must be enabled with \fB\-\-encoding=\fP.
+First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP.
 The valid values range from 1 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
 particularly useful).
@@ -540,7 +541,7 @@ arcfour encryption, then you should run
 .\" produces fine output in the terminal, at least:
 .RS
 .RS
-\fBxpra attach \-\-ssh="ssh \-c arcfour" ssh:frodo:7\fP
+\fBxpra attach \-\-ssh\fP=\fI"ssh \-c arcfour" ssh:frodo:7\fP
 
 .RE
 (\fINote:\fP don't bother to enable ssh compression; this
@@ -565,7 +566,7 @@ appreciate hearing about.
 .SH ENVIRONMENT
 .TP
 \fBDISPLAY\fP
-\fBxpra start \-\-start\-child=...\fP sets this variable in the
+\fBxpra start \-\-start\-child\fP=\fI...\fP sets this variable in the
 environment of the child to point to the xpra display.
 
 \fBxpra attach\fP, on the other hand, uses this variable to determine
@@ -606,7 +607,7 @@ this wastes memory, and can cause applications to misbehave (e.g.,
 by letting menus go off-screen).  Conversely, if the framebuffer is ever
 insufficiently large, clients will misbehave in other ways (e.g.,
 input events will be misdirected). This is not a problem when using
-Xdummy, see the \fB\-\-xvfb=\fP switch for details.
+Xdummy, see the \fB\-\-xvfb\fP= switch for details.
 
 The need to choose display numbers by hand is annoying.
 .\" --------------------------------------------------------------------
