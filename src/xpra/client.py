@@ -390,7 +390,7 @@ class XpraClient(XpraClientBase):
             maintain a consistent keyboard state.
         """
         #we keep track of which keys are still pressed in a dict,
-        if keycode==0:
+        if keycode<0:
             key = name
         else:
             key = keycode

@@ -1348,7 +1348,7 @@ class XpraServer(gobject.GObject):
         if pressed and (wid is not None) and (wid not in self._id_to_window):
             log("window %s is gone, ignoring key press", wid)
             return
-        if keycode<=0:
+        if keycode<0:
             log.warn("ignoring invalid keycode=%s", keycode)
             return
         if keycode in self.keys_timedout:
@@ -1377,7 +1377,7 @@ class XpraServer(gobject.GObject):
                 unpress()
             else:
                 log("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if self.keyboard_sync and keycode>0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+        if self.keyboard_sync and keycode>=0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
     def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
