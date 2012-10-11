@@ -28,7 +28,7 @@ class ClientExtras(ClientExtrasBase):
         except ImportError, e:
             log.error("GDK Translated Clipboard failed to load: %s - using default fallback", e)
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
-        self.setup_menu()
+        self.setup_menu(True)
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
         self.emulate_altgr = False
         self.last_key_event_sent = None
@@ -188,7 +188,3 @@ class ClientExtras(ClientExtrasBase):
 
     def popup_menu_workaround(self, menu):
         self.add_popup_menu_workaround(menu)
-
-    def setup_menu(self, show_close):
-        #override so we always show the close button
-        ClientExtrasBase.setup_menu(True)
