@@ -488,7 +488,8 @@ class Protocol(object):
                     raw_packets[packet_index] = data
                     payload_size = -1
                     packet_index = 0
-                    continue
+                    if len(raw_packets)>=4:
+                        return self._call_connection_lost("too many raw packets: %s" % len(raw_packets))
                 #final packet (packet_index==0), decode it:
                 try:
                     if protocol_flags & Protocol.FLAGS_RENCODE:
