@@ -69,7 +69,7 @@ ALL_X11_MODIFIERS = {
                     "mod5"      : 7
                     }
 
-DEFAULT_MODIFIER_NAMES = ["shift", "control", "meta", "super", "hyper", "alt"]
+DEFAULT_MODIFIER_NAMES = ["shift", "control"]
 DEFAULT_MODIFIER_NUISANCE = ["lock", "num", "scroll"]
 DEFAULT_ALL_MODIFIER_NAMES = DEFAULT_MODIFIER_NAMES+DEFAULT_MODIFIER_NUISANCE+["mod1", "mod2", "mod3", "mod4", "mod5"]
 
