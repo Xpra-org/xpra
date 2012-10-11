@@ -124,7 +124,7 @@ class KeyboardConfig(object):
         debug("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 
-    def set_keymap(self, client_plarform):
+    def set_keymap(self, client_platform):
         if not self.enabled:
             return
         clean_keyboard_state()
@@ -133,7 +133,7 @@ class KeyboardConfig(object):
                           self.xkbmap_print, self.xkbmap_query)
         except:
             log.error("error setting new keymap", exc_info=True)
-        self.make_modifiers_match = (client_plarform and not client_plarform.startswith("win")) or (self.xkbmap_print!="" or self.xkbmap_query!="")
+        self.make_modifiers_match = (client_platform and not client_platform.startswith("win")) or (self.xkbmap_print!="" or self.xkbmap_query!="")
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
