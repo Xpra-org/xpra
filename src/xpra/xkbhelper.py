@@ -496,19 +496,22 @@ def set_modifiers(modifiers):
         else:
             log.error("set_modifiers_from_dict: unknown modifier %s", modifier)
     debug("set_modifiers: %s", instructions)
-    unset = apply_xmodmap(instructions)
-    debug("unset=%s", unset)
-    if len(unset):
-        log.info("set_modifiers %s failed, retrying one more at a time", instructions)
-        l = len(instructions)
-        for i in range(1, l):
-            subset = instructions[:i]
-            debug("set_modifiers testing with [:%s]=%s", i, subset)
-            unset = apply_xmodmap(subset)
-            debug("unset=%s", unset)
-            if len(unset)>0:
-                log.warn("the problematic modifier mapping is: %s", instructions[i-1])
-                break
+    def apply_or_trim(instructions):
+        err = apply_xmodmap(instructions)
+        debug("set_modifiers: err=%s", err)
+        if len(err):
+            log("set_modifiers %s failed, retrying one more at a time", instructions)
+            l = len(instructions)
+            for i in range(1, l):
+                subset = instructions[:i]
+                debug("set_modifiers testing with [:%s]=%s", i, subset)
+                err = apply_xmodmap(subset)
+                debug("err=%s", err)
+                if len(err)>0:
+                    log.warn("removing problematic modifier mapping: %s", instructions[i-1])
+                    instructions = instructions[:i-1]+instructions[i:]
+                    return apply_or_trim(instructions)
+    apply_or_trim(instructions)
     return  modifiers
 
 
