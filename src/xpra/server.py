@@ -1333,7 +1333,7 @@ class XpraServer(gobject.GObject):
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         #negative keycodes are used for key events without a real keypress/unpress
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
-        if keycode>=0:
+        if keycode>0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
 
     def fake_key(self, keycode, press):
@@ -1377,7 +1377,7 @@ class XpraServer(gobject.GObject):
                 unpress()
             else:
                 log("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if self.keyboard_sync and keycode>=0 and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
     def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
