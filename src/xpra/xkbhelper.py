@@ -381,16 +381,22 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         #direct superset:
         for p_keycode, p_entries in preserve_keycode_matches.items():
             if entries.issubset(p_entries):
-                debug("found direct superset for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                debug("found direct preserve superset for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
                 return do_assign(client_keycode, p_keycode, p_entries)
+            if p_entries.issubset(entries):
+                debug("found direct superset of preserve for %s : %s -> %s : %s", client_keycode, entries, p_keycode, p_entries)
+                return do_assign(client_keycode, p_keycode, entries)
 
         #ignoring indexes, but requiring at least as many keysyms:
         for p_keycode, p_entries in preserve_keycode_matches.items():
-            p_keysyms = [keysym for keysym,_ in p_entries]
+            p_keysyms = set([keysym for keysym,_ in p_entries])
             if keysyms.issubset(p_keysyms):
                 if len(p_entries)>len(entries):
-                    debug("found keysym superset with more keys for %s : %s", entries, p_entries)
+                    debug("found keysym preserve superset with more keys for %s : %s", entries, p_entries)
                     return do_assign(client_keycode, p_keycode, p_entries)
+            if p_keysyms.issubset(keysyms):
+                debug("found keysym superset of preserve with more keys for %s : %s", entries, p_entries)
+                return do_assign(client_keycode, p_keycode, entries)
 
         debug("no matches for %s", entries)
         return do_assign(client_keycode, 0, entries)
