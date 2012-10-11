@@ -136,10 +136,5 @@ class ClientExtras(ClientExtrasBase):
     def get_gtk_keymap(self):
         return  get_gtk_keymap()
 
-    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
-        modifiers = ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)
-        modifiers["meta"] = 1 << 3
-        return  modifiers
-
     def get_data_dir(self):
         return  os.environ.get("XDG_DATA_DIRS", os.getcwd())
