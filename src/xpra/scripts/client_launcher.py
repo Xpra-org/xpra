@@ -321,6 +321,7 @@ xpra_opts.notifications = default_bool("notifications", True)
 xpra_opts.sharing = default_bool("sharing", False)
 xpra_opts.delay_tray = default_bool("delay-tray", False)
 xpra_opts.windows_enabled = default_bool("windows-enabled", True)
+xpra_opts.encryption = default_str("encryption", "")
 #these would need testing/work:
 xpra_opts.auto_refresh_delay = 1.0
 xpra_opts.max_bandwidth = 0.0
@@ -631,6 +632,7 @@ class ApplicationWindow:
 		opts.delay_tray = xpra_opts.delay_tray
 		opts.sharing = xpra_opts.sharing
 		opts.windows_enabled = xpra_opts.windows_enabled
+		opts.encryption = xpra_opts.encryption
 
 		def start_XpraClient():
 			app = XpraClient(socket_wrapper, opts)
@@ -671,6 +673,14 @@ class ApplicationWindow:
 			print("stderr=%s" % err)
 			ret = process.wait()
 			def show_result(out, err):
+				def noswscalewarning(s):
+					r = []
+					for x in s.splitlines():
+						if not x.startswith("[swscaler "):
+							r.append(x)
+					return "\n".join(r)
+				out = noswscalewarning(out)
+				err = noswscalewarning(err)
 				if len(out)>255:
 					out = "..."+out[len(out)-255:]
 				if len(err)>255:
