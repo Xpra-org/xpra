@@ -73,6 +73,9 @@ class Protocol(object):
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
 
+    FLAGS_RENCODE = 0x1
+    FLAGS_CIPHER = 0x2
+
     def __init__(self, conn, process_packet_cb):
         assert conn is not None
         self._conn = conn
@@ -94,6 +97,10 @@ class Protocol(object):
         self._encoder = self.bencode
         self._decompressor = zlib.decompressobj()
         self._compression_level = 0
+        self.cipher_in = None
+        self.cipher_in_block_size = 0
+        self.cipher_out = None
+        self.cipher_out_block_size = 0
         def make_daemon_thread(target, name):
             daemon_thread = Thread(target=target, name=name)
             daemon_thread.setDaemon(True)
@@ -102,6 +109,28 @@ class Protocol(object):
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write_loop")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read_loop")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "read_parse_loop")
+
+    def get_cipher(self, ciphername, iv, password, key_salt, iterations):
+        log("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+        if not ciphername:
+            return None, 0
+        assert iterations>=100
+        assert ciphername=="AES"
+        assert password and iv
+        from Crypto.Cipher import AES
+        from Crypto.Protocol.KDF import PBKDF2
+        #stretch the password:
+        block_size = 32         #fixme: can we derive this?
+        secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
+        #secret = (password+password+password+password+password+password+password+password)[:32]
+        log("get_cipher(%s, %s, %s) secret=%s, block_size=%s", ciphername, iv, password, secret.encode('hex'), block_size)
+        return AES.new(secret, AES.MODE_CBC, iv), block_size
+
+    def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
+        self.cipher_in, self.cipher_in_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
+
+    def set_cipher_out(self, ciphername, iv, password, key_salt, iterations):
+        self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def __str__(self):
         ti = ["%s:%s" % (x.name, x.is_alive()) for x in self.get_threads()]
@@ -180,7 +209,7 @@ class Protocol(object):
         return bencode(data), 0
 
     def rencode(self, data):
-        return  rencode_dumps(data), 1
+        return  rencode_dumps(data), Protocol.FLAGS_RENCODE
 
     def encode(self, packet_in):
         """
@@ -235,12 +264,13 @@ class Protocol(object):
         return packets, proto_version
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
-        packets, proto_version = self.encode(packet)
+        packets, proto_flags = self.encode(packet)
         try:
             self._write_lock.acquire()
             counter = 0
             for index,level,data in packets:
-                l = len(data)
+                payload_size = len(data)
+                actual_size = payload_size
                 scb, ecb = None, None
                 #fire the start_send_callback just before the first packet is processed:
                 if counter==0:
@@ -248,14 +278,26 @@ class Protocol(object):
                 #fire the end_send callback when the last packet (index==0) makes it out:
                 if index==0:
                     ecb = end_send_cb
-                if l<16384:
-                    #'p' + protocol-version + compression_level + packet_index + packet_size
+                if self.cipher_out:
+                    proto_flags |= Protocol.FLAGS_CIPHER
+                    #note: since we are padding: l!=len(data)
+                    padding = (self.cipher_out_block_size - len(data) % self.cipher_out_block_size) * " "
+                    if len(padding)==0:
+                        padded = data
+                    else:
+                        padded = data+padding
+                    actual_size = payload_size + len(padding)
+                    assert len(padded)==actual_size
+                    data = self.cipher_out.encrypt(padded)
+                    assert len(data)==actual_size
+                if actual_size<16384:
+                    #'p' + protocol-flags + compression_level + packet_index + data_size
                     if type(data)==unicode:
                         data = str(data)
-                    header_and_data = struct.pack('!BBBBL%ss' % l, ord("P"), proto_version, level, index, l, data)
+                    header_and_data = struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
                     self._write_queue.put((header_and_data, scb, ecb))
                 else:
-                    header = struct.pack('!BBBBL', ord("P"), proto_version, level, index, l)
+                    header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
                     self._write_queue.put((header, scb, None))
                     self._write_queue.put((data, None, ecb))
                 counter += 1
@@ -355,7 +397,8 @@ class Protocol(object):
             The actual processing of the packet is done in the main thread via gobject.idle_add
         """
         read_buffer = None
-        current_packet_size = -1
+        payload_size = -1
+        padding = None
         packet_index = 0
         compression_level = False
         raw_packets = {}
@@ -374,70 +417,84 @@ class Protocol(object):
                 bl = len(read_buffer)
                 if bl<=0:
                     break
-                if current_packet_size<0:
+                if payload_size<0:
                     if read_buffer[0] not in ["P", ord("P")]:
                         return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
                     try:
-                        (_, protocol_version, compression_level, packet_index, current_packet_size) = struct.unpack_from('!cBBBL', read_buffer)
+                        _, protocol_flags, compression_level, packet_index, data_size = struct.unpack_from('!cBBBL', read_buffer)
                     except Exception, e:
                         raise Exception("invalid packet header: %s" % list(read_buffer[:8]), e)
                     read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
+                    if protocol_flags & Protocol.FLAGS_CIPHER:
+                        assert self.cipher_in_block_size>0, "received cipher block but we don't have a cipher do decrypt it with"
+                        padding = (self.cipher_in_block_size - data_size % self.cipher_in_block_size) * " "
+                        payload_size = data_size + len(padding)
+                    else:
+                        #no cipher, no padding:
+                        padding = None
+                        payload_size = data_size
+                    assert payload_size>0
 
-                if current_packet_size>self.max_packet_size:
+                if payload_size>self.max_packet_size:
                     #this packet is seemingly too big, but check again from the main UI thread
-                    #this gives 'set_max_packet_size' a chance to run
+                    #this gives 'set_max_packet_size' a chance to run from "hello"
                     def check_packet_size(size_to_check, packet_header):
                         log("check_packet_size(%s, %s) limit is %s", size_to_check, packet_header, self.max_packet_size)
                         if size_to_check>self.max_packet_size:
                             return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: '%s'), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size, packet_header))
-                    gobject.timeout_add(1000, check_packet_size, current_packet_size, read_buffer[:32])
+                    gobject.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
-                if current_packet_size>0 and bl<current_packet_size:
+                if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
                     break
 
                 #chop this packet from the buffer:
-                if len(read_buffer)==current_packet_size:
+                if len(read_buffer)==payload_size:
                     raw_string = read_buffer
                     read_buffer = ''
                 else:
-                    raw_string = read_buffer[:current_packet_size]
-                    read_buffer = read_buffer[current_packet_size:]
+                    raw_string = read_buffer[:payload_size]
+                    read_buffer = read_buffer[payload_size:]
+                #decrypt if needed:
+                data = raw_string
+                if self.cipher_in and protocol_flags & Protocol.FLAGS_CIPHER:
+                    data = self.cipher_in.decrypt(raw_string)
+                    if padding:
+                        assert data.endswith(padding), "decryption failed: string does not end with '%s': %s (%s) -> %s (%s)" % (padding, list(bytearray(raw_string)), type(raw_string), list(bytearray(data)), type(data))
+                        data = data[:-len(padding)]
+                #uncompress if needed:
                 if compression_level>0:
                     if self.chunked_compression:
-                        raw_string = zlib.decompress(raw_string)
+                        data = zlib.decompress(data)
                     else:
-                        raw_string = self._decompressor.decompress(raw_string)
+                        data = self._decompressor.decompress(data)
                 if sys.version>='3':
-                    raw_string = raw_string.decode("latin1")
+                    data = data.decode("latin1")
+
+                if self.cipher_in and not (protocol_flags & Protocol.FLAGS_CIPHER):
+                    return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
 
                 if self._closed:
                     return
                 if packet_index>0:
                     #raw packet, store it and continue:
-                    raw_packets[packet_index] = raw_string
-                    current_packet_size = -1
+                    raw_packets[packet_index] = data
+                    payload_size = -1
                     packet_index = 0
                     continue
-                result = None
+                #final packet (packet_index==0), decode it:
                 try:
-                    #final packet (packet_index==0), decode it:
-                    if protocol_version==0:
-                        result = bdecode(raw_string)
-                        if result is None:
-                            break
-                        packet, l = result
-                        assert l==len(raw_string)
-                    elif protocol_version==1:
+                    if protocol_flags & Protocol.FLAGS_RENCODE:
                         assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet!"
-                        packet = list(rencode_loads(raw_string))
+                        packet = list(rencode_loads(data))
                     else:
-                        raise Exception("unsupported protocol version: %s" % protocol_version)
+                        packet, l = bdecode(data)
+                        assert l==len(data)
                 except ValueError, e:
                     import traceback
                     traceback.print_exc()
@@ -448,13 +505,14 @@ class Protocol(object):
                         # Peek at the data we got, in case we can make sense of it:
                         self._process_packet_cb(self, [Protocol.GIBBERISH, buf])
                         # Then hang up:
-                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(raw_string), packet_index, current_packet_size, bl, e))
-                    gobject.idle_add(gibberish, raw_string)
+                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e))
+                    gobject.idle_add(gibberish, data)
                     return
 
                 if self._closed:
                     return
-                current_packet_size = -1
+                payload_size = -1
+                padding = None
                 #add any raw packets back into it:
                 if raw_packets:
                     for index,raw_data in raw_packets.items():
@@ -467,8 +525,7 @@ class Protocol(object):
                 except KeyboardInterrupt:
                     raise
                 except:
-                    log.warn("Unhandled error while processing packet from peer",
-                             exc_info=True)
+                    log.warn("Unhandled error while processing packet from peer", exc_info=True)
                 NOYIELD or time.sleep(0)
 
     def flush_then_close(self, last_packet):

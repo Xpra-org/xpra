@@ -82,6 +82,13 @@ if "rgb24" in ENCODINGS:
         pass
     except Exception, e:
         print("cannot load webp: %s" % e)
+ENCRYPTION_CIPHERS = []
+try:
+    from Crypto.Cipher import AES
+    assert AES
+    ENCRYPTION_CIPHERS.append("AES")
+except:
+    pass
 
 
 def read_xpra_conf(conf_dir):
@@ -373,6 +380,11 @@ def main(script_file, cmdline):
                       dest="remote_xpra", default=".xpra/run-xpra",
                       metavar="CMD",
                       help="How to run xpra on the remote host (default: '%default')")
+    if len(ENCRYPTION_CIPHERS)>0:
+        group.add_option("--encryption", action="store",
+                          dest="encryption", default=None,
+                          metavar="CMD",
+                          help="Specifies the encryption cipher to use, only %s is currently supported. (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
     parser.add_option_group(group)
 
     (options, args) = parser.parse_args(cmdline[1:])
@@ -390,6 +402,12 @@ def main(script_file, cmdline):
         parser.error("need a mode")
     if options.encoding and options.encoding not in ENCODINGS:
         parser.error("encoding %s is not supported, try: %s" % (options.encoding, ", ".join(ENCODINGS)))
+    if options.encryption:
+        assert len(ENCRYPTION_CIPHERS)>0
+        if options.encryption not in ENCRYPTION_CIPHERS:
+            parser.error("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
+        if not options.password_file:
+            parser.error("encryption %s cannot be used without a password (see --password-file option)" % options.encryption)
 
     def toggle_logging(level):
         if not options.debug:

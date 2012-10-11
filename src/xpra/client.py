@@ -38,6 +38,7 @@ else:
             gtkwindow.get_window().set_cursor(cursor)
 
 
+import uuid
 import os
 import time
 import ctypes
@@ -199,7 +200,6 @@ class XpraClient(XpraClientBase):
         try:
             import mmap
             import tempfile
-            import uuid
             from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
             mmap_dir = os.getenv("TMPDIR", "/tmp")
             if not os.path.exists(mmap_dir):
@@ -614,43 +614,6 @@ class XpraClient(XpraClientBase):
             return
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
-        try:
-            import glib
-            glib.set_application_name(self.session_name)
-        except ImportError, e:
-            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
-        #figure out the maximum actual desktop size and use it to
-        #calculate the maximum size of a packet (a full screen update packet)
-        self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
-        log("server actual desktop size=%s", self.server_actual_desktop_size)
-        self.set_max_packet_size()
-        self.server_max_desktop_size = capabilities.get("max_desktop_size")
-        self.server_display = capabilities.get("display")
-        server_desktop_size = capabilities.get("desktop_size")
-        log("server desktop size=%s", server_desktop_size)
-        assert server_desktop_size
-        avail_w, avail_h = server_desktop_size
-        root_w, root_h = get_root_size()
-        if avail_w<root_w or avail_h<root_h:
-            log.warn("Server's virtual screen is too small -- "
-                     "(server: %sx%s vs. client: %sx%s)\n"
-                     "You may see strange behavior.\n"
-                     "Please see "
-                     "https://www.xpra.org/trac/ticket/10"
-                     % (avail_w, avail_h, root_w, root_h))
-        self.server_randr = capabilities.get("resize_screen", False)
-        log.debug("server has randr: %s", self.server_randr)
-        if self.server_randr and not is_gtk3():
-            display = gdk.display_get_default()
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
-                screen.connect("size-changed", self._screen_size_changed)
-                i += 1
-        e = capabilities.get("encoding")
-        if e and e!=self.encoding:
-            log.debug("server is using %s encoding" % e)
-            self.encoding = e
         self.window_configure = capabilities.get("window_configure", False)
         self.server_supports_notifications = capabilities.get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
@@ -667,14 +630,56 @@ class XpraClient(XpraClientBase):
             log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), self.mmap_file)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
-        self.send_deflate_level()
         self.server_start_time = capabilities.get("start_time", -1)
         self.server_platform = capabilities.get("platform")
         self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify", False)
         self.toggle_keyboard_sync = capabilities.get("toggle_keyboard_sync", False)
+        self.server_max_desktop_size = capabilities.get("max_desktop_size")
+        self.server_display = capabilities.get("display")
+        self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
+        log("server actual desktop size=%s", self.server_actual_desktop_size)
+        self.server_randr = capabilities.get("resize_screen", False)
+        log.debug("server has randr: %s", self.server_randr)
+        e = capabilities.get("encoding")
+        if e and e!=self.encoding:
+            log.debug("server is using %s encoding" % e)
+            self.encoding = e
+        #process the rest from the UI thread:
+        gobject.idle_add(self.process_ui_capabilities, capabilities)
+
+    def process_ui_capabilities(self, capabilities):
+        #figure out the maximum actual desktop size and use it to
+        #calculate the maximum size of a packet (a full screen update packet)
+        self.set_max_packet_size()
+        self.send_deflate_level()
+        server_desktop_size = capabilities.get("desktop_size")
+        log("server desktop size=%s", server_desktop_size)
+        assert server_desktop_size
+        avail_w, avail_h = server_desktop_size
+        root_w, root_h = get_root_size()
+        if avail_w<root_w or avail_h<root_h:
+            log.warn("Server's virtual screen is too small -- "
+                     "(server: %sx%s vs. client: %sx%s)\n"
+                     "You may see strange behavior.\n"
+                     "Please see "
+                     "https://www.xpra.org/trac/ticket/10"
+                     % (avail_w, avail_h, root_w, root_h))
+        if self.server_randr and not is_gtk3():
+            display = gdk.display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                i += 1
         modifier_keycodes = capabilities.get("modifier_keycodes")
         if modifier_keycodes:
             self._client_extras.set_modifier_mappings(modifier_keycodes)
+
+        try:
+            import glib
+            glib.set_application_name(self.session_name)
+        except ImportError, e:
+            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")

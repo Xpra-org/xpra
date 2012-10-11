@@ -61,6 +61,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-enable\-pings\fP]
+[\fB\-\-encryption\fP=\fICIPHER\fP]
 
 .HP
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
@@ -525,6 +526,14 @@ This is necessary to share the mmap file across user accounts.
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the "xpra info" command.
+[\fB\-\-encryption\fP=\fICIPHER\fP]
+Specifies the cipher to use for securing the connection from
+prying eyes. This is only really useful with the \fB--bind-tcp\fP option.
+This option requires the use of the \fB--password-file\fP option.
+The only cipher supported at present is \fIAES\fP, if the client
+requests encryption it will be used by both the client and server
+for all communication after the initial password verification,
+but only if the server supports this feature too.
 
 .SS Options for attach, stop
 .TP

@@ -61,7 +61,7 @@ from xpra.protocol import Protocol, zlib_compress, has_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -259,6 +259,7 @@ class XpraServer(gobject.GObject):
         self._upgrading = False
 
         self.compression_level = opts.compression_level
+        self.password = None
         self.password_file = opts.password_file
         self.salt = None
 
@@ -806,16 +807,16 @@ class XpraServer(gobject.GObject):
     def _verify_password(self, proto, client_hash):
         try:
             passwordFile = open(self.password_file, "rU")
-            password  = passwordFile.read()
+            self.password  = passwordFile.read()
             passwordFile.close()
-            while password.endswith("\n") or password.endswith("\r"):
-                password = password[:-1]
+            while self.password.endswith("\n") or self.password.endswith("\r"):
+                self.password = self.password[:-1]
         except IOError, e:
             log.error("cannot open password file %s: %s", self.password_file, e)
             self.send_disconnect(proto, "invalid password file specified on server")
             return
-        log("password from file %s is %s", self.password_file, password)
-        password_hash = hmac.HMAC(password, self.salt)
+        log("password from file %s is %s", self.password_file, self.password)
+        password_hash = hmac.HMAC(self.password, self.salt)
         if client_hash != password_hash.hexdigest():
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
@@ -904,6 +905,15 @@ class XpraServer(gobject.GObject):
             del capabilities["challenge_response"]
             if not self._verify_password(proto, client_hash):
                 return
+            cipher = capabilities.get("cipher")
+            cipher_iv = capabilities.get("cipher.iv")
+            key_salt = capabilities.get("cipher.key_salt")
+            iterations = capabilities.get("cipher.key_stretch_iterations")
+            if cipher and cipher_iv:
+                if cipher not in ENCRYPTION_CIPHERS:
+                    log.warn("unsupported cipher: %s", cipher)
+                    return
+                proto.set_cipher_out(cipher, cipher_iv, self.password, key_salt, iterations)
 
         if screenshot_req:
             #this is a screenshot request, handle it and disconnect
@@ -978,7 +988,6 @@ class XpraServer(gobject.GObject):
         #old clients used a network unsafe binary format..
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
-        ss.ping()
         self.send_windows_and_cursors(ss)
 
     def send_windows_and_cursors(self, ss):
@@ -1034,6 +1043,23 @@ class XpraServer(gobject.GObject):
         capabilities["change-quality"] = True
         capabilities["client_window_properties"] = True
         capabilities["auto_refresh_delay"] = client_capabilities.get("auto_refresh_delay", 0)/1000
+
+        #enable cipher if client requested it and has authenticated:
+        cipher = client_capabilities.get("cipher")
+        cipher_iv = client_capabilities.get("cipher.iv")
+        if self.password_file and cipher and cipher_iv:
+            #use the same cipher as used by the client:
+            assert self.password
+            assert cipher in ENCRYPTION_CIPHERS
+            capabilities["cipher"] = cipher
+            iv = uuid.uuid4().hex[:16]
+            capabilities["cipher.iv"] = iv
+            key_salt = uuid.uuid4().hex
+            capabilities["cipher.key_salt"] = key_salt
+            iterations = 1000
+            capabilities["cipher.key_stretch_iterations"] = iterations
+            server_source.protocol.set_cipher_in(cipher, iv, self.password, key_salt, iterations)
+            log.info("using %s encryption", cipher)
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         server_source.hello(capabilities)

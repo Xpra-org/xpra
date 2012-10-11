@@ -6,6 +6,7 @@
 
 import os
 import sys
+import uuid
 import hashlib
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
@@ -15,7 +16,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol, has_rencode
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
 
@@ -30,6 +31,7 @@ EXIT_TIMEOUT = 2
 EXIT_PASSWORD_REQUIRED = 3
 EXIT_PASSWORD_FILE_ERROR = 4
 EXIT_INCOMPATIBLE_VERSION = 5
+EXIT_ENCRYPTION = 6
 
 class ClientSource(object):
     def __init__(self, protocol):
@@ -89,8 +91,10 @@ class XpraClientBase(gobject.GObject):
         self.exit_code = None
         self.compression_level = opts.compression_level
         self.password = None
+        self.password_hash = None
         self.password_file = opts.password_file
         self.encoding = opts.encoding
+        self.encryption = opts.encryption
         self.quality = opts.quality
         self._protocol = None
         self.server_capabilities = {}
@@ -106,11 +110,12 @@ class XpraClientBase(gobject.GObject):
         self._protocol.start()
 
     def init_packet_handlers(self):
-        self._packet_handlers = {}
+        self._packet_handlers = {
+            "hello": self._process_hello,
+            }
         self._ui_packet_handlers = {
             "challenge": self._process_challenge,
             "disconnect": self._process_disconnect,
-            "hello": self._process_hello,
             "set_deflate": self._process_set_deflate,
             Protocol.CONNECTION_LOST: self._process_connection_lost,
             Protocol.GIBBERISH: self._process_gibberish,
@@ -125,7 +130,18 @@ class XpraClientBase(gobject.GObject):
         capabilities = {}
         add_version_info(capabilities)
         if challenge_response:
+            assert self.password
             capabilities["challenge_response"] = challenge_response
+            if self.encryption:
+                assert self.encryption in ENCRYPTION_CIPHERS
+                capabilities["cipher"] = self.encryption
+                iv = uuid.uuid4().hex[:16]
+                capabilities["cipher.iv"] = iv
+                key_salt = uuid.uuid4().hex
+                capabilities["cipher.key_salt"] = key_salt
+                iterations = 1000
+                capabilities["cipher.key_stretch_iterations"] = iterations
+                self._protocol.set_cipher_in(self.encryption, iv, self.password, key_salt, iterations)
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = ENCODINGS
@@ -203,6 +219,7 @@ class XpraClientBase(gobject.GObject):
             import hmac
             challenge_response = hmac.HMAC(self.password, salt)
             self.send_hello(challenge_response.hexdigest())
+            self.password_hash = challenge_response.hexdigest()
 
     def load_password(self):
         try:
@@ -232,6 +249,19 @@ class XpraClientBase(gobject.GObject):
             return False
         if capabilities.get("rencode") and has_rencode:
             self._protocol.enable_rencode()
+        cipher = capabilities.get("cipher")
+        cipher_iv = capabilities.get("cipher.iv")
+        key_salt = capabilities.get("cipher.key_salt")
+        iterations = capabilities.get("cipher.key_stretch_iterations")
+        if self.encryption:
+            if not cipher or not cipher_iv or not self.password_hash:
+                self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
+                return False
+            if cipher not in ENCRYPTION_CIPHERS:
+                self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
+                return False
+            self._protocol.set_cipher_out(cipher, cipher_iv, self.password, key_salt, iterations)
+            log.info("using %s encryption", cipher)
         self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
         return True
 
