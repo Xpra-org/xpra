@@ -51,6 +51,7 @@ else:
         "Test non implemented under {0}".format(sys.platform))
 
 # Load library
+_LIBRARY = None
 for name in _LIBRARY_NAMES:
     try:
         _LIBRARY = loader.LoadLibrary(name)
