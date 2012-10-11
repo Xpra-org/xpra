@@ -374,6 +374,7 @@ class Protocol(object):
             self.close()
 
     def _call_connection_lost(self, message="", exc_info=False):
+        log.info("will call connection lost: %s", message)
         gobject.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
@@ -490,6 +491,7 @@ class Protocol(object):
                     packet_index = 0
                     if len(raw_packets)>=4:
                         return self._call_connection_lost("too many raw packets: %s" % len(raw_packets))
+                    continue
                 #final packet (packet_index==0), decode it:
                 try:
                     if protocol_flags & Protocol.FLAGS_RENCODE:
