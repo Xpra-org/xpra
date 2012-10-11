@@ -459,6 +459,7 @@ class ServerSource(object):
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
+        self.client_platform = capabilities.get("platform", "")
         self.client_version = capabilities.get("version", None)
         #general features:
         self.send_windows = capabilities.get("windows", True)
@@ -500,7 +501,7 @@ class ServerSource(object):
             if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
                 self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
-        log.info("%s client version %s with uuid %s", self.client_type, self.client_version, self.uuid)
+        log.info("%s %s client version %s with uuid %s", self.client_type, self.client_platform, self.client_version, self.uuid)
         if self.send_windows:
             if self.mmap_size>0:
                 log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), mmap_file)
