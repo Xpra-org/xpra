@@ -140,6 +140,8 @@ VNC_JPEG_OPTIONS = [-1, 4]
 
 
 XPRA_BIN = "/usr/bin/xpra"
+XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
+XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
 XPRA_SERVER_STOP_COMMANDS = [
                              [XPRA_BIN, "stop", ":%s" % DISPLAY_NO],
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
@@ -152,9 +154,10 @@ XPRA_QUALITY_OPTIONS = [10, 40, 80, 90]
 XPRA_COMPRESSION_OPTIONS = [0, 3, 9]
 XPRA_COMPRESSION_OPTIONS = [0, 3]
 XPRA_COMPRESSION_OPTIONS = [None]
-XPRA_CONNECT_OPTIONS = ["ssh", "tcp", "unix"]
-XPRA_VERSION = getoutput([XPRA_BIN, "--version"]).replace("\n", "").replace("\r", "").split()[1].replace("v0.", "0.")
-XPRA_VERSION_NO = [int(x) for x in XPRA_VERSION.split(".")]
+XPRA_CONNECT_OPTIONS = [("ssh", None), ("tcp", None), ("unix", None)]
+XPRA_CONNECT_OPTIONS = [("tcp", None)]
+if XPRA_VERSION_NO>=[0, 7]:
+    XPRA_CONNECT_OPTIONS.append(("tcp", "AES"))
 print ("XPRA_VERSION_NO=%s" % XPRA_VERSION_NO)
 XPRA_TEST_ENCODINGS = ["png", "x264", "mmap"]
 XPRA_TEST_ENCODINGS = ["png", "jpeg", "x264", "vpx", "mmap"]
@@ -410,7 +413,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
     errors = 0
     results = []
     count = 0
-    for name, tech_name, server_version, client_version, encoding, compression, ssh, (down,up,latency), test_command, client_cmd in tests:
+    for name, tech_name, server_version, client_version, encoding, compression, encryption, ssh, (down,up,latency), test_command, client_cmd in tests:
         try:
             print("**************************************************************")
             count += 1
@@ -445,7 +448,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     result += [encoding, get_command_name(test_command)]
                     result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO, WINDOW_MANAGER]
                     result += ["%sx%s" % gdk.get_default_root_window().get_size()]
-                    result += [compression, ssh, down, up, latency]
+                    result += [compression, encryption, ssh, down, up, latency]
                     result += measure_client(server_pid, name, client_cmd, get_stats_cb)
                     results.append(result)
                 except Exception, e:
@@ -597,7 +600,7 @@ def test_xpra():
     print("                Xpra tests")
     print("")
     tests = []
-    for connect_option in XPRA_CONNECT_OPTIONS:
+    for connect_option, encryption in XPRA_CONNECT_OPTIONS:
         shaping_options = TRICKLE_SHAPING_OPTIONS
         if connect_option=="unix":
             shaping_options = [NO_SHAPING]
@@ -626,6 +629,8 @@ def test_xpra():
                                 cmd.append("--no-bell")
                                 cmd.append("--no-cursors")
                                 cmd.append("--no-notifications")
+                            if XPRA_VERSION_NO>=[0, 8] and encryption:
+                                cmd.append("--encryption=%s" % encryption)
                             if encoding in ("jpeg", "webp"):
                                 if XPRA_VERSION_NO>=[0, 7]:
                                     cmd.append("--quality=%s" % quality)
@@ -638,8 +643,8 @@ def test_xpra():
                                 cmd.append("--no-mmap")
                                 cmd.append("--encoding=%s" % encoding)
                             command_name = get_command_name(x11_test_command)
-                            test_name = "%s (%s - %s - %s - via %s)" % (name, command_name, compression, trickle_str(down, up, latency), connect_option)
-                            tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, connect_option, (down,up,latency), x11_test_command, cmd))
+                            test_name = "%s (%s - %s - %s - %s - via %s)" % (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
+                            tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, encryption, connect_option, (down,up,latency), x11_test_command, cmd))
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
@@ -775,7 +780,7 @@ def test_vnc():
                                 zlibtxt = "zlib=%s" % zlib
                             command_name = get_command_name(x11_test_command)
                             test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
-                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, encoding, compression, False, (down,up,latency), x11_test_command, cmd))
+                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, encoding, compression, None, False, (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 
 
@@ -796,7 +801,7 @@ def main():
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
                "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
                "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
-               "compression", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
+               "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
     headers += get_stats_headers()
     headers += ["client user cpu_pct", "client system cpu pct", "client number of threads", "client vsize (MB)", "client rss (MB)",
