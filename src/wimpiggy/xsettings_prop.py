@@ -39,9 +39,9 @@ def get_settings(disp, d):
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
-    debug("parse_xsettings(%s)", list(d))    
+    debug("get_settings(%s)", list(d))    
     byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
-    debug("parse_xsettings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
+    debug("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
     settings = []
     pos = 12
     while n_settings>len(settings) and len(d)>0:
@@ -55,7 +55,7 @@ def get_settings(disp, d):
         #serial:
         last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
         pos += 4
-        debug("parse_xsettings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
+        debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
         #extract value:
         if setting_type==0:     #XSettingsTypeInteger
             value = struct.unpack("=I", d[pos:pos+4])[0]
@@ -72,9 +72,9 @@ def get_settings(disp, d):
             log.error("invalid setting type: %s, cannot continue parsing XSETTINGS!", setting_type)
             break
         setting = setting_type, prop_name, value, last_change_serial
-        debug("parse_xsettings(..) %s -> %s", list(d[istart:pos]), setting)
+        debug("get_settings(..) %s -> %s", list(d[istart:pos]), setting)
         settings.append(setting)
-    debug("parse_xsettings(..) settings=%s", settings)
+    debug("get_settings(..) settings=%s", settings)
     return  serial, settings
 
 def set_settings(disp, d):
