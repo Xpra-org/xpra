@@ -404,7 +404,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
     #add all the other preserved ones that have not been mapped to any client keycode:
     for server_keycode, entries in preserve_keycode_entries.items():
         if server_keycode not in server_keycodes:
-            do_assign(0, server_keycode, entries)
+            do_assign(-1, server_keycode, entries)
 
     #find all keysyms assigned so far:
     all_keysyms = set()
@@ -418,7 +418,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         if keysym not in all_keysyms:
             debug("found missing keysym %s for modifier %s, will add it", keysym, modifier)
             new_keycode = set([(keysym, 0)])
-            server_keycode = assign(0, new_keycode)
+            server_keycode = assign(-1, new_keycode)
             debug("assigned keycode %s for key '%s' of modifier '%s'", server_keycode, keysym, modifier)
 
     debug("translated keycodes=%s", keycode_trans)
