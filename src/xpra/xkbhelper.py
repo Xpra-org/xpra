@@ -458,13 +458,9 @@ def keymap_to_xmodmap(trans_keycodes):
                     log.warn("we already have a keysym for %s at index %s: %s, entries=%s", server_keycode, index, keysyms[index], entries)
                 else:
                     keysyms[index] = keysym
-        #remove "duplicates":
-        while len(keysyms)>=4 and keysyms[0]==keysyms[2] and keysyms[1]==keysyms[3]:
-            keysyms = keysyms[2:]
+        #remove empty keysyms:
         while len(keysyms)>0 and keysyms[0] is None:
             keysyms = keysyms[1:]
-        if len(set(keysyms))==1:
-            keysyms = [keysyms[0]]
         debug("%s: %s -> %s", server_keycode, names, keysyms)
         instructions.append(("keycode", server_keycode, keysyms))
 
