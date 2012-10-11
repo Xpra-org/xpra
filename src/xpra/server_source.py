@@ -554,7 +554,10 @@ class ServerSource(object):
         if not self.keyboard_config.enabled:
             log.info("ignoring keycode since keyboard is turned off")
             return -1
-        return self.keyboard_config.keycode_translation.get((client_keycode, keyname), client_keycode)
+        server_keycode = self.keyboard_config.keycode_translation.get((client_keycode, keyname))
+        if not server_keycode:
+            server_keycode = self.keyboard_config.keycode_translation.get(keyname, client_keycode)
+        return server_keycode
 
 
 #
