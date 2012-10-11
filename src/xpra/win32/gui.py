@@ -89,8 +89,8 @@ class ClientExtras(ClientExtrasBase):
         if pressed:
             if "mod5" not in modifiers:
                 modifiers.append("mod5")
-            else:
-                clear.append("mod5")
+        else:
+            clear.append("mod5")
         for x in clear:
             if x in modifiers:
                 modifiers.remove(x)
