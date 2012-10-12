@@ -351,6 +351,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
             if not is_mapped(self.client_window):
                 raise Unmanageable("window already unmapped")
 
+            self._managed = True
             self._read_initial_properties()
         try:
             trap.call(setup)
