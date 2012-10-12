@@ -64,7 +64,7 @@ mkdir ${HELPERS_DIR}
 cp ./Python "${HELPERS_DIR}/"
 cp ./xpra "${HELPERS_DIR}/"
 # copy "python" as "xpra" and "Xpra_Launcher" so we can have a process that is not called "python"...
-cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/xpra"
+cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra"
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra_Launcher"
 #we dont need the wrapper installed by distutils:
 rm "${MACOS_DIR}/Xpra_Launcher-bin"

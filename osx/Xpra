@@ -31,7 +31,7 @@ export PANGO_RC_FILE="$bundle_etc/pango/pangorc"
 #Set $PYTHON to point inside the bundle
 #This is not the real "python" but a copy of it named "xpra"
 #This is hacked together in make-app.sh
-export PYTHON="$bundle_bin/xpra"
+export PYTHON="$bundle_bin/Xpra"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"

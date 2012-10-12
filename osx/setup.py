@@ -30,7 +30,7 @@ setup_options["packages"] = packages
 
 
 Plist = dict(CFBundleDocumentTypes=[
-                dict(CFBundleTypeExtensions=["xpra"],
+                dict(CFBundleTypeExtensions=["Xpra"],
                      CFBundleTypeName="Xpra Session Config File",
                      CFBundleName="Xpra",
                      CFBundleTypeRole="Viewer"),
