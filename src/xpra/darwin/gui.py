@@ -35,7 +35,7 @@ class ClientExtras(ClientExtrasBase):
                 #session_name will get set during handshake
                 self.client.connect("handshake-complete", set_session_name)
         except Exception, e:
-            log.error("failed to load Growl: %s, notifications will not be shown", e)
+            log("failed to load Growl: %s, notifications will not be shown", e)
 
     def locate_icon_filename(self, opts_tray_icon):
         # ensure icon_filename points to a valid file (or None)
@@ -47,7 +47,7 @@ class ClientExtras(ClientExtrasBase):
             x = os.path.join(self.get_data_dir(), "icons", "xpra.png")
             if os.path.exists(x):
                 self.icon_filename = x
-        log.debug("darwin client extras using icon_filename=%s", self.icon_filename)
+        log("darwin client extras using icon_filename=%s", self.icon_filename)
 
     def updated_menus(self):
         self.macapp.sync_menubar()
