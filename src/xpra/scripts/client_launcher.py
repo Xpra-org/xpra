@@ -66,7 +66,7 @@ def get_icon_from_file(filename):
 	pixbuf = loader.get_pixbuf()
 	return pixbuf
 
-def get_icon(name):
+def get_icon_filename(name):
 	global ICONS_DIR
 	if not ICONS_DIR:
 		print("ICONS_DIR not defined!")
@@ -77,6 +77,12 @@ def get_icon(name):
 		return	None
 	if not os.path.isfile(filename):
 		print("%s is not a file!" % filename)
+		return	None
+	return filename
+
+def get_icon(name):
+	filename = get_icon_filename(name)
+	if not filename:
 		return	None
 	return get_icon_from_file(filename)
 
@@ -188,13 +194,13 @@ elif sys.platform.startswith("darwin"):
 			quit_item = gtk.MenuItem("Quit")
 			quit_item.connect("activate", quit_launcher)
 			menu.add(quit_item)
-	
+
 			# Add to the application menu:
 			item = gtk.MenuItem("About")
 			item.show()
 			item.connect("activate", about)
 			item.show()
-			
+
 			#now set the dock/main menu
 			menu.show_all()
 			quit_item.hide()
@@ -454,6 +460,7 @@ class ApplicationWindow:
 		self.password_entry.set_width_chars(30)
 		self.password_entry.set_text("")
 		self.password_entry.set_visibility(False)
+		self.password_entry.connect("changed", self.password_ok)
 		hbox.pack_start(gtk.Label("Password: "))
 		hbox.pack_start(self.password_entry)
 		vbox.pack_start(hbox)
@@ -639,7 +646,10 @@ class ApplicationWindow:
 			warn_and_quit_save = app.warn_and_quit
 			def warn_and_quit_override(exit_code, warning):
 				app.cleanup()
-				err = exit_code!=0 or warning.find("invalid password")>=0
+				password_warning = warning.find("invalid password")>=0
+				if password_warning:
+					self.password_warning()
+				err = exit_code!=0 or password_warning
 				self.set_info_color(err)
 				self.set_info_text(warning)
 				self.window.show()
@@ -652,9 +662,16 @@ class ApplicationWindow:
 					app.warn_and_quit = warn_and_quit_save
 					gtk.main_quit()
 			app.warn_and_quit = warn_and_quit_override
-			app.run()
-			app.cleanup()
 		gobject.idle_add(start_XpraClient)
+
+	def password_ok(self, *args):
+		color_obj = gtk.gdk.color_parse("black")
+		self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
+
+	def password_warning(self, *args):
+		color_obj = gtk.gdk.color_parse("red")
+		self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
+		self.password_entry.grab_focus()
 
 	def launch_xpra(self):
 		thread.start_new_thread(self.do_launch_xpra, ())
@@ -683,6 +700,9 @@ class ApplicationWindow:
 					out = "..."+out[len(out)-255:]
 				if len(err)>255:
 					err = "..."+err[len(err)-255:]
+				password_warning = out.find("invalid password")>=0 or err.find("invalid password")
+				if password_warning:
+					self.password_warning()
 				info = "command terminated with exitcode %s" % ret
 				if out:
 					info += ",\noutput:\n%s" % out
@@ -786,11 +806,14 @@ def update_options_from_file(filename):
 
 
 def main():
-	try:
-		import glib
-		glib.set_application_name(APPLICATION_NAME)
-	except:
-		pass
+	if sys.platform.startswith("win32"):
+		#win32 will launch a new xpra process with its own name
+		#so setting the default application name here is ok
+		try:
+			import glib
+			glib.set_application_name(APPLICATION_NAME)
+		except:
+			pass
 	if len(sys.argv) == 2:
 		update_options_from_file(sys.argv[1])
 	app = ApplicationWindow()
