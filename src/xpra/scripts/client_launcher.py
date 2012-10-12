@@ -357,6 +357,7 @@ class ApplicationWindow:
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
 		self.window.set_title(APPLICATION_NAME)
+		self.window.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color("white"))
 		icon_pixbuf = get_icon("xpra.png")
 		if icon_pixbuf:
 			self.window.set_icon(icon_pixbuf)
@@ -368,9 +369,14 @@ class ApplicationWindow:
 		# Title
 		hbox = gtk.HBox(False, 0)
 		if icon_pixbuf:
+			logo_button = gtk.Button("")
+			logo_button.connect("clicked", about)
+			if hasattr(logo_button, "set_tooltip_text"):
+				logo_button.set_tooltip_text("About")
 			image = gtk.Image()
 			image.set_from_pixbuf(icon_pixbuf)
-			hbox.pack_start(image)
+			logo_button.set_image(image)
+			hbox.pack_start(logo_button, expand=False, fill=False)
 		label = gtk.Label("Connect to xpra server")
 		label.modify_font(pango.FontDescription("sans 13"))
 		hbox.pack_start(label)
@@ -382,15 +388,16 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Mode: "))
 		self.mode_combo = gtk.combo_box_new_text()
 		self.mode_combo.get_model().clear()
-		self.mode_combo.append_text("tcp")
+		self.mode_combo.append_text("TCP")
+		self.mode_combo.append_text("TCP + AES")
 		if not sys.platform.startswith("win"):
 			#when we fix the build on win32 to include putty
 			#this can be enabled again:
-			self.mode_combo.append_text("ssh")
+			self.mode_combo.append_text("SSH")
 		if xpra_opts.mode == "tcp" or sys.platform.startswith("win"):
 			self.mode_combo.set_active(0)
 		else:
-			self.mode_combo.set_active(1)
+			self.mode_combo.set_active(2)
 		def mode_changed(*args):
 			if self.mode_combo.get_active_text()=="ssh":
 				self.port_entry.set_text("22")
@@ -463,15 +470,6 @@ class ApplicationWindow:
 		# Buttons:
 		hbox = gtk.HBox(False, 20)
 		vbox.pack_start(hbox)
-		# About button
-		about_button = gtk.Button("")
-		about_button.connect("clicked", about)
-		about_icon = get_icon("information.png")
-		if about_icon:
-			about_button.set_image(scaled_image(about_icon, 24))
-		else:
-			about_button.set_label("About")
-		hbox.pack_start(about_button, expand=False, fill=False)
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked)
@@ -739,7 +737,13 @@ class ApplicationWindow:
 		xpra_opts.port = self.port_entry.get_text()
 		xpra_opts.encoding = self.encoding_combo.get_active_text()
 		xpra_opts.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
-		xpra_opts.mode = self.mode_combo.get_active_text()
+		mode_enc = self.mode_combo.get_active_text()
+		if mode_enc.startswith("TCP"):
+			xpra_opts.mode = "tcp"
+			if mode_enc.find("AES")>0:
+				xpra_opts.encryption = "AES"
+		else:
+			xpra_opts.mode = "ssh"
 		xpra_opts.password = self.password_entry.get_text()
 
 	def destroy(self, *args):
