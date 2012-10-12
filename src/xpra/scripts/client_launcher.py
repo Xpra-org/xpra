@@ -183,33 +183,15 @@ elif sys.platform.startswith("darwin"):
 		def prepare_window_osx(window):
 			def quit_launcher(*args):
 				gtk.main_quit()
-			osxapp = gtk_osxapplication.OSXApplication()
-			icon = get_icon("xpra.png")
-			if icon:
-				osxapp.set_dock_icon_pixbuf(icon)
-			#menu:
-			menu = gtk.MenuBar()
+			from xpra.darwin.gui import get_OSXApplication, setup_menubar, osx_ready
+			setup_menubar(quit_launcher)
 
-			# Quit (will be hidden - see below)
-			quit_item = gtk.MenuItem("Quit")
-			quit_item.connect("activate", quit_launcher)
-			menu.add(quit_item)
-
-			# Add to the application menu:
-			item = gtk.MenuItem("About")
-			item.show()
-			item.connect("activate", about)
-			item.show()
-
-			#now set the dock/main menu
-			menu.show_all()
-			quit_item.hide()
-			menu.hide()
-			# We need to add it to a widget (otherwise it just does not work)
-			window.vbox.add(menu)
-			osxapp.set_menu_bar(menu)
-			osxapp.insert_app_menu_item(item, 0)
-			osxapp.ready()
+			osxapp = get_OSXApplication()
+			icon_filename = get_icon_filename("xpra.png")
+			if icon_filename:
+				pixbuf = gtk.gdk.pixbuf_new_from_file(icon_filename)
+				osxapp.set_dock_icon_pixbuf(pixbuf)
+			osx_ready()
 		prepare_window = prepare_window_osx
 	except Exception, e:
 		print("error setting up menu: %s" % e)
@@ -728,7 +710,6 @@ class ApplicationWindow:
 
 
 	def start_xpra_process(self):
-		#ret = os.system(" ".join(args))
 		cmd = "xpra"
 		if sys.platform.startswith("win"):
 			if hasattr(sys, "frozen"):

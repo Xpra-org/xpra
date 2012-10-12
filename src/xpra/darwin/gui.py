@@ -11,6 +11,41 @@ from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
+macapp = None
+def get_OSXApplication():
+    global macapp
+    if macapp is None:
+        try:
+            import gtk_osxapplication        #@UnresolvedImport
+            macapp = gtk_osxapplication.OSXApplication()
+        except:
+            pass
+    return macapp
+
+is_osx_ready = False
+def osx_ready():
+    global is_osx_ready
+    if not is_osx_ready:
+        get_OSXApplication().ready()
+        is_osx_ready = True
+
+#we have to do this stuff here so we can
+#re-use the same instance
+macmenubar = None
+hidden_window = None
+quit_menu_item = None
+def setup_menubar(quit_cb):
+    global macmenubar, hidden_window, quit_menu_item
+    log("setup_menubar(%s)", quit_cb)
+    if macmenubar:
+        return macmenubar
+    macapp = get_OSXApplication()
+    assert macapp
+    macmenubar = gtk.MenuBar()
+    macmenubar.show_all()
+    macapp.set_menu_bar(macmenubar)
+    return macmenubar
+
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
@@ -49,48 +84,57 @@ class ClientExtras(ClientExtrasBase):
                 self.icon_filename = x
         log("darwin client extras using icon_filename=%s", self.icon_filename)
 
-    def updated_menus(self):
+    def cleanup(self):
+        ClientExtrasBase.cleanup(self)
+        self.remove_all_menus()
+
+    def remove_all_menus(self):
+        for x in self.menu_bar.get_children():
+            self.menu_bar.remove(x)
+            x.hide()
+        self.info_menu        = None
+        self.features_menu    = None
+        self.encodings_menu   = None
+        self.quality_menu     = None
+        self.actions_menu     = None
         self.macapp.sync_menubar()
 
     def setup_macdock(self):
         log.debug("setup_macdock()")
-        self.macapp = None
+        self.macapp = get_OSXApplication()
         try:
-            import gtk_osxapplication		#@UnresolvedImport
-            self.macapp = gtk_osxapplication.OSXApplication()
-            if self.icon_filename:
-                log.debug("setup_macdock() loading icon from %s", self.icon_filename)
-                pixbuf = gtk.gdk.pixbuf_new_from_file(self.icon_filename)
-                self.macapp.set_dock_icon_pixbuf(pixbuf)
             #setup the menu:
-            self.menu_bar = gtk.MenuBar()
-            # We need to add it to a widget (otherwise it just does not work)
-            self.hidden_window = gtk.Window()
-            self.hidden_window.add(self.menu_bar)
-            self.quit_menu_item = gtk.MenuItem("Quit")
-            self.quit_menu_item.connect("activate", self.quit)
-            self.menu_bar.add(self.quit_menu_item)
-            self.menu_bar.show_all()
-            self.macapp.set_menu_bar(self.menu_bar)
-            self.quit_menu_item.hide()
+            self.menu_bar = setup_menubar(self.quit)
+            #remove all existing sub-menus:
+            self.remove_all_menus()
 
-            self._menu_item_pos = 0
-            def add_item(item):
-                self.macapp.insert_app_menu_item(item, self._menu_item_pos)
-                self._menu_item_pos += 1
-            add_item(self.make_aboutmenuitem())
-            add_item(self.make_sessioninfomenuitem())
-            add_item(self.make_bellmenuitem())
-            add_item(self.make_cursorsmenuitem())
-            add_item(self.make_notificationsmenuitem())
-            add_item(self.make_encodingsmenuitem())
+            def make_menu(name, submenu):
+                item = gtk.MenuItem(name)
+                item.set_submenu(submenu)
+                item.show_all()
+                self.menu_bar.add(item)
+                return submenu
+            self.info_menu        = make_menu("Info", gtk.Menu())
+            self.features_menu    = make_menu("Features", gtk.Menu())
+            self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu())
+            self.quality_menu     = make_menu("Quality", self.make_qualitysubmenu())
+            self.actions_menu     = make_menu("Actions", gtk.Menu())
+
+            #info
+            self.info_menu.add(self.make_aboutmenuitem())
+            self.info_menu.add(self.make_sessioninfomenuitem())
+            #features
+            self.features_menu.add(self.make_bellmenuitem())
+            self.features_menu.add(self.make_cursorsmenuitem())
+            self.features_menu.add(self.make_notificationsmenuitem())
             if not self.client.readonly:
-                add_item(self.make_layoutsmenuitem())
-            add_item(self.make_qualitysubmenu())
-            #add_item(self.make_compressionmenu())
-            add_item(self.make_refreshmenuitem())
-            add_item(self.make_raisewindowsmenuitem())
-            add_item(gtk.SeparatorMenuItem())
+                self.features_menu.add(self.make_layoutsmenuitem())
+            #actions:
+            self.actions_menu.add(self.make_refreshmenuitem())
+            self.actions_menu.add(self.make_raisewindowsmenuitem())
+
+            self.menu_bar.show_all()
+            self.macapp.sync_menubar()
 
             #dock menu
             self.dock_menu = gtk.Menu()
@@ -99,21 +143,28 @@ class ClientExtras(ClientExtrasBase):
             self.dock_menu.add(self.disconnect_dock_item)
             self.dock_menu.show_all()
             self.macapp.set_dock_menu(self.dock_menu)
+            if self.icon_filename:
+                log("setup_macdock() loading icon from %s", self.icon_filename)
+                pixbuf = gtk.gdk.pixbuf_new_from_file(self.icon_filename)
+                self.macapp.set_dock_icon_pixbuf(pixbuf)
 
             self.macapp.connect("NSApplicationBlockTermination", self.quit)
-            def active(*args):
-                log.debug("active()")
-            def inactive(*args):
-                log.debug("inactive()")
-            self.macapp.connect("NSApplicationDidBecomeActive", active)
-            self.macapp.connect("NSApplicationWillResignActive", inactive)
             def dock_ready(*args):
                 log.debug("dock_ready()")
-                self.macapp.ready()
+                osx_ready()
             self.client.connect("handshake-complete", dock_ready)
         except Exception, e:
-            log.error("failed to create dock: %s", e)
+            log.error("failed to create dock: %s", e, exc_info=True)
 
+    def set_qualitymenu(self, *args):
+        vq = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
+        if not vq:
+            self.quality_menu.hide()
+        else:
+            self.quality_menu.show()
+        self.quality_menu.set_sensitive(vq)
+        for i in self.quality_menu.get_children():
+            i.set_sensitive(vq)
 
     def can_notify(self):
         return  self.growl_notifier is not None

@@ -466,7 +466,10 @@ class ClientExtrasBase(object):
         return  self.menuitem("About Xpra", "information.png", None, self.about)
 
     def make_sessioninfomenuitem(self):
-        return  self.menuitem(self.session_name or "Session Info", "statistics.png", None, self.session_info)
+        title = "Session Info"
+        if self.session_name and self.session_name!="Xpra session":
+            title = self.session_name
+        return  self.menuitem(title, "statistics.png", None, self.session_info)
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
@@ -617,15 +620,20 @@ class ClientExtrasBase(object):
 
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
-        self.encodings_submenu = gtk.Menu()
-        encodings.set_submenu(self.encodings_submenu)
-        self.popup_menu_workaround(self.encodings_submenu)
+        encodings.set_submenu(self.make_encodingssubmenu())
         def set_encodingsmenuitem(*args):
             if self.client.mmap_enabled:
                 #mmap disables encoding and uses raw rgb24
                 encodings.set_label("Encoding")
                 set_tooltip_text(encodings, "memory mapped transfers are in use so picture encoding is disabled")
                 encodings.set_sensitive(False)
+        self.client.connect("handshake-complete", set_encodingsmenuitem)
+        return encodings
+
+    def make_encodingssubmenu(self):
+        self.encodings_submenu = gtk.Menu()
+        self.popup_menu_workaround(self.encodings_submenu)
+        def set_encodingsmenuitem(*args):
             for encoding in ENCODINGS:
                 encoding_item = CheckMenuItem(encoding)
                 def encoding_changed(item):
@@ -635,20 +643,23 @@ class ClientExtrasBase(object):
                         self.client.set_encoding(enc)
                         log.debug("setting encoding to %s", enc)
                         self.set_qualitymenu()
-                        self.updated_menus()
                 encoding_item.set_active(encoding==self.client.encoding)
                 encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
                 encoding_item.set_draw_as_radio(True)
+                encoding_item.set_sensitive(not self.client.mmap_enabled)
                 encoding_item.connect("toggled", encoding_changed)
                 self.encodings_submenu.append(encoding_item)
             self.encodings_submenu.show_all()
         self.client.connect("handshake-complete", set_encodingsmenuitem)
-        return encodings
+        return self.encodings_submenu
+
+    def make_qualitymenuitem(self):
+        self.quality = self.menuitem("Quality", "slider.png", "Change quality setting", None)
+        self.quality.set_submenu(self.make_qualitysubmenu())
+        return self.quality
 
     def make_qualitysubmenu(self):
-        self.quality = self.menuitem("Quality", "slider.png", "Change quality setting", None)
         self.quality_submenu = gtk.Menu()
-        self.quality.set_submenu(self.quality_submenu)
         self.popup_menu_workaround(self.quality_submenu)
         quality_options = [-1, 10, 50, 80, 95]
         if self.client.quality>0 and self.client.quality not in quality_options:
@@ -682,7 +693,7 @@ class ClientExtrasBase(object):
             self.quality_submenu.append(qi)
         self.quality_submenu.show_all()
         self.client.connect("handshake-complete", self.set_qualitymenu)
-        return self.quality
+        return self.quality_submenu
 
     def set_qualitymenu(self, *args):
         if self.quality:
@@ -693,7 +704,6 @@ class ClientExtrasBase(object):
                 self.auto_quality.set_label("Auto")
             else:
                 self.auto_quality.set_label("Default")
-            self.updated_menus()
 
     def make_layoutsmenuitem(self):
         keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)
@@ -783,10 +793,6 @@ class ClientExtrasBase(object):
         return self.compression
 
 
-    def updated_menus(self):
-        """ subclasses may override this method - see darwin """
-        pass
-
     def make_refreshmenuitem(self):
         def force_refresh(*args):
             log.debug("force refresh")
@@ -830,7 +836,7 @@ class ClientExtrasBase(object):
             self.encodings_submenu = None
         lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
         if self.client.windows_enabled and len(lossy_encodings)>0:
-            menu.append(self.make_qualitysubmenu())
+            menu.append(self.make_qualitymenuitem())
         else:
             self.quality = None
             self.quality_submenu = None
