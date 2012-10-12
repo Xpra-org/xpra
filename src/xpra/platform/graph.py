@@ -116,7 +116,10 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show
         for v in line_data:
             x = offset + w*j/(max(1, max_x-1))
             if v is not None:
-                y = height-offset - h*v/max_y
+                if max_y>0:
+                    y = height-offset - h*v/max_y
+                else:
+                    y = 0
                 if last_v is not None:
                     context.line_to(x, y)
                     context.stroke()
