@@ -310,6 +310,8 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         remapped.
         The preserve_keycodes is a dict containing {keycode:[entries]}
         for keys we want to preserve the keycode for.
+        Note: a client_keycode of '0' is valid (osx uses that),
+        but server_keycode generally starts at 8...
     """
     debug("translate_keycodes(%s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier)
     #list of free keycodes we can use:
@@ -329,17 +331,17 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         """
         if server_keycode in server_keycodes:
             debug("assign: keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
-            server_keycode = 0
+            server_keycode = -1
         elif server_keycode>0 and (server_keycode<kcmin or server_keycode>kcmax):
             debug("assign: keycode %s out of range (%s to %s)", server_keycode, kcmin, kcmax)
-            server_keycode = 0
+            server_keycode = -1
         if server_keycode<=0:
             if len(free_keycodes)>0:
                 server_keycode = free_keycodes[0]
                 debug("set_keycodes key %s using free keycode=%s", entries, server_keycode)
             else:
                 log.error("set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, entries)
-                server_keycode = 0
+                server_keycode = -1
         if server_keycode>0:
             verbose("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
             #can't use it any more!
@@ -375,7 +377,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
 
         if len(preserve_keycode_matches)==0:
             debug("no preserve matches for %s", entries)
-            return do_assign(client_keycode, 0, entries)         #nothing to preserve
+            return do_assign(client_keycode, -1, entries)         #nothing to preserve
 
         debug("preserve matches for %s : %s", entries, preserve_keycode_matches)
         #direct superset:
@@ -399,7 +401,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 return do_assign(client_keycode, p_keycode, entries)
 
         debug("no matches for %s", entries)
-        return do_assign(client_keycode, 0, entries)
+        return do_assign(client_keycode, -1, entries)
 
     #now try to assign each keycode:
     for keycode in sorted(keycodes.keys()):
