@@ -41,7 +41,7 @@ class ClientExtras(ClientExtrasBase):
             if not self.setup_dbusnotify() and not self.setup_pynotify():
                 log.error("turning notifications off")
 
-    def exit(self):
+    def cleanup(self):
         ClientExtrasBase.cleanup(self)
         if self.tray_widget:
             self.hide_tray()
