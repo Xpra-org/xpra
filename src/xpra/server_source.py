@@ -489,7 +489,7 @@ class ServerSource(object):
         if q>=0:
             self.default_damage_options["quality"] = q
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
-        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000)
+        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000.0)
         #keyboard:
         self.keyboard_config = KeyboardConfig()
         self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
@@ -623,6 +623,7 @@ class ServerSource(object):
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
         capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
+        capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000.0)
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):

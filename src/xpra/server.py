@@ -14,6 +14,7 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 
+import os.path
 import threading
 import gobject
 import cairo
@@ -259,7 +260,6 @@ class XpraServer(gobject.GObject):
         self._upgrading = False
 
         self.compression_level = opts.compression_level
-        self.password = None
         self.password_file = opts.password_file
 
         self.randr = has_randr()
@@ -798,30 +798,19 @@ class XpraServer(gobject.GObject):
         proto._add_packet_to_queue(["disconnect", reason])
         gobject.timeout_add(1000, force_disconnect)
 
-    def _send_password_challenge(self, proto):
-        proto.salt = "%s" % uuid.uuid4()
+    def _send_password_challenge(self, proto, server_cipher):
+        proto.salt = uuid.uuid4().hex
         log.info("Password required, sending challenge")
-        packet = ("challenge", proto.salt)
+        packet = ("challenge", proto.salt, server_cipher)
         proto._add_packet_to_queue(packet)
 
-    def _verify_password(self, proto, client_hash):
+    def _verify_password(self, proto, client_hash, password):
         salt = proto.salt
         proto.salt = None
         if not salt:
             self.send_disconnect(proto, "illegal challenge response received - salt cleared or unset")
             return
-        try:
-            passwordFile = open(self.password_file, "rU")
-            self.password  = passwordFile.read()
-            passwordFile.close()
-            while self.password.endswith("\n") or self.password.endswith("\r"):
-                self.password = self.password[:-1]
-        except IOError, e:
-            log.error("cannot open password file %s: %s", self.password_file, e)
-            self.send_disconnect(proto, "invalid password file specified on server")
-            return
-        log("password from file %s is %s", self.password_file, self.password)
-        password_hash = hmac.HMAC(self.password, salt)
+        password_hash = hmac.HMAC(password, salt)
         if client_hash != password_hash.hexdigest():
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
@@ -831,6 +820,20 @@ class XpraServer(gobject.GObject):
         log.info("Password matches!")
         sys.stdout.flush()
         return True
+
+    def get_password(self):
+        if not self.password_file or not os.path.exists(self.password_file):
+            return  None
+        try:
+            passwordFile = open(self.password_file, "rU")
+            password  = passwordFile.read()
+            passwordFile.close()
+            while password.endswith("\n") or password.endswith("\r"):
+                password = password[:-1]
+            return password
+        except IOError, e:
+            log.error("cannot open password file %s: %s", self.password_file, e)
+            return  None
 
     def get_info(self, proto):
         info = {}
@@ -900,24 +903,48 @@ class XpraServer(gobject.GObject):
         if not is_compatible_with(remote_version):
             proto.close()
             return
+
+        #client may have requested encryption:
+        cipher = capabilities.get("cipher")
+        cipher_iv = capabilities.get("cipher.iv")
+        key_salt = capabilities.get("cipher.key_salt")
+        iterations = capabilities.get("cipher.key_stretch_iterations")
+        password = None
+        if self.password_file or (cipher and cipher_iv):
+            #we will need the password:
+            password = self.get_password()
+            if not password:
+                self.send_disconnect(proto, "password not found")
+                return
+        server_cipher = None
+        if cipher and cipher_iv:
+            if cipher not in ENCRYPTION_CIPHERS:
+                log.warn("unsupported cipher: %s", cipher)
+                self.send_disconnect(proto, "unsupported cipher")
+                return
+            proto.set_cipher_out(cipher, cipher_iv, password, key_salt, iterations)
+            #use the same cipher as used by the client:
+            iv = uuid.uuid4().hex[:16]
+            key_salt = uuid.uuid4().hex
+            iterations = 1000
+            proto.set_cipher_in(cipher, iv, password, key_salt, iterations)
+            server_cipher = {
+                             "cipher"           : cipher,
+                             "cipher.iv"        : iv,
+                             "cipher.key_salt"  : key_salt,
+                             "cipher.key_stretch_iterations" : iterations
+                             }
+            log("server cipher=%s", server_cipher)
+
         if self.password_file:
             log("password auth required")
+            #send challenge if this is not a response:
             client_hash = capabilities.get("challenge_response")
             if not client_hash or not proto.salt:
-                self._send_password_challenge(proto)
+                self._send_password_challenge(proto, server_cipher)
                 return
-            del capabilities["challenge_response"]
-            if not self._verify_password(proto, client_hash):
+            if not self._verify_password(proto, client_hash, password):
                 return
-            cipher = capabilities.get("cipher")
-            cipher_iv = capabilities.get("cipher.iv")
-            key_salt = capabilities.get("cipher.key_salt")
-            iterations = capabilities.get("cipher.key_stretch_iterations")
-            if cipher and cipher_iv:
-                if cipher not in ENCRYPTION_CIPHERS:
-                    log.warn("unsupported cipher: %s", cipher)
-                    return
-                proto.set_cipher_out(cipher, cipher_iv, self.password, key_salt, iterations)
 
         if screenshot_req:
             #this is a screenshot request, handle it and disconnect
@@ -987,7 +1014,7 @@ class XpraServer(gobject.GObject):
         ss.make_keymask_match(capabilities.get("modifiers", []))
 
         #send_hello will take care of sending the current and max screen resolutions
-        self.send_hello(capabilities, ss, root_w, root_h)
+        self.send_hello(ss, root_w, root_h, key_repeat, server_cipher)
 
         #old clients used a network unsafe binary format..
         set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
@@ -1015,8 +1042,10 @@ class XpraServer(gobject.GObject):
                 ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 
-    def send_hello(self, client_capabilities, server_source, root_w, root_h):
+    def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = {}
+        if server_cipher:
+            capabilities.update(server_cipher)
         capabilities["version"] = xpra.__version__
         capabilities["actual_desktop_size"] = root_w, root_h
         capabilities["root_window_size"] = root_w, root_h
@@ -1026,8 +1055,9 @@ class XpraServer(gobject.GObject):
         capabilities["platform"] = sys.platform
         capabilities["encodings"] = ENCODINGS
         capabilities["resize_screen"] = self.randr
-        if "key_repeat" in client_capabilities:
-            capabilities["key_repeat"] = client_capabilities.get("key_repeat")
+        if key_repeat:
+            capabilities["key_repeat"] = key_repeat
+            capabilities["key_repeat_modifiers"] = True
         if self.session_name:
             capabilities["session_name"] = self.session_name
         capabilities["start_time"] = int(self.start_time)
@@ -1037,8 +1067,6 @@ class XpraServer(gobject.GObject):
         capabilities["clipboard"] = self._clipboard_client == server_source
         capabilities["bell"] = self.bell
         capabilities["cursors"] = self.cursors
-        if "key_repeat" in client_capabilities:
-            capabilities["key_repeat_modifiers"] = True
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
@@ -1046,24 +1074,6 @@ class XpraServer(gobject.GObject):
         capabilities["xsettings-tuple"] = True
         capabilities["change-quality"] = True
         capabilities["client_window_properties"] = True
-        capabilities["auto_refresh_delay"] = client_capabilities.get("auto_refresh_delay", 0)/1000
-
-        #enable cipher if client requested it and has authenticated:
-        cipher = client_capabilities.get("cipher")
-        cipher_iv = client_capabilities.get("cipher.iv")
-        if self.password_file and cipher and cipher_iv:
-            #use the same cipher as used by the client:
-            assert self.password
-            assert cipher in ENCRYPTION_CIPHERS
-            capabilities["cipher"] = cipher
-            iv = uuid.uuid4().hex[:16]
-            capabilities["cipher.iv"] = iv
-            key_salt = uuid.uuid4().hex
-            capabilities["cipher.key_salt"] = key_salt
-            iterations = 1000
-            capabilities["cipher.key_stretch_iterations"] = iterations
-            server_source.protocol.set_cipher_in(cipher, iv, self.password, key_salt, iterations)
-            log.info("using %s encryption", cipher)
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         server_source.hello(capabilities)

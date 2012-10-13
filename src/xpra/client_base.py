@@ -91,7 +91,6 @@ class XpraClientBase(gobject.GObject):
         self.exit_code = None
         self.compression_level = opts.compression_level
         self.password = None
-        self.password_hash = None
         self.password_file = opts.password_file
         self.encoding = opts.encoding
         self.encryption = opts.encryption
@@ -132,16 +131,16 @@ class XpraClientBase(gobject.GObject):
         if challenge_response:
             assert self.password
             capabilities["challenge_response"] = challenge_response
-            if self.encryption:
-                assert self.encryption in ENCRYPTION_CIPHERS
-                capabilities["cipher"] = self.encryption
-                iv = uuid.uuid4().hex[:16]
-                capabilities["cipher.iv"] = iv
-                key_salt = uuid.uuid4().hex
-                capabilities["cipher.key_salt"] = key_salt
-                iterations = 1000
-                capabilities["cipher.key_stretch_iterations"] = iterations
-                self._protocol.set_cipher_in(self.encryption, iv, self.password, key_salt, iterations)
+        if self.encryption:
+            assert self.encryption in ENCRYPTION_CIPHERS
+            capabilities["cipher"] = self.encryption
+            iv = uuid.uuid4().hex[:16]
+            capabilities["cipher.iv"] = iv
+            key_salt = uuid.uuid4().hex
+            capabilities["cipher.key_salt"] = key_salt
+            iterations = 1000
+            capabilities["cipher.key_stretch_iterations"] = iterations
+            self._protocol.set_cipher_in(self.encryption, iv, self.get_password(), key_salt, iterations)
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = ENCODINGS
@@ -207,13 +206,35 @@ class XpraClientBase(gobject.GObject):
             return
         if not self.password:
             self.load_password()
-            log("password read from file %s is %s", self.password_file, self.password)
-        if self.password:
-            salt = packet[1]
-            import hmac
-            challenge_response = hmac.HMAC(self.password, salt)
-            self.send_hello(challenge_response.hexdigest())
-            self.password_hash = challenge_response.hexdigest()
+            assert self.password
+        salt = packet[1]
+        if self.encryption:
+            assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
+            server_cipher = packet[2]
+            self.set_server_encryption(server_cipher)
+        import hmac
+        challenge_response = hmac.HMAC(self.password, salt)
+        password_hash = challenge_response.hexdigest()
+        self.send_hello(password_hash)
+
+    def set_server_encryption(self, props):
+        cipher = props.get("cipher")
+        cipher_iv = props.get("cipher.iv")
+        key_salt = props.get("cipher.key_salt")
+        iterations = props.get("cipher.key_stretch_iterations")
+        if not cipher or not cipher_iv:
+            self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
+            return False
+        if cipher not in ENCRYPTION_CIPHERS:
+            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
+            return False
+        self._protocol.set_cipher_out(cipher, cipher_iv, self.get_password(), key_salt, iterations)
+
+
+    def get_password(self):
+        if self.password is None:
+            self.load_password()
+        return self.password
 
     def load_password(self):
         try:
@@ -224,6 +245,7 @@ class XpraClientBase(gobject.GObject):
                 self.password = self.password[:-1]
         except IOError, e:
             self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
+        log("password read from file %s is %s", self.password_file, self.password)
 
     def _process_hello(self, packet):
         self.server_capabilities = packet[1]
@@ -237,19 +259,9 @@ class XpraClientBase(gobject.GObject):
             return False
         if capabilities.get("rencode") and has_rencode:
             self._protocol.enable_rencode()
-        cipher = capabilities.get("cipher")
-        cipher_iv = capabilities.get("cipher.iv")
-        key_salt = capabilities.get("cipher.key_salt")
-        iterations = capabilities.get("cipher.key_stretch_iterations")
         if self.encryption:
-            if not cipher or not cipher_iv or not self.password_hash:
-                self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
-                return False
-            if cipher not in ENCRYPTION_CIPHERS:
-                self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
-                return False
-            self._protocol.set_cipher_out(cipher, cipher_iv, self.password, key_salt, iterations)
-            log.info("using %s encryption", cipher)
+            #server uses a new cipher after second hello:
+            self.set_server_encryption(capabilities)
         self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
         return True
 
