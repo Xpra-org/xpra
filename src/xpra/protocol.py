@@ -98,8 +98,10 @@ class Protocol(object):
         self._decompressor = zlib.decompressobj()
         self._compression_level = 0
         self.cipher_in = None
+        self.cipher_in_name = None
         self.cipher_in_block_size = 0
         self.cipher_out = None
+        self.cipher_out_name = None
         self.cipher_out_block_size = 0
         def make_daemon_thread(target, name):
             daemon_thread = Thread(target=target, name=name)
@@ -127,9 +129,15 @@ class Protocol(object):
         return AES.new(secret, AES.MODE_CBC, iv), block_size
 
     def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
+        if self.cipher_in_name!=ciphername:
+            log.info("receiving data using %s encryption", ciphername)
+            self.cipher_in_name = ciphername
         self.cipher_in, self.cipher_in_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def set_cipher_out(self, ciphername, iv, password, key_salt, iterations):
+        if self.cipher_out_name!=ciphername:
+            log.info("sending data using %s encryption", ciphername)
+            self.cipher_out_name = ciphername
         self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def __str__(self):
@@ -293,6 +301,7 @@ class Protocol(object):
                     assert len(padded)==actual_size
                     data = self.cipher_out.encrypt(padded)
                     assert len(data)==actual_size
+                    log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
                 if actual_size<16384:
                     #'p' + protocol-flags + compression_level + packet_index + data_size
                     if type(data)==unicode:
@@ -467,6 +476,7 @@ class Protocol(object):
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & Protocol.FLAGS_CIPHER:
+                    log("received %s encrypted bytes with %s padding", payload_size, len(padding))
                     data = self.cipher_in.decrypt(raw_string)
                     if padding:
                         assert data.endswith(padding), "decryption failed: string does not end with '%s': %s (%s) -> %s (%s)" % (padding, list(bytearray(raw_string)), type(raw_string), list(bytearray(data)), type(data))
