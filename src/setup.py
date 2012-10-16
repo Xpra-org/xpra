@@ -245,6 +245,9 @@ def get_xorg_conf_and_script():
         print("found valid recent version of Xorg server: %s" % v_str)
         xorg_stat = os.stat(XORG_BIN)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+            if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                print("Xorg is suid and not readable, Xdummy support unavailable")
+                return Xvfb()
             print("%s is suid, using the xpra_Xdummy wrapper" % XORG_BIN)
             return "etc/xpra/xpra_Xdummy/xpra.conf", True
         else:
