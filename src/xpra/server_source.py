@@ -73,6 +73,7 @@ class KeyboardConfig(object):
         self.modifier_client_keycodes = {}
         self.compute_modifier_map()
         self.make_modifiers_match = True
+        self.is_native_keymap = True
 
     def get_hash(self):
         m = hashlib.md5()
@@ -133,7 +134,8 @@ class KeyboardConfig(object):
                           self.xkbmap_print, self.xkbmap_query)
         except:
             log.error("error setting new keymap", exc_info=True)
-        self.make_modifiers_match = (client_platform and not client_platform.startswith("win")) or (self.xkbmap_print!="" or self.xkbmap_query!="")
+        self.is_native_keymap = self.xkbmap_print!="" or self.xkbmap_query!=""
+        self.make_modifiers_match = (client_platform and not client_platform.startswith("win")) or self.is_native_keymap
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
@@ -559,8 +561,13 @@ class ServerSource(object):
             log.info("ignoring keycode since keyboard is turned off")
             return -1
         server_keycode = self.keyboard_config.keycode_translation.get((client_keycode, keyname))
-        if not server_keycode:
-            server_keycode = self.keyboard_config.keycode_translation.get(keyname, client_keycode)
+        if server_keycode is None:
+            if self.keyboard_config.is_native_keymap:
+                #native: assume no translation for this key
+                server_keycode = client_keycode
+            else:
+                #non-native: try harder to find matching keysym
+                server_keycode = self.keyboard_config.keycode_translation.get(keyname, client_keycode)
         return server_keycode
 
 
