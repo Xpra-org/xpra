@@ -169,6 +169,14 @@ XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
                                  "x264" : XPRA_QUALITY_OPTIONS+[-1],
                                  }
 
+password_filename = "./test-password.txt"
+try:
+    import uuid
+    f = open(password_filename, 'wb')
+    f.write(uuid.uuid4().hex)
+finally:
+    f.close()
+
 
 check = [TRICKLE_BIN]
 if TEST_XPRA:
@@ -591,6 +599,7 @@ def get_xpra_start_server_command():
         cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG))
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
+    cmd.append("--password-file=%s" % password_filename)
     cmd += ["start", ":%s" % DISPLAY_NO]
     return cmd
 
@@ -620,6 +629,7 @@ def test_xpra():
                             else:
                                 cmd.append(":%s" % (DISPLAY_NO))
                             cmd.append("--readonly")
+                            cmd.append("--password-file=%s" % password_filename)
                             if compression is not None:
                                 cmd += ["-z", str(compression)]
                             if XPRA_VERSION_NO>=[0, 3]:
