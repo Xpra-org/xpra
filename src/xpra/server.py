@@ -941,7 +941,7 @@ class XpraServer(gobject.GObject):
             #send challenge if this is not a response:
             client_hash = capabilities.get("challenge_response")
             if not client_hash or not proto.salt:
-                self._send_password_challenge(proto, server_cipher)
+                self._send_password_challenge(proto, server_cipher or "")
                 return
             if not self._verify_password(proto, client_hash, password):
                 return
