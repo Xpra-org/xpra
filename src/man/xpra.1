@@ -31,7 +31,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBattach\fP
-[\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
+[\fI:DISPLAY\fP | \fIssh:USER@HOST:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP | \fItcp:HOST:PORT\fP]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
 [\fB\-\-no\-mmap\fP]
 [\fB\-\-no\-windows\fP]
@@ -64,23 +64,23 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 
 .HP
-\fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBdetach\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBscreenshot\fP \fIfilename\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBversion\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:HOST:DISPLAY\fP |
+\fBxpra\fP \fBinfo\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
@@ -121,10 +121,10 @@ Show a list of xpra servers you have running on the current host.
 Attach to the xpra server that is using local display number \fI:7\fP.
 Any apps running on that server will appear on your screen.
 .TP
-\fBxpra attach\fP \fIssh:frodo:7\fP
+\fBxpra attach\fP \fIssh:foo@frodo:7\fP
 Use ssh to attach to the xpra server that is running on machine
-\fIfrodo\fP and using display \fI:7\fP.  Any apps running on that
-server will appear on your local screen.
+\fIfrodo\fP as user \fIfoo\fP and using display \fI:7\fP.
+Any apps running on that server will appear on your local screen.
 .TP
 \fBxpra start\fP \fI:7\fP \fB&& DISPLAY=\fP\fI:7\fP \fBscreen\fP
 Start an xpra server and a \fBscreen\fP(1) session.  If any of the
@@ -171,7 +171,7 @@ numbers near ten (10, 11, 12, ...).
 When specifying an xpra server to a client program like \fBxpra
 attach\fP or \fBxpra stop\fP, then you can use a display of the form
 \fB:\fP\fINUMBER\fP to refer to a server on the local host, or one of
-the form \fBssh:\fP\fIHOST\fP\fB:\fP\fINUMBER\fP to refer to a server
+the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fINUMBER\fP to refer to a server
 on a remote host; xpra will automatically connect to the remote host
 using \fBssh\fP(1).  Generally, if you have only one xpra server
 running on a machine, then you can omit the number entirely; \fBxpra
