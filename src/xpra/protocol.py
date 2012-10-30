@@ -264,9 +264,9 @@ class Protocol(object):
             traceback.print_exc()
             self.verify_packet(packet)
             raise e
-        if len(main_packet)>=1024 and packet_in[0]!="hello":
-            log.warn("found large packet: %s, argument types:%s, sizes: %s, packet head=%s",
-                     packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
+        if len(main_packet)>=1536 and packet_in[0]!="hello":
+            log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
+                     len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         if level>0:
             data = zlib.compress(main_packet, level)
             packets.append((0, level, data))
