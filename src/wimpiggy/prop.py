@@ -110,7 +110,7 @@ class WMHints(object):
         else:
             self.start_iconic = None
         if flags & const["InputHint"]:
-            self.input = input
+            self.input = _input
         else:
             self.input = None
 
