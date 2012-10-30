@@ -599,7 +599,7 @@ def run_client(parser, opts, extra_args, mode):
         extra_args = extra_args[1:]
 
     if mode in ("info", "attach"):
-        sys.stdout.write("xpra client version %s" % xpra.__version__)
+        sys.stdout.write("xpra client version %s\n" % xpra.__version__)
         sys.stdout.flush()
 
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
