@@ -5,9 +5,6 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#disabled for now as this causes bugs:
-PRESERVE_WORSPACE = False
-
 #pygtk3 vs pygtk2 (sigh)
 from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
@@ -137,7 +134,7 @@ log = Logger()
 
 from xpra.window_backing import new_backing
 try:
-    from wimpiggy.prop import prop_set, prop_get
+    from wimpiggy.prop import prop_get
     has_wimpiggy_prop = True
 except ImportError, e:
     has_wimpiggy_prop = False
@@ -190,88 +187,6 @@ class ClientWindow(gtk.Window):
             if transient_for is not None and transient_for.window is not None and type_hint in OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
-
-    def do_realize(self):
-        if not PRESERVE_WORSPACE:
-            gtk.Window.do_realize(self)
-            return
-        ndesktops = 0
-        try:
-            root = gtk.gdk.screen_get_default().get_root_window()
-            prop = root.property_get("_NET_NUMBER_OF_DESKTOPS")
-            if prop is not None and len(prop)==3 and len(prop[2])==1:
-                ndesktops = prop[2][0]
-        except Exception, e:
-            log.error("failed to get workspace count: %s", e)
-        workspace = self._client_properties.get("workspace", -1)
-        log("do_realize() workspace=%s (ndesktops=%s)", workspace, ndesktops)
-
-        #below we duplicate gtk.window.realize() code
-        #just so we can insert the property code at the right place:
-        #after the gdk.Window is created, but before it gets positionned.
-        allocation = self.get_allocation()
-        if allocation.x==-1 and allocation.y==-1 and allocation.width==1 and allocation.height==1:
-            w, h = self.size_request()
-            if w>0 or h>0:
-                allocation.width = w
-                allocation.height = h
-            self.size_allocate(w, h)
-            self.queue_resize()
-            if self.flags() & gtk.REALIZED:
-                log.error("window is already realized!")
-                return
-
-        self.set_flags(gtk.REALIZED)
-        is_toplevel = self.get_parent() is None
-        if hasattr(self, "is_toplevel"):
-            is_toplevel = self.is_toplevel()
-        if is_toplevel:
-            window_type = gtk.gdk.WINDOW_TOPLEVEL
-        else:
-            window_type = gtk.gdk.WINDOW_TEMP
-        if self.get_has_frame():
-            #TODO: duplicate gtk code here too..
-            pass
-
-        events = self.get_events() | gdk.EXPOSURE_MASK | gdk.STRUCTURE_MASK | \
-                    gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK
-        self.window = gdk.Window(
-            self.get_root_window(),
-            x=allocation.x, y=allocation.y, width=allocation.width, height=allocation.height,
-            wmclass_name=self.wmclass_name, wmclass_class=self.wmclass_class,
-            window_type=window_type,
-            wclass=gdk.INPUT_OUTPUT,
-            title=self.get_title(),
-            event_mask=events,
-            )
-
-        if has_wimpiggy_prop and not self._override_redirect and ndesktops>workspace and workspace>=0:
-            try:
-                prop_set(self.window, "_NET_WM_DESKTOP", "u32", workspace)
-            except Exception, e:
-                log.error("failed to set workspace: %s", e)
-
-        self.window.set_opacity(1.0)
-        #self.window.enable_synchronized_configure().. not used?
-        self.window.set_user_data(self)
-        self.style.attach(self.window)
-        self.style.set_background(self.window, gtk.STATE_NORMAL)
-        #self.paint() does not exist in pygtk..
-        transient_for = self.get_transient_for()
-        if transient_for and transient_for.flags() & gtk.REALIZED:
-            self.window.set_transient_for(transient_for.get_window())
-        if not self.get_decorated():
-            self.window.set_decorations(0)
-        if not self.get_deletable():
-            self.window.set_functions(gtk.gdk.FUNC_ALL | gtk.gdk.FUNC_CLOSE)
-        if self.get_skip_pager_hint():
-            self.window.set_skip_pager_hint(True)
-        if self.get_skip_taskbar_hint():
-            self.window.set_skip_taskbar_hint(True)
-        self.window.set_accept_focus(self.get_accept_focus())
-        self.window.set_focus_on_map(self.get_focus_on_map())
-        self.window.set_modal_hint(self.get_modal())
-        #cannot access startup id...
 
     def get_workspace(self):
         try:
