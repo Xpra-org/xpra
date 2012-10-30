@@ -598,6 +598,10 @@ def run_client(parser, opts, extra_args, mode):
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
+    if mode in ("info", "attach"):
+        sys.stdout.write("xpra client version %s" % xpra.__version__)
+        sys.stdout.flush()
+
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
