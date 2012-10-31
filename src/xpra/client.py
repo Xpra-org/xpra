@@ -65,7 +65,7 @@ from xpra.version_util import add_gtk_version_info
 from xpra.maths import std_unit
 
 from xpra.client_window import ClientWindow
-USE_OPENGL = os.environ.get("XPRA_OPENGL", "1")=="0"
+USE_OPENGL = os.environ.get("XPRA_OPENGL", "0")=="1"
 GLClientWindowClass = None
 #the GL backend only works with gtk2:
 if USE_OPENGL and not is_gtk3():
