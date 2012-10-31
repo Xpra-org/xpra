@@ -43,7 +43,6 @@ class GLPixmapBacking(PixmapBacking):
         display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
         self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
-        self.glarea.set_size_request(w, h)
         self.glarea.show()
         self.textures = None # OpenGL texture IDs
         self.yuv_shader = None
