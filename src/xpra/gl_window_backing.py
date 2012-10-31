@@ -24,7 +24,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, \
-    glActiveTexture, glTexSubImage2D, \
+    glActiveTexture, glTexSubImage2D, glTexCoord2i, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glEnableClientState, glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, \
@@ -94,7 +94,7 @@ class GLPixmapBacking(PixmapBacking):
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
-        log.info("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
         assert "rgb24" in ENCODINGS
 
         drawable = self.glarea.get_gl_drawable()
@@ -109,20 +109,21 @@ class GLPixmapBacking(PixmapBacking):
             glDeleteProgramsARB(1, self.yuv_shader)
             self.yuv_shader = None
         self.pixel_format = GLPixmapBacking.RGB24
-        w, h = self.size
 
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
+        for texture in (GL_TEXTURE1, GL_TEXTURE2):
+            glActiveTexture(texture)
+            glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)        
         glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, img_data)
 
         glBegin(GL_QUADS);
         for rx,ry in ((x, y), (x, y+height), (x+width, y+height), (x+width, y)):
-            glMultiTexCoord2i(GL_TEXTURE0, rx, ry)
+            glTexCoord2i(rx, ry)
             glVertex2i(rx, ry)
         glEnd()
 
