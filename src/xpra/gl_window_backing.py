@@ -44,6 +44,7 @@ class GLPixmapBacking(PixmapBacking):
         self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
         self.glarea.show()
+        self.glarea.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
         self.yuv_shader = None
         self.pixel_format = None
@@ -79,12 +80,10 @@ class GLPixmapBacking(PixmapBacking):
 
         drawable.gl_end()
 
-    def render(self):
-        log("GL render")
-        self.render_image()
-        self.glarea.window.invalidate_rect(self.glarea.allocation, False)
-        # Update window synchronously (fast).
-        self.glarea.window.process_updates(False)
+    def gl_expose_event(self, glarea, event):
+        log("GL expose_event(%s, %s) area=%s", glarea, event, event.area)
+        if self.pixel_format is not None:
+            self.render_image()
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -98,8 +97,8 @@ class GLPixmapBacking(PixmapBacking):
         csc_pixel_format = options.get("csc_pixel_format", -1)
         pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
         def do_paint():
-            self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
-            self.render_image()
+            if self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format):
+                self.render_image()
             self.fire_paint_callbacks(callbacks, True)
         gobject.idle_add(do_paint)
 
@@ -115,6 +114,8 @@ class GLPixmapBacking(PixmapBacking):
     def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
+        if drawable is None or context is None:
+            return  False
         window_width, window_height = self.size
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
@@ -165,6 +166,7 @@ class GLPixmapBacking(PixmapBacking):
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div, height/div, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
 
         drawable.gl_end()
+        return True
 
     def render_image(self):
         if self.pixel_format is None:

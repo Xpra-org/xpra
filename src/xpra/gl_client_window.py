@@ -31,7 +31,6 @@ try:
         if gl_major<=1 and gl_minor<1:
             raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
         log("found valid OpenGL: %s.%s", gl_major, gl_minor)
-
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         if not glInitFragmentProgramARB():
@@ -55,18 +54,9 @@ class GLClientWindow(ClientWindow):
         log("GL do_configure_event(%s)", event)
         self._configured = True
         ClientWindow.do_configure_event(self, event)
-        w, h = self.get_size()
-        self._backing.init(w, h)
-
-    def do_expose_event(self, event):
-        log("GL do_expose_event(%s) area=%s, mapped=%s", event, event.area, self.flags() & gtk.MAPPED)
-        if not (self.flags() & gtk.MAPPED):
-            return
-        self._backing.render()
 
     def new_backing(self, w, h):
         log("GL new_backing(%s, %s)", w, h)
-        #self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
         w = max(1, w)
         h = max(1, h)
         lock = None
