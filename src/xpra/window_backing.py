@@ -107,17 +107,23 @@ class Backing(object):
                 self._video_decoder = factory()
                 self._video_decoder.init_context(width, height, options)
             log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
-            err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
-            if err!=0 or rgb_image is None or rgb_image.get_size()==0:
-                log.error("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
-                          coding, err, len(img_data), width, height, options)
-                self.fire_paint_callbacks(callbacks, False)
-                return  False
+            self.do_video_paint(coding, img_data, x, y, width, height, options, callbacks)
         finally:
             self._video_decoder_lock.release()
-        gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
-        del rgb_image
         return  False
+
+    def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
+        log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
+        err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
+        success = err==0 and rgb_image and rgb_image.get_size()>0
+        if success:
+            #this will also take care of firing callbacks (from UI thread):
+            gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
+        else:
+            log.error("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
+                      coding, err, len(img_data), width, height, options)
+            self.fire_paint_callbacks(callbacks, False)
+        del rgb_image
 
 
 """

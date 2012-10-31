@@ -132,7 +132,6 @@ import sys
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.window_backing import new_backing
 try:
     from wimpiggy.prop import prop_get
     has_wimpiggy_prop = True
@@ -206,6 +205,7 @@ class ClientWindow(gtk.Window):
 
 
     def new_backing(self, w, h):
+        from xpra.window_backing import new_backing
         self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
 
     def update_metadata(self, metadata):
