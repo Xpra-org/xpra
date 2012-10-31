@@ -37,8 +37,6 @@ from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glBindProgramARB, glP
 This is the gtk2 + OpenGL version.
 """
 class GLPixmapBacking(PixmapBacking):
-    MODE_UNINITIALIZED = 0
-    MODE_YUV = 1
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
         PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
@@ -52,8 +50,6 @@ class GLPixmapBacking(PixmapBacking):
         self.pixel_format = None
         self.size = 0, 0
 
-        self.current_mode = GLPixmapBacking.MODE_UNINITIALIZED
-
     def init(self, w, h):
         #also init the pixmap as backup:
         self.size = w, h
@@ -65,7 +61,6 @@ class GLPixmapBacking(PixmapBacking):
 
         # Re-create textures
         self.pixel_format = None
-        self.current_mode = GLPixmapBacking.MODE_UNINITIALIZED
 
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
@@ -173,6 +168,9 @@ class GLPixmapBacking(PixmapBacking):
         drawable.gl_end()
 
     def render_image(self):
+        if self.pixel_format is None:
+            #not ready to render yet
+            return
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
         log("GL render_image() size=%s", self.size)
