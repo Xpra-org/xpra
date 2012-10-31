@@ -106,7 +106,7 @@ class GLPixmapBacking(PixmapBacking):
         #cleanup if we were doing yuv previously:
         if self.pixel_format!=GLPixmapBacking.RGB24:
             glDisable(GL_FRAGMENT_PROGRAM_ARB)
-            glDeleteProgramsARB(3, self.yuv_shader)
+            glDeleteProgramsARB(1, self.yuv_shader)
             self.yuv_shader = None
         self.pixel_format = GLPixmapBacking.RGB24
         w, h = self.size
@@ -119,10 +119,7 @@ class GLPixmapBacking(PixmapBacking):
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)        
         glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-        drawable.gl_end()
 
-        if not drawable.gl_begin(context):
-            raise Exception("** Cannot create OpenGL rendering context!")
         glBegin(GL_QUADS);
         for rx,ry in ((x, y), (x, y+height), (x+width, y+height), (x+width, y)):
             glMultiTexCoord2i(GL_TEXTURE0, rx, ry)
@@ -157,7 +154,7 @@ class GLPixmapBacking(PixmapBacking):
             return 1, 2, 2
         elif pixel_format==YUV422P:
             return 1, 2, 1
-        elif pixel_format==YUV444P or pixel_format==GLPixmapBacking.RGB24:
+        elif pixel_format==YUV444P:
             return 1, 1, 1
         raise Exception("invalid pixel format: %s" % pixel_format)
 
@@ -219,7 +216,7 @@ class GLPixmapBacking(PixmapBacking):
         return True
 
     def render_image(self):
-        if self.pixel_format not in (YUV420P, YUV422P, YUV444P, GLPixmapBacking.RGB24):
+        if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
             return
         drawable = self.glarea.get_gl_drawable()
