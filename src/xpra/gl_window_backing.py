@@ -96,9 +96,9 @@ class GLPixmapBacking(PixmapBacking):
                       coding, err, len(img_data), width, height, options)
             self.fire_paint_callbacks(callbacks, False)
             return
+        csc_pixel_format = options.get("csc_pixel_format", -1)
+        pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
         def do_paint():
-            csc_pixel_format = options.get("csc_pixel_format", -1)
-            pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
             self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
             self.render_image()
             self.fire_paint_callbacks(callbacks, True)
