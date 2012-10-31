@@ -130,11 +130,11 @@ int get_csc_format_for_x264_format(int i_csp)
 int get_pixel_format(int csc)
 {
 	if (csc == PIX_FMT_YUV420P || csc < 0)
-		return 0;
+		return 420;
 	else if (csc == PIX_FMT_YUV422P)
-		return 1;
+		return 422;
 	else if (csc == PIX_FMT_YUV444P)
-		return 2;
+		return 444;
 	else
 		return -1;
 }

@@ -326,11 +326,14 @@ class PixmapBacking(Backing):
         if not pixbuf:
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
             self.fire_paint_callbacks(callbacks, False)
-        else:
-            gc = self._backing.new_gc()
-            self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
-            self.fire_paint_callbacks(callbacks, True)
+            return  False
+        self.do_paint_pixbuf(pixbuf, x, y, width, height, options, callbacks)
         return  False
+
+    def do_paint_pixbuf(self, pixbuf, x, y, width, height, options, callbacks):
+        gc = self._backing.new_gc()
+        self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
+        self.fire_paint_callbacks(callbacks, True)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """

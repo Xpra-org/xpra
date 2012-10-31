@@ -16,9 +16,10 @@ log = Logger()
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P
 from xpra.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking
+from xpra.scripts.main import ENCODINGS
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_COORD_ARRAY, GL_FRAGMENT_PROGRAM_ARB, \
-    GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, \
+    GL_PROGRAM_ERROR_STRING_ARB, GL_RGB, GL_PROGRAM_FORMAT_ASCII_ARB, \
     GL_TEXTURE_RECTANGLE_ARB, GL_UNPACK_ROW_LENGTH, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
@@ -31,12 +32,13 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glVertex2i, glEnd
-from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glBindProgramARB, glProgramStringARB
+from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB
 
 """
 This is the gtk2 + OpenGL version.
 """
 class GLPixmapBacking(PixmapBacking):
+    RGB24 = 1   #make sure this never clashes with codec_constants!
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
         PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
@@ -82,8 +84,56 @@ class GLPixmapBacking(PixmapBacking):
 
     def gl_expose_event(self, glarea, event):
         log("GL expose_event(%s, %s) area=%s", glarea, event, event.area)
-        if self.pixel_format is not None:
+        if self.pixel_format in (YUV420P, YUV422P, YUV444P):
             self.render_image()
+
+    def do_paint_pixbuf(self, pixbuf, x, y, width, height, options, callbacks):
+        img_data = pixbuf.get_pixels()
+        rowstride = pixbuf.get_rowstride()
+        self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+
+    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread """
+        log.info("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+        assert "rgb24" in ENCODINGS
+
+        drawable = self.glarea.get_gl_drawable()
+        context = self.glarea.get_gl_context()
+        if not drawable.gl_begin(context):
+            raise Exception("** Cannot create OpenGL rendering context!")
+        assert self.textures is not None
+
+        #cleanup if we were doing yuv previously:
+        if self.pixel_format!=GLPixmapBacking.RGB24:
+            glDisable(GL_FRAGMENT_PROGRAM_ARB)
+            glDeleteProgramsARB(3, self.yuv_shader)
+            self.yuv_shader = None
+        self.pixel_format = GLPixmapBacking.RGB24
+        w, h = self.size
+
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
+
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)        
+        glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+        drawable.gl_end()
+
+        if not drawable.gl_begin(context):
+            raise Exception("** Cannot create OpenGL rendering context!")
+        glBegin(GL_QUADS);
+        for rx,ry in ((x, y), (x, y+height), (x+width, y+height), (x+width, y)):
+            glMultiTexCoord2i(GL_TEXTURE0, rx, ry)
+            glVertex2i(rx, ry)
+        glEnd()
+
+        drawable.swap_buffers()
+        drawable.gl_end()
+
+        self.fire_paint_callbacks(callbacks, True)
+        return  False
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -107,7 +157,7 @@ class GLPixmapBacking(PixmapBacking):
             return 1, 2, 2
         elif pixel_format==YUV422P:
             return 1, 2, 1
-        elif pixel_format==YUV444P:
+        elif pixel_format==YUV444P or pixel_format==GLPixmapBacking.RGB24:
             return 1, 1, 1
         raise Exception("invalid pixel format: %s" % pixel_format)
 
@@ -169,18 +219,19 @@ class GLPixmapBacking(PixmapBacking):
         return True
 
     def render_image(self):
-        if self.pixel_format is None:
+        if self.pixel_format not in (YUV420P, YUV422P, YUV444P, GLPixmapBacking.RGB24):
             #not ready to render yet
             return
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
-        log("GL render_image() size=%s", self.size)
-        w, h = self.size
         if not drawable.gl_begin(context):
             raise Exception("** Cannot create OpenGL rendering context!")
+        log("GL render_image() size=%s", self.size)
+        divs = self.get_subsampling_divs(self.pixel_format)
+
+        w, h = self.size
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         glBegin(GL_QUADS);
-        divs = self.get_subsampling_divs(self.pixel_format)
         for x,y in ((0, 0), (0, h), (w, h), (w, 0)):
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 div = divs[index]

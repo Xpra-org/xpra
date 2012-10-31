@@ -65,15 +65,16 @@ from xpra.version_util import add_gtk_version_info
 from xpra.maths import std_unit
 
 from xpra.client_window import ClientWindow
-ClientWindowClass = ClientWindow
-#the GL backend only works with gtk2
-USE_OPENGL = False
+USE_OPENGL = os.environ.get("XPRA_OPENGL", "1")=="0"
+GLClientWindowClass = None
+#the GL backend only works with gtk2:
 if USE_OPENGL and not is_gtk3():
     try:
         from xpra.gl_client_window import GLClientWindow
-        ClientWindowClass = GLClientWindow
+        GLClientWindowClass = GLClientWindow
     except ImportError, e:
-        log.info("Disabled OpenGL output: %s" % e)
+        log.warn("Disabled OpenGL output: %s" % e)
+        USE_OPENGL = False
 
 def nn(x):
     if x is None:
@@ -789,6 +790,9 @@ class XpraClient(XpraClientBase):
             auto_refresh_delay = 0                          #server takes care of it
         else:
             auto_refresh_delay = self.auto_refresh_delay    #we do it
+        ClientWindowClass = ClientWindow
+        if not self.mmap_enabled and GLClientWindowClass:
+            ClientWindowClass = GLClientWindowClass
         window = ClientWindowClass(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
