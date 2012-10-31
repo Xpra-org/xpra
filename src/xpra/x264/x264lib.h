@@ -29,6 +29,9 @@ int get_encoder_pixel_format(struct x264lib_ctx *ctx);
 /** Expose current quality setting so we can tell the client how good the frame was */
 int get_encoder_quality(struct x264lib_ctx *ctx);
 
+/** Returns the pixel format using our own generic codec_constants */
+int get_pixel_format(int csc);
+
 /** Create an encoding context for images of a given size.  */
 struct x264lib_ctx *init_encoder(int width, int height, int initial_quality, int supports_csc_option);
 
@@ -80,7 +83,7 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
  @param size: Input size.
- @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder. 
+ @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder.
  @param outsize: Output size.
  @param outstride: Output strides (3 planes).
 */

@@ -32,6 +32,7 @@ cdef extern from "x264lib.h":
     int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override) nogil
     int get_encoder_pixel_format(x264lib_ctx *ctx)
     int get_encoder_quality(x264lib_ctx *ctx)
+    int get_pixel_format(int csc_format)
 
     x264lib_ctx* init_decoder(int width, int height, int csc_fmt)
     void set_decoder_csc_format(x264lib_ctx *context, int csc_fmt)
@@ -131,6 +132,9 @@ cdef class Decoder(xcoder):
         out = [doutvY, doutvU, doutvV]
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
+
+    def get_pixel_format(self, csc_pixel_format):
+        return get_pixel_format(csc_pixel_format)
 
     def decompress_image_to_rgb(self, input, options):
         cdef uint8_t *yuvplanes[3]

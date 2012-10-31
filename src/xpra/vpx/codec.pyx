@@ -5,6 +5,7 @@
 
 import os
 from libc.stdlib cimport free
+from xpra.codec_constants import YUV420P
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -108,6 +109,11 @@ cdef class Decoder(xcoder):
         out = [doutvY, doutvU, doutvV]
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
+
+    def get_pixel_format(self, csc_pixel_format):
+        #we only support 420 at present
+        assert csc_pixel_format==-1
+        return YUV420P
 
     def decompress_image_to_rgb(self, input, options):
         cdef uint8_t *yuvplanes[3]

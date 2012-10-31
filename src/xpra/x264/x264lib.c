@@ -119,11 +119,25 @@ int get_csc_format_for_x264_format(int i_csp)
 		return	PIX_FMT_YUV444P;
 #endif
 	else {
+		fprintf(stderr, "invalid pixel format: %i\n", i_csp);
 		return -1;
-		printf("invalid pixel format: %i", i_csp);
 	}
 }
 #endif
+
+//Given a csc colour sampling constant,
+//return our own generic csc constant (see codec_constants.py)
+int get_pixel_format(int csc)
+{
+	if (csc == PIX_FMT_YUV420P || csc < 0)
+		return 0;
+	else if (csc == PIX_FMT_YUV422P)
+		return 1;
+	else if (csc == PIX_FMT_YUV444P)
+		return 2;
+	else
+		return -1;
+}
 
 int get_csc_algo_for_quality(int initial_quality) {
 	//always use the best quality as lower quality options
@@ -343,7 +357,7 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 	return 0;
 }
 #else
-x264_picture_t* csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride) 
+x264_picture_t* csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
 {
 	return	NULL;
 }
