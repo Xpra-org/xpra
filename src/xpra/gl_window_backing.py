@@ -8,6 +8,7 @@ from gtk import gdk
 assert gdk
 import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
+import gobject
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -96,9 +97,11 @@ class GLPixmapBacking(PixmapBacking):
                       coding, err, len(img_data), width, height, options)
             self.fire_paint_callbacks(callbacks, False)
             return
-        self.update_texture_yuv420(img_data, x, y, width, height, rowstrides)
-        self.render_image()
-        self.fire_paint_callbacks(callbacks, True)
+        def do_paint():
+            self.update_texture_yuv420(img_data, x, y, width, height, rowstrides)
+            self.render_image()
+            self.fire_paint_callbacks(callbacks, True)
+        gobject.idle_add(do_paint)
 
     def update_texture_yuv420(self, img_data, x, y, width, height, rowstrides):
         drawable = self.glarea.get_gl_drawable()
