@@ -47,16 +47,16 @@ elif sys.platform == "darwin":
     _LIBRARY_NAMES = ["libwebp.dylib"]
 
 else:
-    raise NotImplementedError(
+    raise ImportError(
         "Test non implemented under {0}".format(sys.platform))
 
 # Load library
 _LIBRARY = None
 for name in _LIBRARY_NAMES:
     try:
-        _LIBRARY = loader.LoadLibrary(name)
+        #_LIBRARY = loader.LoadLibrary(name)
         break
     except:
         pass
 if _LIBRARY is None:
-    raise NotImplementedError("Could not find webp library from %s" % str(_LIBRARY_NAMES))
+    raise ImportError("Could not find webp library from %s" % str(_LIBRARY_NAMES))
