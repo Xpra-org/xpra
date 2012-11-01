@@ -323,7 +323,7 @@ if sys.platform.startswith("win"):
         m = md5.new()
         m.update(data)
         digest = m.hexdigest()
-        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (md5sum, digest)
+        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (dll_file, md5sum, digest)
         sys.stdout.write("OK\n")
         sys.stdout.flush()
     # The x264 DLLs which you can grab from here:
