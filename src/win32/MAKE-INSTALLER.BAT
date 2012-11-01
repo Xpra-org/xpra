@@ -99,7 +99,7 @@ dir Output
 MOVE /Y Output\Xpra_Setup.exe Xpra_Setup.exe
 RMDIR Output
 
-Xpra_Setup.exe
+Xpra_Setup.exe /SILENT
 GOTO:END
 
 :ERROR
