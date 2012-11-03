@@ -17,7 +17,6 @@ gtk.gdk.threads_init()
 import os.path
 import threading
 import gobject
-import cairo
 import sys
 import hmac
 import uuid
@@ -478,13 +477,13 @@ class XpraServer(gobject.GObject):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property:
-    def _make_metadata(self, window, propname, png_window_icons):
+    def _make_metadata(self, window, propname, server_source):
         assert propname in self._all_metadata
         if propname == "title":
-            if window.get_property("title") is not None:
-                return {"title": window.get_property("title").encode("utf-8")}
-            else:
+            title = window.get_property("title")
+            if title is None:
                 return {}
+            return {"title": title.encode("utf-8")}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")
@@ -503,58 +502,31 @@ class XpraServer(gobject.GObject):
             return {"size-constraints": hints_metadata}
         elif propname == "class-instance":
             c_i = window.get_property("class-instance")
-            if c_i is not None:
-                return {"class-instance": [x.encode("utf-8") for x in c_i]}
-            else:
+            if c_i is None:
                 return {}
+            return {"class-instance": [x.encode("utf-8") for x in c_i]}
         elif propname == "icon":
             surf = window.get_property("icon")
-            if surf is not None:
-                w = surf.get_width()
-                h = surf.get_height()
-                log("found new window icon: %sx%s, sending as png=%s", w, h, png_window_icons)
-                if png_window_icons:
-                    import Image
-                    img = Image.frombuffer("RGBA", (w,h), surf.get_data(), "raw", "BGRA", 0, 1)
-                    MAX_SIZE = 64
-                    if w>MAX_SIZE or h>MAX_SIZE:
-                        #scale icon down
-                        if w>=h:
-                            h = int(h*MAX_SIZE/w)
-                            w = MAX_SIZE
-                        else:
-                            w = int(w*MAX_SIZE/h)
-                            h = MAX_SIZE
-                        log("scaling window icon down to %sx%s", w, h)
-                        img = img.resize((w,h), Image.ANTIALIAS)
-                    output = StringIO()
-                    img.save(output, 'PNG')
-                    raw_data = output.getvalue()
-                    return {"icon": (w, h, "png", str(raw_data)) }
-                else:
-                    assert surf.get_format() == cairo.FORMAT_ARGB32
-                    assert surf.get_stride() == 4 * surf.get_width()
-                    return {"icon": (w, h, "premult_argb32", str(surf.get_data())) }
-            else:
+            if surf is None:
                 return {}
+            return server_source.make_window_icon(surf.get_data(), surf.get_format(), surf.get_stride(), surf.get_width(), surf.get_height())
         elif propname == "client-machine":
             client_machine = window.get_property("client-machine")
-            if client_machine is not None:
-                return {"client-machine": client_machine.encode("utf-8")}
-            else:
+            if client_machine is None:
                 return {}
+            return {"client-machine": client_machine.encode("utf-8")}
         elif propname == "transient-for":
             transient_for = window.get_property("transient-for")
-            if transient_for:
-                log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
-                #try to find the model for this window:
-                for model in self._desktop_manager._models.keys():
-                    log("testing model %s: %s", model, model.client_window.xid)
-                    if model.client_window.xid==transient_for.xid:
-                        wid = self._window_to_id.get(model)
-                        log("found match, window id=%s", wid)
-                        return {"transient-for" : wid}
+            if transient_for is None:
                 return {}
+            log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+            #try to find the model for this window:
+            for model in self._desktop_manager._models.keys():
+                log("testing model %s: %s", model, model.client_window.xid)
+                if model.client_window.xid==transient_for.xid:
+                    wid = self._window_to_id.get(model)
+                    log("found match, window id=%s", wid)
+                    return {"transient-for" : wid}
             return {}
         elif propname == "window-type":
             window_types = window.get_property("window-type")
@@ -658,13 +630,13 @@ class XpraServer(gobject.GObject):
         for ss in self._server_sources.values():
             metadata = {}
             for propname in properties:
-                metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
+                metadata.update(self._make_metadata(window, propname, ss))
             ss.new_window(ptype, wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            metadata = self._make_metadata(window, pspec.name, ss.png_window_icons)
+            metadata = self._make_metadata(window, pspec.name, ss)
             ss.window_metadata(wid, metadata)
 
     def _lost_window(self, window, wm_exiting):
@@ -1038,7 +1010,7 @@ class XpraServer(gobject.GObject):
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 metadata = {}
                 for propname in self._all_metadata:
-                    metadata.update(self._make_metadata(window, propname, ss.png_window_icons))
+                    metadata.update(self._make_metadata(window, propname, ss))
                 ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 

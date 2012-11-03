@@ -22,6 +22,11 @@ from collections import deque
 from wimpiggy.log import Logger
 log = Logger()
 
+try:
+    from StringIO import StringIO   #@UnusedImport
+except:
+    from io import StringIO         #@UnresolvedImport @Reimport
+
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
 from xpra.maths import add_list_stats, dec1, std_unit
@@ -517,6 +522,32 @@ class ServerSource(object):
                 log.info("using %s as primary encoding", self.encoding)
         else:
             log.info("windows forwarding is disabled")
+
+    def make_window_icon(self, pixel_data, pixel_format, stride, w, h):
+        log("found new window icon: %sx%s, sending as png=%s", w, h, self.png_window_icons)
+        if self.png_window_icons:
+            import Image
+            img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
+            MAX_SIZE = 64
+            if w>MAX_SIZE or h>MAX_SIZE:
+                #scale icon down
+                if w>=h:
+                    h = int(h*MAX_SIZE/w)
+                    w = MAX_SIZE
+                else:
+                    w = int(w*MAX_SIZE/h)
+                    h = MAX_SIZE
+                log("scaling window icon down to %sx%s", w, h)
+                img = img.resize((w,h), Image.ANTIALIAS)
+            output = StringIO()
+            img.save(output, 'PNG')
+            raw_data = output.getvalue()
+            output.close()
+            return {"icon": (w, h, "png", str(raw_data)) }
+        import cairo
+        assert pixel_format == cairo.FORMAT_ARGB32
+        assert stride == 4 * w
+        return {"icon": (w, h, "premult_argb32", str(pixel_data)) }
 
 #
 # Keyboard magic
