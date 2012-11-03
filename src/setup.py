@@ -299,7 +299,7 @@ if sys.platform.startswith("win"):
     # (you can find them in various packages, including Visual Studio 2008,
     # pywin32, etc...)
     import md5
-    md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "6fda4c0ef8715eead5b8cec66512d3c8",
+    md5sums = {"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest" : "37f44d535dcc8bf7a826dfa4f5fa319b",
                "Microsoft.VC90.CRT/msvcm90.dll"                 : "4a8bc195abdc93f0db5dab7f5093c52f",
                "Microsoft.VC90.CRT/msvcp90.dll"                 : "6de5c66e434a9c1729575763d891c6c2",
                "Microsoft.VC90.CRT/msvcr90.dll"                 : "e7d91d008fe76423962b91c43c88e4eb",
@@ -403,16 +403,50 @@ if sys.platform.startswith("win"):
     setup_options["console"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
               ]
+    py2exe_excludes = []
     py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
+    WIN32_OPENGL = False    #currently does not work..
+    if WIN32_OPENGL:
+        #import OpenGL.GL                    #@UnusedImport
+        #import OpenGL.platform.win32        #@UnusedImport
+        #import OpenGL_accelerate            #@UnusedImport @UnresolvedImport
+        #py2exe_includes += ["OpenGL.platform.win32", "OpenGL.GL",
+        #                    "OpenGL_accelerate.formathandler",
+        #                    "OpenGL.GL.ARB.fragment_program",
+        #                    "OpenGL.arrays.ctypesarrays", "OpenGL.arrays.ctypesparameters",
+        #                    "OpenGL.arrays.numpymodule",  "OpenGL.arrays.numeric",
+        #                    "OpenGL.arrays.nones",
+        #                    "OpenGL.arrays.vbo",
+        #                    "OpenGL.arrays.lists", "OpenGL.arrays.numbers", "OpenGL.arrays.strings"]
+        py2exe_includes += ["ctypes", "platform"]
+        py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]
+        #for this hack to work, you must add "." to the sys.path
+        #so python can load OpenGL from the install directory
+        #(further complicated by the fact that "." is the "frozen" path...)
+        import OpenGL
+        import shutil
+        print "*** copy PyOpenGL module ***"
+        opengl_dir = os.path.dirname( OpenGL.__file__ )
+        try:
+            shutil.copytree(
+                opengl_dir, os.path.join( "dist", "OpenGL" ),
+                ignore = shutil.ignore_patterns( "*.py", "*.pyc", "GLUT", "Tk" ),
+            )
+        except WindowsError, error:     #@UndefinedVariable
+            if not "already exists" in str( error ):
+                raise
     setup_options["options"] = {
                                 "py2exe": {
+                                           "skip_archive"   : False,
+                                           "optimize"       : 2,    #2=extra optimization (like python -OO)
                                            "unbuffered"     : True,
                                            "packages"       : packages,
                                            "includes"       : py2exe_includes,
+                                           "excludes"       : py2exe_excludes,
                                            "dll_excludes"   : "w9xpopen.exe",
                                         }
                                 }
