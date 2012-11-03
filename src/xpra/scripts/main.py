@@ -602,7 +602,7 @@ def run_client(parser, opts, extra_args, mode):
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
-    if mode in ("info", "attach"):
+    if mode in ("attach"):
         sys.stdout.write("xpra client version %s\n" % xpra.__version__)
         sys.stdout.flush()
 
