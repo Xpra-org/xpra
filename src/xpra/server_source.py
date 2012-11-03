@@ -426,6 +426,7 @@ class ServerSource(object):
         self.send_notifications = False
         self.send_windows = True
         self.randr_notify = False
+        self.named_cursors = False
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
@@ -478,6 +479,7 @@ class ServerSource(object):
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
         self.uses_swscale = capabilities.get("uses_swscale", True)
+        self.named_cursors = capabilities.get("named_cursors", False)
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -643,9 +645,12 @@ class ServerSource(object):
         if self.clipboard_enabled:
             self.send(*packet)
 
-    def send_cursor(self, cursor_data):
+    def send_cursor(self, cursor_data, cursor_name=None):
         if self.send_cursors:
             if cursor_data:
+                #only newer versions support cursor names:
+                if self.named_cursors and cursor_name:
+                    cursor_data.append(cursor_name)
                 self.send("cursor", *cursor_data)
             else:
                 self.send("cursor", "")

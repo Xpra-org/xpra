@@ -401,7 +401,7 @@ class XpraServer(gobject.GObject):
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         for ss in self._server_sources.values():
-            ss.send_cursor(self.cursor_data)
+            ss.send_cursor(self.cursor_data, event.cursor_name)
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)

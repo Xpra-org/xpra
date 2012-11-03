@@ -10,6 +10,10 @@ from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_g
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
+
+#for the cursor stuff, we need both cursor_names and trap
+from xpra.cursor_names import cursor_names
+from wimpiggy.error import trap
 if is_gtk3():
     def get_root_size():
         return gdk.get_default_root_window().get_geometry()[2:]
@@ -22,18 +26,28 @@ else:
     def set_windows_cursor(gtkwindows, new_cursor):
         cursor = None
         if len(new_cursor)>0:
-            (_, _, w, h, xhot, yhot, serial, pixels) = new_cursor
-            log.debug("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
-            pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
-            x = max(0, min(xhot, w-1))
-            y = max(0, min(yhot, h-1))
-            size = gdk.display_get_default().get_default_cursor_size()
-            if size>0 and (size<w or size<h):
-                ratio = float(max(w,h))/size
-                pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
-                x = int(x/ratio)
-                y = int(y/ratio)
-            cursor = gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
+            cursor = None
+            if len(new_cursor)>=9 and cursor_names:
+                cursor_name = new_cursor[8]
+                gdk_cursor = cursor_names.get(cursor_name.upper())
+                if gdk_cursor is not None:
+                    try:
+                        cursor = trap.call(gdk.Cursor, gdk_cursor)
+                    except:
+                        pass
+            if cursor is None:
+                w, h, xhot, yhot, serial, pixels = new_cursor[2:8]
+                log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
+                pixbuf = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, True, 8, w, h, w * 4)
+                x = max(0, min(xhot, w-1))
+                y = max(0, min(yhot, h-1))
+                size = gdk.display_get_default().get_default_cursor_size()
+                if size>0 and (size<w or size<h):
+                    ratio = float(max(w,h))/size
+                    pixbuf = pixbuf.scale_simple(int(w/ratio), int(h/ratio), gdk.INTERP_BILINEAR)
+                    x = int(x/ratio)
+                    y = int(y/ratio)
+                cursor = gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
         for gtkwindow in gtkwindows:
             gtkwindow.get_window().set_cursor(cursor)
 
@@ -556,6 +570,7 @@ class XpraClient(XpraClientBase):
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
+        capabilities["named_cursors"] = len(cursor_names)>0
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled

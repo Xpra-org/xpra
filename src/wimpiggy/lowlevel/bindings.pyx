@@ -2156,6 +2156,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.window = _gw(d, e.xany.window)
                     cursor_e = <XFixesCursorNotifyEvent*>e
                     pyev.cursor_serial = cursor_e.cursor_serial
+                    pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
                 elif e.type == XKBNotify:
                     # note we could just cast directly to XkbBellNotifyEvent
                     # but this would be dirty, and we may want to catch
