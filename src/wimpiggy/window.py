@@ -248,6 +248,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         log("new window %s", hex(client_window.xid))
 
+        self._managed = False
         self._composite = None
         self.client_window = client_window
         self._internal_set_property("client-window", client_window)
