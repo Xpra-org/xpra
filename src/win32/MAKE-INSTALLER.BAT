@@ -1,4 +1,6 @@
 ECHO OFF
+SET ARGS=%*
+ECHO "ARGS=%ARGS%"
 
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 SET PYTHON=C:\Python27
@@ -99,7 +101,7 @@ dir Output
 MOVE /Y Output\Xpra_Setup.exe Xpra_Setup.exe
 RMDIR Output
 
-Xpra_Setup.exe /SILENT
+Xpra_Setup.exe %ARGS%
 GOTO:END
 
 :ERROR
