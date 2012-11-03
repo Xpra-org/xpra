@@ -267,6 +267,7 @@ class XpraClient(XpraClientBase):
             "configure-override-redirect":  self._process_configure_override_redirect,
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
+            "window-icon":          self._process_window_icon,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._ui_packet_handlers[k] = v
@@ -574,6 +575,7 @@ class XpraClient(XpraClientBase):
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled
+        capabilities["raw_window_icons"] = True
         try:
             from wimpiggy.prop import set_xsettings_format
             assert set_xsettings_format
@@ -931,8 +933,15 @@ class XpraClient(XpraClientBase):
         if window:
             window.update_metadata(metadata)
 
+    def _process_window_icon(self, packet):
+        log("_process_window_icon(%s,%s bytes)", packet[1:5], len(packet[5]))
+        wid, w, h, pixel_format, data = packet[1:6]
+        window = self._id_to_window.get(wid)
+        if window:
+            window.update_icon(w, h, pixel_format, data)
+
     def _process_configure_override_redirect(self, packet):
-        (wid, x, y, w, h) = packet[1:6]
+        wid, x, y, w, h = packet[1:6]
         window = self._id_to_window[wid]
         window.move_resize(x, y, w, h)
 

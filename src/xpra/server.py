@@ -475,69 +475,19 @@ class XpraServer(gobject.GObject):
     # trigger updates in the xpra window metadata:
     _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type")
 
-    # Takes the name of a WindowModel property, and returns a dictionary of
-    # xpra window metadata values that depend on that property:
-    def _make_metadata(self, window, propname, server_source):
-        assert propname in self._all_metadata
-        if propname == "title":
-            title = window.get_property("title")
-            if title is None:
-                return {}
-            return {"title": title.encode("utf-8")}
-        elif propname == "size-hints":
-            hints_metadata = {}
-            hints = window.get_property("size-hints")
-            if hints is not None:
-                for attr, metakey in [
-                    ("max_size", "maximum-size"),
-                    ("min_size", "minimum-size"),
-                    ("base_size", "base-size"),
-                    ("resize_inc", "increment"),
-                    ("min_aspect_ratio", "minimum-aspect"),
-                    ("max_aspect_ratio", "maximum-aspect"),
-                    ]:
-                    v = getattr(hints, attr)
-                    if v is not None:
-                        hints_metadata[metakey] = v
-            return {"size-constraints": hints_metadata}
-        elif propname == "class-instance":
-            c_i = window.get_property("class-instance")
-            if c_i is None:
-                return {}
-            return {"class-instance": [x.encode("utf-8") for x in c_i]}
-        elif propname == "icon":
-            surf = window.get_property("icon")
-            if surf is None:
-                return {}
-            return server_source.make_window_icon(surf.get_data(), surf.get_format(), surf.get_stride(), surf.get_width(), surf.get_height())
-        elif propname == "client-machine":
-            client_machine = window.get_property("client-machine")
-            if client_machine is None:
-                return {}
-            return {"client-machine": client_machine.encode("utf-8")}
-        elif propname == "transient-for":
-            transient_for = window.get_property("transient-for")
-            if transient_for is None:
-                return {}
-            log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
-            #try to find the model for this window:
-            for model in self._desktop_manager._models.keys():
-                log("testing model %s: %s", model, model.client_window.xid)
-                if model.client_window.xid==transient_for.xid:
-                    wid = self._window_to_id.get(model)
-                    log("found match, window id=%s", wid)
-                    return {"transient-for" : wid}
-            return {}
-        elif propname == "window-type":
-            window_types = window.get_property("window-type")
-            log("window_types=%s", window_types)
-            wts = []
-            for window_type in window_types:
-                wts.append(str(window_type))
-            log("window_types=%s", wts)
-            return {"window-type" : wts}
-        raise Exception("unhandled property name: %s" % propname)
-
+    def _get_transient_for(self, window):
+        transient_for = window.get_property("transient-for")
+        if transient_for is None:
+            return None
+        log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+        #try to find the model for this window:
+        for model in self._desktop_manager._models.keys():
+            log("testing model %s: %s", model, model.client_window.xid)
+            if model.client_window.xid==transient_for.xid:
+                wid = self._window_to_id.get(model)
+                log("found match, window id=%s", wid)
+                return wid
+        return  None
 
     def set_keymap(self, server_source):
         try:
@@ -628,16 +578,12 @@ class XpraServer(gobject.GObject):
         wid = self._window_to_id[window]
         x, y, w, h = geometry
         for ss in self._server_sources.values():
-            metadata = {}
-            for propname in properties:
-                metadata.update(self._make_metadata(window, propname, ss))
-            ss.new_window(ptype, wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
+            ss.new_window(ptype, window, wid, x, y, w, h, properties, self.client_properties.get(ss.uuid))
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            metadata = self._make_metadata(window, pspec.name, ss)
-            ss.window_metadata(wid, metadata)
+            ss.window_metadata(window, wid, pspec.name)
 
     def _lost_window(self, window, wm_exiting):
         wid = self._window_to_id[window]
@@ -954,7 +900,7 @@ class XpraServer(gobject.GObject):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
-        ss = ServerSource(proto, self.supports_mmap, self.default_quality)
+        ss = ServerSource(proto, self._get_transient_for, self.supports_mmap, self.default_quality)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
@@ -1008,10 +954,7 @@ class XpraServer(gobject.GObject):
                 #code more or less duplicated from send_new_window_packet:
                 #so we can send it just to the new client:
                 x, y, w, h = self._desktop_manager.window_geometry(window)
-                metadata = {}
-                for propname in self._all_metadata:
-                    metadata.update(self._make_metadata(window, propname, ss))
-                ss.new_window("new-window", wid, x, y, w, h, metadata, self.client_properties.get(ss.uuid))
+                ss.new_window("new-window", window, wid, x, y, w, h, self._all_metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):

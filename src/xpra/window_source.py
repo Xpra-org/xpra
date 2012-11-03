@@ -140,8 +140,8 @@ class WindowPerformanceStatistics(object):
         add_list_stats(info, "damage_out_latency",  latencies)
         #per encoding totals:
         for encoding, totals in self.encoding_totals.items():
-            info["total_frames%s[%s]" % (suffix, encoding)] = totals[0] 
-            info["total_pixels%s[%s]" % (suffix, encoding)] = totals[1] 
+            info["total_frames%s[%s]" % (suffix, encoding)] = totals[0]
+            info["total_pixels%s[%s]" % (suffix, encoding)] = totals[1]
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency
@@ -467,7 +467,7 @@ class WindowSource(object):
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed_region()
         return False
-    
+
     def do_send_delayed_region(self):
         self.cancel_timeout_timer()
         delayed = self._damage_delayed

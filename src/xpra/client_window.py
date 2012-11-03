@@ -257,24 +257,8 @@ class ClientWindow(gtk.Window):
                                                  ("xpra", "Xpra")))
 
         if "icon" in self._metadata:
-            (width, height, coding, data) = self._metadata["icon"]
-            if coding == "premult_argb32":
-                cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-                cairo_surf.get_data()[:] = data
-                # FIXME: We round-trip through PNG. This is ridiculous, but faster
-                # than doing a bunch of alpha un-premultiplying and byte-swapping
-                # by hand in Python (better still would be to write some Pyrex,
-                # but I don't have time right now):
-                loader = gdk.PixbufLoader()
-                cairo_surf.write_to_png(loader)
-                loader.close()
-                pixbuf = loader.get_pixbuf()
-            else:
-                loader = gdk.PixbufLoader(coding)
-                loader.write(data, len(data))
-                loader.close()
-                pixbuf = loader.get_pixbuf()
-            self.set_icon(pixbuf)
+            width, height, coding, data = self._metadata["icon"]
+            self.update_icon(width, height, coding, data)
 
         if "transient-for" in self._metadata:
             wid = self._metadata.get("transient-for")
@@ -293,6 +277,25 @@ class ClientWindow(gtk.Window):
                     log("setting window type to %s - %s", window_type, hint)
                     self.set_type_hint(hint)
                     break
+
+    def update_icon(self, width, height, coding, data):
+        if coding == "premult_argb32":
+            cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+            cairo_surf.get_data()[:] = data
+            # FIXME: We round-trip through PNG. This is ridiculous, but faster
+            # than doing a bunch of alpha un-premultiplying and byte-swapping
+            # by hand in Python (better still would be to write some Pyrex,
+            # but I don't have time right now):
+            loader = gdk.PixbufLoader()
+            cairo_surf.write_to_png(loader)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+        else:
+            loader = gdk.PixbufLoader(coding)
+            loader.write(data, len(data))
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+        self.set_icon(pixbuf)
 
     def refresh_window(self, *args):
         log("refresh_window(%s) wid=%s", args, self._id)
