@@ -562,7 +562,11 @@ def connect_or_fail(display_desc):
         cmd = (display_desc["full_remote_xpra"]
                + ["_proxy"] + display_desc["display_as_args"])
         try:
-            child = Popen(cmd, stdin=PIPE, stdout=PIPE)
+            def setsid():
+                #run in a new session
+                if os.name=="posix":
+                    os.setsid()
+            child = Popen(cmd, stdin=PIPE, stdout=PIPE, preexec_fn=setsid)
         except OSError, e:
             sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
         def abort_test(action):
