@@ -11,7 +11,7 @@ inherit distutils eutils
 
 DESCRIPTION="X Persistent Remote Apps (xpra) and Partitioning WM (parti) based on wimpiggy"
 HOMEPAGE="http://xpra.org/"
-SRC_URI="http://xpra.org/src/${PF}.tar.bz2"
+SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -44,25 +44,14 @@ DEPEND="${COMMON_DEPEND}
 	virtual/pkgconfig
 	>=dev-python/cython-0.16"
 
-src_prepare() {
-	use server || epatch disable-posix-server.patch
-	if use ffmpeg ; then
-		use x264 || epatch disable-x264.patch
-	else
-		epatch disable-vpx.patch disable-x264.patch
-	fi
-	use clipboard || epatch disable-clipboard.patch
-	use rencode || epatch disable-rencode.patch
-
-	$(PYTHON -2) make_constants_pxi.py wimpiggy/lowlevel/constants.txt wimpiggy/lowlevel/constants.pxi || die
-
-	#python_copy_sources
-	#
-	#patching() {
-	#    [[ "${PYTHON_ABI}" == 2.* ]] && return
-	#	2to3 --no-diffs -x all -f except -w -n .
-	#}
-	#python_execute_function --action-message 'Applying patches with $(python_get_implementation) $(python_get_version)' -s patching
+src_compile() {
+	#we may specify --without-vpx/--without-x264 more than once, which is ok
+	distutils_src_compile $(use server || echo "--without-server") \
+		$(use x264 || echo "--without-x264") \
+		$(use vpx || echo "--without-vpx") \
+		$(use ffmpeg || echo "--without-vpx --without-x264") \
+		$(use clipboard || echo "--without-clipboard") \
+		$(use rencode || echo "--without-rencode")
 }
 
 src_install() {
