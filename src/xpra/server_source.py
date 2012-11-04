@@ -739,8 +739,8 @@ class ServerSource(object):
         if self.send_cursors:
             if cursor_data:
                 #only newer versions support cursor names:
-                if self.named_cursors and cursor_name:
-                    cursor_data.append(cursor_name)
+                if not self.named_cursors:
+                    cursor_data = cursor_data[:8]
                 self.send("cursor", *cursor_data)
             else:
                 self.send("cursor", "")

@@ -1566,8 +1566,8 @@ cdef extern from "X11/extensions/Xfixes.h":
         unsigned short yhot
         unsigned long cursor_serial
         unsigned long* pixels
-        #XFixes v2:
-        #char* name
+        Atom atom
+        char* name
     ctypedef struct XFixesCursorNotifyEvent:
         int type
         unsigned long serial
@@ -1612,15 +1612,17 @@ def get_cursor_image():
     cdef Display * display                              #@DuplicatedSignature
     cdef XFixesCursorImage* image
     #cdef char* pixels
-    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    root = gtk.gdk.get_default_root_window()
+    display = get_xdisplay_for(root)
     try:
         image = XFixesGetCursorImage(display)
         if image==NULL:
             return  None
         l = image.width*image.height
         pixels = argbdata_to_pixdata(image.pixels, l)
+        name = str(image.name)
         return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-            image.cursor_serial, pixels]
+            image.cursor_serial, pixels, name]
     finally:
         XFree(image)
 

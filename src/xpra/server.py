@@ -204,6 +204,13 @@ class XpraServer(gobject.GObject):
         self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
+        self.default_cursor_data = None
+        self.last_cursor_serial = None
+        self.cursor_data = None
+        def get_default_cursor():
+            self.default_cursor_data = get_cursor_image()
+            log("get_default_cursor=%s", self.default_cursor_data)
+        trap.swallow(get_default_cursor)
         self._wm.enableCursors(True)
 
         ### Create our window managing data structures:
@@ -233,8 +240,6 @@ class XpraServer(gobject.GObject):
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
 
-        self.last_cursor_serial = None
-        self.cursor_data = None
         #store list of currently pressed keys
         #(using a dict only so we can display their names in debug messages)
         self.keys_pressed = {}
@@ -392,7 +397,10 @@ class XpraServer(gobject.GObject):
         self.cursor_data = get_cursor_image()
         if self.cursor_data:
             pixels = self.cursor_data[7]
-            if pixels is not None:
+            if self.default_cursor_data and pixels==self.default_cursor_data[7]:
+                log("cursor event: default cursor - clearing it")
+                self.cursor_data = None
+            elif pixels is not None:
                 if len(pixels)<64:
                     self.cursor_data[7] = str(pixels)
                 else:
@@ -400,7 +408,7 @@ class XpraServer(gobject.GObject):
         else:
             log("do_wimpiggy_cursor_event(%s) failed to get cursor image", event)
         for ss in self._server_sources.values():
-            ss.send_cursor(self.cursor_data, event.cursor_name)
+            ss.send_cursor(self.cursor_data)
 
     def _bell_signaled(self, wm, event):
         log("_bell_signaled(%s,%r)", wm, event)

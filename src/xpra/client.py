@@ -29,12 +29,14 @@ else:
             cursor = None
             if len(new_cursor)>=9 and cursor_names:
                 cursor_name = new_cursor[8]
-                gdk_cursor = cursor_names.get(cursor_name.upper())
-                if gdk_cursor is not None:
-                    try:
-                        cursor = trap.call(gdk.Cursor, gdk_cursor)
-                    except:
-                        pass
+                if cursor_name:
+                    gdk_cursor = cursor_names.get(cursor_name.upper())
+                    if gdk_cursor is not None:
+                        try:
+                            log.info("setting new cursor: %s=%s", cursor_name, gdk_cursor)
+                            cursor = trap.call(gdk.Cursor, gdk_cursor)
+                        except:
+                            pass
             if cursor is None:
                 w, h, xhot, yhot, serial, pixels = new_cursor[2:8]
                 log("new cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s" % (xhot,yhot, serial, w,h, len(pixels)))
