@@ -222,7 +222,7 @@ public abstract class AbstractClient implements Runnable, Client {
 					if (compression_level>0) {
 						Inflater decompresser = new Inflater();
 						decompresser.setInput(packet, 0, packet.length);
-						ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+						ByteArrayOutputStream tmp = new ByteArrayOutputStream(packet.length+100);
 						while (decompresser.getRemaining()>0) {
 							int dec_len = decompresser.inflate(inflate_buffer);
 							tmp.write(inflate_buffer, 0, dec_len);
