@@ -60,6 +60,10 @@ xdummy_ENABLED = False
 
 
 
+server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
@@ -73,6 +77,8 @@ for arg in sys.argv:
         rencode_ENABLED = False
     elif arg == "--without-clipboard":
         clipboard_ENABLED = False
+    elif arg == "--without-server":
+        server_ENABLED = False
     elif arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
@@ -112,6 +118,7 @@ packages = ["wimpiggy", "wimpiggy.lowlevel",
           "xpra", "xpra.scripts", "xpra.platform",
           ]
 setup_options["packages"] = packages
+py2exe_excludes = []       #only used on win32
 ext_modules = []
 cmdclass = {}
 
@@ -206,7 +213,7 @@ def pkgconfig(*packages_options, **ekw):
 
 #*******************************************************************************
 def get_xorg_conf_and_script():
-    if not XPRA_LOCAL_SERVERS_SUPPORTED:
+    if not server_ENABLED:
         return "etc/xpra/client-only/xpra.conf", False
     if xdummy_ENABLED:
         return "etc/xpra/Xdummy/xpra.conf", False
@@ -403,7 +410,6 @@ if sys.platform.startswith("win"):
     setup_options["console"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
               ]
-    py2exe_excludes = []
     py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
@@ -519,7 +525,7 @@ else:
 
 
 #*******************************************************************************
-if XPRA_LOCAL_SERVERS_SUPPORTED:
+if server_ENABLED:
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
@@ -536,6 +542,8 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
                 ["xpra/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ))
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("wimpiggy.lowlevel")
 
 
 
@@ -545,6 +553,8 @@ if clipboard_ENABLED:
                 ["wimpiggy/gdk/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("wimpiggy.gdk")
 
 
 
@@ -554,6 +564,8 @@ if x264_ENABLED:
                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.x264")
 
 
 
@@ -563,6 +575,8 @@ if vpx_ENABLED:
                 ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.vpx")
 
 
 
@@ -576,9 +590,16 @@ if rencode_ENABLED:
     cython_add(Extension("xpra.rencode._rencode",
                 ["xpra/rencode/rencode.pyx"],
                 extra_compile_args=extra_compile_args))
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.rencode")
+
+
 
 if webp_ENABLED:
     packages.append("xpra.webm")
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.webm")
+
 
 
 if ext_modules:

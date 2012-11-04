@@ -192,7 +192,14 @@ def main(script_file, cmdline):
             return v
         return [str(v)]
 
-    if XPRA_LOCAL_SERVERS_SUPPORTED:
+    supports_server = XPRA_LOCAL_SERVERS_SUPPORTED
+    if supports_server:
+        try:
+            from xpra.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
+        except:
+            supports_server = False
+
+    if supports_server:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
         upgrade_str = "\t%prog upgrade DISPLAY"
@@ -216,7 +223,7 @@ def main(script_file, cmdline):
                                          list_str,
                                          upgrade_str,
                                          note_str]))
-    if XPRA_LOCAL_SERVERS_SUPPORTED:
+    if supports_server:
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
         group.add_option("--start-child", action="append",
@@ -459,18 +466,18 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
-    if mode in ("start", "upgrade") and XPRA_LOCAL_SERVERS_SUPPORTED:
+    if mode in ("start", "upgrade") and supports_server:
         nox()
         from xpra.scripts.server import run_server
         return run_server(parser, options, mode, script_file, args)
     elif mode in ("attach", "detach", "screenshot", "version", "info"):
         return run_client(parser, options, args, mode)
-    elif mode == "stop" and XPRA_LOCAL_SERVERS_SUPPORTED:
+    elif mode == "stop" and supports_server:
         nox()
         return run_stop(parser, options, args)
-    elif mode == "list" and XPRA_LOCAL_SERVERS_SUPPORTED:
+    elif mode == "list" and supports_server:
         return run_list(parser, options, args)
-    elif mode == "_proxy" and XPRA_LOCAL_SERVERS_SUPPORTED:
+    elif mode == "_proxy" and supports_server:
         nox()
         return run_proxy(parser, options, args)
     else:
