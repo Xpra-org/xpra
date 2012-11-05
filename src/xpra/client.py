@@ -33,7 +33,7 @@ else:
                     gdk_cursor = cursor_names.get(cursor_name.upper())
                     if gdk_cursor is not None:
                         try:
-                            log.info("setting new cursor: %s=%s", cursor_name, gdk_cursor)
+                            log("setting new cursor: %s=%s", cursor_name, gdk_cursor)
                             cursor = trap.call(gdk.Cursor, gdk_cursor)
                         except:
                             pass
