@@ -54,7 +54,7 @@ else:
 _LIBRARY = None
 for name in _LIBRARY_NAMES:
     try:
-        #_LIBRARY = loader.LoadLibrary(name)
+        _LIBRARY = loader.LoadLibrary(name)
         break
     except:
         pass
