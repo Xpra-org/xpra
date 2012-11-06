@@ -384,7 +384,7 @@ class Protocol(object):
             self.close()
 
     def _call_connection_lost(self, message="", exc_info=False):
-        log.info("will call connection lost: %s", message)
+        log("will call connection lost: %s", message)
         gobject.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
