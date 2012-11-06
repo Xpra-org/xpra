@@ -31,12 +31,6 @@ def env_bool(varname, defaultvalue=False):
     return  defaultvalue
 
 
-MAX_NONVIDEO_PIXELS = 512
-try:
-    MAX_NONVIDEO_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_PIXELS", 2048))
-except:
-    pass
-
 MAX_DEBUG_MESSAGES = 1000
 DEBUG_DELAY = env_bool("XPRA_DEBUG_LATENCY", False)
 
