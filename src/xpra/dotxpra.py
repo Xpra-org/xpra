@@ -60,7 +60,10 @@ class DotXpra(object):
             sock.connect(path)
         except socket.error, e:
             err = e.args[0]
-            if err in (errno.ECONNREFUSED, errno.ENOENT):
+            if err==errno.ECONNREFUSED:
+                #could be the server is starting up
+                return self.UNKNOWN
+            if err in (errno.EWOULDBLOCK, errno.ENOENT):
                 return self.DEAD
         else:
             sock.close()
