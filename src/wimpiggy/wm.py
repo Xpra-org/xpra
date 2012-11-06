@@ -102,8 +102,8 @@ class Wm(gobject.GObject):
 
         "_NET_WM_STATE",
         "_NET_WM_STATE_DEMANDS_ATTENTION",
+        "_NET_WM_STATE_MODAL",
         # More states to support:
-        # _NET_WM_STATE_MODAL,
         # _NET_WM_STATE_STICKY,
         # _NET_WM_STATE_MAXIMIZED_VERT,
         # _NET_WM_STATE_MAXIMIZED_HORZ,

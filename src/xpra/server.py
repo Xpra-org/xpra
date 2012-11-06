@@ -481,7 +481,7 @@ class XpraServer(gobject.GObject):
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
-    _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type")
+    _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal")
 
     def _get_transient_for(self, window):
         transient_for = window.get_property("transient-for")
@@ -495,6 +495,10 @@ class XpraServer(gobject.GObject):
                 wid = self._window_to_id.get(model)
                 log("found match, window id=%s", wid)
                 return wid
+        root = gtk.gdk.get_default_root_window()
+        if root.xid==transient_for.xid:
+            return -1       #-1 is the backwards compatible marker for root...
+        log.info("not found transient_for=%s, xid=%s", transient_for, transient_for.xid)
         return  None
 
     def set_keymap(self, server_source):
@@ -1372,10 +1376,9 @@ class XpraServer(gobject.GObject):
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._process_mouse_common(proto, wid, pointer, modifiers)
+        display = gtk.gdk.display_get_default()
         try:
-            trap.call_synced(xtest_fake_button,
-                               gtk.gdk.display_get_default(),
-                               button, pressed)
+            trap.call(xtest_fake_button, display, button, pressed)
         except XError:
             log.warn("Failed to pass on (un)press of mouse button %s"
                      + " (perhaps your Xvfb does not support mousewheels?)",

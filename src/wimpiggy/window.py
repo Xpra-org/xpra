@@ -224,6 +224,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
                           gobject.PARAM_READABLE),
+        "modal": (gobject.TYPE_PYOBJECT,
+                          "Modal (boolean)", "",
+                          gobject.PARAM_READABLE),
         "window-type": (gobject.TYPE_PYOBJECT,
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
@@ -912,6 +915,8 @@ class WindowModel(BaseWindowModel):
             self._internal_set_property("state", ImmutableSet(net_wm_state))
         else:
             self._internal_set_property("state", ImmutableSet())
+        modal = (net_wm_state is not None) and ("_NET_WM_STATE_MODAL" in net_wm_state)
+        self._internal_set_property("modal", modal)
 
         for mutable in ["WM_HINTS", "WM_NORMAL_HINTS",
                         "WM_NAME", "_NET_WM_NAME",

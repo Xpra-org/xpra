@@ -535,6 +535,8 @@ class ServerSource(object):
             if title is None:
                 return {}
             return {"title": title.encode("utf-8")}
+        elif propname == "modal":
+            return {"modal" : window.get_property("modal")}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")

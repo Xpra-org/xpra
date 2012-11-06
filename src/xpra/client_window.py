@@ -256,13 +256,19 @@ class ClientWindow(gtk.Window):
             self.set_wmclass(*self._metadata.get("class-instance",
                                                  ("xpra", "Xpra")))
 
+        modal = self._metadata.get("modal", False)
+        self.set_modal(modal or False)
+
         if "icon" in self._metadata:
             width, height, coding, data = self._metadata["icon"]
             self.update_icon(width, height, coding, data)
 
         if "transient-for" in self._metadata:
             wid = self._metadata.get("transient-for")
-            window = self._client._id_to_window.get(wid)
+            if wid==-1:
+                window = gtk.gdk.get_default_root_window()
+            else:
+                window = self._client._id_to_window.get(wid)
             log("found transient-for: %s / %s", wid, window)
             if window:
                 self.set_transient_for(window)
