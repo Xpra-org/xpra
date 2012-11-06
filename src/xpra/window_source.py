@@ -217,6 +217,7 @@ class WindowSource(object):
         self.auto_refresh_delay = auto_refresh_delay
         self.refresh_timer = None
         self.timeout_timer = None
+        self.expire_timer = None
 
         # mmap:
         self._mmap = mmap
