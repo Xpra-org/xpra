@@ -327,8 +327,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         xvfb_cmd = xvfb.split()
         xvfb_executable = xvfb_cmd[0]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+        def setsid():
+            #run in a new session
+            if os.name=="posix":
+                os.setsid()
         try:
-            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True)
+            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True, preexec_fn=setsid)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
             return  1
