@@ -873,7 +873,7 @@ class ServerSource(object):
         info["client_uuid%s" % suffix] = self.uuid
         info["keyboard%s" % suffix] = self.keyboard_config.enabled
         try:
-            info["client_connection%s" % suffix] = str(self.protocol._conn.target)
+            info["client_connection%s" % suffix] = str(self.protocol._conn.target or self.protocol._conn.filename)
         except:
             pass
         info["client_encodings%s" % suffix] = ",".join(self.encodings)
