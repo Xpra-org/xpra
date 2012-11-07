@@ -708,6 +708,17 @@ def run_stop(parser, opts, extra_args):
     return  e
 
 
+def may_cleanup_socket(sockdir, state, display, clean_states=[DotXpra.DEAD]):
+    sys.stdout.write("\t%s session at %s" % (state, display))
+    if state in clean_states:
+        try:
+            os.unlink(sockdir.socket_path(display))
+        except OSError:
+            pass
+        else:
+            sys.stdout.write(" (cleaned up)")
+    sys.stdout.write("\n")
+
 def run_list(parser, opts, extra_args):
     assert "gtk" not in sys.modules
     if extra_args:
@@ -719,15 +730,30 @@ def run_list(parser, opts, extra_args):
         return  1
     sys.stdout.write("Found the following xpra sessions:\n")
     for state, display in results:
-        sys.stdout.write("\t%s session at %s" % (state, display))
-        if state is DotXpra.DEAD:
-            try:
-                os.unlink(sockdir.socket_path(display))
-            except OSError:
-                pass
+        may_cleanup_socket(sockdir, state, display)
+    #now, re-probe the "unknown" ones:
+    unknown = [display for state, display in results if state==DotXpra.UNKNOWN]
+    if len(unknown)>0:
+        sys.stdout.write("Re-probing unknown sessions: %s\n" % (", ".join(unknown)))
+    counter = 0
+    while len(unknown)>0 and counter<5:
+        time.sleep(1)
+        counter += 1
+        probe_list = list(unknown)
+        unknown = []
+        for display in probe_list:
+            state = sockdir.server_state(display)
+            if state is DotXpra.DEAD:
+                may_cleanup_socket(sockdir, state, display)
+            elif state is DotXpra.UNKNOWN:
+                unknown.append(display)
             else:
-                sys.stdout.write(" (cleaned up)")
-        sys.stdout.write("\n")
+                sys.stdout.write("\t%s session at %s\n" % (state, display))
+    #now cleanup those still unknown:
+    clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
+    for display in unknown:
+        state = sockdir.server_state(display)
+        may_cleanup_socket(sockdir, state, display, clean_states=clean_states)
     return 0
 
 if __name__ == "__main__":
