@@ -668,14 +668,27 @@ class WindowModel(BaseWindowModel):
     def _sanitize_size_hints(self, size_hints):
         if size_hints is None:
             return
-        for attr in ["max_size", "min_size", "base_size",
-                    "resize_inc", "min_aspect", "max_aspect"]:
+        for attr in ["min_aspect", "max_aspect"]:
             #"min_aspect_ratio", "max_aspect_ratio" ??
             v = getattr(size_hints, attr)
             if v is not None:
-                w,h = v
-                if w>=(2**32-1) or h>(2**32-1):
-                    log.info("clearing invalid size hint value for %s: %s", attr, v)
+                try:
+                    f = float(v)
+                except:
+                    f = None
+                if f is None or f>=(2**32-1):
+                    log.warn("clearing invalid aspect hint value for %s: %s", attr, v)
+                    setattr(size_hints, attr, -1.0)
+        for attr in ["max_size", "min_size", "base_size", "resize_inc"]:
+            #"min_aspect_ratio", "max_aspect_ratio" ??
+            v = getattr(size_hints, attr)
+            if v is not None:
+                try:
+                    w,h = v
+                except:
+                    w,h = None,None
+                if (w is None or h is None) or w>=(2**32-1) or h>(2**32-1):
+                    log.warn("clearing invalid size hint value for %s: %s", attr, v)
                     setattr(size_hints, attr, (-1,-1))
 
     def _update_client_geometry(self):
