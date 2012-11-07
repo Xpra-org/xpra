@@ -250,12 +250,12 @@ class WindowSource(object):
         """ Video encoders (x264 and vpx) require us to run
             cleanup code to free the memory they use.
         """
-        if self._video_encoder:
-            try:
-                self._video_encoder_lock.acquire()
+        try:
+            self._video_encoder_lock.acquire()
+            if self._video_encoder:
                 self.do_video_encoder_cleanup()
-            finally:
-                self._video_encoder_lock.release()
+        finally:
+            self._video_encoder_lock.release()
 
     def do_video_encoder_cleanup(self):
         self._video_encoder.clean()
