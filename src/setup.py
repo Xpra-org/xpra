@@ -516,7 +516,7 @@ else:
         etc_files = ["etc/xpra/xorg.conf"]
         #figure out the version of the Xorg server:
         xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
-        if not use_Xdummy_wrapper:
+        if not use_Xdummy_wrapper and "scripts/xpra_Xdummy" in scripts:
             #if we're not using the wrapper, don't install it
             scripts.remove("scripts/xpra_Xdummy")
         etc_files.append(xorg_conf)
