@@ -669,7 +669,6 @@ class WindowModel(BaseWindowModel):
         if size_hints is None:
             return
         for attr in ["min_aspect", "max_aspect"]:
-            #"min_aspect_ratio", "max_aspect_ratio" ??
             v = getattr(size_hints, attr)
             if v is not None:
                 try:
@@ -679,8 +678,8 @@ class WindowModel(BaseWindowModel):
                 if f is None or f>=(2**32-1):
                     log.warn("clearing invalid aspect hint value for %s: %s", attr, v)
                     setattr(size_hints, attr, -1.0)
-        for attr in ["max_size", "min_size", "base_size", "resize_inc"]:
-            #"min_aspect_ratio", "max_aspect_ratio" ??
+        for attr in ["max_size", "min_size", "base_size", "resize_inc",
+                     "min_aspect_ratio", "max_aspect_ratio"]:
             v = getattr(size_hints, attr)
             if v is not None:
                 try:
@@ -1057,6 +1056,8 @@ class WindowModel(BaseWindowModel):
     def give_client_focus(self):
         """The focus manager has decided that our client should recieve X
         focus.  See world_window.py for details."""
+        if self.corral_window is None:
+            return  True
         log("Giving focus to client")
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
