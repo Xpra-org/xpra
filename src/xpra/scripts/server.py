@@ -296,7 +296,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     #print("creating server socket %s" % sockpath)
     clobber = upgrading or opts.use_display
     try:
-        sockpath = dotxpra.server_socket_path(display_name, clobber)
+        sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
     except ServerSockInUse:
         parser.error("You already have an xpra server running at %s\n"
                      "  (did you want 'xpra upgrade'?)"

@@ -8,6 +8,7 @@ import glob
 import socket
 import errno
 import stat
+import time
 
 o0700 = 448     #0o700
 
@@ -71,10 +72,15 @@ class DotXpra(object):
         return self.UNKNOWN
 
     # Same as socket_path, but preps for the server:
-    def server_socket_path(self, local_display_name, clobber):
+    def server_socket_path(self, local_display_name, clobber, wait_for_unknown=0):
         if not clobber:
             state = self.server_state(local_display_name)
-            if state is not self.DEAD:
+            counter = 0
+            while state==self.UNKNOWN and counter<wait_for_unknown:
+                counter += 1
+                time.sleep(1)
+                state = self.server_state(local_display_name)
+            if state not in (self.DEAD, self.UNKNOWN):
                 raise ServerSockInUse((state, local_display_name))
         path = self.socket_path(local_display_name)
         if os.path.exists(path):
