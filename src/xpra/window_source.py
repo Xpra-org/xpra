@@ -153,8 +153,8 @@ class WindowPerformanceStatistics(object):
         if len(self.client_decode_time)>0:
             decoding_latency, _ = calculate_timesize_weighted_average(list(self.client_decode_time))
             decoding_latency /= 1000.0
-        min_latency = (min_client_latency or abs_min)*1.2
-        avg_latency = avg_client_latency or abs_min
+        min_latency = max(abs_min, min_client_latency or abs_min)*1.2
+        avg_latency = max(min_latency, avg_client_latency or abs_min)
         max_latency = 2.0*min_latency
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
 
@@ -358,7 +358,7 @@ class WindowSource(object):
         all_pixels = [pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
         if len(all_pixels)>self.batch_config.max_events or sum(all_pixels)>self.batch_config.max_pixels:
             #force batching: set it just above min_delay
-            self.batch_config.delay = max(self.batch_config.min_delay+0.01, self.batch_config.delay)
+            self.batch_config.delay = self.batch_config.min_delay
 
     def get_packets_backlog(self):
         target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
@@ -400,11 +400,11 @@ class WindowSource(object):
 
         now = time.time()
         packets_backlog = self.get_packets_backlog()
-        if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<=self.batch_config.min_delay:
+        if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             ww, wh = window.get_dimensions()
-            actual_encoding = self.get_best_encoding(window.is_OR(), w*h, ww, wh, self.encoding)
+            actual_encoding = self.get_best_encoding(False, window.is_OR(), w*h, ww, wh, self.encoding)
             if actual_encoding in ("x264", "vpx"):
                 x, y = 0, 0
                 w, h = ww, wh
@@ -486,7 +486,7 @@ class WindowSource(object):
         regions = []
         ww,wh = window.get_dimensions()
         def send_full_screen_update(actual_encoding):
-            actual_encoding = self.get_best_encoding(window.is_OR(), pixel_count, ww, wh, coding)
+            actual_encoding = self.get_best_encoding(True, window.is_OR(), ww*wh, ww, wh, coding)
             log("send_delayed_regions: using full screen update with %s", actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
@@ -519,7 +519,7 @@ class WindowSource(object):
             log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
             return
 
-        actual_encoding = self.get_best_encoding(window.is_OR(), pixel_count, ww, wh, coding)
+        actual_encoding = self.get_best_encoding(True, window.is_OR(), pixel_count, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
@@ -530,7 +530,7 @@ class WindowSource(object):
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
-    def get_best_encoding(self, is_OR, pixel_count, ww, wh, current_encoding):
+    def get_best_encoding(self, batching, is_OR, pixel_count, ww, wh, current_encoding):
         """
             decide whether we send a full screen update
             using the video encoder or if a small lossless region(s) is a better choice
@@ -541,7 +541,12 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
-        if self._sequence==1 and is_OR and pixel_count<MAX_NONVIDEO_OR_INITIAL_PIXELS:
+        max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
+        max_nvp = MAX_NONVIDEO_PIXELS
+        if not batching:
+            max_nvoip *= 128
+            max_nvp *= 128
+        if self._sequence==1 and is_OR and pixel_count<max_nvoip:
             #first frame of a small-ish OR window, those are generally short lived
             #so delay using a video encoder until the next frame:
             return switch()
@@ -554,10 +559,10 @@ class WindowSource(object):
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
             return switch()
-        if pixel_count>MAX_NONVIDEO_PIXELS:
+        if pixel_count>max_nvp:
             #too many pixels, use current video encoder
             return current_encoding
-        if pixel_count>0.5*ww*wh:
+        if pixel_count>0.5*ww*wh and batching:
             #small, but over 50% of the full window
             return current_encoding
         return switch()
