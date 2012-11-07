@@ -546,8 +546,10 @@ class ServerSource(object):
                     ("min_size", "minimum-size"),
                     ("base_size", "base-size"),
                     ("resize_inc", "increment"),
-                    ("min_aspect_ratio", "minimum-aspect"),
-                    ("max_aspect_ratio", "maximum-aspect"),
+                    ("min_aspect", "minimum-aspect"),
+                    ("max_aspect", "maximum-aspect"),
+                    ("min_aspect_ratio", "minimum-aspect-ratio"),
+                    ("max_aspect_ratio", "maximum-aspect-ratio"),
                     ]:
                     v = getattr(hints, attr)
                     if v is not None:
