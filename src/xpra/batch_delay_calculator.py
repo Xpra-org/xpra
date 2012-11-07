@@ -118,12 +118,12 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     if len(statistics.damage_in_latency)>0:
         msg = "damage processing latency:"
         target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-        factors.append(calculate_for_target(msg, target_latency, avg_damage_in_latency, recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=0.2))
+        factors.append(calculate_for_target(msg, target_latency, avg_damage_in_latency, recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
     #damage "out" latency
     if len(statistics.damage_out_latency)>0:
         msg = "damage send latency:"
         target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
-        factors.append(calculate_for_target(msg, target_latency, avg_damage_out_latency, recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt, weight_multiplier=0.2))
+        factors.append(calculate_for_target(msg, target_latency, avg_damage_out_latency, recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
     #send speed:
     if avg_send_speed is not None and recent_send_speed is not None:
         #our calculate methods aims for lower values, so invert speed
@@ -260,7 +260,6 @@ def update_batch_delay(batch, factors):
     avg = 0
     tv, tw = 0.0, 0.0
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
-    min_delay = batch.min_delay
     max_delay = batch.max_delay
     for delays in (batch.last_delays, batch.last_actual_delays):
         if len(delays)>0:
@@ -270,7 +269,7 @@ def update_batch_delay(batch, factors):
             for when, delay in list(delays):
                 #newer matter more:
                 w = 1.0/(1.0+((now-when)/decay)**2)
-                d = max(min_delay, min(max_delay, delay))
+                d = max(0, min(max_delay, delay))
                 tv += d*w
                 tw += w
     if tw>0:
@@ -283,11 +282,11 @@ def update_batch_delay(batch, factors):
         log("update_batch_delay: no weights yet!")
         return
     for _, factor, weight in valid_factors:
-        target_delay = max(min_delay, min(max_delay, current_delay*factor))
+        target_delay = max(0, min(max_delay, current_delay*factor))
         w = max(1, hist_w)*weight/all_factors_weight
         tw += w
         tv += target_delay*w
-    batch.delay = max(min_delay, min(max_delay, tv / tw))
+    batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
     if DEBUG_DELAY:
         decimal_delays = [dec1(x) for _,x in batch.last_delays]
