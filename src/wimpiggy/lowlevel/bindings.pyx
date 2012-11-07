@@ -893,17 +893,19 @@ def get_keycode_mappings(display_source):
     """
     cdef Display * display                          #@DuplicatedSignature
     cdef KeySym keysym                              #@DuplicatedSignature
+    cdef char* keyname
     display = get_xdisplay_for(display_source)
     raw_mappings = _get_raw_keycode_mappings(display)
     mappings = {}
     for keycode, keysyms in raw_mappings.items():
         keynames = []
         for keysym in keysyms:
+            key = ""
             if keysym!=NoSymbol:
                 keyname = XKeysymToString(keysym)
-            else:
-                keyname = ""
-            keynames.append(keyname)
+                if keyname!=NULL:
+                    key = str(keyname)
+            keynames.append(key)
         #now remove trailing empty entries:
         while len(keynames)>0 and keynames[-1]=="":
             keynames = keynames[:-1]
