@@ -554,7 +554,9 @@ class XpraServer(gobject.GObject):
             #no idea why we can't call this straight away!
             #but with win32 clients, it would often fail!???
             def give_focus():
-                window.give_client_focus()
+                #problem with that is that the window may be gone by then!
+                #so ignore those errors:
+                trap.swallow(window.give_client_focus)
                 return False
             gobject.idle_add(give_focus)
             if server_source and modifiers is not None:
