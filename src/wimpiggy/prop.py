@@ -63,8 +63,6 @@ class WMSizeHints(object):
          max_aspect_num, max_aspect_denom,
          base_width, base_height,
          win_gravity) = struct.unpack("=" + "I" * 18, data) #@UnusedVariable
-        #print(repr(data))
-        #print(struct.unpack("@" + "i" * 18, data))
         # We only extract the pieces we care about:
         if flags & const["PMaxSize"]:
             self.max_size = (max_width, max_height)
@@ -90,6 +88,10 @@ class WMSizeHints(object):
         else:
             self.min_aspect, self.max_aspect = (None, None)
             self.min_aspect_ratio, self.max_aspect_ratio = (None, None)
+        if flags & const["PWinGravity"]:
+            self.win_gravity = win_gravity
+        else:
+            self.win_gravity = -1
 
 class WMHints(object):
     def __init__(self, disp, data):
