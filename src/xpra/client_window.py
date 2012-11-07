@@ -236,15 +236,19 @@ class ClientWindow(gtk.Window):
                 ("base-size", "base_width", "base_height"),
                 ("increment", "width_inc", "height_inc"),
                 ]:
-                if a in self._metadata["size-constraints"]:
-                    hints[h1], hints[h2] = size_metadata[a]
+                v = size_metadata.get(a)
+                if v:
+                    hints[h1], hints[h2] = v
             for (a, h) in [
-                ("minimum-aspect", "min_aspect_ratio"),
-                ("maximum-aspect", "max_aspect_ratio"),
+                ("minimum-aspect", "min_aspect"),
+                ("maximum-aspect", "max_aspect"),
                 ]:
-                if a in self._metadata:
-                    hints[h] = size_metadata[a][0] * 1.0 / size_metadata[a][1]
+                v = size_metadata.get(a)
+                if v:
+                    hints[h] = v
             set_geometry_hints(self, hints)
+            #TODO:
+            #gravity = size_metadata.get("gravity")
 
         if hasattr(self, "get_realized"):
             #pygtk 2.22 and above have this method:
