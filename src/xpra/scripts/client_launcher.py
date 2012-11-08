@@ -285,6 +285,12 @@ xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
 xpra_opts.jpegquality = default_int("jpegquality", 90)
 xpra_opts.quality = default_int("quality", 90)
 xpra_opts.host = defaults.get("host", "127.0.0.1")
+xpra_opts.username = ""
+try:
+	import getpass
+	xpra_opts.username = getpass.getuser()
+except:
+	pass
 xpra_opts.port = default_int("port", 10000)
 xpra_opts.mode = default_str("mode", "tcp", ["tcp", "ssh"])
 xpra_opts.debug = default_bool("debug", False)
@@ -386,12 +392,6 @@ class ApplicationWindow:
 			self.mode_combo.set_active(0)
 		else:
 			self.mode_combo.set_active(2)
-		def mode_changed(*args):
-			if self.mode_combo.get_active_text()=="ssh":
-				self.port_entry.set_text("22")
-			else:
-				self.port_entry.set_text("%s" % xpra_opts.port)
-		self.mode_combo.connect("changed", mode_changed)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
 
@@ -421,15 +421,21 @@ class ApplicationWindow:
 		vbox.pack_start(hbox)
 		self.encoding_combo.connect("changed", self.encoding_changed)
 
-		# Host:Port
+		# Username@Host:Port
 		hbox = gtk.HBox(False, 0)
 		hbox.set_spacing(5)
+		self.username_entry = gtk.Entry(max=128)
+		self.username_entry.set_width_chars(16)
+		self.username_entry.set_text(xpra_opts.username)
+		self.username_label = gtk.Label("@")
 		self.host_entry = gtk.Entry(max=128)
-		self.host_entry.set_width_chars(40)
+		self.host_entry.set_width_chars(24)
 		self.host_entry.set_text(xpra_opts.host)
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
 		self.port_entry.set_text(str(xpra_opts.port))
+		hbox.pack_start(self.username_entry)
+		hbox.pack_start(self.username_label)
 		hbox.pack_start(self.host_entry)
 		hbox.pack_start(gtk.Label(":"))
 		hbox.pack_start(self.port_entry)
@@ -475,6 +481,19 @@ class ApplicationWindow:
 
 		self.window.add(vbox)
 		self.window.show_all()
+
+		def mode_changed(*args):
+			ssh = self.mode_combo.get_active_text()=="SSH"
+			if ssh:
+				self.username_entry.show()
+				self.username_label.show()
+				self.port_entry.set_text("22")
+			else:
+				self.username_entry.hide()
+				self.username_label.hide()
+				self.port_entry.set_text("%s" % xpra_opts.port)
+		self.mode_combo.connect("changed", mode_changed)
+		mode_changed()
 
 		global prepare_window
 		if prepare_window:
@@ -720,7 +739,12 @@ class ApplicationWindow:
 			if not os.path.exists(cmd):
 				self.info.set_text("Xpra command not found!")
 				return
-		uri = "%s:%s:%s" % (xpra_opts.mode, xpra_opts.host, xpra_opts.port)
+		username = xpra_opts.username
+		mode = xpra_opts.mode.lower()
+		if username and mode=="ssh":
+			uri = "ssh:%s@%s:%s" % (username, xpra_opts.host, xpra_opts.port)
+		else:
+			uri = "%s:%s:%s" % (mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
 		args.append("--encoding=%s" % xpra_opts.encoding)
 		if xpra_opts.encoding in ["jpeg", "webp", "x264"]:
@@ -736,6 +760,7 @@ class ApplicationWindow:
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
 		xpra_opts.port = self.port_entry.get_text()
+		xpra_opts.username = self.username_entry.get_text()
 		xpra_opts.encoding = self.encoding_combo.get_active_text()
 		xpra_opts.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
 		mode_enc = self.mode_combo.get_active_text()
@@ -777,7 +802,7 @@ def update_options_from_file(filename):
 		propDict[name] = value
 	propFile.close()
 
-	for prop in ["host", "encoding", "mode"]:
+	for prop in ["username", "host", "encoding", "mode"]:
 		val = propDict.get(prop)
 		if val:
 			setattr(xpra_opts, prop, val)
