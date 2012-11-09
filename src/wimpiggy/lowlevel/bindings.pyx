@@ -169,6 +169,8 @@ cdef extern from "X11/Xlib.h":
     # can broadcast it:
     Window XGetSelectionOwner(Display * display, Atom selection)
 
+    int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time time)
+
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:
         int type
@@ -230,9 +232,20 @@ cdef extern from "X11/Xlib.h":
         Atom atom
     ctypedef struct XKeyEvent:
         unsigned int keycode, state
+    ctypedef struct XButtonEvent:
+        Window root
+        Window subwindow
+        Time time
+        int x, y                # pointer x, y coordinates in event window
+        int x_root, y_root      # coordinates relative to root */
+        unsigned int state      # key or button mask
+        unsigned int button
+        Bool same_screen
     ctypedef union XEvent:
         int type
         XAnyEvent xany
+        XKeyEvent xkey
+        XButtonEvent xbutton
         XMapRequestEvent xmaprequest
         XConfigureRequestEvent xconfigurerequest
         XCirculateRequestEvent xcirculaterequest
@@ -244,7 +257,6 @@ cdef extern from "X11/Xlib.h":
         XReparentEvent xreparent
         XDestroyWindowEvent xdestroywindow
         XPropertyEvent xproperty
-        XKeyEvent xkey
 
     Status XSendEvent(Display *, Window target, Bool propagate,
                       unsigned long event_mask, XEvent * event)
@@ -1716,6 +1728,11 @@ def myGetSelectionOwner(display_source, pyatom):
     return XGetSelectionOwner(get_xdisplay_for(display_source),
                               get_xatom(pyatom))
 
+def mySetSelectionOwner(window, atom, time=None):
+    if time is None:
+        time = CurrentTime
+    return XSetSelectionOwner(get_xdisplay_for(window), get_xatom(atom), get_xwindow(window), time)
+
 cdef long cast_to_long(i):
     if i < 0:
         return <long>i
@@ -1727,7 +1744,7 @@ def sendClientMessage(target, propagate, event_mask,
     # data0 etc. are passed through get_xatom, so they can be integers, which
     # are passed through directly, or else they can be strings, which are
     # converted appropriately.
-    cdef Display * display                              #@DuplicatedSignature
+    cdef Display * display              #@DuplicatedSignature
     display = get_xdisplay_for(target)
     cdef Window w
     w = get_xwindow(target)
@@ -1747,6 +1764,39 @@ def sendClientMessage(target, propagate, event_mask,
     s = XSendEvent(display, w, propagate, event_mask, &e)
     if s == 0:
         raise ValueError, "failed to serialize ClientMessage"
+
+def sendClick(target, button, onoff, x, y):
+    cdef Display * display              #@DuplicatedSignature
+    display = get_xdisplay_for(target)
+    cdef Window w                       #@DuplicatedSignature
+    cdef Window r
+    w = get_xwindow(target)
+    r = get_xwindow(gtk.gdk.get_default_root_window())
+    log("sending message to %s", hex(w))
+    cdef XEvent e                       #@DuplicatedSignature
+    e.type = ButtonPress
+    e.xany.display = display
+    e.xany.window = w
+    #e.xclient.message_type = get_xatom(message_type)
+    e.xclient.format = 32
+    if button==1:
+        e.xbutton.button = Button1
+    elif button==2:
+        e.xbutton.button = Button2
+    else:
+        e.xbutton.button = Button3
+    e.xbutton.same_screen = True
+    e.xbutton.root = r
+    e.xbutton.x_root = x
+    e.xbutton.y_root = y
+    e.xbutton.x = 10
+    e.xbutton.y = 10
+    e.xbutton.state = int(onoff)
+    cdef Status s                       #@DuplicatedSignature
+    s = XSendEvent(display, w, False, 0, &e)
+    if s == 0:
+        raise ValueError, "failed to serialize ButtonPress Message"
+
 
 def sendConfigureNotify(pywindow):
     cdef Display * display              #@DuplicatedSignature

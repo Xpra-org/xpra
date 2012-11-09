@@ -195,3 +195,7 @@ AnyModifier
 
 # Change keymap
 MappingBusy
+
+Button1
+Button2
+Button3
