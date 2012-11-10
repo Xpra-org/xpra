@@ -460,13 +460,9 @@ class ClientWindow(gtk.Window):
                                       pointer, modifiers])
 
     def do_button_press_event(self, event):
-        if self._client.readonly:
-            return
         self._button_action(event.button, event, True)
 
     def do_button_release_event(self, event):
-        if self._client.readonly:
-            return
         self._button_action(event.button, event, False)
 
     def do_scroll_event(self, event):
