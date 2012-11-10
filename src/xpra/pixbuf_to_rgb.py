@@ -30,13 +30,14 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
         height = pixmap_h - y
     if width <= 0 or height <= 0:
         return None
-    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
     colormap = pixmap.get_colormap()
     if not colormap:
         log.error("get_rgb_rawdata(..) no colormap for RGB pixbuf %sx%s", width, height)
         return None
+    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
     pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
-    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(time.time()-start)))
+    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, colormap=%s, visual depth=%s",
+             int(1000*(time.time()-start)), pixmap.get_colormap(), pixmap.get_colormap().get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
