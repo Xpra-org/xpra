@@ -270,6 +270,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             trap.call(setup)
         except XError, e:
+            trap.swallow(remove_event_receiver, client_window, self)
             raise Unmanageable(e)
 
     def is_managed(self):
@@ -360,6 +361,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         try:
             trap.call(setup)
         except XError, e:
+            trap.swallow(remove_event_receiver, client_window, self)
             raise Unmanageable(e)
 
     def _guess_window_type(self, transient_for):
@@ -551,6 +553,7 @@ class WindowModel(BaseWindowModel):
             trap.call(setup_client)
             trap.call(self.client_window.get_geometry)
         except XError, e:
+            trap.swallow(remove_event_receiver, client_window, self)
             raise Unmanageable(e)
         self._setup_done = True
 
