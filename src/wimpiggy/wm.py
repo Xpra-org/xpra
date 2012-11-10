@@ -366,7 +366,7 @@ class Wm(gobject.GObject):
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
                                            event_mask=0, # event mask
                                            wclass=gtk.gdk.INPUT_ONLY,
-                                           title=self._name)
+                                           title="%s-EWMH" % self._name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         prop_set(self._root, "_NET_SUPPORTING_WM_CHECK",

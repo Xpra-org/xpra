@@ -77,6 +77,7 @@ log = Logger()
 class WorldWindow(gtk.Window):
     def __init__(self):
         super(WorldWindow, self).__init__()
+        self.set_title("Xpra-WorldWindow")
 
         # FIXME: This would better be a default handler, but there is a bug in
         # the superclass's default handler that means we can't call it
