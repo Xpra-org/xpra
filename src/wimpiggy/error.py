@@ -45,6 +45,9 @@ class XError(Exception):
         Exception.__init__(self)
         self.msg = message
 
+    def __str__(self):
+        return "XError: %s" % str(self.msg)
+
 
 xerror_to_name = None
 def XErrorToName(xerror):
@@ -92,7 +95,8 @@ class _ErrorManager(object):
             if error in _exc_for_error:
                 raise _exc_for_error[error](error)
             else:
-                raise XError(error)
+                from wimpiggy.lowlevel.bindings import error_names  #@UnresolvedImport
+                raise XError(error_names.get(error, error))
 
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once

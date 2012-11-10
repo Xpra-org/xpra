@@ -2045,6 +2045,27 @@ event_type_names = {}
 names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
+error_names = {
+            Success             : "Success", 
+            BadRequest          : "BadRequest",
+            BadValue            : "BadValue",
+            BadWindow           : "BadWindow",
+            BadPixmap           : "BadPixmap",
+            BadAtom             : "BadAtom",
+            BadCursor           : "BadCursor",
+            BadFont             : "BadFont",
+            BadMatch            : "BadMatch",
+            BadDrawable         : "BadDrawable",
+            BadAccess           : "BadAccess",
+            BadAlloc            : "BadAlloc",
+            BadColor            : "BadColor",
+            BadGC               : "BadGC",
+            BadIDChoice         : "BadIDChoice",
+            BadName             : "BadName",
+            BadLength           : "BadLength",
+            BadImplementation   : "BadImplementation",
+               }
+
 def init_x11_events():
     global _x_event_signals, event_type_names, XKBNotify, CursorNotify
     XKBNotify = get_XKB_event_base()
