@@ -408,6 +408,8 @@ class ClientWindow(gtk.Window):
         self.new_backing(w, h)
 
     def destroy(self):
+        if self._refresh_timer:
+            gobject.source_remove(self._refresh_timer)
         self._unfocus()
         gtk.Window.destroy(self)
         self._backing.close()
