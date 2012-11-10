@@ -113,6 +113,8 @@ class ManagerSelection(gobject.GObject):
                 add_event_receiver(window, self)
                 gtk.main()
                 log("...they did.")
+        window = get_pywindow(self.clipboard, self._xwindow)
+        window.set_title("Xpra-ManagerSelection")
 
     def do_wimpiggy_destroy_event(self, event):
         remove_event_receiver(event.window, self)
