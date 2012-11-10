@@ -165,6 +165,8 @@ cdef extern from "X11/Xlib.h":
 
     int XFree(void * data)
 
+    void XSync(Display * display, Bool discard)
+      
     # Needed to find the secret window Gtk creates to own the selection, so we
     # can broadcast it:
     Window XGetSelectionOwner(Display * display, Atom selection)
@@ -347,6 +349,9 @@ cdef extern from "X11/Xlib.h":
 
     # XMapWindow
     int XMapWindow(Display *, Window)
+    int XMapRaised(Display *, Window)
+    Status XWithdrawWindow(Display *, Window, int screen_number)
+    void XReparentWindow(Display *, Window w, Window parent, int x, int y)
 
     ctypedef struct XRectangle:
         short x, y
@@ -408,6 +413,34 @@ def get_display_for(obj):
         return obj.get_display()
     else:
         raise TypeError("Don't know how to get a display from %r" % (obj,))
+
+def xsync(discard=False):
+    cdef Display * display
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    XSync(display, discard)
+
+def map_raised(pywindow):
+    cdef Display * display                    #@DuplicatedSignature
+    cdef Window window = 0                    #@DuplicatedSignature
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    window = get_xwindow(pywindow)
+    XMapRaised(display, window)
+
+def withdraw(pywindow, screen_number=0):
+    cdef Display * display                    #@DuplicatedSignature
+    cdef Window window = 0                    #@DuplicatedSignature
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    window = get_xwindow(pywindow)
+    return XWithdrawWindow(display, window, screen_number)
+
+def reparent(pywindow, pyparent, x, y):
+    cdef Display * display                    #@DuplicatedSignature
+    cdef Window window = 0                    #@DuplicatedSignature
+    cdef Window parent = 0                    #@DuplicatedSignature
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    window = get_xwindow(pywindow)
+    parent = get_xwindow(pyparent)
+    XReparentWindow(display, window, parent, x, y)
 
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
     return <cGdkDisplay*> unwrap(get_display_for(obj), gtk.gdk.Display)
@@ -733,7 +766,7 @@ cdef _get_minmax_keycodes(Display *display):
     return min_keycode, max_keycode
 
 def get_minmax_keycodes():
-    cdef Display * display
+    cdef Display * display                    #@DuplicatedSignature
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     return  _get_minmax_keycodes(display)
 
@@ -1765,7 +1798,7 @@ def sendClientMessage(target, propagate, event_mask,
     if s == 0:
         raise ValueError, "failed to serialize ClientMessage"
 
-def sendClick(target, button, onoff, x, y):
+def sendClick(target, button, onoff, x_root, y_root, x, y):
     cdef Display * display              #@DuplicatedSignature
     display = get_xdisplay_for(target)
     cdef Window w                       #@DuplicatedSignature
@@ -1787,16 +1820,43 @@ def sendClick(target, button, onoff, x, y):
         e.xbutton.button = Button3
     e.xbutton.same_screen = True
     e.xbutton.root = r
-    e.xbutton.x_root = x
-    e.xbutton.y_root = y
-    e.xbutton.x = 10
-    e.xbutton.y = 10
+    e.xbutton.x_root = x_root
+    e.xbutton.y_root = y_root
+    e.xbutton.x = x
+    e.xbutton.y = y
     e.xbutton.state = int(onoff)
     cdef Status s                       #@DuplicatedSignature
     s = XSendEvent(display, w, False, 0, &e)
     if s == 0:
         raise ValueError, "failed to serialize ButtonPress Message"
 
+def send_xembed_message(window, opcode, detail, data1, data2):
+    """
+     Display* dpy, /* display */
+     Window w, /* receiver */
+     long message, /* message opcode */
+     long detail  /* message detail */
+     long data1  /* message data 1 */
+     long data2  /* message data 2 */
+     """
+    cdef Display * display              #@DuplicatedSignature
+    display = get_xdisplay_for(window)
+    cdef Window w                       #@DuplicatedSignature
+    w = get_xwindow(window)
+    cdef XEvent e                       #@DuplicatedSignature
+    e.xany.display = display
+    e.xany.window = w
+    e.xany.type = ClientMessage
+    e.xclient.message_type = get_xatom("_XEMBED")
+    e.xclient.format = 32
+    e.xclient.data.l[0] = CurrentTime
+    e.xclient.data.l[1] = opcode
+    e.xclient.data.l[2] = detail
+    e.xclient.data.l[3] = data1
+    e.xclient.data.l[4] = data2
+    s = XSendEvent(display, w, False, NoEventMask, &e)
+    if s == 0:
+        raise ValueError, "failed to serialize XEmbed Message"
 
 def sendConfigureNotify(pywindow):
     cdef Display * display              #@DuplicatedSignature
