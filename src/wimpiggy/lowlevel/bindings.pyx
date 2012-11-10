@@ -2037,51 +2037,14 @@ def remove_event_receiver(window, receiver):
         receivers = None
         window.set_data(_ev_receiver_key, receivers)
 
-def _maybe_send_event(window, signal, event):
-    handlers = window.get_data(_ev_receiver_key)
-    if handlers is not None:
-        # Copy the 'handlers' list, because signal handlers might cause items
-        # to be added or removed from it while we are iterating:
-        for handler in list(handlers):
-            if signal in gobject.signal_list_names(handler):
-                log("  forwarding event to a %s handler's %s signal",
-                    type(handler).__name__, signal)
-                handler.emit(signal, event)
-                log("  forwarded")
-            else:
-                log("  not forwarding to %s handler, it has no %s signal",
-                    type(handler).__name__, signal)
-    else:
-        log("  no handler registered for this window, ignoring event")
-
-def _route_event(event, signal, parent_signal):
-    # Sometimes we get GDK events with event.window == None, because they are
-    # for windows we have never created a GdkWindow object for, and GDK
-    # doesn't do so just for this event.  As far as I can tell this only
-    # matters for override redirect windows when they disappear, and we don't
-    # care about those anyway.
-    if event.window is None:
-        log("  event.window is None, ignoring")
-        assert event.type in (UnmapNotify, DestroyNotify), \
-                "event window is None for event type %s!"
-        return
-    if event.window is event.delivered_to:
-        if signal is not None:
-            log("  event was delivered to window itself")
-            _maybe_send_event(event.window, signal, event)
-        else:
-            log("  received event on window itself but have no signal for that")
-    else:
-        if parent_signal is not None:
-            log("  event was delivered to parent window")
-            _maybe_send_event(event.delivered_to, parent_signal, event)
-        else:
-            log("  received event on a parent window but have no parent signal")
 
 CursorNotify = 0
 XKBNotify = 0
 _x_event_signals = {}
 event_type_names = {}
+names_to_event_type = {}
+#sometimes we may want to debug routing for certain X11 event types
+debug_route_events = []
 def init_x11_events():
     global _x_event_signals, event_type_names, XKBNotify, CursorNotify
     XKBNotify = get_XKB_event_base()
@@ -2139,6 +2102,71 @@ def init_x11_events():
         MappingNotify       : "MappingNotify",
         #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it 
         }
+    for k,v in event_type_names.items():
+        names_to_event_type[v] = k
+
+    XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
+    for name in XPRA_X11_DEBUG_EVENTS.split(","):
+        event_type = names_to_event_type.get(name.strip())
+        if event_type is None:
+            log.warn("could not find event type '%s' in %s", name.strip(), names_to_event_type.keys())
+        else:
+            debug_route_events.append(event_type)
+    if len(debug_route_events)>0:
+        log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
+
+#and change this debugging on the fly, programmatically:
+def add_debug_route_event(event_type):
+    global debug_route_events
+    debug_route_events.append(event_type)
+def remove_debug_route_event(event_type):
+    global debug_route_events
+    debug_route_events.remove(event_type)
+
+def _route_event(event, signal, parent_signal):
+    # Sometimes we get GDK events with event.window == None, because they are
+    # for windows we have never created a GdkWindow object for, and GDK
+    # doesn't do so just for this event.  As far as I can tell this only
+    # matters for override redirect windows when they disappear, and we don't
+    # care about those anyway.
+    global debug_route_events
+    l = log.debug
+    if event.type in debug_route_events:
+        l = log.info
+    def _maybe_send_event(window, signal, event):
+        handlers = window.get_data(_ev_receiver_key)
+        if handlers is not None:
+            # Copy the 'handlers' list, because signal handlers might cause items
+            # to be added or removed from it while we are iterating:
+            for handler in list(handlers):
+                if signal in gobject.signal_list_names(handler):
+                    l("  forwarding event to a %s handler's %s signal",
+                        type(handler).__name__, signal)
+                    handler.emit(signal, event)
+                    l("  forwarded")
+                else:
+                    l("  not forwarding to %s handler, it has no %s signal",
+                        type(handler).__name__, signal)
+        else:
+            l("  no handler registered for this window, ignoring event")
+    
+    if event.window is None:
+        l("  event.window is None, ignoring")
+        assert event.type in (UnmapNotify, DestroyNotify), \
+                "event window is None for event type %s!" % (event_type_names.get(event.type, event.type))
+        return
+    if event.window is event.delivered_to:
+        if signal is not None:
+            l("  delivering event to window itself")
+            _maybe_send_event(event.window, signal, event)
+        else:
+            l("  received event on window itself but have no signal for that")
+    else:
+        if parent_signal is not None:
+            l("  delivering event to parent window")
+            _maybe_send_event(event.delivered_to, parent_signal, event)
+        else:
+            l("  received event on a parent window but have no parent signal")
 
 
 def _gw(display, xwin):
