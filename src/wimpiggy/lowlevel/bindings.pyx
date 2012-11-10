@@ -2127,10 +2127,13 @@ def init_x11_events():
         names_to_event_type[v] = k
 
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
-    for name in XPRA_X11_DEBUG_EVENTS.split(","):
-        event_type = names_to_event_type.get(name.strip())
+    for n in XPRA_X11_DEBUG_EVENTS.split(","):
+        name = n.strip()
+        if len(name)==0:
+            continue
+        event_type = names_to_event_type.get(name)
         if event_type is None:
-            log.warn("could not find event type '%s' in %s", name.strip(), names_to_event_type.keys())
+            log.warn("could not find event type '%s' in %s", name, ", ".join(names_to_event_type.keys()))
         else:
             debug_route_events.append(event_type)
     if len(debug_route_events)>0:
