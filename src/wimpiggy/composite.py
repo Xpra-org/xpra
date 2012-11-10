@@ -43,17 +43,18 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     # This may raise XError.
     def __init__(self, window, already_composited):
         super(CompositeHelper, self).__init__()
+        log("CompositeHelper.__init__(%s,%s)", window, already_composited)
         self._window = window
         self._already_composited = already_composited
-        def setup():
-            if not self._already_composited:
-                xcomposite_redirect_window(window)
-            (_, _, _, _, self._border_width) = geometry_with_border(window)
-        trap.call(setup)
         self._listening_to = None
-        self.invalidate_pixmap()
-        self._damage_handle = xdamage_start(window)
+        self._damage_handle = None
 
+    def setup(self):
+        if not self._already_composited:
+            trap.call(xcomposite_redirect_window, self._window)
+        (_, _, _, _, self._border_width) = geometry_with_border(self._window)
+        self.invalidate_pixmap()
+        self._damage_handle = trap.call(xdamage_start, self._window)
         add_event_receiver(self._window, self)
 
     def destroy(self):
@@ -62,7 +63,8 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             return
         if not self._already_composited:
             trap.swallow(xcomposite_unredirect_window, self._window)
-        trap.swallow(xdamage_stop, self._window, self._damage_handle)
+        if self._damage_handle:
+            trap.swallow(xdamage_stop, self._window, self._damage_handle)
         self._damage_handle = None
         self._contents_handle = None
         self.invalidate_pixmap()

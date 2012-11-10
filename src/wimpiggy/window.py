@@ -37,7 +37,8 @@ from wimpiggy.lowlevel import (
                XKillClient,                                 #@UnresolvedImport
                sendConfigureNotify,                         #@UnresolvedImport
                configureAndNotify,                          #@UnresolvedImport
-               substructureRedirect                         #@UnresolvedImport
+               substructureRedirect,                        #@UnresolvedImport
+               get_xwindow,                                 #@UnresolvedImport
                )
 from wimpiggy.lowlevel.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
@@ -247,31 +248,53 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
 
     def __init__(self, client_window):
+        log("new window %s - %s", hex(client_window.xid), get_xwindow(client_window))
         super(BaseWindowModel, self).__init__()
-
-        log("new window %s", hex(client_window.xid))
-
-        self._managed = False
-        self._composite = None
         self.client_window = client_window
+        self._managed = False
+        self._setup_done = False
+        self._geometry = None
+        self._damage_forward_handle = None
         self._internal_set_property("client-window", client_window)
-        add_event_receiver(client_window, self)
+        self._composite = CompositeHelper(self.client_window, False)  #self.composite_configure_event)
 
-        def setup():
-            # Keith Packard says that composite state is undefined following a
-            # reparent, so I'm not sure doing this here in the superclass,
-            # before we reparent, actually works... let's wait and see.
-            self._composite = CompositeHelper(self.client_window, False, )  #self.composite_configure_event)
-            h = self._composite.connect("contents-changed", self._forward_contents_changed)
-            self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
-            self._damage_forward_handle = h
-            self._geometry = geometry_with_border(self.client_window)
-            self._managed = True
+    def call_setup(self):
+        log("call_setup() adding event receiver")
+        add_event_receiver(self.client_window, self)
+        # Keith Packard says that composite state is undefined following a
+        # reparent, so I'm not sure doing this here in the superclass,
+        # before we reparent, actually works... let's wait and see.
         try:
-            trap.call(setup)
+            self._composite.setup()
         except XError, e:
-            trap.swallow(remove_event_receiver, client_window, self)
+            log("window %s does not support compositing", get_xwindow(self.client_window))
+            self._composite.destroy()
+            self._composite = None
+            remove_event_receiver(self.client_window, self)
             raise Unmanageable(e)
+        #compositing is now enabled, from now on we need to call setup_failed to clean things up
+        try:
+            trap.call(self.setup)
+            trap.call(self.client_window.get_geometry)
+        except XError, e:
+            try:
+                trap.call(self.setup_failed, e)
+            except Exception, ex:
+                log.error("error in cleanup handler: %s", ex, exc_info=True)
+            raise Unmanageable(e)
+        self._managed = True
+        self._setup_done = True
+        log("call_setup() ended")
+
+    def setup_failed(self, e):
+        log.warn("cannot manage xid %s %s: %s", get_xwindow(self.client_window), self.client_window, e, exc_info=True)
+        self.do_unmanaged(False)
+
+    def setup(self):
+        h = self._composite.connect("contents-changed", self._forward_contents_changed)
+        self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
+        self._damage_forward_handle = h
+        self._geometry = geometry_with_border(self.client_window)
 
     def is_managed(self):
         return self._managed
@@ -306,9 +329,12 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
+        log("do_unmanaged(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
         if self._composite:
-            self._composite.disconnect(self._damage_forward_handle)
+            if self._damage_forward_handle:
+                self._composite.disconnect(self._damage_forward_handle)
+                self._damage_forward_handle = None
             self._composite.destroy()
             self._composite = None
 
@@ -346,23 +372,19 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def __init__(self, client_window):
         BaseWindowModel.__init__(self, client_window)
-        def setup():
-            self.client_window.set_events(self.client_window.get_events()
-                                          | gtk.gdk.STRUCTURE_MASK)
-            # So now if the window becomes unmapped in the future then we will
-            # notice... but it might be unmapped already, and any event
-            # already generated, and our request for that event is too late!
-            # So double check now, *after* putting in our request:
-            if not is_mapped(self.client_window):
-                raise Unmanageable("window already unmapped")
+        self.call_setup()
+        self._read_initial_properties()
 
-            self._managed = True
-            self._read_initial_properties()
-        try:
-            trap.call(setup)
-        except XError, e:
-            trap.swallow(remove_event_receiver, client_window, self)
-            raise Unmanageable(e)
+    def setup(self):
+        BaseWindowModel.setup(self)
+        self.client_window.set_events(self.client_window.get_events()
+                                      | gtk.gdk.STRUCTURE_MASK)
+        # So now if the window becomes unmapped in the future then we will
+        # notice... but it might be unmapped already, and any event
+        # already generated, and our request for that event is too late!
+        # So double check now, *after* putting in our request:
+        if not is_mapped(self.client_window):
+            raise Unmanageable("window already unmapped")
 
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
@@ -496,9 +518,20 @@ class WindowModel(BaseWindowModel):
 
         BaseWindowModel.__init__(self, client_window)
         self.parking_window = parking_window
-        self._setup_done = False
+        self.corral_window = None
+        self.client_window_saved_events = self.client_window.get_events()
+        self.in_save_set = False
+        self.client_reparented = False
+        self.startup_unmap_serial = None
 
+        # The WM_HINTS input field
+        self._input_field = True
         self.connect("notify::iconic", self._handle_iconic_update)
+
+        self.call_setup()
+
+    def setup(self):
+        BaseWindowModel.setup(self)
 
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
@@ -507,55 +540,52 @@ class WindowModel(BaseWindowModel):
                                             height=100,
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
-                                            event_mask=gtk.gdk.PROPERTY_CHANGE_MASK)
+                                            event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
+                                            title = "CorralWindow-0x%s" % self.client_window.xid)
+        log("setup() corral_window=%s", self.corral_window)
         substructureRedirect(self.corral_window)
         add_event_receiver(self.corral_window, self)
-        log("created corral window 0x%x", self.corral_window.xid)
 
-        # The WM_HINTS input field
-        self._input_field = True
+        # Start listening for important events.
+        self.client_window.set_events(self.client_window_saved_events
+                                      | gtk.gdk.STRUCTURE_MASK
+                                      | gtk.gdk.PROPERTY_CHANGE_MASK)
 
-        def setup_client():
-            # Start listening for important events.
-            self.client_window.set_events(self.client_window.get_events()
-                                          | gtk.gdk.STRUCTURE_MASK
-                                          | gtk.gdk.PROPERTY_CHANGE_MASK)
+        # The child might already be mapped, in case we inherited it from
+        # a previous window manager.  If so, we unmap it now, and save the
+        # serial number of the request -- this way, when we get an
+        # UnmapNotify later, we'll know that it's just from us unmapping
+        # the window, not from the client withdrawing the window.
+        if is_mapped(self.client_window):
+            log("hiding inherited window")
+            self.startup_unmap_serial = unmap_with_serial(self.client_window)
 
-            # The child might already be mapped, in case we inherited it from
-            # a previous window manager.  If so, we unmap it now, and save the
-            # serial number of the request -- this way, when we get an
-            # UnmapNotify later, we'll know that it's just from us unmapping
-            # the window, not from the client withdrawing the window.
-            self.startup_unmap_serial = None
-            if is_mapped(self.client_window):
-                log("hiding inherited window")
-                self.startup_unmap_serial = unmap_with_serial(self.client_window)
+        # Process properties
+        self._read_initial_properties()
+        self._write_initial_properties_and_setup()
 
-            # Process properties
-            self._read_initial_properties()
-            self._write_initial_properties_and_setup()
+        # For now, we never use the Iconic state at all.
+        self._internal_set_property("iconic", False)
 
-            # For now, we never use the Iconic state at all.
-            self._internal_set_property("iconic", False)
+        log("setup() adding to save set")
+        XAddToSaveSet(self.client_window)
+        self.in_save_set = True
 
-            XAddToSaveSet(self.client_window)
-            self.client_window.reparent(self.corral_window, 0, 0)
-            w,h = self.client_window.get_geometry()[2:4]
-            hints = self.get_property("size-hints")
-            self._sanitize_size_hints(hints)
-            client_size = calc_constrained_size(w, h, hints)[:2]
-            log("setup_client() resizing windows to %s", client_size)
-            self.client_window.resize(*client_size)
-            self.corral_window.resize(*client_size)
-            self.client_window.show_unraised()
-            self.client_window.get_geometry()
-        try:
-            trap.call(setup_client)
-            trap.call(self.client_window.get_geometry)
-        except XError, e:
-            trap.swallow(remove_event_receiver, client_window, self)
-            raise Unmanageable(e)
-        self._setup_done = True
+        log("setup() reparenting")
+        self.client_window.reparent(self.corral_window, 0, 0)
+        self.client_reparented = True
+
+        log("setup() geometry")
+        w,h = self.client_window.get_geometry()[2:4]
+        hints = self.get_property("size-hints")
+        self._sanitize_size_hints(hints)
+        client_size = calc_constrained_size(w, h, hints)[:2]
+        log("setup_client() resizing windows to %s", client_size)
+        self.client_window.resize(*client_size)
+        self.corral_window.resize(*client_size)
+        self.client_window.show_unraised()
+        self.client_window.get_geometry()
+
 
     def is_OR(self):
         return  False
@@ -625,15 +655,19 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("owner", None)
         def unmanageit():
             self._scrub_withdrawn_window()
-            self.client_window.reparent(gtk.gdk.get_default_root_window(),
-                                        0, 0)
+            if self.client_reparented:
+                self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
+                self.client_reparented = False
+            self.client_window.set_events(self.client_window_saved_events)
             # It is important to remove from our save set, even after
             # reparenting, because according to the X spec, windows that are
             # in our save set are always Mapped when we exit, *even if those
             # windows are no longer inferior to any of our windows!* (see
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
-            XRemoveFromSaveSet(self.client_window)
+            if self.in_save_set:
+                XRemoveFromSaveSet(self.client_window)
+                self.in_save_set = False
             sendConfigureNotify(self.client_window)
             if exiting:
                 self.client_window.show_unraised()
@@ -1345,7 +1379,8 @@ class WindowView(gtk.Widget):
                                      height=self.allocation.height,
                                      window_type=gtk.gdk.WINDOW_CHILD,
                                      wclass=gtk.gdk.INPUT_OUTPUT,
-                                     event_mask=0)
+                                     event_mask=0,
+                                     title="WindowModel-Window")
         self.window.set_user_data(self)
 
         # Give it a nice theme-defined background
@@ -1358,7 +1393,8 @@ class WindowView(gtk.Widget):
                                             height=self.allocation.height,
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
-                                            event_mask=gtk.gdk.EXPOSURE_MASK)
+                                            event_mask=gtk.gdk.EXPOSURE_MASK,
+                                            title="WindowModel-ImageWindow")
         self._image_window.input_shape_combine_region(gtk.gdk.Region(),
                                                       0, 0)
         self._image_window.set_user_data(self)
