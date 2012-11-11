@@ -311,11 +311,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self):
         self._composite.acknowledge_changes()
 
-    def do_wimpiggy_configure_event(self, event):
-        self._geometry = (event.x, event.y, event.width, event.height,
-                          event.border_width)
-        self.notify("geometry")
-
     def composite_configure_event(self, composite_window, event):
         log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
 
@@ -697,6 +692,11 @@ class WindowModel(BaseWindowModel):
             self._update_client_geometry()
             self.corral_window.show_unraised()
         trap.swallow(sendConfigureNotify, self.client_window)
+
+    def do_wimpiggy_configure_event(self, event):
+        self._geometry = (event.x, event.y, event.width, event.height,
+                          event.border_width)
+        self.notify("geometry")
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
         if maybe_owner and self.get_property("owner") is maybe_owner:
