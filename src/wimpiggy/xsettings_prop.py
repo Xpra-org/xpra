@@ -39,7 +39,7 @@ def get_settings(disp, d):
     #parse xsettings according to
     #http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
     assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
-    debug("get_settings(%s)", list(d))    
+    debug("get_settings(%s)", list(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack("=BBBBII", d[:12])
     debug("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s", byte_order, get_local_byteorder(), serial, n_settings)
     settings = []
