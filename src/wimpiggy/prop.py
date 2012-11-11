@@ -23,6 +23,7 @@ from wimpiggy.lowlevel import (
                 PropertyError,              #@UnresolvedImport
                 get_xatom, get_pyatom,      #@UnresolvedImport
                 get_xwindow, get_pywindow,  #@UnresolvedImport
+                get_xvisual,                #@UnresolvedImport
                 const,                      #@UnresolvedImport
                 premultiply_argb_in_place   #@UnresolvedImport
                )
@@ -233,6 +234,10 @@ _prop_types = {
             lambda disp, c: struct.pack("=I", c),
             lambda disp, d: struct.unpack("=I", d)[0],
             ""),
+    "visual": (gtk.gdk.Visual, "XA_VISUALID", 32,
+               lambda disp, c: struct.pack("=I", get_xvisual(c)),
+               unsupported,
+               ""),
     "window": (gtk.gdk.Window, "WINDOW", 32,
                lambda disp, c: struct.pack("=I", get_xwindow(c)),
                lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),

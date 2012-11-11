@@ -353,6 +353,18 @@ cdef extern from "X11/Xlib.h":
     Status XWithdrawWindow(Display *, Window, int screen_number)
     void XReparentWindow(Display *, Window w, Window parent, int x, int y)
 
+    ctypedef CARD32 VisualID
+
+    ctypedef struct Visual:
+        void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
+        VisualID visualid
+        int c_class
+        unsigned long red_mask
+        unsigned long green_mask
+        unsigned long blue_mask
+        int bits_per_rgb
+        int map_entries
+
     ctypedef struct XRectangle:
         short x, y
         unsigned short width, height
@@ -370,6 +382,10 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
         int x, y, width, height
     void gdk_region_get_rectangles(GdkRegion *, GdkRectangle **, int *)
     void g_free(void *)
+
+    ctypedef struct cGdkVisual "GdkVisual":
+        pass
+    Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
 
     ctypedef struct cGdkWindow "GdkWindow":
         pass
@@ -413,6 +429,13 @@ def get_display_for(obj):
         return obj.get_display()
     else:
         raise TypeError("Don't know how to get a display from %r" % (obj,))
+
+def get_xvisual(pyvisual):
+    cdef Visual * xvisual
+    xvisual = GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, gtk.gdk.Visual))
+    if xvisual==NULL:
+        return  -1
+    return xvisual.visualid
 
 def xsync(discard=False):
     cdef Display * display
@@ -1761,10 +1784,13 @@ def myGetSelectionOwner(display_source, pyatom):
     return XGetSelectionOwner(get_xdisplay_for(display_source),
                               get_xatom(pyatom))
 
-def mySetSelectionOwner(window, atom, time=None):
+def mySetSelectionOwner(display_source, window, atom, time=None):
     if time is None:
         time = CurrentTime
-    return XSetSelectionOwner(get_xdisplay_for(window), get_xatom(atom), get_xwindow(window), time)
+    xid = XNone
+    if window:
+        xid = get_xwindow(window)
+    return XSetSelectionOwner(get_xdisplay_for(display_source), get_xatom(atom), xid, time)
 
 cdef long cast_to_long(i):
     if i < 0:
