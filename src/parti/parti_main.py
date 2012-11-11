@@ -33,7 +33,7 @@ class Parti(object):
 
         self._trays = TraySet()
         self._trays.connect("changed", self._desktop_list_changed)
-        
+
         # Create our display stage
         self._world_organizer = WorldOrganizer(self._trays)
         self._wm.get_property("toplevel").add(self._world_organizer)

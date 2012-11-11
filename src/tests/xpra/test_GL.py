@@ -8,14 +8,14 @@
 def main():
     import pygtk
     pygtk.require('2.0')
-    
+
     import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
-    
+
     print("loading OpenGL.GL")
     from OpenGL.GL import GL_VERSION, glGetString
     from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
-    
+
     glconfig = gtk.gdkgl.Config(mode=gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE | gtk.gdkgl.MODE_DEPTH)
     print("glconfig=%s" % glconfig)
 
@@ -53,7 +53,7 @@ def main():
     finally:
         gldrawable.gl_end()
         del glcontext, gldrawable, glext, glconfig
-    
+
 
 if __name__ == "__main__":
     main()

@@ -166,7 +166,7 @@ cdef extern from "X11/Xlib.h":
     int XFree(void * data)
 
     void XSync(Display * display, Bool discard)
-      
+
     # Needed to find the secret window Gtk creates to own the selection, so we
     # can broadcast it:
     Window XGetSelectionOwner(Display * display, Atom selection)
@@ -2072,7 +2072,7 @@ names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
 error_names = {
-            Success             : "Success", 
+            Success             : "Success",
             BadRequest          : "BadRequest",
             BadValue            : "BadValue",
             BadWindow           : "BadWindow",
@@ -2147,7 +2147,7 @@ def init_x11_events():
         ColormapNotify      : "ColormapNotify",
         ClientMessage       : "ClientMessage",
         MappingNotify       : "MappingNotify",
-        #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it 
+        #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it
         }
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
@@ -2199,7 +2199,7 @@ def _route_event(event, signal, parent_signal):
                         type(handler).__name__, signal)
         else:
             l("  no handler registered for this window, ignoring event")
-    
+
     if event.window is None:
         l("  event.window is None, ignoring")
         assert event.type in (UnmapNotify, DestroyNotify), \

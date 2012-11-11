@@ -17,7 +17,7 @@ class PseudoclientWindow(gtk.Window):
 
     The reason this is a separate class, as opposed to say a gtk.Window
     factory method on wm, is that this way allows for subclassing."""
-    
+
     def __init__(self, wm, **kwargs):
         gtk.Window.__init__(self, **kwargs)
         wm._make_window_pseudoclient(self)
