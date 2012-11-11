@@ -178,7 +178,7 @@ class ClientExtras(ClientExtrasBase):
         if self._is_ubuntu_11_10_or_later() and self.setup_appindicator(delay_tray, tray_icon_filename):
             return
         if not self.setup_statusicon(delay_tray, tray_icon_filename):
-            log.error("failed to setup system-tray")
+            log.error("failed to setup tray icon")
 
     def setup_dbusnotify(self):
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")

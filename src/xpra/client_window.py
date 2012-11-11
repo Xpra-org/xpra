@@ -187,6 +187,12 @@ class ClientWindow(gtk.Window):
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
+    def is_OR(self):
+        return self._override_redirect
+
+    def is_tray(self):
+        return False
+
     def get_workspace(self):
         try:
             if sys.platform.startswith("win"):

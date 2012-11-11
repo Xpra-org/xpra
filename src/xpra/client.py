@@ -51,7 +51,10 @@ else:
                     y = int(y/ratio)
                 cursor = gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
         for gtkwindow in gtkwindows:
-            gtkwindow.get_window().set_cursor(cursor)
+            gdkwin = gtkwindow.get_window()
+            #trays don't have a gdk window
+            if gdkwin:
+                gdkwin.set_cursor(cursor)
 
 import sys
 import uuid
@@ -148,6 +151,7 @@ class XpraClient(XpraClientBase):
         self.windows_enabled = opts.windows_enabled
         self._client_extras = ClientExtras(self, opts, conn)
         self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
+        self.client_supports_system_tray = opts.system_tray and self._client_extras.supports_system_tray()
         self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
@@ -260,6 +264,7 @@ class XpraClient(XpraClientBase):
             "hello":                self._process_hello,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
+            "new-tray":             self._process_new_tray,
             "window-resized":       self._process_window_resized,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
@@ -578,6 +583,7 @@ class XpraClient(XpraClientBase):
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled
         capabilities["raw_window_icons"] = True
+        capabilities["system_tray"] = self.client_supports_system_tray
         try:
             from wimpiggy.prop import set_xsettings_format
             assert set_xsettings_format
@@ -822,6 +828,15 @@ class XpraClient(XpraClientBase):
 
     def _process_new_override_redirect(self, packet):
         self._process_new_common(packet, True)
+
+    def _process_new_tray(self, packet):
+        self._ui_event()
+        wid, w, h = packet[1:4]
+        assert wid not in self._id_to_window, "we already have a window %s" % wid
+        tray = self._client_extras.make_system_tray(self, wid, w, h)
+        log("process_new_tray(%s) tray=%s", packet, tray)
+        self._id_to_window[wid] = tray
+        self._window_to_id[tray] = wid
 
     def _process_window_resized(self, packet):
         (wid, w, h) = packet[1:4]

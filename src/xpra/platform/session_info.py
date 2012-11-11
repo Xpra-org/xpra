@@ -235,13 +235,15 @@ class SessionInfo(gtk.Window):
         settimedeltastr(self.session_connected_label, self.client.start_time)
 
         if self.client.windows_enabled:
-            real, redirect = 0, 0
+            real, redirect, trays = 0, 0, 0
             for w in self.client._window_to_id.keys():
-                if w._override_redirect:
+                if w.is_tray():
+                    trays += 1
+                elif w.is_OR():
                     redirect +=1
                 else:
                     real += 1
-            self.windows_managed_label.set_text("%s  (%s transient)" % (real, redirect))
+            self.windows_managed_label.set_text("%s  (%s transient - %s trays)" % (real, redirect, trays))
             regions_sizes = "n/a"
             regions = "n/a"
             pixels = "n/a"

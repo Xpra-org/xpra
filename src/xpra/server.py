@@ -486,6 +486,7 @@ class XpraServer(gobject.GObject):
         self._id_to_window[wid] = window
         window.connect("client-contents-changed", self._contents_changed)
         window.connect("unmanaged", self._lost_window)
+        return wid
 
     _window_export_properties = ("title", "size-hints")
     def _add_new_window(self, window):
@@ -504,14 +505,16 @@ class XpraServer(gobject.GObject):
             if is_tray:
                 assert self._tray
                 window = SystemTrayWindowModel(raw_window)
+                wid = self._add_new_window_common(window)
+                self._send_new_tray_window_packet(wid, window)
+                return
             else:
                 window = OverrideRedirectWindowModel(raw_window)
+                self._add_new_window_common(window)
+                window.connect("notify::geometry", self._or_window_geometry_changed)
+                self._send_new_or_window_packet(window)
         except Unmanageable, e:
             log("cannot add %s: %s" % (window_info(raw_window), e))
-            return
-        self._add_new_window_common(window)
-        window.connect("notify::geometry", self._or_window_geometry_changed)
-        self._send_new_or_window_packet(window)
 
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
@@ -624,12 +627,15 @@ class XpraServer(gobject.GObject):
 
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
-        if window.is_tray():
-            properties = ["system-tray"]
-        else:
-            properties = ["transient-for", "window-type"]
+        properties = ["transient-for", "window-type"]
         self._do_send_new_window_packet("new-override-redirect", window, geometry, properties)
         (_, _, w, h) = geometry
+        self._damage(window, 0, 0, w, h)
+
+    def _send_new_tray_window_packet(self, wid, window):
+        (_, _, w, h) = window.get_property("geometry")
+        for ss in self._server_sources.values():
+            ss.new_tray(wid, window, w, h)
         self._damage(window, 0, 0, w, h)
 
     def _do_send_new_window_packet(self, ptype, window, geometry, properties):

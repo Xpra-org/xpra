@@ -142,6 +142,7 @@ class CairoBacking(Backing):
 
     def init(self, w, h):
         old_backing = self._backing
+        #should we honour self.depth here?
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
         cr = cairo.Context(self._backing)
         if old_backing is not None:
@@ -388,8 +389,14 @@ class PixmapBacking(Backing):
             log.error("cairo_draw(%s)", context, exc_info=True)
             return False
 
-
 def new_backing(wid, w, h, backing, mmap_enabled, mmap):
+    if is_gtk3() or PREFER_CAIRO:
+        backing_class = CairoBacking
+    else:
+        backing_class = PixmapBacking
+    return make_new_backing(backing_class, wid, w, h, backing, mmap_enabled, mmap)
+
+def make_new_backing(backing_class, wid, w, h, backing, mmap_enabled, mmap):
     w = max(1, w)
     h = max(1, h)
     lock = None
@@ -399,10 +406,7 @@ def new_backing(wid, w, h, backing, mmap_enabled, mmap):
         if lock:
             lock.acquire()
         if backing is None:
-            if is_gtk3() or PREFER_CAIRO:
-                backing = CairoBacking(wid, w, h, mmap_enabled, mmap)
-            else:
-                backing = PixmapBacking(wid, w, h, mmap_enabled, mmap)
+            backing = backing_class(wid, w, h, mmap_enabled, mmap)
         backing.init(w, h)
     finally:
         if lock:

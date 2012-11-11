@@ -16,6 +16,7 @@ import webbrowser
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.keys import get_gtk_keymap, mask_to_names
+from xpra.platform.client_tray import ClientTray
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -176,6 +177,12 @@ class ClientExtrasBase(object):
 
     def supports_mmap(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED
+
+    def supports_system_tray(self):
+        return True
+
+    def make_system_tray(self, client, wid, w, h):
+        return ClientTray(client, wid, w, h)
 
     def supports_clipboard(self):
         return self.clipboard_helper is not None
@@ -802,7 +809,7 @@ class ClientExtrasBase(object):
     def make_raisewindowsmenuitem(self):
         def raise_windows(*args):
             for win in self.client._window_to_id.keys():
-                if not win._override_redirect:
+                if not win.is_OR():
                     win.present()
         return self.menuitem("Raise Windows", "raise.png", None, raise_windows)
 

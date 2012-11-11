@@ -539,8 +539,6 @@ class ServerSource(object):
             return {"title": title.encode("utf-8")}
         elif propname == "modal":
             return {"modal" : window.get_property("modal")}
-        elif propname == "system-tray":
-            return {"system-tray" : window.is_tray()}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")
@@ -816,11 +814,17 @@ class ServerSource(object):
                 self.send("window-metadata", wid, metadata)
 
     def can_send_window(self, window):
-        if not self.send_windows:
+        if not self.send_windows and not window.is_tray():
             return  False
         if window.is_tray() and not self.system_tray:
             return  False
         return True
+
+    def new_tray(self, wid, window, w, h):
+        assert window.is_tray()
+        if not self.can_send_window(window):
+            return
+        self.send("new-tray", wid, w, h)
 
     def new_window(self, ptype, wid, window, x, y, w, h, properties, client_properties):
         if not self.can_send_window(window):
