@@ -9,7 +9,7 @@ v0.7.0 (2012-10-08)
 	-- fix "AltGr" key handling with MS Windows clients (and others)
 	-- fix crash with x264 encoding
 	-- fix crash with fast disappearing tooltip windows
-	-- avoid storing password in a file when using the launcher (except on MS Windows) 
+	-- avoid storing password in a file when using the launcher (except on MS Windows)
 	-- many latency fixes and improvements: lower latency, better line congestion handling, etc
 	-- lower client latency: decompress pictures in a dedicated thread (including rgb24+zlib)
 	-- better launcher command feedback
@@ -127,7 +127,7 @@ v0.5.1 (2012-08-25)
 
 v0.5.0 (2012-08-20)
 ======================
-	-- new packet encoder written in C (much faster and data is now smaller too) 
+	-- new packet encoder written in C (much faster and data is now smaller too)
 	-- read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 	-- support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
 	-- pass dpi to server and allow clients to specify dpi on the command line
@@ -175,7 +175,7 @@ v0.4.0 (2012-07-23)
 ======================
 	-- fix client application resizing its own window
 	-- fix window dimensions hints not applied
-	-- fix memleak in x264 cleanup code 
+	-- fix memleak in x264 cleanup code
 	-- fix xpra command exit code (more complete fix)
 	-- fix latency bottleneck in processing of damage requests
 	-- fix free uninitialized pointers in video decoder initialization error codepath
