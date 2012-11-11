@@ -439,6 +439,7 @@ class ServerSource(object):
         self.desktop_size = None
         self.uses_swscale = False
         self.raw_window_icons = False
+        self.system_tray = False
 
         self.keyboard_config = None
 
@@ -489,6 +490,7 @@ class ServerSource(object):
         self.uses_swscale = capabilities.get("uses_swscale", True)
         self.named_cursors = capabilities.get("named_cursors", False)
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
+        self.system_tray = capabilities.get("system_tray", False)
         #encodings:
         self.encoding_client_options = capabilities.get("encoding_client_options", False)
         self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
@@ -537,6 +539,8 @@ class ServerSource(object):
             return {"title": title.encode("utf-8")}
         elif propname == "modal":
             return {"modal" : window.get_property("modal")}
+        elif propname == "system-tray":
+            return {"system-tray" : window.is_tray()}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")
@@ -796,21 +800,30 @@ class ServerSource(object):
         if self.randr_notify:
             self.send("desktop_size", root_w, root_h, max_w, max_h)
 
-    def or_window_geometry(self, wid, x, y, w, h):
-        if self.send_windows:
-            self.send("configure-override-redirect", wid, x, y, w, h)
+    def or_window_geometry(self, wid, window, x, y, w, h):
+        if not self.can_send_window(window):
+            return
+        self.send("configure-override-redirect", wid, x, y, w, h)
 
-    def window_metadata(self, window, wid, prop):
-        if self.send_windows:
-            if prop=="icon" and self.raw_window_icons:
-                self.send_window_icon(window, wid)
-            else:
-                metadata = self._make_metadata(window, prop)
-                if len(metadata)>0:
-                    self.send("window-metadata", wid, metadata)
+    def window_metadata(self, wid, window, prop):
+        if not self.can_send_window(window):
+            return
+        if prop=="icon" and self.raw_window_icons:
+            self.send_window_icon(window, wid)
+        else:
+            metadata = self._make_metadata(window, prop)
+            if len(metadata)>0:
+                self.send("window-metadata", wid, metadata)
 
-    def new_window(self, ptype, window, wid, x, y, w, h, properties, client_properties):
+    def can_send_window(self, window):
         if not self.send_windows:
+            return  False
+        if window.is_tray() and not self.system_tray:
+            return  False
+        return True
+
+    def new_window(self, ptype, wid, window, x, y, w, h, properties, client_properties):
+        if not self.can_send_window(window):
             return
         send_props = list(properties)
         if self.raw_window_icons and "icon" in properties:
@@ -818,11 +831,12 @@ class ServerSource(object):
         metadata = {}
         for propname in send_props:
             metadata.update(self._make_metadata(window, propname))
+        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, properties, client_properties, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if self.raw_window_icons and "icon" in properties:
-            self.send_window_icon(window, wid)
+            self.send_window_icon(wid, window)
 
-    def send_window_icon(self, window, wid):
+    def send_window_icon(self, wid, window):
         surf = window.get_property("icon")
         log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
         if surf is not None:
@@ -834,29 +848,36 @@ class ServerSource(object):
                 data = Compressed("png", pixel_data)
             self.send("window-icon", wid, w, h, pixel_format, data)
 
-    def lost_window(self, wid):
-        if self.send_windows:
-            self.send("lost-window", wid)
+    def lost_window(self, wid, window):
+        if not self.can_send_window(window):
+            return
+        self.send("lost-window", wid)
 
-    def resize_window(self, wid, ww, wh):
+    def resize_window(self, wid, window, ww, wh):
         """
         The server detected that the application window has been resized,
         we forward it if the client supports this type of event.
         """
-        if self.server_window_resize and self.send_windows:
+        if not self.can_send_window(window):
+            return
+        if self.server_window_resize:
             self.send("window-resized", wid, ww, wh)
 
-    def cancel_damage(self, wid):
+    def cancel_damage(self, wid, window):
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
         """
+        if not self.can_send_window(window):
+            return
         ws = self.window_sources.get(wid)
         if ws:
             ws.cancel_damage()
 
-    def remove_window(self, wid):
+    def remove_window(self, wid, window):
         """ The given window is gone, ensure we free all the related resources """
+        if not self.can_send_window(window):
+            return
         ws = self.window_sources.get(wid)
         if ws:
             del self.window_sources[wid]
@@ -914,10 +935,11 @@ class ServerSource(object):
             self.default_damage_options["quality"] = quality
 
     def refresh(self, wid, window, opts):
-        if self.send_windows:
-            self.cancel_damage(wid)
-            w, h = window.get_dimensions()
-            self.damage(wid, window, 0, 0, w, h, opts)
+        if not self.can_send_window(window):
+            return
+        self.cancel_damage(wid)
+        w, h = window.get_dimensions()
+        self.damage(wid, window, 0, 0, w, h, opts)
 
     def damage(self, wid, window, x, y, w, h, options=None):
         """
@@ -925,7 +947,7 @@ class ServerSource(object):
             we dispatch to the WindowSource for this window id
             (creating a new one if needed)
         """
-        if not self.send_windows:
+        if not self.can_send_window(window):
             return
         assert window is not None
         if options is None:

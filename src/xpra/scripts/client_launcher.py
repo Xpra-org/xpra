@@ -312,6 +312,7 @@ xpra_opts.dpi = default_int("dpi", 96)
 xpra_opts.cursors = default_bool("cursors", True)
 xpra_opts.bell = default_bool("bell", True)
 xpra_opts.notifications = default_bool("notifications", True)
+xpra_opts.system_tray = default_bool("system-tray", True)
 xpra_opts.sharing = default_bool("sharing", False)
 xpra_opts.delay_tray = default_bool("delay-tray", False)
 xpra_opts.windows_enabled = default_bool("windows-enabled", True)
@@ -635,6 +636,7 @@ class ApplicationWindow:
 		opts.cursors = xpra_opts.cursors
 		opts.bell = xpra_opts.bell
 		opts.notifications = xpra_opts.notifications
+		opts.system_tray = xpra_opts.system_tray
 		opts.delay_tray = xpra_opts.delay_tray
 		opts.sharing = xpra_opts.sharing
 		opts.windows_enabled = xpra_opts.windows_enabled

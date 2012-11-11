@@ -404,8 +404,8 @@ class WindowSource(object):
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             ww, wh = window.get_dimensions()
-            actual_encoding = self.get_best_encoding(False, window.is_OR(), w*h, ww, wh, self.encoding)
-            if actual_encoding in ("x264", "vpx"):
+            actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
+            if actual_encoding in ("x264", "vpx") or window.is_tray():
                 x, y = 0, 0
                 w, h = ww, wh
             self.process_damage_region(now, window, x, y, w, h, actual_encoding, options)
@@ -485,10 +485,14 @@ class WindowSource(object):
         """
         regions = []
         ww,wh = window.get_dimensions()
-        def send_full_screen_update(actual_encoding):
-            actual_encoding = self.get_best_encoding(True, window.is_OR(), ww*wh, ww, wh, coding)
+        def send_full_screen_update():
+            actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
             log("send_delayed_regions: using full screen update with %s", actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
+
+        if window.is_tray():
+            send_full_screen_update()
+            return
 
         try:
             count_threshold = 60
@@ -506,7 +510,7 @@ class WindowSource(object):
                     pixel_count += w*h
                     #favor full screen updates over many regions:
                     if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
-                        send_full_screen_update(coding)
+                        send_full_screen_update()
                         return
                     regions.append((x, y, w, h))
                     rect = gtk.gdk.Rectangle(x, y, w, h)
@@ -519,7 +523,7 @@ class WindowSource(object):
             log.error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)
             return
 
-        actual_encoding = self.get_best_encoding(True, window.is_OR(), pixel_count, ww, wh, coding)
+        actual_encoding = self.get_best_encoding(True, window, pixel_count, ww, wh, coding)
         if actual_encoding in ("x264", "vpx"):
             #use full screen dimensions:
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
@@ -530,17 +534,23 @@ class WindowSource(object):
             x, y, w, h = region
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
-    def get_best_encoding(self, batching, is_OR, pixel_count, ww, wh, current_encoding):
+    def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
+        return self.do_get_best_encoding(batching, window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
+
+    def do_get_best_encoding(self, batching, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
             decide whether we send a full screen update
             using the video encoder or if a small lossless region(s) is a better choice
         """
-        if current_encoding not in ("x264", "vpx"):
-            return current_encoding
         def switch():
             coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             log("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
+        if is_tray:
+            #tray needs a lossless encoder
+            return switch()
+        if current_encoding not in ("x264", "vpx"):
+            return current_encoding
         max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
         max_nvp = MAX_NONVIDEO_PIXELS
         if not batching:
@@ -585,11 +595,11 @@ class WindowSource(object):
         """
         if w==0 or h==0:
             return
-        # It's important to acknowledge changes *before* we extract them,
-        # to avoid a race condition.
         if not window.is_managed():
             log.warn("the window %s is not composited!?", window)
             return
+        # It's important to acknowledge changes *before* we extract them,
+        # to avoid a race condition.
         window.acknowledge_changes()
 
         self._sequence += 1

@@ -353,6 +353,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return "_NET_WM_TYPE_DIALOG"
         return "_NET_WM_WINDOW_TYPE_NORMAL"
 
+    def is_tray(self):
+        return False
 
 gobject.type_register(BaseWindowModel)
 
@@ -391,14 +393,40 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         return prop_get(self.client_window, key, ptype, ignore_errors=False)
 
     def get_dimensions(self):
-        _, _, ww, wh = self.get_property("geometry")
+        if not self.client_window.is_visible():
+            #prevent nonsensical values:
+            ww, wh = 0, 0
+        else:
+            ww, wh = self._geometry[2:4]
+        #log.info("%s.get_dimensions()=%sx%s", self, ww, wh)
         return ww, wh
 
     def is_OR(self):
         return  True
 
-
 gobject.type_register(OverrideRedirectWindowModel)
+
+
+class SystemTrayWindowModel(OverrideRedirectWindowModel):
+
+    def __init__(self, client_window):
+        OverrideRedirectWindowModel.__init__(self, client_window)
+
+    def is_tray(self):
+        return  True
+
+    def _read_initial_properties(self):
+        pass
+
+    def composite_configure_event(self, composite_window, event):
+        log("SystemTrayWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
+
+    def move_resize(self, x, y, width, height):
+        #Used by clients to tell us where the tray is located on screen
+        log("SystemTrayWindowModel.move_resize(%s, %s, %s, %s)", x, y, width, height)
+        self.client_window.move_resize(x, y, width, height)
+        border = self._geometry[4]
+        self._geometry = (x, y, width, height, border)
 
 
 class WindowModel(BaseWindowModel):
@@ -696,6 +724,7 @@ class WindowModel(BaseWindowModel):
     def do_wimpiggy_configure_event(self, event):
         self._geometry = (event.x, event.y, event.width, event.height,
                           event.border_width)
+        log.info("WindowModel.do_wimpiggy_configure_event(%s)", event)
         self.notify("geometry")
 
     def maybe_recalculate_geometry_for(self, maybe_owner):

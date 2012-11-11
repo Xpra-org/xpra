@@ -23,6 +23,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-system\-tray\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-enable-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
@@ -39,6 +40,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-system\-tray\fP]
 [\fB\-\-no\-bell\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
 [\fB\-\-no\-tray\fP]
@@ -393,9 +395,14 @@ This disables the feature.
 \fB\-\-no\-notifications\fP
 Disable forwarding of system notifications.
 System notifications require the xpra server to have its own instance
-of a dbus daemon, if it is missing an warning will be printed on
+of a dbus daemon, if it is missing a warning will be printed on
 startup. This switch disables the feature entirely, and avoids
 the warning.
+.TP
+\fB\-\-no\-system\-tray\fP
+Disable forwarding of system tray icons.
+This feature requires client support and may not be available on all
+platforms.
 .TP
 \fB\-\-no\-bell\fP
 Disable forwarding of the system bell.
@@ -429,7 +436,7 @@ generally unusable) to 100 (highest quality, low compression - not
 particularly useful).
 Note that the x264 encoding normally use a variable quality
 determined by the connection's performance, this option forces
-a fixed quality setting. 
+a fixed quality setting.
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically

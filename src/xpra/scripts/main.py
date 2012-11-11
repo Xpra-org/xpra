@@ -263,6 +263,9 @@ def main(script_file, cmdline):
     group.add_option("--no-notifications", action="store_false",
                       dest="notifications", default=bool_default("notifications", True),
                       help="Disable forwarding of system notifications")
+    group.add_option("--no-system-tray", action="store_false",
+                      dest="system_tray", default=bool_default("system-tray", True),
+                      help="Disable forwarding of system tray icons")
     group.add_option("--no-cursors", action="store_false",
                       dest="cursors", default=bool_default("cursors", True),
                       help="Disable forwarding of custom application mouse cursors")

@@ -27,6 +27,7 @@ except:
 import time
 
 from wimpiggy.wm import Wm
+from wimpiggy.tray import SystemTray, get_tray_window
 from wimpiggy.util import (AdHocStruct,
                            one_arg_signal,
                            gtk_main_quit_really,
@@ -47,7 +48,7 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
                                )
 from wimpiggy.prop import prop_set, set_xsettings_format
-from wimpiggy.window import OverrideRedirectWindowModel, Unmanageable
+from wimpiggy.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from wimpiggy.error import XError, trap
 
 from wimpiggy.log import Logger
@@ -153,6 +154,23 @@ class DesktopManager(gtk.Widget):
 
 gobject.type_register(DesktopManager)
 
+def window_name(window):
+    from wimpiggy.prop import prop_get
+    return prop_get(window, "_NET_WM_NAME", "utf8", True) or "unknown"
+
+def window_info(window):
+    from wimpiggy.prop import prop_get
+    net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
+    return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
+
+def dump_windows():
+    root = gtk.gdk.get_default_root_window()
+    log("root window: %s" % root)
+    children = get_children(root)
+    log("%s windows" % len(children))
+    for window in get_children(root):
+        log("found window: %s", window_info(window))
+
 
 class XpraServer(gobject.GObject):
     __gsignals__ = {
@@ -162,6 +180,8 @@ class XpraServer(gobject.GObject):
 
     def __init__(self, clobber, sockets, opts):
         gobject.GObject.__init__(self)
+        dump_windows()
+
         init_x11_filter()
         self.init_x11_atoms()
 
@@ -204,6 +224,16 @@ class XpraServer(gobject.GObject):
         self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
+
+        # Tray handler:
+        if opts.system_tray:
+            try:
+                self._tray = SystemTray()
+            except Exception, e:
+                log.error("cannot setup tray forwarding: %s", e, exc_info=True)
+        else:
+            self._tray = None
+
         self.default_cursor_data = None
         self.last_cursor_serial = None
         self.cursor_data = None
@@ -303,6 +333,7 @@ class XpraServer(gobject.GObject):
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
+        dump_windows()
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
@@ -348,6 +379,8 @@ class XpraServer(gobject.GObject):
         return self._upgrading
 
     def cleanup(self, *args):
+        if self._tray:
+            self._tray.cleanup()
         if self.notifications_forwarder:
             try:
                 self.notifications_forwarder.release()
@@ -441,6 +474,7 @@ class XpraServer(gobject.GObject):
             ss.notify_close(int(nid))
 
     def do_wimpiggy_child_map_event(self, event):
+        log("do_wimpiggy_child_map_event(%s)", event)
         raw_window = event.window
         if event.override_redirect:
             self._add_new_or_window(raw_window)
@@ -455,19 +489,25 @@ class XpraServer(gobject.GObject):
 
     _window_export_properties = ("title", "size-hints")
     def _add_new_window(self, window):
-        log("Discovered new ordinary window: %s", window)
         self._add_new_window_common(window)
         for prop in self._window_export_properties:
             window.connect("notify::%s" % prop, self._update_metadata)
         (x, y, w, h, _) = window.get_property("client-window").get_geometry()
+        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         self._send_new_window_packet(window)
 
     def _add_new_or_window(self, raw_window):
-        log("Discovered new override-redirect window")
+        log("Discovered new override-redirect window: %s (geometry=%s)", raw_window, raw_window.get_geometry())
+        is_tray = get_tray_window(raw_window) is not None
         try:
-            window = OverrideRedirectWindowModel(raw_window)
-        except Unmanageable:
+            if is_tray:
+                assert self._tray
+                window = SystemTrayWindowModel(raw_window)
+            else:
+                window = OverrideRedirectWindowModel(raw_window)
+        except Unmanageable, e:
+            log("cannot add %s: %s" % (window_info(raw_window), e))
             return
         self._add_new_window_common(window)
         window.connect("notify::geometry", self._or_window_geometry_changed)
@@ -475,9 +515,10 @@ class XpraServer(gobject.GObject):
 
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
+        log("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            ss.or_window_geometry(wid, x, y, w, h)
+            ss.or_window_geometry(wid, window, x, y, w, h)
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
@@ -573,9 +614,9 @@ class XpraServer(gobject.GObject):
         for ss in self._server_sources.values():
             ss.damage(wid, window, x, y, width, height, options)
 
-    def _cancel_damage(self, wid):
+    def _cancel_damage(self, wid, window):
         for ss in self._server_sources.values():
-            ss.cancel_damage(wid)
+            ss.cancel_damage(wid, window)
 
     def _send_new_window_packet(self, window):
         geometry = self._desktop_manager.window_geometry(window)
@@ -583,7 +624,10 @@ class XpraServer(gobject.GObject):
 
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
-        properties = ["transient-for", "window-type"]
+        if window.is_tray():
+            properties = ["system-tray"]
+        else:
+            properties = ["transient-for", "window-type"]
         self._do_send_new_window_packet("new-override-redirect", window, geometry, properties)
         (_, _, w, h) = geometry
         self._damage(window, 0, 0, w, h)
@@ -592,21 +636,21 @@ class XpraServer(gobject.GObject):
         wid = self._window_to_id[window]
         x, y, w, h = geometry
         for ss in self._server_sources.values():
-            ss.new_window(ptype, window, wid, x, y, w, h, properties, self.client_properties.get(ss.uuid))
+            ss.new_window(ptype, wid, window, x, y, w, h, properties, self.client_properties.get(ss.uuid))
 
     def _update_metadata(self, window, pspec):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            ss.window_metadata(window, wid, pspec.name)
+            ss.window_metadata(wid, window, pspec.name)
 
     def _lost_window(self, window, wm_exiting):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            ss.lost_window(wid)
+            ss.lost_window(wid, window)
         del self._window_to_id[window]
         del self._id_to_window[wid]
         for ss in self._server_sources.values():
-            ss.remove_window(wid)
+            ss.remove_window(wid, window)
 
     def _contents_changed(self, window, event):
         if window.is_OR() or self._desktop_manager.visible(window):
@@ -968,7 +1012,7 @@ class XpraServer(gobject.GObject):
                 #code more or less duplicated from send_new_window_packet:
                 #so we can send it just to the new client:
                 x, y, w, h = self._desktop_manager.window_geometry(window)
-                ss.new_window("new-window", window, wid, x, y, w, h, self._all_metadata, self.client_properties.get(ss.uuid))
+                ss.new_window("new-window", wid, window, x, y, w, h, self._all_metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -1197,7 +1241,7 @@ class XpraServer(gobject.GObject):
             log("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        self._cancel_damage(wid)
+        self._cancel_damage(wid, window)
         self._desktop_manager.hide_window(window)
 
     def _process_configure_window(self, proto, packet):
@@ -1205,6 +1249,10 @@ class XpraServer(gobject.GObject):
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
+            return
+        if window.is_tray():
+            assert self._tray
+            self._tray.move_resize(window, x, y, w, h)
             return
         assert not window.is_OR()
         owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
@@ -1234,7 +1282,7 @@ class XpraServer(gobject.GObject):
             log("cannot resize window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        self._cancel_damage(wid)
+        self._cancel_damage(wid, window)
         x, y, _, _ = self._desktop_manager.window_geometry(window)
         self._desktop_manager.configure_window(window, x, y, w, h)
         _, _, ww, wh = self._desktop_manager.window_geometry(window)
