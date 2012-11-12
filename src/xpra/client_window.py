@@ -138,6 +138,22 @@ try:
 except ImportError, e:
     has_wimpiggy_prop = False
 
+def xget_u32_property(target, name):
+    try:
+        if not has_wimpiggy_prop:
+            prop = target.property_get(name)
+            if not prop or len(prop)!=3 or len(prop[2])!=1:
+                return  None
+            log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+            return prop[2][0]
+        v = prop_get(target, name, "u32", ignore_errors=True)
+        log("xget_u32_property(%s, %s)=%s", target, name, v)
+        if type(v)==int:
+            return  v
+    except Exception, e:
+        log.error("xget_u32_property error on %s / %s: %s", target, name, e)
+    return None
+
 CAN_SET_WORKSPACE = False
 if not sys.platform.startswith("win") and has_wimpiggy_prop:
     try:
@@ -209,6 +225,11 @@ class ClientWindow(gtk.Window):
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
             from wimpiggy.error import trap
             root = self.get_window().get_screen().get_root_window()
+            ndesktops = xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
+            log("set_workspace() ndesktops=%s", ndesktops)
+            if ndesktops is None or ndesktops<=1:
+                return
+            workspace = max(0, min(ndesktops-1, workspace))
             event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
             trap.call(sendClientMessage, root, self.get_window(), False, event_mask, "_NET_WM_DESKTOP",
                       workspace, const["CurrentTime"],
@@ -225,21 +246,13 @@ class ClientWindow(gtk.Window):
     def get_workspace(self):
         if sys.platform.startswith("win"):
             return  -1              #windows does not have workspaces
-        try:
-            if not has_wimpiggy_prop:
-                prop = self.window.get_screen().get_root_window().property_get("_NET_CURRENT_DESKTOP")
-                if not prop or len(prop)!=3 or len(prop[2])!=1:
-                    return  -1
-                log("get_workspace()=%s", prop[2][0])
-                return prop[2][0]
-            v = prop_get(self.get_window(), "_NET_WM_DESKTOP", "u32", ignore_errors=True)
-            log("get_workspace()=%s", v)
-            if type(v)==int:
-                return  v
-        except Exception, e:
-            log.error("failed to detect workspace: %s", e)
+        window = self.get_window()
+        root = window.get_screen().get_root_window()
+        for target, prop in ((window, "_NET_WM_DESKTOP"), (root, "_NET_CURRENT_DESKTOP")):
+            value = xget_u32_property(target, prop)
+            if value is not None:
+                return value
         return  -1
-
 
     def new_backing(self, w, h):
         from xpra.window_backing import new_backing
