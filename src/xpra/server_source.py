@@ -437,6 +437,7 @@ class ServerSource(object):
         self.clipboard_enabled = False
         self.share = False
         self.desktop_size = None
+        self.screen_sizes = []
         self.uses_swscale = False
         self.raw_window_icons = False
         self.system_tray = False
@@ -487,6 +488,7 @@ class ServerSource(object):
         self.clipboard_enabled = capabilities.get("clipboard", True)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
+        self.set_screen_sizes(capabilities.get("screen_sizes"))
         self.uses_swscale = capabilities.get("uses_swscale", True)
         self.named_cursors = capabilities.get("named_cursors", False)
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
@@ -528,6 +530,10 @@ class ServerSource(object):
                 log.info("using %s as primary encoding", self.encoding)
         else:
             log.info("windows forwarding is disabled")
+
+    def set_screen_sizes(self, screen_sizes):
+        self.screen_sizes = screen_sizes or []
+        log("client screen sizes: %s", screen_sizes)
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property:
