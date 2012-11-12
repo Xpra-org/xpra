@@ -579,6 +579,7 @@ class ServerSource(object):
             return {}
         elif propname == "window-type":
             window_types = window.get_property("window-type")
+            assert window_types is not None, "window-type is not defined for %s" % window
             log("window_types=%s", window_types)
             wts = []
             for window_type in window_types:

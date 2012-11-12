@@ -526,6 +526,8 @@ class XpraServer(gobject.GObject):
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
     _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal")
+    _OR_metadata = ("transient-for", "window-type")
+
 
     def _get_transient_for(self, window):
         transient_for = window.get_property("transient-for")
@@ -627,8 +629,7 @@ class XpraServer(gobject.GObject):
 
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
-        properties = ["transient-for", "window-type"]
-        self._do_send_new_window_packet("new-override-redirect", window, geometry, properties)
+        self._do_send_new_window_packet("new-override-redirect", window, geometry, self._OR_metadata)
         (_, _, w, h) = geometry
         self._damage(window, 0, 0, w, h)
 
@@ -1011,12 +1012,22 @@ class XpraServer(gobject.GObject):
         # about this kind of correctness at all, but hey, doesn't hurt.)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
-            if window.is_OR():
-                self._send_new_or_window_packet(window)
+            #most of the code here is duplicated from the send functions
+            #so we can send just to the new client and request damage
+            #just for the new client too:
+            if window.is_tray():
+                #code more or less duplicated from _send_new_tray_window_packet:
+                w, h = window.get_property("geometry")[2:4]
+                ss.new_tray(wid, window, w, h)
+                ss.damage(wid, window, 0, 0, w, h)
+            elif window.is_OR():
+                #code more or less duplicated from _send_new_or_window_packet:
+                x, y, w, h = window.get_property("geometry")
+                ss.new_window("new-override-redirect", wid, window, x, y, w, h, self._OR_metadata, self.client_properties.get(ss.uuid))
+                ss.damage(wid, window, 0, 0, w, h)
             else:
-                self._desktop_manager.hide_window(window)
                 #code more or less duplicated from send_new_window_packet:
-                #so we can send it just to the new client:
+                self._desktop_manager.hide_window(window)
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 ss.new_window("new-window", wid, window, x, y, w, h, self._all_metadata, self.client_properties.get(ss.uuid))
         ss.send_cursor(self.cursor_data)
