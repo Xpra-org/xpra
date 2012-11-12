@@ -138,7 +138,7 @@ class SystemTray(gobject.GObject):
         setsel = mySetSelectionOwner(root, self.tray_window, SELECTION)
         log("setup tray: set selection owner returned %s", setsel)
         event_mask = const["StructureNotifyMask"]
-        sendClientMessage(root, False, event_mask, "MANAGER",
+        sendClientMessage(root, root, False, event_mask, "MANAGER",
                           const["CurrentTime"], SELECTION,
                           get_xwindow(self.tray_window), 0, 0)
         owner = myGetSelectionOwner(root, SELECTION)

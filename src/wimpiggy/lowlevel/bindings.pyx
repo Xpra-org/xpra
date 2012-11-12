@@ -1798,17 +1798,19 @@ cdef long cast_to_long(i):
     else:
         return <long><unsigned long>i
 
-def sendClientMessage(target, propagate, event_mask,
+def sendClientMessage(target, window, propagate, event_mask,
                       message_type, data0, data1, data2, data3, data4):
     # data0 etc. are passed through get_xatom, so they can be integers, which
     # are passed through directly, or else they can be strings, which are
     # converted appropriately.
     cdef Display * display              #@DuplicatedSignature
-    display = get_xdisplay_for(target)
+    cdef Window t
     cdef Window w
-    w = get_xwindow(target)
-    log("sending message to %s", hex(w))
     cdef XEvent e
+    display = get_xdisplay_for(target)
+    t = get_xwindow(target)
+    w = get_xwindow(window)
+    log("sending message to %s", hex(w))
     e.type = ClientMessage
     e.xany.display = display
     e.xany.window = w
@@ -1820,7 +1822,7 @@ def sendClientMessage(target, propagate, event_mask,
     e.xclient.data.l[3] = cast_to_long(get_xatom(data3))
     e.xclient.data.l[4] = cast_to_long(get_xatom(data4))
     cdef Status s
-    s = XSendEvent(display, w, propagate, event_mask, &e)
+    s = XSendEvent(display, t, propagate, event_mask, &e)
     if s == 0:
         raise ValueError, "failed to serialize ClientMessage"
 

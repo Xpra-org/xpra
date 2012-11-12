@@ -92,7 +92,7 @@ class ManagerSelection(gobject.GObject):
         self._xwindow = myGetSelectionOwner(self.clipboard, self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
-        sendClientMessage(root, False, const["StructureNotifyMask"],
+        sendClientMessage(root, root, False, const["StructureNotifyMask"],
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow, 0, 0)
 

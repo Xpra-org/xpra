@@ -138,6 +138,16 @@ try:
 except ImportError, e:
     has_wimpiggy_prop = False
 
+CAN_SET_WORKSPACE = False
+if not sys.platform.startswith("win") and has_wimpiggy_prop:
+    try:
+        #TODO: in theory this is not a proper check, meh - that will do
+        root = gtk.gdk.get_default_root_window()
+        supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
+        CAN_SET_WORKSPACE = bool(supported) and "_NET_WM_DESKTOP" in supported
+    except:
+        pass
+
 if sys.version < '3':
     import codecs
     def u(x):
@@ -186,6 +196,25 @@ class ClientWindow(gtk.Window):
             if transient_for is not None and transient_for.window is not None and type_hint in OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
+        #deal with workspace mapping:
+    
+    def set_workspace(self):
+        if not CAN_SET_WORKSPACE:
+            return
+        workspace = self._client_properties.get("workspace")
+        log("set_workspace() workspace=%s", workspace)
+        if not workspace:
+            return
+        try:
+            from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
+            from wimpiggy.error import trap
+            root = self.get_window().get_screen().get_root_window()
+            event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
+            trap.call(sendClientMessage, root, self.get_window(), False, event_mask, "_NET_WM_DESKTOP",
+                      workspace, const["CurrentTime"],
+                      0, 0, 0)
+        except Exception, e:
+            log.error("failed to set workspace: %s", e)
 
     def is_OR(self):
         return self._override_redirect
@@ -194,15 +223,17 @@ class ClientWindow(gtk.Window):
         return False
 
     def get_workspace(self):
+        if sys.platform.startswith("win"):
+            return  -1              #windows does not have workspaces
         try:
-            if sys.platform.startswith("win"):
-                return  -1              #windows does not have workspaces
             if not has_wimpiggy_prop:
                 prop = self.window.get_screen().get_root_window().property_get("_NET_CURRENT_DESKTOP")
                 if not prop or len(prop)!=3 or len(prop[2])!=1:
                     return  -1
+                log("get_workspace()=%s", prop[2][0])
                 return prop[2][0]
             v = prop_get(self.get_window(), "_NET_WM_DESKTOP", "u32", ignore_errors=True)
+            log("get_workspace()=%s", v)
             if type(v)==int:
                 return  v
         except Exception, e:
@@ -367,6 +398,7 @@ class ClientWindow(gtk.Window):
     def do_map_event(self, event):
         log("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
+        self.set_workspace()
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
             client_properties = {"workspace" : self.get_workspace()}
