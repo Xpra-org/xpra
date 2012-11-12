@@ -666,6 +666,7 @@ class XpraServer(gobject.GObject):
     def _screen_size_changed(self, *args):
         log("_screen_size_changed(%s)", args)
         #randr has resized the screen, tell the client (if it supports it)
+        self.calculate_workarea()
         gobject.idle_add(self.send_updated_screen_size)
 
     def send_updated_screen_size(self):
@@ -752,6 +753,26 @@ class XpraServer(gobject.GObject):
         self.set_screen_size(width, height)
         if len(packet)>=4:
             self._server_sources.get(proto).set_screen_sizes(packet[3])
+            self.calculate_workarea()
+
+    def calculate_workarea(self):
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
+        for ss in self._server_sources.values():
+            screen_sizes = ss.screen_sizes
+            if not screen_sizes:
+                continue
+            for display in screen_sizes:
+                #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
+                work_x, work_y, work_w, work_h = display[6:10]
+                display_workarea = gtk.gdk.Rectangle(work_x, work_y, work_w, work_h)
+                log("found workarea % for display %s", display_workarea, display[0])
+                workarea = workarea.intersect(display_workarea)
+        #sanity checks:
+        if workarea.width==0 or workarea.height==0:
+            log.warn("failed to calculate a common workarea - using the full display area")
+            workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
+        self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
@@ -971,6 +992,7 @@ class XpraServer(gobject.GObject):
             root_w, root_h = self.set_best_screen_size()
         else:
             root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        self.calculate_workarea()
         #take the clipboard if no-one else has yet:
         if ss.clipboard_enabled and (self._clipboard_client is None or self._clipboard_client.closed):
             self._clipboard_client = ss
