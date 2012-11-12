@@ -776,11 +776,19 @@ class XpraClient(XpraClientBase):
                             screen.get_monitor_width_mm(j), screen.get_monitor_height_mm(j))
                 monitors.append(monitor)
                 j += 1
+            root = screen.get_root_window()
+            try:
+                p = gtk.gdk.atom_intern('_NET_WORKAREA')
+                work_width, work_height = root.property_get(p)[2][2:4]
+            except:
+                work_width, work_height = screen.get_width(), screen.get_height()
             item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
                         screen.get_width_mm(), screen.get_height_mm(),
-                        monitors)
+                        monitors,
+                        work_width, work_height)
             screen_sizes.append(item)
             i += 1
+        log.info("get_screen_sizes()=%s", screen_sizes)
         return screen_sizes
 
     def _ui_event(self):
