@@ -50,8 +50,9 @@ class Wm(gobject.GObject):
         "_NET_DESKTOP_GEOMETRY",
         "_NET_NUMBER_OF_DESKTOPS",
         "_NET_DESKTOP_NAMES",
-        #FIXME: "_NET_WORKAREA",
+        "_NET_WORKAREA",
         "_NET_ACTIVE_WINDOW",
+        "_NET_CURRENT_DESKTOP",
 
         "WM_NAME", "_NET_WM_NAME",
         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
@@ -118,7 +119,6 @@ class Wm(gobject.GObject):
         # Not at all yet:
         #"_NET_REQUEST_FRAME_EXTENTS",
         #"_NET_CLOSE_WINDOW",
-        #"_NET_CURRENT_DESKTOP",
         #"_NET_RESTACK_WINDOW",
         #"_NET_WM_DESKTOP",
         ]
@@ -187,10 +187,14 @@ class Wm(gobject.GObject):
 
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
-        prop_set(self._root, "_NET_SUPPORTED",
-                 ["atom"], self._NET_SUPPORTED)
-        prop_set(self._root, "_NET_DESKTOP_VIEWPORT",
-                 ["u32"], [0, 0])
+        # Start with just one desktop:
+        self.do_desktop_list_changed([u"Main"])
+        self.set_current_desktop(0)
+        # Start with the full display as workarea:
+        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        self.set_workarea(0, 0, root_w, root_h)
+        prop_set(self._root, "_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
+        prop_set(self._root, "_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
 
         # Load up our full-screen widget
         self._world_window = WorldWindow()
@@ -221,6 +225,9 @@ class Wm(gobject.GObject):
         # Need viewport abstraction for _NET_CURRENT_DESKTOP...
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
+
+    def set_workarea(self, x, y, width, height):
+        prop_set(self._root, "_NET_WORKAREA", ["u32"], [x, y, width, height])
 
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)
@@ -346,6 +353,9 @@ class Wm(gobject.GObject):
     def do_desktop_list_changed(self, desktops):
         prop_set(self._root, "_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
         prop_set(self._root, "_NET_DESKTOP_NAMES", ["utf8"], desktops)
+
+    def set_current_desktop(self, index):
+        prop_set(self._root, "_NET_CURRENT_DESKTOP", "u32", index)
 
     def _setup_ewmh_window(self):
         # Set up a 1x1 invisible unmapped window, with which to participate in
