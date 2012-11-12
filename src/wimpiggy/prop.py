@@ -196,22 +196,6 @@ def _get_multiple(disp, d):
     return _get_atom(disp, d)
 
 
-def set_xsettings_format(use_tuple=True):
-    log("set_xsettings_format(%s)", use_tuple)
-    global _prop_types
-    if use_tuple:
-        _prop_types["xsettings-settings"] = (tuple, "_XSETTINGS_SETTINGS", 8,
-                           set_settings,
-                           get_settings,
-                           None)
-    else:
-        #for old clients that rely on the old raw string format:
-        _prop_types["xsettings-settings"] = (str, "_XSETTINGS_SETTINGS", 8,
-                           lambda disp, c: c,
-                           lambda disp, d: d,
-                           None)
-
-
 _prop_types = {
     # Python type, X type Atom, formatbits, serializer, deserializer, list
     # terminator
