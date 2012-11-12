@@ -47,7 +47,7 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
                                )
-from wimpiggy.prop import prop_set, set_xsettings_format
+from wimpiggy.prop import prop_set
 from wimpiggy.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from wimpiggy.error import XError, trap
 
@@ -999,8 +999,6 @@ class XpraServer(gobject.GObject):
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, key_repeat, server_cipher)
 
-        #old clients used a network unsafe binary format..
-        set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
         # now we can set the modifiers to match the client
         self.send_windows_and_cursors(ss)
 

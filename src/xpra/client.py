@@ -56,7 +56,6 @@ else:
             if gdkwin:
                 gdkwin.set_cursor(cursor)
 
-import sys
 import uuid
 import os
 import time
@@ -584,12 +583,7 @@ class XpraClient(XpraClientBase):
         capabilities["windows"] = self.windows_enabled
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
-        try:
-            from wimpiggy.prop import set_xsettings_format
-            assert set_xsettings_format
-            capabilities["xsettings-tuple"] = True
-        except:
-            pass
+        capabilities["xsettings-tuple"] = True
         return capabilities
 
     def send_ping(self):
@@ -680,12 +674,6 @@ class XpraClient(XpraClientBase):
     def process_ui_capabilities(self, capabilities):
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
-        try:
-            from wimpiggy.prop import set_xsettings_format
-            set_xsettings_format(use_tuple=capabilities.get("xsettings-tuple", False))
-        except Exception, e:
-            if os.name=="posix" and not sys.platform.startswith("darwin"):
-                log.error("failed to set xsettings format: %s", e)
         self.set_max_packet_size()
         self.send_deflate_level()
         server_desktop_size = capabilities.get("desktop_size")
