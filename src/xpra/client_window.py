@@ -448,22 +448,30 @@ class ClientWindow(gtk.Window):
     def _pointer_modifiers(self, event):
         pointer = (int(event.x_root), int(event.y_root))
         modifiers = self._client.mask_to_names(event.state)
-        return pointer, modifiers
+        buttons = []
+        for mask, button in {gtk.gdk.BUTTON1_MASK : 1,
+                             gtk.gdk.BUTTON2_MASK : 2,
+                             gtk.gdk.BUTTON3_MASK : 3,
+                             gtk.gdk.BUTTON4_MASK : 4,
+                             gtk.gdk.BUTTON5_MASK : 5}.items():
+            if event.state & mask:
+                buttons.append(button)
+        return pointer, modifiers, buttons
 
     def do_motion_notify_event(self, event):
         if self._client.readonly:
             return
-        (pointer, modifiers) = self._pointer_modifiers(event)
+        pointer, modifiers, buttons = self._pointer_modifiers(event)
         self._client.send_mouse_position(["pointer-position", self._id,
-                                          pointer, modifiers])
+                                          pointer, modifiers, buttons])
 
     def _button_action(self, button, event, depressed):
         if self._client.readonly:
             return
-        (pointer, modifiers) = self._pointer_modifiers(event)
+        pointer, modifiers, buttons = self._pointer_modifiers(event)
         self._client.send_positional(["button-action", self._id,
                                       button, depressed,
-                                      pointer, modifiers])
+                                      pointer, modifiers, buttons])
 
     def do_button_press_event(self, event):
         self._button_action(event.button, event, True)
