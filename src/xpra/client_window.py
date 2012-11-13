@@ -215,13 +215,12 @@ class ClientWindow(gtk.Window):
         #deal with workspace mapping:
     
     def set_workspace(self):
-        if not CAN_SET_WORKSPACE:
+        if not CAN_SET_WORKSPACE or self._been_mapped:
             return
         workspace = self._client_properties.get("workspace")
         log("set_workspace() workspace=%s", workspace)
         if not workspace:
             return
-        del self._client_properties["workspace"]
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
             from wimpiggy.error import trap
