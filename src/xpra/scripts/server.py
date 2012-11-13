@@ -231,7 +231,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Daemonize:
     if opts.daemon:
-        logpath = dotxpra.conf_path(display_name) + ".log"
+        logpath = dotxpra.log_path(display_name) + ".log"
         sys.stderr.write("Entering daemon mode; "
                          + "any further errors will be reported to:\n"
                          + ("  %s\n" % logpath))

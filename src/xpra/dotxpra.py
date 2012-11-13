@@ -46,7 +46,7 @@ class DotXpra(object):
     def socket_path(self, local_display_name):
         return self.make_path(local_display_name, self._sockdir)
 
-    def conf_path(self, local_display_name):
+    def log_path(self, local_display_name):
         return self.make_path(local_display_name, self._confdir)
 
     LIVE = "LIVE"
