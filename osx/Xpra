@@ -1,13 +1,8 @@
 #!/bin/sh
 
-name="`basename $0`"
-if [[ "$0" == `pwd`* ]] || [[ "$0" == "//"* ]] || [[ "$0" == /Applications/* ]] || [[ "$0" == /Volumes/* ]] || [[ "$0" == /Users/* ]]; then
-    full_path="$0"
-else
-    full_path="`pwd`/$0"
-fi
+full_path=$(cd "$(dirname "$0")"; pwd)
+
 tmp=`dirname "$full_path"`
-tmp=`dirname "$tmp"`
 bundle=`dirname "$tmp"`
 bundle_contents="$bundle"/Contents
 bundle_res="$bundle_contents"/Resources

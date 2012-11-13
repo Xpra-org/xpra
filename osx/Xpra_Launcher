@@ -1,14 +1,14 @@
 #!/bin/sh
 
-name="`basename $0`"
-if [[ "$0" == `pwd`* ]] || [[ "$0" == "//"* ]] || [[ "$0" == /Applications/* ]] || [[ "$0" == /Volumes/* ]] || [[ "$0" == /Users/* ]]; then
-    full_path="$0"
-else
-    full_path="`pwd`/$0"
-fi
+#ie: $0=/Users/MacAdmin/Desktop/Xpra.app/Contents/MacOS/Xpra_Launcher
+#ie: $0=./Xpra.app/Contents/MacOS/Xpra_Launcher
+full_path=$(cd "$(dirname "$0")"; pwd)
+#ie: full_path=/Users/MacAdmin/Desktop/Xpra.app/Contents/MacOS/
+
 tmp=`dirname "$full_path"`
-tmp=`dirname "$tmp"`
+#ie: tmp=/Users/MacAdmin/Desktop/Xpra.app/Contents
 bundle=`dirname "$tmp"`
+#ie: bundle=/Users/MacAdmin/Desktop/Xpra.app
 bundle_contents="$bundle"/Contents
 bundle_res="$bundle_contents"/Resources
 bundle_lib="$bundle_res"/lib
