@@ -415,7 +415,7 @@ class XpraServer(gobject.GObject):
         log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", wm, window, nw, nh, geom)
         geom[2:4] = nw,nh
         for ss in self._server_sources.values():
-            ss.resize_window(self._window_to_id[window], nw, nh)
+            ss.resize_window(self._window_to_id[window], window, nw, nh)
 
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
