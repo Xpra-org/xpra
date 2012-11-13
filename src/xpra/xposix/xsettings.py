@@ -36,6 +36,9 @@ class XSettingsManager(object):
     # This is factored out as a separate function to make it easier to test
     # XSettingsWatcher:
     def _set_blob_in_place(self, settings_blob):
+        if type(settings_blob)!=tuple:
+            log.warn("discarding xsettings because of incompatible format: %s", type(settings_blob))
+            return
         prop_set(self._window, "_XSETTINGS_SETTINGS", "xsettings-settings",
                  settings_blob)
 
