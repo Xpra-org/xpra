@@ -9,6 +9,7 @@ import socket
 import errno
 import stat
 import time
+import sys
 
 o0700 = 448     #0o700
 
@@ -73,19 +74,26 @@ class DotXpra(object):
 
     # Same as socket_path, but preps for the server:
     def server_socket_path(self, local_display_name, clobber, wait_for_unknown=0):
+        socket_path = self.socket_path(local_display_name)
         if not clobber:
             state = self.server_state(local_display_name)
             counter = 0
             while state==self.UNKNOWN and counter<wait_for_unknown:
+                if counter==0:
+                    sys.stdout.write("%s is not responding, waiting for it to timeout before clearing it" % socket_path)
+                sys.stdout.write(".")
+                sys.stdout.flush()
                 counter += 1
                 time.sleep(1)
                 state = self.server_state(local_display_name)
+            if counter>0:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
             if state not in (self.DEAD, self.UNKNOWN):
                 raise ServerSockInUse((state, local_display_name))
-        path = self.socket_path(local_display_name)
-        if os.path.exists(path):
-            os.unlink(path)
-        return path
+        if os.path.exists(socket_path):
+            os.unlink(socket_path)
+        return socket_path
 
     def sockets(self):
         results = []
