@@ -58,7 +58,7 @@ import xpra
 from xpra.server_source import ServerSource
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.bytestreams import SocketConnection
-from xpra.protocol import Protocol, zlib_compress, has_rencode
+from xpra.protocol import Protocol, Compressed, zlib_compress, has_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
@@ -951,9 +951,13 @@ class XpraServer(gobject.GObject):
 
         if screenshot_req:
             #this is a screenshot request, handle it and disconnect
-            packet = self.make_screenshot_packet()
-            proto._add_packet_to_queue(packet)
-            gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+            try:
+                packet = trap.call(self.make_screenshot_packet)
+                proto._add_packet_to_queue(packet)
+                gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+            except:
+                log.error("failed to capture screenshot", exc_info=True)
+                self.send_disconnect(proto, "screenshot failed")
             return
         if info_req:
             packet = ["hello", self.get_info(proto)]
@@ -1141,7 +1145,7 @@ class XpraServer(gobject.GObject):
             image.save(buf, "png")
             data = buf.getvalue()
             buf.close()
-            packet = ["screenshot", width, height, "png", rowstride, data]
+            packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
         return packet
 
     def _process_set_notify(self, proto, packet):
