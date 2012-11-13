@@ -602,12 +602,11 @@ class WindowSource(object):
         # to avoid a race condition.
         window.acknowledge_changes()
 
-        self._sequence += 1
-        sequence = self._sequence
-        pixmap = window.get_property("client-contents")
+        sequence = self._sequence + 1
         if self.is_cancelled(sequence):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
-            return  None
+            return
+        pixmap = window.get_property("client-contents")
         if pixmap is None:
             log.error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
             return
@@ -615,6 +614,7 @@ class WindowSource(object):
         data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options)
         if not data:
             return
+        self._sequence += 1
         log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
         def make_data_packet(*args):
             #NOTE: this function is called from the damage data thread!
@@ -811,7 +811,10 @@ class WindowSource(object):
             im.save(buf, "JPEG", quality=q)
             client_options["quality"] = q
         else:
+            assert coding=="png"
             log("sending as %s", coding)
+            #transparency = False
+            #transparency=transparency
             im.save(buf, coding.upper())
         data = buf.getvalue()
         buf.close()
