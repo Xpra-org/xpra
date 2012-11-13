@@ -790,7 +790,10 @@ class WindowModel(BaseWindowModel):
         #the client window may have been resized (generally programmatically)
         #so we may need to update the corral_window to match
         cow, coh = self.corral_window.get_geometry()[2:4]
-        clw, clh = self.client_window.get_geometry()[2:4]
+        clx, cly, clw, clh = self.client_window.get_geometry()[:4]
+        if (clx, cly) != (0, 0):
+            log("WindowModel.composite_configure_event(%s, %s) client window has moved, resetting it", composite_window, event)
+            self.client_window.move(0, 0)
         if cow!=clw or coh!=clh:
             log("WindowModel.composite_configure_event(%s, %s) corral window (%sx%s) does not match client window (%sx%s), resizing it",
                      composite_window, event, cow, coh, clw, clh)
