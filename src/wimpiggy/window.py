@@ -256,7 +256,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._geometry = None
         self._damage_forward_handle = None
         self._internal_set_property("client-window", client_window)
-        self._composite = CompositeHelper(self.client_window, False)  #self.composite_configure_event)
+        self._composite = CompositeHelper(self.client_window, False)
 
     def call_setup(self):
         log("call_setup() adding event receiver")
@@ -313,6 +313,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def composite_configure_event(self, composite_window, event):
         log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
+        if self._composite:
+            self._composite.do_wimpiggy_configure_event(event)
 
     def do_get_property_geometry(self, pspec):
         (x, y, w, h, b) = self._geometry
@@ -419,6 +421,7 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
         pass
 
     def composite_configure_event(self, composite_window, event):
+        BaseWindowModel.composite_configure_event(self, composite_window, event)
         log("SystemTrayWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
 
     def move_resize(self, x, y, width, height):
@@ -782,9 +785,10 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
     def composite_configure_event(self, composite_window, event):
+        log("WindowModel.composite_configure_event(%s, %s)", composite_window, event)
+        BaseWindowModel.composite_configure_event(self, composite_window, event)
         #the client window may have been resized (generally programmatically)
         #so we may need to update the corral_window to match
-        log("WindowModel.composite_configure_event(%s, %s)", composite_window, event)
         cow, coh = self.corral_window.get_geometry()[2:4]
         clw, clh = self.client_window.get_geometry()[2:4]
         if cow!=clw or coh!=clh:
