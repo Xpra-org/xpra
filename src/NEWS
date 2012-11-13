@@ -1,6 +1,56 @@
-v0.8.0 (2012-10-09)
+v0.8.0 (2012-11-13)
 ======================
-	-- TODO
+	-- fix window aspect ratio not preserved
+	-- fix modal windows support
+	-- fix default mouse cursor: now uses the client's default cursor
+	-- fix "double-apple" in menu on OSX
+	-- limit the number of raw packets per client to prevent memory exhaustion
+	-- authentication fix: salt per connection
+	-- better mouse cursor support: send cursors by name so their size matches the client's settings
+	-- support system tray icon forwarding (limited)
+	-- restore window on same workspace
+	-- AES packet encryption for TCP mode
+	-- launcher entry box for username in SSH mode
+	-- launcher improvements: highlight the password field if needed, prevent warnings, etc
+	-- better window manager specification compatibility (for broken applications or toolkits)
+	-- use lossless encoders more aggressively when possible
+	-- better detection of dead server sockets: retry and remove them if needed
+	-- send window icons in dedicated compressed packet (smaller new-window packets, faster)
+	-- detect overly large main packets
+	-- py2exe, ebuild and distutils improvements: faster and cleaner builds, discarding unwanted modules
+	-- osx and win32 build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
+	-- updated Cython to 0.17.1 for binary builds
+	
+
+v0.7.3 (2012-11-08)
+======================
+	-- fix crash with unknown X11 keysyms
+	-- avoid error with focus being given to a destroyed window
+	-- honour window aspect ratio
+
+
+v0.7.2 (2012-11-07)
+======================
+	-- fix version string hiding ssh password prompt
+	-- fix focus handling for applications setting XWMHints.input to False (ie: Java)
+	-- fix ssh shared connection mode: do not kill it on Ctrl-C
+	-- fix sanitization of aspect ratio hints
+	-- fix undefined variable exception in window setup/cleanup code
+	-- fix undefined variable exception in window damage code
+	-- fix dimensions used for calculating the optimal picture encoding
+	-- reduce Xdummy memory usage by limitting to lower maxmimum resolutions
+
+
+v0.7.1 (2012-10-21)
+======================
+	-- fix division by zero in graphs causing displayed information to stall
+	-- fix multiple tray shown when using the launcher and password authentication fails
+	-- fix override redirect windows cleanup code
+	-- fix keyboard mapping for AltGr with old versions of X11 server
+	-- fix for Mac OSX zero keycode (letter 'a')
+	-- fix for invalid modifiers: try harder to apply valid mappings
+	-- fix gtk import warning with text clients (xpra version, xpra info)
+
 
 v0.7.0 (2012-10-08)
 ======================
