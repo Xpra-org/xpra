@@ -102,7 +102,7 @@ class ClientTray(object):
                                       (x, y), modifiers])
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        assert coding in ("rgb24", "png")
+        assert coding in ("rgb24", "png", "mmap"), "invalid encoding for tray data: %s" % coding
         log("draw_region for tray")
         def after_draw_update_tray(success):
             if not success:
