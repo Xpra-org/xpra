@@ -44,7 +44,7 @@ from wimpiggy.lowlevel.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
 from wimpiggy.util import (AutoPropGObjectMixin,
-                           one_arg_signal,
+                           one_arg_signal, no_arg_signal,
                            non_none_list_accumulator)
 from wimpiggy.error import trap, XError
 from wimpiggy.prop import prop_get, prop_set
@@ -521,7 +521,7 @@ class WindowModel(BaseWindowModel):
     __gsignals__ = {
         # X11 bell event:
         "bell": one_arg_signal,
-        "geometry": one_arg_signal,
+        "geometry": no_arg_signal,
 
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),
@@ -787,16 +787,33 @@ class WindowModel(BaseWindowModel):
     def composite_configure_event(self, composite_window, event):
         log("WindowModel.composite_configure_event(%s, %s)", composite_window, event)
         BaseWindowModel.composite_configure_event(self, composite_window, event)
+        gobject.idle_add(self.may_resize_corral_window)
+
+    def may_resize_corral_window(self):
+        if not self._managed:
+            return
+        if self.corral_window is None or not self.corral_window.is_visible():
+            return
+        if self.client_window is None or not self.client_window.is_visible():
+            return
+        try:
+            #workaround applications whose windows disappear from underneath us:
+            if trap.call(self.resize_corral_window):
+                self.emit("geometry")
+        except XError, e:
+            log.warn("failed to resize corral window: %s", e)
+
+    def resize_corral_window(self):
         #the client window may have been resized (generally programmatically)
         #so we may need to update the corral_window to match
         cow, coh = self.corral_window.get_geometry()[2:4]
         clx, cly, clw, clh = self.client_window.get_geometry()[:4]
         if (clx, cly) != (0, 0):
-            log("WindowModel.composite_configure_event(%s, %s) client window has moved, resetting it", composite_window, event)
+            log("resize_corral_window() client window has moved, resetting it")
             self.client_window.move(0, 0)
         if cow!=clw or coh!=clh:
-            log("WindowModel.composite_configure_event(%s, %s) corral window (%sx%s) does not match client window (%sx%s), resizing it",
-                     composite_window, event, cow, coh, clw, clh)
+            log("resize_corral_window() corral window (%sx%s) does not match client window (%sx%s), resizing it",
+                     cow, coh, clw, clh)
             self.corral_window.resize(clw, clh)
             hints = self.get_property("size-hints")
             self._sanitize_size_hints(hints)
@@ -805,7 +822,8 @@ class WindowModel(BaseWindowModel):
             w, h, wvis, hvis = size
             self._internal_set_property("actual-size", (w, h))
             self._internal_set_property("user-friendly-size", (wvis, hvis))
-            self.emit("geometry", event)
+            return True
+        return False
 
     def do_child_configure_request_event(self, event):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
