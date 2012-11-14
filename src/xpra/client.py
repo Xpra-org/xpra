@@ -889,7 +889,11 @@ class XpraClient(XpraClientBase):
                 decode_time = -1
             log("record_decode_time(%s) wid=%s, %s: %sx%s, %sms", success, wid, coding, width, height, int(decode_time/100)/10.0)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
-        window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
+        try:
+            window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
+        except:
+            record_decode_time(False)
+            raise
 
     def _process_cursor(self, packet):
         if not self.cursors_enabled:
