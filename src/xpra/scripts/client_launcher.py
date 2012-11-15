@@ -749,7 +749,7 @@ class ApplicationWindow:
 			uri = "%s:%s:%s" % (mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
 		args.append("--encoding=%s" % xpra_opts.encoding)
-		if xpra_opts.encoding in ["jpeg", "webp", "x264"]:
+		if xpra_opts.encoding in ["jpeg"]:
 			args.append("--quality=%s" % xpra_opts.quality)
 		if xpra_opts.password:
 			xpra_opts.password_file = create_password_file(xpra_opts.password)
