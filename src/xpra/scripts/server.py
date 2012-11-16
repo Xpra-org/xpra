@@ -423,11 +423,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.children:
         children_pids = set()
         for child_cmd in opts.children:
-            try:
-                children_pids.add(subprocess.Popen(child_cmd, shell=True, close_fds=True).pid)
-            except OSError, e:
-                sys.stderr.write("Error spawning child '%s': %s\n"
-                                 % (child_cmd, e))
+            if child_cmd:
+                try:
+                    children_pids.add(subprocess.Popen(child_cmd, shell=True, close_fds=True).pid)
+                except OSError, e:
+                    sys.stderr.write("Error spawning child '%s': %s\n"
+                                     % (child_cmd, e))
         child_reaper.set_children_pids(children_pids)
     # Check once after the mainloop is running, just in case the exit
     # conditions are satisfied before we even enter the main loop.
