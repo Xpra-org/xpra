@@ -400,12 +400,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         return prop_get(self.client_window, key, ptype, ignore_errors=False)
 
     def get_dimensions(self):
-        if not self.client_window.is_visible():
-            #prevent nonsensical values:
-            ww, wh = 0, 0
-        else:
-            ww, wh = self._geometry[2:4]
-        #log.info("%s.get_dimensions()=%sx%s", self, ww, wh)
+        ww, wh = self._geometry[2:4]
         return ww, wh
 
     def is_OR(self):
