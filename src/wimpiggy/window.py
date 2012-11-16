@@ -311,6 +311,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self):
         self._composite.acknowledge_changes()
 
+    def do_wimpiggy_configure_event(self, event):
+        self._geometry = (event.x, event.y, event.width, event.height,
+                          event.border_width)
+        log.info("WindowModel.do_wimpiggy_configure_event(%s)", event)
+
     def composite_configure_event(self, composite_window, event):
         log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
         if self._composite:
@@ -725,9 +730,7 @@ class WindowModel(BaseWindowModel):
         trap.swallow(sendConfigureNotify, self.client_window)
 
     def do_wimpiggy_configure_event(self, event):
-        self._geometry = (event.x, event.y, event.width, event.height,
-                          event.border_width)
-        log.info("WindowModel.do_wimpiggy_configure_event(%s)", event)
+        WindowModel.do_wimpiggy_configure_event(self, event)
         self.notify("geometry")
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
@@ -818,7 +821,7 @@ class WindowModel(BaseWindowModel):
             hints = self.get_property("size-hints")
             self._sanitize_size_hints(hints)
             size = calc_constrained_size(clw, clh, hints)
-            log("composite_configure_event: new constrained size=%s", size)
+            log("resize_corral_window() new constrained size=%s", size)
             w, h, wvis, hvis = size
             self._internal_set_property("actual-size", (w, h))
             self._internal_set_property("user-friendly-size", (wvis, hvis))
