@@ -416,7 +416,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
 
         if try_harder:
             #try to match the main key only:
-            main_key = set([keysym for keysym, index in entries if index==0])
+            main_key = set([(keysym, index) for keysym, index in entries if index==0])
             if len(main_key)==1:
                 for p_keycode, p_entries in preserve_keycode_matches.items():
                     p_keysyms = set([keysym for keysym,_ in p_entries])
