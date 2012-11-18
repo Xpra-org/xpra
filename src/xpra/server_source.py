@@ -63,6 +63,7 @@ class KeyboardConfig(object):
         self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_mod_meanings = {}
+        self.xkbmap_mod_managed = []
         self.xkbmap_mod_pointermissing = []
         self.xkbmap_keycodes = []
         self.xkbmap_x11_keycodes = []
@@ -628,14 +629,22 @@ class ServerSource(object):
         if layout!=self.keyboard_config.xkbmap_layout or variant!=self.keyboard_config.xkbmap_variant:
             self.keyboard_config.xkbmap_layout = layout
             self.keyboard_config.xkbmap_variant = variant
+            return True
+        return False
 
     def assign_keymap_options(self, props):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
+        modded = False
         for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
                   "xkbmap_mod_managed", "xkbmap_mod_pointermissing",
                   "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
-            setattr(self.keyboard_config, x, props.get(x))
+            cv = getattr(self.keyboard_config, x)
+            nv = props.get(x)
+            if cv!=nv:
+                setattr(self.keyboard_config, x, nv)
+                modded = True
+        return modded
 
     def keys_changed(self):
         self.keyboard_config.compute_modifier_map()
@@ -645,14 +654,14 @@ class ServerSource(object):
         if self.keyboard_config.enabled:
             self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
 
-    def set_keymap(self, current_keyboard_config, keys_pressed):
+    def set_keymap(self, current_keyboard_config, keys_pressed, force):
         if self.keyboard_config.enabled:
             current_id = None
             if current_keyboard_config and current_keyboard_config.enabled:
                 current_id = current_keyboard_config.get_hash()
             keymap_id = self.keyboard_config.get_hash()
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
-            if current_id is None or keymap_id!=current_id:
+            if force or current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
                 self.keyboard_config.set_keymap(self.client_platform)
                 current_keyboard_config = self.keyboard_config

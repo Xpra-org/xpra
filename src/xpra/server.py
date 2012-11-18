@@ -547,13 +547,13 @@ class XpraServer(gobject.GObject):
         log.info("not found transient_for=%s, xid=%s", transient_for, transient_for.xid)
         return  None
 
-    def set_keymap(self, server_source):
+    def set_keymap(self, server_source, force=False):
         try:
             #prevent _keys_changed() from firing:
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
             self.keymap_changing = True
 
-            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed)
+            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
@@ -1341,15 +1341,15 @@ class XpraServer(gobject.GObject):
     def _process_layout(self, proto, packet):
         layout, variant = packet[1:3]
         ss = self._server_sources.get(proto)
-        ss.set_layout(layout, variant)
-        self.set_keymap(ss)
+        if ss.set_layout(layout, variant):
+            self.set_keymap(ss, force=True)
 
     def _process_keymap(self, proto, packet):
         props = packet[1]
         ss = self._server_sources.get(proto)
-        ss.assign_keymap_options(props)
+        if ss.assign_keymap_options(props):
+            self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
-        self.set_keymap(ss)
         ss.make_keymask_match(modifiers)
 
     def _process_key_action(self, proto, packet):
