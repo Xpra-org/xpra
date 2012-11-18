@@ -814,7 +814,7 @@ cdef _parse_keysym(symbol):
     if keysym==NoSymbol:
         if symbol.lower().startswith("0x"):
             return int(symbol, 16)
-        if symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+        if len(symbol)>0 and symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
             return int(symbol)
         return  None
     return keysym
