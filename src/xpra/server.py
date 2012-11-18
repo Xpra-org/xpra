@@ -1015,12 +1015,9 @@ class XpraServer(gobject.GObject):
             self.key_repeat_interval = -1
             #but do set a default repeat rate:
             set_key_repeat_rate(500, 30)
-        #parse keyboard related options:
-        self.xkbmap_layout = capabilities.get("xkbmap_layout")
-        self.xkbmap_variant = capabilities.get("xkbmap_variant")
         #always clear modifiers before setting a new keymap
-        self.set_keymap(ss)
         ss.make_keymask_match(capabilities.get("modifiers", []))
+        self.set_keymap(ss)
 
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, key_repeat, server_cipher)
