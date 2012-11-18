@@ -245,7 +245,10 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries))
 
     kcmin, kcmax = get_minmax_keycodes()
-    trans, new_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier)
+    for try_harder in (False, True):
+        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
+        if len(missing_keycodes)==0:
+            break
     instructions = keymap_to_xmodmap(new_keycodes)
     unset = apply_xmodmap(instructions)
     debug("unset=%s", unset)
@@ -305,7 +308,7 @@ def x11_keycodes_to_list(x11_mappings):
     return entries
 
 
-def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keysym_to_modifier={}):
+def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keysym_to_modifier={}, try_harder=False):
     """
         The keycodes given may not match the range that the server supports,
         or some of those keycodes may not be usable (only one modifier can
@@ -318,11 +321,12 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         Note: a client_keycode of '0' is valid (osx uses that),
         but server_keycode generally starts at 8...
     """
-    debug("translate_keycodes(%s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier)
+    debug("translate_keycodes(%s, %s, %s, %s, %s, %s)", kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
     #list of free keycodes we can use:
     free_keycodes = [i for i in range(kcmin, kcmax) if i not in preserve_keycode_entries]
     keycode_trans = {}              #translation map from client keycode to our server keycode
     server_keycodes = {}            #the new keycode definitions
+    missing_keycodes = []           #the groups of entries we failed to map due to lack of free keycodes
 
     #to do faster lookups:
     preserve_keysyms_map = {}
@@ -345,7 +349,12 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 server_keycode = free_keycodes[0]
                 debug("set_keycodes key %s using free keycode=%s", entries, server_keycode)
             else:
-                log.error("set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, entries)
+                msg = "set_keycodes: no free keycodes!, cannot translate %s: %s", server_keycode, entries
+                if try_harder:
+                    log.error(*msg)
+                else:
+                    debug(*msg)
+                missing_keycodes.append(entries)
                 server_keycode = -1
         if server_keycode>0:
             verbose("set_keycodes key %s (%s) mapped to keycode=%s", keycode, entries, server_keycode)
@@ -405,6 +414,16 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
                 debug("found keysym superset of preserve with more keys for %s : %s", entries, p_entries)
                 return do_assign(client_keycode, p_keycode, entries)
 
+        if try_harder:
+            #try to match the main key only:
+            main_key = set([keysym for keysym, index in entries if index==0])
+            if len(main_key)==1:
+                for p_keycode, p_entries in preserve_keycode_matches.items():
+                    p_keysyms = set([keysym for keysym,_ in p_entries])
+                    if main_key.issubset(p_entries):
+                        debug("found main key superset for %s : %s", main_key, p_entries)
+                        return do_assign(client_keycode, p_keycode, p_entries)
+
         debug("no matches for %s", entries)
         return do_assign(client_keycode, -1, entries)
 
@@ -436,7 +455,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
 
     debug("translated keycodes=%s", keycode_trans)
     debug("%s free keycodes=%s", len(free_keycodes), free_keycodes)
-    return keycode_trans, server_keycodes
+    return keycode_trans, server_keycodes, missing_keycodes
 
 
 def keymap_to_xmodmap(trans_keycodes):
