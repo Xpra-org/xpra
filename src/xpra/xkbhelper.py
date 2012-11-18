@@ -211,10 +211,15 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         filtered = {}
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
-            if len(mods)<=1:
-                filtered[keycode] = entries
-            else:
+            if len(mods)>1:
                 log.warn("keymapping removed invalid keycode entry %s pointing to more than one modifier (%s): %s", keycode, mods, entries)
+                continue
+            #now remove entries for keysyms we don't have:
+            f_entries = set([(keysym, index) for keysym, index in entries if parse_keysym(keysym) is not None])
+            if len(f_entries)==0:
+                log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
+                continue
+            filtered[keycode] = f_entries
         return filtered
 
     #get the list of keycodes (either from x11 keycodes or gtk keycodes):
