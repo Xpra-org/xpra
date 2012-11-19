@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Vector;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -508,6 +509,8 @@ public abstract class AbstractClient implements Runnable, Client {
 			if (this.encoding.equals("jpeg") && this.jpeg > 0)
 				caps.put("jpeg", this.jpeg);
 		}
+		caps.put("platform", System.getProperty("os.name").toLowerCase());
+		caps.put("uuid", UUID.randomUUID().toString().replace("-", ""));
 		return caps;
 	}
 
