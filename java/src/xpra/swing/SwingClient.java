@@ -5,9 +5,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-import xpra.AbstractClient;
+import xpra.InputContextClient;
 
-public class SwingClient extends AbstractClient {
+public class SwingClient extends InputContextClient {
 
 	protected Toolkit toolkit = null;
 

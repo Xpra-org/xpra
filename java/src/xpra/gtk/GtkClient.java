@@ -8,14 +8,14 @@ import java.util.Map;
 import org.gnome.gdk.Gdk;
 import org.gnome.gtk.Gtk;
 
-import xpra.AbstractClient;
+import xpra.InputContextClient;
 
 /**
  * This is just a proof of concept and this client does not work properly at
  * present.
  * 
  */
-public class GtkClient extends AbstractClient {
+public class GtkClient extends InputContextClient {
 
 	public GtkClient(InputStream is, OutputStream os) {
 		super(is, os);
