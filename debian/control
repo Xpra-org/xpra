@@ -36,17 +36,21 @@ Description: tabbing/tiling window manager using GTK+
 
 Package: xpra
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
-        ,python-wimpiggy (=${binary:Version})
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,libwebp2
+        ,python-wimpiggy (=${binary:Version})
         ,python-gtk2
         ,x11-xserver-utils
-        ,xserver-xorg-video-dummy, xserver-xorg-input-void
-Recommends: python-imaging
-        ,python-gtkglext1, python-opengl
-# keyboard-configuration (>= 1.82) is workaround for #180 to fix keypad keys forwarding.
-        ,keyboard-configuration (>= 1.82)
-Suggests: openssh-client, openssh-server, python-dbus
+        ,xserver-xorg-video-dummy
+        ,xserver-xorg-input-void
+Recommends: python-gtkglext1
+        ,python-imaging
+        ,python-opengl
+        ,openssh-client
+        ,ssh-askpass
+# we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
+        ,keyboard-configuration
+Suggests: openssh-server, python-dbus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -79,7 +83,7 @@ Description: tool to detach/reattach running X programs
 Package: python-wimpiggy
 Section: python
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-gtk2
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-gtk2
 Provides: wimpiggy
 Conflicts: wimpiggy
 Description: library for writing window managers, using GTK+
