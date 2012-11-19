@@ -55,7 +55,7 @@ public class SwingWindow extends JFrame implements ClientWindow {
 
 	public static final boolean save_failed_pixbufs = false;
 	public static final boolean save_successful_pixbufs = true;
-	public static final boolean save_backing = true;
+	public static final boolean save_backing = false;
 
 	public class BitmapArea extends JComponent {
 		private static final long serialVersionUID = 1L;
@@ -73,12 +73,14 @@ public class SwingWindow extends JFrame implements ClientWindow {
 				// g.setPaintMode();
 				g.drawImage(SwingWindow.this.backing, 0, 0, this);
 				// g.finalize();
-				File outputfile = new File("paint-" + System.currentTimeMillis() + ".png");
-				try {
-					ImageIO.write(SwingWindow.this.backing, "png", outputfile);
-				} catch (IOException e) {
-					this.log("pain() failed to save backing: " + e);
-					e.printStackTrace();
+				if (save_backing) {
+					File outputfile = new File("paint-" + System.currentTimeMillis() + ".png");
+					try {
+						ImageIO.write(SwingWindow.this.backing, "png", outputfile);
+					} catch (IOException e) {
+						this.log("pain() failed to save backing: " + e);
+						e.printStackTrace();
+					}
 				}
 			} else
 				g.clearRect(0, 0, getSize().width, getSize().height);

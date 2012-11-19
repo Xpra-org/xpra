@@ -31,6 +31,7 @@ import org.gnome.gdk.WindowTypeHint;
 import org.gnome.gtk.DrawingArea;
 import org.gnome.gtk.Widget;
 
+import xpra.CastHelper;
 import xpra.Client;
 import xpra.ClientWindow;
 
@@ -192,7 +193,7 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 		for (Map.Entry<String, Object> me : newMetadata.entrySet())
 			this.metadata.put(me.getKey(), me.getValue());
 
-		String title = (String) newMetadata.get("title");
+		String title = CastHelper.cast(newMetadata.get("title"), String.class);
 		if (title == null)
 			title = "unknown";
 		this.setTitle(title);
@@ -301,11 +302,6 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 		if (!coding.equals("rgb24")) {
 			Pixbuf pixbuf = null;
 			try {
-				/*
-				 * byte[] bytes = new byte[img_data.length()]; int index = 0;
-				 * for (char c : img_data.toCharArray()) bytes[index++] = (byte)
-				 * c;
-				 */
 				byte[] bytes = img_data;
 				BufferedImage i = ImageIO.read(new ByteArrayInputStream(bytes));
 				if (i == null) {

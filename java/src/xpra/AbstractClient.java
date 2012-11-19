@@ -632,9 +632,11 @@ public abstract class AbstractClient implements Runnable, Client {
 
 	protected void process_draw(int id, int x, int y, int w, int h, String coding, byte[] data, int packet_sequence, int rowstride) {
 		ClientWindow window = this.id_to_window.get(id);
+		long start = System.currentTimeMillis();
 		window.draw(x, y, w, h, coding, data);
-        if (packet_sequence>0)
-            this.send("damage-sequence", packet_sequence, id, w, h, 0);
+		long end = System.currentTimeMillis();
+        if (packet_sequence>=0)
+            this.send("damage-sequence", packet_sequence, id, w, h, end-start);
 	}
 
 	protected void process_window_metadata(int id, Map<String, Object> metadata) {
