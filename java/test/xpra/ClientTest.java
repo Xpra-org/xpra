@@ -32,7 +32,7 @@ public class ClientTest extends AbstractTest {
 		run(ClientTest.class);
 	}
 
-	public static class TestClient extends AbstractClient {
+	public static class TestClient extends InputContextClient {
 
 		public TestClient(String in, OutputStream os) {
 			super(new ByteArrayInputStream(in.getBytes()), os);
