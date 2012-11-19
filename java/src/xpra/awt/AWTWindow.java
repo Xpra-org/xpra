@@ -51,7 +51,7 @@ public class AWTWindow extends Frame implements ClientWindow {
 	protected BufferedImage backing = null;
 	protected Graphics2D graphics = null;
 
-	public static boolean DEBUG_REDRAWS = true;
+	public static boolean DEBUG_REDRAWS = false;
 	public static boolean save_failed_pixbufs = true;
 	public static boolean save_successful_pixbufs = false;
 	public static boolean save_backing = false;
@@ -516,6 +516,10 @@ public class AWTWindow extends Frame implements ClientWindow {
 		String code = String.valueOf(c);
 		List<String> modifiers = Keys.mask_to_names(event.getModifiers());
 		String name = KeyEvent.getKeyText(c);
+		int keyval = event.getKeyCode();
+		int keycode = 0;
+		if (Keys.codeToKeycode.containsKey(keyval))
+			keycode = Keys.codeToKeycode.get(keyval);
 
 		this.log("key_action(" + event + ", " + depressed + ") int(char)=" + new Integer(c) + ", code=" + code + ", keyText=" + name);
 		Map<Character, String> map = null;
@@ -542,7 +546,7 @@ public class AWTWindow extends Frame implements ClientWindow {
 				}
 			}
 		}
-		this.client.send("key-action", this.id, code, boolint(depressed), modifiers, 0, name, 0);
+		this.client.send("key-action", this.id, code, boolint(depressed), modifiers, keyval, name, keycode);
 	}
 
 	protected int boolint(boolean b) {
