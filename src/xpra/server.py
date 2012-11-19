@@ -760,9 +760,13 @@ class XpraServer(gobject.GObject):
         workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
         for ss in self._server_sources.values():
             screen_sizes = ss.screen_sizes
+            log("screen_sizes(%s)=%s", ss, screen_sizes)
             if not screen_sizes:
                 continue
             for display in screen_sizes:
+                #avoid error with old/broken clients:
+                if not display or type(display) not in (list, tuple):
+                    continue
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>10:
                     work_x, work_y, work_w, work_h = display[6:10]
