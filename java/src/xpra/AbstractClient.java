@@ -326,7 +326,7 @@ public abstract class AbstractClient implements Runnable, Client {
 			return;
 		}
 		assert dp.size() >= 1;
-		String type = this.cast(dp.get(0), String.class);
+		String type = CastHelper.cast(dp.get(0), String.class);
 		Method m = this.handlers.get(type);
 		if (m == null) {
 			this.log("processPacket(..) unhandled packet: " + type);

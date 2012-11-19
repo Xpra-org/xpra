@@ -33,8 +33,10 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
+import xpra.CastHelper;
 import xpra.Client;
 import xpra.ClientWindow;
+import xpra.awt.Keys;
 
 public class SwingWindow extends JFrame implements ClientWindow {
 	private static final long serialVersionUID = 1L;
@@ -279,7 +281,7 @@ public class SwingWindow extends JFrame implements ClientWindow {
 		for (Map.Entry<String, Object> me : newMetadata.entrySet())
 			this.metadata.put(me.getKey(), me.getValue());
 
-		String title = (String) newMetadata.get("title");
+		String title = CastHelper.cast(newMetadata.get("title"), String.class);
 		if (title == null)
 			title = "unknown";
 		this.setTitle(title);
@@ -476,9 +478,12 @@ public class SwingWindow extends JFrame implements ClientWindow {
 	protected void key_action(KeyEvent event, boolean depressed) {
 		this.log("key_action(" + event + ", " + depressed + ")");
 		char key = event.getKeyChar();
-		int keycode = event.getKeyCode();
 		int location = event.getKeyLocation();
-		String name = KeyEvent.getKeyText(keycode);
+		int keyval = event.getKeyCode();
+		String name = KeyEvent.getKeyText(keyval);
+		int keycode = 0;
+		if (Keys.codeToKeycode.containsKey(keyval))
+			keycode = Keys.codeToKeycode.get(keyval);
 		/*
 		 * Keyval key = event.getKeyval(); ModifierType mod = event.getState();
 		 * List<String> modifiers = Keys.mask_to_names(mod);
@@ -500,7 +505,7 @@ public class SwingWindow extends JFrame implements ClientWindow {
 			ks = "" + key;
 		this.log("key_action(" + event + ", " + depressed + ") key=" + key + ", keycode=" + keycode + ", location=" + location + ", name=" + name);
 		List<String> modifiers = new ArrayList<String>(); // Keys.mask_to_names(mod);
-		this.client.send("key-action", this.id, ks, boolint(depressed), modifiers, 0, name, 0);
+		this.client.send("key-action", this.id, ks, boolint(depressed), modifiers, keyval, name, keycode);
 	}
 
 	protected int boolint(boolean b) {
