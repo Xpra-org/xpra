@@ -18,7 +18,10 @@ def round_up_unit(i):
 
 DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6)]
 
-def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show_y_scale=True, show_x_scale=False, colours=DEFAULT_COLOURS):
+def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
+                      show_y_scale=True, show_x_scale=False,
+                      min_y_scale=None,
+                      colours=DEFAULT_COLOURS):
     pixmap = gtk.gdk.Pixmap(None, width, height, 24)
     offset = 20
     over = 2
@@ -43,6 +46,8 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show
             max_x = max(max_x, x)
     #round up the scales:
     scale_x = max_x
+    if min_y_scale is not None:
+        max_y = max(max_y, min_y_scale)
     scale_y = round_up_unit(max_y)
     #use black:
     context.set_source_rgb(0, 0, 0)
@@ -70,8 +75,11 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None, show
             #vertical:
             y = height-offset-h*i/10
             #text
-            context.move_to(2, y+2)
-            unit = str(int(scale_y*i/10))
+            if scale_y<10:
+                unit = str(int(scale_y*i)/10.0)
+            else:
+                unit = str(int(scale_y*i/10))
+            context.move_to(offset-4-(offset-8)/2.0*min(2, len(unit)), y+2)
             context.show_text(unit)
             #line indicator
             context.move_to(offset-over, y)

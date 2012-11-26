@@ -301,7 +301,10 @@ class SessionInfo(gtk.Window):
                 if len(l)<20:
                     for _ in range(20-len(l)):
                         l.insert(0, None)
-            pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"], width=w, height=h/2, title="Latency (ms)")
+            pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"],
+                                        width=w, height=h/2,
+                                        min_y_scale=10,
+                                        title="Latency (ms)")
             self.latency_graph.set_size_request(*pixmap.get_size())
             self.latency_graph.set_from_pixmap(pixmap, None)
         return True
