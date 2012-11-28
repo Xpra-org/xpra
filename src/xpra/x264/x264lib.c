@@ -72,6 +72,13 @@ struct x264lib_ctx {
 	// "ultrafast", "superfast", "veryfast", "faster", "fast", "medium",
 	//"slow", "slower", "veryslow", "placebo", 0 }
 	int csc_algo;
+
+	const char* I420_profile;
+	const char* I422_profile;
+	const char* I444_profile;
+
+	int I422_min_quality;
+	int I444_min_quality;
 };
 
 int get_encoder_pixel_format(struct x264lib_ctx *ctx) {
@@ -88,8 +95,6 @@ float get_x264_quality(int pct) {
 	return	roundf(50.0 - (MIN(100, MAX(0, pct)) * 49.0 / 100.0));
 }
 
-#define I422_MIN_QUALITY 80
-#define I444_MIN_QUALITY 90
 //Given a quality percentage (0 to 100),
 //return the x264 colour sampling to use
 //IMPORTANT: changes here must be reflected in get_profile_for_quality
@@ -97,9 +102,11 @@ float get_x264_quality(int pct) {
 int get_x264_colour_sampling(struct x264lib_ctx *ctx, int pct)
 {
 #ifdef SUPPORT_CSC_MODES
-	if (!ctx->supports_csc_option || pct<I422_MIN_QUALITY)
+	if (!ctx->supports_csc_option)
 		return	X264_CSP_I420;
-	else if (pct<I444_MIN_QUALITY)
+	if (pct < ctx->I422_min_quality)
+		return	X264_CSP_I420;
+	else if (pct < ctx->I444_min_quality)
 		return	X264_CSP_I422;
 	return	X264_CSP_I444;
 #else
@@ -145,25 +152,60 @@ int get_csc_algo_for_quality(int initial_quality) {
 	return SWS_BICUBLIN | SWS_ACCURATE_RND;
 }
 
+const int DEFAULT_INITIAL_QUALITY = 70;
+const char I420[] = "I420";
+const char I422[] = "I422";
+const char I444[] = "I444";
+const char PROFILE_BASELINE[] = "baseline";
+const char PROFILE_MAIN[] = "main";
+const char PROFILE_HIGH[] = "high";
+const char PROFILE_HIGH10[] = "high10";
+const char PROFILE_HIGH422[] = "high422";
+const char PROFILE_HIGH444_PREDICTIVE[] = "high444";
+const char *I420_PROFILES[7] = {PROFILE_BASELINE, PROFILE_MAIN, PROFILE_HIGH, PROFILE_HIGH10, PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE, NULL};
+const char *I422_PROFILES[3] = {PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE, NULL};
+const char *I444_PROFILES[2] = {PROFILE_HIGH444_PREDICTIVE, NULL};
+const char *DEFAULT_I420_PROFILE = PROFILE_BASELINE;
+const char *DEFAULT_I422_PROFILE = PROFILE_HIGH422;
+const char *DEFAULT_I444_PROFILE = PROFILE_HIGH444_PREDICTIVE;
+const int DEFAULT_I422_MIN_QUALITY = 80;
+const int DEFAULT_I444_MIN_QUALITY = 90;
+
 #ifndef _WIN32
-const char* PROFILE_BASELINE = "baseline";
-const char* PROFILE_MAIN = "main";
-const char* PROFILE_HIGH = "high";
-const char* PROFILE_HIGH10 = "high10";
-const char* PROFILE_HIGH422 = "high422";
-const char* PROFILE_HIGH444_PREDICTIVE = "high444";
 //Given a quality percentage (0 to 100)
 //return the profile to use
 //IMPORTANT: changes here must be reflected in get_x264_colour_sampling
 // as not all pixel formats are supported by all profiles.
-const char *get_profile_for_quality(int pct) {
-	if (pct<I422_MIN_QUALITY)
-		return	PROFILE_BASELINE;
-	if (pct<I444_MIN_QUALITY)
-		return	PROFILE_HIGH422;
-	return	PROFILE_HIGH444_PREDICTIVE;
+const char *get_profile_for_quality(struct x264lib_ctx *ctx, int pct) {
+	if (pct < ctx->I422_min_quality)
+		return	ctx->I420_profile;
+	if (pct < ctx->I444_min_quality)
+		return	ctx->I422_profile;
+	return	ctx->I444_profile;
 }
 
+/**
+ * Ensures that the profile given is valid and
+ * returns a pointer to the const string for it.
+ * (as we may pass temporary strings from python!)
+ */
+const char *get_valid_profile(const char* csc_mode, const char *profile, const char *profiles[], const char *default_profile)
+{
+	//printf("get_valid_profile(%s, %s, %p, %s)\n", csc_mode, profile, profiles, default_profile);
+	if (profile==NULL)
+		return	default_profile;
+	int i = 0;
+	while (profiles[i]!=NULL)
+	{
+		if (strcmp(profiles[i], profile)==0) {
+			//printf("found valid %s profile: %s\n", csc_mode, profiles[i]);
+			return profiles[i];
+		}
+		i++;
+	}
+	fprintf(stderr, "invalid %s profile specified: %s\n", csc_mode, profile);
+	return default_profile;
+}
 
 struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 {
@@ -174,39 +216,73 @@ struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 	return sws_getContext(ctx->width, ctx->height, PIX_FMT_RGB24, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
 }
 
-void do_init_encoder(struct x264lib_ctx *ctx, int width, int height, int initial_quality, int supports_csc_option)
+/**
+ * Configure values that will not change during the lifetime of the encoder.
+ */
+void configure_encoder(struct x264lib_ctx *ctx, int width, int height, int initial_quality, int supports_csc_option, int I422_min_quality, int I444_min_quality, char *i420_profile, char *i422_profile, char *i444_profile)
 {
-	ctx->quality = initial_quality;
+	//printf("configure_encoder(%p, %i, %i, %i, %i, %i, %i, %s, %s, %s)\n", ctx, width, height, initial_quality, supports_csc_option, I422_min_quality, I444_min_quality, i420_profile, i422_profile, i444_profile);
+	ctx->width = width;
+	ctx->height = height;
+	if (initial_quality >= 0)
+		ctx->quality = initial_quality;
+	else
+		ctx->quality = DEFAULT_INITIAL_QUALITY;
+	//printf("configure_encoder: %ix%i q=%i\n", ctx->width, ctx->height, ctx->quality);
 	ctx->supports_csc_option = supports_csc_option;
-	ctx->colour_sampling = get_x264_colour_sampling(ctx, initial_quality);
-	ctx->x264_quality = get_x264_quality(initial_quality);
+	if (I422_min_quality >= 0)
+		ctx->I422_min_quality = I422_min_quality;
+	else
+		ctx->I422_min_quality = DEFAULT_I422_MIN_QUALITY;
+	if (I444_min_quality >= 0)
+		ctx->I444_min_quality = I444_min_quality;
+	else
+		ctx->I444_min_quality = DEFAULT_I444_MIN_QUALITY;
+	//printf("configure_encoder: min quality %i / %i\n", ctx->I422_min_quality, ctx->I444_min_quality);
+	ctx->I420_profile = get_valid_profile(I420, i420_profile, I420_PROFILES, DEFAULT_I420_PROFILE);
+	ctx->I422_profile = get_valid_profile(I422, i422_profile, I422_PROFILES, DEFAULT_I422_PROFILE);
+	ctx->I444_profile = get_valid_profile(I444, i444_profile, I444_PROFILES, DEFAULT_I444_PROFILE);
+	//printf("configure_encoder: profiles %s / %s / %s\n", ctx->I420_profile, ctx->I422_profile, ctx->I444_profile);
+}
+
+/**
+ * Actually initialize the encoder.
+ * This may be called more than once if required, ie:
+ * - if the dimensions change,
+ * - if the csc mode changes.
+ */
+void do_init_encoder(struct x264lib_ctx *ctx)
+{
+	ctx->colour_sampling = get_x264_colour_sampling(ctx, ctx->quality);
+	ctx->x264_quality = get_x264_quality(ctx->quality);
 	ctx->csc_format = get_csc_format_for_x264_format(ctx->colour_sampling);
 	ctx->encoding_preset = 2;
 	ctx->preset = x264_preset_names[ctx->encoding_preset];
-	ctx->profile = get_profile_for_quality(initial_quality);
-	ctx->csc_algo = get_csc_algo_for_quality(initial_quality);
-	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, x264_quality=%f, profile=%s\n", ctx, width, height, initial_quality, supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
+	ctx->profile = get_profile_for_quality(ctx, ctx->quality);
+	ctx->csc_algo = get_csc_algo_for_quality(ctx->quality);
+	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
 
 	x264_param_t param;
 	x264_param_default_preset(&param, ctx->preset, "zerolatency");
 	param.i_threads = 1;
-	param.i_width = width;
-	param.i_height = height;
+	param.i_width = ctx->width;
+	param.i_height = ctx->height;
 	param.i_csp = ctx->colour_sampling;
 	param.rc.f_rf_constant = ctx->x264_quality;
 	param.i_log_level = 0;
 	x264_param_apply_profile(&param, ctx->profile);
 	ctx->encoder = x264_encoder_open(&param);
-	ctx->width = width;
-	ctx->height = height;
 	ctx->rgb2yuv = init_encoder_csc(ctx);
 }
 
-struct x264lib_ctx *init_encoder(int width, int height, int initial_quality, int supports_csc_option)
+struct x264lib_ctx *init_encoder(int width, int height, int initial_quality, int supports_csc_option,
+		int I422_min_quality, int I444_min_quality,
+        char *i420_profile, char *i422_profile, char *i444_profile)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
-	do_init_encoder(ctx, width, height, initial_quality, supports_csc_option);
+	configure_encoder(ctx, width, height, initial_quality, supports_csc_option, I422_min_quality, I444_min_quality, i420_profile, i422_profile, i444_profile);
+	do_init_encoder(ctx);
 	return ctx;
 }
 
@@ -473,18 +549,20 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 #ifndef _WIN32
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
+	float new_quality = get_x264_quality(pct);
 	if (ctx->supports_csc_option) {
 		int new_colour_sampling = get_x264_colour_sampling(ctx, pct);
 		if (ctx->colour_sampling!=new_colour_sampling) {
 			//pixel encoding has changed, we must re-init everything:
 			//printf("set_encoding_quality(%i) old colour_sampling=%i, new colour_sampling %i\n", pct, ctx->colour_sampling, new_colour_sampling);
 			do_clean_encoder(ctx);
-			do_init_encoder(ctx, ctx->width , ctx->height, pct, ctx->supports_csc_option);
+			ctx->quality = pct;
+			ctx->x264_quality = new_quality;
+			do_init_encoder(ctx);
 			return;
 		}
 	}
 	if ((ctx->quality & ~0x1)!=(pct & ~0x1)) {
-		float new_quality = get_x264_quality(pct);
 		//float old_quality = ctx->x264_quality;
 		//printf("set_encoding_quality(%i) was %i, new x264 quality %f was %f\n", pct, ctx->quality, new_quality, old_quality);
 		//only f_rf_constant was changed,

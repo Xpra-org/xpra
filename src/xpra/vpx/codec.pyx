@@ -141,7 +141,7 @@ cdef class Decoder(xcoder):
 cdef class Encoder(xcoder):
     cdef int frames
 
-    def init_context(self, width, height, supports_options):    #@DuplicatedSignature
+    def init_context(self, width, height, options):    #@DuplicatedSignature
         self.init(width, height)
         self.context = init_encoder(width, height)
         self.frames = 0

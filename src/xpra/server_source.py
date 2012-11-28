@@ -405,7 +405,6 @@ class ServerSource(object):
         self.closed = False
         self.ordinary_packets = []
         self.protocol = protocol
-        self.supports_rgb24zlib = False
         self.get_transient_for = get_transient_for
         # mmap:
         self.supports_mmap = supports_mmap
@@ -415,7 +414,8 @@ class ServerSource(object):
         self.default_quality = default_quality      #default encoding quality for lossless encodings
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
-        self.encoding_client_options = False        #does the client support encoding options?
+        self.encoding_options = {}
+        self.x264_min_quality_profile = ""
         self.png_window_icons = False
         self.default_batch_config = DamageBatchConfig()
         self.default_damage_options = {}
@@ -439,7 +439,6 @@ class ServerSource(object):
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
-        self.uses_swscale = False
         self.raw_window_icons = False
         self.system_tray = False
 
@@ -490,13 +489,19 @@ class ServerSource(object):
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
         self.set_screen_sizes(capabilities.get("screen_sizes"))
-        self.uses_swscale = capabilities.get("uses_swscale", True)
         self.named_cursors = capabilities.get("named_cursors", False)
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
         self.system_tray = capabilities.get("system_tray", False)
+        #encoding options (filter):
+        for k, v in capabilities.items():
+            #these properties are special cased here because we
+            #defined their name before the "encoding." prefix convention:
+            if k in ("initial_quality", "rgb24zlib", "uses_swscale", "encoding_client_options"):
+                self.encoding_options[k] = v
+            elif k.startswith("encoding."):
+                k = k[len("encoding."):]
+                self.encoding_options[k] = v
         #encodings:
-        self.encoding_client_options = capabilities.get("encoding_client_options", False)
-        self.supports_rgb24zlib = capabilities.get("rgb24zlib", False)
         self.encodings = capabilities.get("encodings", [])
         self.set_encoding(capabilities.get("encoding", None), None)
         q = self.default_quality
@@ -982,9 +987,8 @@ class ServerSource(object):
             batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, batch_config, self.auto_refresh_delay,
-                              self.encoding, self.encodings,
+                              self.encoding, self.encodings, self.encoding_options,
                               self.default_damage_options,
-                              self.encoding_client_options, self.supports_rgb24zlib, self.uses_swscale,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws
         ws.damage(window, x, y, w, h, damage_options)

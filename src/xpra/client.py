@@ -584,6 +584,23 @@ class XpraClient(XpraClientBase):
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
+        capabilities["uses_swscale"] = not USE_OPENGL
+        if "x264" in ENCODINGS:
+            # some profile options: "baseline", "main", "high", "high10", ...
+            # set the default to "high" for i420 as the python client always supports all the profiles
+            # whereas on the server side, the default is baseline to accomodate less capable clients.
+            for csc_mode, default_profile in {"I420" : "high",
+                                              "I422" : "",
+                                              "I444" : ""}.items():
+                profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, default_profile)
+                if profile:
+                    capabilities["encoding.x264.%s.profile" % csc_mode] = profile
+            for csc_mode in ("I422", "I444"):
+                min_quality = os.environ.get("XPRA_X264_%s_MIN_QUALITY" % csc_mode)
+                if min_quality:
+                    capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
+            log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
+        capabilities["encoding.initial_quality"] = 70
         return capabilities
 
     def send_ping(self):

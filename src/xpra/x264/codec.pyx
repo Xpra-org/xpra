@@ -6,6 +6,17 @@
 import os
 from libc.stdlib cimport free
 
+DEFAULT_INITIAL_QUALITY = 70
+ALL_PROFILES = ["baseline", "main", "high", "high10", "high422", "high444"]
+I420_PROFILES = ALL_PROFILES[:]
+I422_PROFILES = ["high422", "high444"]
+I444_PROFILES = ["high444"]
+DEFAULT_I420_PROFILE = "baseline"
+DEFAULT_I422_PROFILE = "high422"
+DEFAULT_I444_PROFILE = "high444"
+DEFAULT_I422_MIN_QUALITY = 80
+DEFAULT_I444_MIN_QUALITY = 90
+
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
     void * memset ( void * ptr, int value, size_t num )
@@ -26,7 +37,9 @@ cdef extern from "x264lib.h":
     void* xmemalign(size_t size)
     void xmemfree(void* ptr)
 
-    x264lib_ctx* init_encoder(int width, int height, int initial_quality, int supports_csc_option)
+    x264lib_ctx* init_encoder(int width, int height, int initial_quality, int supports_csc_option,
+                              int I422_min_quality, int I444_min_quality,
+                              char *i420_profile, char *i422_profile, char *i444_profile)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
     int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override) nogil
@@ -170,11 +183,41 @@ cdef class Encoder(xcoder):
     cdef int frames
     cdef int supports_options
 
-    def init_context(self, width, height, supports_options):    #@DuplicatedSignature
+    def _get_profile(self, options, csc_mode, default_value, valid_options):
+        #try the environment as a default, fallback to hardcoded default:
+        profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, default_value)
+        #now see if the client has requested a different value:
+        profile = options.get("x264.%s.profile" % csc_mode, profile)
+        if profile not in valid_options:
+            print("invalid %s profile: %s" % (csc_mode, profile))
+            return default_value
+        return profile
+
+    def _get_min_quality(self, options, csc_mode, default_value):
+        #try the environment as a default, fallback to hardcoded default:
+        min_quality = int(os.environ.get("XPRA_X264_%s_MIN_QUALITY" % csc_mode, default_value))
+        #now see if the client has requested a different value:
+        min_quality = options.get("x264.%s.min_quality" % csc_mode, min_quality)
+        #enforce valid range:
+        return min(100, max(-1, min_quality))
+
+    def init_context(self, width, height, options):    #@DuplicatedSignature
         self.init(width, height)
-        self.supports_options = supports_options
-        self.context = init_encoder(width, height, 70, int(supports_options))
         self.frames = 0
+        self.supports_options = int(options.get("encoding_client_options", False))
+        I420_profile = self._get_profile(options, "I420", DEFAULT_I420_PROFILE, I420_PROFILES)
+        I422_profile = self._get_profile(options, "I422", DEFAULT_I422_PROFILE, I422_PROFILES)
+        I444_profile = self._get_profile(options, "I444", DEFAULT_I444_PROFILE, I444_PROFILES)
+        I422_min_quality = self._get_min_quality(options, "I422", DEFAULT_I422_MIN_QUALITY)
+        I444_min_quality = self._get_min_quality(options, "I444", DEFAULT_I444_MIN_QUALITY)
+        if I422_min_quality>I444_min_quality:
+            print("ignoring nonsensical I422 vs i444 thresholds: %s vs %s" % (I422_min_quality, I444_min_quality))
+            I422_min_quality = -1
+            I444_min_quality = -1
+        initial_quality = min(100, max(0, options.get("initial_quality", DEFAULT_INITIAL_QUALITY)))
+        self.context = init_encoder(width, height, initial_quality, int(self.supports_options),
+                                    int(I422_min_quality), int(I444_min_quality),
+                                    I420_profile, I422_profile, I444_profile)
 
     def clean(self):                        #@DuplicatedSignature
         if self.context!=NULL:
@@ -190,6 +233,7 @@ cdef class Encoder(xcoder):
             #quality was overriden via options:
             client_options["quality"] = options["quality"]
         else:
+
             #current quality settings:
             client_options["quality"] = get_encoder_quality(self.context)
         return  client_options

@@ -196,9 +196,8 @@ class WindowSource(object):
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
-                    encoding, encodings,
+                    encoding, encodings, encoding_options,
                     default_damage_options,
-                    encoding_client_options, supports_rgb24zlib, uses_swscale,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -207,11 +206,15 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
+        self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.default_damage_options = default_damage_options    #default encoding options, like "quality"
                                                         #may change at runtime (ie: see ServerSource.set_quality)
-        self.encoding_client_options = encoding_client_options  #does the client support encoding options?
-        self.supports_rgb24zlib = supports_rgb24zlib    #supports rgb24 compression outside network layer (unwrapped)
-        self.uses_swscale = uses_swscale                #client uses uses_swscale (has extra limits on sizes)
+        self.encoding_client_options = encoding_options.get("encoding_client_options", False)
+                                                        #does the client support encoding options?
+        self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
+                                                        #supports rgb24 compression outside network layer (unwrapped)
+        self.uses_swscale = encoding_options.get("uses_swscale", True)
+                                                        #client uses uses_swscale (has extra limits on sizes)
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -852,7 +855,7 @@ class WindowSource(object):
                     log("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
                     self._video_encoder.clean()
-                    self._video_encoder.init_context(w, h, self.encoding_client_options)
+                    self._video_encoder.init_context(w, h, self.encoding_options)
                     #if we had an encoding speed set, restore it (also scaled):
                     if len(self._video_encoder_speed):
                         _, recent_speed = calculate_time_weighted_average(list(self._video_encoder_speed))
@@ -862,7 +865,7 @@ class WindowSource(object):
             if self._video_encoder is None:
                 log("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 self._video_encoder = self.make_video_encoder(coding)
-                self._video_encoder.init_context(w, h, self.encoding_client_options)
+                self._video_encoder.init_context(w, h, self.encoding_options)
             err, _, data = self._video_encoder.compress_image(data, rowstride, options)
             if err!=0:
                 log.error("%s: ouch, compression error %s", coding, err)
