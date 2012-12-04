@@ -104,6 +104,19 @@ public class AndroidXpraClient extends AbstractClient {
 		return display.getHeight()-this.statusBarHeight;
 	}
 
+
+	@Override
+	protected String getKeyboardLayout() {
+		return	"us";
+	}
+
+	@Override
+	protected List<?>[]	getKeycodes() {
+		List<List<Object>> keycodes = new ArrayList<List<Object>>();
+		return	keycodes.toArray(new List<?>[keycodes.size()]);
+	}
+
+
 	@Override
 	public void run(String[] args) {
 		//first we calculate the statusBarHeight
