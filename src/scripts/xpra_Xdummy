@@ -1,4 +1,5 @@
 #!/bin/sh
+#@PydevCodeAnalysisIgnore
 
 DOTXPRA_DIR="${HOME}/.xpra"
 NOSUID_XORG="${DOTXPRA_DIR}/Xorg"
