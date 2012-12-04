@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import gtk
-from parti.addons.ipython_view import IPythonView
+from parti.addons.ipython_view import IPythonView   #@UnresolvedImport
 
 class PseudoclientWindow(gtk.Window):
     """A gtk.Window that acts like an ordinary client.
