@@ -401,7 +401,11 @@ class ServerSource(object):
     damage_packet_queue.
     """
 
-    def __init__(self, protocol, get_transient_for, supports_mmap, default_quality):
+    def __init__(self, protocol, get_transient_for,
+                 supports_mmap,
+                 supports_speaker, supports_microphone,
+                 speaker_codecs, microphone_codecs,
+                 default_quality):
         self.closed = False
         self.ordinary_packets = []
         self.protocol = protocol
@@ -410,13 +414,18 @@ class ServerSource(object):
         self.supports_mmap = supports_mmap
         self.mmap = None
         self.mmap_size = 0
+        # sound:
+        self.supports_speaker = supports_speaker
+        self.speaker_codecs = speaker_codecs
+        self.supports_microphone = supports_microphone
+        self.microphone_codecs = microphone_codecs
+        self.sound_source = None
+        self.sound_sink = None
 
         self.default_quality = default_quality      #default encoding quality for lossless encodings
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.encoding_options = {}
-        self.x264_min_quality_profile = ""
-        self.png_window_icons = False
         self.default_batch_config = DamageBatchConfig()
         self.default_damage_options = {}
 
@@ -427,6 +436,7 @@ class ServerSource(object):
         self.client_type = None
         self.client_version = None
         self.client_platform = None
+        self.png_window_icons = False
         self.auto_refresh_delay = 0
         self.server_window_resize = False
         self.send_cursors = False
@@ -441,6 +451,11 @@ class ServerSource(object):
         self.screen_sizes = []
         self.raw_window_icons = False
         self.system_tray = False
+        #sound props:
+        self.pulseaudio_id = None
+        self.pulseaudio_server = None
+        self.sound_decoders = []
+        self.sound_encoders = []
 
         self.keyboard_config = None
 
@@ -465,6 +480,7 @@ class ServerSource(object):
         self.window_sources = {}
         self.close_mmap()
         self.protocol = None
+        self.stop_sending_sound()
 
     def parse_hello(self, capabilities):
         #batch options:
@@ -536,6 +552,65 @@ class ServerSource(object):
                 log.info("using %s as primary encoding", self.encoding)
         else:
             log.info("windows forwarding is disabled")
+        #sound stuff:
+        self.pulseaudio_id = capabilities.get("sound.pulseaudio.id")
+        self.pulseaudio_server = capabilities.get("sound.pulseaudio.server")
+        self.sound_decoders = capabilities.get("sound.decoders", [])
+        self.sound_encoders = capabilities.get("sound.encoders", [])
+        self.sound_receive = capabilities.get("sound.receive", False)
+        self.sound_send = capabilities.get("sound.send", False)
+
+    def start_sending_sound(self):
+        assert self.supports_speaker
+        assert self.sound_source is None
+        assert self.sound_receive
+        try:
+            from xpra.sound.gstreamer_util import start_sending_sound
+            self.sound_source = start_sending_sound(self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            if self.sound_source:
+                self.sound_source.connect("new-buffer", self.new_sound_buffer)
+                self.sound_source.start()
+        except Exception, e:
+            log.error("error setting up sound: %s", e)
+
+    def stop_sending_sound(self):
+        if self.sound_source:
+            self.sound_source.stop()
+            self.sound_source.cleanup()
+            self.sound_source = None
+
+    def new_sound_buffer(self, sound_source, data):
+        assert self.sound_source
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+
+    def sound_control(self, action, *args):
+        if action=="stop":
+            self.stop_sending_sound()
+        elif action=="start":
+            self.start_sending_sound()
+        #elif action=="quality":
+        #    assert self.sound_source
+        #    quality = args[0]
+        #    self.sound_source.set_quality(quality)
+        #    self.start_sending_sound()
+        else:
+            log.error("unkown sound action: %s", action)
+
+    def sound_data(self, codec, data, *args):
+        if self.sound_sink is not None and codec!=self.sound_sink.codec:
+            log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
+            self.sound_sink.stop()
+            self.sound_sink.cleanup()
+            self.sound_sink = None
+        if not self.sound_sink:
+            try:
+                from xpra.sound.sink import SoundSink
+                self.sound_sink = SoundSink(codec=codec)
+                self.sound_sink.start()
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+                return
+        self.sound_sink.add_data(data)
 
     def set_screen_sizes(self, screen_sizes):
         self.screen_sizes = screen_sizes or []
@@ -746,6 +821,16 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
+        try:
+            from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
+            add_pulseaudio_capabilities(capabilities)
+            from xpra.sound.gstreamer_util import add_gst_capabilities
+            add_gst_capabilities(capabilities,
+                                 receive=self.supports_microphone, send=self.supports_speaker,
+                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+        except Exception, e:
+            log.error("failed to load sound modules: %s", e)
+        log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
         capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes

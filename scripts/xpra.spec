@@ -16,6 +16,7 @@
 %define no_server 1
 %define no_webp 1
 %define no_video 1
+%define no_sound 1
 %endif
 
 #python and gtk bits:
@@ -29,6 +30,7 @@
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
 %define requires_webp , libwebp
+%define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-python, pulseaudio, pulseaudio-utils
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
@@ -70,10 +72,14 @@
 %define requires_python_gtk , python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
 %define requires_xorg , xorg-x11-server-utils, xf86-video-dummy, xf86-input-void
 %define requires_extra %{nil}
+%define requires_sound %{nil}
 %endif
 
 %if 0%{?no_webp}
 %define requires_webp %{nil}
+%endif
+%if 0%{?no_sound}
+%define requires_sound %{nil}
 %endif
 
 
@@ -83,7 +89,7 @@ Name: xpra
 Version: %{version}
 Release: %{build_no}%{dist}
 License: GPL
-Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl}
+Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound}
 Group: Networking
 Packager: Antoine Martin <antoine@nagafix.co.uk>
 URL: http://xpra.org/

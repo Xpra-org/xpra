@@ -16,7 +16,7 @@ SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS=""
-IUSE="+clipboard ffmpeg jpeg libnotify parti png +rencode server ssh x264 vpx webp"
+IUSE="+clipboard ffmpeg jpeg libnotify parti png sound +rencode server ssh x264 vpx webp"
 
 S="${WORKDIR}/${PF}"
 
@@ -30,6 +30,12 @@ COMMON_DEPEND="dev-python/pygtk:2
 		vpx? ( media-libs/libvpx )
 	)
 	server? ( x11-libs/libXtst )
+	sound? (
+		media-sound/pulseaudio
+		media-libs/gstreamer
+		media-libs/gst-plugins-base
+		dev-python/gst-python
+	)
 	!x11-wm/parti"
 
 RDEPEND="${COMMON_DEPEND}
@@ -55,7 +61,8 @@ src_compile() {
 		$(use ffmpeg || echo '--without-vpx --without-x264') \
 		$(use clipboard || echo '--without-clipboard') \
 		$(use rencode || echo '--without-rencode') \
-		$(use server || echo '--without-server')
+		$(use server || echo '--without-server') \
+		$(use sound || echo '--without-sound')
 }
 
 src_install() {

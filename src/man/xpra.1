@@ -25,6 +25,10 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-system\-tray\fP]
 [\fB\-\-no\-bell\fP]
+[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-enable-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-password\-file\fP=\fIfilename\fP]
@@ -44,10 +48,13 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-bell\fP]
 [\fB\-\-no\-keyboard\-sync\fP]
 [\fB\-\-no\-tray\fP]
+[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
 [\fB\-\-quality\fP=\fIVALUE\fP]
-[\fB\-\-jpeg\-quality\fP=\fIVALUE\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
 [\fB\-\-max\-bandwidth\fP=\fIBW\fP]
 [\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
@@ -493,6 +500,20 @@ the server can maintain a consistent keyboard state.
 Using this option can prevent keys from repeating unexpectedly on
 high latency links but it may also disrupt applications which access
 the keyboard directly (games, etc).
+.TP
+\fB\-\-no\-speaker\fP
+Disable sound output forwarding support. Application sound output will
+not be sent to the client(s).
+.TP
+\fB\-\-no\-microphone\fP
+Disable sound input forwarding support. Application sound input will
+not be sent from the client(s) to the server.
+.TP
+\fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
+Specify the codec to use for sound output (speaker) or input (microphone).
+You may specify more than one to define the preferred order,
+use the special value 'help' to get a list of options.
+When unspecified, all the available codecs are allowed and the first one is used.
 .TP
 \fB\-\-title\-suffix\fP=\fIVALUE\fP
 Sets the portion of text which is appended to the windows' title.

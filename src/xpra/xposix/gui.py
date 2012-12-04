@@ -35,6 +35,7 @@ class ClientExtras(ClientExtrasBase):
         self.setup_tray(opts.no_tray, opts.delay_tray, opts.tray_icon)
         self.setup_xprops(opts.pulseaudio)
         self.setup_x11_bell()
+        self.setup_pa_audio_tagging()
         self.has_dbusnotify = False
         self.has_pynotify = False
         if opts.notifications:
@@ -46,6 +47,13 @@ class ClientExtras(ClientExtrasBase):
         if self.tray_widget:
             self.hide_tray()
             self.tray_widget = None
+
+    def setup_pa_audio_tagging(self):
+        try:
+            from xpra.sound.pulseaudio_util import add_audio_tagging_env
+            add_audio_tagging_env(self.get_tray_icon_filename(None))
+        except Exception, e:
+            log("failed to set pulseaudio audio tagging: %s", e)
 
     def get_data_dir(self):
         #is there a better/cleaner way?

@@ -311,6 +311,19 @@ class XpraServer(gobject.GObject):
                 i += 1
         log("randr enabled: %s", self.randr)
 
+        # note: not just True/False here: if None, allow it
+        # (the client can then use this None value as False to
+        # prevent microphone from being enabled by default whilst still being allowed)
+        self.supports_speaker = bool(opts.speaker) or opts.speaker is None
+        self.supports_microphone = bool(opts.microphone) or opts.microphone is None
+        self.speaker_codecs = opts.speaker_codec
+        self.microphone_codecs = opts.microphone_codec
+        try:
+            from xpra.sound.pulseaudio_util import add_audio_tagging_env
+            add_audio_tagging_env()
+        except Exception, e:
+            log("failed to set pulseaudio audio tagging: %s", e)
+
         self.default_quality = opts.quality
         self.pulseaudio = opts.pulseaudio
         self.sharing = opts.sharing
@@ -994,7 +1007,11 @@ class XpraServer(gobject.GObject):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
-        ss = ServerSource(proto, self._get_transient_for, self.supports_mmap, self.default_quality)
+        ss = ServerSource(proto, self._get_transient_for,
+                          self.supports_mmap,
+                          self.supports_speaker, self.supports_microphone,
+                          self.speaker_codecs, self.microphone_codecs,
+                          self.default_quality)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
@@ -1168,6 +1185,12 @@ class XpraServer(gobject.GObject):
         proto.set_compression_level(level)
         #echo it back to the client:
         self._server_sources.get(proto).set_deflate(level)
+
+    def _process_sound_control(self, proto, packet):
+        self._server_sources.get(proto).sound_control(*packet[1:])
+
+    def _process_sound_data(self, proto, packet):
+        self._server_sources.get(proto).sound_data(*packet[1:])
 
     def disconnect(self, protocol, reason):
         ss = None
@@ -1590,6 +1613,8 @@ class XpraServer(gobject.GObject):
         "quality": _process_quality,
         "buffer-refresh": _process_buffer_refresh,
         "screenshot": _process_screenshot,
+        "sound-control": _process_sound_control,
+        "sound-data": _process_sound_data,
         "desktop_size": _process_desktop_size,
         "encoding": _process_encoding,
         "disconnect": _process_disconnect,

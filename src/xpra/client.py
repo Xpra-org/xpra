@@ -81,6 +81,7 @@ from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
 from xpra.maths import std_unit
+from xpra.protocol import Compressed
 
 from xpra.client_window import ClientWindow
 USE_OPENGL = os.environ.get("XPRA_OPENGL", "0")=="1"
@@ -140,6 +141,20 @@ class XpraClient(XpraClientBase):
         self.server_load = None
         self.client_ping_latency = maxdeque(maxlen=100)
         self.last_ping_echoed_time = 0
+
+        #sound:
+        self.speaker_enabled = bool(opts.speaker)
+        self.microphone_enabled = bool(opts.microphone)
+        self.speaker_codecs = opts.speaker_codec
+        self.microphone_codecs = opts.microphone_codec
+        self.sound_sink = None
+        self.sound_source = None
+        self.server_pulseaudio_id = None
+        self.server_pulseaudio_server = None
+        self.server_sound_decoders = []
+        self.server_sound_encoders = []
+        self.server_sound_receive = False
+        self.server_sound_send = False
 
         #features:
         self.toggle_cursors_bell_notify = False
@@ -274,6 +289,7 @@ class XpraClient(XpraClientBase):
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
+            "sound-data":           self._process_sound_data,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._ui_packet_handlers[k] = v
@@ -601,6 +617,14 @@ class XpraClient(XpraClientBase):
                     capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
         capabilities["encoding.initial_quality"] = 70
+        try:
+            from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
+            add_pulseaudio_capabilities(capabilities)
+            from xpra.sound.gstreamer_util import add_gst_capabilities
+            add_gst_capabilities(capabilities, receive=True, send=True,
+                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+        except Exception, e:
+            log.error("failed to load sound modules: %s", e)
         return capabilities
 
     def send_ping(self):
@@ -722,6 +746,18 @@ class XpraClient(XpraClientBase):
         except ImportError, e:
             log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
+        #sound:
+        self.server_pulseaudio_id = capabilities.get("sound.pulseaudio.id")
+        self.server_pulseaudio_server = capabilities.get("sound.pulseaudio.server")
+        self.server_sound_decoders = capabilities.get("sound.decoders", [])
+        self.server_sound_encoders = capabilities.get("sound.encoders", [])
+        self.server_sound_receive = capabilities.get("sound.receive", False)
+        self.server_sound_send = capabilities.get("sound.send", False)
+        if self.server_sound_send and self.speaker_enabled:
+            self.start_receiving_sound()
+        if self.server_sound_receive and self.microphone_enabled:
+            self.start_sending_sound()
+
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
@@ -732,6 +768,55 @@ class XpraClient(XpraClientBase):
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
+
+    def start_sending_sound(self):
+        assert self.sound_source is None
+        assert self.microphone_enabled
+        assert self.server_sound_receive
+        try:
+            from xpra.sound.gstreamer_util import start_sending_sound
+            self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulsesound_server, self.server_pulseaudio_id)
+            if self.sound_source:
+                self.sound_source.connect("new-buffer", self.new_sound_buffer)
+                self.sound_source.start()
+        except Exception, e:
+            log.error("error setting up sound: %s", e)
+
+    def stop_sending_sound(self):
+        if self.sound_source:
+            self.sound_source.stop()
+            self.sound_source.cleanup()
+            self.sound_source = None
+
+    def start_receiving_sound(self):
+        assert self.server_sound_send
+        self.send("sound-control", "start")
+
+    def stop_receiving_sound(self):
+        self.send("sound-control", "stop")
+
+    def new_sound_buffer(self, sound_source, data):
+        assert self.sound_source
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+
+    def _process_sound_data(self, packet):
+        codec = packet[1]
+        if self.sound_sink is not None and codec!=self.sound_sink.codec:
+            log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
+            self.sound_sink.stop()
+            self.sound_sink.cleanup()
+            self.sound_sink = None
+        if not self.sound_sink:
+            try:
+                from xpra.sound.sink import SoundSink
+                self.sound_sink = SoundSink(codec=codec)
+                self.sound_sink.start()
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+                return
+        data = packet[2]
+        self.sound_sink.add_data(data)
+
 
     def send_notify_enabled(self):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"

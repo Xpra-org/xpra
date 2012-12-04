@@ -64,6 +64,10 @@ server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
+sound_ENABLED = True
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
@@ -79,6 +83,8 @@ for arg in sys.argv:
         clipboard_ENABLED = False
     elif arg == "--without-server":
         server_ENABLED = False
+    elif arg == "--without-sound":
+        sound_ENABLED = False
     elif arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
@@ -436,7 +442,7 @@ if sys.platform.startswith("win"):
         import OpenGL
         import shutil
         print "*** copy PyOpenGL module ***"
-        opengl_dir = os.path.dirname( OpenGL.__file__ )
+        opengl_dir = os.path.dirname( OpenGL.__file__ ) #@UndefinedVariable
         try:
             shutil.copytree(
                 opengl_dir, os.path.join( "dist", "OpenGL" ),
@@ -555,6 +561,13 @@ if clipboard_ENABLED:
                 ))
 elif sys.platform.startswith("win"):
     py2exe_excludes.append("wimpiggy.gdk")
+
+
+
+if sound_ENABLED:
+    packages.append("xpra.sound")
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.sound")
 
 
 

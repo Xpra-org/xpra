@@ -141,6 +141,7 @@ def read_xpra_defaults():
         defaults[k] = v
     return defaults
 
+
 def nox():
     if "DISPLAY" in os.environ:
         del os.environ["DISPLAY"]
@@ -251,7 +252,7 @@ def main(script_file, cmdline):
         parser.add_option_group(group)
 
     group = OptionGroup(parser, "Server Controlled Features",
-                "These options can be used to turn on or off certain features, "
+                "These options can be used to turn certain features on or off, "
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     group.add_option("--no-clipboard", action="store_false",
@@ -281,6 +282,22 @@ def main(script_file, cmdline):
     group.add_option("--enable-sharing", action="store_true",
                       dest="sharing", default=bool_default("sharing", False),
                       help="Allow more than one client to connect to the same session")
+    group.add_option("--no-speaker", action="store_false",
+                      dest="speaker", default=bool_default("speaker", True),
+                      help="Disable forwarding of sound output to the client(s)")
+    group.add_option("--speaker-codec", action="append",
+                      dest="speaker_codec", default=string_list("speaker_codec", []),
+                      help="The audio codec to use for forwarding the speaker sound output "
+                      "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
+                      "when unspecified all available codecs are allowed and the first one is used)")
+    group.add_option("--no-microphone", action="store_false",
+                      dest="microphone", default=bool_default("microphone", None),
+                      help="Disable forwarding of sound input to the server")
+    group.add_option("--microphone-codec", action="append",
+                      dest="microphone_codec", default=string_list("microphone_codec", []),
+                      help="The audio codec to use for forwaring the microphone sound input "
+                      "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
+                      "when unspecified all available codecs are allowed and the first one is used)")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
@@ -449,6 +466,9 @@ def main(script_file, cmdline):
     #configure default logging handler:
     mode = args.pop(0)
     if mode in ("start", "upgrade", "attach"):
+        if show_codec_help("attach" not in cmdline[1:],
+                           options.speaker_codec, options.microphone_codec):
+            return 0
         logging.basicConfig(format="%(asctime)s %(message)s")
     else:
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
@@ -486,6 +506,51 @@ def main(script_file, cmdline):
     else:
         parser.error("invalid mode '%s'" % mode)
         return 1
+
+try:
+    from xpra.sound import gstreamer_util
+    has_sound = gstreamer_util is not None
+except:
+    has_sound = False
+
+def get_codecs(is_speaker, is_server):
+    if not has_sound:
+        return []
+    try:
+        from xpra.sound.gstreamer_util import can_encode, can_decode
+        if (is_server and is_speaker) or (not is_server and not is_speaker):
+            return can_encode()
+        else:
+            return can_decode()
+    except Exception, e:
+        print("failed to get list of codecs: %s" % e)
+        return []
+
+def show_codec_help(is_server, speaker_codecs, microphone_codecs):
+    all_speaker_codecs = get_codecs(True, is_server)
+    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
+    hs = "help" in speaker_codecs
+    if hs:
+        print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
+    elif len(invalid_sc):
+        print("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        for x in invalid_sc:
+            speaker_codecs.remove(x)
+    elif len(speaker_codecs)==0:
+        speaker_codecs += all_speaker_codecs
+
+    all_microphone_codecs = get_codecs(True, is_server)
+    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
+    hm = "help" in microphone_codecs
+    if hm:
+        print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
+    elif len(invalid_mc):
+        print("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        for x in invalid_mc:
+            microphone_codecs.remove(x)
+    elif len(microphone_codecs)==0:
+        microphone_codecs += all_microphone_codecs
+    return hm or hs
 
 def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")

@@ -712,6 +712,53 @@ class ClientExtrasBase(object):
             else:
                 self.auto_quality.set_label("Default")
 
+    def make_speakermenuitem(self):
+        speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
+        def spk_on(*args):
+            self.client.start_receiving_sound()
+        def spk_off(*args):
+            self.client.stop_receiving_sound()
+        def speaker_state(*args):
+            if self.client.server_sound_send:
+                on = self.client.sound_sink is not None
+                speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off))
+            else:
+                speaker.set_sensitive(False)
+                set_tooltip_text(speaker, "Server does not support speaker forwarding")
+        self.client.connect("handshake-complete", speaker_state)
+        return speaker
+
+    def make_microphonemenuitem(self):
+        microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
+        def mic_on(*args):
+            self.client.start_sending_sound()
+        def mic_off(*args):
+            self.client.stop_sending_sound()
+        def microphone_state(*args):
+            if self.client.server_sound_send:
+                on = self.client.sound_source is not None
+                microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off))
+            else:
+                microphone.set_sensitive(False)
+                set_tooltip_text(microphone, "Server does not support microphone forwarding")
+        self.client.connect("handshake-complete", microphone_state)
+        return microphone
+
+    def make_soundsubmenu(self, on, on_cb, off_cb):
+        menu = gtk.Menu()
+        def onoffitem(label, active, cb):
+            c = CheckMenuItem(label)
+            c.set_draw_as_radio(True)
+            c.set_active(active)
+            c.connect('activate', cb)
+            return c
+        menu.append(onoffitem("On", on, on_cb))
+        menu.append(onoffitem("Off", not on, off_cb))
+        #menu.append(gtk.SeparatorMenuItem())
+        #...
+        menu.show_all()
+        return menu
+
     def make_layoutsmenuitem(self):
         keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)
         self.layout_submenu = gtk.Menu()
@@ -847,6 +894,8 @@ class ClientExtrasBase(object):
         else:
             self.quality = None
             self.quality_submenu = None
+        menu.append(self.make_speakermenuitem())
+        menu.append(self.make_microphonemenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
         if not self.client.readonly:

@@ -43,7 +43,11 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
         ,xserver-xorg-input-void
-Recommends: python-gtkglext1
+Recommends: gstreamer0.10-plugins-base
+        ,pulseaudio
+        ,pulseaudio-utils
+        ,python-gst0.10 
+        ,python-gtkglext1
         ,python-imaging
         ,python-opengl
         ,openssh-client

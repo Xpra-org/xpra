@@ -14,6 +14,7 @@ SET VPX=1
 SET WEBP=1
 SET RENCODE=1
 SET CLIPBOARD=1
+SET SOUND=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM support double-click on BAT file, so run from parent directory:
@@ -39,6 +40,7 @@ IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
 IF %WEBP% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-webp
 IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
+IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 
 ECHO %PYTHON_EXE% -OO setup.py build %BUILD_ARGS%
 %PYTHON_EXE% -OO setup.py build %BUILD_ARGS% > build-xpra.log
