@@ -119,7 +119,7 @@ setup_options["long_description"] = """This package contains several sub-project
 
 data_files = []
 setup_options["data_files"] = data_files
-packages = ["wimpiggy", "wimpiggy.lowlevel",
+packages = ["wimpiggy",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
           "xpra", "xpra.scripts", "xpra.platform",
           ]
@@ -532,6 +532,7 @@ else:
 
 #*******************************************************************************
 if server_ENABLED:
+    packages.append("wimpiggy.lowlevel")
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
