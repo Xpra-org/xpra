@@ -510,11 +510,14 @@ def main(script_file, cmdline):
 # we don't want with sys.argv, so hack around it:
 saved_args = sys.argv
 sys.argv = sys.argv[:1]
-try:
-    from xpra.sound import gstreamer_util
-    has_sound = gstreamer_util is not None
-except:
-    has_sound = False
+has_sound = bool(os.environ.get("XPRA_SOUND", False))
+if has_sound:
+    try:
+        from xpra.sound import gstreamer_util
+        has_sound = gstreamer_util is not None
+    except:
+        pass
+        has_sound = False
 sys.argv = saved_args
 
 def get_codecs(is_speaker, is_server):
