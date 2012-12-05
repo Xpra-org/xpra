@@ -581,7 +581,7 @@ class ServerSource(object):
 
     def new_sound_buffer(self, sound_source, data):
         assert self.sound_source
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+        self.idle_send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
 
     def sound_control(self, action, *args):
         if action=="stop":
@@ -772,12 +772,15 @@ class ServerSource(object):
         """ Called by protocol.py when it is ready to send the next packet """
         packet, start_send_cb, end_send_cb, have_more = None, None, None, False
         if not self.closed:
-            if self.ordinary_packets:
+            if len(self.ordinary_packets)>0:
                 packet = self.ordinary_packets.pop(0)
             elif len(self.damage_packet_queue)>0:
                 packet, _, _, start_send_cb, end_send_cb = self.damage_packet_queue.popleft()
-            have_more = packet is not None and (bool(self.ordinary_packets) or len(self.damage_packet_queue)>0)
+            have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.damage_packet_queue)>0)
         return packet, start_send_cb, end_send_cb, have_more
+
+    def idle_send(self, *parts):
+        gobject.idle_add(self.send, *parts)
 
     def send(self, *parts):
         """ This method queues non-damage packets (higher priority) """
@@ -889,7 +892,7 @@ class ServerSource(object):
             cl = int(1000.0*cl)
         else:
             cl = -1
-        self.send("ping_echo", time_to_echo, l1, l2, l3, cl)
+        self.idle_send("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 

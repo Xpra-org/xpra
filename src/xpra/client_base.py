@@ -165,6 +165,9 @@ class XpraClientBase(gobject.GObject):
         capabilities["windows"] = False         #only client.py cares about this
         return capabilities
 
+    def idle_send(self, *parts):
+        gobject.idle_add(self.send, *parts)
+
     def send(self, *parts):
         if self._protocol and self._protocol.source:
             self._protocol.source.queue_ordinary_packet(parts)
