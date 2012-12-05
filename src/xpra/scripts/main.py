@@ -506,11 +506,16 @@ def main(script_file, cmdline):
         parser.error("invalid mode '%s'" % mode)
         return 1
 
+# we end up initializing gstreamer here and it does things
+# we don't want with sys.argv, so hack around it:
+saved_args = sys.argv
+sys.argv = sys.argv[:1]
 try:
     from xpra.sound import gstreamer_util
     has_sound = gstreamer_util is not None
 except:
     has_sound = False
+sys.argv = saved_args
 
 def get_codecs(is_speaker, is_server):
     if not has_sound:
