@@ -56,6 +56,7 @@ else:
             if gdkwin:
                 gdkwin.set_cursor(cursor)
 
+import sys
 import uuid
 import os
 import time
@@ -879,12 +880,14 @@ class XpraClient(XpraClientBase):
                 monitors.append(monitor)
                 j += 1
             root = screen.get_root_window()
-            try:
-                p = gtk.gdk.atom_intern('_NET_WORKAREA')
-                work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
-            except:
-                work_x, work_y = 0, 0
-                work_width, work_height = screen.get_width(), screen.get_height()
+            work_x, work_y = 0, 0
+            work_width, work_height = screen.get_width(), screen.get_height()
+            if not sys.platform.startswith("win"):
+                try:
+                    p = gtk.gdk.atom_intern('_NET_WORKAREA')
+                    work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
+                except:
+                    pass
             item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
                         screen.get_width_mm(), screen.get_height_mm(),
                         monitors,
