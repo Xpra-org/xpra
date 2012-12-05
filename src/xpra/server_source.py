@@ -883,11 +883,13 @@ class ServerSource(object):
             l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
         except:
             l1,l2,l3 = 0,0,0
-        cl = -1
         #and the last client ping latency we measured (if any):
         if len(self.statistics.client_ping_latency)>0:
             _, cl = self.statistics.client_ping_latency[-1]
-        self.send("ping_echo", time_to_echo, l1, l2, l3, int(1000.0*cl))
+            cl = int(1000.0*cl)
+        else:
+            cl = -1
+        self.send("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 
