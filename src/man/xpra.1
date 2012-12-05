@@ -71,8 +71,23 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-enable\-pings\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
-
 .HP
+.HP \w'xpra\ 'u
+\fBxpra\fP \fBshadow\fP \fI:DISPLAY\fP
+[\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
+[\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
+[\fB\-\-no\-clipboard\fP]
+[\fB\-\-no\-notifications\fP]
+[\fB\-\-no\-bell\fP]
+[\fB\-\-no\-speaker\fP]
+[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
+[\fB\-\-no\-microphone\fP]
+[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
+[\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-socket\-dir\fP=\fIDIR\fP]
+.HP
+
 \fBxpra\fP \fBstop\fP [\fI:DISPLAY\fP | \fIssh:[USER@]HOST:DISPLAY\fP |
 \fItcp:HOST:PORT\fP] [\fB\-\-ssh=CMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
@@ -113,6 +128,7 @@ in a box together".  Xpra also uses a custom protocol that is
 self-tuning and relatively latency-insensitive, and thus is usable
 over network connections that are too slow or unreliable for standard
 X forwarding.
+Xpra can also be used to shadow an existing X11 display.
 .\" --------------------------------------------------------------------
 .SH EXAMPLES
 .TP \w'xpra\ 'u
@@ -227,6 +243,11 @@ the name suggests, the main use case is to replace a server running
 against an older version of xpra with a newer version, without having
 to restart your session.  Any currently-running \fBxpra attach\fP
 command will exit and need to be restarted.
+.SS xpra shadow
+This command shadows an existing X11 display. Note that this mode of
+operation uses screenscraping which is far less efficient. Using a
+video encoder (x264 or vpx) is highly recommended for this mode of
+operation.
 
 .SS Important Note
 Some platforms and package managers may choose to only build the client

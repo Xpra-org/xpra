@@ -194,12 +194,24 @@ def close_all_fds(exceptions=[]):
 def run_server(parser, opts, mode, xpra_file, extra_args):
     if len(extra_args) != 1:
         parser.error("need exactly 1 extra argument")
+    assert mode in ("start", "upgrade", "shadow")
+    upgrading = mode == "upgrade"
+    shadowing = mode == "shadow"
     display_name = extra_args.pop(0)
-    if display_name==":0" or display_name.startswith(":0."):
-        sys.stderr.write("WARNING:")
-        sys.stderr.write("You are attempting to run the xpra server against the default X11 display '%s'." % display_name)
-        sys.stderr.write("This is generally not what you want.")
-        sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
+    if display_name.startswith(":") and not shadowing:
+        n = display_name[1:]
+        p = n.find(".")
+        if p>0:
+            n = n[:p]
+        try:
+            dno = int(n)
+            if dno>=0 and dno<10:
+                sys.stderr.write("WARNING: low display number: %s" % dno)
+                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'." % display_name)
+                sys.stderr.write("This is generally not what you want.")
+                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
+        except:
+            pass
 
     if opts.exit_with_children and not opts.children:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
@@ -208,9 +220,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     atexit.register(run_cleanups)
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
-
-    assert mode in ("start", "upgrade")
-    upgrading = (mode == "upgrade")
 
     from xpra.scripts.main import get_default_socket_dir
     dotxpra = DotXpra(opts.sockdir or get_default_socket_dir())
@@ -313,7 +322,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
 
-    if not clobber:
+    if not clobber and not shadowing:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
         subs = {"XAUTHORITY" : xauthority,
@@ -347,7 +356,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
 
     def xvfb_error(instance_exists=False):
-        if clobber:
+        if clobber or shadowing:
             return False
         if xvfb.poll() is None:
             return False
@@ -382,7 +391,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         default_display.close()
     manager.set_default_display(display)
 
-    if clobber:
+    if shadowing:
+        xvfb_pid = None
+    elif clobber:
         xvfb_pid = get_pid()
     else:
         if xvfb_error(True):
@@ -397,22 +408,26 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         for display in gtk.gdk.display_manager_get().list_displays():
             display.close()
         os.kill(xvfb_pid, signal.SIGTERM)
-    if xvfb_pid is not None and not opts.use_display:
+    if xvfb_pid is not None and not opts.use_display and not shadowing:
         _cleanups.append(kill_xvfb)
 
-    try:
-        from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
-        from xpra.server import XpraServer
-    except ImportError, e:
-        log.error("Failed to load Xpra server components, check your installation: %s" % e)
-        return 1
-    root = gtk.gdk.get_default_root_window()
-    if not displayHasXComposite(root):
-        log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
-        return 1
+    if shadowing:
+        from xpra.shadow_server import XpraShadowServer
+        app = XpraShadowServer(sockets, opts)
+    else:
+        try:
+            from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
+            from xpra.server import XpraServer
+        except ImportError, e:
+            log.error("Failed to load Xpra server components, check your installation: %s" % e)
+            return 1
+        root = gtk.gdk.get_default_root_window()
+        if not displayHasXComposite(root):
+            log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
+            return 1
 
-    # This import is delayed because the module depends on gtk:
-    app = XpraServer(clobber, sockets, opts)
+        # This import is delayed because the module depends on gtk:
+        app = XpraServer(clobber, sockets, opts)
 
     child_reaper = ChildReaper(app, opts.exit_with_children)
     # Always register the child reaper, because even if exit_with_children is
@@ -443,6 +458,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         log.info("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
         # and don't delete the new socket (not ours)
-        _cleanups.remove(kill_xvfb)
+        if kill_xvfb in _cleanups:
+            _cleanups.remove(kill_xvfb)
         _cleanups.remove(cleanup_socket)
     return  0

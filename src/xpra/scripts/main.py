@@ -204,14 +204,12 @@ def main(script_file, cmdline):
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
         upgrade_str = "\t%prog upgrade DISPLAY"
+        shadow_str = "\t%prog upgrade DISPLAY"
         note_str = ""
         stop_str = "\t%prog stop [DISPLAY]\n"
     else:
-        start_str = ""
-        list_str = ""
-        upgrade_str = ""
+        start_str, list_str, upgrade_str, shadow_str, stop_str = "", "", "", "", ""
         note_str = "(This xpra installation does not support starting local servers.)"
-        stop_str = ""
     parser = OptionParser(version="xpra v%s" % xpra.__version__,
                           usage="".join(["\n",
                                          start_str,
@@ -223,6 +221,7 @@ def main(script_file, cmdline):
                                          stop_str,
                                          list_str,
                                          upgrade_str,
+                                         shadow_str,
                                          note_str]))
     if supports_server:
         group = OptionGroup(parser, "Server Options",
@@ -465,7 +464,7 @@ def main(script_file, cmdline):
 
     #configure default logging handler:
     mode = args.pop(0)
-    if mode in ("start", "upgrade", "attach"):
+    if mode in ("start", "upgrade", "attach", "shadow"):
         if show_codec_help("attach" not in cmdline[1:],
                            options.speaker_codec, options.microphone_codec):
             return 0
@@ -489,7 +488,7 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
-    if mode in ("start", "upgrade") and supports_server:
+    if mode in ("start", "upgrade", "shadow") and supports_server:
         nox()
         from xpra.scripts.server import run_server
         return run_server(parser, options, mode, script_file, args)
