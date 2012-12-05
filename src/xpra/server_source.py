@@ -1049,7 +1049,7 @@ class ServerSource(object):
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
             return
-        self.cancel_damage(wid)
+        self.cancel_damage(wid, window)
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
