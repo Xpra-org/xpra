@@ -1,12 +1,21 @@
 ECHO OFF
 SET ARGS=%*
 ECHO "ARGS=%ARGS%"
+set DIR=%CD%
 
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 SET PYTHON=C:\Python27
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET INNOSETUP="C:\Program Files\Inno Setup 5\ISCC.exe"
+
+SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
+SET GTK=%PYGTK%\runtime
+SET GSTREAMER=C:\Program Files\OSSBuild\GStreamer\v0.10.7
+SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
+SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
 SET BUILD_DIR=build
+
+SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
 
 REM "SET THESE TO 0 TO DISABLE VPX/X264/RENCODE/CLIPBOARD:"
 SET X264=1
@@ -31,9 +40,6 @@ DEL /Q xpra\vpx\codec.pyd
 DEL /Q xpra\rencode\rencode.pyd
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd
 
-ECHO ***************************************************************
-ECHO ****** Hack for x264/vpx/rencode:
-ECHO ****** build pyd file and place it where py2exe can find it
 SET BUILD_ARGS=
 IF %X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-x264
 IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
@@ -42,43 +48,46 @@ IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 
+ECHO ***************************************************************
+ECHO ****** Hack for x264/vpx/rencode/gdk-clipboard:
+ECHO ****** build pyd file and place it where py2exe can find it
 ECHO %PYTHON_EXE% -OO setup.py build %BUILD_ARGS%
 %PYTHON_EXE% -OO setup.py build %BUILD_ARGS% > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
-	GOTO:ERROR
+	GOTO ERROR
 )
 
-IF %X264% NEQ 1 GOTO:NO_X264
+IF %X264% NEQ 1 GOTO NO_X264
 SET X264_CODEC_PYD=build\lib.win32-2.7\xpra\x264\codec.pyd
 COPY %X264_CODEC_PYD% xpra\x264\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled x264 codec.pyd"
-	GOTO:ERROR
+	GOTO ERROR
 )
 :NO_X264
-IF %VPX% NEQ 1 GOTO:NO_VPX
+IF %VPX% NEQ 1 GOTO NO_VPX
 SET VPX_CODEC_PYD=build\lib.win32-2.7\xpra\vpx\codec.pyd
 COPY %VPX_CODEC_PYD% xpra\vpx\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled vpx codec.pyd"
-	GOTO:ERROR
+	GOTO ERROR
 )
 :NO_VPX
-IF %RENCODE% NEQ 1 GOTO:NO_RENCODE
+IF %RENCODE% NEQ 1 GOTO NO_RENCODE
 SET RENCODE_PYD=build\lib.win32-2.7\xpra\rencode\_rencode.pyd
 COPY %RENCODE_PYD% xpra\rencode\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled _rencode.pyd"
-	GOTO:ERROR
+	GOTO ERROR
 )
 :NO_RENCODE
-IF %CLIPBOARD% NEQ 1 GOTO:NO_CLIPBOARD
+IF %CLIPBOARD% NEQ 1 GOTO NO_CLIPBOARD
 SET CLIPBOARD_PYD=build\lib.win32-2.7\wimpiggy\gdk\gdk_atoms.pyd
 COPY %CLIPBOARD_PYD% wimpiggy\gdk\
 if %errorlevel% NEQ 0 (
 	ECHO "build error: cannot find compiled gdk_atoms.pyd"
-	GOTO:ERROR
+	GOTO ERROR
 )
 :NO_CLIPBOARD
 
@@ -87,8 +96,23 @@ ECHO ****** py2exe
 %PYTHON_EXE% -OO setup.py py2exe %BUILD_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
-	GOTO:ERROR
+	GOTO ERROR
 )
+
+if %SOUND% NEQ 1 GOTO NOGSTREAMER
+ECHO ****** Adding gstreamer DLLs
+XCOPY /I /Y /S /Q "%GSTREAMER%\bin\*.dll" dist\
+XCOPY /I /Y /S /Q "%GSTREAMER%\lib\gstreamer-0.10\*.dll" dist\
+XCOPY /I /Y /S "%PYGSTDLL%\*.dll" dist\
+XCOPY /I /Y /S "%GSTREAMER%\bin\gst-launch.exe" dist\
+REM DEL dist\av*dll
+REM DEL dist\libdvd*dll
+:NOGSTREAMER
+
+REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
+ECHO "%GTK%\bin\*.dll" dist\
+XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
+REM XCOPY /I /Y /S /Q "%GTK%\bin\*.*.dll" dist\
 
 ECHO ***************************************************************
 ECHO ****** InnoSetup
@@ -97,14 +121,14 @@ COPY win32\xpra.iss xpra.iss
 ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (
 	ECHO "InnoSetup error"
-	GOTO:ERROR
+	GOTO ERROR
 )
 dir Output
 MOVE /Y Output\Xpra_Setup.exe Xpra_Setup.exe
 RMDIR Output
 
 Xpra_Setup.exe %ARGS%
-GOTO:END
+GOTO END
 
 :ERROR
 pause
