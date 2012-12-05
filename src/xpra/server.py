@@ -100,6 +100,9 @@ class DesktopManager(gtk.Widget):
         if model.get_property("iconic"):
             model.set_property("iconic", False)
 
+    def is_shown(self, model):
+        return self._models[model].shown
+
     def configure_window(self, model, x, y, w, h):
         log("DesktopManager.configure_window(%s, %s, %s, %s, %s)", model, x, y, w, h)
         if not self.visible(model):
@@ -151,6 +154,25 @@ class DesktopManager(gtk.Widget):
             log.warn("Uh-oh, our size doesn't fit window sizing constraints: "
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
+
+    def get_transient_for(self, window):
+        transient_for = window.get_property("transient-for")
+        if transient_for is None:
+            return None
+        log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+        #try to find the model for this window:
+        for model in self._models.keys():
+            log("testing model %s: %s", model, model.client_window.xid)
+            if model.client_window.xid==transient_for.xid:
+                wid = self._window_to_id.get(model)
+                log("found match, window id=%s", wid)
+                return wid
+        root = gtk.gdk.get_default_root_window()
+        if root.xid==transient_for.xid:
+            return -1       #-1 is the backwards compatible marker for root...
+        log.info("not found transient_for=%s, xid=%s", transient_for, transient_for.xid)
+        return  None
+
 
 gobject.type_register(DesktopManager)
 
@@ -541,24 +563,6 @@ class XpraServer(gobject.GObject):
     _all_metadata = ("title", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal")
     _OR_metadata = ("transient-for", "window-type")
 
-
-    def _get_transient_for(self, window):
-        transient_for = window.get_property("transient-for")
-        if transient_for is None:
-            return None
-        log("found transient_for=%s, xid=%s", transient_for, transient_for.xid)
-        #try to find the model for this window:
-        for model in self._desktop_manager._models.keys():
-            log("testing model %s: %s", model, model.client_window.xid)
-            if model.client_window.xid==transient_for.xid:
-                wid = self._window_to_id.get(model)
-                log("found match, window id=%s", wid)
-                return wid
-        root = gtk.gdk.get_default_root_window()
-        if root.xid==transient_for.xid:
-            return -1       #-1 is the backwards compatible marker for root...
-        log.info("not found transient_for=%s, xid=%s", transient_for, transient_for.xid)
-        return  None
 
     def set_keymap(self, server_source, force=False):
         try:
@@ -1007,7 +1011,7 @@ class XpraServer(gobject.GObject):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
-        ss = ServerSource(proto, self._get_transient_for,
+        ss = ServerSource(proto, self._desktop_manager.get_transient_for,
                           self.supports_mmap,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
@@ -1544,10 +1548,9 @@ class XpraServer(gobject.GObject):
         for wid, window in wid_windows.items():
             if window is None:
                 continue
-            if not window.is_OR():
-                if not self._desktop_manager._models[window].shown:
-                    log("window is no longer shown, ignoring buffer refresh which would fail")
-                    continue
+            if not window.is_OR() and not self._desktop_manager.is_shown(window):
+                log("window is no longer shown, ignoring buffer refresh which would fail")
+                continue
             self._server_sources.get(proto).refresh(wid, window, opts)
 
     def _process_quality(self, proto, packet):
