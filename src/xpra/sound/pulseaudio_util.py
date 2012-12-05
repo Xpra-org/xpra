@@ -31,7 +31,7 @@ pactl_bin = which("pactl")
 has_pulseaudio = None
 
 def pactl_output(pactl_cmd):
-	if not pactl_cmd:
+	if not pactl_bin:
 		return -1, None
 	#ie: "pactl list"
 	cmd = [pactl_bin, pactl_cmd]
