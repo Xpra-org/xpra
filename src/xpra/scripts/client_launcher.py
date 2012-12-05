@@ -702,8 +702,11 @@ class ApplicationWindow:
 				def noswscalewarning(s):
 					r = []
 					for x in s.splitlines():
-						if not x.startswith("[swscaler "):
-							r.append(x)
+						if x.startswith("[swscaler "):
+							continue
+						if x.startswith("** Message: pygobject_register_sinkfunc is deprecated"):
+							continue
+						r.append(x)
 					return "\n".join(r)
 				out = noswscalewarning(out)
 				err = noswscalewarning(err)
