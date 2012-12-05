@@ -60,6 +60,8 @@ def has_pa():
 
 
 def get_x11_property(atom_name):
+	if sys.platform.startswith("win"):
+		return ""
 	from gtk import gdk
 	root = gdk.get_default_root_window()
 	try:
