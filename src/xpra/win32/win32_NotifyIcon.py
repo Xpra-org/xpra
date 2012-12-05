@@ -67,9 +67,9 @@ class win32NotifyIcon:
 	
 	def OnCommand(self, hwnd, msg, wparam, lparam):
 		log.debug("OnCommand(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
-		id = LOWORD(wparam)
+		cid = LOWORD(wparam)
 		if self.command_callback:
-			self.command_callback(self.hwnd, id)
+			self.command_callback(self.hwnd, cid)
 		
 	def OnDestroy(self, hwnd, msg, wparam, lparam):
 		log.debug("OnDestroy(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
@@ -106,15 +106,15 @@ def main():
 		TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos[0], pos[1], 0, hwnd, None)
 		PostMessage(hwnd, win32con.WM_NULL, 0, 0)
 	
-	def command_callback(hwnd, id):
-		if id == 1024:
+	def command_callback(hwnd, cid):
+		if cid == 1024:
 			from winswitch.ui.win32_balloon import notify
 			notify(hwnd, "hello", "world")
-		elif id == 1025:
+		elif cid == 1025:
 			print("Goodbye")
 			DestroyWindow(hwnd)
 		else:
-			print("OnCommand for ID=%s" % id)
+			print("OnCommand for ID=%s" % cid)
 	
 	def win32_quit():
 		PostQuitMessage(0) # Terminate the app.
