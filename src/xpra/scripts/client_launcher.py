@@ -389,10 +389,7 @@ class ApplicationWindow:
 		self.mode_combo.get_model().clear()
 		self.mode_combo.append_text("TCP")
 		self.mode_combo.append_text("TCP + AES")
-		if not sys.platform.startswith("win"):
-			#when we fix the build on win32 to include putty
-			#this can be enabled again:
-			self.mode_combo.append_text("SSH")
+		self.mode_combo.append_text("SSH")
 		if xpra_opts.mode == "tcp" or sys.platform.startswith("win"):
 			self.mode_combo.set_active(0)
 		else:
@@ -755,9 +752,15 @@ class ApplicationWindow:
 		username = xpra_opts.username
 		mode = xpra_opts.mode.lower()
 		if username and mode=="ssh":
-			uri = "ssh:%s@%s:%s" % (username, xpra_opts.host, xpra_opts.port)
+			host = xpra_opts.host
+			if xpra_opts.username:
+				username = xpra_opts.username
+				if xpra_opts.password:
+					username += ":%s" % xpra_opts.password
+				host = "%s@%s" % (username, host)
+			uri = "ssh/%s/%s" % (host, xpra_opts.port)
 		else:
-			uri = "%s:%s:%s" % (mode, xpra_opts.host, xpra_opts.port)
+			uri = "%s/%s/%s" % (mode, xpra_opts.host, xpra_opts.port)
 		args = [cmd, "attach", uri]
 		args.append("--encoding=%s" % xpra_opts.encoding)
 		if xpra_opts.encoding in ["jpeg"]:

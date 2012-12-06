@@ -570,22 +570,35 @@ def parse_display_name(parser, opts, display_name):
         desc["local"] = False
         parts = display_name.split(separator)
         if len(parts)>2:
-            desc["host"] = separator.join(parts[1:-1])
+            host = separator.join(parts[1:-1])
             desc["display"] = parts[-1]
             desc["display"] = ":" + desc["display"]
             desc["display_as_args"] = [desc["display"]]
         else:
-            desc["host"] = parts[1]
+            host = parts[1]
             desc["display"] = None
             desc["display_as_args"] = []
         desc["ssh"] = shlex.split(opts.ssh)
-        desc["full_ssh"] = desc["ssh"] + ["-T", desc["host"]]
+        full_ssh = desc["ssh"]
+        upos = host.find("@")
+        if upos>=0:
+            username = host[:upos]
+            host = host[upos+1:]
+            ppos = username.find(":")
+            if ppos>=0:
+                password = username[ppos+1:]
+                username = username[:ppos]
+                desc["password"] = password
+            desc["username"] = username
+            full_ssh += ["-l", username]
+        desc["host"] = host
+        full_ssh += ["-T", desc["host"]]
+        desc["full_ssh"] = full_ssh
         remote_xpra = opts.remote_xpra.split()
         if opts.sockdir:
             #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
             remote_xpra.append("--socket-dir=%s" % opts.sockdir)
         desc["remote_xpra"] = remote_xpra
-        desc["full_remote_xpra"] = desc["full_ssh"] + desc["remote_xpra"]
         return desc
     elif display_name.startswith(":"):
         desc["type"] = "unix-domain"
@@ -641,8 +654,14 @@ def _socket_connect(sock, endpoint, description):
 def connect_or_fail(display_desc):
     display_name = display_desc["display_name"]
     if display_desc["type"] == "ssh":
-        cmd = (display_desc["full_remote_xpra"]
-               + ["_proxy"] + display_desc["display_as_args"])
+        cmd = display_desc["full_ssh"]
+        if sys.platform.startswith("win"):
+            password = display_desc.get("password")
+            if password:
+                cmd += ["-pw", password]
+            cmd.append("-ssh")
+            cmd.append("-agent")
+        cmd += display_desc["remote_xpra"] + ["_proxy"] + display_desc["display_as_args"]
         try:
             kwargs = {}
             if os.name=="posix":
@@ -650,6 +669,7 @@ def connect_or_fail(display_desc):
                     #run in a new session
                     os.setsid()
                 kwargs["preexec_fn"] = setsid
+            print("going to execute: %s" % str(cmd))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError, e:
             sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
