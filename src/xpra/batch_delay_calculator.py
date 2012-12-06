@@ -227,7 +227,7 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         batch_q = 4.0 * batch.min_delay / batch.delay
         target = max(packets_bl, batch_q)
         latency_q = 0.0
-        if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
+        if len(global_statistics.client_latency)>0 and recent_client_latency>0:
             latency_q = 4.0 * target_latency / recent_client_latency
             target = min(target, latency_q)
         target_quality = 100.0*(min(1.0, max(0.0, target)))
