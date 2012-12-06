@@ -825,15 +825,20 @@ class ServerSource(object):
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         try:
-            from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
-            add_pulseaudio_capabilities(capabilities)
-            from xpra.sound.gstreamer_util import add_gst_capabilities
-            add_gst_capabilities(capabilities,
-                                 receive=self.supports_microphone, send=self.supports_speaker,
-                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
-        except Exception, e:
-            log.error("failed to load sound modules: %s", e)
-        log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+            import xpra.sound
+            try:
+                assert xpra.sound
+                from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
+                add_pulseaudio_capabilities(capabilities)
+                from xpra.sound.gstreamer_util import add_gst_capabilities
+                add_gst_capabilities(capabilities,
+                                     receive=self.supports_microphone, send=self.supports_speaker,
+                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+                log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+        except ImportError, e:
+            log("sound modules were not included in this installation")
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
         capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes

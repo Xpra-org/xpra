@@ -619,13 +619,19 @@ class XpraClient(XpraClientBase):
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
         capabilities["encoding.initial_quality"] = 70
         try:
-            from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
-            add_pulseaudio_capabilities(capabilities)
-            from xpra.sound.gstreamer_util import add_gst_capabilities
-            add_gst_capabilities(capabilities, receive=True, send=True,
-                                 receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
-        except Exception, e:
-            log.error("failed to load sound modules: %s", e)
+            import xpra.sound
+            try:
+                assert xpra.sound
+                from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
+                add_pulseaudio_capabilities(capabilities)
+                from xpra.sound.gstreamer_util import add_gst_capabilities
+                add_gst_capabilities(capabilities, receive=True, send=True,
+                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+                log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+            except Exception, e:
+                log.error("failed to setup sound: %s", e)
+        except ImportError, e:
+            log("sound modules were not included in this installation")
         return capabilities
 
     def send_ping(self):
