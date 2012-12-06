@@ -217,9 +217,8 @@ class XpraServerBase(object):
             "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
                                           }
-        self._authenticated_ui_packet_handlers = {
-            "hello":                                self._process_hello,
-            "server-settings":                      self._process_server_settings,
+        self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
+        self._authenticated_ui_packet_handlers.update({
             #windows:
             "map-window":                           self._process_map_window,
             "unmap-window":                         self._process_unmap_window,
@@ -236,7 +235,8 @@ class XpraServerBase(object):
             #mouse:
             "button-action":                        self._process_button_action,
             "pointer-position":                     self._process_pointer_position,
-            #attributes / notifications:
+            #attributes / settings:
+            "server-settings":                      self._process_server_settings,
             "jpeg-quality":                         self._process_quality,
             "quality":                              self._process_quality,
             "set_deflate":                          self._process_set_deflate,
@@ -251,7 +251,7 @@ class XpraServerBase(object):
             "screenshot":                           self._process_screenshot,
             "disconnect":                           self._process_disconnect,
             # Note: "clipboard-*" packets are handled via a special case..
-            }
+            })
 
     def quit(self, upgrading):
         self._upgrading = upgrading
