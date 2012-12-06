@@ -669,7 +669,6 @@ def connect_or_fail(display_desc):
                     #run in a new session
                     os.setsid()
                 kwargs["preexec_fn"] = setsid
-            print("going to execute: %s" % str(cmd))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError, e:
             sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
