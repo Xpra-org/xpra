@@ -569,6 +569,8 @@ if sound_ENABLED:
     packages.append("xpra.sound")
 elif sys.platform.startswith("win"):
     py2exe_excludes.append("xpra.sound")
+    py2exe_excludes.append("pygst")
+    py2exe_excludes.append("gst")
 
 
 
