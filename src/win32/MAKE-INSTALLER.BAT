@@ -7,6 +7,7 @@ REM "*********CHANGE THESE BEFORE RUNNING**************"
 SET PYTHON=C:\Python27
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET INNOSETUP="C:\Program Files\Inno Setup 5\ISCC.exe"
+SET TORTOISESVN=C:\Program Files\TortoiseSVN
 
 SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
 SET GTK=%PYGTK%\runtime
@@ -103,16 +104,22 @@ if %SOUND% NEQ 1 GOTO NOGSTREAMER
 ECHO ****** Adding gstreamer DLLs
 XCOPY /I /Y /S /Q "%GSTREAMER%\bin\*.dll" dist\
 XCOPY /I /Y /S /Q "%GSTREAMER%\lib\gstreamer-0.10\*.dll" dist\
-XCOPY /I /Y /S "%PYGSTDLL%\*.dll" dist\
-XCOPY /I /Y /S "%GSTREAMER%\bin\gst-launch.exe" dist\
+COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
 REM DEL dist\av*dll
 REM DEL dist\libdvd*dll
 :NOGSTREAMER
 
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
-ECHO "%GTK%\bin\*.dll" dist\
+ECHO ****** Fix GTK DLLs
 XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
-REM XCOPY /I /Y /S /Q "%GTK%\bin\*.*.dll" dist\
+
+ECHO ****** Adding TortoisePlink
+ECHO "%TORTOISESVN%\bin\TortoisePlink.exe"
+ECHO "%TORTOISESVN%\Putty-License.txt"
+COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe
+COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
+
 
 ECHO ***************************************************************
 ECHO ****** InnoSetup
