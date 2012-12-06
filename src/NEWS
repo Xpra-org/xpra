@@ -6,21 +6,42 @@ v0.8.0 (2012-11-13)
 	-- fix "double-apple" in menu on OSX
 	-- limit the number of raw packets per client to prevent memory exhaustion
 	-- authentication fix: salt per connection
+	-- SSH support on MS Windows
+	-- "xpra shadow" mode to clone an existing X11 display
+	-- avoid warnings and X11 errors with the screenshot command
 	-- better mouse cursor support: send cursors by name so their size matches the client's settings
 	-- support system tray icon forwarding (limited)
-	-- restore window on same workspace
+	-- restore window on previous workspace
 	-- AES packet encryption for TCP mode
 	-- launcher entry box for username in SSH mode
 	-- launcher improvements: highlight the password field if needed, prevent warnings, etc
 	-- better window manager specification compatibility (for broken applications or toolkits)
 	-- use lossless encoders more aggressively when possible
+	-- new x264 tuning options: profiles to use and thresholds
 	-- better detection of dead server sockets: retry and remove them if needed
 	-- send window icons in dedicated compressed packet (smaller new-window packets, faster)
 	-- detect overly large main packets
 	-- py2exe, ebuild and distutils improvements: faster and cleaner builds, discarding unwanted modules
 	-- osx and win32 build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
+	-- osx command line path fix
 	-- updated Cython to 0.17.1 for binary builds
-	
+
+
+v0.7.5 (2012-12-06)
+======================
+	-- fix crash on empty keysym
+	-- fix potential division by zero
+	-- fix network queue access from invalid thread
+	-- fix cleanup code on upgrade corner cases
+	-- fix keyboard layout change detection
+	-- try harder to apply keymaps when the number of free keycodes are limited
+
+
+v0.7.4 (2012-11-16)
+======================
+	-- avoid crash with configure events on windows being destroyed
+	-- fix 100% cpu usage with python2.6 server started with no child
+
 
 v0.7.3 (2012-11-08)
 ======================
