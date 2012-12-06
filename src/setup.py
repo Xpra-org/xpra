@@ -90,8 +90,8 @@ for arg in sys.argv:
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
-print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, force Xdummy=%s" %
-      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, xdummy_ENABLED))
+print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, force Xdummy=%s" %
+      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xdummy_ENABLED))
 
 
 #*******************************************************************************
