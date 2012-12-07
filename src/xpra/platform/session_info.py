@@ -14,7 +14,7 @@ import datetime
 
 from xpra.platform.graph import make_graph_pixmap
 from xpra.deque import maxdeque
-from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, std_unit, std_unit_dec
+from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from wimpiggy.log import Logger
 from xpra.platform.client_extras_base import set_tooltip_text, get_build_info
 log = Logger()
@@ -276,22 +276,25 @@ class SessionInfo(gtk.Window):
             h = max(100, h-20, rect.height-20)
             w = max(360, rect.width/2-40)
             #bandwidth graph:
-            #FIXME: we skip the first record because the timing isn't right so the values aren't either..:
-            in_scale, in_data = values_to_diff_scaled_values(list(self.net_in_data)[1:N_SAMPLES+2])
-            out_scale, out_data = values_to_diff_scaled_values(list(self.net_out_data)[1:N_SAMPLES+2])
+            #Note: we skip the first record because the timing isn't right so the values aren't either..:
+            in_scale, in_data = values_to_diff_scaled_values(list(self.net_in_data)[1:N_SAMPLES+2], scale_unit=1000, min_scaled_value=50)
+            out_scale, out_data = values_to_diff_scaled_values(list(self.net_out_data)[1:N_SAMPLES+2], scale_unit=1000, min_scaled_value=50)
             if in_data and out_data:
                 def unit(scale):
                     if scale==1:
                         return ""
                     else:
-                        return "x%s" % std_unit(scale)
+                        unit, value = to_std_unit(scale)
+                        if value==1:
+                            return str(unit)
+                        return "x%s%s" % (int(value), unit)
                 labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale)]
                 datasets = [in_data, out_data]
                 if self.client.windows_enabled:
-                    pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[:N_SAMPLES])
+                    pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[:N_SAMPLES], min_scaled_value=100)
                     datasets.append(in_pixels)
                     labels.append("%s pixels/s" % unit(pixel_scale))
-                pixmap = make_graph_pixmap(datasets, labels=labels, width=w, height=h/2, title="Bandwidth")
+                pixmap = make_graph_pixmap(datasets, labels=labels, width=w, height=h/2, title="Bandwidth", min_y_scale=10, rounding=10)
                 self.bandwidth_graph.set_size_request(*pixmap.get_size())
                 self.bandwidth_graph.set_from_pixmap(pixmap, None)
             #latency graph:
@@ -303,7 +306,7 @@ class SessionInfo(gtk.Window):
                         l.insert(0, None)
             pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"],
                                         width=w, height=h/2,
-                                        min_y_scale=10,
+                                        min_y_scale=10, rounding=50,
                                         title="Latency (ms)")
             self.latency_graph.set_size_request(*pixmap.get_size())
             self.latency_graph.set_from_pixmap(pixmap, None)

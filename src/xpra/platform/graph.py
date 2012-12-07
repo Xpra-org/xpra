@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding=utf8
 # This file is part of Parti.
 # Copyright (C) 2012 Antoine Martin <antoine@nagafix.co.uk>
@@ -7,28 +8,33 @@
 import gtk.gdk
 import math
 
-def round_up_unit(i):
+DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6)]
+
+
+def round_up_unit(i, rounding=10):
     v = 1
-    while v*10<i:
-        v = v*10
+    while v*rounding<i:
+        v = v*rounding
     for x in range(10):
         if v*x>i:
             return v*x
-    return v * 10
-
-DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6)]
+    return v * rounding
 
 def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                       show_y_scale=True, show_x_scale=False,
-                      min_y_scale=None,
+                      min_y_scale=None, rounding=10,
                       colours=DEFAULT_COLOURS):
+    #print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
+    #                  show_y_scale, show_x_scale, min_y_scale, colours))
     pixmap = gtk.gdk.Pixmap(None, width, height, 24)
-    offset = 20
+    y_label_chars = 4
+    x_offset = y_label_chars*8
+    y_offset = 20
     over = 2
     radius = 2
     #inner dimensions (used for graph only)
-    w = width - offset
-    h = height - offset*2
+    w = width - x_offset
+    h = height - y_offset*2
     context = pixmap.cairo_create()
     #fill with white:
     context.rectangle(0, 0, width, height)
@@ -48,7 +54,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
     scale_x = max_x
     if min_y_scale is not None:
         max_y = max(max_y, min_y_scale)
-    scale_y = round_up_unit(max_y)
+    scale_y = round_up_unit(max_y, rounding)
     #use black:
     context.set_source_rgb(0, 0, 0)
     #border:
@@ -59,11 +65,11 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
     context.line_to(0, 0)
     context.stroke()
     #show vertical line:
-    context.move_to(offset, offset-over)
-    context.line_to(offset, height-offset+over)
+    context.move_to(x_offset, y_offset-over)
+    context.line_to(x_offset, height-y_offset+over)
     #show horizontal line:
-    context.move_to(offset-over, height-offset)
-    context.line_to(width, height-offset)
+    context.move_to(x_offset-over, height-y_offset)
+    context.line_to(width, height-y_offset)
     #units:
     context.select_font_face('Sans')
     context.set_font_size(10)
@@ -73,19 +79,19 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
             context.set_source_rgb(0, 0, 0)
             context.set_line_width(1)
             #vertical:
-            y = height-offset-h*i/10
+            y = height-y_offset-h*i/10
             #text
             if scale_y<10:
                 unit = str(int(scale_y*i)/10.0)
             else:
                 unit = str(int(scale_y*i/10))
-            context.move_to(offset-4-(offset-8)/2.0*min(2, len(unit)), y+2)
+            context.move_to(x_offset-3-(x_offset-6)/y_label_chars*min(y_label_chars, len(unit)), y+3)
             context.show_text(unit)
             #line indicator
-            context.move_to(offset-over, y)
-            context.line_to(offset+over, y)
+            context.move_to(x_offset-over, y)
+            context.line_to(x_offset+over, y)
             context.stroke()
-            context.move_to(offset+over, y)
+            context.move_to(x_offset+over, y)
             context.set_source_rgb(0.5, 0.5, 0.5)
             context.set_line_width(0.5)
             context.set_dash([3.0, 3.0])
@@ -96,21 +102,21 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
             context.set_source_rgb(0, 0, 0)
             context.set_line_width(1)
             #horizontal:
-            x = offset+w*i/10
+            x = x_offset+w*i/10
             #text
             context.move_to(x-2, height-2)
             unit = str(int(scale_x*i/10))
             context.show_text(unit)
             #line indicator
-            context.move_to(x, height-offset-over)
-            context.line_to(x, height-offset+over)
+            context.move_to(x, height-y_offset-over)
+            context.line_to(x, height-y_offset+over)
             context.stroke()
     #title:
     if title:
         context.set_source_rgb(0.2, 0.2, 0.2)
         context.select_font_face('Serif')
         context.set_font_size(14)
-        context.move_to(offset+w/2-len(title)*14/2, 14)
+        context.move_to(x_offset+w/2-len(title)*14/2, 14)
         context.show_text(title)
         context.stroke()
     #now draw the actual data
@@ -122,10 +128,10 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
         j = 0
         last_v = None
         for v in line_data:
-            x = offset + w*j/(max(1, max_x-1))
+            x = x_offset + w*j/(max(1, max_x-1))
             if v is not None:
                 if max_y>0:
-                    y = height-offset - h*v/max_y
+                    y = height-y_offset - h*v/scale_y
                 else:
                     y = 0
                 if last_v is not None:
@@ -143,7 +149,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
             label = labels[i]
             context.select_font_face('Serif')
             context.set_font_size(12)
-            context.move_to(offset/2+(width-offset)*i/len(labels), height-4)
+            context.move_to(x_offset/2+(width-x_offset)*i/len(labels), height-4)
             context.show_text(label)
             context.stroke()
         i += 1
@@ -152,11 +158,23 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
 
 def main():
     window = gtk.Window()
-    data = [[34, 12, 39, 35, 25], [12, 20, 14, 20, 27], [None, None, 10, 12, 15]]
-    graph = make_graph_pixmap(data, labels=["one", "two"], title="hello")
-    image = gtk.Image()
-    image.set_from_pixmap(graph, None)
-    window.add(image)
+    box = gtk.VBox(False)
+    window.add(box)
+
+    if True:
+        data = [[7, 7, 7, 7, 7, 7, 7, 7, 12, 10, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], [4, 7, 10, 4, 7, 7, 7, 10, 12, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        graph = make_graph_pixmap(data, ['recv x10B/s', 'sent x10B/s', ' pixels/s'], 360, 165, "Bandwidth", True, False, None, rounding=100)
+        image = gtk.Image()
+        image.set_from_pixmap(graph, None)
+        box.add(image)
+
+    if True:
+        data = [[6.761074066162109, 7.436990737915039, 5.215167999267578, 6.270885467529297, 5.424976348876953, 6.54292106628418, 2.619028091430664, 5.944013595581055, 5.134105682373047, 5.10096549987793, 5.944967269897461, 5.656957626342773, 8.015155792236328, 5.669116973876953, 4.487037658691406, 5.110979080200195, 5.182027816772461, 5.619049072265625, 4.729032516479492, 5.012035369873047], [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 2.0, 2.0, 2.0, 1.0, 1.0, 2.0, 3.0, 4.0, 2.0, 2.0, 3.0, 3.0]]
+        graph = make_graph_pixmap(data, ['server', 'client'], 360, 165, "Latency (ms)", True, False, 10, rounding=10)
+        image = gtk.Image()
+        image.set_from_pixmap(graph, None)
+        box.add(image)
+
     window.connect("destroy", gtk.main_quit)
     window.show_all()
     gtk.main()

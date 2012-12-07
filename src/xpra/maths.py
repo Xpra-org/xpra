@@ -73,16 +73,19 @@ def absolute_to_diff_values(in_data):
         last_value = x
     return data
 
-def values_to_scaled_values(data):
+def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values=20):
+    #print("values_to_scaled_values(%s, %s, %s)" % (data, scale_unit, num_values))
     if data is None or len(data)==0:
         return  0, data
-    if len(data)<20:
-        for _ in range(20-len(data)):
+    #pad with None values so we have at least num_values:
+    if len(data)<num_values:
+        for _ in range(num_values-len(data)):
             data.insert(0, None)
     max_v = max(data)
     scale = 1
-    while scale*100<max_v:
-        scale *= 10
+    assert scale_unit>1
+    while scale*scale_unit*min_scaled_value<=max_v:
+        scale *= scale_unit
     if scale==1:
         return scale, data
     sdata = []
@@ -93,8 +96,8 @@ def values_to_scaled_values(data):
             sdata.append(x/scale)
     return scale, sdata
 
-def values_to_diff_scaled_values(data):
-    return values_to_scaled_values(absolute_to_diff_values(data))
+def values_to_diff_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values=20):
+    return values_to_scaled_values(absolute_to_diff_values(data), scale_unit=scale_unit, min_scaled_value=min_scaled_value, num_values=num_values)
 
 def add_weighted_list_stats(info, basename, weighted_values, show_percentile=False):
     values = [x for x, _ in weighted_values]
