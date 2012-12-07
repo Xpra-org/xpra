@@ -97,7 +97,10 @@ class SessionInfo(gtk.Window):
         #graph box:
         self.graph_box = gtk.VBox(False, 10)
         self.hbox.add(self.graph_box)
-        self.bandwidth_graph = self.add_graph_button("Number of bytes measured by the networks sockets,\nand pixels rendered", self.save_graphs)
+        bandwidth_label = "Number of bytes measured by the networks sockets"
+        if SHOW_PIXEL_STATS:
+            bandwidth_label += ",\nand number of pixels rendered"
+        self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
         self.latency_graph = self.add_graph_button("The time it takes to send an echo packet and get the reply", self.save_graphs)
         self.pixel_in_data = maxdeque(N_SAMPLES+3)
         self.net_in_data = maxdeque(N_SAMPLES+3)
