@@ -20,6 +20,8 @@ from xpra.platform.client_extras_base import set_tooltip_text, get_build_info
 log = Logger()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
+SHOW_PIXEL_STATS = True
+
 
 def label(text="", tooltip=None):
     l = gtk.Label(text)
@@ -290,7 +292,7 @@ class SessionInfo(gtk.Window):
                         return "x%s%s" % (int(value), unit)
                 labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale)]
                 datasets = [in_data, out_data]
-                if self.client.windows_enabled:
+                if SHOW_PIXEL_STATS and self.client.windows_enabled:
                     pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[:N_SAMPLES], min_scaled_value=100)
                     datasets.append(in_pixels)
                     labels.append("%s pixels/s" % unit(pixel_scale))
