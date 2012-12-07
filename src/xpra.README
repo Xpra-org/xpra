@@ -95,10 +95,13 @@ Download the latest version from
 Make sure you have the dependencies, at least:
   development packages for python-gtk, and all dependencies
   Xvfb
-  cython (version 0.9.7 at least, check with 'cython --version')
+  cython (version 0.14 at least, 0.16 to support video encoding
+  check with 'cython --version')
 On Debian-based OSes, I think it's:
   # aptitude install libx11-dev libxtst-dev libxcomposite-dev \
-    libxdamage-dev python-gobject-dev python-gtk2-dev xvfb python-cython
+    libxdamage-dev python-gobject-dev python-gtk2-dev xvfb cython
+  To support video encoding, you also need:
+    libx264-dev libswscale-dev libavcodec-dev libvpx-dev
 And a mailing list report suggests the following for Fedora:
   # yum install xorg-x11-server-Xvfb Cython libX11-devel \
     libXtst-devel libXcomposite-devel libXdamage-devel pygobject2-devel \
