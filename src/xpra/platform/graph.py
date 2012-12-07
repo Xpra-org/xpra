@@ -23,7 +23,7 @@ def round_up_unit(i, rounding=10):
 def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                       show_y_scale=True, show_x_scale=False,
                       min_y_scale=None, rounding=10,
-                      colours=DEFAULT_COLOURS):
+                      colours=DEFAULT_COLOURS, dots=False, curves=True):
     #print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
     #                  show_y_scale, show_x_scale, min_y_scale, colours))
     pixmap = gtk.gdk.Pixmap(None, width, height, 24)
@@ -135,14 +135,26 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                 else:
                     y = 0
                 if last_v is not None:
-                    context.line_to(x, y)
+                    _, lx, ly = last_v
+                    if curves:
+                        x1 = (lx*2+x)/3
+                        y1 = ly
+                        x2 = (lx+x*2)/3
+                        y2 = y
+                        context.curve_to(x1, y1, x2, y2, x, y)
+                        context.stroke()
+                    else:
+                        context.line_to(x, y)
+                        context.stroke()                        
+                if dots:
+                    context.arc(x, y, radius, 0, 2*math.pi)
+                    context.fill()
                     context.stroke()
-                context.arc(x, y, radius, 0, 2*math.pi)
-                context.fill()
-                context.stroke()
-                context.move_to(x, y)
+                    context.move_to(x, y)
+                else:
+                    context.move_to(x, y)
             j += 1
-            last_v = v
+            last_v = v, x, y
         context.stroke()
         #show label:
         if labels and len(labels)>i:
