@@ -131,7 +131,7 @@ class DesktopManager(gtk.Widget):
                      "%sx%s vs %sx%s", w0, h0, w, h)
         return x, y
 
-    def get_transient_for(self, window):
+    def get_transient_for(self, window, window_to_id):
         transient_for = window.get_property("transient-for")
         if transient_for is None:
             return None
@@ -140,7 +140,7 @@ class DesktopManager(gtk.Widget):
         for model in self._models.keys():
             log("testing model %s: %s", model, model.client_window.xid)
             if model.client_window.xid==transient_for.xid:
-                wid = self._window_to_id.get(model)
+                wid = window_to_id.get(model)
                 log("found match, window id=%s", wid)
                 return wid
         root = gtk.gdk.get_default_root_window()
@@ -216,7 +216,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
     def get_transient_for(self, window):
-        return self._desktop_manager.get_transient_for(window)
+        return self._desktop_manager.get_transient_for(window, self._window_to_id)
 
     def is_shown(self, window):
         return self._desktop_manager.is_shown(window)
