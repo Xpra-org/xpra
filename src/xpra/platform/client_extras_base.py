@@ -315,7 +315,7 @@ class ClientExtrasBase(object):
 
 
     def session_info(self, *args):
-        if self.session_info_window is None:
+        if self.session_info_window is None or self.session_info_window.is_closed:
             #we import here to avoid an import loop
             from xpra.platform.session_info import SessionInfo
             pixbuf = self.get_pixbuf("statistics.png")
