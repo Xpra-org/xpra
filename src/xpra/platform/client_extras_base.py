@@ -321,7 +321,7 @@ class ClientExtrasBase(object):
             pixbuf = self.get_pixbuf("statistics.png")
             if not pixbuf and self.tray_icon:
                 pixbuf = self.get_pixbuf(self.tray_icon)
-            self.session_info_window = SessionInfo(self.client, self.session_name, pixbuf, self.connection)
+            self.session_info_window = SessionInfo(self.client, self.session_name, pixbuf, self.connection, self.get_pixbuf)
             self.session_info_window.populate_info()
             add_close_accel(self.session_info_window, self.close_session_info)
             gobject.timeout_add(1000, self.session_info_window.populate_info)
