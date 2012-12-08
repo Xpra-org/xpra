@@ -15,6 +15,11 @@ from subprocess import Popen, PIPE
 import signal
 import shlex
 
+#this is here so we can expose the "platform" module
+#before we import xpra.platform
+import platform as python_platform
+assert python_platform
+
 import xpra
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
