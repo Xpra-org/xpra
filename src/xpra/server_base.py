@@ -16,6 +16,7 @@ import sys
 import hmac
 import uuid
 import time
+import platform
 
 from wimpiggy.util import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -559,6 +560,7 @@ class XpraServerBase(object):
         capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["version"] = xpra.__version__
         capabilities["platform"] = sys.platform
+        capabilities["python_version"] = platform.python_version
         capabilities["encodings"] = ENCODINGS
         capabilities["resize_screen"] = self.randr
         if self.session_name:
@@ -612,6 +614,7 @@ class XpraServerBase(object):
         info["start_time"] = int(self.start_time)
         info["encodings"] = ",".join(ENCODINGS)
         info["platform"] = sys.platform
+        info["python_version"] = platform.python_version
         info["windows"] = len(self._id_to_window)
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
