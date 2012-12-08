@@ -195,6 +195,10 @@ class SessionInfo(gtk.Window):
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
+        self.server_encodings_label = label()
+        tb.new_row("Server Encodings", self.server_encodings_label)
+        self.client_encodings_label = label()
+        tb.new_row("Client Encodings", self.client_encodings_label)
         self.server_mmap_icon = gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
         self.server_clipboard_icon = gtk.Image()
@@ -204,11 +208,7 @@ class SessionInfo(gtk.Window):
         self.server_bell_icon = gtk.Image()
         tb.new_row("Bell Forwarding", self.server_bell_icon)
         self.server_cursors_icon = gtk.Image()
-        tb.new_row("Cursors Forwarding", self.server_cursors_icon)
-        self.server_encodings_label = label()
-        tb.new_row("Server Encodings", self.server_encodings_label)
-        self.client_encodings_label = label()
-        tb.new_row("Client Encodings", self.client_encodings_label)
+        tb.new_row("Cursor Forwarding", self.server_cursors_icon)
         speaker_box = gtk.HBox(False, 20)
         self.server_speaker_icon = gtk.Image()
         speaker_box.add(self.server_speaker_icon)
@@ -239,14 +239,32 @@ class SessionInfo(gtk.Window):
             tb.new_row("Server Platform", label(self.client.server_platform))
         self.server_load_label = label()
         tb.new_row("Server Load", self.server_load_label, label_text="Average over 1, 5 and 15 minutes")
-        self.server_latency_label = label()
-        tb.new_row("Server Latency", self.server_latency_label, label_text="last value and average")
-        self.client_latency_label = label()
-        tb.new_row("Client Latency", self.client_latency_label, label_text="last value and average")
         self.session_started_label = label()
         tb.new_row("Session Started", self.session_started_label)
         self.session_connected_label = label()
         tb.new_row("Session Connected", self.session_connected_label)
+        self.input_packets_label = label()
+        tb.new_row("Packets Received", self.input_packets_label)
+        self.input_bytes_label = label()
+        tb.new_row("Bytes Received", self.input_bytes_label)
+        self.output_packets_label = label()
+        tb.new_row("Packets Sent", self.output_packets_label)
+        self.output_bytes_label = label()
+        tb.new_row("Bytes Sent", self.output_bytes_label)
+        self.compression_label = label()
+        tb.new_row("Compression Level", self.compression_label)
+        self.connection_type_label = label()
+        tb.new_row("Connection Type", self.connection_type_label)
+        self.input_encryption_label = label()
+        tb.new_row("Input Encryption", self.input_encryption_label)
+        self.output_encryption_label = label()
+        tb.new_row("Output Encryption", self.output_encryption_label)
+
+        tb = self.table_tab("browse.png", "Details", self.populate_details)
+        self.server_latency_label = label()
+        tb.new_row("Server Latency", self.server_latency_label, label_text="last value and average")
+        self.client_latency_label = label()
+        tb.new_row("Client Latency", self.client_latency_label, label_text="last value and average")
         if self.client.windows_enabled:
             self.windows_managed_label = label()
             tb.new_row("Windows Managed", self.windows_managed_label,
@@ -260,8 +278,6 @@ class SessionInfo(gtk.Window):
             self.pixels_per_second_label = label()
             tb.new_row("Pixels/s", self.pixels_per_second_label,
                           label_text="The number of pixels updated per second")
-
-        #tb = self.table_tab("browse.png", "Details", None)
 
         self.graph_box = gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Statistics", self.populate_statistics, self.graph_box)
@@ -400,13 +416,13 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
         scaps = self.client.server_capabilities
+        self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
+        self.client_encodings_label.set_text(", ".join(ENCODINGS))
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         self.bool_icon(self.server_clipboard_icon, scaps.get("clipboard", False))
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
         self.bool_icon(self.server_bell_icon, scaps.get("bell", False))
         self.bool_icon(self.server_cursors_icon, scaps.get("cursors", False))
-        self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
-        self.client_encodings_label.set_text(", ".join(ENCODINGS))
         self.bool_icon(self.server_speaker_icon, scaps.get("sound.send", False))
         if self.client.sound_sink and self.client.sound_sink.codec:
             self.speaker_codec_label.set_text(self.client.sound_sink.codec)
@@ -435,6 +451,29 @@ class SessionInfo(gtk.Window):
             label.set_text(str(delta))
         if self.client.server_load:
             self.server_load_label.set_text("  ".join([str(x/1000.0) for x in self.client.server_load]))
+        if self.client.server_start_time>0:
+            settimedeltastr(self.session_started_label, self.client.server_start_time)
+        else:
+            self.session_started_label.set_text("unknown")
+        settimedeltastr(self.session_connected_label, self.client.start_time)
+
+        p = self.client._protocol
+        c = p._conn
+        self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
+        self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
+        self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
+        self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+
+        self.connection_type_label.set_text(c.info)
+        self.compression_label.set_text(str(p._compression_level))
+        suffix = ""
+        if c.info.lower()=="ssh":
+            suffix = " (%s)" % c.info
+        self.input_encryption_label.set_text((p.cipher_in_name or "None")+suffix)
+        self.output_encryption_label.set_text((p.cipher_out_name or "None")+suffix)
+        return True
+
+    def populate_details(self):
         if len(self.client.server_ping_latency)>0:
             spl = [x for _,x in list(self.client.server_ping_latency)]
             avg = sum(spl)/len(spl)
@@ -443,12 +482,6 @@ class SessionInfo(gtk.Window):
             cpl = [x for _,x in list(self.client.client_ping_latency)]
             avg = sum(cpl)/len(cpl)
             self.client_latency_label.set_text("%sms  (%sms)" % (int(1000*cpl[-1]), int(1000.0*avg)))
-        if self.client.server_start_time>0:
-            settimedeltastr(self.session_started_label, self.client.server_start_time)
-        else:
-            self.session_started_label.set_text("unknown")
-        settimedeltastr(self.session_connected_label, self.client.start_time)
-
         if self.client.windows_enabled:
             real, redirect, trays = 0, 0, 0
             for w in self.client._window_to_id.keys():
@@ -478,7 +511,6 @@ class SessionInfo(gtk.Window):
             self.regions_sizes_label.set_text(regions_sizes)
             self.regions_per_second_label.set_text(regions)
             self.pixels_per_second_label.set_text(pixels)
-        return True
 
     def populate_statistics(self):
         box = self.tab_box

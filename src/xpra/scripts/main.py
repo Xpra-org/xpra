@@ -686,7 +686,7 @@ def connect_or_fail(display_desc):
                 from wimpiggy.util import gtk_main_quit_really
                 gtk_main_quit_really()
                 raise IOError(error_message)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH")
 
     elif display_desc["type"] == "unix-domain":
         sockdir = DotXpra(display_desc["sockdir"])
@@ -767,7 +767,7 @@ def run_proxy(parser, opts, extra_args):
     from xpra.proxy import XpraProxy
     assert "gtk" not in sys.modules
     server_conn = connect_or_fail(pick_display(parser, opts, extra_args))
-    app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin), server_conn)
+    app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     app.run()
     return  0
 

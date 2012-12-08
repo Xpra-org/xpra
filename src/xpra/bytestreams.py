@@ -42,12 +42,13 @@ class Connection(object):
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None):
+    def __init__(self, writeable, readable, abort_test=None, target=None, info=""):
         Connection.__init__(self, target)
         self._writeable = writeable
         self._readable = readable
         self._abort_test = abort_test
         self.filename = None
+        self.info = info
 
     def may_abort(self, action):
         """ if abort_test is defined, run it """
@@ -80,6 +81,7 @@ class SocketConnection(Connection):
             self.filename = remote
         else:
             self.filename = None
+        self.info = "socket"
 
     def read(self, n):
         return self._read(self._s.recv, n)
