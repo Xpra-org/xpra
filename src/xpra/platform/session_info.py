@@ -30,6 +30,16 @@ def label(text="", tooltip=None):
         set_tooltip_text(l, tooltip)
     return l
 
+def title_box(label_str):
+    eb = gtk.EventBox()
+    l = label(label_str)
+    l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color('#300000'))
+    al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+    al.set_padding(0, 0, 10, 10)
+    al.add(l)
+    eb.add(al)
+    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color('#dbe2f2'))
+    return eb
 
 def pixelstr(v):
     if v<0:
@@ -74,23 +84,23 @@ class TableBuilder(object):
         self.table.set_col_spacings(0)
         self.table.set_row_spacings(0)
         self.row = 0
-    
+
     def get_table(self):
         return self.table
 
-    def add_row(self, label, widget1, widget2):
+    def add_row(self, label, *widgets):
         if label:
             l_al = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(label)
             self.attach(l_al, 0)
-        if widget1:
-            w_al1 = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            w_al1.add(widget1)
-            self.attach(w_al1, 1)
-        if widget2:
-            w_al2 = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            w_al2.add(widget2)
-            self.attach(w_al2, 2)
+        if widgets:
+            i = 1
+            for w in widgets:
+                if w:
+                    w_al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+                    w_al.add(w)
+                    self.attach(w_al, i)
+                i += 1
         self.inc()
 
     def attach(self, widget, i, count=1, xoptions=gtk.FILL, xpadding=10):
@@ -134,16 +144,6 @@ class SessionInfo(gtk.Window):
         #Package Table:
         tb = self.table_tab("package.png", "Software", self.populate_package)
         #title row:
-        def title_box(label_str):
-            eb = gtk.EventBox()
-            l = label(label_str)
-            l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color('#300000'))
-            al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            al.set_padding(0, 0, 10, 10)
-            al.add(l)
-            eb.add(al)
-            eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color('#dbe2f2'))
-            return eb
         tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Client"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
@@ -260,24 +260,36 @@ class SessionInfo(gtk.Window):
         self.output_encryption_label = label()
         tb.new_row("Output Encryption", self.output_encryption_label)
 
+        # Details:
         tb = self.table_tab("browse.png", "Details", self.populate_details)
-        self.server_latency_label = label()
-        tb.new_row("Server Latency", self.server_latency_label, label_text="last value and average")
-        self.client_latency_label = label()
-        tb.new_row("Client Latency", self.client_latency_label, label_text="last value and average")
+        tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Latest"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Minimum"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Average"), 3, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("95 percentile"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("Maximum"), 5, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.inc()
+
+        def maths_labels():
+            return label(), label(), label(), label(), label()
+        self.server_latency_labels = maths_labels()
+        tb.add_row(label("Server Latency (ms)"), *self.server_latency_labels)
+        self.client_latency_labels = maths_labels()
+        tb.add_row(label("Client Latency (ms)"), *self.client_latency_labels)
         if self.client.windows_enabled:
+            self.regions_per_second_labels = maths_labels()
+            tb.add_row(label("Regions/s"), *self.regions_per_second_labels)
+            self.regions_sizes_labels = maths_labels()
+            tb.add_row(label("Pixels/region"), *self.regions_sizes_labels)
+            self.pixels_per_second_labels = maths_labels()
+            tb.add_row(label("Pixels/s"), *self.pixels_per_second_labels)
+
             self.windows_managed_label = label()
-            tb.new_row("Windows Managed", self.windows_managed_label,
-                          label_text="The number of windows forwarded, some may just be temporary widgets (usually transient ones)")
-            self.regions_sizes_label = label()
-            tb.new_row("Pixels/region", self.regions_sizes_label,
-                          label_text="The number of pixels updated at a time: min/avg/max")
-            self.regions_per_second_label = label()
-            tb.new_row("Regions/s", self.regions_per_second_label,
-                          label_text="The number of screen updates per second")
-            self.pixels_per_second_label = label()
-            tb.new_row("Pixels/s", self.pixels_per_second_label,
-                          label_text="The number of pixels updated per second")
+            tb.new_row("Windows Managed", self.windows_managed_label),
+            self.transient_managed_label = label()
+            tb.new_row("Transient Windows", self.transient_managed_label),
+            self.trays_managed_label = label()
+            tb.new_row("Trays Managed", self.trays_managed_label),
 
         self.graph_box = gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Statistics", self.populate_statistics, self.graph_box)
@@ -329,7 +341,6 @@ class SessionInfo(gtk.Window):
                 b.set_relief(gtk.RELIEF_NORMAL)
                 b.grab_focus()
                 self.populate_cb = p_cb
-                break
             else:
                 b.set_relief(gtk.RELIEF_NONE)
         assert button
@@ -474,43 +485,74 @@ class SessionInfo(gtk.Window):
         return True
 
     def populate_details(self):
+        def setall(labels, values):
+            assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
+            for i in range(len(labels)):
+                l = labels[i]
+                v = values[i]
+                l.set_text(str(v))
+        def setlabels(labels, values, rounding=int):
+            if len(values)==0:
+                return
+            avg = sum(values)/len(values)
+            svalues = sorted(values)
+            l = len(svalues)
+            assert l>0
+            if l<20:
+                index = l-1
+            else:
+                index = int(l*95/100)
+            index = max(0, min(l-1, index))
+            pct = svalues[index]
+            disp = values[-1], min(values), avg, pct, max(values)
+            rounded_values = [rounding(v) for v in disp]
+            setall(labels, rounded_values)
+
         if len(self.client.server_ping_latency)>0:
-            spl = [x for _,x in list(self.client.server_ping_latency)]
-            avg = sum(spl)/len(spl)
-            self.server_latency_label.set_text("%sms  (%sms)" % (int(1000.0*spl[-1]), int(1000.0*avg)))
+            spl = [1000.0*x for _,x in list(self.client.server_ping_latency)]
+            setlabels(self.server_latency_labels, spl)
         if len(self.client.client_ping_latency)>0:
-            cpl = [x for _,x in list(self.client.client_ping_latency)]
-            avg = sum(cpl)/len(cpl)
-            self.client_latency_label.set_text("%sms  (%sms)" % (int(1000*cpl[-1]), int(1000.0*avg)))
+            cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
+            setlabels(self.client_latency_labels, cpl)
         if self.client.windows_enabled:
-            real, redirect, trays = 0, 0, 0
+            region_sizes = []
+            rps = []
+            pps = []
+            if len(self.client.pixel_counter)>0:
+                min_time = None
+                max_time = None
+                regions_per_second = {}
+                pixels_per_second = {}
+                for event_time, size in self.client.pixel_counter:
+                    region_sizes.append(size)
+                    if min_time is None or min_time>event_time:
+                        min_time = event_time
+                    if max_time is None or max_time<event_time:
+                        max_time = event_time
+                    time_in_seconds = int(event_time)
+                    regions = regions_per_second.get(time_in_seconds, 0)
+                    regions_per_second[time_in_seconds] = regions+1
+                    pixels = pixels_per_second.get(time_in_seconds, 0)
+                    pixels_per_second[time_in_seconds] = pixels + size
+                for t in xrange(int(min_time), int(max_time+1)):
+                    rps.append(regions_per_second.get(t, 0))
+                    pps.append(pixels_per_second.get(t, 0))
+            setlabels(self.regions_per_second_labels, rps)
+            setlabels(self.regions_sizes_labels, region_sizes, rounding=std_unit_dec)
+            setlabels(self.pixels_per_second_labels, pps, rounding=std_unit_dec)
+
+            windows, transient, trays = 0, 0, 0
             for w in self.client._window_to_id.keys():
                 if w.is_tray():
                     trays += 1
                 elif w.is_OR():
-                    redirect +=1
+                    transient +=1
                 else:
-                    real += 1
-            self.windows_managed_label.set_text("%s  (%s transient - %s trays)" % (real, redirect, trays))
-            regions_sizes = "n/a"
-            regions = "n/a"
-            pixels = "n/a"
-            if len(self.client.pixel_counter)>0:
-                p20 = average(20, self.client.pixel_counter)
-                if p20:
-                    avg20,fps20,mins,avgs,maxs = p20
-                    p1 = average(1, self.client.pixel_counter)
-                    if p1:
-                        avg1,fps1 = p1[:2]
-                    else:
-                        avg1,fps1 = -1, -1
-                    pixels = "%s  (%s)" % (pixelstr(avg1), pixelstr(avg20))
-                    regions = "%s  (%s)" % (fpsstr(fps1), fpsstr(fps20))
-                    regions_sizes = "%s  %s  %s" % (pixelstr(mins), pixelstr(avgs), pixelstr(maxs))
-
-            self.regions_sizes_label.set_text(regions_sizes)
-            self.regions_per_second_label.set_text(regions)
-            self.pixels_per_second_label.set_text(pixels)
+                    windows += 1
+            self.windows_managed_label.set_text(str(windows))
+            self.transient_managed_label.set_text(str(transient))
+            self.trays_managed_label.set_text(str(trays))
+        return True
 
     def populate_statistics(self):
         box = self.tab_box
