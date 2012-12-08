@@ -27,11 +27,15 @@ CODEC_ORDER = [VORBIS, AAC, MP3, FLAC]
 
 has_gst = False
 all_plugin_names = []
+pygst_version = ""
+gst_version = ""
 try:
 	import pygst
 	pygst.require("0.10")
 	import gst
 	has_gst = True
+	gst_version = gst.gst_version
+	pygst_version = gst.pygst_version
 
 	registry = gst.registry_get_default()
 	all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
@@ -85,6 +89,8 @@ def plugin_str(plugin, options):
 
 def add_gst_capabilities(capabilities, receive=True, send=True,
 						receive_codecs=[], send_codecs=[]):
+	capabilities["gst_version"] = gst_version
+	capabilities["pygst_version"] = pygst_version
 	capabilities["sound.decoders"] = receive_codecs
 	capabilities["sound.encoders"] = send_codecs
 	capabilities["sound.receive"] = receive and len(receive_codecs)>0
