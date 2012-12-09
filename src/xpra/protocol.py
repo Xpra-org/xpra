@@ -265,6 +265,8 @@ class Protocol(object):
         try:
             main_packet, proto_version = self._encoder(packet)
         except (KeyError, TypeError), e:
+            if self._closed:
+                return [], 0
             log.error("failed to encode packet: %s", packet)
             import traceback
             traceback.print_exc()
