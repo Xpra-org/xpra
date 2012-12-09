@@ -470,6 +470,7 @@ class ServerSource(object):
                                                     #format: packet, wid, pixels, start_send_cb, end_send_cb
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
+        self.last_user_event = time.time()
         # ready for processing:
         protocol.source = self
         self.datapacket_thread = start_daemon_thread(self.data_to_packet, "data_to_packet")
@@ -483,6 +484,9 @@ class ServerSource(object):
         self.close_mmap()
         self.protocol = None
         self.stop_sending_sound()
+
+    def user_event(self):
+        self.last_user_event = time.time()
 
     def parse_hello(self, capabilities):
         #batch options:
@@ -854,10 +858,13 @@ class ServerSource(object):
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
-        info["clipboard%s" % suffix] = self.clipboard_enabled
-        info["cursors%" % suffix] = self.send_cursors
-        info["bell%" % suffix] = self.send_bell
-        info["notifications%" % suffix] = self.send_notifications
+        info["client_clipboard%s" % suffix] = self.clipboard_enabled
+        info["client_cursors%s" % suffix] = self.send_cursors
+        info["client_bell%s" % suffix] = self.send_bell
+        info["client_notifications%s" % suffix] = self.send_notifications
+        info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
+        info["client_hostname%s" % suffix] = self.hostname
+        info["client_fqdn%s" % suffix] = self.fqdn
 
     def send_clipboard(self, packet):
         if self.clipboard_enabled:

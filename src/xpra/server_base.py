@@ -629,10 +629,13 @@ class XpraServerBase(object):
         #find the source to report on:
         n = len(self._server_sources)
         if n==1:
-            self._server_sources.values()[0].add_stats(info, self._id_to_window.keys())
+            ss = self._server_sources.values()[0]
+            ss.add_info(info)
+            ss.add_stats(info, self._id_to_window.keys())
         elif n>1:
             i = 0
             for ss in self._server_sources.values():
+                ss.add_info(info, suffix="{%s}" % i)
                 ss.add_stats(info, self._id_to_window.keys(), suffix="{%s}" % i)
                 i += 1
         #threads:
@@ -1018,6 +1021,7 @@ class XpraServerBase(object):
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
         if keycode>0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
+        ss.user_event()
 
     def fake_key(self, keycode, press):
         trap.call(xtest_fake_key, gtk.gdk.display_get_default(), keycode, press)
@@ -1102,6 +1106,7 @@ class XpraServerBase(object):
                 self.keys_pressed[keycode] = keyname
                 self.fake_key(keycode, True)
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
+        ss.user_event()
 
 
     def _move_pointer(self, pos):
@@ -1121,6 +1126,7 @@ class XpraServerBase(object):
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._process_mouse_common(proto, wid, pointer, modifiers)
+        self._server_sources.get(proto).user_event()
         display = gtk.gdk.display_get_default()
         try:
             trap.call(xtest_fake_button, display, button, pressed)
