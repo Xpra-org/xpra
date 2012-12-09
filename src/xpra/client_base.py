@@ -100,6 +100,7 @@ class XpraClientBase(gobject.GObject):
         self.server_capabilities = {}
         self._remote_version = None
         self._remote_revision = None
+        self.make_uuid()
         self.init_packet_handlers()
 
     def ready(self, conn):
@@ -154,6 +155,14 @@ class XpraClientBase(gobject.GObject):
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
+        capabilities["hostname"] = socket.gethostname()
+        capabilities["fqdn"] = socket.getfqdn()
+        capabilities["uuid"] = self.uuid
+        capabilities["randr_notify"] = False    #only client.py cares about this
+        capabilities["windows"] = False         #only client.py cares about this
+        return capabilities
+
+    def make_uuid(self):
         u = hashlib.sha1()
         u.update(str(get_machine_id()))
         if os.name=="posix":
@@ -161,12 +170,7 @@ class XpraClientBase(gobject.GObject):
             u.update(str(os.getuid()))
             u.update("/")
             u.update(str(os.getgid()))
-        capabilities["hostname"] = socket.gethostname()
-        capabilities["fqdn"] = socket.getfqdn()
-        capabilities["uuid"] = u.hexdigest()
-        capabilities["randr_notify"] = False    #only client.py cares about this
-        capabilities["windows"] = False         #only client.py cares about this
-        return capabilities
+        self.uuid = u.hexdigest()
 
     def idle_send(self, *parts):
         gobject.idle_add(self.send, *parts)
