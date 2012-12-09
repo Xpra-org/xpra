@@ -1047,19 +1047,21 @@ class ServerSource(object):
         if window_ids:
             total_pixels = 0
             total_time = 0.0
+            n = len(window_ids)
             for wid in window_ids:
                 ws = self.window_sources.get(wid)
                 if ws:
-                    #per-window stats:
-                    ws.add_stats(info, suffix=suffix)
+                    if n>1:
+                        #per-window stats:
+                        ws.add_stats(info, suffix=suffix)
                     #collect stats for global averages:
                     for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels
                         total_time += encoding_time
-                    info["pixels_encoded_per_second%s" % suffix] = int(total_pixels / total_time)
                     batch = ws.batch_config
                     for _,d in list(batch.last_delays):
                         batch_delays.append(d)
+            info["pixels_encoded_per_second%s" % suffix] = int(total_pixels / total_time)
         if len(batch_delays)>0:
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
