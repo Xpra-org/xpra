@@ -60,7 +60,7 @@ class DamageBatchConfig(object):
     MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
     TIME_UNIT = 1                       #per second
     MIN_DELAY = 5                       #lower than 5 milliseconds does not make sense, just don't batch
-    START_DELAY = 100
+    START_DELAY = 50
     MAX_DELAY = 15000
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
                                         #(this theoretical limit is never achieved since calculations take time + scheduling also does)
@@ -328,15 +328,17 @@ class WindowSource(object):
         if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.batch_config.last_delays)]
             add_list_stats(info, "batch_delay"+suffix, batch_delays)
-        if self._video_encoder is not None:
-            try:
-                self._video_encoder_lock.acquire()
+        try:
+            quality_list, speed_list = None, None
+            self._video_encoder_lock.acquire()
+            if self._video_encoder is not None:
                 quality_list = [x for _, x in list(self._video_encoder_quality)]
-                add_list_stats(info, self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
                 speed_list = [x for _, x in list(self._video_encoder_speed)]
-                add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
-            finally:
-                self._video_encoder_lock.release()
+        finally:
+            self._video_encoder_lock.release()
+        if quality_list and speed_list:
+            add_list_stats(info, self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
+            add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
 
 
     def may_calculate_batch_delay(self, window):
