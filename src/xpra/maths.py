@@ -130,6 +130,7 @@ def add_list_stats(info, basename, in_values, show_percentile=True):
     values = list(in_values)
     if len(values)==0:
         return
+    info["%s.cur" % basename] = int(values[-1])
     info["%s.min" % basename] = int(min(values))
     info["%s.max" % basename] = int(max(values))
     #arithmetic mean
