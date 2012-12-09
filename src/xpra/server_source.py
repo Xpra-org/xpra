@@ -431,7 +431,9 @@ class ServerSource(object):
 
         self.window_sources = {}                    #WindowSource for each Window ID
 
-        self.uuid = None
+        self.uuid = ""
+        self.hostname = ""
+        self.fqdn = ""
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -491,6 +493,8 @@ class ServerSource(object):
         self.default_batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
+        self.hostname = capabilities.get("hostname", "")
+        self.fqdn = capabilities.get("fqdn", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_platform = capabilities.get("platform", "")
         self.client_version = capabilities.get("version", None)
@@ -544,7 +548,11 @@ class ServerSource(object):
             if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
                 self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
-        log.info("%s %s client version %s with uuid %s", self.client_type, self.client_platform, self.client_version, self.uuid)
+        log("client uuid %s", self.uuid)
+        msg = "%s %s client version %s" % (self.client_type, self.client_platform, self.client_version)
+        if self.fqdn:
+            msg += " connected from '%s'" % self.fqdn
+        log.info(msg)
         if self.send_windows:
             if self.mmap_size>0:
                 log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), mmap_file)

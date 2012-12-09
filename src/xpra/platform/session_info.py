@@ -84,6 +84,7 @@ class TableBuilder(object):
         self.table.set_col_spacings(0)
         self.table.set_row_spacings(0)
         self.row = 0
+        self.widget_xalign = 0.0
 
     def get_table(self):
         return self.table
@@ -97,7 +98,7 @@ class TableBuilder(object):
             i = 1
             for w in widgets:
                 if w:
-                    w_al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
+                    w_al = gtk.Alignment(xalign=self.widget_xalign, yalign=0.5, xscale=0.0, yscale=0.0)
                     w_al.add(w)
                     self.attach(w_al, i)
                 i += 1
@@ -149,6 +150,7 @@ class SessionInfo(gtk.Window):
         tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.inc()
 
+        scaps = self.client.server_capabilities
         from xpra.__init__ import __version__
         tb.new_row("Xpra", label(__version__), label(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
@@ -157,14 +159,14 @@ class SessionInfo(gtk.Window):
         except:
             pass
         tb.new_row("Revision", label(cl_rev), label(self.client._remote_revision or "unknown"))
-        tb.new_row("Local Changes", label(cl_ch), label(self.client.server_capabilities.get("local_modifications", "unknown")))
-        tb.new_row("Build date", label(cl_date), label(self.client.server_capabilities.get("build_date", "unknown")))
+        tb.new_row("Local Changes", label(cl_ch), label(scaps.get("local_modifications", "unknown")))
+        tb.new_row("Build date", label(cl_date), label(scaps.get("build_date", "unknown")))
         def make_version_str(version):
             if version and type(version) in (tuple, list):
                 version = ".".join([str(x) for x in version])
             return version or "unknown"
         def server_version_info(prop_name):
-            return make_version_str(self.client.server_capabilities.get(prop_name))
+            return make_version_str(scaps.get(prop_name))
         def client_version_info(prop_name):
             info = "unknown"
             if hasattr(gtk, prop_name):
@@ -235,6 +237,8 @@ class SessionInfo(gtk.Window):
         tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
             tb.new_row("Server Display", label(self.client.server_display))
+        if "fqdn" in scaps:
+            tb.new_row("Server Hostname", label(scaps.get("fqdn")))
         if self.client.server_platform:
             tb.new_row("Server Platform", label(self.client.server_platform))
         self.server_load_label = label()
@@ -261,7 +265,8 @@ class SessionInfo(gtk.Window):
         tb.new_row("Output Encryption", self.output_encryption_label)
 
         # Details:
-        tb = self.table_tab("browse.png", "Details", self.populate_details)
+        tb = self.table_tab("browse.png", "Statistics", self.populate_details)
+        tb.widget_xalign = 1.0
         tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Latest"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Minimum"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
@@ -292,7 +297,7 @@ class SessionInfo(gtk.Window):
             tb.new_row("Trays Managed", self.trays_managed_label),
 
         self.graph_box = gtk.VBox(False, 10)
-        self.add_tab("statistics.png", "Statistics", self.populate_statistics, self.graph_box)
+        self.add_tab("statistics.png", "Graphs", self.populate_statistics, self.graph_box)
         bandwidth_label = "Number of bytes measured by the networks sockets"
         if SHOW_PIXEL_STATS:
             bandwidth_label += ",\nand number of pixels rendered"

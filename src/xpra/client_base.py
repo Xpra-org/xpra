@@ -8,6 +8,7 @@ import os
 import sys
 import uuid
 import hashlib
+import socket
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 
@@ -160,6 +161,8 @@ class XpraClientBase(gobject.GObject):
             u.update(str(os.getuid()))
             u.update("/")
             u.update(str(os.getgid()))
+        capabilities["hostname"] = socket.gethostname()
+        capabilities["fqdn"] = socket.getfqdn()
         capabilities["uuid"] = u.hexdigest()
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this

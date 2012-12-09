@@ -16,6 +16,7 @@ import sys
 import hmac
 import uuid
 import time
+import socket
 
 from wimpiggy.util import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -556,6 +557,8 @@ class XpraServerBase(object):
 
     def make_hello(self):
         capabilities = {}
+        capabilities["hostname"] = socket.gethostname()
+        capabilities["fqdn"] = socket.getfqdn()
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["version"] = xpra.__version__
@@ -601,6 +604,8 @@ class XpraServerBase(object):
         info = {}
         add_version_info(info)
         add_gtk_version_info(info, gtk)
+        info["hostname"] = socket.gethostname()
+        info["fqdn"] = socket.getfqdn()
         info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
