@@ -255,6 +255,10 @@ class XpraServerBase(object):
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
+    def signal_quit(self, signum, frame):
+        log.info("got signal %s, exiting", signum)
+        self.quit(False)
+
     def quit(self, upgrading):
         self._upgrading = upgrading
         log.info("xpra is terminating.")

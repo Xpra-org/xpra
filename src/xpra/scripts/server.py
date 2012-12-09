@@ -454,6 +454,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     gobject.timeout_add(0, check_once)
 
     _cleanups.insert(0, app.cleanup)
+    signal.signal(signal.SIGTERM, app.signal_quit)
+    signal.signal(signal.SIGINT, app.signal_quit)
     if app.run():
         log.info("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
