@@ -44,10 +44,10 @@ except Exception, e:
 
 class GLClientWindow(ClientWindow):
 
-    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         log("GLClientWindow(..)")
         self._configured = False
-        ClientWindow.__init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self.add(self._backing.glarea)
 
     def do_configure_event(self, event):

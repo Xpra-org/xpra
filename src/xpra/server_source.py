@@ -636,6 +636,8 @@ class ServerSource(object):
             return {"title": title.encode("utf-8")}
         elif propname == "modal":
             return {"modal" : window.get_property("modal")}
+        elif propname == "pid":
+            return {"pid" : window.get_property("pid") or -1}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")

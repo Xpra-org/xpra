@@ -175,12 +175,13 @@ else:
 
 
 class ClientWindow(gtk.Window):
-    def __init__(self, client, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         if override_redirect:
             init_window(self, WINDOW_POPUP)
         else:
             init_window(self, WINDOW_TOPLEVEL)
         self._client = client
+        self.group_leader = group_leader
         self._id = wid
         self._pos = (-1, -1)
         self._size = (1, 1)
@@ -411,6 +412,8 @@ class ClientWindow(gtk.Window):
     def do_map_event(self, event):
         log("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
+        if self.group_leader:
+            self.window.set_group(self.group_leader)
         self.set_workspace()
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
