@@ -18,7 +18,7 @@ log = Logger()
 
 from xpra.server_base import XpraServerBase
 from xpra.protocol import Compressed
-
+from xpra.window_source import DamageBatchConfig
 
 class RootWindowModel():
 
@@ -39,9 +39,7 @@ class RootWindowModel():
 
     def get_property(self, prop):
         if prop=="client-contents":
-            #w, h = self.window.get_size()
-            return self.window  #.get_image(0, 0, w, h)
-            #return None
+            return self.window
         return None
 
     def get_dimensions(self):
@@ -56,6 +54,9 @@ class XpraShadowServer(XpraServerBase):
         XpraServerBase.__init__(self, True, sockets, opts)
         self.pulseaudio = False
         self.sharing = False
+        DamageBatchConfig.ALWAYS = True             #always batch
+        DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
+        DamageBatchConfig.RECALCULATE_DELAY = 0.1   #re-compute delay 10 times per second at most
 
     def start_refresh(self):
         gobject.timeout_add(50, self.refresh)
@@ -178,7 +179,6 @@ class XpraShadowServer(XpraServerBase):
         rowstride = w*3
         packet = ["screenshot", w, h, "png", rowstride, Compressed("png", data)]
         return packet
-
 
     def make_hello(self):
         capabilities = XpraServerBase.make_hello(self)
