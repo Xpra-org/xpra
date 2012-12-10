@@ -496,7 +496,7 @@ class SessionInfo(gtk.Window):
         return True
 
     def populate_statistics(self):
-        log.info("populate_statistics()")
+        log("populate_statistics()")
         self.client.send_ping()
         self.client.send_info_request()
         def setall(labels, values):

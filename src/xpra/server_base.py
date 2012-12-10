@@ -675,7 +675,7 @@ class XpraServerBase(object):
             if t not in info_threads:
                 info["thread[%s]" % i] = t.name
                 i += 1
-        log.info("get_info took %s", time.time()-start)
+        log("get_info took %s", time.time()-start)
         return info
 
 
