@@ -106,6 +106,8 @@ class XpraClientBase(gobject.GObject):
     def ready(self, conn):
         log.debug("ready(%s)", conn)
         self._protocol = Protocol(conn, self.process_packet)
+        self._protocol.large_packets.append("keymap-changed")
+        self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
         ClientSource(self._protocol)
         self._protocol.start()

@@ -96,6 +96,7 @@ class Protocol(object):
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
+        self.large_packets = ["hello"]
         self.chunked_compression = True
         self._closed = False
         self._encoder = self.bencode
@@ -272,7 +273,7 @@ class Protocol(object):
             traceback.print_exc()
             self.verify_packet(packet)
             raise e
-        if len(main_packet)>=1024 and packet_in[0] not in ("hello", "keymap-changed", "server-settings"):
+        if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         if level>0:
