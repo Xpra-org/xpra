@@ -433,7 +433,6 @@ class ServerSource(object):
 
         self.uuid = ""
         self.hostname = ""
-        self.fqdn = ""
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -498,7 +497,6 @@ class ServerSource(object):
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
         self.hostname = capabilities.get("hostname", "")
-        self.fqdn = capabilities.get("fqdn", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_platform = capabilities.get("platform", "")
         self.client_version = capabilities.get("version", None)
@@ -554,8 +552,8 @@ class ServerSource(object):
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         msg = "%s %s client version %s" % (self.client_type, self.client_platform, self.client_version)
-        if self.fqdn:
-            msg += " connected from '%s'" % self.fqdn
+        if self.hostname:
+            msg += " connected from '%s'" % self.hostname
         log.info(msg)
         if self.send_windows:
             if self.mmap_size>0:
@@ -864,7 +862,6 @@ class ServerSource(object):
         info["client_notifications%s" % suffix] = self.send_notifications
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
-        info["client_fqdn%s" % suffix] = self.fqdn
 
     def send_clipboard(self, packet):
         if self.clipboard_enabled:

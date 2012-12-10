@@ -57,8 +57,6 @@ class XpraServerBase(object):
         self.x11_init(clobber)
 
         self.start_time = time.time()
-        self.hostname = socket.gethostname()
-        self.fqdn = socket.getfqdn()
 
         # This must happen early, before loading in windows at least:
         self._potential_protocols = []
@@ -563,8 +561,7 @@ class XpraServerBase(object):
 
     def make_hello(self):
         capabilities = {}
-        capabilities["hostname"] = self.hostname
-        capabilities["fqdn"] = self.fqdn
+        capabilities["hostname"] = socket.gethostname()
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["version"] = xpra.__version__

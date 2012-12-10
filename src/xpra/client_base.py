@@ -156,7 +156,6 @@ class XpraClientBase(gobject.GObject):
         capabilities["rencode"] = has_rencode
         capabilities["server-window-resize"] = True
         capabilities["hostname"] = socket.gethostname()
-        capabilities["fqdn"] = socket.getfqdn()
         capabilities["uuid"] = self.uuid
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this
