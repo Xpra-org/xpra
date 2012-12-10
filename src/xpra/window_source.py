@@ -443,7 +443,6 @@ class WindowSource(object):
             self.timeout_timer = gobject.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
 
     def delayed_region_timeout(self, delayed_region_time):
-        self.timeout_timer = None
         if self._damage_delayed:
             region_time = self._damage_delayed[0]
             if region_time==delayed_region_time:
@@ -455,7 +454,7 @@ class WindowSource(object):
     def may_send_delayed(self):
         """ send the delayed region for processing if there is no client backlog """
         if not self._damage_delayed:
-            log("window %s already removed from delayed list?", self.wid)
+            log("window %s delayed region already sent", self.wid)
             return False
         damage_time = self._damage_delayed[0]
         packets_backlog = self.get_packets_backlog()
