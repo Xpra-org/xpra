@@ -528,7 +528,8 @@ class XpraServerBase(object):
             root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         self.calculate_workarea()
         #take the clipboard if no-one else has yet:
-        if ss.clipboard_enabled and (self._clipboard_client is None or self._clipboard_client.closed):
+        if ss.clipboard_enabled and self._clipboard_helper is not None and \
+            (self._clipboard_client is None or self._clipboard_client.closed):
             self._clipboard_client = ss
         #so only activate this feature afterwards:
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
@@ -596,7 +597,7 @@ class XpraServerBase(object):
         if key_repeat:
             capabilities["key_repeat"] = key_repeat
             capabilities["key_repeat_modifiers"] = True
-        capabilities["clipboard"] = self._clipboard_client == server_source
+        capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
         if server_cipher:
             capabilities.update(server_cipher)
         add_version_info(capabilities)
@@ -680,6 +681,7 @@ class XpraServerBase(object):
 
 
     def send_clipboard_packet(self, *parts):
+        assert self._clipboard_helper is not None
         if self._clipboard_client:
             self._clipboard_client.send(*parts)
 
@@ -1236,6 +1238,7 @@ class XpraServerBase(object):
             assert self._clipboard_client==ss, \
                     "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
             assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
+            assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
             gobject.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
             return
         if proto in self._server_sources:
