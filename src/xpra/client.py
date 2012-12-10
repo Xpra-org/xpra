@@ -785,7 +785,7 @@ class XpraClient(XpraClientBase):
         self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
-        if self.clipboard_enabled:
+        if self.server_supports_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)
         if self.toggle_keyboard_sync:
