@@ -550,7 +550,7 @@ class Protocol(object):
                 except KeyboardInterrupt:
                     raise
                 except:
-                    log.warn("Unhandled error while processing packet from peer", exc_info=True)
+                    log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
                 NOYIELD or time.sleep(0)
 
     def flush_then_close(self, last_packet):
