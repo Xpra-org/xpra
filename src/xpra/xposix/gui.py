@@ -259,16 +259,16 @@ class ClientExtras(ClientExtrasBase):
             self.client.send("server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")})
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        if not self.has_x11_bell:
-            gdk.beep()
-            return
-        from wimpiggy.error import trap, XError
-        try:
-            from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
-            trap.call_unsynced(device_bell, window, device, bell_class, bell_id, percent, bell_name)
-        except XError, e:
-            log.error("error using device_bell: %s, will fallback to gdk beep from now on", e)
-            self.has_x11_bell = False
+        if self.has_x11_bell:
+            try:
+                from wimpiggy.error import trap, XError
+                from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
+                trap.call(device_bell, window, device, bell_class, bell_id, percent, bell_name)
+                return
+            except XError, e:
+                log.error("error using device_bell: %s, will fallback to gdk beep from now on", e)
+                self.has_x11_bell = False
+        ClientExtrasBase.system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def can_notify(self):
         return  self.has_dbusnotify or self.has_pynotify
