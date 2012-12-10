@@ -190,8 +190,8 @@ class ClientExtrasBase(object):
                 log.info("clipboard is disabled, not sending clipboard packet")
         self.clipboard_helper = helperClass(clipboard_send)
         def clipboard_toggled(*args):
-            log.debug("clipboard_toggled enabled=%s", self.client.clipboard_enabled)
-            if self.client.clipboard_enabled:
+            log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)
+            if self.client.clipboard_enabled and self.client.server_supports_clipboard:
                 self.clipboard_helper.send_all_tokens()
             else:
                 pass    #FIXME: todo!
@@ -537,7 +537,7 @@ class ClientExtrasBase(object):
         self.popup_menu_workaround(clipboard_submenu)
         def set_clipboard_menu(*args):
             c = self.client
-            can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard
+            can_clipboard = c.server_supports_clipboard and c.client_supports_clipboard and c.server_supports_clipboard
             log("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
             clipboard_menu.set_sensitive(can_clipboard)
             LABEL_TO_NAME = {"Disabled"  : None,
@@ -547,6 +547,7 @@ class ClientExtrasBase(object):
             for label, remote_clipboard in LABEL_TO_NAME.items():
                 clipboard_item = CheckMenuItem(label)
                 def remote_clipboard_changed(item):
+                    assert can_clipboard
                     item = ensure_item_selected(clipboard_submenu, item)
                     label = item.get_label()
                     remote_clipboard = LABEL_TO_NAME.get(label)
