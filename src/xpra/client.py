@@ -144,6 +144,7 @@ class XpraClient(XpraClientBase):
         self.last_ping_echoed_time = 0
         self.server_info_request = False
         self.server_last_info = None
+        self.info_request_pending = False
 
         #sound:
         self.speaker_enabled = bool(opts.speaker)
@@ -670,12 +671,15 @@ class XpraClient(XpraClientBase):
         self.idle_send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
 
     def _process_info_response(self, packet):
+        self.info_request_pending = False
         self.server_last_info = packet[1]
         log("info-response: %s", packet)
 
     def send_info_request(self):
         assert self.server_info_request
-        self.send("info-request", [self.uuid], self._id_to_window.keys())
+        if not self.info_request_pending:
+            self.info_request_pending = True
+            self.send("info-request", [self.uuid], self._id_to_window.keys())
 
     def send_quality(self, q):
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
