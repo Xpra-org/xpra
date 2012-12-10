@@ -286,9 +286,9 @@ class XpraServerBase(object):
                 self.notifications_forwarder.release()
             except Exception, e:
                 log.error("failed to release dbus notification forwarder: %s", e)
-        for proto in self._server_sources.keys():
+        log("cleanup will disconnect: %s", self._potential_protocols)
+        for proto in self._potential_protocols:
             self.disconnect_client(proto, "shutting down")
-
 
     def add_listen_socket(self, sock):
         sock.listen(5)
