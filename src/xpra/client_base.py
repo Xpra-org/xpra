@@ -93,6 +93,7 @@ class XpraClientBase(gobject.GObject):
         self.compression_level = opts.compression_level
         self.password = None
         self.password_file = opts.password_file
+        self.password_sent = False
         self.encoding = opts.encoding
         self.encryption = opts.encryption
         self.quality = opts.quality
@@ -226,6 +227,7 @@ class XpraClientBase(gobject.GObject):
         import hmac
         challenge_response = hmac.HMAC(self.password, salt)
         password_hash = challenge_response.hexdigest()
+        self.password_sent = True
         self.send_hello(password_hash)
 
     def set_server_encryption(self, props):
@@ -259,6 +261,8 @@ class XpraClientBase(gobject.GObject):
         log("password read from file %s is %s", self.password_file, self.password)
 
     def _process_hello(self, packet):
+        if not self.password_sent and self.password_file:
+            log.warn("Warning: the server did not request our password!")
         self.server_capabilities = packet[1]
         self.parse_server_capabilities(self.server_capabilities)
 
