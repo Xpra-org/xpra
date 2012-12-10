@@ -863,6 +863,9 @@ class ServerSource(object):
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
 
+    def send_info_response(self, info):
+        self.idle_send("info-response", info)
+
     def send_clipboard(self, packet):
         if self.clipboard_enabled:
             self.send(*packet)
@@ -1036,21 +1039,18 @@ class ServerSource(object):
         add_list_stats(info, "damage_packet_queue_pixels%s" % suffix,  qpixels)
         if len(qpixels)>0:
             info["damage_packet_queue_pixels%s.current" % suffix] = qpixels[-1]
-        self.ping()
 
         self.protocol.add_stats(info, suffix=suffix)
         self.statistics.add_stats(info, suffix=suffix)
-        batch_delays = []
-        if window_ids:
+        if len(window_ids)>0:
+            batch_delays = []
             total_pixels = 0
             total_time = 0.0
-            n = len(window_ids)
             for wid in window_ids:
                 ws = self.window_sources.get(wid)
                 if ws:
-                    if n>1:
-                        #per-window stats:
-                        ws.add_stats(info, suffix=suffix)
+                    #per-window stats:
+                    ws.add_stats(info, suffix=suffix)
                     #collect stats for global averages:
                     for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels
@@ -1058,9 +1058,12 @@ class ServerSource(object):
                     batch = ws.batch_config
                     for _,d in list(batch.last_delays):
                         batch_delays.append(d)
-            info["pixels_encoded_per_second%s" % suffix] = int(total_pixels / total_time)
-        if len(batch_delays)>0:
-            add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
+            v = 0
+            if total_time>0:
+                v = int(total_pixels / total_time)
+            info["pixels_encoded_per_second%s" % suffix] = v
+            if len(batch_delays)>0:
+                add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
     def set_quality(self, quality):
         if quality==-1:

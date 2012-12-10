@@ -142,6 +142,8 @@ class XpraClient(XpraClientBase):
         self.server_load = None
         self.client_ping_latency = maxdeque(maxlen=100)
         self.last_ping_echoed_time = 0
+        self.server_info_request = False
+        self.server_last_info = None
 
         #sound:
         self.speaker_enabled = bool(opts.speaker)
@@ -299,6 +301,7 @@ class XpraClient(XpraClientBase):
             "draw":                 self._process_draw,
             "ping":                 self._process_ping,
             "ping_echo":            self._process_ping_echo,
+            "info-response":        self._process_info_response,
             }.items():
             self._packet_handlers[k] = v
 
@@ -666,6 +669,14 @@ class XpraClient(XpraClientBase):
             _, sl = self.server_ping_latency[-1]
         self.idle_send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
 
+    def _process_info_response(self, packet):
+        self.server_last_info = packet[1]
+        log("info-response: %s", packet)
+
+    def send_info_request(self):
+        assert self.server_info_request
+        self.send("info-request", [self.uuid], self._id_to_window.keys())
+
     def send_quality(self, q):
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
         self.quality = q
@@ -712,6 +723,7 @@ class XpraClient(XpraClientBase):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
+        self.server_info_request = capabilities.get("info-request", False)
         e = capabilities.get("encoding")
         if e and e!=self.encoding:
             log.debug("server is using %s encoding" % e)

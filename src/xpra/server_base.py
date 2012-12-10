@@ -17,6 +17,7 @@ import hmac
 import uuid
 import time
 import socket
+import thread
 
 from wimpiggy.util import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -218,6 +219,7 @@ class XpraServerBase(object):
             "set-cursors":                          self._process_set_cursors,
             "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
+            "info-request":                         self._process_info_request,
                                           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -301,6 +303,7 @@ class XpraServerBase(object):
         sc = SocketConnection(sock, sock.getsockname(), address, sock.getpeername())
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
+        protocol.large_packets.append("info-response")
         protocol.salt = None
         protocol.set_compression_level(self.compression_level)
         self._potential_protocols.append(protocol)
@@ -485,9 +488,7 @@ class XpraServerBase(object):
                 self.send_disconnect(proto, "screenshot failed")
             return
         if info_req:
-            packet = ["hello", self.get_info(proto)]
-            proto._add_packet_to_queue(packet)
-            gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
+            thread.start_new_thread(self.send_hello_info, (proto,))
             return
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
@@ -584,6 +585,7 @@ class XpraServerBase(object):
         capabilities["xsettings-tuple"] = True
         capabilities["change-quality"] = True
         capabilities["client_window_properties"] = True
+        capabilities["info-request"] = True
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -595,15 +597,32 @@ class XpraServerBase(object):
             capabilities["key_repeat"] = key_repeat
             capabilities["key_repeat_modifiers"] = True
         capabilities["clipboard"] = self._clipboard_client == server_source
-
         if server_cipher:
             capabilities.update(server_cipher)
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
         server_source.hello(capabilities)
 
+    def send_hello_info(self, proto):
+        packet = ["hello", self.get_info(proto)]
+        proto._add_packet_to_queue(packet)
+        gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
+
+    def _process_info_request(self, proto, packet):
+        client_uuids, wids = packet[1:3]
+        sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
+        log("info-request: sources=%s, wids=%s", proto, packet, sources, wids)
+        try:
+            info = self.do_get_info(proto, sources, wids)
+            self._server_sources.get(proto).send_info_response(info)
+        except Exception, e:
+            log.error("error during info request: %s", e, exc_info=True)
 
     def get_info(self, proto):
+        return self.do_get_info(proto, self._server_sources.values(), self._id_to_window.keys())
+
+    def do_get_info(self, proto, server_sources, window_ids):
+        start = time.time()
         info = {}
         add_version_info(info)
         add_gtk_version_info(info, gtk)
@@ -623,22 +642,23 @@ class XpraServerBase(object):
         info["platform"] = sys.platform
         info["python_version"] = python_platform.python_version()
         info["windows"] = len(self._id_to_window)
-        info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
-        info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
         info["keyboard_sync"] = self.keyboard_sync
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
+        # other clients:
+        info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
+        info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
         #find the source to report on:
-        n = len(self._server_sources)
+        n = len(server_sources)
         if n==1:
-            ss = self._server_sources.values()[0]
+            ss = server_sources[0]
             ss.add_info(info)
-            ss.add_stats(info, self._id_to_window.keys())
+            ss.add_stats(info, window_ids)
         elif n>1:
             i = 0
-            for ss in self._server_sources.values():
+            for ss in server_sources:
                 ss.add_info(info, suffix="{%s}" % i)
-                ss.add_stats(info, self._id_to_window.keys(), suffix="{%s}" % i)
+                ss.add_stats(info, window_ids, suffix="{%s}" % i)
                 i += 1
         #threads:
         info_threads = proto.get_threads()
@@ -655,8 +675,8 @@ class XpraServerBase(object):
             if t not in info_threads:
                 info["thread[%s]" % i] = t.name
                 i += 1
+        log.info("get_info took %s", time.time()-start)
         return info
-
 
 
     def send_clipboard_packet(self, *parts):

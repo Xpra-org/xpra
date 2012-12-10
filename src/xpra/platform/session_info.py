@@ -237,8 +237,8 @@ class SessionInfo(gtk.Window):
         tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
             tb.new_row("Server Display", label(self.client.server_display))
-        if "fqdn" in scaps:
-            tb.new_row("Server Hostname", label(scaps.get("fqdn")))
+        if "hostname" in scaps:
+            tb.new_row("Server Hostname", label(scaps.get("hostname")))
         if self.client.server_platform:
             tb.new_row("Server Platform", label(self.client.server_platform))
         self.server_load_label = label()
@@ -265,13 +265,13 @@ class SessionInfo(gtk.Window):
         tb.new_row("Output Encryption", self.output_encryption_label)
 
         # Details:
-        tb = self.table_tab("browse.png", "Statistics", self.populate_details)
+        tb = self.table_tab("browse.png", "Statistics", self.populate_statistics)
         tb.widget_xalign = 1.0
         tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Latest"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Minimum"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Average"), 3, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
-        tb.attach(title_box("95 percentile"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+        tb.attach(title_box("90 percentile"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Maximum"), 5, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.inc()
 
@@ -282,6 +282,12 @@ class SessionInfo(gtk.Window):
         self.client_latency_labels = maths_labels()
         tb.add_row(label("Client Latency (ms)"), *self.client_latency_labels)
         if self.client.windows_enabled:
+            if self.client.server_info_request:
+                self.batch_labels = maths_labels()
+                tb.add_row(label("Batch Delay (ms)"), *self.batch_labels)
+                self.damage_labels = maths_labels()
+                tb.add_row(label("Damage Latency (ms)"), *self.damage_labels)
+
             self.regions_per_second_labels = maths_labels()
             tb.add_row(label("Regions/s"), *self.regions_per_second_labels)
             self.regions_sizes_labels = maths_labels()
@@ -297,7 +303,7 @@ class SessionInfo(gtk.Window):
             tb.new_row("Trays Managed", self.trays_managed_label),
 
         self.graph_box = gtk.VBox(False, 10)
-        self.add_tab("statistics.png", "Graphs", self.populate_statistics, self.graph_box)
+        self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
         bandwidth_label = "Number of bytes measured by the networks sockets"
         if SHOW_PIXEL_STATS:
             bandwidth_label += ",\nand number of pixels rendered"
@@ -489,7 +495,10 @@ class SessionInfo(gtk.Window):
         self.output_encryption_label.set_text((p.cipher_out_name or "None")+suffix)
         return True
 
-    def populate_details(self):
+    def populate_statistics(self):
+        log.info("populate_statistics()")
+        self.client.send_ping()
+        self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
             for i in range(len(labels)):
@@ -503,10 +512,10 @@ class SessionInfo(gtk.Window):
             svalues = sorted(values)
             l = len(svalues)
             assert l>0
-            if l<20:
+            if l<10:
                 index = l-1
             else:
-                index = int(l*95/100)
+                index = int(l*90/100)
             index = max(0, min(l-1, index))
             pct = svalues[index]
             disp = values[-1], min(values), avg, pct, max(values)
@@ -520,6 +529,15 @@ class SessionInfo(gtk.Window):
             cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
             setlabels(self.client_latency_labels, cpl)
         if self.client.windows_enabled:
+            if self.client.server_info_request:
+                def values_from_info(prefix):
+                    def getv(name):
+                        if self.client.server_last_info is None:
+                            return ""
+                        return self.client.server_last_info.get(name, "")
+                    return getv(prefix+".cur"), getv(prefix+".min"), getv(prefix+".avg"), getv(prefix+".90p"), getv(prefix+".max")
+                setall(self.batch_labels, values_from_info("batch_delay"))
+                setall(self.damage_labels, values_from_info("damage_out_latency"))
             region_sizes = []
             rps = []
             pps = []
@@ -559,7 +577,7 @@ class SessionInfo(gtk.Window):
             self.trays_managed_label.set_text(str(trays))
         return True
 
-    def populate_statistics(self):
+    def populate_graphs(self):
         box = self.tab_box
         _, h = box.size_request()
         _, bh = self.tab_button_box.size_request()
