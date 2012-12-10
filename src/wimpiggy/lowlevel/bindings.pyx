@@ -1609,6 +1609,10 @@ def device_bell(pywindow, deviceSpec, bellClass, bellID, percent, name):
     display = get_xdisplay_for(pywindow)
     window = get_xwindow(pywindow)
     name_atom = get_xatom(name)
+    #until (if ever) we replicate the same devices on the server,
+    #use the default device:
+    deviceSpec = XkbUseCoreKbd
+    bellID = XkbDfltXIId
     return XkbDeviceBell(display, window, deviceSpec, bellClass, bellID,  percent, name_atom)
 
 
