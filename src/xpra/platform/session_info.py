@@ -24,6 +24,18 @@ N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
 
 
+def add_close_accel(window, callback):
+    if is_gtk3():
+        return      #TODO: implement accel for gtk3
+    # key accelerators
+    accel_group = gtk.AccelGroup()
+    accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+    window.add_accel_group(accel_group)
+    accel_group = gtk.AccelGroup()
+    escape_key, modifier = gtk.accelerator_parse('Escape')
+    accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
+    window.add_accel_group(accel_group)
+
 def label(text="", tooltip=None):
     l = gtk.Label(text)
     if tooltip:
@@ -322,7 +334,12 @@ class SessionInfo(gtk.Window):
         self.connect('delete_event', window_deleted)
         self.show_tab(self.tabs[0][1])
         self.set_size_request(-1, 480)
+        self.populate()
         self.populate_all()
+        gobject.timeout_add(1000, self.populate)
+        self.connect("realize", self.populate_graphs)
+        add_close_accel(self, self.destroy)
+
 
     def table_tab(self, icon_filename, title, populate_cb):
         tb = TableBuilder()
@@ -407,7 +424,7 @@ class SessionInfo(gtk.Window):
             icon = self.get_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
 
-    def populate_info(self, *args):
+    def populate(self, *args):
         if self.is_closed:
             return False
         self.client.send_ping()
@@ -497,7 +514,6 @@ class SessionInfo(gtk.Window):
 
     def populate_statistics(self):
         log("populate_statistics()")
-        self.client.send_ping()
         self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
@@ -577,7 +593,7 @@ class SessionInfo(gtk.Window):
             self.trays_managed_label.set_text(str(trays))
         return True
 
-    def populate_graphs(self):
+    def populate_graphs(self, *args):
         box = self.tab_box
         _, h = box.size_request()
         _, bh = self.tab_button_box.size_request()
@@ -663,6 +679,6 @@ class SessionInfo(gtk.Window):
         else:
             log.warn("unknown chooser response: %d" % response)
 
-    def destroy(self):
+    def destroy(self, *args):
         self.is_closed = True
         gtk.Window.destroy(self)

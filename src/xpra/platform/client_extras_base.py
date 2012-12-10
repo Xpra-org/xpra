@@ -77,18 +77,6 @@ def set_checkeditems(submenu, is_match_func):
             if a!=v:
                 x.set_active(v)
 
-def add_close_accel(window, callback):
-    if is_gtk3():
-        return      #TODO: implement accel for gtk3
-    # key accelerators
-    accel_group = gtk.AccelGroup()
-    accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
-    window.add_accel_group(accel_group)
-    accel_group = gtk.AccelGroup()
-    escape_key, modifier = gtk.accelerator_parse('Escape')
-    accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
-    window.add_accel_group(accel_group)
-
 def get_build_info():
     info = []
     try:
@@ -173,7 +161,8 @@ class ClientExtrasBase(object):
 
     def cleanup(self):
         self.close_about()
-        self.close_session_info()
+        if self.session_info_window:
+            self.session_info_window.destroy()
 
     def supports_mmap(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED
@@ -322,19 +311,8 @@ class ClientExtrasBase(object):
             if not pixbuf and self.tray_icon:
                 pixbuf = self.get_pixbuf(self.tray_icon)
             self.session_info_window = SessionInfo(self.client, self.session_name, pixbuf, self.connection, self.get_pixbuf)
-            self.session_info_window.populate_info()
-            add_close_accel(self.session_info_window, self.close_session_info)
-            gobject.timeout_add(1000, self.session_info_window.populate_info)
             self.session_info_window.show_all()
         self.session_info_window.present()
-
-    def close_session_info(self, *args):
-        try:
-            if self.session_info_window:
-                self.session_info_window.destroy()
-                self.session_info_window = None
-        except:
-            log.error("closing session info", exc_info=True)
 
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
