@@ -608,7 +608,6 @@ class XpraServerBase(object):
         add_version_info(info)
         add_gtk_version_info(info, gtk)
         info["hostname"] = socket.gethostname()
-        info["fqdn"] = socket.getfqdn()
         info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
