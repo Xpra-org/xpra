@@ -454,7 +454,7 @@ if sys.platform.startswith("win"):
     setup_options["options"] = {
                                 "py2exe": {
                                            "skip_archive"   : False,
-                                           "optimize"       : 2,    #2=extra optimization (like python -OO)
+                                           "optimize"       : 0,    #WARNING: do not change - causes crashes
                                            "unbuffered"     : True,
                                            "packages"       : packages,
                                            "includes"       : py2exe_includes,
