@@ -34,7 +34,7 @@ class TestTimeoutClient(GLibXpraClient):
 
     def quit(self, *args):
         log.info("server correctly terminated the connection")
-        GLibXpraClient.quit(self)
+        GLibXpraClient.quit(self, 0)
 
 def main():
     import sys

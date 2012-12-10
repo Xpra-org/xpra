@@ -26,7 +26,10 @@ def test_DoS(client_class_constructor, args):
     opts = AdHocStruct()
     opts.password_file = ""
     opts.encoding = "rgb24"
-    opts.jpegquality = 0
+    opts.jpegquality = 70
+    opts.quality = 70
+    opts.compression_level = 1
+    opts.encryption = ""
     display = sys.argv[1]
     target = DotXpra().socket_path(display)
     print("will attempt to connect to socket: %s" % target)
