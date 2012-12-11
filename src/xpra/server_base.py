@@ -18,6 +18,7 @@ import uuid
 import time
 import socket
 import thread
+import signal
 
 from wimpiggy.util import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -38,6 +39,7 @@ log = Logger()
 
 import xpra
 from xpra.scripts.main import python_platform
+from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
 from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, has_rencode
@@ -273,7 +275,9 @@ class XpraServerBase(object):
 
     def signal_quit(self, signum, frame):
         log.info("got signal %s, exiting", signum)
-        self.quit(False)
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+        gobject.idle_add(self.quit, False)
 
     def quit(self, upgrading):
         self._upgrading = upgrading
