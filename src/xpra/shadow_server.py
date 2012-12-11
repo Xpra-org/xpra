@@ -7,6 +7,7 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 import gobject
+import socket
 
 try:
     from StringIO import StringIO   #@UnusedImport
@@ -40,6 +41,12 @@ class RootWindowModel():
     def get_property(self, prop):
         if prop=="client-contents":
             return self.window
+        elif prop=="title":
+            return self.window.get_screen().get_display().get_name()
+        elif prop=="client-machine":
+            return socket.gethostname()
+        else:
+            raise Exception("invalid property: %s" % prop)
         return None
 
     def get_dimensions(self):
@@ -94,7 +101,7 @@ class XpraShadowServer(XpraServerBase):
             window = self._id_to_window[wid]
             assert window == self.root_window_model
             w, h = self.root.get_size()
-            ss.new_window("new-window", wid, window, 0, 0, w, h, (), self.client_properties.get(ss.uuid))
+            ss.new_window("new-window", wid, window, 0, 0, w, h, ("title", "client-machine"), self.client_properties.get(ss.uuid))
         #ss.send_cursor(self.cursor_data)
 
 
