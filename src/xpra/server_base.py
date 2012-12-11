@@ -439,11 +439,8 @@ class XpraServerBase(object):
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
         server_uuid = capabilities.get("server_uuid")
-        if server_uuid:
-            if server_uuid==self.uuid:
-                self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")
-                return
-            log.warn("This client is running within the Xpra server %s", server_uuid)
+        if not self.check_server_uuid(proto, server_uuid):
+            return
 
         screenshot_req = capabilities.get("screenshot_request", False)
         info_req = capabilities.get("info_request", False)
@@ -574,6 +571,14 @@ class XpraServerBase(object):
 
         # now we can set the modifiers to match the client
         self.send_windows_and_cursors(ss)
+
+    def check_server_uuid(self, proto, server_uuid):
+        if server_uuid:
+            if server_uuid==self.uuid:
+                self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")
+                return  False
+            log.warn("This client is running within the Xpra server %s", server_uuid)
+        return True
 
     def get_transient_for(self, window):
         return  None

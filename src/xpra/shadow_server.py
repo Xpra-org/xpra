@@ -75,6 +75,14 @@ class XpraShadowServer(XpraServerBase):
         self._damage(self.root_window_model, 0, 0, w, h)
         return True
 
+    def check_server_uuid(self, proto, server_uuid):
+        if server_uuid:
+            if server_uuid==self.uuid:
+                log.warn("Warning: shadowing your own display can be quite confusing")
+            else:
+                log.warn("This client is running within the Xpra server %s", server_uuid)
+        return True
+
     def x11_init(self, clobber):
         self.init_x11_atoms()
 
