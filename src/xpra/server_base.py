@@ -84,6 +84,12 @@ class XpraServerBase(object):
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
 
+        ### Misc. state:
+        self._settings = {}
+        self._xsettings_manager = None
+        self._upgrading = False
+        self._tray = None
+
         self.load_existing_windows(opts.system_tray)
 
         ## These may get set by the client:
@@ -110,12 +116,6 @@ class XpraServerBase(object):
         self._clipboard_client = None
         if opts.clipboard:
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet)
-
-        ### Misc. state:
-        self._settings = {}
-        self._xsettings_manager = None
-        self._upgrading = False
-        self._tray = None
 
         self.compression_level = opts.compression_level
         self.password_file = opts.password_file
