@@ -442,8 +442,7 @@ class XpraServerBase(object):
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
-        server_uuid = capabilities.get("server_uuid")
-        if not self.check_server_uuid(proto, server_uuid):
+        if not self.sanity_checks(proto, capabilities):
             return
 
         screenshot_req = capabilities.get("screenshot_request", False)
@@ -576,7 +575,8 @@ class XpraServerBase(object):
         # now we can set the modifiers to match the client
         self.send_windows_and_cursors(ss)
 
-    def check_server_uuid(self, proto, server_uuid):
+    def sanity_checks(self, proto, capabilities):
+        server_uuid = capabilities.get("server_uuid")
         if server_uuid:
             if server_uuid==self.uuid:
                 self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")

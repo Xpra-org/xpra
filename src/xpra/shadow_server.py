@@ -75,10 +75,15 @@ class XpraShadowServer(XpraServerBase):
         self._damage(self.root_window_model, 0, 0, w, h)
         return True
 
-    def check_server_uuid(self, proto, server_uuid):
+    def sanity_checks(self, proto, capabilities):
+        server_uuid = capabilities.get("server_uuid")
         if server_uuid:
             if server_uuid==self.uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
+                clipboard = self._clipboard_helper and capabilities.get("clipboard", True)
+                if clipboard:
+                    log.warn("clipboard sharing was enabled and has now been disabled")
+                    capabilities["clipboard"] = False
             else:
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
