@@ -19,6 +19,7 @@ class ClientTray(object):
         self._client = client
         self._id = wid
         self._geometry = None
+        self.group_leader = None
 
         self._backing = None
         self.tray_widget = gtk.StatusIcon()
