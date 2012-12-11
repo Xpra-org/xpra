@@ -30,7 +30,7 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_screen_size,             #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
                                )
-from wimpiggy.prop import prop_set
+from wimpiggy.prop import prop_set, prop_get
 from wimpiggy.error import XError, trap
 
 from wimpiggy.log import Logger
@@ -50,6 +50,12 @@ from xpra.version_util import is_compatible_with, add_version_info, add_gtk_vers
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
+def save_uuid(uuid):
+    prop_set(gtk.gdk.get_default_root_window(),
+                           "_XPRA_SERVER_UUID", "latin1", uuid)    
+def get_uuid():
+    return prop_get(gtk.gdk.get_default_root_window(),
+                                  "_XPRA_SERVER_UUID", "latin1", ignore_errors=True)
 
 class XpraServerBase(object):
 
@@ -57,6 +63,7 @@ class XpraServerBase(object):
 
         self.x11_init(clobber)
 
+        self.init_uuid()
         self.start_time = time.time()
 
         # This must happen early, before loading in windows at least:
@@ -172,6 +179,13 @@ class XpraServerBase(object):
         for sock in sockets:
             self.add_listen_socket(sock)
 
+    def init_uuid(self):
+        # Define a server UUID if needed:
+        self.uuid = get_uuid()
+        if not self.uuid:
+            self.uuid = unicode(uuid.uuid4().hex)
+            save_uuid(self.uuid)
+        log.info("server uuid is %s", self.uuid)
 
     def x11_init(self, clobber):
         self.init_x11_atoms()
@@ -424,6 +438,12 @@ class XpraServerBase(object):
             proto._add_packet_to_queue(packet)
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
+        server_uuid = capabilities.get("server_uuid")
+        if server_uuid:
+            if server_uuid==self.uuid:
+                self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")
+                return
+            log.warn("This client is running within the Xpra server %s", server_uuid)
 
         screenshot_req = capabilities.get("screenshot_request", False)
         info_req = capabilities.get("info_request", False)

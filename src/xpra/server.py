@@ -318,7 +318,6 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 window = SystemTrayWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
                 self._send_new_tray_window_packet(wid, window)
-                return
             else:
                 window = OverrideRedirectWindowModel(raw_window)
                 self._add_new_window_common(window)
