@@ -152,7 +152,11 @@ class XpraClient(XpraClientBase):
         self.speaker_enabled = bool(opts.speaker)
         self.microphone_enabled = bool(opts.microphone)
         self.speaker_codecs = opts.speaker_codec
+        if len(self.speaker_codecs)==0:
+            self.speaker_enabled = False
         self.microphone_codecs = opts.microphone_codec
+        if len(self.microphone_codecs)==0:
+            self.microphone_enabled = False
         self.sound_sink = None
         self.sound_source = None
         self.server_pulseaudio_id = None

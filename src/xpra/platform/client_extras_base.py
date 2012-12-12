@@ -698,7 +698,7 @@ class ClientExtrasBase(object):
         def spk_off(*args):
             self.client.stop_receiving_sound()
         def speaker_state(*args):
-            if self.client.server_sound_send:
+            if self.client.server_sound_send and self.client.speaker_enabled:
                 on = self.client.sound_sink is not None
                 speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off))
             else:
@@ -714,7 +714,7 @@ class ClientExtrasBase(object):
         def mic_off(*args):
             self.client.stop_sending_sound()
         def microphone_state(*args):
-            if self.client.server_sound_send:
+            if self.client.server_sound_send and self.client.microphone_enabled:
                 on = self.client.sound_source is not None
                 microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off))
             else:
