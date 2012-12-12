@@ -150,14 +150,32 @@ def main():
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.INFO)
     f = open(filename, "wb")
-    ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)
+    from xpra.sound.pulseaudio_util import get_pa_device_options
+    monitor_devices = get_pa_device_options(True, False)
+    log("found pulseaudio monitor devices: %s", monitor_devices)
+    if len(monitor_devices)==0:
+        log.warn("could not detect any pulseaudio monitor devices - will use a test source")
+        ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)
+    else:
+        monitor_device = monitor_devices.items()[0][0]
+        log.info("using pulseaudio source device: %s", monitor_device)
+        ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
     def new_buffer(ss, data):
         f.write(data)
     ss.connect("new-buffer", new_buffer)
     ss.start()
 
+    import signal
+    def deadly_signal(*args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, deadly_signal)
+    signal.signal(signal.SIGTERM, deadly_signal)
+
     import gtk
     gtk.main()
+
+    log.info("wrote %s bytes to %s", f.tell(), filename)
+    f.close()
 
 
 if __name__ == "__main__":

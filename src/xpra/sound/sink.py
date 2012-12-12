@@ -162,6 +162,19 @@ def main():
     ss.add_data(data)
     ss.start()
 
+    import signal
+    def deadly_signal(*args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, deadly_signal)
+    signal.signal(signal.SIGTERM, deadly_signal)
+
+    def check_for_end(*args):
+        if not(ss.data):
+            log.info("no more data")
+            gtk.main_quit()
+        return True
+    gobject.timeout_add(1000, check_for_end)
+
     import gtk
     gtk.main()
 
