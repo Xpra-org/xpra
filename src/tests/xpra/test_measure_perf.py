@@ -539,7 +539,10 @@ def no_stats(last_record=None):
 def xpra_get_stats(last_record=None):
     if XPRA_VERSION_NO<[0, 3]:
         return  no_stats(last_record)
-    out = getoutput(XPRA_INFO_COMMAND)
+    info_cmd = XPRA_INFO_COMMAND
+    if password_filename:
+        info_cmd.append("--password-file=%s" % password_filename)
+    out = getoutput(info_cmd)
     if not out:
         return  no_stats(last_record)
     d = {}
