@@ -21,7 +21,7 @@ from xpra.server_base import XpraServerBase
 from xpra.protocol import Compressed
 from xpra.window_source import DamageBatchConfig
 
-class RootWindowModel():
+class RootWindowModel(object):
 
     def __init__(self, root_window):
         self.window = root_window
