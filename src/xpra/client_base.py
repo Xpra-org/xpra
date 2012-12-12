@@ -451,4 +451,4 @@ class StopXpraClient(GLibXpraClient):
         GLibXpraClient.__init__(self, conn, opts)
 
     def _process_hello(self, packet):
-        self.send("shutdown-server")
+        gobject.idle_add(self.send, "shutdown-server")
