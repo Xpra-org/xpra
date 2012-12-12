@@ -362,6 +362,7 @@ class XpraServerBase(object):
             if ss:
                 ss.close()
                 del self._server_sources[protocol]
+                log.info("xpra client disconnected.")
         #so it is now safe to clear them:
         #(this may fail during shutdown - which is ok)
         try:
