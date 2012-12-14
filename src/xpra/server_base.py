@@ -31,7 +31,7 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_screen_size,             #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
                                )
-from wimpiggy.prop import prop_set, prop_get
+from wimpiggy.prop import prop_set
 from wimpiggy.error import XError, trap
 
 from wimpiggy.log import Logger
@@ -41,6 +41,7 @@ import xpra
 from xpra.scripts.main import python_platform
 from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
+from xpra.server_uuid import save_uuid, get_uuid
 from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, has_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
@@ -51,13 +52,6 @@ from xpra.version_util import is_compatible_with, add_version_info, add_gtk_vers
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
-
-def save_uuid(uuid):
-    prop_set(gtk.gdk.get_default_root_window(),
-                           "_XPRA_SERVER_UUID", "latin1", uuid)    
-def get_uuid():
-    return prop_get(gtk.gdk.get_default_root_window(),
-                                  "_XPRA_SERVER_UUID", "latin1", ignore_errors=True)
 
 class XpraServerBase(object):
 

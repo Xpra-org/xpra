@@ -595,12 +595,11 @@ class XpraClient(XpraClientBase):
         if self.mmap_file:
             capabilities["mmap_file"] = self.mmap_file
             capabilities["mmap_token"] = self.mmap_token
-        #we may be running inside another server!
-        try:
-            from xpra.server_base import get_uuid
+        #ugly platform test: we get lockups when we try to import this on win32!
+        if not sys.platform.startswith("win"):
+            #we may be running inside another server!
+            from xpra.server_uuid import get_uuid
             capabilities["server_uuid"] = get_uuid() or ""
-        except Exception, e:
-            log.error("could not get server uuid: %s", e)
         capabilities["randr_notify"] = True
         capabilities["compressible_cursors"] = True
         capabilities["dpi"] = self.dpi
