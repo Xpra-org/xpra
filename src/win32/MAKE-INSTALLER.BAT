@@ -108,11 +108,11 @@ COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
 REM DEL dist\av*dll
 REM DEL dist\libdvd*dll
-:NOGSTREAMER
 
 REM "Overwrite the old version shipped with gstreamer - not sure why the PYTHONPATH order is not honoured.."
 ECHO ****** Fix GTK DLLs
 XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
+:NOGSTREAMER
 
 ECHO ****** Adding TortoisePlink
 ECHO "%TORTOISESVN%\bin\TortoisePlink.exe"
