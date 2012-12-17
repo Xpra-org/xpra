@@ -340,9 +340,22 @@ class XpraServerBase(object):
         if proto._closed:
             return
         def force_disconnect(*args):
+            self.cleanup_source(proto)
             proto.close()
         proto._add_packet_to_queue(["disconnect", reason])
         gobject.timeout_add(1000, force_disconnect)
+
+    def cleanup_source(self, protocol):
+        #this ensures that from now on we ignore any incoming packets coming
+        #from this connection as these could potentially set some keys pressed, etc
+        source = self._server_sources.get(protocol)
+        if source:
+            source.close()
+            del self._server_sources[protocol]
+            log.info("xpra client disconnected.")
+        if protocol in self._potential_protocols:
+            self._potential_protocols.remove(protocol)
+        return source
 
     def disconnect_client(self, protocol, reason):
         ss = None
@@ -350,13 +363,7 @@ class XpraServerBase(object):
             log.info("Disconnecting existing client %s, reason is: %s", protocol, reason)
             # send message asking client to disconnect (politely):
             protocol.flush_then_close(["disconnect", reason])
-            #this ensures that from now on we ignore any incoming packets coming
-            #from this connection as these could potentially set some keys pressed, etc
-            ss = self._server_sources.get(protocol)
-            if ss:
-                ss.close()
-                del self._server_sources[protocol]
-                log.info("xpra client disconnected.")
+            self.cleanup_source(protocol)
         #so it is now safe to clear them:
         #(this may fail during shutdown - which is ok)
         try:
@@ -371,15 +378,9 @@ class XpraServerBase(object):
 
     def _process_connection_lost(self, proto, packet):
         log.info("Connection lost")
-        if proto in self._potential_protocols:
-            self._potential_protocols.remove(proto)
         if self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
-        source = self._server_sources.get(proto)
-        if source:
-            del self._server_sources[proto]
-            source.close()
-            log.info("xpra client disconnected.")
+        source = self.cleanup_source(proto)
         if len(self._server_sources)==0:
             self._clear_keys_pressed()
             self._focus(source, 0, [])
