@@ -34,6 +34,9 @@ EXIT_PASSWORD_FILE_ERROR = 4
 EXIT_INCOMPATIBLE_VERSION = 5
 EXIT_ENCRYPTION = 6
 
+DEFAULT_TIMEOUT = 20*1000
+
+
 class ClientSource(object):
     def __init__(self, protocol):
         self._priority_packets = []
@@ -312,7 +315,11 @@ class GLibXpraClient(XpraClientBase):
     def __init__(self, conn, opts):
         XpraClientBase.__init__(self, opts)
         self.ready(conn)
+        gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
         self.send_hello()
+
+    def timeout(self, *args):
+        log.warn("timeout!")
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
@@ -364,10 +371,10 @@ class ScreenshotXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
-        def screenshot_timeout(*args):
-            self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
-        gobject.timeout_add(10*1000, screenshot_timeout)
         GLibXpraClient.__init__(self, conn, opts)
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
 
     def _process_screenshot(self, packet):
         (w, h, encoding, _, img_data) = packet[1:6]
@@ -395,11 +402,8 @@ class InfoXpraClient(GLibXpraClient):
         it queries the server with an 'info' request
     """
 
-    def __init__(self, conn, opts):
-        def info_timeout(*args):
-            self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
-        gobject.timeout_add(10*1000, info_timeout)
-        GLibXpraClient.__init__(self, conn, opts)
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
     def _process_hello(self, packet):
         log.debug("process_hello: %s", packet)
@@ -422,12 +426,8 @@ class VersionXpraClient(GLibXpraClient):
         it queries the server for version information and prints it out
     """
 
-    def __init__(self, conn, opts):
-        def version_timeout(*args):
-            log.error("timeout: did not receive the version")
-            self.quit(5)
-        gobject.timeout_add(10*1000, version_timeout)
-        GLibXpraClient.__init__(self, conn, opts)
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the version")
 
     def _process_hello(self, packet):
         log.debug("process_hello: %s", packet)
@@ -444,11 +444,8 @@ class VersionXpraClient(GLibXpraClient):
 class StopXpraClient(GLibXpraClient):
     """ stop a server """
 
-    def __init__(self, conn, opts):
-        def stop_timeout(*args):
-            self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
-        gobject.timeout_add(5*1000, stop_timeout)
-        GLibXpraClient.__init__(self, conn, opts)
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
     def _process_hello(self, packet):
         gobject.idle_add(self.send, "shutdown-server")
