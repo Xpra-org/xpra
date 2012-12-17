@@ -93,4 +93,6 @@ class SocketConnection(Connection):
         return self._s.close()
 
     def __str__(self):
-        return "SocketConnection(%s - %s)" % (self.local, self.remote)
+        if self.remote:
+            return "SocketConnection(%s - %s)" % (self.local, self.remote)
+        return "SocketConnection(%s)" % self.local
