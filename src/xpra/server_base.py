@@ -268,7 +268,7 @@ class XpraServerBase(object):
             })
 
     def signal_quit(self, signum, frame):
-        log.info("got signal %s, exiting", signum)
+        log.info("got signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         gobject.idle_add(self.quit, False)
