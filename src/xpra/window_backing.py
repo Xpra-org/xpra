@@ -17,6 +17,7 @@ log = Logger()
 
 from threading import Lock
 from xpra.scripts.main import ENCODINGS
+from xpra.xor import xor_str
 
 PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
 
@@ -30,6 +31,7 @@ class Backing(object):
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap
         self._backing = None
+        self._last_pixmap_data = None
         self._video_decoder = None
         self._video_decoder_lock = Lock()
 
@@ -305,9 +307,20 @@ class PixmapBacking(Backing):
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
         assert "rgb24" in ENCODINGS
+        delta = options.get("delta", -1)        #the delta frame we reference
+        if delta>=0:
+            if self._last_pixmap_data:
+                lwidth, lheight, store, ldata = self._last_pixmap_data
+                assert width==lwidth and height==lheight and delta==store
+                img_data = xor_str(img_data, ldata)
+            else:
+                raise Exception("delta region references pixmap data we do not have!")
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         self.fire_paint_callbacks(callbacks, True)
+        store = options.get("store", -1)
+        if store>=0:
+            self._last_pixmap_data =  width, height, store, img_data
         return  False
 
     def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -332,9 +345,9 @@ class PixmapBacking(Backing):
         return  False
 
     def do_paint_pixbuf(self, pixbuf, x, y, width, height, options, callbacks):
-        gc = self._backing.new_gc()
-        self._backing.draw_pixbuf(gc, pixbuf, 0, 0, x, y, width, height)
-        self.fire_paint_callbacks(callbacks, True)
+        img_data = pixbuf.get_pixels()
+        rowstride = pixbuf.get_rowstride()
+        self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """

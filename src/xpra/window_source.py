@@ -49,6 +49,7 @@ from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.maths import dec1, add_list_stats, add_weighted_list_stats, calculate_time_weighted_average, calculate_timesize_weighted_average
 from xpra.batch_delay_calculator import calculate_batch_delay
+from xpra.xor import xor_str        #@UnresolvedImport
 
 
 class DamageBatchConfig(object):
@@ -215,6 +216,8 @@ class WindowSource(object):
                                                         #supports rgb24 compression outside network layer (unwrapped)
         self.uses_swscale = encoding_options.get("uses_swscale", True)
                                                         #client uses uses_swscale (has extra limits on sizes)
+        self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("jpeg", "png", "webp", "rgb24")]
+        self.last_pixmap_data = None
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -616,7 +619,7 @@ class WindowSource(object):
             return
         process_damage_time = time.time()
         data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options)
-        if not data:
+        if not data or self.is_cancelled(sequence):
             return
         self._sequence += 1
         log("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
@@ -624,7 +627,7 @@ class WindowSource(object):
             #NOTE: this function is called from the damage data thread!
             packet = self.make_data_packet(*data)
             if packet:
-                self.queue_damage_packet(pixmap, packet, damage_time, process_damage_time)
+                self.queue_damage_packet(packet, damage_time, process_damage_time)
                 #auto-refresh:
                 if self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
@@ -670,7 +673,7 @@ class WindowSource(object):
         log("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
         self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
 
-    def queue_damage_packet(self, pixmap, packet, damage_time, process_damage_time):
+    def queue_damage_packet(self, packet, damage_time, process_damage_time):
         """
             Adds the given packet to the damage_packet_queue,
             (warning: this runs from the non-UI thread 'data_to_packet')
@@ -721,7 +724,7 @@ class WindowSource(object):
         if self._damage_delayed is not None and self._damage_delayed_expired:
             gobject.idle_add(self.may_send_delayed)
 
-    def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, data, rowstride, sequence, options):
+    def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, rgbdata, rowstride, sequence, options):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'damage_data_queue'
@@ -738,14 +741,24 @@ class WindowSource(object):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
-        assert data, "data is missing"
+        assert rgbdata, "data is missing"
         log("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and len(data)>256:
+        if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
             #try with mmap (will change coding to "mmap" if it succeeds)
-            coding, data = self.mmap_send(coding, data)
+            coding, data = self.mmap_send(coding, rgbdata)
+        else:
+            data = rgbdata
+        #if client supports delta pre-compression for this encoding, use it if we can:
+        delta = -1
+        if coding in self.supports_delta:
+            if self.last_pixmap_data is not None:
+                lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
+                if lw==w and lh==h and lcoding==coding and lsequence+1==sequence and len(ldata)==len(rgbdata):
+                    #xor with the last frame:
+                    delta = lsequence
+                    data = xor_str(rgbdata, ldata)
 
-        client_options = {}
         if coding in ("jpeg", "png"):
             data, client_options = self.PIL_encode(w, h, coding, data, rowstride, options)
         elif coding=="x264":
@@ -761,7 +774,7 @@ class WindowSource(object):
         elif coding=="webp":
             data, client_options = self.webp_encode(w, h, data, rowstride, options)
         elif coding=="mmap":
-            pass        #already handled via mmap_send
+            client_options = {}  #actual sending is already handled via mmap_send above
         else:
             raise Exception("invalid encoding: %s" % coding)
         #check cancellation list again since the code above may take some time:
@@ -769,9 +782,17 @@ class WindowSource(object):
         if coding!="mmap" and self.is_cancelled(sequence):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
+        #tell client about delta/store for this pixmap:
+        if delta>=0:
+            client_options["delta"] = delta
+        if coding in self.supports_delta:
+            self.last_pixmap_data = w, h, coding, sequence, rgbdata
+            client_options["store"] = sequence
         #actual network packet:
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
         end = time.time()
+        #log("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
+        #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)
         self._damage_packet_sequence += 1
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
         #record number of frames and pixels:

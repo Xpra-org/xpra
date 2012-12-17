@@ -5,4 +5,5 @@ wimpiggy/gdk/gdk_atoms.c
 xpra/x264/codec.c
 xpra/vpx/codec.c
 xpra/rencode/rencode.c
+xpra/xor/cyxor.c
 etc/xpra/xpra.conf

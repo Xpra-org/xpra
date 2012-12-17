@@ -569,7 +569,8 @@ cd parti-all-%{version}
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/gdk/gdk_atoms.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/wimpiggy/bindings.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/wait_for_x_server.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/rencode
+rm -rf ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/rencode
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/xor/cyxor.so
 %if 0%{?static_x264}
 echo "Note: static x264 included in generic rpm"
 %else

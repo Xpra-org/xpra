@@ -68,6 +68,10 @@ sound_ENABLED = True
 
 
 
+xor_ENABLED = True
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
@@ -85,13 +89,15 @@ for arg in sys.argv:
         server_ENABLED = False
     elif arg == "--without-sound":
         sound_ENABLED = False
+    elif arg == "--without-xor":
+        xor_ENABLED = False
     elif arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
-print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, force Xdummy=%s" %
-      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xdummy_ENABLED))
+print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, xor=%s, force Xdummy=%s" %
+      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xor_ENABLED, xdummy_ENABLED))
 
 
 #*******************************************************************************
@@ -121,7 +127,7 @@ data_files = []
 setup_options["data_files"] = data_files
 packages = ["wimpiggy",
           "parti", "parti.trays", "parti.addons", "parti.scripts",
-          "xpra", "xpra.scripts", "xpra.platform",
+          "xpra", "xpra.scripts", "xpra.platform", "xpra.xor",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
@@ -571,6 +577,12 @@ elif sys.platform.startswith("win"):
     py2exe_excludes.append("xpra.sound")
     py2exe_excludes.append("pygst")
     py2exe_excludes.append("gst")
+
+
+
+if xor_ENABLED:
+    cython_add(Extension("xpra.xor.cyxor",
+                ["xpra/xor/cyxor.pyx"]))
 
 
 

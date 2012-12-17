@@ -633,6 +633,10 @@ class XpraClient(XpraClientBase):
                     capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
         capabilities["encoding.initial_quality"] = 70
+        if is_gtk3():
+            capabilities["encoding.supports_delta"] = []    #need implementing in window_backing
+        else:
+            capabilities["encoding.supports_delta"] = ("jpeg", "png", "webp", "rgb24")
         try:
             import xpra.sound
             try:
