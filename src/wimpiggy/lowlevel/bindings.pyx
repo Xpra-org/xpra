@@ -2057,6 +2057,8 @@ def add_event_receiver(window, receiver):
     if receivers is None:
         receivers = set()
         window.set_data(_ev_receiver_key, receivers)
+    if len(receivers)>5:
+        log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
     if receiver not in receivers:
         receivers.add(receiver)
 
@@ -2206,6 +2208,7 @@ def _route_event(event, signal, parent_signal):
         else:
             l("  no handler registered for this window, ignoring event")
 
+    l("%s event %s", event_type_names.get(event.type, event.type), event.serial)
     if event.window is None:
         l("  event.window is None, ignoring")
         assert event.type in (UnmapNotify, DestroyNotify), \
@@ -2259,6 +2262,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             pyev.type = e.type
             pyev.send_event = e.xany.send_event
             pyev.display = d
+            pyev.serial = e.xany.serial
             # Unmarshal:
             try:
                 if e.type != XKBNotify:
@@ -2323,7 +2327,6 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.override_redirect = e.xmap.override_redirect
                 elif e.type == UnmapNotify:
                     log("UnmapNotify event received")
-                    pyev.serial = e.xany.serial
                     pyev.window = _gw(d, e.xunmap.window)
                 elif e.type == DestroyNotify:
                     log("DestroyNotify event received")
