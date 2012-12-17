@@ -147,8 +147,7 @@ class Protocol(object):
         self.cipher_out, self.cipher_out_block_size = self.get_cipher(ciphername, iv, password, key_salt, iterations)
 
     def __str__(self):
-        ti = ["%s:%s" % (x.name, x.is_alive()) for x in self.get_threads()]
-        return "Protocol(%s - %s)" % (self._conn, ti)
+        return "Protocol(%s)" % self._conn
 
     def get_threads(self):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread] if x is not None]
