@@ -33,7 +33,7 @@ from wimpiggy.lowlevel import (is_override_redirect,        #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                )
 from wimpiggy.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
-from wimpiggy.error import trap
+from wimpiggy.error import trap, XError
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -289,9 +289,8 @@ class XpraServer(gobject.GObject, XpraServerBase):
 
     def do_wimpiggy_child_map_event(self, event):
         log("do_wimpiggy_child_map_event(%s)", event)
-        raw_window = event.window
         if event.override_redirect:
-            self._add_new_or_window(raw_window)
+            self._add_new_or_window(event.window)
 
     def _add_new_window_common(self, window):
         wid = XpraServerBase._add_new_window_common(self, window)
@@ -310,10 +309,17 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._send_new_window_packet(window)
 
     def _add_new_or_window(self, raw_window):
-        log("Discovered new override-redirect window: %s (geometry=%s)", raw_window, raw_window.get_geometry())
-        is_tray = get_tray_window(raw_window) is not None
         try:
-            if is_tray:
+            #get_geometry() may fail with an XError if the window is gone
+            #this is fine as it saves us finding that out later
+            geom = trap.call(raw_window.get_geometry)
+            tray_window = trap.call(get_tray_window, raw_window)
+        except XError, e:
+            log.error("cannot add %s: %s", raw_window, e)
+            return
+        log("Discovered new override-redirect window: %s (geometry=%s)", raw_window, geom)
+        try:
+            if tray_window is not None:
                 assert self._tray
                 window = SystemTrayWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
@@ -324,7 +330,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 window.connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
         except Unmanageable, e:
-            log("cannot add %s: %s" % (window_info(raw_window), e))
+            log("cannot add %s: %s", raw_window, e)
 
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
