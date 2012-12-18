@@ -2083,6 +2083,8 @@ names_to_event_type = {}
 debug_route_events = []
 
 def get_error_text(code):
+    if type(code)!=int:
+        return code
     cdef Display * display                    #@DuplicatedSignature
     display = get_xdisplay_for(gtk.gdk.get_default_root_window())
     cdef char[128] buffer
@@ -2241,7 +2243,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         else:
             damage_type = -1
         event_args = my_events.get(e.type)
-        msg = "x_event_filter event=%s/%s", event_args, event_type_names.get(e.type, e.type)
+        msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
         if XPRA_X11_DEBUG:
             log.info(*msg)
         else:
@@ -2387,12 +2389,16 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.width = damage_e.area.width
                     pyev.height = damage_e.area.height
             except XError, ex:
-                msg = "Some window in our event disappeared before we could " \
-                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
-                if XPRA_X11_DEBUG:
-                    log.error(*msg)
+                if ex.msg==BadWindow:
+                    msg = "Some window in our event disappeared before we could " \
+                        + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
+                    if XPRA_X11_DEBUG:
+                        log.error(*msg)
+                    else:
+                        log(*msg)
                 else:
-                    log(*msg)
+                    msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type_names.get(e.type), event_args, pyev
+                    log.error(*msg)
             else:
                 _route_event(pyev, *event_args)
     except (KeyboardInterrupt, SystemExit):
