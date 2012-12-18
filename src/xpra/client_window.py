@@ -214,7 +214,7 @@ class ClientWindow(gtk.Window):
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
         #deal with workspace mapping:
-    
+
     def set_workspace(self):
         if not CAN_SET_WORKSPACE or self._been_mapped:
             return

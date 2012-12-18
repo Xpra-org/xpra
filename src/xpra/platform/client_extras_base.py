@@ -403,7 +403,7 @@ class ClientExtrasBase(object):
         def enable_menuitem(*args):
             mi.set_sensitive(True)
         self.client.connect("handshake-complete", enable_menuitem)
-        return mi        
+        return mi
 
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
         """ Utility method for easily creating an ImageMenuItem """

@@ -147,7 +147,7 @@ def main():
         if codec not in CODECS:
             print("invalid codec: %s" % codec)
             sys.exit(2)
-            return            
+            return
     else:
         codec = MP3
 

@@ -33,7 +33,7 @@ from wimpiggy.lowlevel import (is_override_redirect,        #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                )
 from wimpiggy.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
-from wimpiggy.error import trap, XError
+from wimpiggy.error import trap
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -309,6 +309,15 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._send_new_window_packet(window)
 
     def _add_new_or_window(self, raw_window):
+        WINDOW_MODEL_KEY = "_xpra_window_model_"
+        wid = raw_window.get_data(WINDOW_MODEL_KEY)
+        window = self._id_to_window.get(wid)
+        if window and window.is_managed():
+            log.warn("found existing model for %s: %s", raw_window, window)
+            geometry = window.get_property("geometry")
+            _, _, w, h = geometry
+            self._damage(window, 0, 0, w, h)
+            return
         tray_window = get_tray_window(raw_window)
         log("Discovered new override-redirect window: %s (tray=%s)", raw_window, tray_window)
         try:
@@ -319,9 +328,13 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 self._send_new_tray_window_packet(wid, window)
             else:
                 window = OverrideRedirectWindowModel(raw_window)
-                self._add_new_window_common(window)
+                wid = self._add_new_window_common(window)
+                ch = window.get_property("client-contents-handle")
+                if ch is None:
+                    raise Unmanageable("failed to get damage handle")
                 window.connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
+            raw_window.set_data(WINDOW_MODEL_KEY, wid)
         except Unmanageable, e:
             log("cannot add %s: %s", raw_window, e)
 

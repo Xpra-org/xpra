@@ -12,7 +12,7 @@ from wimpiggy.prop import prop_set, prop_get
 
 def save_uuid(uuid):
     prop_set(gtk.gdk.get_default_root_window(),
-                           "_XPRA_SERVER_UUID", "latin1", uuid)    
+                           "_XPRA_SERVER_UUID", "latin1", uuid)
 def get_uuid():
     return prop_get(gtk.gdk.get_default_root_window(),
                                   "_XPRA_SERVER_UUID", "latin1", ignore_errors=True)

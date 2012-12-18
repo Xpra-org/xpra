@@ -145,7 +145,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                         context.stroke()
                     else:
                         context.line_to(x, y)
-                        context.stroke()                        
+                        context.stroke()
                 if dots:
                     context.arc(x, y, radius, 0, 2*math.pi)
                     context.fill()
