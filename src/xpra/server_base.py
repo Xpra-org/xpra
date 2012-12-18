@@ -496,7 +496,7 @@ class XpraServerBase(object):
         if screenshot_req:
             #this is a screenshot request, handle it and disconnect
             try:
-                packet = trap.call(self.make_screenshot_packet)
+                packet = trap.call_synced(self.make_screenshot_packet)
                 proto._add_packet_to_queue(packet)
                 gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
             except:
@@ -1073,7 +1073,7 @@ class XpraServerBase(object):
         ss.user_event()
 
     def fake_key(self, keycode, press):
-        trap.call(xtest_fake_key, gtk.gdk.display_get_default(), keycode, press)
+        trap.call_synced(xtest_fake_key, gtk.gdk.display_get_default(), keycode, press)
 
     def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
         """
@@ -1170,7 +1170,7 @@ class XpraServerBase(object):
         if not window:
             log("_process_mouse_common() invalid window id: %s", wid)
             return
-        trap.swallow(self._move_pointer, pointer)
+        trap.swallow_unsynced(self._move_pointer, pointer)
 
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
@@ -1178,7 +1178,7 @@ class XpraServerBase(object):
         self._server_sources.get(proto).user_event()
         display = gtk.gdk.display_get_default()
         try:
-            trap.call(xtest_fake_button, display, button, pressed)
+            trap.call_synced(xtest_fake_button, display, button, pressed)
         except XError:
             log.warn("Failed to pass on (un)press of mouse button %s"
                      + " (perhaps your Xvfb does not support mousewheels?)",
