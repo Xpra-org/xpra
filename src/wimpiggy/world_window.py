@@ -6,10 +6,10 @@
 import gtk
 import gobject
 import wimpiggy.window
-import wimpiggy.prop
 from wimpiggy.error import trap
 from wimpiggy.lowlevel import const                         #@UnresolvedImport
 from wimpiggy.lowlevel.send_wm import send_wm_take_focus    #@UnresolvedImport
+from wimpiggy.prop import prop_set
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -74,6 +74,10 @@ log = Logger()
 # ('reset_x_focus') that people should call whenever they think that focus may
 # have gone wonky.
 
+def root_set(*args):
+    prop_set(gtk.gdk.get_default_root_window(), *args)
+
+
 class WorldWindow(gtk.Window):
     def __init__(self):
         super(WorldWindow, self).__init__()
@@ -99,9 +103,7 @@ class WorldWindow(gtk.Window):
         log("sizing world to %sx%s", x, y)
         self.set_size_request(x, y)
         self.resize(x, y)
-        wimpiggy.prop.prop_set(gtk.gdk.get_default_root_window(),
-                            "_NET_DESKTOP_GEOMETRY",
-                            ["u32"], [x, y])
+        root_set("_NET_DESKTOP_GEOMETRY", ["u32"], [x, y])
 
     # We want to fake GTK out into thinking that this window always has
     # toplevel focus, no matter what happens.  There are two parts to this:
@@ -164,13 +166,10 @@ class WorldWindow(gtk.Window):
         if isinstance(focus, wimpiggy.window.WindowView):
             # FIXME: ugly:
             focus.model.give_client_focus()
-            trap.swallow(wimpiggy.prop.prop_set, gtk.gdk.get_default_root_window(),
-                         "_NET_ACTIVE_WINDOW", "window",
-                         focus.model.get_property("client-window"))
+            trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "window", focus.model.get_property("client-window"))
         else:
             self._take_focus()
-            wimpiggy.prop.prop_set(gtk.gdk.get_default_root_window(),
-                                   "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
+            trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
 
     def _after_set_focus(self, *args):
         # GTK focus has changed.  See comment in __init__ for why this isn't a
