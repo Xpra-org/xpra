@@ -193,8 +193,8 @@ class Wm(gobject.GObject):
         # Start with the full display as workarea:
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         self.set_workarea(0, 0, root_w, root_h)
-        prop_set(self._root, "_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
-        prop_set(self._root, "_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
+        self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
+        self.root_set("_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
 
         # Load up our full-screen widget
         self._world_window = WorldWindow()
@@ -226,8 +226,11 @@ class Wm(gobject.GObject):
         # Tray's need to provide info for _NET_ACTIVE_WINDOW and _NET_WORKAREA
         # (and notifications for both)
 
+    def root_set(self, *args):
+        prop_set(self._root, *args)
+
     def set_workarea(self, x, y, width, height):
-        prop_set(self._root, "_NET_WORKAREA", ["u32"], [x, y, width, height])
+        self.root_set("_NET_WORKAREA", ["u32"], [x, y, width, height])
 
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)
@@ -254,6 +257,12 @@ class Wm(gobject.GObject):
     # This is in some sense the key entry point to the entire WM program.  We
     # have detected a new client window, and start managing it:
     def _manage_client(self, gdkwindow):
+        try:
+            trap.call_synced(self.do_manage_client, gdkwindow)
+        except Exception, e:
+            log.warn("failed to manage client %s: %s", gdkwindow, e)
+
+    def do_manage_client(self, gdkwindow):
         if gdkwindow in self._windows:
             log.error("window %s is already managed!", gdkwindow)
             return
@@ -290,10 +299,10 @@ class Wm(gobject.GObject):
         # in a moment we'll get a signal telling us about the window that
         # doesn't exist anymore, will remove it from the list, and then call
         # _update_window_list again.
-        trap.swallow(prop_set, self._root, "_NET_CLIENT_LIST",
+        trap.swallow_synced(self.root_set, "_NET_CLIENT_LIST",
                      ["window"], self._windows_in_order)
         # This is a lie, but we don't maintain a stacking order, so...
-        trap.swallow(prop_set, self._root, "_NET_CLIENT_LIST_STACKING",
+        trap.swallow_synced(self.root_set, "_NET_CLIENT_LIST_STACKING",
                      ["window"], self._windows_in_order)
 
     def do_wimpiggy_client_message_event(self, event):
@@ -334,7 +343,7 @@ class Wm(gobject.GObject):
         if event.window in self._windows:
             return
         log("Reconfigure on withdrawn window")
-        trap.swallow(configureAndNotify,
+        trap.swallow_synced(configureAndNotify,
                      event.window, event.x, event.y,
                      event.width, event.height,
                      event.value_mask)
@@ -351,11 +360,11 @@ class Wm(gobject.GObject):
         printFocus(self._display)
 
     def do_desktop_list_changed(self, desktops):
-        prop_set(self._root, "_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
-        prop_set(self._root, "_NET_DESKTOP_NAMES", ["utf8"], desktops)
+        self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
+        self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)
 
     def set_current_desktop(self, index):
-        prop_set(self._root, "_NET_CURRENT_DESKTOP", "u32", index)
+        self.root_set("_NET_CURRENT_DESKTOP", "u32", index)
 
     def _setup_ewmh_window(self):
         # Set up a 1x1 invisible unmapped window, with which to participate in
@@ -379,7 +388,7 @@ class Wm(gobject.GObject):
                                            title="%s-EWMH" % self._name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
-        prop_set(self._root, "_NET_SUPPORTING_WM_CHECK",
+        self.root_set("_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
 
     # Other global actions:
