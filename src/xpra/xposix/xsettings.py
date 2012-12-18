@@ -63,7 +63,7 @@ class XSettingsWatcher(gobject.GObject):
         if owner_x == const["XNone"]:
             return None
         try:
-            return trap.call(get_pywindow, self._clipboard, owner_x)
+            return trap.call_synced(get_pywindow, self._clipboard, owner_x)
         except XError:
             log("X error while fetching owner of XSettings data; ignored")
             return None
@@ -95,7 +95,7 @@ class XSettingsWatcher(gobject.GObject):
     def get_settings_blob(self):
         log("Fetching current XSettings data")
         try:
-            return trap.call(self._get_settings_blob)
+            return trap.call_synced(self._get_settings_blob)
         except XError:
             log("X error while fetching XSettings data; ignored")
             return None

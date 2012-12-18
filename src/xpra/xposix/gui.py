@@ -263,7 +263,7 @@ class ClientExtras(ClientExtrasBase):
             try:
                 from wimpiggy.error import trap, XError
                 from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
-                trap.call(device_bell, window, device, bell_class, bell_id, percent, bell_name)
+                trap.call_synced(device_bell, window, device, bell_class, bell_id, percent, bell_name)
                 return
             except XError, e:
                 log.error("error using device_bell: %s, will fallback to gdk beep from now on", e)
