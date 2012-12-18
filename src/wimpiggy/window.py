@@ -836,7 +836,7 @@ class WindowModel(BaseWindowModel):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
         # ConfigureNotify telling the client that nothing has happened.
         log("do_child_configure_request_event(%s)", event)
-        trap.swallow(sendConfigureNotify, event.window)
+        trap.swallow_synced(sendConfigureNotify, event.window)
 
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
