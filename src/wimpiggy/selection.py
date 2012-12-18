@@ -104,7 +104,7 @@ class ManagerSelection(gobject.GObject):
                 window.set_events(window.get_events() | gtk.gdk.STRUCTURE_MASK)
                 return window
             try:
-                window = trap.call(getwin)
+                window = trap.call_synced(getwin)
                 log("got window")
             except XError:
                 log("Previous owner is already gone, not blocking")

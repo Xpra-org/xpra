@@ -104,7 +104,7 @@ class SystemTray(gobject.GObject):
             reparent(window, root, 0, 0)
             map_raised(window)
         for window, tray_window in self.tray_windows.items():
-            trap.swallow(undock, window)
+            trap.swallow_synced(undock, window)
             tray_window.destroy()
         self.tray_window.destroy()
         self.tray_window = None
@@ -155,7 +155,7 @@ class SystemTray(gobject.GObject):
             SYSTEM_TRAY_CANCEL_MESSAGE = 2
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
-                trap.call(self.dock_tray, xid)
+                trap.call_synced(self.dock_tray, xid)
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]
