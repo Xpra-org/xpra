@@ -34,7 +34,7 @@ else:
                     if gdk_cursor is not None:
                         try:
                             log("setting new cursor: %s=%s", cursor_name, gdk_cursor)
-                            cursor = trap.call(gdk.Cursor, gdk_cursor)
+                            cursor = trap.call_synced(gdk.Cursor, gdk_cursor)
                         except:
                             pass
             if cursor is None:
