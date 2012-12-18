@@ -1115,10 +1115,10 @@ class WindowModel(BaseWindowModel):
 
     def _handle_iconic_update(self, *args):
         def set_state(state):
-            trap.swallow(prop_set, self.client_window, "WM_STATE",
+            trap.swallow_synced(prop_set, self.client_window, "WM_STATE",
                              ["u32"],
                              [state, const["XNone"]])
-                
+
         if self.get_property("iconic"):
             set_state(const["IconicState"])
             self._state_add("_NET_WM_STATE_HIDDEN")
