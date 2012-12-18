@@ -167,6 +167,8 @@ cdef extern from "X11/Xlib.h":
 
     void XSync(Display * display, Bool discard)
 
+    void XGetErrorText(Display * display, int code, char * buffer_return, int length)
+
     # Needed to find the secret window Gtk creates to own the selection, so we
     # can broadcast it:
     Window XGetSelectionOwner(Display * display, Atom selection)
@@ -2079,26 +2081,13 @@ event_type_names = {}
 names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
-error_names = {
-            Success             : "Success",
-            BadRequest          : "BadRequest",
-            BadValue            : "BadValue",
-            BadWindow           : "BadWindow",
-            BadPixmap           : "BadPixmap",
-            BadAtom             : "BadAtom",
-            BadCursor           : "BadCursor",
-            BadFont             : "BadFont",
-            BadMatch            : "BadMatch",
-            BadDrawable         : "BadDrawable",
-            BadAccess           : "BadAccess",
-            BadAlloc            : "BadAlloc",
-            BadColor            : "BadColor",
-            BadGC               : "BadGC",
-            BadIDChoice         : "BadIDChoice",
-            BadName             : "BadName",
-            BadLength           : "BadLength",
-            BadImplementation   : "BadImplementation",
-               }
+
+def get_error_text(code):
+    cdef Display * display                    #@DuplicatedSignature
+    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    cdef char[128] buffer
+    XGetErrorText(display, code, buffer, 128)
+    return str(buffer[:128])
 
 def init_x11_events():
     global _x_event_signals, event_type_names, XKBNotify, CursorNotify
