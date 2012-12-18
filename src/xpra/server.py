@@ -209,7 +209,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         def get_default_cursor():
             self.default_cursor_data = get_cursor_image()
             log("get_default_cursor=%s", self.default_cursor_data)
-        trap.swallow(get_default_cursor)
+        trap.swallow_synced(get_default_cursor)
         self._wm.enableCursors(True)
 
     def set_workarea(self, workarea):
@@ -242,7 +242,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
 
         root = gtk.gdk.get_default_root_window()
         for window in get_children(root):
-            if (is_override_redirect(window) and is_mapped(window)):
+            if is_override_redirect(window) and is_mapped(window):
                 self._add_new_or_window(window)
 
     def send_windows_and_cursors(self, ss):
@@ -309,15 +309,8 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._send_new_window_packet(window)
 
     def _add_new_or_window(self, raw_window):
-        try:
-            #get_geometry() may fail with an XError if the window is gone
-            #this is fine as it saves us finding that out later
-            geom = trap.call(raw_window.get_geometry)
-            tray_window = trap.call(get_tray_window, raw_window)
-        except XError, e:
-            log.error("cannot add %s: %s", raw_window, e)
-            return
-        log("Discovered new override-redirect window: %s (geometry=%s)", raw_window, geom)
+        tray_window = get_tray_window(raw_window)
+        log("Discovered new override-redirect window: %s (tray=%s)", raw_window, tray_window)
         try:
             if tray_window is not None:
                 assert self._tray
@@ -401,12 +394,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 return reset_focus()
             #no idea why we can't call this straight away!
             #but with win32 clients, it would often fail!???
-            def give_focus():
-                #problem with that is that the window may be gone by then!
-                #so ignore those errors:
-                trap.swallow(window.give_client_focus)
-                return False
-            gobject.idle_add(give_focus)
+            gobject.idle_add(window.give_client_focus)
             if server_source and modifiers is not None:
                 server_source.make_keymask_match(modifiers)
             self._has_focus = wid
@@ -528,7 +516,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         def raise_and_move():
             self._desktop_manager.raise_window(window)
             self._move_pointer(pointer)
-        trap.swallow(raise_and_move)
+        trap.swallow_unsynced(raise_and_move)
 
 
     def _process_close_window(self, proto, packet):
