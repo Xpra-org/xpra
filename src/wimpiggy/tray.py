@@ -6,7 +6,7 @@
 import gtk
 import gobject
 
-from wimpiggy.prop import prop_set, prop_get
+from wimpiggy.prop import prop_set
 from wimpiggy.util import one_arg_signal
 from wimpiggy.error import trap
 
@@ -57,17 +57,17 @@ TRAY_ORIENTATION = "_NET_SYSTEM_TRAY_ORIENTATION"
 TRAY_ORIENTATION_HORZ   = 0
 TRAY_ORIENTATION_VERT   = 1
 
-XPRA_TRAY_WINDOW_PROPERTY = "_XPRA_TRAY_WINDOW"
+XPRA_TRAY_WINDOW_PROPERTY = "_xpra_tray_window_"
 
 #TRANSPARENCY = False
 TRANSPARENCY = True
 
 
 def get_tray_window(tray_window):
-    return prop_get(tray_window, XPRA_TRAY_WINDOW_PROPERTY, "u32", True)
+    tray_window.get_data(XPRA_TRAY_WINDOW_PROPERTY)
 
 def set_tray_window(tray_window, window):
-    prop_set(tray_window, XPRA_TRAY_WINDOW_PROPERTY, "u32", get_xwindow(window))
+    tray_window.set_data(XPRA_TRAY_WINDOW_PROPERTY, get_xwindow(window))
 
 def set_tray_visual(tray_window, gdk_visual):
     prop_set(tray_window, TRAY_VISUAL, "visual", gdk_visual)
