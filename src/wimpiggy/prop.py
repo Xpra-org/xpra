@@ -280,7 +280,7 @@ def _prop_encode_list(disp, etype, value):
 
 
 def prop_set(target, key, etype, value):
-    trap.call_unsynced(XChangeProperty, target, key,
+    trap.call_synced(XChangeProperty, target, key,
                        _prop_encode(target, etype, value))
 
 def _prop_decode(disp, etype, data):
