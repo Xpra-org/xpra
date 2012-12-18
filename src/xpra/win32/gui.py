@@ -37,6 +37,7 @@ class ClientExtras(ClientExtrasBase):
         ClientExtrasBase.cleanup(self)
         if self.tray:
             self.tray.close()
+            self.tray = None
 
     def can_notify(self):
         return  True

@@ -163,6 +163,7 @@ class ClientExtrasBase(object):
         self.close_about()
         if self.session_info_window:
             self.session_info_window.destroy()
+            self.session_info_window = None
 
     def supports_mmap(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED

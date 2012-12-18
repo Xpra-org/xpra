@@ -26,6 +26,7 @@ class Win32Tray:
 
 	def close(self):
 		self.tray_widget.close()
+		self.tray_widget = None
 
 
 	#****************************************************************
