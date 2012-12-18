@@ -220,7 +220,7 @@ class ClientWindow(gtk.Window):
             return
         workspace = self._client_properties.get("workspace")
         log("set_workspace() workspace=%s", workspace)
-        if not workspace:
+        if not workspace or workspace==self.get_workspace():
             return
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
@@ -232,7 +232,7 @@ class ClientWindow(gtk.Window):
                 return
             workspace = max(0, min(ndesktops-1, workspace))
             event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
-            trap.call(sendClientMessage, root, self.get_window(), False, event_mask, "_NET_WM_DESKTOP",
+            trap.call_synced(sendClientMessage, root, self.get_window(), False, event_mask, "_NET_WM_DESKTOP",
                       workspace, const["CurrentTime"],
                       0, 0, 0)
         except Exception, e:
