@@ -38,7 +38,7 @@ def run_cleanups():
             traceback.print_exception(*sys.exc_info())
 
 def deadly_signal(signum, frame):
-    print("got signal %s, exiting" % signum)
+    print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
