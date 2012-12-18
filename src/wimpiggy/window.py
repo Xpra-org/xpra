@@ -265,29 +265,28 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
         try:
-            self._composite.setup()
+            trap.call_synced(self._composite.setup)
         except XError, e:
-            log("window %s does not support compositing", get_xwindow(self.client_window))
-            self._composite.destroy()
+            log("window %s does not support compositing: %s", get_xwindow(self.client_window), e)
+            trap.swallow_synced(self._composite.destroy)
             self._composite = None
             remove_event_receiver(self.client_window, self)
             raise Unmanageable(e)
         #compositing is now enabled, from now on we need to call setup_failed to clean things up
         try:
-            trap.call(self.setup)
-            trap.call(self.client_window.get_geometry)
+            trap.call_synced(self.setup)
         except XError, e:
             try:
-                trap.call(self.setup_failed, e)
+                trap.call_synced(self.setup_failed, e)
             except Exception, ex:
-                log.error("error in cleanup handler: %s", ex, exc_info=True)
+                log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
         self._managed = True
         self._setup_done = True
         log("call_setup() ended")
 
     def setup_failed(self, e):
-        log.warn("cannot manage xid %s %s: %s", get_xwindow(self.client_window), self.client_window, e, exc_info=True)
+        log.warn("cannot manage xid %s %s: %s", get_xwindow(self.client_window), self.client_window, e)
         self.do_unmanaged(False)
 
     def setup(self):
@@ -331,7 +330,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
-        log("do_unmanaged(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
+        trap.swallow_synced(self.synced_unmanage, wm_exiting)
+
+    def synced_unmanage(self, wm_exiting):
+        log("synced_unmanage(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
         if self._composite:
             if self._damage_forward_handle:
@@ -676,11 +678,22 @@ class WindowModel(BaseWindowModel):
         # the morning.  It makes for simple code:
         self.unmanage()
 
-    def do_unmanaged(self, exiting):
+    SCRUB_PROPERTIES = ["WM_STATE",
+                        "_NET_WM_STATE",
+                        "_NET_FRAME_EXTENTS",
+                        "_NET_WM_ALLOWED_ACTIONS",
+                        ]
+
+    def synced_unmanage(self, exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
         self._internal_set_property("owner", None)
-        def unmanageit():
-            self._scrub_withdrawn_window()
+        if self.corral_window:
+            remove_event_receiver(self.corral_window, self)
+            self.corral_window.destroy()
+            self.corral_window = None
+
+            for prop in WindowModel.SCRUB_PROPERTIES:
+                XDeleteProperty(self.client_window, prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
@@ -697,11 +710,7 @@ class WindowModel(BaseWindowModel):
             sendConfigureNotify(self.client_window)
             if exiting:
                 self.client_window.show_unraised()
-        if self.corral_window:
-            trap.swallow(unmanageit)
-            self.corral_window.destroy()
-            self.corral_window = None
-        BaseWindowModel.do_unmanaged(self, exiting)
+        BaseWindowModel.synced_unmanage(self, exiting)
 
     def ownership_election(self):
         candidates = self.emit("ownership-election")
@@ -722,7 +731,7 @@ class WindowModel(BaseWindowModel):
             winner.take_window(self, self.corral_window)
             self._update_client_geometry()
             self.corral_window.show_unraised()
-        trap.swallow(sendConfigureNotify, self.client_window)
+        trap.swallow_synced(sendConfigureNotify, self.client_window)
 
     def do_wimpiggy_configure_event(self, event):
         WindowModel.do_wimpiggy_configure_event(self, event)
@@ -778,7 +787,7 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         log("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
-        trap.swallow(configureAndNotify, self.client_window, 0, 0, w, h)
+        trap.swallow_synced(configureAndNotify, self.client_window, 0, 0, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
@@ -796,7 +805,7 @@ class WindowModel(BaseWindowModel):
             return
         try:
             #workaround applications whose windows disappear from underneath us:
-            if trap.call(self.resize_corral_window):
+            if trap.call_synced(self.resize_corral_window):
                 self.emit("geometry")
         except XError, e:
             log.warn("failed to resize corral window: %s", e)
@@ -1080,7 +1089,7 @@ class WindowModel(BaseWindowModel):
 
     def _handle_state_changed(self, *args):
         # Sync changes to "state" property out to X property.
-        prop_set(self.client_window, "_NET_WM_STATE",
+        trap.swallow_synced(prop_set, self.client_window, "_NET_WM_STATE",
                  ["atom"], self.get_property("state"))
 
     def do_set_property(self, pspec, value):
@@ -1105,15 +1114,16 @@ class WindowModel(BaseWindowModel):
 
 
     def _handle_iconic_update(self, *args):
-        if self.get_property("iconic"):
+        def set_state(state):
             trap.swallow(prop_set, self.client_window, "WM_STATE",
-                         ["u32"],
-                         [const["IconicState"], const["XNone"]])
+                             ["u32"],
+                             [state, const["XNone"]])
+                
+        if self.get_property("iconic"):
+            set_state(const["IconicState"])
             self._state_add("_NET_WM_STATE_HIDDEN")
         else:
-            trap.swallow(prop_set, self.client_window, "WM_STATE",
-                         ["u32"],
-                         [const["NormalState"], const["XNone"]])
+            set_state(const["NormalState"])
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
     def _write_initial_properties_and_setup(self):
@@ -1127,16 +1137,6 @@ class WindowModel(BaseWindowModel):
         # Flush things:
         self._handle_state_changed()
 
-    def _scrub_withdrawn_window(self):
-        remove = ["WM_STATE",
-                  "_NET_WM_STATE",
-                  "_NET_FRAME_EXTENTS",
-                  "_NET_WM_ALLOWED_ACTIONS",
-                  ]
-        def delete_properties():
-            for prop in remove:
-                XDeleteProperty(self.client_window, prop)
-        trap.swallow(delete_properties)
 
     ################################
     # Focus handling:
@@ -1147,6 +1147,9 @@ class WindowModel(BaseWindowModel):
         focus.  See world_window.py for details."""
         if self.corral_window is None:
             return  True
+        trap.swallow_synced(self.do_give_client_focus)
+
+    def do_give_client_focus(self):
         log("Giving focus to client")
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
@@ -1170,12 +1173,12 @@ class WindowModel(BaseWindowModel):
         success = True
         if self._input_field:
             log("... using XSetInputFocus")
-            if not trap.swallow(XSetInputFocus, self.client_window, now):
+            if not XSetInputFocus(self.client_window, now):
                 log("XSetInputFocus failed...")
                 success = False
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
-            if not trap.swallow(send_wm_take_focus, self.client_window, now):
+            if not send_wm_take_focus(self.client_window, now):
                 log("WM_TAKE_FOCUS failed...")
                 success = False
         return success

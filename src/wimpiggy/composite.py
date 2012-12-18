@@ -51,29 +51,29 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
 
     def setup(self):
         if not self._already_composited:
-            trap.call(xcomposite_redirect_window, self._window)
-        (_, _, _, _, self._border_width) = geometry_with_border(self._window)
+            xcomposite_redirect_window(self._window)
+        _, _, _, _, self._border_width = geometry_with_border(self._window)
         self.invalidate_pixmap()
-        self._damage_handle = trap.call(xdamage_start, self._window)
+        self._damage_handle = xdamage_start(self._window)
         add_event_receiver(self._window, self)
 
     def destroy(self):
         if self._window is None:
             log.warn("composite window %s already destroyed!", self)
             return
-        if not self._already_composited:
-            trap.swallow(xcomposite_unredirect_window, self._window)
-        if self._damage_handle:
-            trap.swallow(xdamage_stop, self._window, self._damage_handle)
-        self._damage_handle = None
-        self._contents_handle = None
-        self.invalidate_pixmap()
         remove_event_receiver(self._window, self)
+        self.invalidate_pixmap()
+        if not self._already_composited:
+            xcomposite_unredirect_window(self._window)
+        if self._damage_handle:
+            xdamage_stop(self._window, self._damage_handle)
+            self._damage_handle = None
         self._window = None
 
     def acknowledge_changes(self):
         if self._damage_handle is not None and self._window is not None:
-            trap.swallow(xdamage_acknowledge, self._window, self._damage_handle)
+            #"Synchronously modifies the regions..." so unsynced?
+            trap.swallow_synced(xdamage_acknowledge, self._window, self._damage_handle)
 
     def invalidate_pixmap(self):
         log("invalidating named pixmap", type="pixmap")
@@ -140,7 +140,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                     # NameWindowPixmap has succeeded, to maintain our
                     # invariant:
                     self._listening_to = listening
-            trap.swallow(set_pixmap)
+            trap.swallow_synced(set_pixmap)
         return self._contents_handle
 
     def do_get_property_contents(self, name):
