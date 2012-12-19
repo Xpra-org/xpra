@@ -2220,7 +2220,26 @@ def _route_event(event, signal, parent_signal):
 
 
 def _gw(display, xwin):
-    return trap.call_synced(get_pywindow, display, xwin)
+    gtk.gdk.error_trap_push()
+    try:
+        disp = get_display_for(display)
+        win = gtk.gdk.window_foreign_new_for_display(disp, xwin)
+        gtk.gdk.flush()
+        error = gtk.gdk.error_trap_pop()
+    except Exception, e:
+        log("cannot get gdk window for %s, %s: %s", display, xwin, e)
+        error = gtk.gdk.error_trap_pop()
+        if error:
+            log("ignoring XError %s in unwind", get_error_text(error))
+        raise XError(e)
+    if error:
+        log("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
+        raise XError(error)
+    if win is None:
+        log("cannot get gdk window for %s, %s", display, xwin)
+        raise XError(BadWindow)
+    return win
+
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     GdkEvent * gdk_event,
