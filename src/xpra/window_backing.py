@@ -284,6 +284,7 @@ class PixmapBacking(Backing):
 
     def init(self, w, h):
         old_backing = self._backing
+        assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
         if old_backing is not None:
