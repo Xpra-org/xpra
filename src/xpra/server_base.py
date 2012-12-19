@@ -1257,7 +1257,7 @@ class XpraServerBase(object):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
-        assert isinstance(packet_type, str) or isinstance(packet_type, unicode), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
+        assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
         if packet_type.startswith("clipboard-"):
             ss = self._server_sources.get(proto)
             assert self._clipboard_client==ss, \
