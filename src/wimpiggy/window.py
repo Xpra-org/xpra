@@ -267,10 +267,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             trap.call_synced(self._composite.setup)
         except XError, e:
+            remove_event_receiver(self.client_window, self)
             log("window %s does not support compositing: %s", get_xwindow(self.client_window), e)
             trap.swallow_synced(self._composite.destroy)
             self._composite = None
-            remove_event_receiver(self.client_window, self)
             raise Unmanageable(e)
         #compositing is now enabled, from now on we need to call setup_failed to clean things up
         try:
@@ -286,7 +286,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log("call_setup() ended")
 
     def setup_failed(self, e):
-        log.warn("cannot manage xid %s %s: %s", get_xwindow(self.client_window), self.client_window, e)
+        log("cannot manage %s: %s", get_xwindow(self.client_window), e)
         self.do_unmanaged(False)
 
     def setup(self):
@@ -326,11 +326,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def unmanage(self, exiting=False):
         if self._managed:
-            self._managed = False
             self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
         trap.swallow_synced(self.synced_unmanage, wm_exiting)
+        self._managed = False
 
     def synced_unmanage(self, wm_exiting):
         log("synced_unmanage(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
@@ -390,7 +390,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         # already generated, and our request for that event is too late!
         # So double check now, *after* putting in our request:
         if not is_mapped(self.client_window):
-            raise Unmanageable("window already unmapped")
+            raise XError("window already unmapped")
 
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"

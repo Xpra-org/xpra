@@ -27,6 +27,7 @@ from wimpiggy.util import (AdHocStruct,
                            one_arg_signal)
 from wimpiggy.lowlevel import (is_override_redirect,        #@UnresolvedImport
                                is_mapped,                   #@UnresolvedImport
+                               get_xwindow,                 #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
                                get_cursor_image,            #@UnresolvedImport
                                get_children,                #@UnresolvedImport
@@ -312,14 +313,17 @@ class XpraServer(gobject.GObject, XpraServerBase):
         WINDOW_MODEL_KEY = "_xpra_window_model_"
         wid = raw_window.get_data(WINDOW_MODEL_KEY)
         window = self._id_to_window.get(wid)
-        if window and window.is_managed():
-            log.warn("found existing model for %s: %s", raw_window, window)
-            geometry = window.get_property("geometry")
-            _, _, w, h = geometry
-            self._damage(window, 0, 0, w, h)
-            return
+        if window:
+            if window.is_managed():
+                log.warn("found existing window model %s for %s, will refresh it", type(window), get_xwindow(raw_window))
+                geometry = window.get_property("geometry")
+                _, _, w, h = geometry
+                self._damage(window, 0, 0, w, h, options={"calculate" : False, "min_delay" : 50})
+                return
+            log.warn("found existing model %s (but no longer managed!) for %s: %s", type(window), get_xwindow(raw_window), window)
+            window = None
         tray_window = get_tray_window(raw_window)
-        log("Discovered new override-redirect window: %s (tray=%s)", raw_window, tray_window)
+        log("Discovered new override-redirect window: %s (tray=%s)", get_xwindow(raw_window), tray_window)
         try:
             if tray_window is not None:
                 assert self._tray
@@ -336,7 +340,14 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 self._send_new_or_window_packet(window)
             raw_window.set_data(WINDOW_MODEL_KEY, wid)
         except Unmanageable, e:
-            log("cannot add %s: %s", raw_window, e)
+            if window:
+                #if window is set, we failed after instantiating it,
+                #so we need to fail it manually:
+                window.setup_failed(e)
+            else:
+                log.warn("cannot add %s: %s", get_xwindow(raw_window), e)
+            #from now on, we return to the gtk main loop,
+            #so we *should* get a signal when the window goes away
 
     def _or_window_geometry_changed(self, window, pspec):
         (x, y, w, h) = window.get_property("geometry")
@@ -376,7 +387,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
             ss.send_cursor(self.cursor_data)
 
     def _bell_signaled(self, wm, event):
-        log("_bell_signaled(%s,%r)", wm, event)
+        log("bell signaled on window %s", get_xwindow(event.window))
         if not self.bell:
             return
         wid = 0

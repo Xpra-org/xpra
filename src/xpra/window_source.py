@@ -373,7 +373,7 @@ class WindowSource(object):
         packets_backlog, _, _ = self.statistics.get_backlog(target_latency)
         return packets_backlog
 
-    def damage(self, window, x, y, w, h, options=None):
+    def damage(self, window, x, y, w, h, options={}):
         """ decide what to do with the damage area:
             * send it now (if not congested)
             * add it to an existing delayed region
@@ -386,11 +386,13 @@ class WindowSource(object):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
-        self.may_calculate_batch_delay(window)
+        if options.get("calculate", True):
+            self.may_calculate_batch_delay(window)
         if w==0 or h==0:
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
+        now = time.time()
 
         if self._damage_delayed:
             #use existing delayed region:
@@ -403,12 +405,15 @@ class WindowSource(object):
                 for k,v in options.items():
                     if override or k not in existing_options:
                         existing_options[k] = v
-            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed region: %s", x, y, w, h, options, self.wid, self._damage_delayed)
+            log("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %sms ago",
+                x, y, w, h, options, self.wid, self._damage_delayed[3], dec1(now-self._damage_delayed[0]))
             return
 
-        now = time.time()
+        delay = options.get("delay", self.batch_config.delay)
+        delay = max(delay, options.get("min_delay", 0))
+        delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         packets_backlog = self.get_packets_backlog()
-        if packets_backlog==0 and not self.batch_config.always and self.batch_config.delay<self.batch_config.min_delay:
+        if packets_backlog==0 and not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             log("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             ww, wh = window.get_dimensions()
@@ -426,9 +431,9 @@ class WindowSource(object):
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._damage_delayed_expired = False
         self._damage_delayed = now, window, region, self.encoding, options or {}
-        log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(self.batch_config.delay))
-        self.batch_config.last_delays.append((now, self.batch_config.delay))
-        self.expire_timer = gobject.timeout_add(int(self.batch_config.delay), self.expire_delayed_region)
+        log("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(delay))
+        self.batch_config.last_delays.append((now, delay))
+        self.expire_timer = gobject.timeout_add(int(delay), self.expire_delayed_region)
 
     def expire_delayed_region(self):
         """ mark the region as expired so damage_packet_acked can send it later,
@@ -494,7 +499,7 @@ class WindowSource(object):
         ww,wh = window.get_dimensions()
         def send_full_screen_update():
             actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
-            log("send_delayed_regions: using full screen update with %s", actual_encoding)
+            log("send_delayed_regions: using full screen update %sx%s with %s", ww, wh, actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         if window.is_tray():
@@ -626,10 +631,12 @@ class WindowSource(object):
         def make_data_packet(*args):
             #NOTE: this function is called from the damage data thread!
             packet = self.make_data_packet(*data)
+            #NOTE: we have to send it (even if the window is cancelled by now..)
+            #because the code may rely on the client having received this frame
             if packet:
                 self.queue_damage_packet(packet, damage_time, process_damage_time)
                 #auto-refresh:
-                if self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
+                if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
                     gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
         self.queue_damage(make_data_packet)
@@ -649,6 +656,8 @@ class WindowSource(object):
             #lossless already: small region sent lossless or encoding is lossless
             #don't change anything: if we have a timer, keep it
             return
+        if not window.is_managed():
+            return
         ww, wh = window.get_dimensions()
         if actual_quality>=90 and w*h>=ww*wh:
             log("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
@@ -658,6 +667,9 @@ class WindowSource(object):
         def full_quality_refresh():
             if self._damage_delayed:
                 #there is already a new damage region pending
+                return
+            if not window.is_managed():
+                #this window is no longer managed
                 return
             self.refresh_timer = None
             new_options = damage_options.copy()
