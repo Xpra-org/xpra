@@ -1175,7 +1175,7 @@ class WindowModel(BaseWindowModel):
         # the WM's XSetInputFocus.
         if self._input_field:
             log("... using XSetInputFocus")
-            XSetInputFocus(self.client_window, now):
+            XSetInputFocus(self.client_window, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
