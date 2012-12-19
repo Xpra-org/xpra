@@ -7,9 +7,15 @@ from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
 
 #network bits:
 net = ['xpra.protocol.*', 'xpra.protocol.Protocol.start'
-       'xpra.bytestreams.*', 'socket.*',
+       'xpra.bytestreams.*',
        'xpra.bencode.*', 'xpra.rencode.*',
-       'xpra.server_base.XpraServer.process_packet'
+       'xpra.server_base.XpraServer.process_packet',
+       'xpra.server_source.ServerSource.next_packet',
+       'socket.*',
+       '*._write_thread_loop',
+       '*._read_thread_loop',
+       '*._read_parse_thread_loop',
+       'threading.*',
        ]
 damage = ['xpra.server_source.*', 'xpra.window_source.*',
           'xpra.batch_delay_calculator.*',
@@ -140,17 +146,46 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'socket._socketobject.close']
 
 
-#examples:
-#filter_func = pycallgraph.GlobbingFilter(include=net)
-#filter_func = pycallgraph.GlobbingFilter(include=damage)
-#trimmed (no irrelevant stuff):
+# exclude most things, but not damage:
 exclude = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + connection
+include = ["*"]
+
+#just damage without network:
+exclude = net
+include = damage
+
+#damage + network:
+exclude = []
+include = net + damage
+
 import fnmatch
-fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude)) + 10
+fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude), len(include)) + 10
 fnmatch._purge()
 
-filter_func = GlobbingFilter(exclude=exclude)
-start_trace(filter_func=filter_func)
+filter_func = GlobbingFilter(include=include, exclude=exclude)
+
+#TRACE_THREAD = "read_parse_loop"
+TRACE_THREAD = "data_to_packet"
+TRACE_THREAD = None
+if TRACE_THREAD:
+    from xpra import daemon_thread
+    saved_make_daemon_thread = daemon_thread.make_daemon_thread
+    trace_count = 0
+    def make_trace_daemon_thread(target, name):
+        def trace_target(*args):
+            global trace_count
+            if name==TRACE_THREAD and trace_count==0:
+                trace_count += 1
+                print("started tracing %s / %s!" % (target, name))
+                start_trace(filter_func=filter_func)
+            else:
+                print("not tracing %s / %s!" % (target, name))
+            target()
+        return saved_make_daemon_thread(trace_target, name)
+    daemon_thread.make_daemon_thread = make_trace_daemon_thread
+else:
+    #trace main thread
+    start_trace(filter_func=filter_func)
 
 x = xpra.scripts.main.main(__file__, sys.argv)
 

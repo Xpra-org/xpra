@@ -32,6 +32,7 @@ from xpra.window_source import WindowSource, DamageBatchConfig
 from xpra.maths import add_list_stats, dec1, std_unit
 from xpra.scripts.main import ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
+from xpra.daemon_thread import make_daemon_thread
 
 from wimpiggy.keys import grok_modifier_map
 from xpra.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
@@ -40,15 +41,6 @@ from xpra.xkbhelper import do_set_keymap, set_all_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
 from wimpiggy.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
-
-
-def start_daemon_thread(target, name):
-    from threading import Thread
-    t = Thread(target=target)
-    t.name = name
-    t.daemon = True
-    t.start()
-    return t
 
 import os
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -470,7 +462,8 @@ class ServerSource(object):
         self.last_user_event = time.time()
         # ready for processing:
         protocol.source = self
-        self.datapacket_thread = start_daemon_thread(self.data_to_packet, "data_to_packet")
+        self.datapacket_thread = make_daemon_thread(self.data_to_packet, "data_to_packet")
+        self.datapacket_thread.start()
 
     def close(self):
         self.closed = True

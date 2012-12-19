@@ -25,11 +25,12 @@ try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except:
     from Queue import Queue     #@Reimport
-from threading import Thread, Lock
+from threading import Lock
 
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra.daemon_thread import make_daemon_thread
 from xpra.bytestreams import untilConcludes
 from xpra.bencode import bencode, bdecode
 rencode_dumps, rencode_loads = None, None
@@ -108,10 +109,6 @@ class Protocol(object):
         self.cipher_out = None
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
-        def make_daemon_thread(target, name):
-            daemon_thread = Thread(target=target, name=name)
-            daemon_thread.setDaemon(True)
-            return daemon_thread
         self._write_lock = Lock()
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write_loop")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read_loop")
