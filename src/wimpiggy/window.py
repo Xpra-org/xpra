@@ -607,10 +607,13 @@ class WindowModel(BaseWindowModel):
         w,h = self.client_window.get_geometry()[2:4]
         hints = self.get_property("size-hints")
         self._sanitize_size_hints(hints)
-        client_size = calc_constrained_size(w, h, hints)[:2]
-        log("setup_client() resizing windows to %s", client_size)
-        self.client_window.resize(*client_size)
-        self.corral_window.resize(*client_size)
+        nw, nh = calc_constrained_size(w, h, hints)[:2]
+        if nw>=32768 or nh>=32768:
+            log.error("setup() window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)", nw, nh, w, h, hints)
+            nw, nh = gtk.gdk.get_default_root_window().get_size()
+        log("setup() resizing windows to %sx%s", nw, nh)
+        self.client_window.resize(nw, nh)
+        self.corral_window.resize(nw, nh)
         self.client_window.show_unraised()
         self.client_window.get_geometry()
 
@@ -1170,18 +1173,12 @@ class WindowModel(BaseWindowModel):
         # XSetInputFocus well, while Qt apps ignore (!!!) WM_TAKE_FOCUS
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.
-        success = True
         if self._input_field:
             log("... using XSetInputFocus")
-            if not XSetInputFocus(self.client_window, now):
-                log("XSetInputFocus failed...")
-                success = False
+            XSetInputFocus(self.client_window, now):
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
-            if not send_wm_take_focus(self.client_window, now):
-                log("WM_TAKE_FOCUS failed...")
-                success = False
-        return success
+            send_wm_take_focus(self.client_window, now)
 
     ################################
     # Killing clients:
