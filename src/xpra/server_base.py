@@ -1191,7 +1191,6 @@ class XpraServerBase(object):
 
     def _process_damage_sequence(self, proto, packet):
         packet_sequence = packet[1]
-        log("received sequence: %s", packet_sequence)
         if len(packet)>=6:
             wid, width, height, decode_time = packet[2:6]
             self._server_sources.get(proto).client_ack_damage(packet_sequence, wid, width, height, decode_time)

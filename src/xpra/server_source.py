@@ -205,9 +205,7 @@ class KeyboardConfig(object):
         """
         def get_current_mask():
             _, _, current_mask = gtk.gdk.get_default_root_window().get_pointer()
-            modifiers = mask_to_names(current_mask, self.modifier_map)
-            debug("get_modifier_mask()=%s", modifiers)
-            return modifiers
+            return mask_to_names(current_mask, self.modifier_map)
 
         if not self.keynames_for_mod:
             debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
@@ -1117,7 +1115,6 @@ class ServerSource(object):
         if not self.send_windows:
             log.error("client_ack_damage when we don't send any window data!?")
             return
-        log("packet decoding for window %s %sx%s took %s µs", wid, width, height, decode_time)
         if decode_time>0:
             self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
         ws = self.window_sources.get(wid)

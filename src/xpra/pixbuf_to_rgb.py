@@ -12,7 +12,7 @@ import time
 from wimpiggy.log import Logger
 log = Logger()
 
-def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options):
+def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options, logger=None):
     """
         Extracts pixels from the given pixmap
     """
@@ -36,8 +36,9 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
         return None
     pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
     pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
-    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, colormap=%s, visual depth=%s",
-             int(1000*(time.time()-start)), pixmap.get_colormap(), pixmap.get_colormap().get_visual().depth)
+    if logger:
+        logger("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, visual depth=%s",
+             int(1000*(time.time()-start)), colormap.get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)

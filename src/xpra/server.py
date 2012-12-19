@@ -582,7 +582,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
             import Image
             image = Image.new("RGBA", (width, height))
             for wid, x, y, w, h, pixmap in reversed(regions):
-                _, _, wid, _, _, w, h, _, raw_data, rowstride, _, _ = get_rgb_rawdata(0, 0, wid, pixmap, 0, 0, w, h, "rgb24", -1, None)
+                _, _, wid, _, _, w, h, _, raw_data, rowstride, _, _ = get_rgb_rawdata(0, 0, wid, pixmap, 0, 0, w, h, "rgb24", -1, None, logger=log.debug)
                 window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
                 tx = x-minx
                 ty = y-miny
