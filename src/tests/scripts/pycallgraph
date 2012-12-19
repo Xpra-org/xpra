@@ -3,10 +3,158 @@
 import sys
 import xpra.scripts.main
 
-import pycallgraph
-pycallgraph.start_trace()
+from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
+
+#network bits:
+net = ['xpra.protocol.*', 'xpra.protocol.Protocol.start'
+       'xpra.bytestreams.*', 'socket.*',
+       'xpra.bencode.*', 'xpra.rencode.*',
+       'xpra.server_base.XpraServer.process_packet'
+       ]
+damage = ['xpra.server_source.*', 'xpra.window_source.*',
+          'xpra.batch_delay_calculator.*',
+          'xpra.pixbuf_to_rgb.*',
+          'xpra.deque.*', 'xpra.maths.*',
+          'xpra.x264.*', 'xpra.vpx.*', 'xpra.webm.*',
+          'xpra.xor.*']
+mouse = ['xpra.server_base.XpraServer._process_pointer_position',
+         'xpra.server_base.XpraServer._process_button_action',
+         'xpra.server_base.XpraServer._process_mouse_common']
+keyboard = ['xpra.keys.*', 'xpra.xkbhelper.*', 'wimpiggy.keys.*',
+       'xpra.server_source.KeyboardConfig.*',
+       'xpra.server_source.ServerSource.make_keymask_match',
+       'xpra.server_source.ServerSource._keys_changed',
+       'xpra.server_base.XpraServer._keys_changed',
+       'xpra.server_base.XpraServer._process_key_action',
+       'xpra.server_base.XpraServer._process_key_repeat',
+       'xpra.server_base.XpraServer._clear_keys_pressed',
+       'xpra.server_base.XpraServer._handle_key',
+       'xpra.server_base.XpraServer._key_repeat',
+       'xpra.server_base.XpraServer._key_repeat_timeout',
+       'xpra.server_source.ServerSource.get_keycode',
+       ]
+bell = ['wimpiggy.window.WindowModel.do_wimpiggy_xkb_event',
+        'wimpiggy.wm.Wm.bell_event',
+        'wimpiggy.wm.Wm.do_bell_event',
+        'xpra.server.XpraServer._bell_signaled',
+        'xpra.server_source.ServerSource.bell']
+misc = ['xpra.dotxpra.*', 'xpra.wait_for_server.*',
+        'xpra.scripts.*', 'subprocess.*',
+        'wimpiggy.log*',
+        'wimpiggy.gobject_compat.*',
+        'wimpiggy.tray.*',
+        'xpra.version_util.*', 'xpra.build_info.*']
+
+xsettings = ['xpra.xposix.xroot_props.*', 'xpra.xposix.xsettings.*', 'wimpiggy.xsettings_prop.*']
+clipboard = ['xpra.platform.clipboard_base.*',
+             'xpra.platform.gdk_clipboard.*', 'wimpiggy.gdk.*',
+             'xpra.nested_main.*',
+             'wimpiggy.selection.*']
+sound = ['xpra.sound.*',
+         'xpra.server_source.ServerSource.stop_sending_sound']
+gl = ['xpra.gl_client_window.*', 'xpra.gl_colorspace_conversions.*', 'xpra.gl_window_backing.*']
+
+std = ['pycallgraph.*',
+       'traceback.*', 'linecache.*',
+       'logging.*',
+       're.*', 'sre_parse.*', 'sre_compile.*',
+       'atexit.*', 'warnings.*',
+       'posixpath.*', 'genericpath.*', 'stat.*',
+       'encodings.*',
+       'optparse.*', 'gettext.*', 'locale.*', 'codecs.*']
+
+libs = ['gobject.*', 'gtk.*', 'uuid.*', 'pygtk.*', 'gio.*', 'cairo.*',
+        'os.environ.*', 'os._Environ.*', 'UserDict.*', 'platform.*', 'string.split',
+        'ctypes.*', 'hmac.*']
+
+one_offs = ['xpra.server.XpraServer.__init__',
+            'xpra.server_base.XpraServer.__init__',
+            'xpra.server_base.XpraServer.x11_init',
+            'xpra.server_base.XpraServer.init_x11_atoms',
+            'xpra.server_base.XpraServer.load_existing_windows',
+            'xpra.server_base.XpraServer.init_packet_handlers',
+            'xpra.server_base.XpraServer.reenable_keymap_changes',
+            'xpra.server_base.print_ready',
+            'xpra.server.DesktopManager.__init__',
+            'xpra.protocol.make_daemon_thread',
+            'threading.Thread.daemon', 'threading._MainThread.daemon',
+            'threading._MainThread.name',
+            'threading._newname',
+            'threading.Thread.setDaemon', 'threading.Thread.set_daemon',
+            'threading.Thread.__init__',
+            'threading.Condition.*', 'threading.Event.*',
+            'wimpiggy.util.gtk_main_quit_forever',
+            'wimpiggy.util.gtk_main_quit_really',
+            'wimpiggy.util.gtk_main_quit_on_fatal_exceptions_enable',
+            'wimpiggy.wm.Wm.__init__'
+            'wimpiggy.wm.Wm.__setup_ewmh_window'
+            'wimpiggy.wm.Wm.enableCursors',
+            'xpra.xposix.add_client_options', 'xpra.platform.add_*_option',
+            'xpra.server_base.XpraServer.add_listen_socket',
+            'xpra.server_base.XpraServer._process_shutdown_server',
+            'socket._socketobject.meth']
+
+connection = ['xpra.server_base.XpraServer.send_hello',
+              'xpra.server_base.XpraServer.make_hello',
+              'xpra.server_base.XpraServer._get_desktop_size_capability',
+              'xpra.server_source.ServerSource.hello',
+              #handle connection:
+              'socket._socketobject.accept',
+              'socket._socketobject.__init__',
+              'xpra.bytestreams.SocketConnection.__init__',
+              'xpra.bytestreams.SocketConnection.__str__',
+              'xpra.server_base.XpraServer._new_connection',
+              'xpra.server_base.XpraServer.verify_connection_accepted',
+              'xpra.server_base.XpraServer._process_hello',
+              'xpra.server_base.XpraServer.sanity_checks',
+              'xpra.server_base.XpraServer.get_max_screen_size',
+              'xpra.server_base.XpraServer.set_best_screen_size',
+              'xpra.server_base.XpraServer.set_screen_size',
+              'xpra.server_base.XpraServer.send_updated_screen_size',
+              'xpra.server_base.XpraServer.set_workarea',
+              'xpra.server_base.XpraServer.calculate_workarea',
+              'xpra.server_base.XpraServer._process_set_deflate',
+              'xpra.server_base.XpraServer._screen_size_changed',
+              'xpra.server_base.XpraServer.set_keymap',
+              'xpra.server_source.ServerSource.set_deflate',
+              'xpra.server_source.ServerSource.parse_hello',
+              'xpra.server_source.ServerSource.init_mmap',
+              'xpra.server_source.ServerSource.keys_changed',
+              'xpra.server_source.ServerSource.set_keymap',
+              'xpra.server_source.ServerSource.updated_desktop_size',
+              'xpra.server_source.ServerSource.set_screen_sizes',
+              'xpra.server_source.ServerSource.set_encoding',
+              'xpra.server_source.ServerSource.assign_keymap_options',
+              'xpra.server.XpraServer.send_windows_and_cursors',
+              'xpra.protocol.Protocol.set_compression_level',
+              'xpra.protocol.Protocol.enable_rencode',
+              'xpra.protocol.Protocol.do_start',
+              #disconnection:
+              'xpra.server_base.XpraServer.send_disconnect',
+              'xpra.server_base.XpraServer._process_connection_lost',
+              'xpra.server_base.XpraServer.cleanup_source',
+              'xpra.protocol.Protocol.close',
+              'xpra.protocol.Protocol.clean',
+              'xpra.protocol.Protocol.terminate_io_threads',
+              'xpra.bytestreams.SocketConnection.close',
+              'socket._socketobject.close']
+
+
+#examples:
+#filter_func = pycallgraph.GlobbingFilter(include=net)
+#filter_func = pycallgraph.GlobbingFilter(include=damage)
+#trimmed (no irrelevant stuff):
+exclude = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + connection
+import fnmatch
+fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude)) + 10
+fnmatch._purge()
+
+filter_func = GlobbingFilter(exclude=exclude)
+start_trace(filter_func=filter_func)
 
 x = xpra.scripts.main.main(__file__, sys.argv)
 
-pycallgraph.make_dot_graph('pycallgraph.png')
+filename = 'pycallgraph.png'
+make_dot_graph(filename)
+
 sys.exit(x)
