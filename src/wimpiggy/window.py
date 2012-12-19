@@ -1148,9 +1148,8 @@ class WindowModel(BaseWindowModel):
     def give_client_focus(self):
         """The focus manager has decided that our client should recieve X
         focus.  See world_window.py for details."""
-        if self.corral_window is None:
-            return  True
-        trap.swallow_synced(self.do_give_client_focus)
+        if self.corral_window:
+            trap.swallow_synced(self.do_give_client_focus)
 
     def do_give_client_focus(self):
         log("Giving focus to client")
