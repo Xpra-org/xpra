@@ -22,7 +22,18 @@ from wimpiggy.error import trap, XError
 from wimpiggy.log import Logger
 log = Logger("wimpiggy.lowlevel")
 
+XPRA_X11_LOG = os.environ.get("XPRA_X11_LOG", "0")!="0"
 XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
+if XPRA_X11_LOG:
+    debug = log.debug
+    info = log.info
+else:
+    def noop(*args, **kwargs):
+        pass
+    debug = noop
+    info = noop
+warn = log.warn
+error = log.error
 
 ###################################
 # Headers, python magic
@@ -416,7 +427,7 @@ def get_pywindow(display_source, xwindow):
     disp = get_display_for(display_source)
     win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
-        log("cannot get gdk window for %s : %s", display_source, xwindow)
+        debug("cannot get gdk window for %s : %s", display_source, xwindow)
         raise XError(BadWindow)
     return win
 
@@ -693,7 +704,7 @@ def printFocus(display_source):
     cdef Window w = 0
     cdef int revert_to = 0
     cXGetInputFocus(get_xdisplay_for(display_source), &w, &revert_to)
-    log("Current focus: %s, %s", hex(w), revert_to)
+    debug("Current focus: %s, %s", hex(w), revert_to)
 
 # Geometry hints
 
@@ -799,13 +810,13 @@ cdef XModifierKeymap* work_keymap = NULL
 cdef XModifierKeymap* get_keymap(Display * display, load):
     global work_keymap
     if work_keymap==NULL and load:
-        log("retrieving keymap")
+        debug("retrieving keymap")
         work_keymap = XGetModifierMapping(display)
     return work_keymap
 
 cdef set_keymap(XModifierKeymap* new_keymap):
     global work_keymap
-    log("setting new keymap")
+    debug("setting new keymap")
     work_keymap = new_keymap
 
 cdef _parse_keysym(symbol):
@@ -855,7 +866,7 @@ cdef _parse_keycode(Display* display, keycode_str):
         keycode = int(keycode_str)
     min_keycode, max_keycode = _get_minmax_keycodes(display)
     if keycode!=0 and keycode<min_keycode or keycode>max_keycode:
-        log.error("keycode %s: value %s is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
+        error("keycode %s: value %s is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
         return -1
     return keycode
 
@@ -875,23 +886,23 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
     num_codes = 1+last_keycode-first_keycode
     MAX_KEYSYMS_PER_KEYCODE = 8
     keysyms_per_keycode = min(MAX_KEYSYMS_PER_KEYCODE, max([1]+[len(keysyms) for keysyms in keycodes.values()]))
-    log("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
+    debug("xmodmap_setkeycodes using %s keysyms_per_keycode", keysyms_per_keycode)
     ckeysyms = <KeySym*> malloc(sizeof(KeySym)*num_codes*keysyms_per_keycode)
     try:
         missing_keysyms = []
         for i in range(0, num_codes):
             keycode = first_keycode+i
             keysyms_strs = keycodes.get(keycode)
-            log("setting keycode %s: %s", keycode, keysyms_strs)
+            debug("setting keycode %s: %s", keycode, keysyms_strs)
             if keysyms_strs is None:
                 if len(new_keysyms)>0:
                     #no keysyms for this keycode yet, assign one of the "new_keysyms"
                     keysyms = new_keysyms[:1]
                     new_keysyms = new_keysyms[1:]
-                    log("assigned keycode %s to %s", keycode, keysyms[0])
+                    debug("assigned keycode %s to %s", keycode, keysyms[0])
                 else:
                     keysyms = []
-                    log("keycode %s is still free", keycode)
+                    debug("keycode %s is still free", keycode)
             else:
                 keysyms = []
                 for ks in keysyms_strs:
@@ -913,7 +924,7 @@ cdef xmodmap_setkeycodes(Display* display, keycodes, new_keysyms):
                     keysym = keysyms[j]
                 ckeysyms[i*keysyms_per_keycode+j] = keysym
         if len(missing_keysyms)>0:
-            log.info("could not find the following keysyms: %s", " ".join(set(missing_keysyms)))
+            info("could not find the following keysyms: %s", " ".join(set(missing_keysyms)))
         return XChangeKeyboardMapping(display, first_keycode, keysyms_per_keycode, ckeysyms, num_codes)==0
     finally:
         free(ckeysyms)
@@ -941,7 +952,7 @@ cdef _get_raw_keycode_mappings(Display * display):
     cdef KeyCode keycode
     min_keycode,max_keycode = _get_minmax_keycodes(display)
     keyboard_map = XGetKeyboardMapping(display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
-    log("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
+    debug("XGetKeyboardMapping keysyms_per_keycode=%s", keysyms_per_keycode)
     mappings = {}
     i = 0
     keycode = min_keycode
@@ -1062,7 +1073,7 @@ cdef _get_modifier_mappings(Display * display):
     for mod, keycodes in raw_mappings.items():
         modifier = modifier_name(mod)
         if not modifier:
-            log.error("cannot find name for modifier %s", mod)
+            error("cannot find name for modifier %s", mod)
             continue
         keynames = []
         for keycode in keycodes:
@@ -1072,7 +1083,7 @@ cdef _get_modifier_mappings(Display * display):
                 keysym = XkbKeycodeToKeysym(display, keycode, index//4, index%4)
                 index += 1
             if keysym==0:
-                log.info("no keysym found for keycode %s", keycode)
+                info("no keysym found for keycode %s", keycode)
                 continue
             keyname = XKeysymToString(keysym)
             if keyname not in keynames:
@@ -1090,7 +1101,7 @@ cdef xmodmap_clearmodifier(Display * display, int modifier):
     cdef XModifierKeymap* keymap                    #@DuplicatedSignature
     keymap = get_keymap(display, True)
     keycode = <KeyCode*> keymap.modifiermap
-    log("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
+    debug("clear modifier: clearing all %s for modifier=%s", keymap.max_keypermod, modifier)
     for i in range(0, keymap.max_keypermod):
         keycode[modifier*keymap.max_keypermod+i] = 0
 
@@ -1100,14 +1111,14 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
     cdef KeySym keysym                              #@DuplicatedSignature
     keymap = get_keymap(display, True)
     success = True
-    log("add modifier: modifier %s=%s", modifier, keysyms)
+    debug("add modifier: modifier %s=%s", modifier, keysyms)
     for keysym_str in keysyms:
         keysym = XStringToKeysym(keysym_str)
-        log("add modifier: keysym(%s)=%s", keysym_str, keysym)
+        debug("add modifier: keysym(%s)=%s", keysym_str, keysym)
         keycodes = KeysymToKeycodes(display, keysym)
-        log("add modifier: keycodes(%s)=%s", keysym, keycodes)
+        debug("add modifier: keycodes(%s)=%s", keysym, keycodes)
         if len(keycodes)==0:
-            log.error("xmodmap_exec_add: no keycodes found for keysym %s/%s", keysym_str, keysym)
+            error("xmodmap_exec_add: no keycodes found for keysym %s/%s", keysym_str, keysym)
             success = False
         else:
             for k in keycodes:
@@ -1116,12 +1127,12 @@ cdef xmodmap_addmodifier(Display * display, int modifier, keysyms):
                     keymap = XInsertModifiermapEntry(keymap, keycode, modifier)
                     if keymap!=NULL:
                         set_keymap(keymap)
-                        log("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
+                        debug("add modifier: added keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                     else:
-                        log.error("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
+                        error("add modifier: failed keycode=%s for modifier %s and keysym=%s", k, modifier, keysym_str)
                         success = False
                 else:
-                    log.info("add modifier: failed, found zero keycode for %s", modifier)
+                    info("add modifier: failed, found zero keycode for %s", modifier)
                     success = False
     return success
 
@@ -1167,7 +1178,7 @@ cdef native_xmodmap(display_source, instructions):
     new_keysyms = []
     try:
         for line in instructions:
-            log("processing: %s", line)
+            debug("processing: %s", line)
             if not line:
                 continue
             cmd = line[0]
@@ -1196,21 +1207,21 @@ cdef native_xmodmap(display_source, instructions):
                 if modifier>=0:
                     if xmodmap_addmodifier(display, modifier, keysyms):
                         continue
-            log.error("native_xmodmap could not handle instruction: %s", line)
+            error("native_xmodmap could not handle instruction: %s", line)
             unhandled.append(line)
         if len(keycodes)>0:
-            log("calling xmodmap_setkeycodes with %s", keycodes)
+            debug("calling xmodmap_setkeycodes with %s", keycodes)
             xmodmap_setkeycodes(display, keycodes, new_keysyms)
     finally:
         keymap = get_keymap(display, False)
         if keymap!=NULL:
             set_keymap(NULL)
-            log("saving modified keymap")
+            debug("saving modified keymap")
             if XSetModifierMapping(display, keymap)==MappingBusy:
-                log.error("cannot change keymap: mapping busy: %s" % get_keycodes_down(display_source))
+                error("cannot change keymap: mapping busy: %s" % get_keycodes_down(display_source))
                 unhandled = instructions
             XFreeModifiermap(keymap)
-    log.debug("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
+    debug("modify keymap: %s instructions, %s unprocessed", len(instructions), len(unhandled))
     return unhandled
 
 def set_xmodmap(display_source, xmodmap_data):
@@ -1308,7 +1319,7 @@ cdef _ensure_extension_support(display_source, major, minor, extension,
             cminor = minor
             if (query_version)(get_xdisplay_for(display), &cmajor, &cminor):
                 # See X.org bug #14511:
-                log("found X11 extension %s with version %s.%s", extension, major, minor)
+                debug("found X11 extension %s with version %s.%s", extension, major, minor)
                 if major == cmajor and minor <= cminor:
                     display.set_data(key, True)
                 else:
@@ -1351,7 +1362,7 @@ def displayHasXComposite(display_source):
         _ensure_XComposite_support(display_source)
         return  True
     except Exception, e:
-        log.error("%s", e)
+        error("%s", e)
     return False
 
 def xcomposite_redirect_window(window):
@@ -1438,7 +1449,7 @@ def has_randr():
                                  XRRQueryVersion)
         return True
     except Exception, e:
-        log.warn("Warning: %s", e)
+        warn("Warning: %s", e)
         return False
 
 cdef _get_screen_sizes(display_source):
@@ -1483,7 +1494,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
             if xrr.width==width and xrr.height==height:
                 sizeID = i
         if sizeID<0:
-            log.error("size not found for %sx%s" % (width, height))
+            error("size not found for %sx%s" % (width, height))
             return False
         rates = XRRConfigRates(config, sizeID, &num_rates)
         rate = rates[0]
@@ -1491,7 +1502,7 @@ cdef _set_screen_size(display_source, pywindow, width, height):
         time = CurrentTime    #gtk.gdk.x11_get_server_time(pywindow)
         status = XRRSetScreenConfigAndRate(display, config, window, sizeID, rotation, rate, time)
         if status != Success:
-            log.error("failed to set new screen size")
+            error("failed to set new screen size")
             return False
         return True
     finally:
@@ -1816,7 +1827,7 @@ def sendClientMessage(target, window, propagate, event_mask,
     display = get_xdisplay_for(target)
     t = get_xwindow(target)
     w = get_xwindow(window)
-    log("sending message to %s", hex(w))
+    debug("sending message to %s", hex(w))
     e.type = ClientMessage
     e.xany.display = display
     e.xany.window = w
@@ -1839,7 +1850,7 @@ def sendClick(target, button, onoff, x_root, y_root, x, y):
     cdef Window r
     w = get_xwindow(target)
     r = get_xwindow(gtk.gdk.get_default_root_window())
-    log("sending message to %s", hex(w))
+    debug("sending message to %s", hex(w))
     cdef XEvent e                       #@DuplicatedSignature
     e.type = ButtonPress
     e.xany.display = display
@@ -1910,7 +1921,7 @@ def sendConfigureNotify(pywindow):
                                  0, 0,
                                  &dest_x, &dest_y, &child):
         # Window seems to have disappeared, so never mind.
-        log("couldn't TranslateCoordinates (maybe window is gone)")
+        debug("couldn't TranslateCoordinates (maybe window is gone)")
         return
 
     # Send synthetic ConfigureNotify (ICCCM 4.2.3, for example)
@@ -2059,8 +2070,10 @@ def add_event_receiver(window, receiver):
     if receivers is None:
         receivers = set()
         window.set_data(_ev_receiver_key, receivers)
-    if len(receivers)>5:
-        log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
+    if len(receivers)>3:
+        warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
+        import traceback
+        traceback.print_stack()
     if receiver not in receivers:
         receivers.add(receiver)
 
@@ -2158,11 +2171,11 @@ def init_x11_events():
             continue
         event_type = names_to_event_type.get(name)
         if event_type is None:
-            log.warn("could not find event type '%s' in %s", name, ", ".join(names_to_event_type.keys()))
+            warn("could not find event type '%s' in %s", name, ", ".join(names_to_event_type.keys()))
         else:
             debug_route_events.append(event_type)
     if len(debug_route_events)>0:
-        log.warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
+        warn("debugging of X11 events enabled for: %s", [event_type_names.get(x, x) for x in debug_route_events])
 
 #and change this debugging on the fly, programmatically:
 def add_debug_route_event(event_type):
@@ -2179,9 +2192,9 @@ def _route_event(event, signal, parent_signal):
     # matters for override redirect windows when they disappear, and we don't
     # care about those anyway.
     global debug_route_events
-    l = log.debug
+    l = debug
     if event.type in debug_route_events:
-        l = log.info
+        l = info
     def _maybe_send_event(window, signal, event):
         handlers = window.get_data(_ev_receiver_key)
         if handlers is not None:
@@ -2227,16 +2240,16 @@ def _gw(display, xwin):
         gtk.gdk.flush()
         error = gtk.gdk.error_trap_pop()
     except Exception, e:
-        log("cannot get gdk window for %s, %s: %s", display, xwin, e)
+        debug("cannot get gdk window for %s, %s: %s", display, xwin, e)
         error = gtk.gdk.error_trap_pop()
         if error:
-            log("ignoring XError %s in unwind", get_error_text(error))
+            debug("ignoring XError %s in unwind", get_error_text(error))
         raise XError(e)
     if error:
-        log("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
+        debug("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
         raise XError(error)
     if win is None:
-        log("cannot get gdk window for %s, %s", display, xwin)
+        debug("cannot get gdk window for %s, %s", display, xwin)
         raise XError(BadWindow)
     return win
 
@@ -2264,9 +2277,9 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         event_args = my_events.get(e.type)
         msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
         if XPRA_X11_DEBUG:
-            log.info(*msg)
+            info(*msg)
         else:
-            log(*msg)
+            debug(*msg)
         if event_args is not None:
             pyev = AdHocStruct()
             pyev.type = e.type
@@ -2278,10 +2291,10 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                 if e.type != XKBNotify:
                     pyev.delivered_to = _gw(d, e.xany.window)
                 if e.type == MapRequest:
-                    log("MapRequest received")
+                    debug("MapRequest received")
                     pyev.window = _gw(d, e.xmaprequest.window)
                 elif e.type == ConfigureRequest:
-                    log("ConfigureRequest received")
+                    debug("ConfigureRequest received")
                     pyev.window = _gw(d, e.xconfigurerequest.window)
                     pyev.x = e.xconfigurerequest.x
                     pyev.y = e.xconfigurerequest.y
@@ -2301,15 +2314,15 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.detail = e.xconfigurerequest.detail
                     pyev.value_mask = e.xconfigurerequest.value_mask
                 elif e.type in (FocusIn, FocusOut):
-                    log("FocusIn/FocusOut received")
+                    debug("FocusIn/FocusOut received")
                     pyev.window = _gw(d, e.xfocus.window)
                     pyev.mode = e.xfocus.mode
                     pyev.detail = e.xfocus.detail
                 elif e.type == ClientMessage:
-                    log("ClientMessage received")
+                    debug("ClientMessage received")
                     pyev.window = _gw(d, e.xany.window)
                     if long(e.xclient.message_type) > (long(2) ** 32):
-                        log.warn("Xlib claims that this ClientEvent's 32-bit "
+                        warn("Xlib claims that this ClientEvent's 32-bit "
                                  + "message_type is %s.  "
                                  + "Note that this is >2^32.  "
                                  + "This makes no sense, so I'm ignoring it.",
@@ -2323,7 +2336,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                         #_KDE_SPLASH_PROGRESS can be ignored silently
                         #we know about it and we don't care
                         if pyev.message_type!="_KDE_SPLASH_PROGRESS":
-                            log.warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
+                            warn("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)" % (pyev.message_type, pyev.format))
                         return GDK_FILTER_CONTINUE
                     pieces = []
                     for i in xrange(5):
@@ -2332,22 +2345,22 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                         pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
                     pyev.data = tuple(pieces)
                 elif e.type == MapNotify:
-                    log("MapNotify event received")
+                    debug("MapNotify event received")
                     pyev.window = _gw(d, e.xmap.window)
                     pyev.override_redirect = e.xmap.override_redirect
                 elif e.type == UnmapNotify:
-                    log("UnmapNotify event received")
+                    debug("UnmapNotify event received")
                     pyev.window = _gw(d, e.xunmap.window)
                 elif e.type == DestroyNotify:
-                    log("DestroyNotify event received")
+                    debug("DestroyNotify event received")
                     pyev.window = _gw(d, e.xdestroywindow.window)
                 elif e.type == PropertyNotify:
-                    log("PropertyNotify event received")
+                    debug("PropertyNotify event received")
                     pyev.window = _gw(d, e.xany.window)
                     pyev.atom = trap.call_synced(get_pyatom, d,
                                                  e.xproperty.atom)
                 elif e.type == ConfigureNotify:
-                    log("ConfigureNotify event received")
+                    debug("ConfigureNotify event received")
                     pyev.window = _gw(d, e.xconfigure.window)
                     pyev.x = e.xconfigure.x
                     pyev.y = e.xconfigure.y
@@ -2355,15 +2368,15 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     pyev.height = e.xconfigure.height
                     pyev.border_width = e.xconfigure.border_width
                 elif e.type == ReparentNotify:
-                    log("ReparentNotify event received")
+                    debug("ReparentNotify event received")
                     pyev.window = _gw(d, e.xreparent.window)
                 elif e.type == KeyPress:
-                    log("KeyPress event received")
+                    debug("KeyPress event received")
                     pyev.window = _gw(d, e.xany.window)
                     pyev.hardware_keycode = e.xkey.keycode
                     pyev.state = e.xkey.state
                 elif e.type == CursorNotify:
-                    log("Cursor event received")
+                    debug("Cursor event received")
                     pyev.window = _gw(d, e.xany.window)
                     cursor_e = <XFixesCursorNotifyEvent*>e
                     pyev.cursor_serial = cursor_e.cursor_serial
@@ -2373,7 +2386,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     # but this would be dirty, and we may want to catch
                     # other types of XKB events in the future
                     xkb_e = <XkbAnyEvent*>e
-                    log("XKB event received xkb_type=%s", xkb_e.xkb_type)
+                    debug("XKB event received xkb_type=%s", xkb_e.xkb_type)
                     if xkb_e.xkb_type!=XkbBellNotify:
                         return GDK_FILTER_CONTINUE
                     bell_e = <XkbBellNotifyEvent*>e
@@ -2388,18 +2401,18 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     # since we can fire it from a specific window
                     # but we need one for the dispatch logic, so use root if unset
                     if bell_e.window!=0:
-                        log("using bell_e.window=%s", bell_e.window)
+                        debug("using bell_e.window=%s", bell_e.window)
                         pyev.window = _gw(d, bell_e.window)
                     else:
                         pyev.window = d.get_default_screen().get_root_window()
-                        log("bell using root window=%s", pyev.window)
+                        debug("bell using root window=%s", pyev.window)
                     pyev.event_only = bool(bell_e.event_only)
                     pyev.delivered_to = pyev.window
                     pyev.window_model = None
                     pyev.bell_name = get_pyatom(pyev.window, bell_e.name)
-                    log("XKB BellEvent: event=%r", pyev)
+                    debug("XKB BellEvent: event=%r", pyev)
                 elif e.type == damage_type:
-                    log("DamageNotify received")
+                    debug("DamageNotify received")
                     damage_e = <XDamageNotifyEvent*>e
                     pyev.window = _gw(d, e.xany.window)
                     pyev.damage = damage_e.damage
@@ -2412,19 +2425,19 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     msg = "Some window in our event disappeared before we could " \
                         + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
                     if XPRA_X11_DEBUG:
-                        log.error(*msg)
+                        error(*msg)
                     else:
-                        log(*msg)
+                        debug(*msg)
                 else:
                     msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type_names.get(e.type), event_args, pyev
-                    log.error(*msg)
+                    error(*msg)
             else:
                 _route_event(pyev, *event_args)
     except (KeyboardInterrupt, SystemExit):
-        log("exiting on KeyboardInterrupt/SystemExit")
+        debug("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
     except:
-        log.warn("Unhandled exception in x_event_filter:", exc_info=True)
+        warn("Unhandled exception in x_event_filter:", exc_info=True)
     return GDK_FILTER_CONTINUE
 
 def init_x11_filter():
