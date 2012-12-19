@@ -16,7 +16,8 @@ from wimpiggy.lowlevel import (
            remove_event_receiver,           #@UnresolvedImport
            get_parent,                      #@UnresolvedImport
            addXSelectInput, const,          #@UnresolvedImport
-           geometry_with_border             #@UnresolvedImport
+           geometry_with_border,            #@UnresolvedImport
+           get_xwindow                      #@UnresolvedImport
            )
 
 from wimpiggy.log import Logger
@@ -109,6 +110,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                 #   4) call NameWindowPixmap
                 # we are safe.  (I think.)
                 listening = []
+                e = None
                 try:
                     win = get_parent(self._window)
                     while win is not None and win.get_parent() is not None:
@@ -124,15 +126,14 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         listening.append(win)
                         win = get_parent(win)
                     handle = xcomposite_name_window_pixmap(self._window)
-                except:
+                except Exception, e:
                     try:
                         self._cleanup_listening(listening)
                     except:
                         pass
                     raise
                 if handle is None:
-                    log.warn("failed to name a window pixmap (expect an X error soon)",
-                        type="pixmap")
+                    log.warn("failed to name a window pixmap for %s: %s", get_xwindow(self._window), e)
                     self._cleanup_listening(listening)
                 else:
                     self._contents_handle = handle
