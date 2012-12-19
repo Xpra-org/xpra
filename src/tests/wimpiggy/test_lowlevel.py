@@ -7,7 +7,6 @@
 
 from wimpiggy.test import *
 import wimpiggy.lowlevel as l
-import wimpiggy.lowlevel.send_wm
 import gtk
 from wimpiggy.error import trap, XError
 
