@@ -449,6 +449,8 @@ class ServerSource(object):
         self.sound_encoders = []
 
         self.keyboard_config = None
+        self.cursor_data = None
+        self.send_cursor_pending = False
 
         # the queues of damage requests we work through:
         self.damage_data_queue = Queue()           #holds functions to call to process damage data
@@ -863,15 +865,23 @@ class ServerSource(object):
         if self.clipboard_enabled:
             self.send(*packet)
 
-    def send_cursor(self, cursor_data, cursor_name=None):
-        if self.send_cursors:
-            if cursor_data:
-                #only newer versions support cursor names:
-                if not self.named_cursors:
-                    cursor_data = cursor_data[:8]
-                self.send("cursor", *cursor_data)
-            else:
-                self.send("cursor", "")
+    def send_cursor(self, cursor_data):
+        if not self.send_cursors:
+            return
+        self.cursor_data = cursor_data
+        if not self.send_cursor_pending:
+            self.send_cursor_pending = True
+            gobject.timeout_add(50, self.do_send_cursor)
+
+    def do_send_cursor(self):
+        self.send_cursor_pending = False
+        if self.cursor_data:
+            #only newer versions support cursor names:
+            if not self.named_cursors:
+                self.cursor_data = self.cursor_data[:8]
+            self.send("cursor", *self.cursor_data)
+        else:
+            self.send("cursor", "")
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if self.send_bell:
