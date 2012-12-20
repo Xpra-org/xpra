@@ -634,7 +634,7 @@ class WindowSource(object):
             return
         pixmap = window.get_property("client-contents")
         if pixmap is None:
-            error("get_window_pixmap: wtf, pixmap is None for window %s, wid=%s", window, self.wid)
+            debug("get_window_pixmap: pixmap is None for window %s, wid=%s", window, self.wid)
             return
         process_damage_time = time.time()
         data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options, logger=rgblog)

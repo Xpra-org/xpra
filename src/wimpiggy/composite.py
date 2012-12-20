@@ -74,7 +74,8 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self):
         if self._damage_handle is not None and self._window is not None:
             #"Synchronously modifies the regions..." so unsynced?
-            trap.swallow_synced(xdamage_acknowledge, self._window, self._damage_handle)
+            if not trap.swallow_synced(xdamage_acknowledge, self._window, self._damage_handle):
+                self.invalidate_pixmap()
 
     def invalidate_pixmap(self):
         log("invalidating named pixmap")
@@ -133,7 +134,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         pass
                     raise
                 if handle is None:
-                    log.warn("failed to name a window pixmap for %s: %s", get_xwindow(self._window), e)
+                    log("failed to name a window pixmap for %s: %s", get_xwindow(self._window), e)
                     self._cleanup_listening(listening)
                 else:
                     self._contents_handle = handle
