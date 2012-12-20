@@ -1,17 +1,24 @@
-v0.8.0 (2012-11-13)
+v0.8.0 (2012-12-20)
 ======================
-	-- fix window aspect ratio not preserved
 	-- fix modal windows support
 	-- fix default mouse cursor: now uses the client's default cursor
 	-- fix "double-apple" in menu on OSX
-	-- limit the number of raw packets per client to prevent memory exhaustion
-	-- authentication fix: salt per connection
+	-- fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers
+	-- fix limit the number of raw packets per client to prevent DoS via memory exhaustion
+	-- fix authentication: ensure salt is per connection
+	-- performance optimizations in critical sections, logging conditional removal
+	-- avoid server loops: prevent the client from connecting to itself
+	-- group windows according to the remote application they belong to
+	-- sound forwarding
+	-- faster and more reliable client and server exit (from signal or otherwise)
 	-- SSH support on MS Windows
 	-- "xpra shadow" mode to clone an existing X11 display
+	-- support for delta pixels mode (most useful for shadow)
 	-- avoid warnings and X11 errors with the screenshot command
 	-- better mouse cursor support: send cursors by name so their size matches the client's settings
+	-- mitigate cursors change storms: introduce simple cursor batching
 	-- support system tray icon forwarding (limited)
-	-- restore window on previous workspace
+	-- preserve window workspace
 	-- AES packet encryption for TCP mode
 	-- launcher entry box for username in SSH mode
 	-- launcher improvements: highlight the password field if needed, prevent warnings, etc
@@ -19,12 +26,26 @@ v0.8.0 (2012-11-13)
 	-- use lossless encoders more aggressively when possible
 	-- new x264 tuning options: profiles to use and thresholds
 	-- better detection of dead server sockets: retry and remove them if needed
+	-- improved session information dialog and graphs
 	-- send window icons in dedicated compressed packet (smaller new-window packets, faster)
 	-- detect overly large main packets
+	-- partial/initial Java/AWT keyboard support
 	-- py2exe, ebuild and distutils improvements: faster and cleaner builds, discarding unwanted modules
 	-- osx and win32 build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
 	-- osx command line path fix
-	-- updated Cython to 0.17.1 for binary builds
+	-- updated Cython to 0.17.3 for binary builds
+
+
+v0.7.6 (2012-12-20)
+======================
+	-- fix tray options meant to be unusable until connected
+	-- fix missing first bell in error case
+	-- fix potential DoS in client disconnection accounting
+	-- fix network calls coming from wrong thread in error case
+	-- fix unlikely locking issue and reduce lock hold time
+	-- fix disconnect all connected clients cleanly
+	-- fix clipboard flag handling
+	-- don't bother trying to auto-refresh in lossless modes
 
 
 v0.7.5 (2012-12-06)
