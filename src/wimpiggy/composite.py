@@ -77,7 +77,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             trap.swallow_synced(xdamage_acknowledge, self._window, self._damage_handle)
 
     def invalidate_pixmap(self):
-        log("invalidating named pixmap", type="pixmap")
+        log("invalidating named pixmap")
         if self._listening_to is not None:
             self._cleanup_listening(self._listening_to)
             self._listening_to = None
@@ -92,7 +92,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
 
     def do_get_property_contents_handle(self, name):
         if self._contents_handle is None:
-            log("refreshing named pixmap", type="pixmap")
+            log("refreshing named pixmap")
             assert self._listening_to is None
             def set_pixmap():
                 # The tricky part here is that the pixmap returned by

@@ -137,7 +137,7 @@ class WorldWindow(gtk.Window):
             send_wm_take_focus(self.window, current_time)
 
     def do_focus_in_event(self, *args):
-        log("world window got focus", type="focus")
+        log("world window got focus")
         if not self.get_property("has-toplevel-focus"):
             #super(WorldWindow, self).do_focus_in_event(*args)
             gtk.Window.do_focus_in_event(self, *args)
@@ -149,7 +149,7 @@ class WorldWindow(gtk.Window):
         return False
 
     def _take_focus(self):
-        log("Focus -> world window", type="focus")
+        log("Focus -> world window")
         assert self.flags() & gtk.REALIZED
         # Weird hack: we are a GDK window, and the only way to properly get
         # input focus to a GDK window is to send it WM_TAKE_FOCUS.  So this is
@@ -162,7 +162,7 @@ class WorldWindow(gtk.Window):
 
     def reset_x_focus(self):
         focus = self.get_focus()
-        log("widget with focus: %s", focus, type="focus")
+        log("widget with focus: %s", focus)
         if isinstance(focus, wimpiggy.window.WindowView):
             # FIXME: ugly:
             focus.model.give_client_focus()

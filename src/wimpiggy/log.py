@@ -32,11 +32,7 @@ class Logger(object):
     def log(self, level, msg, *args, **kwargs):
         if kwargs.get("exc_info") is True:
             kwargs["exc_info"] = sys.exc_info()
-        ltype = None
-        if "type" in kwargs:
-            ltype = kwargs["type"]
-            del kwargs["type"]
-        self.getLogger(ltype).log(level, msg, *args, **kwargs)
+        self.getLogger().log(level, msg, *args, **kwargs)
 
     def _method_maker(level):           #@NoSelf
         return (lambda self, msg, *args, **kwargs:
