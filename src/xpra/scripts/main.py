@@ -749,10 +749,18 @@ def run_client(parser, opts, extra_args, mode):
         elif mode=="attach":
             log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
     app.connect("handshake-complete", handshake_complete)
-    def client_SIGINT(*args):
-        print("received SIGINT, closing")
-        app.quit(-signal.SIGINT)
-    signal.signal(signal.SIGINT, client_SIGINT)
+    import gobject
+    def deadly_signal(signum, frame):
+        print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        app.cleanup()
+        os._exit(128 + signum)
+    def client_signal(signum, frame):
+        print("got signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+        gobject.timeout_add(0, app.quit, priority=gobject.PRIORITY_HIGH)
+    signal.signal(signal.SIGINT, client_signal)
+    signal.signal(signal.SIGTERM, client_signal)
     try:
         try:
             return app.run()

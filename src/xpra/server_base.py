@@ -271,7 +271,7 @@ class XpraServerBase(object):
         log.info("got signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        gobject.idle_add(self.quit, False)
+        gobject.timeout_add(0, self.quit, False, priority=gobject.PRIORITY_HIGH)
 
     def quit(self, upgrading):
         self._upgrading = upgrading
@@ -1221,7 +1221,7 @@ class XpraServerBase(object):
 
     def refresh_windows(self, proto, wid_windows, opts=None):
         for wid, window in wid_windows.items():
-            if window is None:
+            if window is None or not window.is_managed():
                 continue
             if not window.is_OR() and not self.is_shown(window):
                 log("window is no longer shown, ignoring buffer refresh which would fail")
