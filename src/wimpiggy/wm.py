@@ -258,14 +258,12 @@ class Wm(gobject.GObject):
     # have detected a new client window, and start managing it:
     def _manage_client(self, gdkwindow):
         try:
-            trap.call_synced(self.do_manage_client, gdkwindow)
+            if gdkwindow not in self._windows:
+                trap.call_synced(self.do_manage_client, gdkwindow)
         except Exception, e:
-            log.warn("failed to manage client %s: %s", gdkwindow, e)
+            log("failed to manage client %s: %s", gdkwindow, e)
 
     def do_manage_client(self, gdkwindow):
-        if gdkwindow in self._windows:
-            log.error("window %s is already managed!", gdkwindow)
-            return
         try:
             win = WindowModel(self._root, gdkwindow)
         except Unmanageable:
