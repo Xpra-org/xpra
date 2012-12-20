@@ -255,6 +255,9 @@ class XpraServer(gobject.GObject, XpraServerBase):
         log("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
+            if not window.is_managed():
+                #we keep references to windows that aren't meant to be displayed..
+                continue
             #most of the code here is duplicated from the send functions
             #so we can send just to the new client and request damage
             #just for the new client too:
@@ -315,13 +318,13 @@ class XpraServer(gobject.GObject, XpraServerBase):
         window = self._id_to_window.get(wid)
         if window:
             if window.is_managed():
-                log.warn("found existing window model %s for %s, will refresh it", type(window), get_xwindow(raw_window))
+                log("found existing window model %s for %s, will refresh it", type(window), get_xwindow(raw_window))
                 geometry = window.get_property("geometry")
                 _, _, w, h = geometry
                 self._damage(window, 0, 0, w, h, options={"calculate" : False, "min_delay" : 50})
                 return
-            log.warn("found existing model %s (but no longer managed!) for %s: %s", type(window), get_xwindow(raw_window), window)
-            window = None
+            log("found existing model %s (but no longer managed!) for %s", type(window), get_xwindow(raw_window))
+            return
         tray_window = get_tray_window(raw_window)
         log("Discovered new override-redirect window: %s (tray=%s)", get_xwindow(raw_window), tray_window)
         try:
@@ -329,16 +332,16 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 assert self._tray
                 window = SystemTrayWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
+                raw_window.set_data(WINDOW_MODEL_KEY, wid)
+                window.call_setup()
                 self._send_new_tray_window_packet(wid, window)
             else:
                 window = OverrideRedirectWindowModel(raw_window)
                 wid = self._add_new_window_common(window)
-                ch = window.get_property("client-contents-handle")
-                if ch is None:
-                    raise Unmanageable("failed to get damage handle")
+                raw_window.set_data(WINDOW_MODEL_KEY, wid)
+                window.call_setup()
                 window.connect("notify::geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
-            raw_window.set_data(WINDOW_MODEL_KEY, wid)
         except Unmanageable, e:
             if window:
                 #if window is set, we failed after instantiating it,
@@ -428,17 +431,17 @@ class XpraServer(gobject.GObject, XpraServerBase):
         geometry = self._desktop_manager.window_geometry(window)
         self._do_send_new_window_packet("new-window", window, geometry, self._all_metadata)
 
-    def _send_new_or_window_packet(self, window):
+    def _send_new_or_window_packet(self, window, options=None):
         geometry = window.get_property("geometry")
         self._do_send_new_window_packet("new-override-redirect", window, geometry, self._OR_metadata)
         (_, _, w, h) = geometry
-        self._damage(window, 0, 0, w, h)
+        self._damage(window, 0, 0, w, h, options=options)
 
-    def _send_new_tray_window_packet(self, wid, window):
+    def _send_new_tray_window_packet(self, wid, window, options=None):
         (_, _, w, h) = window.get_property("geometry")
         for ss in self._server_sources.values():
             ss.new_tray(wid, window, w, h)
-        self._damage(window, 0, 0, w, h)
+        self._damage(window, 0, 0, w, h, options=options)
 
 
     def _update_metadata(self, window, pspec):
@@ -446,7 +449,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         for ss in self._server_sources.values():
             ss.window_metadata(wid, window, pspec.name)
 
-    def _lost_window(self, window, wm_exiting):
+    def _lost_window(self, window, wm_exiting=False):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
             ss.lost_window(wid, window)

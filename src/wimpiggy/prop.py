@@ -310,22 +310,26 @@ def _prop_decode_list(disp, etype, data):
     return [x for x in props if x is not None]
 
 # May return None.
-def prop_get(target, key, etype, ignore_errors=False):
+def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     if isinstance(etype, list):
         scalar_type = etype[0]
     else:
         scalar_type = etype
     (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
-        #print(atom)
         data = trap.call_synced(XGetWindowProperty, target, key, atom)
-        #print(atom, repr(data[:100]))
     except NoSuchProperty:
         log.debug("Missing property %s (%s)", key, etype)
         return None
-    except (XError, PropertyError):
+    except XError:
+        if raise_xerrors:
+            raise
+        log.info("Missing window %s or wrong property type %s (%s)", target, key, etype)
+        traceback.print_exc()
+        return None
+    except PropertyError:
         if not ignore_errors:
-            log.info("Missing window or missing property or wrong property type %s (%s)", key, etype)
+            log.info("Missing property or wrong property type %s (%s)", key, etype)
             traceback.print_exc()
         return None
     try:

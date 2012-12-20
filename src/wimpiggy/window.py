@@ -260,6 +260,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def call_setup(self):
         log("call_setup() adding event receiver")
+        try:
+            self._geometry = trap.call_unsynced(geometry_with_border, self.client_window)
+        except XError, e:
+            raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
         # reparent, so I'm not sure doing this here in the superclass,
@@ -293,7 +297,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         h = self._composite.connect("contents-changed", self._forward_contents_changed)
         self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
         self._damage_forward_handle = h
-        self._geometry = geometry_with_border(self.client_window)
+
+    def prop_get(self, key, ptype, ignore_errors=False, raise_xerrors=False):
+        # Utility wrapper for prop_get on the client_window
+        # also allows us to ignore property errors during setup_client
+        if not self._setup_done:
+            ignore_errors = True
+        return prop_get(self.client_window, key, ptype, ignore_errors=ignore_errors, raise_xerrors=raise_xerrors)
 
     def is_managed(self):
         return self._managed
@@ -343,11 +353,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = None
 
     def _read_initial_properties(self):
-        transient_for = self.prop_get("WM_TRANSIENT_FOR", "window")
+        def pget(*args):
+            return self.prop_get(*args, raise_xerrors=True)
+        transient_for = pget("WM_TRANSIENT_FOR", "window")
         # May be None
         self._internal_set_property("transient-for", transient_for)
 
-        window_types = self.prop_get("_NET_WM_WINDOW_TYPE", ["atom"])
+        window_types = pget("_NET_WM_WINDOW_TYPE", ["atom"])
         if not window_types:
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
@@ -378,8 +390,10 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def __init__(self, client_window):
         BaseWindowModel.__init__(self, client_window)
-        self.call_setup()
+
+    def call_setup(self):
         self._read_initial_properties()
+        BaseWindowModel.call_setup(self)
 
     def setup(self):
         BaseWindowModel.setup(self)
@@ -390,16 +404,16 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         # already generated, and our request for that event is too late!
         # So double check now, *after* putting in our request:
         if not is_mapped(self.client_window):
-            raise XError("window already unmapped")
+            raise Unmanageable("window already unmapped")
+        ch = self._composite.get_property("contents-handle")
+        if ch is None:
+            raise Unmanageable("failed to get damage handle")
 
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
 
     def do_wimpiggy_unmap_event(self, event):
         self.unmanage()
-
-    def prop_get(self, key, ptype):
-        return prop_get(self.client_window, key, ptype, ignore_errors=False)
 
     def get_dimensions(self):
         ww, wh = self._geometry[2:4]
@@ -623,13 +637,6 @@ class WindowModel(BaseWindowModel):
 
     def get_dimensions(self):
         return  self.get_property("actual-size")
-
-    def prop_get(self, key, ptype, ignore_errors=False):
-        # Utility wrapper for prop_get on the client_window
-        # also allows us to ignore property errors during setup_client
-        if not self._setup_done:
-            ignore_errors = True
-        return prop_get(self.client_window, key, ptype, ignore_errors=ignore_errors)
 
     def do_wimpiggy_xkb_event(self, event):
         log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)
@@ -971,6 +978,8 @@ class WindowModel(BaseWindowModel):
     def _read_initial_properties(self):
         # Things that don't change:
         BaseWindowModel._read_initial_properties(self)
+        def pget(*args):
+            return self.prop_get(*args, raise_xerrors=True)
 
         geometry = self.client_window.get_geometry()
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
@@ -987,24 +996,24 @@ class WindowModel(BaseWindowModel):
             except ValueError:
                 log.warn("Malformed WM_CLASS: %s, ignoring", class_instance)
                 return  False
-        class_instance = self.prop_get("WM_CLASS", "latin1")
+        class_instance = pget("WM_CLASS", "latin1")
         if class_instance:
             if not set_class_instance(class_instance):
-                set_class_instance(self.prop_get("WM_CLASS", "utf8"))
+                set_class_instance(pget("WM_CLASS", "utf8"))
 
-        protocols = self.prop_get("WM_PROTOCOLS", ["atom"])
+        protocols = pget("WM_PROTOCOLS", ["atom"])
         if protocols is None:
             protocols = []
         self._internal_set_property("protocols", protocols)
         self.notify("can-focus")
 
-        pid = self.prop_get("_NET_WM_PID", "u32")
+        pid = pget("_NET_WM_PID", "u32")
         if pid is not None:
             self._internal_set_property("pid", pid)
         else:
             self._internal_set_property("pid", -1)
 
-        client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1")
+        client_machine = pget("WM_CLIENT_MACHINE", "latin1")
         # May be None
         self._internal_set_property("client-machine", client_machine)
 
@@ -1023,7 +1032,7 @@ class WindowModel(BaseWindowModel):
         # initial states are read off from the client, and (2) is accomplished
         # by having WM_HINTS affect _NET_WM_STATE.  But this means that
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
-        net_wm_state = self.prop_get("_NET_WM_STATE", ["atom"])
+        net_wm_state = pget("_NET_WM_STATE", ["atom"])
         if net_wm_state:
             self._internal_set_property("state", ImmutableSet(net_wm_state))
         else:
