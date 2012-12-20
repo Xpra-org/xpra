@@ -623,8 +623,8 @@ class WindowModel(BaseWindowModel):
         self._sanitize_size_hints(hints)
         nw, nh = calc_constrained_size(w, h, hints)[:2]
         if nw>=32768 or nh>=32768:
-            log.error("setup() window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)", nw, nh, w, h, hints)
-            nw, nh = gtk.gdk.get_default_root_window().get_size()
+            #we can't handle windows that big!
+            raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
         log("setup() resizing windows to %sx%s", nw, nh)
         self.client_window.resize(nw, nh)
         self.corral_window.resize(nw, nh)
