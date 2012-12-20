@@ -316,17 +316,18 @@ class XpraServer(gobject.GObject, XpraServerBase):
         WINDOW_MODEL_KEY = "_xpra_window_model_"
         wid = raw_window.get_data(WINDOW_MODEL_KEY)
         window = self._id_to_window.get(wid)
+        xid = get_xwindow(raw_window)
         if window:
             if window.is_managed():
-                log("found existing window model %s for %s, will refresh it", type(window), get_xwindow(raw_window))
+                log("found existing window model %s for %s, will refresh it", type(window), xid)
                 geometry = window.get_property("geometry")
                 _, _, w, h = geometry
-                self._damage(window, 0, 0, w, h, options={"calculate" : False, "min_delay" : 50})
+                self._damage(window, 0, 0, w, h, options={"min_delay" : 50})
                 return
-            log("found existing model %s (but no longer managed!) for %s", type(window), get_xwindow(raw_window))
+            log("found existing model %s (but no longer managed!) for %s", type(window), xid)
             return
         tray_window = get_tray_window(raw_window)
-        log("Discovered new override-redirect window: %s (tray=%s)", get_xwindow(raw_window), tray_window)
+        log("Discovered new override-redirect window: %s (tray=%s)", xid, tray_window)
         try:
             if tray_window is not None:
                 assert self._tray
@@ -348,7 +349,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
                 #so we need to fail it manually:
                 window.setup_failed(e)
             else:
-                log.warn("cannot add %s: %s", get_xwindow(raw_window), e)
+                log.warn("cannot add %s: %s", xid, e)
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
