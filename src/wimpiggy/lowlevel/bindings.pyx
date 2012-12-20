@@ -11,6 +11,7 @@
 
 import struct
 import os
+import time
 
 import gobject
 import gtk
@@ -22,8 +23,8 @@ from wimpiggy.error import trap, XError
 from wimpiggy.log import Logger
 log = Logger("wimpiggy.lowlevel")
 
-XPRA_X11_LOG = os.environ.get("XPRA_X11_LOG", "0")!="0"
 XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
+XPRA_X11_LOG = XPRA_X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0"
 if XPRA_X11_LOG:
     debug = log.debug
     info = log.info
@@ -184,7 +185,7 @@ cdef extern from "X11/Xlib.h":
     # can broadcast it:
     Window XGetSelectionOwner(Display * display, Atom selection)
 
-    int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time time)
+    int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
 
     # There are way more event types than this; add them as needed.
     ctypedef struct XAnyEvent:
@@ -322,7 +323,7 @@ cdef extern from "X11/Xlib.h":
                       Window ** children, unsigned int * nchildren)
 
     int cXSetInputFocus "XSetInputFocus" (Display * display, Window focus,
-                                          int revert_to, Time time)
+                                          int revert_to, Time ctime)
     # Debugging:
     int cXGetInputFocus "XGetInputFocus" (Display * display, Window * focus,
                                           int * revert_to)
@@ -2265,6 +2266,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     e = <XEvent*>e_gdk
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         return GDK_FILTER_CONTINUE
+    start = time.time()
     try:
         d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
         my_events = _x_event_signals
@@ -2275,11 +2277,9 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         else:
             damage_type = -1
         event_args = my_events.get(e.type)
-        msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
         if XPRA_X11_DEBUG:
+            msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
             info(*msg)
-        else:
-            debug(*msg)
         if event_args is not None:
             pyev = AdHocStruct()
             pyev.type = e.type
@@ -2425,7 +2425,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     msg = "Some window in our event disappeared before we could " \
                         + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
                     if XPRA_X11_DEBUG:
-                        error(*msg)
+                        info(*msg)
                     else:
                         debug(*msg)
                 else:
@@ -2433,6 +2433,9 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     error(*msg)
             else:
                 _route_event(pyev, *event_args)
+        if XPRA_X11_DEBUG:
+            msg = "x_event_filter event=%s/%s took %sms", event_args, event_type_names.get(e.type, e.type), int(100000*(time.time()-start))/100.0
+            info(*msg)
     except (KeyboardInterrupt, SystemExit):
         debug("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
