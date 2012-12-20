@@ -649,6 +649,9 @@ class WindowSource(object):
             #because the code may rely on the client having received this frame
             if packet:
                 self.queue_damage_packet(packet, damage_time, process_damage_time)
+                if self.encoding in ("png", "rgb24"):
+                    #primary encoding is lossless, no need for auto-refresh
+                    return
                 #auto-refresh:
                 if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
