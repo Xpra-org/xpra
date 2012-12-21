@@ -576,6 +576,7 @@ elif sys.platform.startswith("win"):
 
 
 if xor_ENABLED:
+    packages.append("xpra.xor")
     cython_add(Extension("xpra.xor.cyxor",
                 ["xpra/xor/cyxor.pyx"]))
 
