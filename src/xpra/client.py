@@ -90,10 +90,15 @@ GLClientWindowClass = None
 #the GL backend only works with gtk2:
 if USE_OPENGL and not is_gtk3():
     try:
-        from xpra.gl.gl_client_window import GLClientWindow
-        GLClientWindowClass = GLClientWindow
+        from xpra import gl
+        try:
+            from xpra.gl.gl_client_window import GLClientWindow
+            GLClientWindowClass = GLClientWindow
+        except Exception, e:
+            log.error("Error loading OpenGL support: %s", e, exc_info=True)
+            USE_OPENGL = False
     except ImportError, e:
-        log.warn("Disabled OpenGL output: %s" % e)
+        log("OpenGL support not installed: %s", e)
         USE_OPENGL = False
 
 def nn(x):
