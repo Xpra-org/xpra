@@ -58,7 +58,7 @@ class GLPixmapBacking(PixmapBacking):
         # Re-create textures
         self.pixel_format = None
         PixmapBacking.init(self, w, h)
-        drawable = self.gl_begin()
+        self.drawable = self.gl_begin()
 
         log("GL Pixmap backing size: %d x %d", w, h)
         glViewport(0, 0, w, h)
@@ -72,8 +72,6 @@ class GLPixmapBacking(PixmapBacking):
 
         if self.textures is None:
             self.textures = glGenTextures(3)
-
-        self.gl_end(drawable)
 
     def close(self):
         PixmapBacking.close(self)
@@ -99,27 +97,21 @@ class GLPixmapBacking(PixmapBacking):
             log.error("OpenGL error: cannot create rendering context!")
         return drawable
 
-    def gl_end(self, drawable):
+    def gl_end(self):
         glFlush()
-        drawable.gl_end()
+        self.drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
         log("gl_expose_event(%s, %s)", glarea, event)
         area = event.area
         x, y, w, h = area.x, area.y, area.width, area.height
-        drawable = self.gl_begin()
-        if not drawable:
+        if not self.drawable:
             return
-        try:
-            self.render_image(drawable, x, y, w, h)
-        finally:
-            self.gl_end(drawable)
+        self.render_image(x, y, w, h)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
         assert self.textures is not None
-        drawable = self.gl_begin()
-
         #cleanup if we were doing yuv previously:
         if self.pixel_format!=GLPixmapBacking.RGB24:
             self.remove_shader()
@@ -141,7 +133,6 @@ class GLPixmapBacking(PixmapBacking):
             glTexCoord2i(rx, ry)
             glVertex2i(rx, ry)
         glEnd()
-        self.gl_end(drawable)
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -155,20 +146,16 @@ class GLPixmapBacking(PixmapBacking):
         csc_pixel_format = options.get("csc_pixel_format", -1)
         pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
         def do_paint():
-            drawable = self.gl_begin()
-            if not drawable:
+            if not self.drawable:
                 return
             try:
-                try:
-                    self.update_texture_yuv(drawable, img_data, x, y, width, height, rowstrides, pixel_format)
-                    w, h = self.size
-                    self.render_image(drawable, 0, 0, w, h)
-                    self.fire_paint_callbacks(callbacks, True)
-                except Exception, e:
-                    log.error("OpenGL paint error: %s", e, exc_info=True)
-                    self.fire_paint_callbacks(callbacks, False)
-            finally:
-                self.gl_end(drawable)
+                self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
+                w, h = self.size
+                self.render_image(0, 0, w, h)
+                self.fire_paint_callbacks(callbacks, True)
+            except Exception, e:
+                log.error("OpenGL paint error: %s", e, exc_info=True)
+                self.fire_paint_callbacks(callbacks, False)
         gobject.idle_add(do_paint)
 
     def get_subsampling_divs(self, pixel_format):
@@ -180,7 +167,7 @@ class GLPixmapBacking(PixmapBacking):
             return 1, 1, 1
         raise Exception("invalid pixel format: %s" % pixel_format)
 
-    def update_texture_yuv(self, drawable, img_data, x, y, width, height, rowstrides, pixel_format):
+    def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
         window_width, window_height = self.size
         assert self.textures is not None, "no OpenGL textures!"
 
@@ -228,7 +215,7 @@ class GLPixmapBacking(PixmapBacking):
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div, height/div, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
 
-    def render_image(self, drawable, rx, ry, rw, rh):
+    def render_image(self, rx, ry, rw, rh):
         log("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
