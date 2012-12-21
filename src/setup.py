@@ -72,6 +72,11 @@ xor_ENABLED = True
 
 
 
+#currently does not work on MS Windows:
+opengl_ENABLED = not sys.platform.startswith("win")
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
@@ -91,13 +96,15 @@ for arg in sys.argv:
         sound_ENABLED = False
     elif arg == "--without-xor":
         xor_ENABLED = False
+    elif arg == "--without-opengl":
+        opengl_ENABLED = False
     elif arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
         filtered_args.append(arg)
 sys.argv = filtered_args
-print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, xor=%s, force Xdummy=%s" %
-      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xor_ENABLED, xdummy_ENABLED))
+print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, xor=%s, OpengGL=%s, force Xdummy=%s" %
+      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xor_ENABLED, opengl_ENABLED, xdummy_ENABLED))
 
 
 #*******************************************************************************
@@ -427,8 +434,7 @@ if sys.platform.startswith("win"):
                         "hashlib",
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
-    WIN32_OPENGL = False    #currently does not work..
-    if WIN32_OPENGL:
+    if opengl_ENABLED:
         #import OpenGL.GL                    #@UnusedImport
         #import OpenGL.platform.win32        #@UnusedImport
         #import OpenGL_accelerate            #@UnusedImport @UnresolvedImport
@@ -627,6 +633,13 @@ if webp_ENABLED:
     packages.append("xpra.webm")
 elif sys.platform.startswith("win"):
     py2exe_excludes.append("xpra.webm")
+
+
+
+if opengl_ENABLED:
+    packages.append("xpra.gl")
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.gl")
 
 
 
