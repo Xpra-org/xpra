@@ -66,7 +66,7 @@ class GLClientWindow(ClientWindow):
             if lock:
                 lock.acquire()
             if self._backing is None:
-                from xpra.gl_window_backing import GLPixmapBacking
+                from xpra.gl.gl_window_backing import GLPixmapBacking
                 self._backing = GLPixmapBacking(self._id, w, h, self._client.supports_mmap, self._client.mmap)
             if self._configured:
                 self._backing.init(w, h)

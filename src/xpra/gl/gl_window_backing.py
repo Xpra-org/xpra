@@ -14,9 +14,8 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P
-from xpra.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
+from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking
-from xpra.scripts.main import ENCODINGS
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_COORD_ARRAY, GL_FRAGMENT_PROGRAM_ARB, \
     GL_PROGRAM_ERROR_STRING_ARB, GL_RGB, GL_PROGRAM_FORMAT_ASCII_ARB, \
@@ -87,16 +86,8 @@ class GLPixmapBacking(PixmapBacking):
         if self.pixel_format in (YUV420P, YUV422P, YUV444P):
             self.render_image()
 
-    def do_paint_pixbuf(self, pixbuf, x, y, width, height, options, callbacks):
-        img_data = pixbuf.get_pixels()
-        rowstride = pixbuf.get_rowstride()
-        self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-
-    def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        """ must be called from UI thread """
-        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
-        assert "rgb24" in ENCODINGS
-
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        log.info("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
         if not drawable.gl_begin(context):
@@ -129,9 +120,6 @@ class GLPixmapBacking(PixmapBacking):
 
         drawable.swap_buffers()
         drawable.gl_end()
-
-        self.fire_paint_callbacks(callbacks, True)
-        return  False
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
