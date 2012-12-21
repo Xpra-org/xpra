@@ -87,7 +87,7 @@ class GLPixmapBacking(PixmapBacking):
             self.render_image()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        log.info("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
         if not drawable.gl_begin(context):

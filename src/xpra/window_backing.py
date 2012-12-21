@@ -317,7 +317,6 @@ class PixmapBacking(Backing):
                 lwidth, lheight, store, ldata = self._last_pixmap_data
                 assert width==lwidth and height==lheight and delta==store
                 img_data = xor_str(img_data, ldata)
-                log.info("xored %s bytes", len(img_data))
             else:
                 raise Exception("delta region references pixmap data we do not have!")
         self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
