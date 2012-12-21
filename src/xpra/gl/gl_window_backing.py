@@ -78,6 +78,8 @@ class GLPixmapBacking(PixmapBacking):
     def close(self):
         PixmapBacking.close(self)
         self.remove_shader()
+        self.glarea = None
+        self.glconfig = None
 
     def remove_shader(self):
         if self.yuv_shader:
@@ -86,18 +88,19 @@ class GLPixmapBacking(PixmapBacking):
             self.yuv_shader = None
 
     def gl_begin(self):
+        if self.glarea is None:
+            return None     #closed already
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
         if drawable is None or context is None:
             log.error("OpenGL error: no drawable or context!")
-            return None, None
+            return None
         if not drawable.gl_begin(context):
             log.error("OpenGL error: cannot create rendering context!")
         return drawable
 
-    def gl_end(self, drawable, flush=True):
-        if flush:
-            glFlush()
+    def gl_end(self, drawable):
+        glFlush()
         drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):

@@ -465,8 +465,8 @@ class ClientWindow(gtk.Window):
         if self._refresh_timer:
             gobject.source_remove(self._refresh_timer)
         self._unfocus()
-        gtk.Window.destroy(self)
         self._backing.close()
+        gtk.Window.destroy(self)
 
     def _unfocus(self):
         if self._client._focused==self._id:
