@@ -80,28 +80,17 @@ opengl_ENABLED = not sys.platform.startswith("win")
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 for arg in sys.argv:
-    if arg == "--without-x264":
-        x264_ENABLED = False
-    elif arg == "--without-vpx":
-        vpx_ENABLED = False
-    elif arg == "--without-webp":
-        webp_ENABLED = False
-    elif arg == "--without-rencode":
-        rencode_ENABLED = False
-    elif arg == "--without-clipboard":
-        clipboard_ENABLED = False
-    elif arg == "--without-server":
-        server_ENABLED = False
-    elif arg == "--without-sound":
-        sound_ENABLED = False
-    elif arg == "--without-xor":
-        xor_ENABLED = False
-    elif arg == "--without-opengl":
-        opengl_ENABLED = False
-    elif arg == "--enable-Xdummy":
+    if arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
-        filtered_args.append(arg)
+        matched = False
+        for x in ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "xor", "opengl"):
+            if arg=="--without-%s" % x:
+                vars()["%s_ENABLED" % x] = False
+                matched = True
+                break
+        if not matched:
+            filtered_args.append(arg)
 sys.argv = filtered_args
 print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, xor=%s, OpengGL=%s, force Xdummy=%s" %
       (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xor_ENABLED, opengl_ENABLED, xdummy_ENABLED))
