@@ -784,7 +784,7 @@ class WindowSource(object):
         if coding in self.supports_delta:
             if self.last_pixmap_data is not None:
                 lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
-                if lw==w and lh==h and lcoding==coding and lsequence+1==sequence and len(ldata)==len(rgbdata):
+                if lw==w and lh==h and lcoding==coding and len(ldata)==len(rgbdata):
                     #xor with the last frame:
                     delta = lsequence
                     data = xor_str(rgbdata, ldata)
