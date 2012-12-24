@@ -319,11 +319,13 @@ class PixmapBacking(Backing):
                 img_data = xor_str(img_data, ldata)
             else:
                 raise Exception("delta region references pixmap data we do not have!")
-        self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-        self.fire_paint_callbacks(callbacks, True)
-        store = options.get("store", -1)
-        if store>=0:
-            self._last_pixmap_data =  width, height, store, img_data
+        try:
+            self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            self.fire_paint_callbacks(callbacks, True)
+        finally:
+            store = options.get("store", -1)
+            if store>=0:
+                self._last_pixmap_data =  width, height, store, img_data
         return  False
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
