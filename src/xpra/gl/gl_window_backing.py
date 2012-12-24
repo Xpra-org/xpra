@@ -17,7 +17,7 @@ from xpra.codec_constants import YUV420P, YUV422P, YUV444P
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
-    GL_TEXTURE_COORD_ARRAY, GL_FRAGMENT_PROGRAM_ARB, \
+    GL_TEXTURE_COORD_ARRAY, \
     GL_PROGRAM_ERROR_STRING_ARB, GL_RGB, GL_PROGRAM_FORMAT_ASCII_ARB, \
     GL_TEXTURE_RECTANGLE_ARB, GL_UNPACK_ROW_LENGTH, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
@@ -31,6 +31,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glVertex2i, glEnd
+from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB
 
 """
