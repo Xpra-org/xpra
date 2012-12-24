@@ -50,6 +50,7 @@ class GLPixmapBacking(PixmapBacking):
         self.yuv_shader = None
         self.pixel_format = None
         self.size = 0, 0
+        self.drawable = None
 
     def init(self, w, h):
         #also init the pixmap as backup:
@@ -133,6 +134,7 @@ class GLPixmapBacking(PixmapBacking):
             glTexCoord2i(rx, ry)
             glVertex2i(rx, ry)
         glEnd()
+        glFlush()
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -214,6 +216,7 @@ class GLPixmapBacking(PixmapBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div, height/div, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
+        glFlush()
 
     def render_image(self, rx, ry, rw, rh):
         log("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
@@ -229,3 +232,4 @@ class GLPixmapBacking(PixmapBacking):
                 glMultiTexCoord2i(texture, x/div, y/div)
             glVertex2i(x, y)
         glEnd()
+        glFlush()
