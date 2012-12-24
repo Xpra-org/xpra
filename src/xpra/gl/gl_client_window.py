@@ -8,7 +8,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.client_window import ClientWindow
-
+from xpra.gl.gl_window_backing import GLPixmapBacking
 
 import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
@@ -66,7 +66,6 @@ class GLClientWindow(ClientWindow):
             if lock:
                 lock.acquire()
             if self._backing is None:
-                from xpra.gl.gl_window_backing import GLPixmapBacking
                 self._backing = GLPixmapBacking(self._id, w, h, self._client.supports_mmap, self._client.mmap)
             if self._configured:
                 self._backing.init(w, h)
