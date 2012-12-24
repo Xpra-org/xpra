@@ -206,10 +206,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         try:
             dno = int(n)
             if dno>=0 and dno<10:
-                sys.stderr.write("WARNING: low display number: %s" % dno)
-                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'." % display_name)
-                sys.stderr.write("This is generally not what you want.")
-                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).")
+                sys.stderr.write("WARNING: low display number: %s\n" % dno)
+                sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
+                sys.stderr.write("This is generally not what you want.\n")
+                sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
         except:
             pass
 
