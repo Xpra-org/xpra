@@ -46,19 +46,22 @@ class GLClientWindow(ClientWindow):
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         log("GLClientWindow(..)")
-        self._configured = False
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self.add(self._backing.glarea)
 
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
-        self._configured = True
         ClientWindow.do_configure_event(self, event)
+        self._backing.paint_screen = True
+
+    def destroy(self):
+        self._backing.paint_screen = False
+        ClientWindow.destroy(self)
 
     def new_backing(self, w, h):
         log("GL new_backing(%s, %s)", w, h)
-        w = max(1, w)
-        h = max(1, h)
+        w = max(2, w)
+        h = max(2, h)
         lock = None
         if self._backing:
             lock = self._backing._video_decoder_lock
@@ -67,8 +70,7 @@ class GLClientWindow(ClientWindow):
                 lock.acquire()
             if self._backing is None:
                 self._backing = GLPixmapBacking(self._id, w, h, self._client.supports_mmap, self._client.mmap)
-            if self._configured:
-                self._backing.init(w, h)
+            self._backing.init(w, h)
         finally:
             if lock:
                 lock.release()

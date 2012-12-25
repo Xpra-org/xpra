@@ -52,6 +52,7 @@ class GLPixmapBacking(PixmapBacking):
         self.pixel_format = None
         self.size = 0, 0
         self.drawable = None
+        self.paint_screen = False
 
     def init(self, w, h):
         #also init the pixmap as backup:
@@ -162,8 +163,9 @@ class GLPixmapBacking(PixmapBacking):
                 return
             try:
                 self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
-                w, h = self.size
-                self.render_image(0, 0, w, h)
+                if self.paint_screen:
+                    w, h = self.size
+                    self.render_image(0, 0, w, h)
                 self.fire_paint_callbacks(callbacks, True)
             except Exception, e:
                 log.error("OpenGL paint error: %s", e, exc_info=True)
