@@ -125,36 +125,40 @@ class GLPixmapBacking(PixmapBacking):
             finally:
                 self.gl_end(drawable)
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+    def _do_paint_rgb24(self, img_data, x, y, w, h, rowstride, options, callbacks):
+        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, w, h, rowstride, options, callbacks)
         ww, wh = self.size
-        if x+width>ww or y+height>wh:
+        if x+w>ww or y+h>wh:
             log("do_paint_rgb24: ignoring paint which would overflow the backing area")
             return
         drawable = self.gl_init()
-        #cleanup if we were doing yuv previously:
-        if self.pixel_format!=GLPixmapBacking.RGB24:
-            self.remove_shader()
-            self.pixel_format = GLPixmapBacking.RGB24
-
-        glEnable(GL_TEXTURE_RECTANGLE_ARB)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
-        for texture in (GL_TEXTURE1, GL_TEXTURE2):
-            glActiveTexture(texture)
-            glDisable(GL_TEXTURE_RECTANGLE_ARB)
-
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-
-        glBegin(GL_QUADS)
-        for rx,ry in ((x, y), (x, y+height), (x+width, y+height), (x+width, y)):
-            glTexCoord2i(rx, ry)
-            glVertex2i(rx, ry)
-        glEnd()
-        glFlush()
-        self.gl_end(drawable)
+        if not drawable:
+            log("do_paint_rgb24: cannot paint yet..")
+            return
+        try:
+            #cleanup if we were doing yuv previously:
+            if self.pixel_format!=GLPixmapBacking.RGB24:
+                self.remove_shader()
+                self.pixel_format = GLPixmapBacking.RGB24
+    
+            glEnable(GL_TEXTURE_RECTANGLE_ARB)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
+            for texture in (GL_TEXTURE1, GL_TEXTURE2):
+                glActiveTexture(texture)
+                glDisable(GL_TEXTURE_RECTANGLE_ARB)
+    
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+    
+            glBegin(GL_QUADS)
+            for rx,ry in ((x, y), (x, y+h), (x+w, y+h), (x+w, y)):
+                glTexCoord2i(rx, ry)
+                glVertex2i(rx, ry)
+            glEnd()
+        finally:
+            self.gl_end(drawable)
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
