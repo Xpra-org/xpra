@@ -125,6 +125,10 @@ class GLPixmapBacking(PixmapBacking):
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+        ww, wh = self.size
+        if x+width>ww or y+height>wh:
+            log("do_paint_rgb24: ignoring paint which would overflow the backing area")
+            return
         drawable = self.gl_init()
         #cleanup if we were doing yuv previously:
         if self.pixel_format!=GLPixmapBacking.RGB24:
