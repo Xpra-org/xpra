@@ -1050,7 +1050,8 @@ class XpraClient(XpraClientBase):
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
         except:
-            record_decode_time(False)
+            log.error("draw error", exc_info=True)
+            gobject.idle_add(record_decode_time, False)
             raise
 
     def _process_cursor(self, packet):
