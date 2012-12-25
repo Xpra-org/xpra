@@ -369,6 +369,8 @@ class ClientWindow(gtk.Window):
         self._client.send_refresh_all()
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
+        if not self._backing:
+            return
         def after_draw_refresh(success):
             log("after_draw_refresh(%s) options=%s", success, options)
             if success:
@@ -395,13 +397,13 @@ class ClientWindow(gtk.Window):
     """ gtk3 """
     def do_draw(self, context):
         log("do_draw(%s)", context)
-        if self.get_mapped():
+        if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context, 0, 0)
 
     """ gtk2 """
     def do_expose_event(self, event):
         log("do_expose_event(%s) area=%s", event, event.area)
-        if not (self.flags() & gtk.MAPPED):
+        if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         x,y,_,_ = event.area
         context = self.window.cairo_create()
@@ -465,7 +467,9 @@ class ClientWindow(gtk.Window):
         if self._refresh_timer:
             gobject.source_remove(self._refresh_timer)
         self._unfocus()
-        self._backing.close()
+        if self._backing:
+            self._backing.close()
+            self._backing = None
         gtk.Window.destroy(self)
 
     def _unfocus(self):
