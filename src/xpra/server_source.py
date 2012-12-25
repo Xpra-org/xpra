@@ -662,7 +662,10 @@ class ServerSource(object):
         elif propname == "client-machine":
             client_machine = window.get_property("client-machine")
             if client_machine is None:
-                return {}
+                import socket
+                client_machine = socket.gethostname()
+                if client_machine is None:
+                    return {}
             return {"client-machine": client_machine.encode("utf-8")}
         elif propname == "transient-for":
             wid = self.get_transient_for(window)
