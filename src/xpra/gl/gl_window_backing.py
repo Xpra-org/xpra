@@ -51,7 +51,7 @@ class GLPixmapBacking(PixmapBacking):
         self.yuv_shader = None
         self.pixel_format = None
         self.size = 0, 0
-        self.drawable = None
+        self.gl_setup = False
         self.paint_screen = False
 
     def init(self, w, h):
@@ -63,20 +63,25 @@ class GLPixmapBacking(PixmapBacking):
         # Re-create textures
         self.pixel_format = None
         PixmapBacking.init(self, w, h)
-        if self.drawable is None:
-            if not self.gl_begin():
-                return
-        log("GL Pixmap backing size: %d x %d", w, h)
-        glViewport(0, 0, w, h)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
-        glMatrixMode(GL_MODELVIEW)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-        glDisable(GL_FRAGMENT_PROGRAM_ARB)
-        if self.textures is None:
-            self.textures = glGenTextures(3)
+
+    def gl_init(self):
+        drawable = self.gl_begin()
+        w, h = self.size
+        log("GL Pixmap backing size: %d x %d, drawable=%s", w, h, drawable)
+        if not drawable:
+            return  None
+        if not self.gl_setup:
+            glViewport(0, 0, w, h)
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
+            glMatrixMode(GL_MODELVIEW)
+            glEnableClientState(GL_VERTEX_ARRAY)
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+            glDisable(GL_FRAGMENT_PROGRAM_ARB)
+            if self.textures is None:
+                self.textures = glGenTextures(3)
+        return drawable
 
     def close(self):
         PixmapBacking.close(self)
@@ -91,37 +96,36 @@ class GLPixmapBacking(PixmapBacking):
             self.yuv_shader = None
 
     def gl_begin(self):
-        assert self.drawable is None
         if self.glarea is None:
-            return False     #closed already
+            return None     #closed already
         drawable = self.glarea.get_gl_drawable()
         context = self.glarea.get_gl_context()
         if drawable is None or context is None:
             log.error("OpenGL error: no drawable or context!")
-            return False
+            return None
         if not drawable.gl_begin(context):
             log.error("OpenGL error: cannot create rendering context!")
-            return False
-        self.drawable = drawable
-        return True
+            return None
+        return drawable
 
-    def gl_end(self):
+    def gl_end(self, drawable):
         glFlush()
-        self.drawable.gl_end()
-        self.drawable = None
+        drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
         log("gl_expose_event(%s, %s)", glarea, event)
+        return
         area = event.area
         x, y, w, h = area.x, area.y, area.width, area.height
-        if not self.drawable:
-            return
-        self.render_image(x, y, w, h)
+        drawable = self.gl_init()
+        log.info("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
+        if drawable:
+            self.render_image(x, y, w, h)
+            self.gl_end(drawable)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
-        assert self.textures is not None
-        assert self.drawable is not None
+        drawable = self.gl_init()
         #cleanup if we were doing yuv previously:
         if self.pixel_format!=GLPixmapBacking.RGB24:
             self.remove_shader()
@@ -144,6 +148,7 @@ class GLPixmapBacking(PixmapBacking):
             glVertex2i(rx, ry)
         glEnd()
         glFlush()
+        self.gl_end(drawable)
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -155,12 +160,13 @@ class GLPixmapBacking(PixmapBacking):
                           coding, err, len(img_data), width, height, options)
                 self.fire_paint_callbacks(callbacks, False)
                 return
-            if not self.drawable:
+            csc_pixel_format = options.get("csc_pixel_format", -1)
+            pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
+            drawable = self.gl_init()
+            if not drawable:
                 log("cannot paint, drawable is not set")
                 self.fire_paint_callbacks(callbacks, False)
                 return
-            csc_pixel_format = options.get("csc_pixel_format", -1)
-            pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
             try:
                 self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
                 if self.paint_screen:
@@ -170,6 +176,7 @@ class GLPixmapBacking(PixmapBacking):
             except Exception, e:
                 log.error("OpenGL paint error: %s", e, exc_info=True)
                 self.fire_paint_callbacks(callbacks, False)
+            self.gl_end(drawable)
         gobject.idle_add(do_paint)
 
     def get_subsampling_divs(self, pixel_format):
