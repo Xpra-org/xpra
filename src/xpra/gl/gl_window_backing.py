@@ -120,8 +120,10 @@ class GLPixmapBacking(PixmapBacking):
         drawable = self.gl_init()
         log.info("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
         if drawable:
-            self.render_image(x, y, w, h)
-            self.gl_end(drawable)
+            try:
+                self.render_image(x, y, w, h)
+            finally:
+                self.gl_end(drawable)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
@@ -154,7 +156,7 @@ class GLPixmapBacking(PixmapBacking):
         glFlush()
         self.gl_end(drawable)
 
-    def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
+    def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
         err, rowstrides, img_data = self._video_decoder.decompress_image_to_yuv(img_data, options)
         csc_pixel_format = options.get("csc_pixel_format", -1)
@@ -165,7 +167,7 @@ class GLPixmapBacking(PixmapBacking):
             #this function runs in the UI thread, no video_decoder lock held
             if not success:
                 log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
-                          coding, err, len(img_data), width, height, options)
+                          coding, err, len(img_data), w, h, options)
                 self.fire_paint_callbacks(callbacks, False)
                 return
             drawable = self.gl_init()
@@ -175,10 +177,9 @@ class GLPixmapBacking(PixmapBacking):
                 return
             try:
                 try:
-                    self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
+                    self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
                     if self.paint_screen:
-                        w, h = self.size
-                        self.render_image(0, 0, w, h)
+                        self.render_image(x, y, x+w, y+h)
                     self.fire_paint_callbacks(callbacks, True)
                 except Exception, e:
                     log.error("OpenGL paint error: %s", e, exc_info=True)
