@@ -37,7 +37,7 @@
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void
 %if 0%{?opengl}
-%define requires_opengl , PyOpenGL, pygtkglext, python-numeric
+%define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
 %endif
 %endif
 
