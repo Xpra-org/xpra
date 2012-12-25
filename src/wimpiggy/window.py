@@ -1194,7 +1194,7 @@ class WindowModel(BaseWindowModel):
 
     def request_close(self):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
-            trap.swallow(send_wm_delete_window, self.client_window)
+            trap.swallow_synced(send_wm_delete_window, self.client_window)
         else:
             log.warn("window does not support WM_DELETE_WINDOW... using force_quit()")
             # You don't wanna play ball?  Then no more Mr. Nice Guy!
@@ -1212,7 +1212,7 @@ class WindowModel(BaseWindowModel):
                     os.kill(pid, 9)
                 except OSError:
                     log.warn("failed to kill() client with pid %s", pid)
-        trap.swallow(XKillClient, self.client_window)
+        trap.swallow_synced(XKillClient, self.client_window)
 
 gobject.type_register(WindowModel)
 
