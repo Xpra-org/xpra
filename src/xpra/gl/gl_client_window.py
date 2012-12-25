@@ -19,6 +19,9 @@ from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
 #sanity checks: OpenGL version
 try:
     from gtk import gdk
+    assert gtk.gdkgl.query_extension()
+    log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
+    log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
     glconfig = gtk.gdkgl.Config(mode=gtk.gdkgl.MODE_RGB|gtk.gdkgl.MODE_SINGLE)
     glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
     gldrawable = glext.set_gl_capability(glconfig)
