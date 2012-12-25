@@ -230,6 +230,7 @@ class WindowSource(object):
                                                         #supports rgb24 compression outside network layer (unwrapped)
         self.uses_swscale = encoding_options.get("uses_swscale", True)
                                                         #client uses uses_swscale (has extra limits on sizes)
+                                                        #unused since we still use swscale on the server...
         self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("jpeg", "png", "webp", "rgb24")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
@@ -590,7 +591,7 @@ class WindowSource(object):
             #x264 needs sizes divisible by 2:
             ww = ww & 0xFFFE
             wh = wh & 0xFFFE
-        if self.uses_swscale and (ww<8 or wh<=2):
+        if ww<8 or wh<=2:
             return switch()
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area

@@ -511,7 +511,7 @@ class ServerSource(object):
         for k, v in capabilities.items():
             #these properties are special cased here because we
             #defined their name before the "encoding." prefix convention:
-            if k in ("initial_quality", "rgb24zlib", "uses_swscale", "encoding_client_options"):
+            if k in ("initial_quality", "rgb24zlib", "encoding_client_options"):
                 self.encoding_options[k] = v
             elif k.startswith("encoding."):
                 k = k[len("encoding."):]

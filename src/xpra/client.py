@@ -621,7 +621,7 @@ class XpraClient(XpraClientBase):
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
-        capabilities["uses_swscale"] = not USE_OPENGL
+        capabilities["encoding.uses_swscale"] = not USE_OPENGL
         if "x264" in ENCODINGS:
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high" for i420 as the python client always supports all the profiles
