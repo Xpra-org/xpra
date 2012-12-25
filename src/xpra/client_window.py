@@ -414,7 +414,8 @@ class ClientWindow(gtk.Window):
     def do_map_event(self, event):
         log("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
-        if self.group_leader:
+        #set group leader (but avoid ugly "not implemented" warning on win32):
+        if self.group_leader and not sys.platform.startswith("win"):
             self.window.set_group(self.group_leader)
         self.set_workspace()
         if not self._override_redirect:
