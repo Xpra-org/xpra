@@ -424,17 +424,6 @@ if sys.platform.startswith("win"):
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
     if opengl_ENABLED:
-        #import OpenGL.GL                    #@UnusedImport
-        #import OpenGL.platform.win32        #@UnusedImport
-        #import OpenGL_accelerate            #@UnusedImport @UnresolvedImport
-        #py2exe_includes += ["OpenGL.platform.win32", "OpenGL.GL",
-        #                    "OpenGL_accelerate.formathandler",
-        #                    "OpenGL.GL.ARB.fragment_program",
-        #                    "OpenGL.arrays.ctypesarrays", "OpenGL.arrays.ctypesparameters",
-        #                    "OpenGL.arrays.numpymodule",  "OpenGL.arrays.numeric",
-        #                    "OpenGL.arrays.nones",
-        #                    "OpenGL.arrays.vbo",
-        #                    "OpenGL.arrays.lists", "OpenGL.arrays.numbers", "OpenGL.arrays.strings"]
         py2exe_includes += ["ctypes", "platform"]
         py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]
         #for this hack to work, you must add "." to the sys.path
@@ -443,11 +432,11 @@ if sys.platform.startswith("win"):
         import OpenGL
         import shutil
         print "*** copy PyOpenGL module ***"
-        opengl_dir = os.path.dirname( OpenGL.__file__ ) #@UndefinedVariable
+        opengl_dir = os.path.dirname(OpenGL.__file__ ) #@UndefinedVariable
         try:
             shutil.copytree(
-                opengl_dir, os.path.join( "dist", "OpenGL" ),
-                ignore = shutil.ignore_patterns( "*.py", "*.pyc", "GLUT", "Tk" ),
+                opengl_dir, os.path.join("dist", "OpenGL"),
+                ignore = shutil.ignore_patterns("Tk",)
             )
         except WindowsError, error:     #@UndefinedVariable
             if not "already exists" in str( error ):
