@@ -960,7 +960,7 @@ class XpraClient(XpraClientBase):
         else:
             auto_refresh_delay = self.auto_refresh_delay    #we do it
         ClientWindowClass = ClientWindow
-        if not self.mmap_enabled and GLClientWindowClass:
+        if not self.mmap_enabled and GLClientWindowClass and self.encoding in ("x264", "vpx"):
             ClientWindowClass = GLClientWindowClass
         pid = metadata.get("pid", -1)
         group_leader = None
