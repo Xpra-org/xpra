@@ -755,7 +755,7 @@ def run_client(parser, opts, extra_args, mode):
         app.cleanup()
         os._exit(128 + signum)
     def client_signal(signum, frame):
-        print("got signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        print("\ngot signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         gobject.timeout_add(0, app.quit, priority=gobject.PRIORITY_HIGH)
