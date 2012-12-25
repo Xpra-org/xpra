@@ -149,18 +149,18 @@ class GLPixmapBacking(PixmapBacking):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
         err, rowstrides, img_data = self._video_decoder.decompress_image_to_yuv(img_data, options)
         success = err==0 and img_data and len(img_data)==3
-        if not success:
-            log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
-                      coding, err, len(img_data), width, height, options)
-            self.fire_paint_callbacks(callbacks, False)
-            return
-        csc_pixel_format = options.get("csc_pixel_format", -1)
-        pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
         def do_paint():
+            if not success:
+                log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
+                          coding, err, len(img_data), width, height, options)
+                self.fire_paint_callbacks(callbacks, False)
+                return
             if not self.drawable:
                 log("cannot paint, drawable is not set")
                 self.fire_paint_callbacks(callbacks, False)
                 return
+            csc_pixel_format = options.get("csc_pixel_format", -1)
+            pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
             try:
                 self.update_texture_yuv(img_data, x, y, width, height, rowstrides, pixel_format)
                 if self.paint_screen:
