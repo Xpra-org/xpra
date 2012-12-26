@@ -429,18 +429,19 @@ if sys.platform.startswith("win"):
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
-        import OpenGL
+        import OpenGL, OpenGL_accelerate        #@UnresolvedImport
         import shutil
-        print "*** copy PyOpenGL module ***"
-        opengl_dir = os.path.dirname(OpenGL.__file__ ) #@UndefinedVariable
-        try:
-            shutil.copytree(
-                opengl_dir, os.path.join("dist", "OpenGL"),
-                ignore = shutil.ignore_patterns("Tk",)
-            )
-        except WindowsError, error:     #@UndefinedVariable
-            if not "already exists" in str( error ):
-                raise
+        print("*** copy PyOpenGL modules ***")
+        for module_name, module in {"OpenGL" : OpenGL, "OpenGL_accelerate" : OpenGL_accelerate}.items():
+            module_dir = os.path.dirname(module.__file__ )
+            try:
+                shutil.copytree(
+                    module_dir, os.path.join("dist", module_name),
+                    ignore = shutil.ignore_patterns("Tk")
+                )
+            except WindowsError, error:     #@UndefinedVariable
+                if not "already exists" in str( error ):
+                    raise
     setup_options["options"] = {
                                 "py2exe": {
                                            "skip_archive"   : False,
