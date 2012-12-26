@@ -91,7 +91,7 @@ cdef class Decoder(xcoder):
             clean_decoder(self.context)
             self.context = NULL
 
-    def decompress_image_to_yuv(self, input):
+    def decompress_image_to_yuv(self, input, options):
         cdef uint8_t *dout[3]
         cdef int outsize
         cdef int outstrides[3]
