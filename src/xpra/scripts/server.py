@@ -436,11 +436,13 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.exit_with_children:
         assert opts.children
     if opts.children:
+        env = os.environ.copy()
+        env["UBUNTU_MENUPROXY"] = ""
         children_pids = set()
         for child_cmd in opts.children:
             if child_cmd:
                 try:
-                    children_pids.add(subprocess.Popen(child_cmd, shell=True, close_fds=True).pid)
+                    children_pids.add(subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True).pid)
                 except OSError, e:
                     sys.stderr.write("Error spawning child '%s': %s\n"
                                      % (child_cmd, e))
