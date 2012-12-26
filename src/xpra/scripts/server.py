@@ -436,8 +436,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.exit_with_children:
         assert opts.children
     if opts.children:
+        #disable ubuntu's global menu using env vars:
         env = os.environ.copy()
         env["UBUNTU_MENUPROXY"] = ""
+        env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
         children_pids = set()
         for child_cmd in opts.children:
             if child_cmd:
