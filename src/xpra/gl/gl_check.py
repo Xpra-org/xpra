@@ -21,8 +21,9 @@ def check_GL_support(gldrawable, glcontext):
         from OpenGL.GL import glGetString
         gl_major = int(glGetString(GL_VERSION)[0])
         gl_minor = int(glGetString(GL_VERSION)[2])
-        if (gl_major, gl_minor) <= (1,3):
-            raise ImportError("** OpenGL output requires OpenGL version 1.1 or greater, not %s.%s" % (gl_major, gl_minor))
+        MIN_VERSION = (1,3)
+        if (gl_major, gl_minor) <= MIN_VERSION:
+            raise ImportError("** OpenGL output requires OpenGL version %s or greater, not %s.%s" % (".".join(MIN_VERSION), gl_major, gl_minor))
         log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
         #this allows us to do CSC via OpenGL:
