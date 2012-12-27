@@ -75,7 +75,7 @@ class Win32Tray:
 							self.balloon_click_callback()
 							self.balloon_click_callback = None
 				else:
-					log.debug("unkown message")
+					log.debug("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
 				# Pass all messages to the original WndProc
 				try:
 					return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)

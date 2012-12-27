@@ -597,7 +597,7 @@ class ServerSource(object):
         #    self.sound_source.set_quality(quality)
         #    self.start_sending_sound()
         else:
-            log.error("unkown sound action: %s", action)
+            log.error("unknown sound action: %s", action)
 
     def sound_data(self, codec, data, *args):
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
