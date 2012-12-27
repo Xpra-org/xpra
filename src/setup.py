@@ -416,13 +416,16 @@ if sys.platform.startswith("win"):
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     setup_options["console"] = [
-                    {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",}
+                    {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
+                    {'script': 'xpra/gl/gl_check.py',                   'icon_resources': [(1, "win32/opengl.ico")],  "dest_base": "OpenGL_check",},
+                    {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")],  "dest_base": "GStreamer_info",}
               ]
     py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
+    py2exe_excludes.append("tcl")
     if opengl_ENABLED:
         py2exe_includes += ["ctypes", "platform"]
         py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]

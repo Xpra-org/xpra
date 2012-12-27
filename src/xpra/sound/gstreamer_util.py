@@ -139,11 +139,14 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
 		return	None
 
 def main():
-	import logging
+	import logging, sys
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.setLevel(logging.INFO)
 
-	log.info("all gstreamer plugins: %s", all_plugin_names)
+	log.info("GStreamer plugins found: %s", ", ".join(all_plugin_names))
+	if sys.platform.startswith("win"):
+		print("\nPress Enter to close")
+		sys.stdin.readline()
 
 
 if __name__ == "__main__":

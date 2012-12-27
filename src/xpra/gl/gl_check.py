@@ -37,6 +37,8 @@ def check_GL_support(gldrawable, glcontext):
         for ext in required_extensions:
             if ext not in extensions:
                 raise ImportError("OpenGL driver lacks support for extension: %s", ext)
+            else:
+                log("%s is present", ext)
     finally:
         gldrawable.gl_end()
 
@@ -98,6 +100,9 @@ def main():
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.DEBUG)
     check_support()
+    if sys.platform.startswith("win"):
+        print("\nPress Enter to close")
+        sys.stdin.readline()
 
 
 if __name__ == "__main__":
