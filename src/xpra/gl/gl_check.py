@@ -11,6 +11,23 @@ log = Logger()
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
+#by default, we raise an ImportError as soon as we find something missing:
+def raise_error(msg):
+    raise ImportError(msg)
+gl_check_error = raise_error
+
+
+def check_functions(*functions):
+    for x in functions:
+        try:
+            name = x.__name__
+        except:
+            name = str(x)
+        if not bool(x):
+            gl_check_error("required function %s is not available" % name)
+        else:
+            log("Function %s is available" % name)
+
 #sanity checks: OpenGL version and fragment program support:
 def check_GL_support(gldrawable, glcontext):
     if not gldrawable.gl_begin(glcontext):
@@ -22,23 +39,49 @@ def check_GL_support(gldrawable, glcontext):
         gl_minor = int(glGetString(GL_VERSION)[2])
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
-            raise ImportError("** OpenGL output requires OpenGL version %s or greater, not %s.%s" %
+            gl_check_error("OpenGL output requires version %s or greater, not %s.%s" %
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
-        log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
+        else:
+            log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
         extensions = glGetString(GL_EXTENSIONS).split(" ")
         log("OpenGL extensions found: %s", ", ".join(extensions))
+
+        #check for specific functions we need:
+        from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
+            glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
+            glEnableClientState, glGenTextures, glDisable, \
+            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
+            glTexParameteri, \
+            glTexImage2D, \
+            glMultiTexCoord2i, \
+            glVertex2i, glEnd
+        check_functions(glActiveTexture, glTexSubImage2D, glTexCoord2i, \
+            glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
+            glEnableClientState, glGenTextures, glDisable, \
+            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
+            glTexParameteri, \
+            glTexImage2D, \
+            glMultiTexCoord2i, \
+            glVertex2i, glEnd)
+
+        for ext in required_extensions:
+            if ext not in extensions:
+                gl_check_error("OpenGL driver lacks support for extension: %s" % ext)
+            else:
+                log("Extension %s is present", ext)
 
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
         if not glInitFragmentProgramARB():
-            raise ImportError("OpenGL output requires glInitFragmentProgramARB")
-        
-        for ext in required_extensions:
-            if ext not in extensions:
-                raise ImportError("OpenGL driver lacks support for extension: %s", ext)
-            else:
-                log("%s is present", ext)
+            gl_check_error("OpenGL output requires glInitFragmentProgramARB")
+        else:
+            log("glInitFragmentProgramARB works")
+
+        from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
+            glBindProgramARB, glProgramStringARB
+        check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
+
     finally:
         gldrawable.gl_end()
 
@@ -99,6 +142,11 @@ def main():
     import logging
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.DEBUG)
+    #replace ImportError with a log message:
+    global gl_check_error
+    def log_error(msg):
+        log.error("ERROR: %s", msg)
+    gl_check_error = log_error
     check_support()
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
