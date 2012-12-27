@@ -9,6 +9,8 @@ import sys, os
 from wimpiggy.log import Logger
 log = Logger()
 
+required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
+
 #sanity checks: OpenGL version and fragment program support:
 def check_GL_support(gldrawable, glcontext):
     if not gldrawable.gl_begin(glcontext):
@@ -23,13 +25,18 @@ def check_GL_support(gldrawable, glcontext):
             raise ImportError("** OpenGL output requires OpenGL version %s or greater, not %s.%s" %
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
         log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
-        log("OpenGL extensions found: %s", glGetString(GL_EXTENSIONS))
+        extensions = glGetString(GL_EXTENSIONS).split(" ")
+        log("OpenGL extensions found: %s", ", ".join(extensions))
 
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
         if not glInitFragmentProgramARB():
             raise ImportError("OpenGL output requires glInitFragmentProgramARB")
+        
+        for ext in required_extensions:
+            if ext not in extensions:
+                raise ImportError("OpenGL driver lacks support for extension: %s", ext)
     finally:
         gldrawable.gl_end()
 
