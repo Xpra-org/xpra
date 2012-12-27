@@ -14,8 +14,10 @@ I444_PROFILES = ["high444"]
 DEFAULT_I420_PROFILE = "baseline"
 DEFAULT_I422_PROFILE = "high422"
 DEFAULT_I444_PROFILE = "high444"
-DEFAULT_I422_MIN_QUALITY = 80
-DEFAULT_I444_MIN_QUALITY = 90
+DEFAULT_I422_QUALITY = 70
+DEFAULT_I422_MIN_QUALITY = 50
+DEFAULT_I444_QUALITY = 90
+DEFAULT_I444_MIN_QUALITY = 75
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -37,8 +39,10 @@ cdef extern from "x264lib.h":
     void* xmemalign(size_t size)
     void xmemfree(void* ptr)
 
-    x264lib_ctx* init_encoder(int width, int height, int initial_quality, int supports_csc_option,
-                              int I422_min_quality, int I444_min_quality,
+    x264lib_ctx* init_encoder(int width, int height,
+                              int initial_quality, int supports_csc_option,
+                              int I422_quality, int I444_quality,
+                              int I422_min, int I444_min,
                               char *i420_profile, char *i422_profile, char *i444_profile)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
@@ -200,6 +204,14 @@ cdef class Encoder(xcoder):
         #enforce valid range:
         return min(100, max(-1, min_quality))
 
+    def _get_quality(self, options, csc_mode, default_value):
+        #try the environment as a default, fallback to hardcoded default:
+        quality = int(os.environ.get("XPRA_X264_%s_QUALITY" % csc_mode, default_value))
+        #now see if the client has requested a different value:
+        quality = options.get("x264.%s.quality" % csc_mode, quality)
+        #enforce valid range:
+        return min(100, max(-1, quality))
+
     def init_context(self, width, height, options):    #@DuplicatedSignature
         self.init(width, height)
         self.frames = 0
@@ -207,15 +219,15 @@ cdef class Encoder(xcoder):
         I420_profile = self._get_profile(options, "I420", DEFAULT_I420_PROFILE, I420_PROFILES)
         I422_profile = self._get_profile(options, "I422", DEFAULT_I422_PROFILE, I422_PROFILES)
         I444_profile = self._get_profile(options, "I444", DEFAULT_I444_PROFILE, I444_PROFILES)
-        I422_min_quality = self._get_min_quality(options, "I422", DEFAULT_I422_MIN_QUALITY)
-        I444_min_quality = self._get_min_quality(options, "I444", DEFAULT_I444_MIN_QUALITY)
-        if I422_min_quality>I444_min_quality:
-            print("ignoring nonsensical I422 vs i444 thresholds: %s vs %s" % (I422_min_quality, I444_min_quality))
-            I422_min_quality = -1
-            I444_min_quality = -1
+        I422_quality = self._get_quality(options, "I422", DEFAULT_I422_QUALITY)
+        I444_quality = self._get_quality(options, "I444", DEFAULT_I444_QUALITY)
+        I422_min = self._get_min_quality(options, "I422", DEFAULT_I422_MIN_QUALITY)
+        I444_min = self._get_min_quality(options, "I444", DEFAULT_I444_MIN_QUALITY)
         initial_quality = min(100, max(0, options.get("initial_quality", DEFAULT_INITIAL_QUALITY)))
-        self.context = init_encoder(width, height, initial_quality, int(self.supports_options),
-                                    int(I422_min_quality), int(I444_min_quality),
+        self.context = init_encoder(width, height,
+                                    initial_quality, int(self.supports_options),
+                                    int(I422_quality), int(I444_quality),
+                                    int(I422_min), int(I444_min),
                                     I420_profile, I422_profile, I444_profile)
 
     def clean(self):                        #@DuplicatedSignature
