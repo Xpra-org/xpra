@@ -633,6 +633,9 @@ class XpraClient(XpraClientBase):
                 if profile:
                     capabilities["encoding.x264.%s.profile" % csc_mode] = profile
             for csc_mode in ("I422", "I444"):
+                quality = os.environ.get("XPRA_X264_%s_QUALITY" % csc_mode)
+                if quality:
+                    capabilities["encoding.x264.%s.quality" % csc_mode] = int(quality)
                 min_quality = os.environ.get("XPRA_X264_%s_MIN_QUALITY" % csc_mode)
                 if min_quality:
                     capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
