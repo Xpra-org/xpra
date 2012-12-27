@@ -202,10 +202,11 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         new_speed = fixed_speed
         msg = "video encoder using fixed speed: %s", fixed_speed
     else:
-        min_damage_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-        target_damage_latency = min_damage_latency + batch.delay/1000.0
-        dam_lat = (avg_damage_in_latency or 0)/target_damage_latency
-        target_decode_speed = 1*1000*1000      #1 MPixels/s
+        #20ms + 50ms per MPixel
+        min_damage_latency = 0.020 + 0.050*low_limit/1024.0/1024.0
+        target_damage_latency = min_damage_latency + 10*batch.delay/1000.0
+        dam_lat = max(0, ((avg_damage_in_latency or 0)-target_damage_latency)*5)
+        target_decode_speed = 2*1000*1000      #2 MPixels/s
         dec_lat = 0.0
         if avg_decode_speed:
             dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
@@ -213,8 +214,8 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         target_speed = 100.0 * min(1.0, target)
         video_encoder_speed.append((time.time(), target_speed))
         _, new_speed = calculate_time_weighted_average(video_encoder_speed)
-        msg = "video encoder speed factors: min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
-                 dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
+        msg = "video encoder speed factors: low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
+                 low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
     log(*msg)
     if DEBUG_DELAY:
         add_DEBUG_DELAY_MESSAGE(msg)
@@ -229,11 +230,11 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     else:
         packets_backlog, _, _ = statistics.get_backlog(target_latency)
         packets_bl = 1.0 - logp(packets_backlog/low_limit)
-        batch_q = 4.0 * batch.min_delay / max(batch.min_delay, batch.delay)
-        target = max(packets_bl, batch_q)
+        batch_q = batch.min_delay / max(batch.min_delay, batch.delay)
+        target = min(packets_bl, batch_q)
         latency_q = 0.0
         if len(global_statistics.client_latency)>0 and recent_client_latency>0:
-            latency_q = 4.0 * target_latency / recent_client_latency
+            latency_q = 6.0 * target_latency / recent_client_latency
             target = min(target, latency_q)
         target_quality = 100.0*(min(1.0, max(0.0, target)))
         video_encoder_quality.append((time.time(), target_quality))
