@@ -50,7 +50,7 @@ cdef extern from "x264lib.h":
     x264lib_ctx* init_decoder(int width, int height, int csc_fmt)
     void set_decoder_csc_format(x264lib_ctx *context, int csc_fmt)
     void clean_decoder(x264lib_ctx *context)
-    int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]) nogil
+    int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int (*outstride)[3]) nogil
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     void set_encoding_speed(x264lib_ctx *context, int pct)
     void set_encoding_quality(x264lib_ctx *context, int pct)
@@ -120,7 +120,6 @@ cdef class Decoder(xcoder):
 
     def decompress_image_to_yuv(self, input, options):
         cdef uint8_t *dout[3]
-        cdef int outsize
         cdef int outstrides[3]
         cdef unsigned char * padded_buf = NULL
         cdef unsigned char * buf = NULL
@@ -135,7 +134,7 @@ cdef class Decoder(xcoder):
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         i = 0
         with nogil:
-            i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
+            i = decompress_image(self.context, buf, buf_len, &dout, &outstrides)
         xmemfree(padded_buf)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
@@ -168,7 +167,7 @@ cdef class Decoder(xcoder):
         memset(padded_buf+buf_len, 0, 32)
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         with nogil:
-            i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
+            i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &yuvstrides)
             if i==0:
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         xmemfree(padded_buf)
