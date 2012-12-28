@@ -85,21 +85,6 @@ from xpra.maths import std_unit
 from xpra.protocol import Compressed
 
 from xpra.client_window import ClientWindow
-USE_OPENGL = os.environ.get("XPRA_OPENGL", "1")=="1"
-GLClientWindowClass = None
-#the GL backend only works with gtk2:
-if USE_OPENGL and not is_gtk3():
-    try:
-        from xpra import gl
-        try:
-            from xpra.gl.gl_client_window import GLClientWindow
-            GLClientWindowClass = GLClientWindow
-        except Exception, e:
-            log.error("Error loading OpenGL support: %s", e, exc_info=True)
-            USE_OPENGL = False
-    except ImportError, e:
-        log("OpenGL support not installed: %s", e)
-        USE_OPENGL = False
 
 def nn(x):
     if x is None:
@@ -172,6 +157,7 @@ class XpraClient(XpraClientBase):
         self.server_sound_send = False
 
         #features:
+        self.init_opengl()
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
@@ -286,6 +272,28 @@ class XpraClient(XpraClientBase):
             self.mmap = None
             self.mmap_file = None
             self.mmap_size = 0
+
+    def init_opengl(self):
+        USE_OPENGL = os.environ.get("XPRA_OPENGL", "1")=="1"
+        self.opengl_enabled = False
+        self.GLClientWindowClass = None
+        self.opengl_props = {}
+        #the GL backend only works with gtk2:
+        if USE_OPENGL and not is_gtk3():
+            try:
+                from xpra import gl     #@UnusedImport
+                try:
+                    from xpra.gl.gl_check import check_support
+                    self.opengl_props = check_support()
+
+                    from xpra.gl.gl_client_window import GLClientWindow
+                    self.GLClientWindowClass = GLClientWindow
+                    self.opengl_enabled = True
+                except Exception, e:
+                    log.error("Error loading OpenGL support: %s", e, exc_info=True)
+            except ImportError, e:
+                log("OpenGL support not installed: %s", e)
+        return self.GLClientWindowClass is not None
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
@@ -621,7 +629,7 @@ class XpraClient(XpraClientBase):
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
-        capabilities["encoding.uses_swscale"] = not USE_OPENGL
+        capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in ENCODINGS:
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high" for i420 as the python client always supports all the profiles
@@ -963,8 +971,8 @@ class XpraClient(XpraClientBase):
         else:
             auto_refresh_delay = self.auto_refresh_delay    #we do it
         ClientWindowClass = ClientWindow
-        if not self.mmap_enabled and GLClientWindowClass and self.encoding in ("x264", "vpx"):
-            ClientWindowClass = GLClientWindowClass
+        if not self.mmap_enabled and self.opengl_enabled and self.encoding in ("x264", "vpx"):
+            ClientWindowClass = self.GLClientWindowClass
         pid = metadata.get("pid", -1)
         group_leader = None
         if pid>0:

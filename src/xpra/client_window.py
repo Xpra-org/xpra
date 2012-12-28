@@ -244,6 +244,9 @@ class ClientWindow(gtk.Window):
     def is_tray(self):
         return False
 
+    def is_GL(self):
+        return False
+
     def get_workspace(self):
         if sys.platform.startswith("win"):
             return  -1              #windows does not have workspaces

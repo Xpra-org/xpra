@@ -21,6 +21,9 @@ class GLClientWindow(ClientWindow):
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self.add(self._backing.glarea)
 
+    def is_GL(self):
+        return True
+
     def do_configure_event(self, event):
         log("GL do_configure_event(%s)", event)
         ClientWindow.do_configure_event(self, event)

@@ -200,6 +200,8 @@ class SessionInfo(gtk.Window):
             pass
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("pygst_version")))
+        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("gdkgl_version", "n/a"))), label("n/a"))
+        tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label("n/a"))
 
         # Features Table:
         tb = self.table_tab("features.png", "Server\nFeatures", self.populate_features)
@@ -308,11 +310,14 @@ class SessionInfo(gtk.Window):
             tb.add_row(label("Pixels/s"), *self.pixels_per_second_labels)
 
             self.windows_managed_label = label()
-            tb.new_row("Windows Managed", self.windows_managed_label),
+            tb.new_row("Regular Windows", self.windows_managed_label),
             self.transient_managed_label = label()
             tb.new_row("Transient Windows", self.transient_managed_label),
             self.trays_managed_label = label()
             tb.new_row("Trays Managed", self.trays_managed_label),
+            if self.client.opengl_enabled:
+                self.opengl_label = label()
+                tb.new_row("OpenGL Windows", self.opengl_label),
 
         self.graph_box = gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
@@ -580,7 +585,7 @@ class SessionInfo(gtk.Window):
             setlabels(self.regions_sizes_labels, region_sizes, rounding=std_unit_dec)
             setlabels(self.pixels_per_second_labels, pps, rounding=std_unit_dec)
 
-            windows, transient, trays = 0, 0, 0
+            windows, gl, transient, trays = 0, 0, 0, 0
             for w in self.client._window_to_id.keys():
                 if w.is_tray():
                     trays += 1
@@ -588,9 +593,13 @@ class SessionInfo(gtk.Window):
                     transient +=1
                 else:
                     windows += 1
+                if w.is_GL():
+                    gl += 1
             self.windows_managed_label.set_text(str(windows))
             self.transient_managed_label.set_text(str(transient))
             self.trays_managed_label.set_text(str(trays))
+            if self.client.opengl_enabled:
+                self.opengl_label.set_text(str(gl))
         return True
 
     def populate_graphs(self, *args):

@@ -32,6 +32,7 @@ def check_functions(*functions):
 def check_GL_support(gldrawable, glcontext):
     if not gldrawable.gl_begin(glcontext):
         raise ImportError("gl_begin failed on %s" % gldrawable)
+    props = {}
     try:
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString
@@ -45,6 +46,20 @@ def check_GL_support(gldrawable, glcontext):
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
         extensions = glGetString(GL_EXTENSIONS).split(" ")
         log("OpenGL extensions found: %s", ", ".join(extensions))
+        props["extensions"] = extensions
+
+        from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
+        for d,s in {"vendor":GL_VENDOR, "renderer":GL_RENDERER,
+                    "shading language version":GL_SHADING_LANGUAGE_VERSION}.items():
+            v = glGetString(s)
+            log("%s: %s", d, v)
+            props[d] = v
+
+        from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
+        for d,s in {"GLU version": GLU_VERSION, "GLU extensions":GLU_EXTENSIONS}.items():
+            v = gluGetString(s)
+            log("%s: %s", d, v)
+            props[d] = v
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
@@ -82,6 +97,7 @@ def check_GL_support(gldrawable, glcontext):
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
+        return props
     finally:
         gldrawable.gl_end()
 
@@ -101,18 +117,26 @@ def check_support():
         #This is supposed to help py2exe (after we setup the path):
         from OpenGL.platform import win32   #@UnusedImport
 
+    props = {}
     from gtk import gdk
     import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
     log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
+    props["pygdkglext_version"] = gtk.gdkgl.pygdkglext_version
     log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
+    props["gdkgl_version"] = gtk.gdkgl.query_version()
     display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE)
     try:
         glconfig = gtk.gdkgl.Config(mode=display_mode)
     except gtk.gdkgl.NoMatches:
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    log("using display mode: %s", display_mode)
+    friendly_mode_names = {gtk.gdkgl.MODE_RGB : "RGB", gtk.gdkgl.MODE_DEPTH:"DEPTH",
+                           gtk.gdkgl.MODE_DOUBLE : "DOUBLE"}
+    friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
+    log("using display mode: %s", friendly_modes)
+    props["display_mode"] = friendly_modes
+    props["glconfig"] = glconfig
     assert gtk.gdkgl.query_extension()
     if sys.platform.startswith("win"):
         #FIXME: ugly win32 hack for getting a drawable and context, we must use a window...
@@ -121,10 +145,12 @@ def check_support():
         glarea.show()
         w.add(glarea)
         w.show()
+        w.process_updates(True)
+        #gtk.gdk.window_process_all_updates()
         gldrawable = glarea.get_gl_drawable()
         glcontext = glarea.get_gl_context()
         try:
-            check_GL_support(gldrawable, glcontext)
+            gl_props = check_GL_support(gldrawable, glcontext)
         finally:
             w.destroy()
             del glcontext, gldrawable, glconfig
@@ -133,9 +159,11 @@ def check_support():
         gldrawable = glext.set_gl_capability(glconfig)
         glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
         try:
-            check_GL_support(gldrawable, glcontext)
+            gl_props = check_GL_support(gldrawable, glcontext)
         finally:
             del glcontext, gldrawable, glext, glconfig
+    props.update(gl_props)
+    return props
 
 
 def main():
