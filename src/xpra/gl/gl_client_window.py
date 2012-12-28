@@ -7,18 +7,18 @@
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.gl.gl_check import check_support
-check_support()
-
 from xpra.client_window import ClientWindow
 from xpra.gl.gl_window_backing import GLPixmapBacking
 
 
 class GLClientWindow(ClientWindow):
+    
+    gl_pixmap_backing_class = GLPixmapBacking
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         log("GLClientWindow(..)")
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        self.set_reallocate_redraws(True)
         self.add(self._backing.glarea)
 
     def is_GL(self):
@@ -44,7 +44,7 @@ class GLClientWindow(ClientWindow):
             if lock:
                 lock.acquire()
             if self._backing is None:
-                self._backing = GLPixmapBacking(self._id, w, h, self._client.supports_mmap, self._client.mmap)
+                self._backing = self.gl_pixmap_backing_class(self._id, w, h, self._client.supports_mmap, self._client.mmap)
             self._backing.init(w, h)
         finally:
             if lock:
