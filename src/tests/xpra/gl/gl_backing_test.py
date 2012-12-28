@@ -6,17 +6,19 @@
 
 import pygtk
 pygtk.require('2.0')
-import gtk
+import gtk              #@UnusedImport
 import gobject
+
+import gtk.gtkgl        #@UnusedImport
+import gtk.gdkgl        #@UnusedImport
 
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.gl.gl_client_window import GLClientWindow
 from tests.xpra.fake_client import FakeClient
 
 
-def gl_backing_test(gl_client_window_class=GLClientWindow, w=200, h=100):
+def gl_backing_test(gl_client_window_class=None, w=200, h=100):
     window = gl_client_window_class(FakeClient(), None, 1, 0, 0, w, h, {}, False, {}, 0)
     window.show()
     def update_backing(*args):
@@ -45,7 +47,8 @@ def main():
     logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.DEBUG)
 
-    gl_backing_test()
+    from xpra.gl.gl_client_window import GLClientWindow
+    gl_backing_test(gl_client_window_class=GLClientWindow)
     gtk.main()
 
 

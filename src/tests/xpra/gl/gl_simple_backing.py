@@ -13,7 +13,6 @@ assert gtk.gdkgl is not None and gtk.gtkgl is not None
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.window_backing import PixmapBacking
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_RGB, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE,  GL_UNPACK_ALIGNMENT, \
@@ -27,10 +26,9 @@ from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 """
 Test version so we can try to make it work on win32..
 """
-class GLTestBacking(PixmapBacking):
+class GLTestBacking(object):
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
-        PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
         display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
@@ -48,10 +46,8 @@ class GLTestBacking(PixmapBacking):
 
     def init(self, w, h):
         self.size = w, h
-        PixmapBacking.init(self, w, h)
 
     def close(self):
-        PixmapBacking.close(self)
         self.glarea = None
         self.glconfig = None
 
