@@ -81,6 +81,7 @@ class GLPixmapBacking(PixmapBacking):
             glDisable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
                 self.textures = glGenTextures(3)
+            self.gl_setup = True
         return drawable
 
     def close(self):
