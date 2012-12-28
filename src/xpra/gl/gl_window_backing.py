@@ -42,8 +42,12 @@ class GLPixmapBacking(PixmapBacking):
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
         PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
-        display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
-        self.glconfig = gtk.gdkgl.Config(mode=display_mode)
+        display_mode = gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE
+        try:
+            self.glconfig = gtk.gdkgl.Config(mode=display_mode)
+        except gtk.gdkgl.NoMatches:
+            display_mode &= ~gtk.gdkgl.MODE_DOUBLE
+            self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
         self.glarea.show()
         self.glarea.connect("expose_event", self.gl_expose_event)
