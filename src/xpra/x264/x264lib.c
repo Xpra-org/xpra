@@ -607,7 +607,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 	if (ctx->supports_csc_option) {
 		if (!can_keep_colour_sampling(ctx, pct)) {
 			int new_colour_sampling = get_x264_colour_sampling(ctx, pct);
-			printf("set_encoding_quality(%i) old colour_sampling=%i, new colour_sampling %i\n", pct, ctx->colour_sampling, new_colour_sampling);
+			//printf("set_encoding_quality(%i) old colour_sampling=%i, new colour_sampling %i\n", pct, ctx->colour_sampling, new_colour_sampling);
 			if (ctx->colour_sampling!=new_colour_sampling) {
 				//pixel encoding has changed, we must re-init everything:
 				do_clean_encoder(ctx);
