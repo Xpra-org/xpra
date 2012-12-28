@@ -14,10 +14,22 @@ import pygtk
 pygtk.require('2.0')
 import gtk.gtkgl
 import gtk.gdkgl
-from OpenGL.GL import *
-from OpenGL.GLU import *
 import gobject
 
+from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
+    GL_RGB, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
+    GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
+    GL_UNSIGNED_BYTE,  GL_QUADS, GL_LINES, GL_BLEND, GL_SMOOTH, \
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_UNPACK_ALIGNMENT, \
+    glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
+    glGenTextures, glDisable, \
+    glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
+    glTexCoord2f, glVertex2f, glTexParameterf, \
+    glTexImage2D, \
+    glClearColor, glColor4f, glBlendFunc, glShadeModel, \
+    glPushMatrix, glScale, glPopMatrix, \
+    glClear, \
+    glEnd
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 
 WIDTH = 640
@@ -84,9 +96,8 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
     OpenGL-capable gtk.DrawingArea by subclassing
     gtk.gtkgl.Widget mixin.
     """
-    def __init__(self, glconfig, app):
+    def __init__(self, glconfig):
         gtk.DrawingArea.__init__(self)
-        self._app = app # let's pass it 
         self.set_gl_capability(glconfig)
         self.connect_after('realize', self._on_realize)
         self.connect('configure_event', self._on_configure_event)
@@ -263,7 +274,7 @@ class App(object):
         print("has stencil buffer:", glconfig.has_stencil_buffer())
         print("has accumulation buffer:", glconfig.has_accum_buffer())
         # Drawing Area
-        self.drawing_area = GlDrawingArea(glconfig, self)
+        self.drawing_area = GlDrawingArea(glconfig)
         self.drawing_area.set_size_request(WIDTH, HEIGHT)
         self.window.add(self.drawing_area)
         self.drawing_area.show()
