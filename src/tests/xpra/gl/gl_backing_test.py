@@ -16,15 +16,8 @@ from xpra.gl.gl_client_window import GLClientWindow
 from tests.xpra.fake_client import FakeClient
 
 
-def main():
-    import logging
-    logging.basicConfig(format="%(asctime)s %(message)s")
-    logging.root.setLevel(logging.DEBUG)
-    
-    w = 200
-    h = 100
-
-    window = GLClientWindow(FakeClient(), None, 1, 0, 0, w, h, {}, False, {}, 0)
+def gl_backing_test(gl_client_window_class=GLClientWindow, w=200, h=100):
+    window = gl_client_window_class(FakeClient(), None, 1, 0, 0, w, h, {}, False, {}, 0)
     window.show()
     def update_backing(*args):
         log.info("update_backing(%s)", args)
@@ -43,9 +36,16 @@ def main():
     def initial_update(*args):
         update_backing()
         return False
-    #gobject.idle_add(initial_update)
     gobject.timeout_add(10, initial_update)
     gobject.timeout_add(1000*5, update_backing)
+
+
+def main():
+    import logging
+    logging.basicConfig(format="%(message)s")
+    logging.root.setLevel(logging.DEBUG)
+
+    gl_backing_test()
     gtk.main()
 
 

@@ -110,6 +110,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
         Sets up the OpenGL rendering context.
         """
+        print("_on_realize(%s)" % str(args))
         gldrawable = self.get_gl_drawable()
         glcontext = self.get_gl_context()
         if not gldrawable.gl_begin(glcontext):
@@ -135,6 +136,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
         Coordinates should give a rendering area height of 1
         and a width of 1.33, when in 4:3 ratio.
         """
+        print("_set_view(%s)" % str(ratio))
         w = ratio
         h = 1.
 
@@ -151,6 +153,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
         Sets up the OpenGL view port dimensions.
         """
+        print("_on_configure_event(%s)" % str(args))
         gldrawable = self.get_gl_drawable()
         glcontext = self.get_gl_context()
         if gldrawable is None:
@@ -171,6 +174,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
 
         Calls self.draw() and swaps the buffers.
         """
+        print("_on_expose_event(%s)" % str(args))
         gldrawable = self.get_gl_drawable()
         glcontext = self.get_gl_context()
         if gldrawable is None:
@@ -211,6 +215,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
         """
         Draws each frame.
         """
+        print("draw()")
         # DRAW STUFF HERE
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glColor4f(1.0, 0.8, 0.2, 1.0)
@@ -250,10 +255,7 @@ class App(object):
         self.window.set_title('Testing OpenGL')
         self.window.set_reallocate_redraws(True)
         self.window.connect('delete_event', self.on_delete_event)
-        self.actual_size = (WIDTH, HEIGHT) # should actually be bigger
-        # Query the OpenGL extension version.
         print "OpenGL extension version - %d.%d\n" % gtk.gdkgl.query_version()
-        # Configure OpenGL framebuffer.
         # Try to get a double-buffered framebuffer configuration,
         # if not successful then try to get a single-buffered one.
         display_mode = (
@@ -289,7 +291,7 @@ class App(object):
         return True
 
     def _update_texture(self, w, h, pixels):
-        print("update_texture id=%s", self.drawing_area.texture_id)
+        print("update_texture id=%s" % self.drawing_area.texture_id)
         if self.drawing_area.texture_id is not None:
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.drawing_area.texture_id)
 
