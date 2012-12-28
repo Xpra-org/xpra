@@ -6,11 +6,8 @@
 
 import pygtk
 pygtk.require('2.0')
-import gtk              #@UnusedImport
+import gtk
 import gobject
-
-import gtk.gtkgl        #@UnusedImport
-import gtk.gdkgl        #@UnusedImport
 
 from wimpiggy.log import Logger
 log = Logger()

@@ -29,7 +29,11 @@ Test version so we can try to make it work on win32..
 class GLTestBacking(object):
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
-        display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE)
+        display_mode = (
+            gtk.gdkgl.MODE_RGB |
+            gtk.gdkgl.MODE_DEPTH |
+            gtk.gdkgl.MODE_DOUBLE
+            )
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         except gtk.gdkgl.NoMatches:
@@ -119,4 +123,4 @@ class GLTestBacking(object):
 
     def do_gl_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
         #pretend we did something
-        self.fire_paint_callbacks(callbacks, True)
+        pass
