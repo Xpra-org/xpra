@@ -114,16 +114,18 @@ class GLPixmapBacking(PixmapBacking):
         return drawable
 
     def gl_end(self, drawable):
-        glFlush()
+        if drawable.is_double_buffered():
+            drawable.swap_buffers()
+        else:
+            glFlush()
         drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
         log("gl_expose_event(%s, %s)", glarea, event)
-        return
         area = event.area
         x, y, w, h = area.x, area.y, area.width, area.height
         drawable = self.gl_init()
-        log.info("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
+        log("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
         if drawable:
             try:
                 self.render_image(x, y, w, h)
@@ -145,18 +147,18 @@ class GLPixmapBacking(PixmapBacking):
             if self.pixel_format!=GLPixmapBacking.RGB24:
                 self.remove_shader()
                 self.pixel_format = GLPixmapBacking.RGB24
-    
+
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
             for texture in (GL_TEXTURE1, GL_TEXTURE2):
                 glActiveTexture(texture)
                 glDisable(GL_TEXTURE_RECTANGLE_ARB)
-    
+
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-    
+
             glBegin(GL_QUADS)
             for rx,ry in ((x, y), (x, y+h), (x+w, y+h), (x+w, y)):
                 glTexCoord2i(rx, ry)
@@ -239,7 +241,10 @@ class GLPixmapBacking(PixmapBacking):
                 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
                 prog = GL_COLORSPACE_CONVERSIONS
                 glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(prog), prog)
-                log.error(glGetString(GL_PROGRAM_ERROR_STRING_ARB))
+                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
+                if err:
+                    #FIXME: maybe we should do something else here?
+                    log.error(err)
                 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
 
         # Clamp width and height to the actual texture size
