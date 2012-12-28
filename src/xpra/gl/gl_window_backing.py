@@ -168,30 +168,32 @@ class GLPixmapBacking(PixmapBacking):
         #this needs to be done here so we still hold the video_decoder lock:
         pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
         success = err==0 and img_data and len(img_data)==3
-        def do_paint():
-            #this function runs in the UI thread, no video_decoder lock held
-            if not success:
-                log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
-                          coding, err, len(img_data), w, h, options)
-                self.fire_paint_callbacks(callbacks, False)
-                return
-            drawable = self.gl_init()
-            if not drawable:
-                log("cannot paint, drawable is not set")
-                self.fire_paint_callbacks(callbacks, False)
-                return
+        if not success:
+            log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
+                      coding, err, len(img_data), w, h, options)
+            gobject.idle_add(self.fire_paint_callbacks, callbacks, False)
+            return
+        gobject.idle_add(self.do_gl_paint, x, y, w, h, img_data, rowstrides, pixel_format, callbacks)
+
+    def do_gl_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
+        #this function runs in the UI thread, no video_decoder lock held
+        drawable = self.gl_init()
+        if not drawable:
+            log("cannot paint, drawable is not set")
+            self.fire_paint_callbacks(callbacks, False)
+            return
+        try:
             try:
-                try:
-                    self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
-                    if self.paint_screen:
-                        self.render_image(x, y, x+w, y+h)
-                    self.fire_paint_callbacks(callbacks, True)
-                except Exception, e:
-                    log.error("OpenGL paint error: %s", e, exc_info=True)
-                    self.fire_paint_callbacks(callbacks, False)
-            finally:
-                self.gl_end(drawable)
-        gobject.idle_add(do_paint)
+                self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
+                if self.paint_screen:
+                    self.render_image(x, y, x+w, y+h)
+                self.fire_paint_callbacks(callbacks, True)
+            except Exception, e:
+                log.error("OpenGL paint error: %s", e, exc_info=True)
+                self.fire_paint_callbacks(callbacks, False)
+        finally:
+            self.gl_end(drawable)
+
 
     def get_subsampling_divs(self, pixel_format):
         if pixel_format==YUV420P:
