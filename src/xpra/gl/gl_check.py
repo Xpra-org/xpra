@@ -34,10 +34,13 @@ def check_GL_support(gldrawable, glcontext):
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
     try:
+        import OpenGL
+        props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString
         gl_major = int(glGetString(GL_VERSION)[0])
         gl_minor = int(glGetString(GL_VERSION)[2])
+        props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
             gl_check_error("OpenGL output requires version %s or greater, not %s.%s" %
@@ -93,6 +96,12 @@ def check_GL_support(gldrawable, glcontext):
         else:
             log("glInitFragmentProgramARB works")
 
+        from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
+        if not glInitTextureRectangleARB():
+            gl_check_error("OpenGL output requires glInitTextureRectangleARB")
+        else:
+            log("glInitTextureRectangleARB works")
+
         from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
@@ -103,6 +112,7 @@ def check_GL_support(gldrawable, glcontext):
 
 def check_support():
     #tricks to get py2exe to include what we need / load it from its unusual path:
+    opengl_icon = os.path.join(os.getcwd(), "icons", "opengl.png")
     if sys.platform.startswith("win"):
         log("is frozen: %s", hasattr(sys, "frozen"))
         if hasattr(sys, "frozen"):
@@ -112,6 +122,7 @@ def check_support():
                 log("main_dir=%s", main_dir)
                 sys.path.insert(0, main_dir)
                 os.chdir(main_dir)
+                opengl_icon = os.path.join(main_dir, "icons", "opengl.png")
             else:
                 sys.path.insert(0, ".")
         #This is supposed to help py2exe (after we setup the path):
@@ -138,30 +149,37 @@ def check_support():
     props["display_mode"] = friendly_modes
     props["glconfig"] = glconfig
     assert gtk.gdkgl.query_extension()
-    if sys.platform.startswith("win"):
-        #FIXME: ugly win32 hack for getting a drawable and context, we must use a window...
-        w = gtk.Window()
-        glarea = gtk.gtkgl.DrawingArea(glconfig)
-        glarea.show()
-        w.add(glarea)
-        w.show()
-        w.process_updates(True)
-        #gtk.gdk.window_process_all_updates()
-        gldrawable = glarea.get_gl_drawable()
-        glcontext = glarea.get_gl_context()
-        try:
-            gl_props = check_GL_support(gldrawable, glcontext)
-        finally:
+    glcontext, gldrawable, glext, w = None, None, None, None
+    try:
+        if sys.platform.startswith("win"):
+            #FIXME: ugly win32 hack for getting a drawable and context, we must use a window...
+            #maybe using a gl.drawable would work too?
+            w = gtk.Window()
+            w.set_decorated(False)
+            vbox = gtk.VBox()
+            if opengl_icon and os.path.exists(opengl_icon):
+                pixbuf = gtk.gdk.pixbuf_new_from_file(opengl_icon)
+                image = gtk.image_new_from_pixbuf(pixbuf)
+                vbox.add(image)
+                w.set_default_size(pixbuf.get_width(), pixbuf.get_height())
+                w.set_resizable(False)
+            glarea = gtk.gtkgl.DrawingArea(glconfig)
+            vbox.add(glarea)
+            w.add(vbox)
+            w.show_all()
+            gtk.gdk.window_process_all_updates()
+            gldrawable = glarea.get_gl_drawable()
+            glcontext = glarea.get_gl_context()
+        else:
+            glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+            gldrawable = glext.set_gl_capability(glconfig)
+            glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+
+        gl_props = check_GL_support(gldrawable, glcontext)
+    finally:
+        if w:
             w.destroy()
-            del glcontext, gldrawable, glconfig
-    else:
-        glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
-        gldrawable = glext.set_gl_capability(glconfig)
-        glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
-        try:
-            gl_props = check_GL_support(gldrawable, glcontext)
-        finally:
-            del glcontext, gldrawable, glext, glconfig
+        del glcontext, gldrawable, glext, glconfig
     props.update(gl_props)
     return props
 

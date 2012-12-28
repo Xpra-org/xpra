@@ -200,8 +200,9 @@ class SessionInfo(gtk.Window):
             pass
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("pygst_version")))
-        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("gdkgl_version", "n/a"))), label("n/a"))
+        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))
         tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label("n/a"))
+        tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))
 
         # Features Table:
         tb = self.table_tab("features.png", "Server\nFeatures", self.populate_features)
