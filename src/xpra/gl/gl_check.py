@@ -6,10 +6,16 @@
 # later version. See the file COPYING for details.
 
 import sys, os
+import logging
 from wimpiggy.log import Logger
 log = Logger()
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
+
+#warnings seem unavoidable on win32, so silence them
+#(other platforms should fix their packages instead)
+SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win")
+
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -34,6 +40,8 @@ def check_GL_support(gldrawable, glcontext):
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
     try:
+        if SILENCE_FORMAT_HANDLER_LOGGER:
+            logging.getLogger('OpenGL.formathandler').setLevel(logging.WARN)
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
@@ -108,6 +116,11 @@ def check_GL_support(gldrawable, glcontext):
 
         return props
     finally:
+        if SILENCE_FORMAT_HANDLER_LOGGER:
+            try:
+                logging.getLogger('OpenGL.formathandler').setLevel(logging.INFO)
+            except:
+                pass
         gldrawable.gl_end()
 
 def check_support():
@@ -185,7 +198,6 @@ def check_support():
 
 
 def main():
-    import logging
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.DEBUG)
     #replace ImportError with a log message:
