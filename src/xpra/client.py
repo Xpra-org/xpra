@@ -162,9 +162,6 @@ class XpraClient(XpraClientBase):
         self.mmap_token = None
         self.mmap_file = None
         self.mmap_size = 0
-        self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
-        if self.supports_mmap:
-            self.init_mmap(opts.mmap_group, conn.filename)
 
         #features:
         self.init_opengl()
@@ -185,6 +182,10 @@ class XpraClient(XpraClientBase):
         self.clipboard_enabled = self.client_supports_clipboard
         self.cursors_enabled = self.client_supports_cursors
         self.bell_enabled = self.client_supports_bell
+
+        self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
+        if self.supports_mmap:
+            self.init_mmap(opts.mmap_group, conn.filename)
 
         self.init_packet_handlers()
         self.ready(conn)
@@ -608,11 +609,15 @@ class XpraClient(XpraClientBase):
         if self.mmap_file:
             capabilities["mmap_file"] = self.mmap_file
             capabilities["mmap_token"] = self.mmap_token
-        #ugly platform test: we get lockups when we try to import this on win32!
-        if not sys.platform.startswith("win"):
+        #don't try to find the server uuid if this platform cannot run servers..
+        #(doing so causes lockups on win32 and startup errors on osx)
+        if self._client_extras.supports_server():
             #we may be running inside another server!
-            from xpra.server_uuid import get_uuid
-            capabilities["server_uuid"] = get_uuid() or ""
+            try:
+                from xpra.server_uuid import get_uuid
+                capabilities["server_uuid"] = get_uuid() or ""
+            except:
+                pass
         capabilities["randr_notify"] = True
         capabilities["compressible_cursors"] = True
         capabilities["dpi"] = self.dpi

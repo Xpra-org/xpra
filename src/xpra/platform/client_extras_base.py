@@ -165,6 +165,9 @@ class ClientExtrasBase(object):
             self.session_info_window.destroy()
             self.session_info_window = None
 
+    def supports_server(self):
+        return XPRA_LOCAL_SERVERS_SUPPORTED
+
     def supports_mmap(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED
 
@@ -648,7 +651,6 @@ class ClientExtrasBase(object):
             encoding_item.set_active(encoding==self.client.encoding)
             encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
             encoding_item.set_draw_as_radio(True)
-            encoding_item.set_sensitive(not self.client.mmap_enabled)
             encoding_item.connect("toggled", encoding_changed)
             encodings_submenu.append(encoding_item)
         encodings_submenu.show_all()
