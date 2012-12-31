@@ -2,6 +2,7 @@ ECHO OFF
 SET ARGS=%*
 ECHO "ARGS=%ARGS%"
 set DIR=%CD%
+SET OLDPYTHONPATH=%PYTHONPATH%
 
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 SET PYTHON=C:\Python27
@@ -18,11 +19,14 @@ SET BUILD_DIR=build
 
 SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
 
+SET SHOW_DEPENDENCIES=1
+
 REM "SET THESE TO 0 TO DISABLE VPX/X264/RENCODE/CLIPBOARD:"
 SET X264=1
 SET VPX=1
 SET WEBP=1
 SET RENCODE=1
+SET CYXOR=1
 SET CLIPBOARD=1
 SET SOUND=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
@@ -46,6 +50,7 @@ IF %X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-x264
 IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
 IF %WEBP% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-webp
 IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
+IF %CYXOR% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cyxor
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 
@@ -83,6 +88,14 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 :NO_RENCODE
+IF %CYXOR% NEQ 1 GOTO NO_CYXOR
+SET CYXOR_PYD=build\lib.win32-2.7\xpra\xor\cyxor.pyd
+COPY %CYXOR_PYD% xpra\xor\
+if %errorlevel% NEQ 0 (
+	ECHO "build error: cannot find compiled cyxor.pyd"
+	GOTO ERROR
+)
+:NO_CYXOR
 IF %CLIPBOARD% NEQ 1 GOTO NO_CLIPBOARD
 SET CLIPBOARD_PYD=build\lib.win32-2.7\wimpiggy\gdk\gdk_atoms.pyd
 COPY %CLIPBOARD_PYD% wimpiggy\gdk\
@@ -94,7 +107,10 @@ if %errorlevel% NEQ 0 (
 
 ECHO ***************************************************************
 ECHO ****** py2exe
-%PYTHON_EXE% -OO setup.py py2exe %BUILD_ARGS% > py2exe-xpra.log
+SET PY2EXE_ARGS=%BUILD_ARGS%
+IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%PY2EXE_ARGS% -x
+
+%PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
 	GOTO ERROR
@@ -140,3 +156,4 @@ GOTO END
 :ERROR
 pause
 :END
+SET PYTHONPATH=%OLDPYTHONPATH%

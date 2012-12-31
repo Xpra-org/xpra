@@ -64,27 +64,32 @@ server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
+parti_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
+
+
+
 sound_ENABLED = True
 
 
 
-xor_ENABLED = True
+cyxor_ENABLED = True
 
 
 
 #currently does not work on MS Windows:
-opengl_ENABLED = not sys.platform.startswith("win")
+opengl_ENABLED = True
 
 
 
 #allow some of these flags to be modified on the command line:
 filtered_args = []
+SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "cyxor", "opengl", "parti")
 for arg in sys.argv:
     if arg == "--enable-Xdummy":
         xdummy_ENABLED = True
     else:
         matched = False
-        for x in ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "xor", "opengl"):
+        for x in SWITCHES:
             if arg=="--without-%s" % x:
                 vars()["%s_ENABLED" % x] = False
                 matched = True
@@ -92,8 +97,12 @@ for arg in sys.argv:
         if not matched:
             filtered_args.append(arg)
 sys.argv = filtered_args
-print("build switches: x264=%s, vpx=%s, webp=%s, rencode=%s, extra clipboard=%s, sound=%s, xor=%s, OpengGL=%s, force Xdummy=%s" %
-      (x264_ENABLED, vpx_ENABLED, webp_ENABLED, rencode_ENABLED, clipboard_ENABLED, sound_ENABLED, xor_ENABLED, opengl_ENABLED, xdummy_ENABLED))
+switches_info = {}
+for x in SWITCHES:
+    switches_info[x] = vars()["%s_ENABLED" % x]
+print("build switches: %s" % switches_info)
+if XPRA_LOCAL_SERVERS_SUPPORTED:
+    print("force Xdummy=%s" % xdummy_ENABLED)
 
 
 #*******************************************************************************
@@ -122,13 +131,16 @@ setup_options["long_description"] = """This package contains several sub-project
 data_files = []
 setup_options["data_files"] = data_files
 packages = ["wimpiggy",
-          "parti", "parti.trays", "parti.addons", "parti.scripts",
-          "xpra", "xpra.scripts", "xpra.platform", "xpra.xor",
+          "xpra", "xpra.scripts", "xpra.platform",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
 ext_modules = []
 cmdclass = {}
+
+if parti_ENABLED:
+    packages += ["parti", "parti.trays", "parti.addons", "parti.scripts"]
+
 
 
 #*******************************************************************************
@@ -425,7 +437,20 @@ if sys.platform.startswith("win"):
                         "hashlib",
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
-    py2exe_excludes.append("tcl")
+    dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
+    py2exe_excludes += ["Tkconstants", "Tkinter", "tcl"]
+    py2exe_excludes.append("xpra.darwin")
+    py2exe_excludes.append("xpra.xposix")
+    if not parti_ENABLED:
+        py2exe_excludes.append("parti")
+    if cyxor_ENABLED and not opengl_ENABLED:
+        #we only need numpy for opengl or as a fallback for the Cython xor module
+        py2exe_excludes.append("numpy")
+        py2exe_excludes.append("xpra.xor.numpyxor")
+    else:
+        py2exe_includes.append("numpy")
+        py2exe_includes.append("numpy.core.numeric")
+
     if opengl_ENABLED:
         py2exe_includes += ["ctypes", "platform"]
         py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]
@@ -450,10 +475,12 @@ if sys.platform.startswith("win"):
                                            "skip_archive"   : False,
                                            "optimize"       : 0,    #WARNING: do not change - causes crashes
                                            "unbuffered"     : True,
+                                           "compressed"     : True,
+                                           "skip_archive"   : False,
                                            "packages"       : packages,
                                            "includes"       : py2exe_includes,
                                            "excludes"       : py2exe_excludes,
-                                           "dll_excludes"   : "w9xpopen.exe",
+                                           "dll_excludes"   : dll_excludes,
                                         }
                                 }
     data_files += [
@@ -544,7 +571,23 @@ if server_ENABLED:
                 **pkgconfig("x11")
                 ))
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("wimpiggy.lowlevel")
+    #with py2exe, we have to remove the default packages and let it figure it out...
+    #(otherwise, we can't remove specific files from those packages)
+    packages.remove("wimpiggy")
+    packages.remove("xpra")
+    packages.remove("xpra.scripts")
+    packages.remove("xpra.platform")
+    py2exe_excludes += ["xpra.scripts.server",
+                        "xpra.server", "xpra.shadow_server", "xpra.server_base",
+                        "xpra.server_source", "xpra.window_source",
+                        "xpra.xkbhelper", "xpra.wait_for_x_server",
+                        "xpra.dbus_notifications_forwarder",
+                        "xpra.pixbuf_to_rgb",
+                        "wimpiggy.lowlevel",  "wimpiggy.tray""wimpiggy.selection",
+                        "wimpiggy.prop", "wimpiggy.composite",
+                        "wimpiggy.keys", "wimpiggy.wm",
+                        "wimpiggy.window", "wimpiggy.world_window",
+                        "wimpiggy.xsettings_prop"]
 
 
 
@@ -568,7 +611,7 @@ elif sys.platform.startswith("win"):
 
 
 
-if xor_ENABLED:
+if cyxor_ENABLED:
     packages.append("xpra.xor")
     cython_add(Extension("xpra.xor.cyxor",
                 ["xpra/xor/cyxor.pyx"]))
