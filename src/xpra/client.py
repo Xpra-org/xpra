@@ -156,6 +156,16 @@ class XpraClient(XpraClientBase):
         self.server_sound_receive = False
         self.server_sound_send = False
 
+        #mmap:
+        self.mmap_enabled = False
+        self.mmap = None
+        self.mmap_token = None
+        self.mmap_file = None
+        self.mmap_size = 0
+        self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
+        if self.supports_mmap:
+            self.init_mmap(opts.mmap_group, conn.filename)
+
         #features:
         self.init_opengl()
         self.toggle_cursors_bell_notify = False
@@ -175,16 +185,6 @@ class XpraClient(XpraClientBase):
         self.clipboard_enabled = self.client_supports_clipboard
         self.cursors_enabled = self.client_supports_cursors
         self.bell_enabled = self.client_supports_bell
-
-        #mmap:
-        self.mmap_enabled = False
-        self.mmap = None
-        self.mmap_token = None
-        self.mmap_file = None
-        self.mmap_size = 0
-        self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
-        if self.supports_mmap:
-            self.init_mmap(opts.mmap_group, conn.filename)
 
         self.init_packet_handlers()
         self.ready(conn)
