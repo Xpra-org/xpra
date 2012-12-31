@@ -438,18 +438,35 @@ if sys.platform.startswith("win"):
                         "PIL",
                         "win32con", "win32gui", "win32process", "win32api"]
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
-    py2exe_excludes += ["Tkconstants", "Tkinter", "tcl"]
+    py2exe_excludes += [
+                        #Tcl/Tk
+                        "Tkconstants", "Tkinter", "tcl",
+                        #PIL bits that import TK:
+                        "_imagingtk", "PIL._imagingtk", "ImageTk", "PIL.ImageTk", "FixTk",
+                        #formats we don't use:
+                        "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
+                        #not used on win32:
+                        "mmap",
+                        #this is a mac osx thing:
+                        "ctypes.macholib",
+                        #not used:
+                        "curses", "email", "mimetypes", "mimetools", "inspect", "pdb",
+                        "urllib", "urllib2", "urlparse", "tty",
+                        "ssl", "_ssl",
+                        "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
+                        "distutils", "setuptools", "doctest"]
     py2exe_excludes.append("xpra.darwin")
     py2exe_excludes.append("xpra.xposix")
     if not parti_ENABLED:
         py2exe_excludes.append("parti")
-    if cyxor_ENABLED and not opengl_ENABLED:
-        #we only need numpy for opengl or as a fallback for the Cython xor module
-        py2exe_excludes.append("numpy")
-        py2exe_excludes.append("xpra.xor.numpyxor")
-    else:
+
+    if not cyxor_ENABLED or opengl_ENABLED:
+        #we need numpy for opengl or as a fallback for the Cython xor module
         py2exe_includes.append("numpy")
-        py2exe_includes.append("numpy.core.numeric")
+    else:
+        py2exe_excludes += ["numpy",
+                            "unittest", "difflib",  #avoid numpy warning (not an error)
+                            "pydoc"]
 
     if opengl_ENABLED:
         py2exe_includes += ["ctypes", "platform"]
