@@ -74,4 +74,4 @@ while (($#)); do
 done
 args="$args]"
 
-exec $PYTHON -c "import sys;sys.argv[0]=\"$full_path\";from xpra.scripts.client_launcher import main;main()"
+exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path\";from xpra.scripts.client_launcher import main;main()"
