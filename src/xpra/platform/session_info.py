@@ -327,9 +327,9 @@ class SessionInfo(gtk.Window):
             bandwidth_label += ",\nand number of pixels rendered"
         self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
         self.latency_graph = self.add_graph_button("The time it takes to send an echo packet and get the reply", self.save_graphs)
-        self.pixel_in_data = maxdeque(N_SAMPLES+3)
+        self.pixel_in_data = maxdeque(N_SAMPLES+4)
         self.net_in_data = maxdeque(N_SAMPLES+3)
-        self.net_out_data = maxdeque(N_SAMPLES+2)
+        self.net_out_data = maxdeque(N_SAMPLES+3)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -629,7 +629,7 @@ class SessionInfo(gtk.Window):
             labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale)]
             datasets = [in_data, out_data]
             if SHOW_PIXEL_STATS and self.client.windows_enabled:
-                pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[:N_SAMPLES], min_scaled_value=100)
+                pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
                 datasets.append(in_pixels)
                 labels.append("%s pixels/s" % unit(pixel_scale))
             pixmap = make_graph_pixmap(datasets, labels=labels, width=w, height=h/2, title="Bandwidth", min_y_scale=10, rounding=10)

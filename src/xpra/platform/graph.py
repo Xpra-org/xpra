@@ -153,8 +153,8 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                     context.move_to(x, y)
                 else:
                     context.move_to(x, y)
+                last_v = v, x, y
             j += 1
-            last_v = v, x, y
         context.stroke()
         #show label:
         if labels and len(labels)>i:
