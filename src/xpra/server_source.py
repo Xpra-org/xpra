@@ -527,7 +527,7 @@ class ServerSource(object):
         if q>=0:
             self.default_damage_options["quality"] = q
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
-        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0)/1000.0)
+        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))/1000.0
         #keyboard:
         self.keyboard_config = KeyboardConfig()
         self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
@@ -860,6 +860,7 @@ class ServerSource(object):
         info["client_notifications%s" % suffix] = self.send_notifications
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
+        info["auto_refresh%s" % suffix] = int(self.auto_refresh_delay*1000.0)
 
     def send_info_response(self, info):
         self.idle_send("info-response", info)
