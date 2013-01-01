@@ -292,15 +292,20 @@ class ClientWindow(gtk.Window):
                 ]:
                 v = size_metadata.get(a)
                 if v:
-                    hints[h1], hints[h2] = v
+                    v1, v2 = v
+                    hints[h1], hints[h2] = int(v1), int(v2)
             for (a, h) in [
-                ("minimum-aspect", "min_aspect"),
-                ("maximum-aspect", "max_aspect"),
+                ("minimum-aspect-ratio", "min_aspect"),
+                ("maximum-aspect-ratio", "max_aspect"),
                 ]:
                 v = size_metadata.get(a)
                 if v:
-                    hints[h] = v
-            set_geometry_hints(self, hints)
+                    v1, v2 = v
+                    hints[h] = float(v1)/float(v2)
+            try:
+                set_geometry_hints(self, hints)
+            except:
+                log.error("with hints=%s", hints, exc_info=True)
             #TODO:
             #gravity = size_metadata.get("gravity")
 
