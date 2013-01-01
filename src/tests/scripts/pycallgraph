@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os.path
 import sys
 import xpra.scripts.main
 
@@ -145,36 +146,94 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
+THREAD_NAMES = ["data_to_packet", "write_loop", "read_loop", "read_parse_loop"]
+SETS = ["all", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "connection"]
 
-# exclude most things, but not damage:
-exclude = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + connection
-include = ["*"]
+def usage(msg):
+    print(msg)
+    cmd = os.path.basename(sys.argv[0])
+    print("%s usage: -i include-set -e exclude-set -t thread-name -- XPRA ARGS" % sys.argv[0])
+    print("The default thread is the main thread, other options are: %s" % ", ".join(THREAD_NAMES))
+    print("The include and exclude sets are define as a coma seperated list of package groups.")
+    print("The package groups available are: %s" % ", ".join(SETS))
+    print("The 'all' set is a superset containing all the other groups")
+    print("Use '*' as a wildcard group")
+    print("")
+    print("Examples:")
+    print("#profile server damage without network")
+    print("%s -i damage -e net -- start :10" % cmd)
+    print("#profile client damage and network only")
+    print("%s -i damage -i net -e * -- attach :10" % cmd)
+    print("#profile server data_to_packet thread, excluding standard libraries")
+    print("%s -t data_to_packet -i * -e std -e libs -- start :10" % cmd)
+    sys.exit(1)
 
-#just damage without network:
-exclude = net
-include = damage
 
-#damage + network:
+pos = 0
+for x in sys.argv:
+    if x=="--":
+        break
+    pos += 1
+if pos==0 or pos==len(sys.argv):
+    usage("invalid number of arguments")
+
+cg_args = sys.argv[1:pos]
+sys.argv = sys.argv[:1]+sys.argv[pos+1:]
+if len(cg_args)%2!=0:
+    usage("invalid number of arguments")
+    
+pairs = []
+for i in xrange(len(cg_args)/2):
+    pairs.append((cg_args[i*2], cg_args[i*2+1]))
+
+def get_group(v):
+    if v=="*":
+        return ["*"]
+    if v not in SETS:
+        usage("invalid package group %s, options are: %s" % (v, SETS))
+    return globals()[v]
+
 exclude = []
-include = net + damage
+include = []
+trace_thread = None
+for a,v in pairs:
+    if a not in ("-i", "-e", "-t"):
+        usage("invalid argument: %s" % a)
+    if a=="-i":
+        include += get_group(v)
+    elif a=="-e":
+        exclude += get_group(v)
+    elif a=="-t":
+        if trace_thread:
+            usage("only one thread can be traced at a time")
+        if v not in THREAD_NAMES:
+            usage("invalid thread name: %s, options are: %s" % (v, THREAD_NAMES))
+        trace_thread=v
+    else:
+        usage("impossible!")
 
+print("")
+print("include=%s" % str(include))
+print("exclude=%s" % str(exclude))
+print("trace_thread=%s" % trace_thread)
+print("")
+
+
+#adjust cache size:
 import fnmatch
 fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude), len(include)) + 10
 fnmatch._purge()
 
 filter_func = GlobbingFilter(include=include, exclude=exclude)
 
-#TRACE_THREAD = "read_parse_loop"
-TRACE_THREAD = "data_to_packet"
-TRACE_THREAD = None
-if TRACE_THREAD:
+if trace_thread:
     from xpra import daemon_thread
     saved_make_daemon_thread = daemon_thread.make_daemon_thread
     trace_count = 0
     def make_trace_daemon_thread(target, name):
         def trace_target(*args):
             global trace_count
-            if name==TRACE_THREAD and trace_count==0:
+            if name==trace_thread and trace_count==0:
                 trace_count += 1
                 print("started tracing %s / %s!" % (target, name))
                 start_trace(filter_func=filter_func)
@@ -187,6 +246,7 @@ else:
     #trace main thread
     start_trace(filter_func=filter_func)
 
+print("calling xpra with: %s" % str(sys.argv))
 x = xpra.scripts.main.main(__file__, sys.argv)
 
 filename = 'pycallgraph.png'
