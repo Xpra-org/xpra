@@ -127,8 +127,9 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
     #ratio of "in" and "out" latency indicates network bottleneck:
     if len(statistics.damage_in_latency)>0 and len(statistics.damage_out_latency)>0:
         msg = "damage network delay:"
-        r = recent_damage_out_latency/recent_damage_in_latency
-        factors.append(calculate_for_average(msg, 1.1, r, weight_div=0.4))
+        ad = max(0.001, avg_damage_out_latency-avg_damage_in_latency)
+        rd = max(0.001, recent_damage_out_latency-recent_damage_in_latency)
+        factors.append(calculate_for_average(msg, ad, rd, weight_div=0.4))
     #send speed:
     if avg_send_speed is not None and recent_send_speed is not None:
         #our calculate methods aims for lower values, so invert speed
