@@ -520,7 +520,8 @@ class SessionInfo(gtk.Window):
 
     def populate_statistics(self):
         log("populate_statistics()")
-        self.client.send_info_request()
+        if self.client.server_info_request:
+            self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
             for i in range(len(labels)):
