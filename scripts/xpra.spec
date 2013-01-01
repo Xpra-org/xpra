@@ -557,7 +557,7 @@ cd parti-all-%{version}
 %build
 cd parti-all-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build
+CFLAGS=-O2 python setup.py build --without-parti
 
 %install
 rm -rf $RPM_BUILD_ROOT
