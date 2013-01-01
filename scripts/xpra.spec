@@ -562,7 +562,7 @@ CFLAGS=-O2 python setup.py build --without-parti
 %install
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
-%{__python} setup.py install -O1  --prefix /usr --skip-build --root %{buildroot}
+%{__python} setup.py install -O1 --without-parti --prefix /usr --skip-build --root %{buildroot}
 %if 0%{?generic}
 # remove anything relying on dynamic libraries (not suitable for a generic RPM)
 # unless they're statically linked and enabled (static_vpx / static_x264):
