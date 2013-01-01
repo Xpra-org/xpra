@@ -20,9 +20,8 @@ import os.path
 import stat
 
 import wimpiggy
-import parti
 import xpra
-assert wimpiggy.__version__ == parti.__version__ == xpra.__version__
+assert wimpiggy.__version__ == xpra.__version__
 
 print(" ".join(sys.argv))
 
@@ -112,21 +111,23 @@ setup_options = {}
 setup_options["name"] = "parti-all"
 setup_options["author"] = "Antoine Martin"
 setup_options["author_email"] = "antoine@nagafix.co.uk"
-setup_options["version"] = parti.__version__
+setup_options["version"] = xpra.__version__
 setup_options["url"] = "http://xpra.org/"
 setup_options["download_url"] = "http://xpra.org/src/"
 setup_options["description"] = "A window manager library, a window manager, and a 'screen for X' utility"
 
 wimpiggy_desc = "A library for writing window managers, using GTK+"
-parti_desc = "A tabbing/tiling window manager using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
 setup_options["long_description"] = """This package contains several sub-projects:
   wimpiggy:
     %s
-  parti:
-    %s
   xpra:
-    %s""" % (wimpiggy_desc, parti_desc, xpra_desc)
+    %s""" % (wimpiggy_desc, xpra_desc)
+if parti_ENABLED:
+    parti_desc = "A tabbing/tiling window manager using GTK+"
+    setup_options["long_description"] = setup_options["long_description"]+ """
+  parti:
+    %s""" % parti_desc
 
 data_files = []
 setup_options["data_files"] = data_files
@@ -140,6 +141,8 @@ cmdclass = {}
 
 if parti_ENABLED:
     packages += ["parti", "parti.trays", "parti.addons", "parti.scripts"]
+    import parti
+    assert parti.__version__ == xpra.__version__
 
 
 
@@ -522,27 +525,32 @@ if sys.platform.startswith("win"):
 
 #*******************************************************************************
 else:
+    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
+    man_pages = ["man/xpra.1", "man/xpra_launcher.1"]
     data_files += [
-                    ("share/man/man1", ["man/xpra.1", "man/xpra_launcher.1", "man/parti.1"]),
-                    ("share/parti", ["README", "parti.README"]),
+                    ("share/man/man1", man_pages),
                     ("share/xpra", ["xpra.README", "COPYING"]),
                     ("share/wimpiggy", ["wimpiggy.README"]),
                     ("share/xpra/icons", glob.glob("icons/*")),
                     ("share/applications", ["xpra_launcher.desktop"]),
                     ("share/icons", ["xpra.png"])
                   ]
+    if parti_ENABLED:
+        man_pages.append("man/parti.1")
+        data_files.append(("share/parti", ["README", "parti.README"]))
+        scripts += ["scripts/parti", "scripts/parti-repl"]
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
 
-    scripts = ["scripts/xpra", "scripts/xpra_launcher"]
     if sys.platform.startswith("darwin"):
         #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
         packages.append("xpra.darwin")
     else:
         packages.append("xpra.xposix")
-        scripts += ["scripts/parti", "scripts/parti-repl",
-                    "scripts/xpra_Xdummy"]  #always include the wrapper in case we need it later, we remove it during the 'install' below step if it isn't actually needed
+        #always include the wrapper in case we need it later:
+        #(we remove it during the 'install' below step if it isn't actually needed)
+        scripts.append("scripts/xpra_Xdummy")
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:

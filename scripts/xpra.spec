@@ -606,13 +606,6 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/icons/xpra.png
 /etc/xpra/*
 
-# we no longer ship parti in rpms:
-%exclude %{_bindir}/parti
-%exclude %{_bindir}/parti-repl
-%exclude %{python_sitelib}/parti
-%exclude /usr/share/parti
-%exclude /usr/share/man/man1/parti.*
-
 ###
 ### eof
 ###
