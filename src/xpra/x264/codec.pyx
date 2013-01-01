@@ -243,10 +243,11 @@ cdef class Encoder(xcoder):
         if "quality" in options:
             #quality was overriden via options:
             client_options["quality"] = options["quality"]
+            #print("quality specified: %s" % options["quality"])
         else:
-
             #current quality settings:
             client_options["quality"] = get_encoder_quality(self.context)
+            #print("quality from encoder: %s" % client_options["quality"])
         return  client_options
 
     def compress_image(self, input, rowstride, options):
@@ -259,7 +260,7 @@ cdef class Encoder(xcoder):
         PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
         pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
-        return self.do_compress_image(pic_in, quality_override)
+        return self.do_compress_image(pic_in, quality_override), self.get_client_options(options)
 
     cdef do_compress_image(self, x264_picture_t *pic_in, int quality_override):
         #actual compression (no gil):
@@ -269,10 +270,10 @@ cdef class Encoder(xcoder):
         with nogil:
             i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
         if i!=0:
-            return i, 0, ""
+            return None
         coutv = (<char *>cout)[:coutsz]
         self.frames += 1
-        return  i, coutsz, coutv
+        return  coutv
 
     def set_encoding_speed(self, pct):
         ipct = int(pct)

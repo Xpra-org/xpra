@@ -920,11 +920,10 @@ class WindowSource(object):
                 debug("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 self._video_encoder = self.make_video_encoder(coding)
                 self._video_encoder.init_context(w, h, self.encoding_options)
-            err, _, data = self._video_encoder.compress_image(data, rowstride, options)
-            if err!=0:
-                error("%s: ouch, compression error %s", coding, err)
+            data, client_options = self._video_encoder.compress_image(data, rowstride, options)
+            if data is None:
+                error("%s: ouch, compression failed", coding)
                 return None, None
-            client_options = self._video_encoder.get_client_options(options)
             debug("compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
             return Compressed(coding, data), client_options
         finally:
