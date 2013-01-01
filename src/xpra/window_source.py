@@ -656,7 +656,7 @@ class WindowSource(object):
                 #auto-refresh:
                 if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
-                    gobject.idle_add(self.schedule_auto_refresh, window, w, h, self.encoding, options, client_options)
+                    gobject.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
         self.queue_damage(make_data_packet)
 
     def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
@@ -697,9 +697,10 @@ class WindowSource(object):
             #self.process_damage_region(time.time(), window, 0, 0, ww, wh, coding, new_options)
         self.cancel_refresh_timer()
         if self._damage_delayed:
+            debug("auto refresh: delayed region already exists")
             #there is already a new damage region pending, let it re-schedule when it gets sent
             return
-        delay = max(self.auto_refresh_delay, int(1000*self.batch_config.delay))
+        delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay))
         debug("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
         self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
 
