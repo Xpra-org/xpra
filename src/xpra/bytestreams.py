@@ -72,9 +72,9 @@ class TwoFileConnection(Connection):
 
 
 class SocketConnection(Connection):
-    def __init__(self, s, local, remote, target):
+    def __init__(self, socket, local, remote, target):
         Connection.__init__(self, target)
-        self._s = s
+        self._socket = socket
         self.local = local
         self.remote = remote
         if type(remote)==str:
@@ -84,13 +84,13 @@ class SocketConnection(Connection):
         self.info = "socket"
 
     def read(self, n):
-        return self._read(self._s.recv, n)
+        return self._read(self._socket.recv, n)
 
     def write(self, buf):
-        return self._write(self._s.send, buf)
+        return self._write(self._socket.send, buf)
 
     def close(self):
-        return self._s.close()
+        self._socket.close()
 
     def __str__(self):
         if self.remote:
