@@ -432,9 +432,9 @@ class ServerSource(object):
         self.sound_send = capabilities.get("sound.send", False)
 
     def start_sending_sound(self):
-        assert self.supports_speaker
-        assert self.sound_source is None
-        assert self.sound_receive
+        assert self.supports_speaker, "cannot send sound: support not enabled on the server"
+        assert self.sound_source is None, "a sound source already exists"
+        assert self.sound_receive, "cannot send sound: support is not enabled on the client"
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
             self.sound_source = start_sending_sound(self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)

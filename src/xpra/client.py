@@ -665,7 +665,7 @@ class XpraClient(XpraClientBase):
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
                 from xpra.sound.gstreamer_util import add_gst_capabilities
-                add_gst_capabilities(capabilities, receive=True, send=True,
+                add_gst_capabilities(capabilities, receive=self.speaker_enabled, send=self.microphone_enabled,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
@@ -848,7 +848,7 @@ class XpraClient(XpraClientBase):
             self.sound_source = None
 
     def start_receiving_sound(self):
-        assert self.server_sound_send
+        assert self.server_sound_send, "cannot start receiving sound: support not enabled on the server"
         self.send("sound-control", "start")
 
     def stop_receiving_sound(self):
