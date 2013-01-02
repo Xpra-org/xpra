@@ -904,7 +904,7 @@ class ServerSource(object):
         """
         now = time.time()
         self.statistics.damage_packet_qsizes.append((now, len(self.damage_packet_queue)))
-        self.statistics.damage_packet_qpixels.append((now, wid, sum([x[1] for x in list(self.damage_packet_queue) if x[2]==wid])))
+        self.statistics.damage_packet_qpixels.append((now, wid, sum([x[2] for x in list(self.damage_packet_queue) if x[1]==wid])))
         self.damage_packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
         #if self.protocol._write_queue.empty():
         p = self.protocol
