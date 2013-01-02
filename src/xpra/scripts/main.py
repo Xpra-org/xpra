@@ -29,7 +29,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
 from xpra.bytestreams import TwoFileConnection, SocketConnection
 
 from wimpiggy.gobject_compat import import_gobject, is_gtk3
-import_gobject()
+gobject = import_gobject()
 try:
     import Image
     assert Image
@@ -702,6 +702,18 @@ def connect_or_fail(display_desc):
     else:
         assert False, "unsupported display type in connect"
 
+def set_signal_handlers(app):
+    def deadly_signal(signum, frame):
+        print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        app.cleanup()
+        os._exit(128 + signum)
+    def app_signal(signum, frame):
+        print("\ngot signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+        gobject.timeout_add(0, app.quit, priority=gobject.PRIORITY_HIGH)
+    signal.signal(signal.SIGINT, app_signal)
+    signal.signal(signal.SIGTERM, app_signal)
 
 def run_client(parser, opts, extra_args, mode):
     if mode=="screenshot":
@@ -751,18 +763,7 @@ def run_client(parser, opts, extra_args, mode):
         elif mode=="attach":
             log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
     app.connect("handshake-complete", handshake_complete)
-    import gobject
-    def deadly_signal(signum, frame):
-        print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
-        app.cleanup()
-        os._exit(128 + signum)
-    def client_signal(signum, frame):
-        print("\ngot signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
-        signal.signal(signal.SIGINT, deadly_signal)
-        signal.signal(signal.SIGTERM, deadly_signal)
-        gobject.timeout_add(0, app.quit, priority=gobject.PRIORITY_HIGH)
-    signal.signal(signal.SIGINT, client_signal)
-    signal.signal(signal.SIGTERM, client_signal)
+    set_signal_handlers(app)
     try:
         try:
             return app.run()
@@ -776,6 +777,8 @@ def run_proxy(parser, opts, extra_args):
     assert "gtk" not in sys.modules
     server_conn = connect_or_fail(pick_display(parser, opts, extra_args))
     app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
+    signal.signal(signal.SIGINT, app.quit)
+    signal.signal(signal.SIGTERM, app.quit)
     app.run()
     return  0
 
