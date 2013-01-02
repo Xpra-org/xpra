@@ -1147,7 +1147,9 @@ class ServerSource(object):
         self.statistics.damage_packet_qpixels.append((now, wid, sum([x[1] for x in list(self.damage_packet_queue) if x[2]==wid])))
         self.damage_packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
         #if self.protocol._write_queue.empty():
-        gobject.idle_add(self.protocol.source_has_more)
+        p = self.protocol
+        if p:
+            gobject.idle_add(p.source_has_more)
 
 #
 # The damage packet thread loop:
