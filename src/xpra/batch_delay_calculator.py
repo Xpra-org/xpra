@@ -14,8 +14,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.maths import dec1, dec2, logp, \
-        calculate_time_weighted_average, calculate_timesize_weighted_average, \
-        calculate_for_target, calculate_for_average, queue_inspect
+        calculate_time_weighted_average, queue_inspect
 
 
 
@@ -67,126 +66,26 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         then use them to calculate a number of factors.
         which are then used to adjust the batch delay in 'update_batch_delay'.
     """
+    global_statistics.update_averages()
+    statistics.update_averages()
+
     #the number of pixels which can be considered 'low' in terms of backlog.
     #Generally, just one full frame, (more with mmap because it is so fast)
     low_limit = 1024*1024
     if window:
         ww, wh = window.get_dimensions()
         low_limit = max(8*8, ww*wh)
-        if global_statistics.mmap_size>0:
-            #mmap can accumulate much more as it is much faster
-            low_limit *= 4
-    #client latency: (how long it takes for a packet to get to the client and get the echo back)
-    avg_client_latency, recent_client_latency = 0.1, 0.1    #assume 100ms until we get some data
-    if len(global_statistics.client_latency)>0:
-        data = [(when, latency) for _, when, _, latency in list(global_statistics.client_latency)]
-        avg_client_latency, recent_client_latency = calculate_time_weighted_average(data)
-        global_statistics.avg_client_latency = avg_client_latency
-    #client ping latency: from ping packets
-    avg_client_ping_latency, recent_client_ping_latency = 0.1, 0.1    #assume 100ms until we get some data
-    if len(global_statistics.client_ping_latency)>0:
-        avg_client_ping_latency, recent_client_ping_latency = calculate_time_weighted_average(list(global_statistics.client_ping_latency))
-    #server ping latency: from ping packets
-    avg_server_ping_latency, recent_server_ping_latency = 0.1, 0.1    #assume 100ms until we get some data
-    if len(global_statistics.server_ping_latency)>0:
-        avg_server_ping_latency, recent_server_ping_latency = calculate_time_weighted_average(list(global_statistics.server_ping_latency))
-    #damage "in" latency: (the time it takes for damage requests to be processed only)
-    avg_damage_in_latency, recent_damage_in_latency = 0, 0
-    if len(statistics.damage_in_latency)>0:
-        data = [(when, latency) for when, _, _, latency in list(statistics.damage_in_latency)]
-        avg_damage_in_latency, recent_damage_in_latency =  calculate_time_weighted_average(data)
-    #damage "out" latency: (the time it takes for damage requests to be processed and sent out)
-    avg_damage_out_latency, recent_damage_out_latency = 0, 0
-    if len(statistics.damage_out_latency)>0:
-        data = [(when, latency) for when, _, _, latency in list(statistics.damage_out_latency)]
-        avg_damage_out_latency, recent_damage_out_latency = calculate_time_weighted_average(data)
-    #client decode speed:
-    avg_decode_speed, recent_decode_speed = None, None
-    if len(statistics.client_decode_time)>0:
-        #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
-        avg_decode_speed, recent_decode_speed = calculate_timesize_weighted_average(list(statistics.client_decode_time), sizeunit=1000*1000)
-    #network send speed:
-    avg_send_speed, recent_send_speed = None, None
-    if len(statistics.damage_send_speed)>0:
-        avg_send_speed, recent_send_speed = calculate_timesize_weighted_average(list(statistics.damage_send_speed))
-    max_latency = max(avg_damage_in_latency, recent_damage_in_latency, avg_damage_out_latency, recent_damage_out_latency)
+    if global_statistics.mmap_size>0:
+        #mmap can accumulate much more as it is much faster
+        low_limit *= 4
 
     #for each indicator: (description, factor, weight)
-    factors = []
-
-    #damage "in" latency factor:
-    if len(statistics.damage_in_latency)>0:
-        msg = "damage processing latency:"
-        target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
-        factors.append(calculate_for_target(msg, target_latency, avg_damage_in_latency, recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
-    #damage "out" latency
-    if len(statistics.damage_out_latency)>0:
-        msg = "damage send latency:"
-        target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
-        factors.append(calculate_for_target(msg, target_latency, avg_damage_out_latency, recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
-    #ratio of "in" and "out" latency indicates network bottleneck:
-    if len(statistics.damage_in_latency)>0 and len(statistics.damage_out_latency)>0:
-        msg = "damage network delay:"
-        ad = max(0.001, avg_damage_out_latency-avg_damage_in_latency)
-        rd = max(0.001, recent_damage_out_latency-recent_damage_in_latency)
-        factors.append(calculate_for_average(msg, ad, rd, weight_div=0.4))
-    #send speed:
-    if avg_send_speed is not None and recent_send_speed is not None:
-        #our calculate methods aims for lower values, so invert speed
-        #this is how long it takes to send 1MB:
-        avg1MB = 1.0*1024*1024/avg_send_speed
-        recent1MB = 1.0*1024*1024/recent_send_speed
-        #we only really care about this when the speed is quite low,
-        #so adjust the weight accordingly:
-        minspeed = float(128*1024)
-        div = logp(max(recent_send_speed, minspeed)/minspeed)
-        msg = "network send speed: avg=%s, recent=%s (KBytes/s), div=%s" % (int(avg_send_speed/1024), int(recent_send_speed/1024), div)
-        factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
-    #client decode time:
-    if avg_decode_speed is not None and recent_decode_speed is not None:
-        msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(avg_decode_speed/1000/1000), dec1(recent_decode_speed/1000/1000))
-        #our calculate methods aims for lower values, so invert speed
-        #this is how long it takes to send 1MB:
-        avg1MB = 1.0*1024*1024/avg_decode_speed
-        recent1MB = 1.0*1024*1024/recent_decode_speed
-        factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0))
-    #elapsed time without damage:
-    if batch.last_updated>0:
-        #If nothing happens for a while then we can reduce the batch delay,
-        #however we must ensure this is not caused by a high damage latency
-        #so we ignore short elapsed times.
-        ignore_time = max(max_latency+batch.recalculate_delay, batch.delay+batch.recalculate_delay)
-        ignore_count = 2 + ignore_time / batch.recalculate_delay
-        elapsed = time.time()-batch.last_updated
-        n_skipped_calcs = elapsed / batch.recalculate_delay
-        #the longer the elapsed time, the more we slash:
-        weight = logp(max(0, n_skipped_calcs-ignore_count))
-        msg = "delay not updated for %s ms (skipped %s times - highest latency is %s)" % (dec1(1000*elapsed), int(n_skipped_calcs), dec1(1000*max_latency))
-        factors.append((msg, 0, weight))
-
-    target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, avg_client_latency)
-    if len(global_statistics.client_latency)>0 and avg_client_latency is not None and recent_client_latency is not None:
-        #client latency: (we want to keep client latency as low as can be)
-        msg = "client latency:"
-        factors.append(calculate_for_target(msg, target_latency, avg_client_latency, recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt))
-    if len(global_statistics.client_ping_latency)>0:
-        msg = "client ping latency:"
-        factors.append(calculate_for_target(msg, target_latency, avg_client_ping_latency, recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
-    if len(global_statistics.server_ping_latency)>0:
-        msg = "server ping latency:"
-        factors.append(calculate_for_target(msg, target_latency, avg_server_ping_latency, recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
-    #damage packet queue size: (includes packets from all windows)
-    factors.append(queue_inspect("damage packet queue size:", global_statistics.damage_packet_qsizes, smoothing=sqrt))
+    factors = statistics.get_factors(low_limit)
+    target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
+    factors += global_statistics.get_factors(target_latency, low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
-    time_values = [(event_time, value) for event_time, dwid, value in list(global_statistics.damage_packet_qpixels) if dwid==wid]
-    factors.append(queue_inspect("damage packet queue pixels:", time_values, div=low_limit, smoothing=sqrt))
-    #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
-    factors.append(queue_inspect("damage data queue:", global_statistics.damage_data_qsizes))
-    if global_statistics.mmap_size>0:
-        #full: effective range is 0.0 to ~1.2
-        full = 1.0-float(global_statistics.mmap_free_size)/global_statistics.mmap_size
-        #aim for ~50%
-        factors.append(("mmap area %s%% full" % int(100*full), logp(2*full), 2*full))
+    time_values = global_statistics.get_damage_pixels(wid)
+    factors.append(queue_inspect("damage packet queue window pixels:", time_values, div=low_limit, smoothing=sqrt))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
     #***************************************************************
@@ -206,11 +105,11 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         #20ms + 50ms per MPixel
         min_damage_latency = 0.020 + 0.050*low_limit/1024.0/1024.0
         target_damage_latency = min_damage_latency + 10*batch.delay/1000.0
-        dam_lat = max(0, ((avg_damage_in_latency or 0)-target_damage_latency)*5)
+        dam_lat = max(0, ((statistics.avg_damage_in_latency or 0)-target_damage_latency)*5)
         target_decode_speed = 2*1000*1000      #2 MPixels/s
         dec_lat = 0.0
-        if avg_decode_speed:
-            dec_lat = target_decode_speed/(avg_decode_speed or target_decode_speed)
+        if statistics.avg_decode_speed:
+            dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
         target = max(dam_lat, dec_lat, 0.0)
         target_speed = 100.0 * min(1.0, target)
         video_encoder_speed.append((time.time(), target_speed))
@@ -234,8 +133,8 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         batch_q = batch.min_delay / max(batch.min_delay, batch.delay)
         target = min(packets_bl, batch_q)
         latency_q = 0.0
-        if len(global_statistics.client_latency)>0 and recent_client_latency>0:
-            latency_q = 6.0 * target_latency / recent_client_latency
+        if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
+            latency_q = 6.0 * target_latency / global_statistics.recent_client_latency
             target = min(target, latency_q)
         target_quality = 100.0*(min(1.0, max(0.0, target)))
         video_encoder_quality.append((time.time(), target_quality))

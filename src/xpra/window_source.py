@@ -61,7 +61,10 @@ from xpra.deque import maxdeque
 from xpra.protocol import zlib_compress, Compressed
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import dec1, add_list_stats, add_weighted_list_stats, calculate_time_weighted_average, calculate_timesize_weighted_average
+from xpra.maths import dec1, logp, \
+    add_list_stats, add_weighted_list_stats, \
+    calculate_time_weighted_average, calculate_timesize_weighted_average, \
+    calculate_for_target, calculate_for_average
 from xpra.batch_delay_calculator import calculate_batch_delay
 from xpra.xor import xor_str        #@UnresolvedImport
 
@@ -79,6 +82,7 @@ class DamageBatchConfig(object):
     MAX_DELAY = 15000
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
                                         #(this theoretical limit is never achieved since calculations take time + scheduling also does)
+
     def __init__(self):
         self.always = self.ALWAYS
         self.max_events = self.MAX_EVENTS
@@ -108,6 +112,10 @@ class WindowPerformanceStatistics(object):
     def __init__(self):
         self.reset()
 
+    #assume 100ms until we get some data to compute the real values
+    DEFAULT_DAMAGE_LATENCY = 0.1
+    DEFAULT_NETWORK_LATENCY = 0.1
+
     def reset(self):
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
                                                         #(ack_time, no of pixels, decoding_time*1000*1000)
@@ -123,6 +131,89 @@ class WindowPerformanceStatistics(object):
                                                         #so we can calculate the "client_latency" when the client sends
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
         self.encoding_totals = {}                       #for each encoding, how many frames we sent and how many pixels in total
+        self.last_damage_event_time = None
+
+        #these values are calculated from the values above (see update_averages)
+        self.avg_damage_in_latency = self.DEFAULT_DAMAGE_LATENCY
+        self.recent_damage_in_latency = self.DEFAULT_DAMAGE_LATENCY
+        self.avg_damage_out_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
+        self.recent_damage_out_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
+        self.max_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
+        self.avg_decode_speed = None
+        self.recent_decode_speed = None
+        self.avg_send_speed = None
+        self.recent_send_speed = None
+
+    def update_averages(self):
+        #damage "in" latency: (the time it takes for damage requests to be processed only)
+        if len(self.damage_in_latency)>0:
+            data = [(when, latency) for when, _, _, latency in list(self.damage_in_latency)]
+            self.avg_damage_in_latency, self.recent_damage_in_latency =  calculate_time_weighted_average(data)
+        #damage "out" latency: (the time it takes for damage requests to be processed and sent out)
+        if len(self.damage_out_latency)>0:
+            data = [(when, latency) for when, _, _, latency in list(self.damage_out_latency)]
+            self.avg_damage_out_latency, self.recent_damage_out_latency = calculate_time_weighted_average(data)
+        #client decode speed:
+        if len(self.client_decode_time)>0:
+            #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
+            self.avg_decode_speed, self.recent_decode_speed = calculate_timesize_weighted_average(list(self.client_decode_time), sizeunit=1000*1000)
+        #network send speed:
+        if len(self.damage_send_speed)>0:
+            self.avg_send_speed, self.recent_send_speed = calculate_timesize_weighted_average(list(self.damage_send_speed))
+        all_l = [0.1,
+                 self.avg_damage_in_latency, self.recent_damage_in_latency,
+                 self.avg_damage_out_latency, self.recent_damage_out_latency]
+        self.max_latency = max(all_l)
+
+    def get_factors(self, low_limit):
+        factors = []
+        #damage "in" latency factor:
+        if len(self.damage_in_latency)>0:
+            msg = "damage processing latency:"
+            target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
+            factors.append(calculate_for_target(msg, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
+        #damage "out" latency
+        if len(self.damage_out_latency)>0:
+            msg = "damage send latency:"
+            target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
+            factors.append(calculate_for_target(msg, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
+        #ratio of "in" and "out" latency indicates network bottleneck:
+        if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
+            msg = "damage network delay:"
+            ad = max(0.001, self.avg_damage_out_latency-self.avg_damage_in_latency)
+            rd = max(0.001, self.recent_damage_out_latency-self.recent_damage_in_latency)
+            factors.append(calculate_for_average(msg, ad, rd, weight_div=1.0))
+        #send speed:
+        if self.avg_send_speed is not None and self.recent_send_speed is not None:
+            #our calculate methods aims for lower values, so invert speed
+            #this is how long it takes to send 1MB:
+            avg1MB = 1.0*1024*1024/self.avg_send_speed
+            recent1MB = 1.0*1024*1024/self.recent_send_speed
+            #we only really care about this when the speed is quite low,
+            #so adjust the weight accordingly:
+            minspeed = float(128*1024)
+            div = logp(max(self.recent_send_speed, minspeed)/minspeed)
+            msg = "network send speed: avg=%s, recent=%s (KBytes/s), div=%s" % (int(self.avg_send_speed/1024), int(self.recent_send_speed/1024), div)
+            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
+        #client decode time:
+        if self.avg_decode_speed is not None and self.recent_decode_speed is not None:
+            msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(self.avg_decode_speed/1000/1000), dec1(self.recent_decode_speed/1000/1000))
+            #our calculate methods aims for lower values, so invert speed
+            #this is how long it takes to send 1MB:
+            avg1MB = 1.0*1024*1024/self.avg_decode_speed
+            recent1MB = 1.0*1024*1024/self.recent_decode_speed
+            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0))
+        if self.last_damage_event_time:
+            #If nothing happens for a while then we can reduce the batch delay,
+            #however we must ensure this is not caused by a high system latency
+            #so we ignore short elapsed times.
+            elapsed = time.time()-self.last_damage_event_time
+            mtime = max(0, elapsed-self.max_latency*2)
+            #the longer the time, the more we slash:
+            weight = sqrt(mtime)
+            msg = "no damage events for %s ms (highest latency is %s)" % (dec1(1000*elapsed), dec1(1000*self.max_latency))
+            factors.append((msg, 0, weight))
+        return factors
 
     def add_stats(self, info, suffix=""):
         #encoding stats:
@@ -408,6 +499,7 @@ class WindowSource(object):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
+        self.statistics.last_damage_event_time = now
 
         if self._damage_delayed:
             #use existing delayed region:

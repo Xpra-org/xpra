@@ -28,11 +28,14 @@ except:
 
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
-from xpra.maths import add_list_stats, dec1, std_unit
+from xpra.maths import add_list_stats, dec1, logp, std_unit, \
+        calculate_time_weighted_average, calculate_for_target, queue_inspect
 from xpra.scripts.main import ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server_keyboard_config import KeyboardConfig
+
+from math import sqrt
 
 import os
 NOYIELD = os.environ.get("XPRA_YIELD") is None
@@ -49,6 +52,9 @@ class GlobalPerformanceStatistics(object):
     """
     def __init__(self):
         self.reset()
+
+    #assume 100ms until we get some data to compute the real values
+    DEFAULT_LATENCY = 0.1
 
     def reset(self):
         # mmap state:
@@ -72,12 +78,21 @@ class GlobalPerformanceStatistics(object):
                                                         #(but not including time spent decoding on the client)
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
-        self.avg_client_latency = None
         self.client_ping_latency = maxdeque(NRECS)      #time it took to get a ping_echo back from the client:
                                                         #(event_time, elapsed_time_in_seconds)
         self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
                                                         #(event_time, elapsed_time_in_seconds)
         self.client_load = None
+        #these values are calculated from the values above (see update_averages)
+        self.min_client_latency = self.DEFAULT_LATENCY
+        self.avg_client_latency = self.DEFAULT_LATENCY
+        self.recent_client_latency = self.DEFAULT_LATENCY
+        self.min_client_ping_latency = self.DEFAULT_LATENCY
+        self.avg_client_ping_latency = self.DEFAULT_LATENCY
+        self.recent_client_ping_latency = self.DEFAULT_LATENCY
+        self.min_server_ping_latency = self.DEFAULT_LATENCY
+        self.avg_server_ping_latency = self.DEFAULT_LATENCY
+        self.recent_server_ping_latency = self.DEFAULT_LATENCY
 
     def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
         now = time.time()
@@ -90,6 +105,53 @@ class GlobalPerformanceStatistics(object):
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
         self.client_latency.append((wid, time.time(), pixels, send_latency))
+
+    def get_damage_pixels(self, wid):
+        """ returns the list of (event_time, pixelcount) for the given window id """
+        return [(event_time, value) for event_time, dwid, value in list(self.damage_packet_qpixels) if dwid==wid]
+
+    def update_averages(self):
+        if len(self.client_latency)>0:
+            data = [(when, latency) for _, when, _, latency in list(self.client_latency)]
+            self.min_client_latency = min([x for _,x in data])
+            self.avg_client_latency, self.recent_client_latency = calculate_time_weighted_average(data)
+        #client ping latency: from ping packets
+        if len(self.client_ping_latency)>0:
+            self.min_client_ping_latency = min([x for _,x in data])
+            self.avg_client_ping_latency, self.recent_client_ping_latency = calculate_time_weighted_average(list(self.client_ping_latency))
+        #server ping latency: from ping packets
+        if len(self.server_ping_latency)>0:
+            self.min_server_ping_latency = min([x for _,x in data])
+            self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(list(self.server_ping_latency))
+
+    def get_factors(self, target_latency, low_limit):
+        factors = []
+        if len(self.client_latency)>0:
+            #client latency: (we want to keep client latency as low as can be)
+            msg = "client latency:"
+            l = max(0.010, self.min_client_latency)
+            factors.append(calculate_for_target(msg, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt))
+        if len(self.client_ping_latency)>0:
+            msg = "client ping latency:"
+            l = max(0.010, self.min_client_ping_latency)
+            factors.append(calculate_for_target(msg, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
+        if len(self.server_ping_latency)>0:
+            msg = "server ping latency:"
+            l = max(0.010, self.min_server_ping_latency)
+            factors.append(calculate_for_target(msg, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
+        #damage packet queue size: (includes packets from all windows)
+        factors.append(queue_inspect("damage packet queue size:", self.damage_packet_qsizes, smoothing=sqrt))
+        #damage packet queue pixels (global):
+        qpix_time_values = [(event_time, value) for event_time, _, value in list(self.damage_packet_qpixels)]
+        factors.append(queue_inspect("damage packet queue pixels:", qpix_time_values, div=low_limit, smoothing=sqrt))
+        #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
+        factors.append(queue_inspect("damage data queue:", self.damage_data_qsizes))
+        if self.mmap_size>0:
+            #full: effective range is 0.0 to ~1.2
+            full = 1.0-float(self.mmap_free_size)/self.mmap_size
+            #aim for ~33%
+            factors.append(("mmap area %s%% full" % int(100*full), logp(3*full), (3*full)**2))
+        return factors
 
     def add_stats(self, info, suffix=""):
         info["output_mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
