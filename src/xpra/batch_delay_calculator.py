@@ -57,7 +57,7 @@ else:
 
 
 
-def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
+def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics,
                           video_encoder=None, video_encoder_lock=None, video_encoder_speed=None, video_encoder_quality=None,
                           fixed_quality=-1, fixed_speed=-1):
     """
@@ -66,14 +66,11 @@ def calculate_batch_delay(window, wid, batch, global_statistics, statistics,
         then use them to calculate a number of factors.
         which are then used to adjust the batch delay in 'update_batch_delay'.
     """
-    global_statistics.update_averages()
-    statistics.update_averages()
-
     #the number of pixels which can be considered 'low' in terms of backlog.
     #Generally, just one full frame, (more with mmap because it is so fast)
     low_limit = 1024*1024
-    if window:
-        ww, wh = window.get_dimensions()
+    ww, wh = window_dimensions
+    if ww>0 and wh>0:
         low_limit = max(8*8, ww*wh)
     if global_statistics.mmap_size>0:
         #mmap can accumulate much more as it is much faster

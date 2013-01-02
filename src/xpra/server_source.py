@@ -17,6 +17,7 @@ try:
 except:
     from Queue import Queue         #@Reimport
 from collections import deque
+from threading import Event
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -73,9 +74,6 @@ class GlobalPerformanceStatistics(object):
                                                         #(wid, event time, no of pixels)
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
                                                         #(wid, event_time, no of pixels, decoding_time*1000*1000)
-        self.min_client_latency = None                  #The lowest client latency ever recorded: the time it took
-                                                        #from the moment the damage packet got sent until we got the ack packet
-                                                        #(but not including time spent decoding on the client)
         self.client_latency = maxdeque(NRECS)           #how long it took for a packet to get to the client and get the echo back.
                                                         #(wid, event_time, no of pixels, client_latency)
         self.client_ping_latency = maxdeque(NRECS)      #time it took to get a ping_echo back from the client:
@@ -117,12 +115,14 @@ class GlobalPerformanceStatistics(object):
             self.avg_client_latency, self.recent_client_latency = calculate_time_weighted_average(data)
         #client ping latency: from ping packets
         if len(self.client_ping_latency)>0:
+            data = list(self.client_ping_latency)
             self.min_client_ping_latency = min([x for _,x in data])
-            self.avg_client_ping_latency, self.recent_client_ping_latency = calculate_time_weighted_average(list(self.client_ping_latency))
+            self.avg_client_ping_latency, self.recent_client_ping_latency = calculate_time_weighted_average(data)
         #server ping latency: from ping packets
         if len(self.server_ping_latency)>0:
+            data = list(self.server_ping_latency)
             self.min_server_ping_latency = min([x for _,x in data])
-            self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(list(self.server_ping_latency))
+            self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
 
     def get_factors(self, target_latency, low_limit):
         factors = []
@@ -218,7 +218,7 @@ class ServerSource(object):
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality):
-        self.closed = False
+        self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol
         self.get_transient_for = get_transient_for
@@ -288,9 +288,55 @@ class ServerSource(object):
         protocol.source = self
         self.datapacket_thread = make_daemon_thread(self.data_to_packet, "data_to_packet")
         self.datapacket_thread.start()
+        self.calculate_window_ids = set()
+        self.calculate_event = Event()
+        self.calculate_thread = make_daemon_thread(self.calculate_delay_thread, "calculate_delay_thread")
+        self.calculate_thread.start()
+
+    def calculate_delay_thread(self):
+        """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
+            and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
+            no more often than every RECALCULATE_DELAY
+        """
+        RECALCULATE_DELAY = 0.250           #250ms
+        AFTER_EACH_WINDOW_WAIT = 0.010      #10ms
+        INITIAL_WAIT = 0.025                #25ms
+        while not self.close_event.is_set():
+            self.calculate_event.wait()
+            if self.close_event.is_set():
+                return
+            wait_time = RECALCULATE_DELAY-INITIAL_WAIT
+            self.close_event.wait(INITIAL_WAIT)     #give time for the source/windows to disappear
+            if self.close_event.is_set():
+                return
+            self.statistics.update_averages()
+            wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
+            for wid in wids:
+                self.calculate_window_ids.remove(wid)
+                ws = self.window_sources.get(wid)
+                if ws is None:
+                    continue
+                try:
+                    ws.statistics.update_averages()
+                    ws.calculate_batch_delay()
+                except:
+                    log.error("error on window %s", wid, exc_info=True)
+                wait_time -= AFTER_EACH_WINDOW_WAIT
+                self.close_event.wait(AFTER_EACH_WINDOW_WAIT)
+                if self.close_event.is_set():
+                    return
+            self.calculate_event.clear()
+            if wait_time>0:
+                #wait before trying to run again:
+                self.close_event.wait(wait_time)
+
+    def may_recalculate(self, wid):
+        self.calculate_window_ids.add(wid)
+        self.calculate_event.set()
 
     def close(self):
-        self.closed = True
+        self.close_event.set()
+        self.calculate_event.set()
         self.damage_data_queue.put(None, block=False)
         for window_source in self.window_sources.values():
             window_source.cleanup()
@@ -599,7 +645,7 @@ class ServerSource(object):
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
         packet, start_send_cb, end_send_cb, have_more = None, None, None, False
-        if not self.closed:
+        if not self.close_event.is_set():
             if len(self.ordinary_packets)>0:
                 packet = self.ordinary_packets.pop(0)
             elif len(self.damage_packet_queue)>0:
@@ -913,6 +959,8 @@ class ServerSource(object):
         """
         if not self.can_send_window(window):
             return
+        if options is None or options.get("calculate", True):
+            self.may_recalculate(wid)
         assert window is not None
         if options is None:
             damage_options = self.default_damage_options
@@ -947,6 +995,7 @@ class ServerSource(object):
         ws = self.window_sources.get(wid)
         if ws:
             ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time)
+            self.may_recalculate(wid)
 
 #
 # Methods used by WindowSource:
@@ -981,7 +1030,7 @@ class ServerSource(object):
             This runs in a separate thread and calls all the function callbacks
             which are added to the 'damage_data_queue'.
         """
-        while not self.closed:
+        while not self.close_event.is_set():
             encode_and_queue = self.damage_data_queue.get(True)
             if encode_and_queue is None:
                 return              #empty marker

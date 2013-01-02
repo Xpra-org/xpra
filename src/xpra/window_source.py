@@ -331,6 +331,8 @@ class WindowSource(object):
         self.timeout_timer = None
         self.expire_timer = None
 
+        self.window_dimensions = 0, 0
+
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -450,29 +452,11 @@ class WindowSource(object):
             add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
 
 
-    def may_calculate_batch_delay(self, window):
-        """
-            Call this method whenever a batch delay related statistic has changed,
-            this will call 'calculate_batch_delay' if we haven't done so
-            for at least 'batch.recalculate_delay'.
-        """
-        now = time.time()
-        if self.batch_config.last_updated+self.batch_config.recalculate_delay<now:
-            #simple timeout
-            calculate_batch_delay(window, self.wid, self.batch_config, self.global_statistics, self.statistics,
-                                  self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
-                                  fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)
-        if self.batch_config.delay>self.batch_config.min_delay:
-            #already above batching threshold
-            return
-        #work out if we have too many damage requests
-        #or too many pixels in those requests
-        #for the last time_unit:
-        event_min_time = now-self.batch_config.time_unit
-        all_pixels = [pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
-        if len(all_pixels)>self.batch_config.max_events or sum(all_pixels)>self.batch_config.max_pixels:
-            #force batching: set it just above min_delay
-            self.batch_config.delay = self.batch_config.min_delay
+    def calculate_batch_delay(self):
+        #simple timeout
+        calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics,
+                              self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
+                              fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)
 
     def get_packets_backlog(self):
         target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
@@ -492,14 +476,14 @@ class WindowSource(object):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
-        if options.get("calculate", True):
-            self.may_calculate_batch_delay(window)
         if w==0 or h==0:
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
         self.statistics.last_damage_event_time = now
+        ww, wh = window.get_dimensions()
+        self.window_dimensions = ww, wh
 
         if self._damage_delayed:
             #use existing delayed region:
@@ -515,6 +499,16 @@ class WindowSource(object):
             debug("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %sms ago",
                 x, y, w, h, options, self.wid, self._damage_delayed[3], dec1(now-self._damage_delayed[0]))
             return
+        elif self.batch_config.delay < self.batch_config.min_delay:
+            #work out if we have too many damage requests
+            #or too many pixels in those requests
+            #for the last time_unit, and if so we force batching on
+            event_min_time = now-self.batch_config.time_unit
+            all_pixels = [pixels for _,event_time,pixels in self.global_statistics.damage_last_events if event_time>event_min_time]
+            eratio = float(len(all_pixels)) / self.batch_config.max_events
+            pratio = float(sum(all_pixels)) / self.batch_config.max_pixels
+            if eratio>1.0 or pratio>1.0:
+                self.batch_config.delay = self.batch_config.min_delay * max(eratio, pratio)
 
         delay = options.get("delay", self.batch_config.delay)
         delay = max(delay, options.get("min_delay", 0))
@@ -523,7 +517,6 @@ class WindowSource(object):
         if packets_backlog==0 and not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             debug("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            ww, wh = window.get_dimensions()
             actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
             if actual_encoding in ("x264", "vpx") or window.is_tray():
                 x, y = 0, 0

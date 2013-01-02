@@ -146,7 +146,7 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
-THREAD_NAMES = ["data_to_packet", "write_loop", "read_loop", "read_parse_loop"]
+THREAD_NAMES = ["data_to_packet", "write_loop", "read_loop", "read_parse_loop", "calculate_delay_thread"]
 SETS = ["all", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "connection"]
 
 def usage(msg):
