@@ -124,7 +124,7 @@ def add_weighted_list_stats(info, basename, weighted_values, show_percentile=Fal
             info["%s.%sp" % (basename, pct)] = int(svalues[index])
 
 
-def add_list_stats(info, basename, in_values, show_percentile=True):
+def add_list_stats(info, basename, in_values, show_percentile=[5, 8, 9], show_dev=False):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
     values = list(in_values)
@@ -136,36 +136,37 @@ def add_list_stats(info, basename, in_values, show_percentile=True):
     #arithmetic mean
     avg = sum(values)/len(values)
     info["%s.avg" % basename] = int(avg)
-    p = 1           #geometric mean
-    h = 0           #harmonic mean
-    var = 0         #variance
-    counter = 0
-    for x in values:
-        if x!=0:
-            p *= x
-            h += 1.0/x
-            counter += 1
-        var += (x-avg)**2
-    #standard deviation:
-    std = sqrt(var/len(values))
-    info["%s.std" % basename] = int(std)
-    if avg!=0:
-        #coefficient of variation
-        info["%s.cv_pct" % basename] = int(100.0*std/avg)
-    if counter>0 and p<float('inf'):
-        #geometric mean
-        try:
-            v = int(pow(p, 1.0/counter))
-        except OverflowError:
-            v = find_invpow(p, counter)
-        info["%s.gm" % basename] = v
-    if h!=0:
-        #harmonic mean
-        info["%s.h" % basename] = int(counter/h)
+    if show_dev:
+        p = 1           #geometric mean
+        h = 0           #harmonic mean
+        var = 0         #variance
+        counter = 0
+        for x in values:
+            if x!=0:
+                p *= x
+                h += 1.0/x
+                counter += 1
+            var += (x-avg)**2
+        #standard deviation:
+        std = sqrt(var/len(values))
+        info["%s.std" % basename] = int(std)
+        if avg!=0:
+            #coefficient of variation
+            info["%s.cv_pct" % basename] = int(100.0*std/avg)
+        if counter>0 and p<float('inf'):
+            #geometric mean
+            try:
+                v = int(pow(p, 1.0/counter))
+            except OverflowError:
+                v = find_invpow(p, counter)
+            info["%s.gm" % basename] = v
+        if h!=0:
+            #harmonic mean
+            info["%s.h" % basename] = int(counter/h)
     if show_percentile:
         #percentile
         svalues = sorted(values)
-        for i in range(1,10):
+        for i in show_percentile:
             pct = i*10
             index = len(values)*i//10
             info["%s.%sp" % (basename, pct)] = int(svalues[index])
