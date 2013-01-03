@@ -29,6 +29,7 @@ SET RENCODE=1
 SET CYXOR=1
 SET CLIPBOARD=1
 SET SOUND=1
+SET OPENGL=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM support double-click on BAT file, so run from parent directory:
@@ -53,6 +54,7 @@ IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
 IF %CYXOR% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cyxor
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
+IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
 
 ECHO ***************************************************************
 ECHO ****** Hack for x264/vpx/rencode/gdk-clipboard:
