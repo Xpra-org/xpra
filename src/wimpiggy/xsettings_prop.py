@@ -57,14 +57,14 @@ def get_settings(disp, d):
         pos += 4
         debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
         #extract value:
-        if setting_type==0:     #XSettingsTypeInteger
+        if setting_type==XSettingsTypeInteger:
             value = struct.unpack("=I", d[pos:pos+4])[0]
             pos += 4
-        elif setting_type==1:   #XSettingsTypeString
+        elif setting_type==XSettingsTypeString:
             value_len = struct.unpack("=I", d[pos:pos+4])[0]
             value = d[pos+4:pos+4+value_len]
             pos += 4 + ((value_len + 0x3) & ~0x3)
-        elif setting_type==2:   #XSettingsTypeColor
+        elif setting_type==XSettingsTypeColor:
             red, blue, green, alpha = struct.unpack("=HHHH", d[pos:pos+8])
             value = (red, blue, green, alpha)
             pos += 8
@@ -92,10 +92,10 @@ def set_settings(disp, d):
         x += '\0'*pad_len
         x += struct.pack("=I", last_change_serial)
         if setting_type==XSettingsTypeInteger:
-            assert type(value)==int
+            assert type(value)==int, "invalid value type (int wanted): %s" % type(value)
             x += struct.pack("=I", value)
         elif setting_type==XSettingsTypeString:
-            assert type(value)==str
+            assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
             x += struct.pack("=I", len(value))
             x += struct.pack("="+"s"*len(value), *list(value))
             pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
