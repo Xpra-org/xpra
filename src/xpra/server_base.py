@@ -545,7 +545,7 @@ class XpraServerBase(object):
         self.calculate_workarea()
         #take the clipboard if no-one else has yet:
         if ss.clipboard_enabled and self._clipboard_helper is not None and \
-            (self._clipboard_client is None or self._clipboard_client.closed):
+            (self._clipboard_client is None or self._clipboard_client.is_closed()):
             self._clipboard_client = ss
         #so only activate this feature afterwards:
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))

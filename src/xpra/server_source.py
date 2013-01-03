@@ -294,6 +294,9 @@ class ServerSource(object):
         self.calculate_thread = make_daemon_thread(self.calculate_delay_thread, "calculate_delay_thread")
         self.calculate_thread.start()
 
+    def is_closed(self):
+        return self.close_event.is_set()
+
     def calculate_delay_thread(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
@@ -302,13 +305,13 @@ class ServerSource(object):
         RECALCULATE_DELAY = 0.250           #250ms
         AFTER_EACH_WINDOW_WAIT = 0.010      #10ms
         INITIAL_WAIT = 0.025                #25ms
-        while not self.close_event.is_set():
+        while not self.is_closed():
             self.calculate_event.wait()
-            if self.close_event.is_set():
+            if self.is_closed():
                 return
             wait_time = RECALCULATE_DELAY-INITIAL_WAIT
             self.close_event.wait(INITIAL_WAIT)     #give time for the source/windows to disappear
-            if self.close_event.is_set():
+            if self.is_closed():
                 return
             self.statistics.update_averages()
             wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
@@ -324,7 +327,7 @@ class ServerSource(object):
                     log.error("error on window %s", wid, exc_info=True)
                 wait_time -= AFTER_EACH_WINDOW_WAIT
                 self.close_event.wait(AFTER_EACH_WINDOW_WAIT)
-                if self.close_event.is_set():
+                if self.is_closed():
                     return
             #calculate weighted average as new globale default delay:
             now = time.time()
@@ -680,7 +683,7 @@ class ServerSource(object):
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
         packet, start_send_cb, end_send_cb, have_more = None, None, None, False
-        if not self.close_event.is_set():
+        if not self.is_closed():
             if len(self.ordinary_packets)>0:
                 packet = self.ordinary_packets.pop(0)
             elif len(self.damage_packet_queue)>0:
@@ -1066,7 +1069,7 @@ class ServerSource(object):
             This runs in a separate thread and calls all the function callbacks
             which are added to the 'damage_data_queue'.
         """
-        while not self.close_event.is_set():
+        while not self.is_closed():
             encode_and_queue = self.damage_data_queue.get(True)
             if encode_and_queue is None:
                 return              #empty marker
