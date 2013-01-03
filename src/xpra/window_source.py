@@ -234,7 +234,8 @@ class WindowPerformanceStatistics(object):
                         total_time += compression_time
                 add_weighted_list_stats(info, "compression_ratio_pct"+suffix, comp_ratios_pct)
                 add_weighted_list_stats(info, "compression_pixels_per_ns"+suffix, comp_times_ns)
-                info["pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
+                if total_time>0:
+                    info["pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats, suffix=suffix)
             for encoding in encodings_used:
                 enc_stats = [x for x in estats if x[0]==encoding]
@@ -450,7 +451,7 @@ class WindowSource(object):
         #batch stats:
         if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.batch_config.last_delays)]
-            add_list_stats(info, prefix+"batch_delay"+suffix, batch_delays)
+            add_list_stats(info, prefix+"batch_delay"+suffix, batch_delays, show_percentile=[9])
         try:
             quality_list, speed_list = None, None
             self._video_encoder_lock.acquire()
@@ -460,8 +461,8 @@ class WindowSource(object):
         finally:
             self._video_encoder_lock.release()
         if quality_list and speed_list:
-            add_list_stats(info, prefix+self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
-            add_list_stats(info, prefix+self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
+            add_list_stats(info, prefix+self._video_encoder.get_type()+".quality"+suffix, quality_list, show_percentile=[9])
+            add_list_stats(info, prefix+self._video_encoder.get_type()+".speed"+suffix, speed_list, show_percentile=[9])
 
 
     def calculate_batch_delay(self):
