@@ -247,7 +247,11 @@ class ClientExtras(ClientExtrasBase):
         self.client.connect("handshake-complete", setup_xprop_xsettings)
 
     def _handle_xsettings_changed(self, *args):
-        blob = self._xsettings_watcher.get_settings_blob()
+        try:
+            blob = self._xsettings_watcher.get_settings_blob()
+        except:
+            log.error("failed to get XSETTINGS", exc_info=True)
+            return
         log("xsettings_changed new value=%s", blob)
         if blob is not None:
             self.client.send("server-settings", {"xsettings-blob": blob})

@@ -53,18 +53,23 @@ def get_settings(disp, d):
         prop_name = d[pos:pos+name_len]
         pos += (name_len + 0x3) & ~0x3
         #serial:
+        assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
         last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
         pos += 4
         debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
+            assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
             value = struct.unpack("=I", d[pos:pos+4])[0]
             pos += 4
         elif setting_type==XSettingsTypeString:
+            assert len(d)>=pos+4, "not enough data (%s bytes) to extract string length (4 bytes needed)" % (len(d)-pos)
             value_len = struct.unpack("=I", d[pos:pos+4])[0]
+            assert len(d)>=pos+4+value_len, "not enough data (%s bytes) to extract string (%s bytes needed)" % (len(d)-pos-4, value_len)
             value = d[pos+4:pos+4+value_len]
             pos += 4 + ((value_len + 0x3) & ~0x3)
         elif setting_type==XSettingsTypeColor:
+            assert len(d)>=pos+8, "not enough data (%s bytes) to extract color (8 bytes needed)" % (len(d)-pos)
             red, blue, green, alpha = struct.unpack("=HHHH", d[pos:pos+8])
             value = (red, blue, green, alpha)
             pos += 8
