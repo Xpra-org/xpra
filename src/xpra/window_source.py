@@ -466,7 +466,6 @@ class WindowSource(object):
 
 
     def calculate_batch_delay(self):
-        #simple timeout
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics,
                               self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
                               fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)

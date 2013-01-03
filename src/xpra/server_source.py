@@ -326,6 +326,21 @@ class ServerSource(object):
                 self.close_event.wait(AFTER_EACH_WINDOW_WAIT)
                 if self.close_event.is_set():
                     return
+            #calculate weighted average as new globale default delay:
+            now = time.time()
+            wdimsum, wdelay = 0, 0
+            for ws in list(self.window_sources.values()):
+                if ws.batch_config.last_updated<=0:
+                    continue
+                w, h = ws.window_dimensions
+                time_w = 2.0+(now-ws.batch_config.last_updated)     #add 2 seconds to even things out
+                weight = w*h*time_w
+                wdelay += ws.batch_config.delay*weight
+                wdimsum += weight
+            if wdimsum>0:
+                delay = wdelay / wdimsum
+                self.default_batch_config.last_delays.append((now, delay))
+                self.default_batch_config.delay = delay
             self.calculate_event.clear()
             if wait_time>0:
                 #wait before trying to run again:
@@ -761,7 +776,8 @@ class ServerSource(object):
         self.cursor_data = cursor_data
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
-            gobject.timeout_add(50, self.do_send_cursor)
+            delay = max(10, int(self.default_batch_config.delay*4))
+            gobject.timeout_add(delay, self.do_send_cursor)
 
     def do_send_cursor(self):
         self.send_cursor_pending = False
@@ -938,7 +954,6 @@ class ServerSource(object):
         self.protocol.add_stats(info, suffix=suffix)
         self.statistics.add_stats(info, suffix=suffix)
         if len(window_ids)>0:
-            batch_delays = []
             total_pixels = 0
             total_time = 0.0
             for wid in window_ids:
@@ -951,15 +966,13 @@ class ServerSource(object):
                     for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels
                         total_time += encoding_time
-                    batch = ws.batch_config
-                    for _,d in list(batch.last_delays):
-                        batch_delays.append(d)
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)
             info["pixels_encoded_per_second%s" % suffix] = v
-            if len(batch_delays)>0:
-                add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
+        if len(self.default_batch_config.last_delays)>0:
+            batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
+            add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
     def set_quality(self, quality):
         if quality==-1:
