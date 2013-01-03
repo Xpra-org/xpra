@@ -242,6 +242,7 @@ class ServerSource(object):
         self.default_damage_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
+        self.window_metdata_cache = {}
 
         self.uuid = ""
         self.hostname = ""
@@ -341,6 +342,7 @@ class ServerSource(object):
         for window_source in self.window_sources.values():
             window_source.cleanup()
         self.window_sources = {}
+        self.window_metdata_cache = {}
         self.close_mmap()
         self.protocol = None
         self.stop_sending_sound()
@@ -488,8 +490,21 @@ class ServerSource(object):
         log("client screen sizes: %s", screen_sizes)
 
     # Takes the name of a WindowModel property, and returns a dictionary of
-    # xpra window metadata values that depend on that property:
-    def _make_metadata(self, window, propname):
+    # xpra window metadata values that depend on that property
+    # (this method just caches the results, see do_make_metadata)
+    def _make_metadata(self, wid, window, propname):
+        cache = self.window_metdata_cache.setdefault(wid, {})
+        if len(cache)==0:
+            #these never change and are never queried,
+            #but we want to report on them via "xpra info",
+            #so populate them here
+            cache["override-redirect"] = window.is_OR()
+            cache["tray"] = window.is_tray()
+        props = self.do_make_metadata(window, propname)
+        cache.update(props)
+        return props
+
+    def do_make_metadata(self, window, propname):
         if propname == "title":
             title = window.get_property("title")
             if title is None:
@@ -813,7 +828,7 @@ class ServerSource(object):
         if prop=="icon" and self.raw_window_icons:
             self.send_window_icon(window, wid)
         else:
-            metadata = self._make_metadata(window, prop)
+            metadata = self._make_metadata(wid, window, prop)
             if len(metadata)>0:
                 self.send("window-metadata", wid, metadata)
 
@@ -838,7 +853,7 @@ class ServerSource(object):
             send_props.remove("icon")
         metadata = {}
         for propname in send_props:
-            metadata.update(self._make_metadata(window, propname))
+            metadata.update(self._make_metadata(wid, window, propname))
         log("new_window(%s, %s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, properties, client_properties, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if self.raw_window_icons and "icon" in properties:
@@ -890,6 +905,8 @@ class ServerSource(object):
         if ws:
             del self.window_sources[wid]
             ws.cleanup()
+        if wid in self.window_metdata_cache:
+            del self.window_metdata_cache[wid]
 
     def add_stats(self, info, window_ids=[], suffix=""):
         """
@@ -923,7 +940,8 @@ class ServerSource(object):
                 ws = self.window_sources.get(wid)
                 if ws:
                     #per-window stats:
-                    ws.add_stats(info, suffix=suffix)
+                    metadata = self.window_metdata_cache.get(wid)
+                    ws.add_stats(info, metadata, suffix=suffix)
                     #collect stats for global averages:
                     for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels

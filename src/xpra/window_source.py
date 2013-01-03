@@ -428,17 +428,29 @@ class WindowSource(object):
         """ See cancel_damage(wid) """
         return sequence>=0 and self._damage_cancelled>=sequence
 
-    def add_stats(self, info, suffix=""):
+    def add_stats(self, info, metadata, suffix=""):
         """
             Add window specific stats
         """
-        suffix += "[%s]" % self.wid
-        info["encoding"+suffix] = self.encoding
+        prefix = "window[%s]." % self.wid
+        #no suffix for metadata (as it is the same for all clients):
+        info[prefix+"dimensions"] = self.window_dimensions
+        if metadata:
+            for k,v in metadata.items():
+                if k=="icon" or v is None:
+                    continue
+                if k=="size-constraints":
+                    #unroll nested props:
+                    for sk,sv in v.items():
+                        info[prefix+sk] = sv
+                    continue
+                info[prefix+k] = v
+        info[prefix+"encoding"+suffix] = self.encoding
         self.statistics.add_stats(info, suffix)
         #batch stats:
         if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.batch_config.last_delays)]
-            add_list_stats(info, "batch_delay"+suffix, batch_delays)
+            add_list_stats(info, prefix+"batch_delay"+suffix, batch_delays)
         try:
             quality_list, speed_list = None, None
             self._video_encoder_lock.acquire()
@@ -448,8 +460,8 @@ class WindowSource(object):
         finally:
             self._video_encoder_lock.release()
         if quality_list and speed_list:
-            add_list_stats(info, self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
-            add_list_stats(info, self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
+            add_list_stats(info, prefix+self._video_encoder.get_type()+"_quality"+suffix, quality_list, show_percentile=False)
+            add_list_stats(info, prefix+self._video_encoder.get_type()+"_speed"+suffix, speed_list, show_percentile=False)
 
 
     def calculate_batch_delay(self):
