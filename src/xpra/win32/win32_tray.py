@@ -22,11 +22,15 @@ class Win32Tray:
 		self.balloon_click_callback = None
 
 	def getHWND(self):
+		if self.tray_widget is None:
+			return	None
 		return	self.tray_widget.hwnd
 
 	def close(self):
-		self.tray_widget.close()
-		self.tray_widget = None
+		log("close() tray_widget=%s", self.tray_widget)
+		if self.tray_widget:
+			self.tray_widget.close()
+			self.tray_widget = None
 
 
 	#****************************************************************

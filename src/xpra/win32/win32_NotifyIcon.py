@@ -79,7 +79,8 @@ class win32NotifyIcon:
 		try:
 			nid = (self.hwnd, 0)
 			Shell_NotifyIcon(NIM_DELETE, nid)
-			self.exit_callback()
+			if self.exit_callback:
+				self.exit_callback()
 		except Exception, e:
 			log.error("OnDestroy error: %s", e)
 
@@ -90,6 +91,7 @@ class win32NotifyIcon:
 		return 1
 
 	def close(self):
+		self.exit_callback = None
 		self.OnDestroy(0, None, None, None)
 
 	def get_geometry(self):

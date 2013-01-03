@@ -338,6 +338,7 @@ class XpraClient(XpraClientBase):
         gobject.timeout_add(50, gtk_main_quit_really)
 
     def cleanup(self):
+        log("cleanup() client_extras=%s", self._client_extras)
         if self._client_extras:
             self._client_extras.cleanup()
         XpraClientBase.cleanup(self)
