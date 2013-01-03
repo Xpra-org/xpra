@@ -453,7 +453,7 @@ if sys.platform.startswith("win"):
                         #this is a mac osx thing:
                         "ctypes.macholib",
                         #not used:
-                        "curses", "email", "mimetypes", "mimetools", "inspect", "pdb",
+                        "curses", "email", "mimetypes", "mimetools", "pdb",
                         "urllib", "urllib2", "urlparse", "tty",
                         "ssl", "_ssl",
                         "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
