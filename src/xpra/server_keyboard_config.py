@@ -22,7 +22,12 @@ from xpra.xkbhelper import do_set_keymap, set_all_keycodes, \
                            clean_keyboard_state
 from wimpiggy.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
 
-debug = log.debug
+import os
+XPRA_KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")!="0"
+if XPRA_KEYBOARD_DEBUG:
+    debug = log.info
+else:
+    debug = log.debug
 
 
 class KeyboardConfig(object):
@@ -77,7 +82,7 @@ class KeyboardConfig(object):
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         try:
             server_mappings = get_modifier_mappings()
-            log("get_modifier_mappings=%s", server_mappings)
+            debug("get_modifier_mappings=%s", server_mappings)
             #update the mappings to use the keycodes the client knows about:
             reverse_trans = {}
             for k,v in self.keycode_translation.items():
@@ -90,7 +95,7 @@ class KeyboardConfig(object):
                     if client_keycode:
                         client_keycodes.append((client_keycode, keyname))
                 self.modifier_client_keycodes[modifier] = client_keycodes
-            log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
+            debug("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
         except Exception, e:
             log.error("do_set_keymap: %s" % e, exc_info=True)
 
@@ -141,12 +146,12 @@ class KeyboardConfig(object):
 
             #now set the new modifier mappings:
             clean_keyboard_state()
-            log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+            debug("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
             if self.keynames_for_mod:
                 set_modifiers(self.keynames_for_mod)
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
-            log("keyname_for_mod=%s", self.keynames_for_mod)
+            debug("keyname_for_mod=%s", self.keynames_for_mod)
         except:
             log.error("error setting xmodmap", exc_info=True)
 
