@@ -500,6 +500,11 @@ class ServerSource(object):
             #so populate them here
             cache["override-redirect"] = window.is_OR()
             cache["tray"] = window.is_tray()
+            try:
+                from wimpiggy.lowlevel import get_xwindow       #@UnresolvedImport
+                cache["xid"] = get_xwindow(window.client_window)
+            except:
+                pass
         props = self.do_make_metadata(window, propname)
         cache.update(props)
         return props
