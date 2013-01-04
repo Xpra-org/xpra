@@ -14,7 +14,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.maths import dec1, dec2, logp, \
-        calculate_time_weighted_average, queue_inspect
+        time_weighted_average, queue_inspect
 
 
 
@@ -58,7 +58,8 @@ else:
 
 
 def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics,
-                          video_encoder=None, video_encoder_lock=None, video_encoder_speed=None, video_encoder_quality=None,
+                          video_encoder=None, video_encoder_lock=None,
+                          video_encoder_speed=None, video_encoder_quality=None,
                           fixed_quality=-1, fixed_speed=-1):
     """
         Calculates a new batch delay.
@@ -109,8 +110,11 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
             dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
         target = max(dam_lat, dec_lat, 0.0)
         target_speed = 100.0 * min(1.0, target)
-        video_encoder_speed.append((time.time(), target_speed))
-        _, new_speed = calculate_time_weighted_average(video_encoder_speed)
+        #make a copy to work on
+        ves_copy = list(video_encoder_speed)
+        ves_copy.append((time.time(), target_speed))
+        new_speed = time_weighted_average(ves_copy, rpow=1.2)
+        video_encoder_speed.append((time.time(), new_speed))
         msg = "video encoder speed factors: low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
                  low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
     log(*msg)
@@ -134,8 +138,11 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
             latency_q = 6.0 * target_latency / global_statistics.recent_client_latency
             target = min(target, latency_q)
         target_quality = 100.0*(min(1.0, max(0.0, target)))
-        video_encoder_quality.append((time.time(), target_quality))
-        new_quality, _ = calculate_time_weighted_average(video_encoder_quality)
+        #make a copy to work on
+        veq_copy = list(video_encoder_quality)
+        veq_copy.append((time.time(), target_quality))
+        new_quality = time_weighted_average(veq_copy, rpow=1.4)
+        video_encoder_quality.append((time.time(), new_quality))
         msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
                  dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
     log(*msg)

@@ -177,20 +177,37 @@ def calculate_time_weighted_average(data):
         Given a list of items of the form [(event_time, value)],
         this method calculates a time-weighted average where
         recent values matter a lot more than more ancient ones.
-        The 'recent' average is even more slanted towards recent values.
     """
     assert len(data)>0
     now = time.time()
     tv, tw, rv, rw = 0.0, 0.0, 0.0, 0.0
     for event_time, value in data:
         #newer matter more:
-        w = 1.0/(1.0+(now-event_time))
+        dt = now-event_time
+        w = 1.0/(1.0+dt)
         tv += value*w
         tw += w
-        w = 1.0/(0.1+(now-event_time)**2)
+        w = 1.0/(0.1+dt**2)
         rv += value*w
         rw += w
     return tv / tw, rv / rw
+
+def time_weighted_average(data, rpow=2):
+    """
+        Given a list of items of the form [(event_time, value)],
+        this method calculates a time-weighted average where
+        recent values matter a lot more than more ancient ones.
+        We take the "rpow" power of the time offset.
+        (defaults to 2, which means we square it)
+    """
+    assert len(data)>0
+    now = time.time()
+    tv, tw = 0.0, 0.0
+    for event_time, value in data:
+        w = 1.0/(0.1+(now-event_time)**rpow)
+        tv += value*w
+        tw += w
+    return tv / tw
 
 def calculate_timesize_weighted_average(data, sizeunit=1.0):
     """
