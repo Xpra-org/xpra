@@ -316,7 +316,11 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 	param.i_height = ctx->height;
 	param.i_csp = ctx->colour_sampling;
 	param.rc.f_rf_constant = ctx->x264_quality;
-	param.i_log_level = 0;
+	param.i_log_level = X264_LOG_ERROR;
+	param.i_keyint_max = 999999;	//we never lose frames or use seeking, so no need for regular I-frames
+	param.i_keyint_min = 999999;	//we don't want IDR frames either
+	param.b_intra_refresh = 0;		//no intra refresh
+	param.b_open_gop = 1;			//allow open gop
 	x264_param_apply_profile(&param, ctx->profile);
 	ctx->encoder = x264_encoder_open(&param);
 	ctx->rgb2yuv = init_encoder_csc(ctx);
