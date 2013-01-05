@@ -4,7 +4,7 @@ Description: Disable webp encoding support.
  
 --- a/setup.py
 +++ b/setup.py	
-@@ -48,7 +48,7 @@
+@@ -47,7 +47,7 @@
  
  
  
