@@ -9,7 +9,7 @@ from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
 #network bits:
 net = ['xpra.protocol.*', 'xpra.protocol.Protocol.start'
        'xpra.bytestreams.*',
-       'xpra.bencode.*', 'xpra.rencode.*',
+       'xpra.rencode.*',
        'xpra.server_base.XpraServer.process_packet',
        'xpra.server_source.ServerSource.next_packet',
        'socket.*',
@@ -39,6 +39,22 @@ keyboard = ['xpra.keys.*', 'xpra.xkbhelper.*', 'wimpiggy.keys.*',
        'xpra.server_base.XpraServer._key_repeat',
        'xpra.server_base.XpraServer._key_repeat_timeout',
        'xpra.server_source.ServerSource.get_keycode',
+       'xpra.client.XpraClient.get_keymap_properties',
+       'xpra.client.XpraClient.do_keys_changed',
+       'xpra.client.XpraClient.query_xkbmap',
+       'xpra.client.XpraClient.grok_modifier_map',
+       'xpra.client.XpraClient.get_keymap_modifiers',
+       'xpra.client.XpraClient.send_key_action',
+       'xpra.client.nn',
+       'xpra.*._key_repeat',
+       'xpra.*.clear_repeat',
+       'xpra.*._key_handled_as_shortcut',
+       'xpra.*.get_x11_keymap',
+       'xpra.*.get_gtk_keymap',
+       'xpra.*.get_keymap_modifiers',
+       'xpra.*.get_keymap_spec',
+       'xpra.*.get_layout_spec',
+       'xpra.*.exec_get_keyboard_data',
        ]
 bell = ['wimpiggy.window.WindowModel.do_wimpiggy_xkb_event',
         'wimpiggy.wm.Wm.bell_event',
@@ -56,9 +72,11 @@ xsettings = ['xpra.xposix.xroot_props.*', 'xpra.xposix.xsettings.*', 'wimpiggy.x
 clipboard = ['xpra.platform.clipboard_base.*',
              'xpra.platform.gdk_clipboard.*', 'wimpiggy.gdk.*',
              'xpra.nested_main.*',
-             'wimpiggy.selection.*']
+             'wimpiggy.selection.*',
+             'xpra.*.ClientExtras.setup_clipboard_helper']
 sound = ['xpra.sound.*',
-         'xpra.server_source.ServerSource.stop_sending_sound']
+         'xpra.server_source.ServerSource.stop_sending_sound',
+         'gst.*', 'pygst.*']
 gl = ['xpra.gl_client_window.*', 'xpra.gl_colorspace_conversions.*', 'xpra.gl_window_backing.*']
 
 std = ['pycallgraph.*',
@@ -72,6 +90,8 @@ std = ['pycallgraph.*',
 
 libs = ['gobject.*', 'gtk.*', 'uuid.*', 'pygtk.*', 'gio.*', 'cairo.*',
         'os.environ.*', 'os._Environ.*', 'UserDict.*', 'platform.*', 'string.split',
+        'dbus.*',
+        'libxml2.*', "xml.*",    #used by gst..
         'ctypes.*', 'hmac.*']
 
 one_offs = ['xpra.server.XpraServer.__init__',
@@ -96,10 +116,88 @@ one_offs = ['xpra.server.XpraServer.__init__',
             'wimpiggy.wm.Wm.__init__'
             'wimpiggy.wm.Wm.__setup_ewmh_window'
             'wimpiggy.wm.Wm.enableCursors',
+            #client bits:
             'xpra.xposix.add_client_options', 'xpra.platform.add_*_option',
             'xpra.server_base.XpraServer.add_listen_socket',
             'xpra.server_base.XpraServer._process_shutdown_server',
-            'socket._socketobject.meth']
+            'xpra.server_uuid',
+            'socket._socketobject.meth',
+            'xpra.*Client.*hello',
+            'xpra.xposix.get_machine_id',
+            'xpra.*.init_packet_handlers',
+            'xpra.*.get_screen_sizes',
+            'xpra.*.get_root_size',
+            'xpra.*.parse_shortcuts',
+            'xpra.*.ready',
+            'xpra.*.setup_pa_audio_tagging',
+            'xpra.*.make_uuid',
+            'xpra.cursor_names.*',
+            'xpra.platform.client_tray.*',
+            'xpra.platform.get_keyboard_repeat',
+            'xpra.platform.keyboard_layouts.*',
+            'xpra.bencode.*',
+            #exit stuff:
+            'xpra.*.quit',
+            'xpra.*.cleanup',
+            'xpra.*.clean_mmap',
+            'xpra.*.close_about',
+            'xpra.*.hide_tray',
+            ]
+
+dialogs = [
+            'xpra.*.setup_tray',
+            'xpra.*.setup_statusicon',
+            'xpra.*.get_tray_icon_filename',
+            'xpra.*.get_tray_tooltip',
+            'xpra.*.get_data_dir',
+            'xpra.*.get_icons_dir',
+            'xpra.*._is_ubuntu*',
+            'xpra.*.setup_dbusnotify',
+            'xpra.*.setup_xprops',
+            'xpra.*.setup_x11_bell',
+            'xpra.*.supports_system_tray',
+            #tray menu:
+            'xpra.*.supports_server',
+            'xpra.*.setup_menu',
+            'xpra.*.make_*menuitem',
+            'xpra.*.make_*submenu',
+            'xpra.*.menuitem',
+            'xpra.*.checkitem',
+            'xpra.*.kbitem',
+            'xpra.*.handshake_menuitem',
+            'xpra.*.enable*menuitem',
+            'xpra.*.close*menu',
+            'xpra.*.may_enable*menu',
+            'xpra.*.set_*menuitem',
+            'xpra.*.set_*menu',
+            'xpra.*.menu_deactivated',
+            'xpra.*.CheckMenuItem',
+            'xpra.*.ClientExtras.popup_menu_workaround',
+            'xpra.*.ClientExtras.setup_xprops',
+            'xpra.*.ClientExtras.setup_pa_audio_tagging',
+            'xpra.*.ClientExtras.clipboard_toggled',
+            'xpra.*.ClientExtras.bell_toggled',
+            'xpra.*.ClientExtras.cursors_toggled',
+            'xpra.*.ClientExtras.keyboard_sync_toggled',
+            'xpra.*.ClientExtras.set_keyboard_sync_tooltip',
+            'xpra.*.ClientExtras.microphone_state',
+            'xpra.*.ClientExtras.speaker_state',
+            'xpra.*.ClientExtras.set_selected_layout',
+            'xpra.*.ClientExtras.set_menu_title',
+            'xpra.*.ClientExtras.get_image',
+            'xpra.*.ClientExtras.get_pixbuf',
+            'xpra.*.ClientExtras.get_icon_filename',
+            'xpra.*.ClientExtras.set_window_icon',
+            'xpra.platform.client_extras_base.set_tooltip_text',
+            'webbrowser.*',
+            #network related, but only happens rarely (user action or initial connection):
+            'xpra.*.send_bell_enabled',
+            'xpra.*.send_cursors_enabled',
+            'xpra.*.send_deflate_level',
+            #session info:
+            'xpra.*.session_info.*',
+            'xpra.platform.graph.*',
+            ]
 
 connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.server_base.XpraServer.make_hello',
@@ -146,11 +244,14 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
+ALL = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + dialogs + connection
+
 COMMON_THREAD_NAMES = ["write_loop", "read_loop", "read_parse_loop"]
 SERVER_THREAD_NAMES = ["data_to_packet", "calculate_delay_thread"]
 CLIENT_THREAD_NAMES = ["draw_loop"]
 THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
-SETS = ["all", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "connection"]
+SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "dialogs", "connection"]
+
 
 def usage(msg):
     print(msg)
@@ -162,7 +263,7 @@ def usage(msg):
     print(" - client-only threads: %s" % ", ".join(CLIENT_THREAD_NAMES))
     print("The include and exclude sets are defined as a coma seperated list of package groups.")
     print("The package groups available are: %s" % ", ".join(SETS))
-    print("The 'all' set is a superset containing all the other groups")
+    print("The 'ALL' set is a superset containing all the other groups")
     print("Use '*' as a wildcard group")
     print("")
     print("Examples:")
