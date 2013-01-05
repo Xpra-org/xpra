@@ -61,7 +61,6 @@ import uuid
 import os
 import time
 import ctypes
-from threading import Thread
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except:
@@ -83,6 +82,7 @@ from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
 from xpra.maths import std_unit
 from xpra.protocol import Compressed
+from xpra.daemon_thread import make_daemon_thread
 
 from xpra.client_window import ClientWindow
 
@@ -118,8 +118,7 @@ class XpraClient(XpraClientBase):
 
         #draw thread:
         self._draw_queue = Queue()
-        self._draw_thread = Thread(target=self._draw_thread_loop, name="draw_loop")
-        self._draw_thread.setDaemon(True)
+        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw_loop")
         self._draw_thread.start()
 
         #statistics and server info:

@@ -146,15 +146,21 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
-THREAD_NAMES = ["data_to_packet", "write_loop", "read_loop", "read_parse_loop", "calculate_delay_thread"]
+COMMON_THREAD_NAMES = ["write_loop", "read_loop", "read_parse_loop"]
+SERVER_THREAD_NAMES = ["data_to_packet", "calculate_delay_thread"]
+CLIENT_THREAD_NAMES = ["draw_loop"]
+THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
 SETS = ["all", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "connection"]
 
 def usage(msg):
     print(msg)
     cmd = os.path.basename(sys.argv[0])
     print("%s usage: -i include-set -e exclude-set -t thread-name -- XPRA ARGS" % sys.argv[0])
-    print("The default thread is the main thread, other options are: %s" % ", ".join(THREAD_NAMES))
-    print("The include and exclude sets are define as a coma seperated list of package groups.")
+    print("The default thread is the main thread, other options are:")
+    print(" - for both client and server: %s" % ", ".join(COMMON_THREAD_NAMES))
+    print(" - server-only threads: %s" % ", ".join(SERVER_THREAD_NAMES))
+    print(" - client-only threads: %s" % ", ".join(CLIENT_THREAD_NAMES))
+    print("The include and exclude sets are defined as a coma seperated list of package groups.")
     print("The package groups available are: %s" % ", ".join(SETS))
     print("The 'all' set is a superset containing all the other groups")
     print("Use '*' as a wildcard group")
