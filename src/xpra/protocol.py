@@ -20,6 +20,7 @@ import os
 import threading
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
+CHECK_THREAD = os.environ.get("XPRA_CHECK_THREAD", "0")!="0"
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -113,7 +114,8 @@ class Protocol(object):
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write_loop")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read_loop")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "read_parse_loop")
-        self._main_thread = threading.currentThread()
+        if CHECK_THREAD:
+            self._main_thread = threading.currentThread()
 
     def get_cipher(self, ciphername, iv, password, key_salt, iterations):
         log("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
@@ -204,7 +206,8 @@ class Protocol(object):
                 self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
 
     def _flush_one_packet_into_buffer(self):
-        assert self._main_thread==threading.currentThread(), "queuing should only be called from the main thread!"
+        if CHECK_THREAD:
+            assert self._main_thread==threading.currentThread(), "queuing should only be called from the main thread!"
         if not self.source or self._closed:
             return
         packet, start_send_cb, end_send_cb, self._source_has_more = self.source.next_packet()
