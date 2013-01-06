@@ -79,8 +79,8 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
 
     #for each indicator: (description, factor, weight)
     factors = statistics.get_factors(low_limit)
-    target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
-    factors += global_statistics.get_factors(target_latency, low_limit)
+    statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
+    factors += global_statistics.get_factors(statistics.target_latency, low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
     factors.append(queue_inspect("damage packet queue window pixels:", time_values, div=low_limit, smoothing=sqrt))
@@ -90,6 +90,7 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
     #special hook for video encoders
     if video_encoder is None:
         return
+
 
     #***********************************************************
     # encoding speed:
@@ -129,13 +130,13 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
         new_quality = fixed_quality
         msg = "video encoder using fixed quality: %s", fixed_quality
     else:
-        packets_backlog, _, _ = statistics.get_backlog(target_latency)
+        packets_backlog, _, _ = statistics.get_backlog()
         packets_bl = 1.0 - logp(packets_backlog/low_limit)
         batch_q = batch.min_delay / max(batch.min_delay, batch.delay)
         target = min(packets_bl, batch_q)
         latency_q = 0.0
         if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
-            latency_q = 6.0 * target_latency / global_statistics.recent_client_latency
+            latency_q = 6.0 * statistics.target_latency / global_statistics.recent_client_latency
             target = min(target, latency_q)
         target_quality = 100.0*(min(1.0, max(0.0, target)))
         #make a copy to work on

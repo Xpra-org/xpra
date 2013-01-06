@@ -115,6 +115,7 @@ class WindowPerformanceStatistics(object):
     #assume 100ms until we get some data to compute the real values
     DEFAULT_DAMAGE_LATENCY = 0.1
     DEFAULT_NETWORK_LATENCY = 0.1
+    DEFAULT_TARGET_LATENCY = 0.1
 
     def reset(self):
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
@@ -134,6 +135,7 @@ class WindowPerformanceStatistics(object):
         self.last_damage_event_time = None
 
         #these values are calculated from the values above (see update_averages)
+        self.target_latency = self.DEFAULT_TARGET_LATENCY
         self.avg_damage_in_latency = self.DEFAULT_DAMAGE_LATENCY
         self.recent_damage_in_latency = self.DEFAULT_DAMAGE_LATENCY
         self.avg_damage_out_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
@@ -265,10 +267,10 @@ class WindowPerformanceStatistics(object):
         max_latency = 2.0*min_latency
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
 
-    def get_backlog(self, latency):
+    def get_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
-            sent_before = time.time()-latency
+            sent_before = time.time()-self.target_latency
             dropped_acks_time = time.time()-60      #1 minute
             drop_missing_acks = []
             for sequence, (start_send_at, start_bytes, end_send_at, end_bytes, pixels) in list(self.damage_ack_pending.items()):
@@ -290,6 +292,15 @@ class WindowPerformanceStatistics(object):
                     except:
                         pass
         return packets_backlog, pixels_backlog, bytes_backlog
+
+    def get_packets_backlog(self):
+        packets_backlog = 0
+        if len(self.damage_ack_pending)>0:
+            sent_before = time.time()-self.target_latency
+            for _, (start_send_at, _, end_send_at, _, _) in list(self.damage_ack_pending.items()):
+                if end_send_at>0 and start_send_at<=sent_before:
+                    packets_backlog += 1
+        return packets_backlog
 
 
 class WindowSource(object):
@@ -470,11 +481,6 @@ class WindowSource(object):
                               self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
                               fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)
 
-    def get_packets_backlog(self):
-        target_latency = self.statistics.get_target_client_latency(self.global_statistics.min_client_latency, self.global_statistics.avg_client_latency)
-        packets_backlog, _, _ = self.statistics.get_backlog(target_latency)
-        return packets_backlog
-
     def damage(self, window, x, y, w, h, options={}):
         """ decide what to do with the damage area:
             * send it now (if not congested)
@@ -525,7 +531,7 @@ class WindowSource(object):
         delay = options.get("delay", self.batch_config.delay)
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
-        packets_backlog = self.get_packets_backlog()
+        packets_backlog = self.statistics.get_packets_backlog()
         if packets_backlog==0 and not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             debug("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
@@ -577,7 +583,7 @@ class WindowSource(object):
             debug("window %s delayed region already sent", self.wid)
             return False
         damage_time = self._damage_delayed[0]
-        packets_backlog = self.get_packets_backlog()
+        packets_backlog = self.statistics.get_packets_backlog()
         now = time.time()
         actual_delay = 1000.0*(time.time()-damage_time)
         if packets_backlog>0:
