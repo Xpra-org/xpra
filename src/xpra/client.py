@@ -118,7 +118,7 @@ class XpraClient(XpraClientBase):
 
         #draw thread:
         self._draw_queue = Queue()
-        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw_loop")
+        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
         self._draw_thread.start()
 
         #statistics and server info:

@@ -288,9 +288,9 @@ connection = ['xpra.server_base.XpraServer.send_hello',
 
 ALL = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + dialogs + connection
 
-COMMON_THREAD_NAMES = ["write_loop", "read_loop", "read_parse_loop"]
-SERVER_THREAD_NAMES = ["data_to_packet", "calculate_delay_thread"]
-CLIENT_THREAD_NAMES = ["draw_loop"]
+COMMON_THREAD_NAMES = ["write", "read", "parse"]
+SERVER_THREAD_NAMES = ["encode", "calculate_delay"]
+CLIENT_THREAD_NAMES = ["draw"]
 THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
 SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "dialogs", "connection"]
 

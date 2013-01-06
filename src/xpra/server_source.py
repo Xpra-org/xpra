@@ -287,11 +287,11 @@ class ServerSource(object):
         self.last_user_event = time.time()
         # ready for processing:
         protocol.source = self
-        self.datapacket_thread = make_daemon_thread(self.data_to_packet, "data_to_packet")
+        self.datapacket_thread = make_daemon_thread(self.data_to_packet, "encode")
         self.datapacket_thread.start()
         self.calculate_window_ids = set()
         self.calculate_event = Event()
-        self.calculate_thread = make_daemon_thread(self.calculate_delay_thread, "calculate_delay_thread")
+        self.calculate_thread = make_daemon_thread(self.calculate_delay_thread, "calculate_delay")
         self.calculate_thread.start()
 
     def is_closed(self):

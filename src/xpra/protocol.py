@@ -111,9 +111,9 @@ class Protocol(object):
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
         self._write_lock = Lock()
-        self._write_thread = make_daemon_thread(self._write_thread_loop, "write_loop")
-        self._read_thread = make_daemon_thread(self._read_thread_loop, "read_loop")
-        self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "read_parse_loop")
+        self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
+        self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
+        self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         if CHECK_THREAD:
             self._main_thread = threading.currentThread()
 
