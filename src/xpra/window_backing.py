@@ -20,6 +20,14 @@ from threading import Lock
 from xpra.scripts.main import ENCODINGS
 from xpra.xor import xor_str
 
+try:
+    from xpra.x264.codec import Decoder as x264_Decoder     #@UnresolvedImport
+except:
+    pass
+try:
+    from xpra.vpx.codec import Decoder as vpx_Decoder       #@UnresolvedImport
+except:
+    pass
 #have/use PIL?
 has_PIL = False
 try:
@@ -114,16 +122,6 @@ class Backing(object):
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         raise Exception("override me!")
-
-    def paint_x264(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        assert "x264" in ENCODINGS
-        from xpra.x264.codec import Decoder     #@UnresolvedImport
-        self.paint_with_video_decoder(Decoder, "x264", img_data, x, y, width, height, rowstride, options, callbacks)
-
-    def paint_vpx(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        assert "vpx" in ENCODINGS
-        from xpra.vpx.codec import Decoder     #@UnresolvedImport
-        self.paint_with_video_decoder(Decoder, "vpx", img_data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options, callbacks):
         assert x==0 and y==0
@@ -427,9 +425,11 @@ class PixmapBacking(Backing):
                 rowstride = width * 3
             self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
-            self.paint_x264(img_data, x, y, width, height, rowstride, options, callbacks)
+            assert "x264" in ENCODINGS
+            self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "vpx":
-            self.paint_vpx(img_data, x, y, width, height, rowstride, options, callbacks)
+            assert "vpx" in ENCODINGS
+            self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
