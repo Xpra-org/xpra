@@ -7,6 +7,7 @@
 from wimpiggy.gobject_compat import import_gdk, is_gtk3
 gdk = import_gdk()
 
+import os
 import ctypes
 import cairo
 import gobject
@@ -18,6 +19,21 @@ log = Logger()
 from threading import Lock
 from xpra.scripts.main import ENCODINGS
 from xpra.xor import xor_str
+
+#have/use PIL?
+has_PIL = False
+try:
+    import Image
+    has_PIL = True
+except:
+    pass
+use_PIL = has_PIL and os.environ.get("XPRA_USE_PIL", "1")=="1"
+#python3 making life difficult:
+try:
+    from io import BytesIO as IOClass          #@UnusedImport
+except:
+    from StringIO import StringIO as IOClass   #@Reimport
+
 
 PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
 
@@ -46,18 +62,11 @@ class Backing(object):
                 self._video_decoder_lock.release()
 
     def jpegimage(self, img_data, width, height):
-        import Image
-        try:
-            from io import BytesIO          #@Reimport
-            data = bytearray(img_data)
-            buf = BytesIO(data)
-        except:
-            from StringIO import StringIO   #@Reimport
-            buf = StringIO(img_data)
+        buf = IOClass(img_data)
         return Image.open(buf)
 
     def rgb24image(self, img_data, width, height, rowstride):
-        import Image
+        assert has_PIL
         if rowstride>0:
             assert len(img_data) == rowstride * height
         else:
@@ -71,12 +80,37 @@ class Backing(object):
             except:
                 log.error("error calling %s(%s)", x, success, exc_info=True)
 
-    def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
+
+    def process_delta(self, raw_data, width, height, rowstride, options):
+        """
+            Can be called from any thread, decompresses and xors the rgb raw_data,
+            then stores it for later xoring if needed.
+        """
         img_data = raw_data
         if options and options.get("zlib", 0)>0:
             img_data = zlib.decompress(raw_data)
         assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
+        delta = options.get("delta", -1)
+        if delta>=0:
+            if not self._last_pixmap_data:
+                raise Exception("delta region references pixmap data we do not have!")
+            lwidth, lheight, store, ldata = self._last_pixmap_data
+            assert width==lwidth and height==lheight and delta==store
+            img_data = xor_str(img_data, ldata)
+        #store new pixels for next delta:
+        store = options.get("store", -1)
+        if store>=0:
+            self._last_pixmap_data =  width, height, store, img_data
+        return img_data
+
+    def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
+        """ called from non-UI thread
+            this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
+        """
+        assert "rgb24" in ENCODINGS
+        img_data = self.process_delta(raw_data, width, height, rowstride, options)
         gobject.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+        return  False
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         raise Exception("override me!")
@@ -118,14 +152,11 @@ class Backing(object):
         log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
         err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
         success = err==0 and rgb_image and rgb_image.get_size()>0
-        if success:
-            #this will also take care of firing callbacks (from UI thread):
-            gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
-        else:
-            log.error("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
+        if not success:
+            raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
                       coding, err, len(img_data), width, height, options)
-            self.fire_paint_callbacks(callbacks, False)
-        del rgb_image
+        #this will also take care of firing callbacks (from the UI thread):
+        gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
 
 
 """
@@ -307,30 +338,15 @@ class PixmapBacking(Backing):
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread
-            this method mostly deals with delta/store and firing callbacks
-            actual implementation is in _do_paint_rgb24 (which is also done in gl_window_backing)
+            this method is only here to ensure that we always fire the callbacks,
+            the actual paint code is in _do_paint_rgb24 (which is overriden in gl_window_backing)
         """
-        assert "rgb24" in ENCODINGS
-        delta = options.get("delta", -1)        #the delta frame we reference
-        if delta>=0:
-            if self._last_pixmap_data:
-                lwidth, lheight, store, ldata = self._last_pixmap_data
-                assert width==lwidth and height==lheight and delta==store
-                img_data = xor_str(img_data, ldata)
-            else:
-                raise Exception("delta region references pixmap data we do not have!")
         try:
-            try:
-                self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-                self.fire_paint_callbacks(callbacks, True)
-            except:
-                log.error("do_paint_rgb24 error", exc_info=True)
-                self.fire_paint_callbacks(callbacks, False)
-        finally:
-            store = options.get("store", -1)
-            if store>=0:
-                self._last_pixmap_data =  width, height, store, img_data
-        return  False
+            self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            self.fire_paint_callbacks(callbacks, True)
+        except:
+            log.error("do_paint_rgb24 error", exc_info=True)
+            self.fire_paint_callbacks(callbacks, False)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         gc = self._backing.new_gc()
@@ -343,9 +359,26 @@ class PixmapBacking(Backing):
         gobject.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, width*3, options, callbacks)
         return  False
 
-    def paint_pixbuf(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
-        """ must be called from UI thread """
+    def paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ can be called from any thread """
         assert coding in ENCODINGS
+        if use_PIL:
+            #try PIL first since it doesn't need the UI thread until the actual do_paint_rgb24 call
+            buf = IOClass(img_data)
+            img = Image.open(buf)
+            if img.mode=="RGB":
+                raw_data = img.tostring("raw", "RGB")
+                #PIL flattens the data to a continuous straightforward RGB format:
+                rowstride = width*3
+                img_data = self.process_delta(raw_data, width, height, rowstride, options)
+                gobject.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+                return False
+        #gdk needs UI thread:
+        gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
+        return  False
+
+    def paint_pixbuf_gdk(self, coding, img_data, x, y, width, height, options, callbacks):
+        """ must be called from UI thread """
         loader = gdk.PixbufLoader(coding)
         loader.write(img_data, len(img_data))
         loader.close()
@@ -354,12 +387,9 @@ class PixmapBacking(Backing):
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
             self.fire_paint_callbacks(callbacks, False)
             return  False
-        self.do_paint_pixbuf(pixbuf, x, y, width, height, options, callbacks)
-        return  False
-
-    def do_paint_pixbuf(self, pixbuf, x, y, width, height, options, callbacks):
-        img_data = pixbuf.get_pixels()
+        raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()
+        img_data = self.process_delta(raw_data, width, height, rowstride, options)
         self.do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -403,7 +433,7 @@ class PixmapBacking(Backing):
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
-            gobject.idle_add(self.paint_pixbuf, coding, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_image(coding, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def cairo_draw(self, context, x, y):
         try:
@@ -414,6 +444,7 @@ class PixmapBacking(Backing):
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
             return False
+
 
 def new_backing(wid, w, h, backing, mmap_enabled, mmap):
     if is_gtk3() or PREFER_CAIRO:
