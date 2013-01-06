@@ -18,15 +18,15 @@ has_cymaths = False
 try:
     import os
     if os.environ.get("XPRA_CYTHON_MATH", "1")=="1":
-        from xpra.stats.cymaths import (logp,                       #@UnusedImport
-                              calculate_time_weighted_average,      #@UnusedImport
-                              time_weighted_average,                #@UnusedImport
-                              calculate_timesize_weighted_average,  #@UnusedImport
-                              calculate_for_target,                 #@UnusedImport
-                              calculate_for_average, queue_inspect) #@UnusedImport
+        from xpra.stats.cymaths import (logp,                       #@UnresolvedImport @UnusedImport
+                              calculate_time_weighted_average,      #@UnresolvedImport @UnusedImport
+                              time_weighted_average,                #@UnresolvedImport @UnusedImport
+                              calculate_timesize_weighted_average,  #@UnresolvedImport @UnusedImport
+                              calculate_for_target,                 #@UnresolvedImport @UnusedImport
+                              calculate_for_average, queue_inspect) #@UnresolvedImport @UnusedImport
         has_cymaths = True
-except Exception, e:
-    print("failed to load cython math: %s" % e)
+except ImportError:
+    pass
 
 if not has_cymaths:
     from xpra.stats.pymaths import (logp,                           #@UnusedImport @Reimport
