@@ -10,6 +10,8 @@ This code deals with:
 * extracting data from XSETTINGS into nice python data structures
 and
 * converting those structures back into XSETTINGS format
+
+It is used by wimpiggy.prop
 """
 
 import sys
@@ -34,6 +36,13 @@ XSettingsTypeInteger = 0
 XSettingsTypeString = 1
 XSettingsTypeColor = 2
 
+XSettingsNames = {
+                XSettingsTypeInteger    : "Integer",
+                XSettingsTypeString     : "String",
+                XSettingsTypeColor      : "Color",
+                }
+
+
 
 def get_settings(disp, d):
     #parse xsettings according to
@@ -56,11 +65,11 @@ def get_settings(disp, d):
         assert len(d)>=pos+4, "not enough data (%s bytes) to extract serial (4 bytes needed)" % (len(d)-pos)
         last_change_serial = struct.unpack("=I", d[pos:pos+4])[0]
         pos += 4
-        debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, setting_type, last_change_serial)
+        debug("get_settings(..) found property %s of type %s, serial=%s", prop_name, XSettingsNames.get(setting_type, "INVALID!"), last_change_serial)
         #extract value:
         if setting_type==XSettingsTypeInteger:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract int (4 bytes needed)" % (len(d)-pos)
-            value = struct.unpack("=I", d[pos:pos+4])[0]
+            value = int(struct.unpack("=I", d[pos:pos+4])[0])
             pos += 4
         elif setting_type==XSettingsTypeString:
             assert len(d)>=pos+4, "not enough data (%s bytes) to extract string length (4 bytes needed)" % (len(d)-pos)
@@ -86,19 +95,20 @@ def set_settings(disp, d):
     #TODO: detect old clients
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
-    debug("format_xsettings(%s) serial=%s, %s settings", d, serial, len(settings))
+    debug("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
     all_bin_settings = None
     n_settings = 0
     for setting in settings:
         setting_type, prop_name, value, last_change_serial = setting
+        debug("set_settings(..) processing property %s of type %s", prop_name, XSettingsNames.get(setting_type, "INVALID!"))
         x = struct.pack("=BBH", setting_type, 0, len(prop_name))
         x += struct.pack("="+"s"*len(prop_name), *list(prop_name))
         pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
         x += '\0'*pad_len
         x += struct.pack("=I", last_change_serial)
         if setting_type==XSettingsTypeInteger:
-            assert type(value)==int, "invalid value type (int wanted): %s" % type(value)
-            x += struct.pack("=I", value)
+            assert type(value) in (int, long), "invalid value type (int or long wanted): %s" % type(value)
+            x += struct.pack("=I", int(value))
         elif setting_type==XSettingsTypeString:
             assert type(value)==str, "invalid value type (str wanted): %s" % type(value)
             x += struct.pack("=I", len(value))
@@ -111,7 +121,7 @@ def set_settings(disp, d):
         else:
             log.error("invalid xsetting type: %s, skipped %s", setting_type, prop_name)
             continue
-        debug("format_xsettings(..) %s -> %s", setting, list(x))
+        debug("set_settings(..) %s -> %s", setting, list(x))
         if all_bin_settings is None:
             all_bin_settings = x
         else:
@@ -121,5 +131,5 @@ def set_settings(disp, d):
     v = struct.pack("=BBBBII", get_local_byteorder(), 0, 0, 0, serial, n_settings)
     v += all_bin_settings   #values
     v += '\0'               #null terminated
-    debug("format_xsettings(%s)=%s", d, list(v))
+    debug("set_settings(%s)=%s", d, list(v))
     return  v
