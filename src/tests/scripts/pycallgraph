@@ -297,6 +297,8 @@ pos = 0
 for x in sys.argv:
     if x=="--":
         break
+    if x=="-h" or x=="--help":
+        usage()
     pos += 1
 if pos==0 or pos==len(sys.argv):
     usage("invalid number of arguments")
