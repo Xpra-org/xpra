@@ -125,8 +125,8 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
             self.pipeline.set_state(gst.STATE_NULL)
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
-            err, debug = message.parse_error()
-            log.error("Pipeline error: %s / %s", err, debug)
+            err, details = message.parse_error()
+            log.error("Pipeline error: %s / %s", err, details)
 
 gobject.type_register(SoundSource)
 

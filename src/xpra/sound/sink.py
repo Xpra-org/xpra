@@ -115,8 +115,8 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         needed = self.data_needed
         if len(self.data)<needed:
             chunk = self.data
-            self.data = ""
             self.data_needed = needed-len(self.data)
+            self.data = ""
         else:
             chunk = self.data[:self.data_needed]
             self.data = self.data[self.data_needed:]
