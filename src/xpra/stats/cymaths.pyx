@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import time
-from xpra.maths_base import dec3
+from xpra.stats.base import dec3
 
 cdef extern from "math.h":
     double log(double x)
