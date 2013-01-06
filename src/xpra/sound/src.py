@@ -11,10 +11,15 @@ gobject.threads_init()
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS
 import gst
-
 from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
+
+DEBUG_SOUND = os.environ.get("XPRA_DEBUG_SOUND", "0")=="1"
+if DEBUG_SOUND:
+    debug = log.info
+else:
+    debug = log.debug
 
 
 BITRATES = [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
@@ -63,13 +68,13 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
                         encoder_str,
                         "appsink name=sink"]
         pipeline_str = " ! ".join(pipeline_els)
-        log("soundsource pipeline=%s", pipeline_str)
+        debug("soundsource pipeline=%s", pipeline_str)
         self.pipeline = gst.parse_launch(pipeline_str)
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
         self.sink = self.pipeline.get_by_name("sink")
-        log("sink %s", self.sink)
+        debug("sink %s", self.sink)
         self.volume = self.pipeline.get_by_name("volume")
         self.sink.set_property("emit-signals", True)
         self.sink.set_property("drop", False)
@@ -98,23 +103,23 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
 
     def on_new_preroll(self, appsink):
         buf = appsink.emit('pull-preroll')
-        log.info('new preroll: %s bytes', len(buf))
+        debug('new preroll: %s bytes', len(buf))
         self.emit("new-buffer", str(buf))
         return True
 
     def on_new_buffer_list(self, appsink):
         buf = appsink.emit('pull-buffer-list')
-        log.info('new buffer list', len(buf))
+        debug('new buffer list', len(buf))
         return True
 
     def on_new_buffer(self, bus, *args):
         buf = self.sink.emit("pull-buffer")
-        log("new-buffer: %s bytes", len(buf))
+        debug("new-buffer: %s bytes", len(buf))
         self.emit("new-buffer", str(buf))
         return True
 
     def on_message(self, bus, message):
-        log("on_message(%s, %s)", bus, message)
+        debug("on_message(%s, %s)", bus, message)
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
@@ -152,7 +157,7 @@ def main():
     f = open(filename, "wb")
     from xpra.sound.pulseaudio_util import get_pa_device_options
     monitor_devices = get_pa_device_options(True, False)
-    log("found pulseaudio monitor devices: %s", monitor_devices)
+    log.info("found pulseaudio monitor devices: %s", monitor_devices)
     if len(monitor_devices)==0:
         log.warn("could not detect any pulseaudio monitor devices - will use a test source")
         ss = SoundSource("audiotestsrc", src_options={"wave":2, "freq":100, "volume":0.4}, codec=codec)

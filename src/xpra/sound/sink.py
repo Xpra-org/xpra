@@ -15,6 +15,12 @@ from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
+DEBUG_SOUND = os.environ.get("XPRA_DEBUG_SOUND", "0")=="1"
+if DEBUG_SOUND:
+    debug = log.info
+else:
+    debug = log.debug
+
 
 SINKS = ["autoaudiosink"]
 if has_pa():
@@ -54,13 +60,13 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
                         "volume name=volume",
                         sink_type]
         pipeline_str = " ! ".join(pipeline_els)
-        log("soundsink pipeline=%s", pipeline_str)
+        debug("soundsink pipeline=%s", pipeline_str)
         self.pipeline = gst.parse_launch(pipeline_str)
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.on_message)
         self.src = self.pipeline.get_by_name("src")
-        log("src %s", self.src)
+        debug("src %s", self.src)
         self.volume = self.pipeline.get_by_name("volume")
         self.src.connect("need-data", self.need_data)
         self.src.connect("enough-data", self.on_enough_data)
@@ -86,6 +92,7 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         self.src = None
 
     def eos(self):
+        debug("eos()")
         self.src.emit('end-of-stream')
 
     def set_volume(self, volume):
@@ -93,12 +100,13 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         self.volume.set_property("volume", volume)
 
     def add_data(self, data):
+        debug("add_data(%s bytes) we already have %s bytes", len(data), len(self.data))
         self.data += data
         if self.data_needed>0:
             self.push_buffer()
 
     def need_data(self, src_arg, needed):
-        log("need_data: %s bytes, we have %s", needed, len(self.data))
+        debug("need_data: %s bytes, we have %s", needed, len(self.data))
         self.data_needed = needed
         if len(self.data)>0:
             self.push_buffer()
@@ -113,20 +121,21 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
             chunk = self.data[:self.data_needed]
             self.data = self.data[self.data_needed:]
             self.data_needed = 0
+        debug("push_buffer() adding %s bytes, %s still needed", len(chunk), self.data_needed)
         self.src.emit("push-buffer", gst.Buffer(chunk))
 
     def on_message(self, bus, message):
-        log("bus message: %s", message)
+        debug("bus message: %s", message)
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
-            err, debug = message.parse_error()
-            log.error("Pipeline error: %s / %s", err, debug)
+            err, details = message.parse_error()
+            log.error("Pipeline error: %s / %s", err, details)
 
     def on_enough_data(self, *args):
-        log("on_enough_data(%s)", args)
+        debug("on_enough_data(%s)", args)
 
 gobject.type_register(SoundSink)
 
