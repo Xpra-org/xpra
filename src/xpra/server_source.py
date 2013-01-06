@@ -29,8 +29,8 @@ except:
 
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
-from xpra.maths import add_list_stats, dec1, logp, std_unit, \
-        calculate_time_weighted_average, calculate_for_target, queue_inspect
+from xpra.stats.base import add_list_stats, dec1, std_unit
+from xpra.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
 from xpra.scripts.main import ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread

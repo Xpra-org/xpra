@@ -27,6 +27,7 @@ SET VPX=1
 SET WEBP=1
 SET RENCODE=1
 SET CYXOR=1
+SET CYMATHS=1
 SET CLIPBOARD=1
 SET SOUND=1
 SET OPENGL=1
@@ -52,6 +53,7 @@ IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
 IF %WEBP% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-webp
 IF %RENCODE% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-rencode
 IF %CYXOR% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cyxor
+IF %CYMATHS% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cymaths
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
@@ -98,6 +100,14 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 :NO_CYXOR
+IF %CYMATHS% NEQ 1 GOTO NO_CYMATHS
+SET CYMATHS_PYD=build\lib.win32-2.7\xpra\stats\cymaths.pyd
+COPY %CYMATHS_PYD% xpra\stats\
+if %errorlevel% NEQ 0 (
+	ECHO "build error: cannot find compiled cymaths.pyd"
+	GOTO ERROR
+)
+:NO_CYMATHS
 IF %CLIPBOARD% NEQ 1 GOTO NO_CLIPBOARD
 SET CLIPBOARD_PYD=build\lib.win32-2.7\wimpiggy\gdk\gdk_atoms.pyd
 COPY %CLIPBOARD_PYD% wimpiggy\gdk\

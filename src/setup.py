@@ -75,6 +75,10 @@ cyxor_ENABLED = True
 
 
 
+cymaths_ENABLED = True
+
+
+
 #currently does not work on MS Windows:
 opengl_ENABLED = True
 
@@ -82,7 +86,7 @@ opengl_ENABLED = True
 
 #allow some of these flags to be modified on the command line:
 filtered_args = []
-SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "cyxor", "opengl", "parti")
+SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "cyxor", "cymaths", "opengl", "parti")
 for arg in sys.argv:
     if arg == "--enable-Xdummy":
         xdummy_ENABLED = True
@@ -133,6 +137,7 @@ data_files = []
 setup_options["data_files"] = data_files
 packages = ["wimpiggy",
           "xpra", "xpra.scripts", "xpra.platform",
+          "xpra.stats",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
@@ -640,6 +645,12 @@ if cyxor_ENABLED:
     packages.append("xpra.xor")
     cython_add(Extension("xpra.xor.cyxor",
                 ["xpra/xor/cyxor.pyx"]))
+
+
+
+if cymaths_ENABLED:
+    cython_add(Extension("xpra.stats.cymaths",
+                ["xpra/stats/cymaths.pyx"]))
 
 
 

@@ -80,7 +80,7 @@ from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFA
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.main import ENCODINGS
 from xpra.version_util import add_gtk_version_info
-from xpra.maths import std_unit
+from xpra.stats.base import std_unit
 from xpra.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 

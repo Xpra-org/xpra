@@ -15,7 +15,7 @@ import platform
 
 from xpra.platform.graph import make_graph_pixmap
 from xpra.deque import maxdeque
-from xpra.maths import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
+from xpra.stats.base import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from wimpiggy.log import Logger
 from xpra.platform.client_extras_base import set_tooltip_text
 log = Logger()

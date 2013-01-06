@@ -61,11 +61,11 @@ from xpra.deque import maxdeque
 from xpra.protocol import zlib_compress, Compressed
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.maths import dec1, logp, \
-    add_list_stats, add_weighted_list_stats, \
+from xpra.stats.base import dec1, add_list_stats, add_weighted_list_stats
+from xpra.stats.maths import logp, \
     calculate_time_weighted_average, calculate_timesize_weighted_average, \
     calculate_for_target, calculate_for_average
-from xpra.batch_delay_calculator import calculate_batch_delay
+from xpra.batch_delay_calculator import calculate_batch_delay, update_video_encoder
 from xpra.xor import xor_str        #@UnresolvedImport
 
 
@@ -477,9 +477,12 @@ class WindowSource(object):
 
 
     def calculate_batch_delay(self):
-        calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics,
+        calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
+        if self._video_encoder:
+            update_video_encoder(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics,
                               self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
                               fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=-1)
+
 
     def damage(self, window, x, y, w, h, options={}):
         """ decide what to do with the damage area:

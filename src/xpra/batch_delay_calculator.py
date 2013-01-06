@@ -13,9 +13,8 @@ from math import sqrt
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.maths import dec1, dec2, logp, \
-        time_weighted_average, queue_inspect
-
+from xpra.stats.base import dec1, dec2
+from xpra.stats.maths import time_weighted_average, queue_inspect, logp
 
 
 def env_bool(varname, defaultvalue=False):
@@ -56,26 +55,26 @@ else:
         pass
 
 
-
-def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics,
-                          video_encoder=None, video_encoder_lock=None,
-                          video_encoder_speed=None, video_encoder_quality=None,
-                          fixed_quality=-1, fixed_speed=-1):
-    """
-        Calculates a new batch delay.
-        We first gather some statistics,
-        then use them to calculate a number of factors.
-        which are then used to adjust the batch delay in 'update_batch_delay'.
-    """
+def get_low_limit(mmap_enabled, window_dimensions):
     #the number of pixels which can be considered 'low' in terms of backlog.
     #Generally, just one full frame, (more with mmap because it is so fast)
     low_limit = 1024*1024
     ww, wh = window_dimensions
     if ww>0 and wh>0:
         low_limit = max(8*8, ww*wh)
-    if global_statistics.mmap_size>0:
+    if mmap_enabled:
         #mmap can accumulate much more as it is much faster
         low_limit *= 4
+    return low_limit
+
+def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics):
+    """
+        Calculates a new batch delay.
+        We first gather some statistics,
+        then use them to calculate a number of factors.
+        which are then used to adjust the batch delay in 'update_batch_delay'.
+    """
+    low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
 
     #for each indicator: (description, factor, weight)
     factors = statistics.get_factors(low_limit)
@@ -86,12 +85,66 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
     factors.append(queue_inspect("damage packet queue window pixels:", time_values, div=low_limit, smoothing=sqrt))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
-    #***************************************************************
-    #special hook for video encoders
-    if video_encoder is None:
+
+
+def update_batch_delay(batch, factors):
+    """
+        Given a list of factors of the form:
+        [(description, factor, weight)]
+        we calculate a new batch delay.
+        We use a time-weighted average of previous delays as a starting value,
+        then combine it with the new factors.
+    """
+    last_updated = batch.last_updated
+    current_delay = batch.delay
+    now = time.time()
+    avg = 0
+    tv, tw = 0.0, 0.0
+    decay = max(1, logp(current_delay/batch.min_delay)/5.0)
+    max_delay = batch.max_delay
+    for delays in (batch.last_delays, batch.last_actual_delays):
+        if len(delays)>0:
+            #get the weighted average
+            #older values matter less, we decay them according to how much we batch already
+            #(older values matter more when we batch a lot)
+            for when, delay in list(delays):
+                #newer matter more:
+                w = 1.0/(1.0+((now-when)/decay)**2)
+                d = max(0, min(max_delay, delay))
+                tv += d*w
+                tw += w
+    if tw>0:
+        avg = tv / tw
+    hist_w = tw
+
+    valid_factors = [x for x in factors if x is not None]
+    all_factors_weight = sum([w for _,_,w in valid_factors])
+    if all_factors_weight==0:
+        log("update_batch_delay: no weights yet!")
         return
+    for _, factor, weight in valid_factors:
+        target_delay = max(0, min(max_delay, current_delay*factor))
+        w = max(1, hist_w)*weight/all_factors_weight
+        tw += w
+        tv += target_delay*w
+    batch.delay = max(0, min(max_delay, tv / tw))
+    batch.last_updated = now
+    if DEBUG_DELAY:
+        decimal_delays = [dec1(x) for _,x in batch.last_delays]
+        if len(decimal_delays)==0:
+            decimal_delays.append(0)
+        logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
+        rec = ("update_batch_delay: wid=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s\n %s",
+                batch.wid, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
+                dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
+        add_DEBUG_DELAY_MESSAGE(rec)
 
 
+def update_video_encoder(window_dimensions, batch, global_statistics, statistics,
+                          video_encoder=None, video_encoder_lock=None,
+                          video_encoder_speed=None, video_encoder_quality=None,
+                          fixed_quality=-1, fixed_speed=-1):
+    low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # encoding speed:
     #    0    for highest compression/slower
@@ -155,56 +208,3 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
         video_encoder.set_encoding_quality(new_quality)
     finally:
         video_encoder_lock.release()
-
-
-def update_batch_delay(batch, factors):
-    """
-        Given a list of factors of the form:
-        [(description, factor, weight)]
-        we calculate a new batch delay.
-        We use a time-weighted average of previous delays as a starting value,
-        then combine it with the new factors.
-    """
-    last_updated = batch.last_updated
-    current_delay = batch.delay
-    now = time.time()
-    avg = 0
-    tv, tw = 0.0, 0.0
-    decay = max(1, logp(current_delay/batch.min_delay)/5.0)
-    max_delay = batch.max_delay
-    for delays in (batch.last_delays, batch.last_actual_delays):
-        if len(delays)>0:
-            #get the weighted average
-            #older values matter less, we decay them according to how much we batch already
-            #(older values matter more when we batch a lot)
-            for when, delay in list(delays):
-                #newer matter more:
-                w = 1.0/(1.0+((now-when)/decay)**2)
-                d = max(0, min(max_delay, delay))
-                tv += d*w
-                tw += w
-    if tw>0:
-        avg = tv / tw
-    hist_w = tw
-
-    valid_factors = [x for x in factors if x is not None]
-    all_factors_weight = sum([w for _,_,w in valid_factors])
-    if all_factors_weight==0:
-        log("update_batch_delay: no weights yet!")
-        return
-    for _, factor, weight in valid_factors:
-        target_delay = max(0, min(max_delay, current_delay*factor))
-        w = max(1, hist_w)*weight/all_factors_weight
-        tw += w
-        tv += target_delay*w
-    batch.delay = max(0, min(max_delay, tv / tw))
-    batch.last_updated = now
-    if DEBUG_DELAY:
-        decimal_delays = [dec1(x) for _,x in batch.last_delays]
-        if len(decimal_delays)==0:
-            decimal_delays.append(0)
-        logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
-        rec = ("update_batch_delay: wid=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s\n %s",
-                batch.wid, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
-                dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
-        add_DEBUG_DELAY_MESSAGE(rec)
