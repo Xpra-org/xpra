@@ -3,6 +3,7 @@
 import os.path
 import sys
 import xpra.scripts.main
+import gobject
 
 from pycallgraph import start_trace, make_dot_graph, GlobbingFilter
 
@@ -71,10 +72,13 @@ sound = ['xpra.sound.*',
          'gst.*', 'pygst.*']
 gl = ['xpra.gl_client_window.*', 'xpra.gl_colorspace_conversions.*', 'xpra.gl_window_backing.*']
 
+logging = [
+       'logging.*',
+       'wimpiggy.log.*']
+
 std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
        '_weakrefset.*', 'weakref.*',
-       'logging.*',
        'DLFCN.*',
        're.*', 'sre_parse.*', 'sre_compile.*',
        'atexit.*', 'warnings.*',
@@ -286,19 +290,19 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
-ALL = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + libs + one_offs + dialogs + connection
+ALL = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + logging + libs + one_offs + dialogs + connection
 
 COMMON_THREAD_NAMES = ["write", "read", "parse"]
 SERVER_THREAD_NAMES = ["encode", "calculate_delay"]
 CLIENT_THREAD_NAMES = ["draw"]
 THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
-SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "libs", "one_offs", "dialogs", "connection"]
+SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "logging", "libs", "one_offs", "dialogs", "connection"]
 
 
 def usage(msg):
     print(msg)
     cmd = os.path.basename(sys.argv[0])
-    print("%s usage: -i include-set -e exclude-set -d DELAY -t thread-name -- XPRA ARGS" % sys.argv[0])
+    print("%s usage: -i include-set -e exclude-set -d DELAY -r RUNTIME -t thread-name -- XPRA ARGS" % sys.argv[0])
     print("The default thread is the main thread, other options are:")
     print(" - for both client and server: %s" % ", ".join(COMMON_THREAD_NAMES))
     print(" - server-only threads: %s" % ", ".join(SERVER_THREAD_NAMES))
@@ -308,7 +312,9 @@ def usage(msg):
     print("The 'ALL' set is a superset containing all the other groups")
     print("Use '*' as a wildcard group")
     print("Use the delay to start profiling after a certain amount of time and to avoid")
-    print("profiling the initial setup code")
+    print("profiling the initial setup code. This can only apply to the main thread.")
+    print("Use the runtime to automatically terminate the process after the given amount of time,")
+    print("the time starts counting after the start delay.")
     print("")
     print("Examples:")
     print("#profile server damage without network")
@@ -316,9 +322,11 @@ def usage(msg):
     print("#profile client, excluding ALL sets:")
     print("%s -i '*' -e ALL -- attach  :10" % cmd)
     print("#profile the client's draw thread, excluding ALL sets:")
-    print("%s -t draw_loop -i '*' -e ALL -- attach  :10" % cmd)
+    print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
+    print("#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")
+    print("%s -t write -i '*' -e logging -r 10 -- attach  :10  --no-mmap --encoding=x264" % cmd)
     print("#profile server data_to_packet thread, excluding standard libraries")
-    print("%s -t data_to_packet -i * -e std -e libs -- start :10" % cmd)
+    print("%s -t encode -i * -e std -e libs -- start :10" % cmd)
     sys.exit(1)
 
 
@@ -352,8 +360,9 @@ exclude = []
 include = []
 trace_thread = None
 delay = 0
+runtime = 0
 for a,v in pairs:
-    if a not in ("-i", "-e", "-d", "-t"):
+    if a not in ("-i", "-e", "-d", "-r", "-t"):
         usage("invalid argument: %s" % a)
     if a=="-i":
         include += get_group(v)
@@ -361,6 +370,8 @@ for a,v in pairs:
         exclude += get_group(v)
     elif a=="-d":
         delay  = int(v)
+    elif a=="-r":
+        runtime  = int(v)
     elif a=="-t":
         if trace_thread:
             usage("only one thread can be traced at a time")
@@ -374,8 +385,11 @@ print("")
 print("include=%s" % str(include))
 print("exclude=%s" % str(exclude))
 print("trace_thread=%s" % trace_thread)
+print("delay=%s" % delay)
+print("runtime=%s" % runtime)
 print("")
-
+if delay>0 and trace_thread:
+    usage("delay (-d DELAY) cannot be used with the thread parameter (-t THREAD)")
 
 #adjust cache size:
 import fnmatch
@@ -408,8 +422,14 @@ else:
     if delay==0:
         do_start_trace()
     else:
-        import gobject
         gobject.timeout_add(delay*1000, do_start_trace)
+
+if runtime>0:
+    def force_exit(*args):
+        print("runtime %s expired, using SIGINT to force exit" % runtime)
+        import signal
+        os.kill(os.getpid(), signal.SIGINT)
+    gobject.timeout_add((runtime+delay)*1000, force_exit)
 
 print("calling xpra with: %s" % str(sys.argv))
 x = xpra.scripts.main.main(__file__, sys.argv)
