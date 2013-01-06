@@ -73,6 +73,7 @@ gl = ['xpra.gl_client_window.*', 'xpra.gl_colorspace_conversions.*', 'xpra.gl_wi
 
 std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
+       '_weakrefset.*', 'weakref.*',
        'logging.*',
        'DLFCN.*',
        're.*', 'sre_parse.*', 'sre_compile.*',
@@ -100,11 +101,11 @@ one_offs = ['xpra.<module>',
             'xpra.server_base.XpraServer.reenable_keymap_changes',
             'xpra.server_base.print_ready',
             'xpra.server.DesktopManager.__init__',
-            'xpra.protocol.make_daemon_thread',
+            'xpra.daemon_thread.*',
             'threading.Thread.daemon', 'threading._MainThread.daemon',
             'threading._MainThread.name',
             'threading._newname',
-            'threading.Thread.setDaemon', 'threading.Thread.set_daemon',
+            'threading.Thread.setDaemon', 'threading.Thread.set_daemon', 'threading.Thread._set_daemon',
             'threading.Thread.__init__',
             'threading.Condition.*', 'threading.Event.*',
             'wimpiggy.util.gtk_main_quit_forever',
@@ -113,9 +114,24 @@ one_offs = ['xpra.<module>',
             'wimpiggy.wm.Wm.__init__'
             'wimpiggy.wm.Wm.__setup_ewmh_window'
             'wimpiggy.wm.Wm.enableCursors',
+            'wimpiggy.*.n_arg_signal',
+            'wimpiggy.*.<module>',
+            'wimpiggy.error._ErrorManager.__init__',
             #client bits:
+            'xpra.client_base.<module>',
+            'xpra.client_base.ScreenshotXpraClient',
+            'xpra.client_base.XpraClientBase',
+            'xpra.client_base.InfoXpraClient',
+            'xpra.client_base.VersionXpraClient',
+            'xpra.client_base.StopXpraClient',
+            'xpra.client_base.GlibXpraClient',
+            'xpra.client_base.XpraClient',
+            'xpra.client_base.ClientSource',
             'xpra.client_base.*.__init__',
             'xpra.*.ClientExtras.__init__',
+            'xpra.xposix.gui.<module>',
+            'xpra.platform.*.ClientExtrasBase',
+            'xpra.xposix.ClientExtras',
             'xpra.xposix.add_client_options', 'xpra.platform.add_*_option',
             'xpra.server_base.XpraServer.add_listen_socket',
             'xpra.server_base.XpraServer._process_shutdown_server',
@@ -128,11 +144,16 @@ one_offs = ['xpra.<module>',
             'xpra.*.parse_shortcuts',
             'xpra.*.ready',
             'xpra.*.setup_pa_audio_tagging',
+            'xpra.*.setup_xprop_xsettings',
+            'xpra.protocol.<module>',
+            'xpra.protocol.rencode.<module>',
+            'xpra.protocol.Protocol.__init__',
             'xpra.*.make_uuid',
             'xpra.cursor_names.*',
             'xpra.platform.client_tray.*',
+            'xpra.platform.*.<module>',
             #keyboard stuff that we only do once:
-            'xpra.*.do_keys_changed',
+            'xpra.*._do_keys_changed',
             'xpra.*.query_xkbmap',
             'xpra.*.grok_modifier_map',
             'xpra.*.get_keyboard_repeat',
@@ -142,10 +163,15 @@ one_offs = ['xpra.<module>',
             'xpra.*.get_keymap_spec',
             'xpra.*.get_layout_spec',
             'xpra.*.exec_get_keyboard_data',
+            'xpra.*.set_modifier_mappings',
+            'xpra.*.update_modmap',
             'xpra.platform.keyboard_layouts.*',
             'xpra.platform.update_modmap',
-            'xpra.bencode.*',
+            #some network stuff only happens once too:
+            'xpra.*.set_max_packet_size',
             #exit stuff:
+            'xpra.*._process_connection_lost',
+            'xpra.*.warn_and_quit',
             'xpra.*.quit',
             'xpra.*.cleanup',
             'xpra.*.clean_mmap',
@@ -166,6 +192,7 @@ dialogs = [
             'xpra.*.setup_x11_bell',
             'xpra.*.supports_system_tray',
             'xpra.*.supports_clipboard',
+            'xpra.*.can_notify',
             #tray menu:
             'xpra.*.supports_server',
             'xpra.*.setup_menu',
@@ -271,7 +298,7 @@ SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sou
 def usage(msg):
     print(msg)
     cmd = os.path.basename(sys.argv[0])
-    print("%s usage: -i include-set -e exclude-set -t thread-name -- XPRA ARGS" % sys.argv[0])
+    print("%s usage: -i include-set -e exclude-set -d DELAY -t thread-name -- XPRA ARGS" % sys.argv[0])
     print("The default thread is the main thread, other options are:")
     print(" - for both client and server: %s" % ", ".join(COMMON_THREAD_NAMES))
     print(" - server-only threads: %s" % ", ".join(SERVER_THREAD_NAMES))
@@ -280,6 +307,8 @@ def usage(msg):
     print("The package groups available are: %s" % ", ".join(SETS))
     print("The 'ALL' set is a superset containing all the other groups")
     print("Use '*' as a wildcard group")
+    print("Use the delay to start profiling after a certain amount of time and to avoid")
+    print("profiling the initial setup code")
     print("")
     print("Examples:")
     print("#profile server damage without network")
@@ -322,13 +351,16 @@ def get_group(v):
 exclude = []
 include = []
 trace_thread = None
+delay = 0
 for a,v in pairs:
-    if a not in ("-i", "-e", "-t"):
+    if a not in ("-i", "-e", "-d", "-t"):
         usage("invalid argument: %s" % a)
     if a=="-i":
         include += get_group(v)
     elif a=="-e":
         exclude += get_group(v)
+    elif a=="-d":
+        delay  = int(v)
     elif a=="-t":
         if trace_thread:
             usage("only one thread can be traced at a time")
@@ -369,8 +401,15 @@ if trace_thread:
         return saved_make_daemon_thread(trace_target, name)
     daemon_thread.make_daemon_thread = make_trace_daemon_thread
 else:
+    def do_start_trace(*args):
+        print("starting trace")
+        start_trace(filter_func=filter_func)
     #trace main thread
-    start_trace(filter_func=filter_func)
+    if delay==0:
+        do_start_trace()
+    else:
+        import gobject
+        gobject.timeout_add(delay*1000, do_start_trace)
 
 print("calling xpra with: %s" % str(sys.argv))
 x = xpra.scripts.main.main(__file__, sys.argv)
