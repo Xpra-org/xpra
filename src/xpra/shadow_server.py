@@ -16,6 +16,21 @@ from xpra.server_base import XpraServerBase
 from xpra.protocol import Compressed
 from xpra.window_source import DamageBatchConfig
 
+
+def take_root_screenshot():
+    log("grabbing screenshot")
+    root = gtk.gdk.get_default_root_window()
+    w,h = root.get_size()
+    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+    pixbuf = pixbuf.get_from_drawable(root, root.get_colormap(), 0, 0, 0, 0, w, h)
+    def save_to_memory(data, buf):
+        buf.append(data)
+    buf = []
+    pixbuf.save_to_callback(save_to_memory, "png", {}, buf)
+    rowstride = w*3
+    return w, h, "png", rowstride, "".join(buf)
+
+
 class RootWindowModel(object):
 
     def __init__(self, root_window):
@@ -191,20 +206,10 @@ class XpraShadowServer(XpraServerBase):
         self._process_window_common(wid)
         self.disconnect_client(proto, "closed the only window")
 
-
     def make_screenshot_packet(self):
-        log("grabbing screenshot")
-        root = gtk.gdk.get_default_root_window()
-        w,h = root.get_size()
-        pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
-        pixbuf = pixbuf.get_from_drawable(root, root.get_colormap(), 0, 0, 0, 0, w, h)
-        def save_to_memory(data, buf):
-            buf.append(data)
-        buf = []
-        pixbuf.save_to_callback(save_to_memory, "png", {}, buf)
-        rowstride = w*3
-        packet = ["screenshot", w, h, "png", rowstride, Compressed("png", "".join(buf))]
-        return packet
+        w, h, encoding, rowstride, data = take_root_screenshot()
+        assert encoding=="png"  #use fixed encoding for now
+        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
 
     def make_hello(self):
         capabilities = XpraServerBase.make_hello(self)
