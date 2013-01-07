@@ -18,7 +18,6 @@ net = ['xpra.protocol.*',
        '*._write_thread_loop',
        '*._read_thread_loop',
        '*._read_parse_thread_loop',
-       'threading.*',
        ]
 damage = ['xpra.server_source.*', 'xpra.window_source.*',
           'xpra.batch_delay_calculator.*',
@@ -83,6 +82,7 @@ std = ['pycallgraph.*',
        're.*', 'sre_parse.*', 'sre_compile.*',
        'atexit.*', 'warnings.*',
        'posixpath.*', 'genericpath.*', 'stat.*',
+       'threading.*',
        'encodings.*',
        'optparse.*', 'gettext.*', 'locale.*', 'codecs.*']
 
