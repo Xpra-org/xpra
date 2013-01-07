@@ -191,7 +191,7 @@ class ClientExtrasBase(object):
             if self.client.clipboard_enabled:
                 self.client.send(*parts)
             else:
-                log.info("clipboard is disabled, not sending clipboard packet")
+                log("clipboard is disabled, not sending clipboard packet")
         self.clipboard_helper = helperClass(clipboard_send)
         def clipboard_toggled(*args):
             log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)
