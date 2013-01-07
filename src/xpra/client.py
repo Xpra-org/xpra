@@ -778,16 +778,17 @@ class XpraClient(XpraClientBase):
         self.send_deflate_level()
         server_desktop_size = capabilities.get("desktop_size")
         log("server desktop size=%s", server_desktop_size)
-        assert server_desktop_size
-        avail_w, avail_h = server_desktop_size
-        root_w, root_h = get_root_size()
-        if avail_w<root_w or avail_h<root_h:
-            log.warn("Server's virtual screen is too small -- "
-                     "(server: %sx%s vs. client: %sx%s)\n"
-                     "You may see strange behavior.\n"
-                     "Please see "
-                     "https://www.xpra.org/trac/ticket/10"
-                     % (avail_w, avail_h, root_w, root_h))
+        if not capabilities.get("shadow", False):
+            assert server_desktop_size
+            avail_w, avail_h = server_desktop_size
+            root_w, root_h = get_root_size()
+            if avail_w<root_w or avail_h<root_h:
+                log.warn("Server's virtual screen is too small -- "
+                         "(server: %sx%s vs. client: %sx%s)\n"
+                         "You may see strange behavior.\n"
+                         "Please see "
+                         "https://www.xpra.org/trac/ticket/10"
+                         % (avail_w, avail_h, root_w, root_h))
         if self.server_randr and not is_gtk3():
             display = gdk.display_get_default()
             i=0
