@@ -94,7 +94,7 @@ cdef cGObject * unwrap(box, pyclass) except? NULL:
     # Extract a raw GObject* from a PyGObject wrapper.
     assert issubclass(pyclass, gobject.GObject)
     if not isinstance(box, pyclass):
-        raise TypeError, ("object %r is not a %r" % (box, pyclass))
+        raise TypeError("object %r is not a %r" % (box, pyclass))
     return pygobject_get(box)
 
 # def print_unwrapped(box):
@@ -114,7 +114,7 @@ cdef void * unwrap_boxed(box, pyclass):
     # Extract a raw object from a PyGBoxed wrapper
     assert issubclass(pyclass, gobject.GBoxed)
     if not isinstance(box, pyclass):
-        raise TypeError, ("object %r is not a %r" % (box, pyclass))
+        raise TypeError("object %r is not a %r" % (box, pyclass))
     return (<PyGBoxed *>box).boxed
 
 ###################################
@@ -499,7 +499,7 @@ def get_xatom(str_or_xatom):
 
 def get_pyatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
-        raise Exception, "weirdly huge purported xatom: %s" % xatom
+        raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
         return  None
     cdef cGdkDisplay * disp
@@ -588,11 +588,11 @@ def XGetWindowProperty(pywindow, property, req_type):
                                  xreq_type, &xactual_type,
                                  &actual_format, &nitems, &bytes_after, &prop)
     if status != Success:
-        raise PropertyError, "no such window"
+        raise PropertyError("no such window")
     if xactual_type == XNone:
-        raise NoSuchProperty, property
+        raise NoSuchProperty(property)
     if xreq_type and xreq_type != xactual_type:
-        raise BadPropertyType, xactual_type
+        raise BadPropertyType(xactual_type)
     # This should only occur for bad property types:
     assert not (bytes_after and not nitems)
     # actual_format is in (8, 16, 32), and is the number of bits in a logical
@@ -611,7 +611,7 @@ def XGetWindowProperty(pywindow, property, req_type):
         assert False
     nbytes = bytes_per_item * nitems
     if bytes_after:
-        raise PropertyOverflow, nbytes + bytes_after
+        raise PropertyOverflow(nbytes + bytes_after)
     data = PyString_FromStringAndSize(<char *>prop, nbytes)
     XFree(prop)
     if actual_format == 32:
@@ -765,7 +765,7 @@ def get_rectangle_from_region(region):
     gdk_region_get_rectangles(cregion, &rectangles, &count)
     if count == 0:
         g_free(rectangles)
-        raise ValueError, "empty region"
+        raise ValueError("empty region")
     (x, y, w, h) = (rectangles[0].x, rectangles[0].y,
                     rectangles[0].width, rectangles[0].height)
     g_free(rectangles)
@@ -1281,7 +1281,7 @@ def _ensure_XTest_support(display_source):
                                              &ignored, &ignored,
                                              &ignored, &ignored))
     if not display.get_data("XTest-support"):
-        raise ValueError, "XTest not supported"
+        raise ValueError("XTest not supported")
 
 def xtest_fake_key(display_source, keycode, is_press):
     _ensure_XTest_support(display_source)
@@ -1330,7 +1330,7 @@ cdef _ensure_extension_support(display_source, major, minor, extension,
             raise ValueError("X server does not support required extension %s"
                              % extension)
     if not display.get_data(key):
-        raise ValueError, "insufficient %s support in server" % extension
+        raise ValueError("insufficient %s support in server" % extension)
 
 ###################################
 # Composite
@@ -1842,7 +1842,7 @@ def sendClientMessage(target, window, propagate, event_mask,
     cdef Status s
     s = XSendEvent(display, t, propagate, event_mask, &e)
     if s == 0:
-        raise ValueError, "failed to serialize ClientMessage"
+        raise ValueError("failed to serialize ClientMessage")
 
 def sendClick(target, button, onoff, x_root, y_root, x, y):
     cdef Display * display              #@DuplicatedSignature
@@ -1874,7 +1874,7 @@ def sendClick(target, button, onoff, x_root, y_root, x, y):
     cdef Status s                       #@DuplicatedSignature
     s = XSendEvent(display, w, False, 0, &e)
     if s == 0:
-        raise ValueError, "failed to serialize ButtonPress Message"
+        raise ValueError("failed to serialize ButtonPress Message")
 
 def send_xembed_message(window, opcode, detail, data1, data2):
     """
@@ -1902,7 +1902,7 @@ def send_xembed_message(window, opcode, detail, data1, data2):
     e.xclient.data.l[4] = data2
     s = XSendEvent(display, w, False, NoEventMask, &e)
     if s == 0:
-        raise ValueError, "failed to serialize XEmbed Message"
+        raise ValueError("failed to serialize XEmbed Message")
 
 def sendConfigureNotify(pywindow):
     cdef Display * display              #@DuplicatedSignature
@@ -1941,7 +1941,7 @@ def sendConfigureNotify(pywindow):
     cdef Status s                       #@DuplicatedSignature
     s = XSendEvent(display, window, False, StructureNotifyMask, &e)
     if s == 0:
-        raise ValueError, "failed to serialize ConfigureNotify"
+        raise ValueError("failed to serialize ConfigureNotify")
 
 def configureAndNotify(pywindow, x, y, width, height, fields=None):
     cdef Display * display              #@DuplicatedSignature
