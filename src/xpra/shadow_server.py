@@ -203,12 +203,12 @@ class XpraShadowServer(XpraServerBase):
         w,h = root.get_size()
         pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
         pixbuf = pixbuf.get_from_drawable(root, root.get_colormap(), 0, 0, 0, 0, w, h)
-        buf = StringIO()
-        pixbuf.save(buf, "png")
-        data = buf.getvalue()
-        buf.close()
+        def save_to_memory(data, buf):
+            buf.append(data)
+        buf = []
+        pixbuf.save_to_callback(save_to_memory, "png", {}, buf)
         rowstride = w*3
-        packet = ["screenshot", w, h, "png", rowstride, Compressed("png", data)]
+        packet = ["screenshot", w, h, "png", rowstride, Compressed("png", "".join(buf))]
         return packet
 
     def make_hello(self):
