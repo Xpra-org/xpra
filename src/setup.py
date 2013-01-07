@@ -87,6 +87,15 @@ opengl_ENABLED = True
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "cyxor", "cymaths", "opengl", "parti")
+HELP = "-h" in sys.argv or "--help" in sys.argv
+if HELP:
+    setup()
+    print("Xpra specific build switches:")
+    for x in SWITCHES:
+        print("  --without-%s" % x)
+    print("  --enable-Xdummy")
+    sys.exit(0)
+
 for arg in sys.argv:
     if arg == "--enable-Xdummy":
         xdummy_ENABLED = True
