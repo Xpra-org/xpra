@@ -9,11 +9,6 @@ gtk.gdk.threads_init()
 import gobject
 import socket
 
-try:
-    from StringIO import StringIO   #@UnusedImport
-except:
-    from io import StringIO         #@UnresolvedImport @Reimport
-
 from wimpiggy.log import Logger
 log = Logger()
 
