@@ -9,7 +9,7 @@ import os
 from wimpiggy.log import Logger
 log = Logger()
 
-SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", False)
+SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 
 
 VORBIS = "vorbis"
