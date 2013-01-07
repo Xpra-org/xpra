@@ -6,20 +6,27 @@ v0.8.0 (2012-12-20)
 	-- fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers
 	-- fix limit the number of raw packets per client to prevent DoS via memory exhaustion
 	-- fix authentication: ensure salt is per connection
-	-- performance optimizations in critical sections, logging conditional removal
+	-- fix for ubuntu global application menus
+	-- fix proxy handling of deadly signals
+	-- fix pixel queue size calculations used for performance tuning decisions
+	-- fix ^C exit on MS Windows: ensure we do cleanup the system tray on exit
+	-- edge resistance for colourspace conversion level changes to prevent yoyo effect
+	-- more aggressive picture quality tuning
+	-- x264 disable unecessary I-frames and avoid IDR frames
+	-- performance and latency optimizations in critical sections
 	-- avoid server loops: prevent the client from connecting to itself
 	-- group windows according to the remote application they belong to
 	-- sound forwarding
 	-- faster and more reliable client and server exit (from signal or otherwise)
 	-- SSH support on MS Windows
 	-- "xpra shadow" mode to clone an existing X11 display
-	-- support for delta pixels mode (most useful for shadow)
+	-- support for delta pixels mode (most useful for shadow mode)
 	-- avoid warnings and X11 errors with the screenshot command
 	-- better mouse cursor support: send cursors by name so their size matches the client's settings
-	-- mitigate cursors change storms: introduce simple cursor batching
+	-- mitigate bandwidth eating cursor change storms: introduce simple cursor update batching
 	-- support system tray icon forwarding (limited)
 	-- preserve window workspace
-	-- AES packet encryption for TCP mode
+	-- AES packet encryption for TCP mode (without key secure exchange for now)
 	-- launcher entry box for username in SSH mode
 	-- launcher improvements: highlight the password field if needed, prevent warnings, etc
 	-- better window manager specification compatibility (for broken applications or toolkits)
@@ -27,13 +34,14 @@ v0.8.0 (2012-12-20)
 	-- new x264 tuning options: profiles to use and thresholds
 	-- better detection of dead server sockets: retry and remove them if needed
 	-- improved session information dialog and graphs
+	-- more detailed hierarchical per-window details via "xpra info"
 	-- send window icons in dedicated compressed packet (smaller new-window packets, faster)
 	-- detect overly large main packets
 	-- partial/initial Java/AWT keyboard support
 	-- py2exe, ebuild and distutils improvements: faster and cleaner builds, discarding unwanted modules
-	-- osx and win32 build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
-	-- osx command line path fix
-	-- updated Cython to 0.17.3 for binary builds
+	-- OSX and MS Windows build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
+	-- OSX command line path fix
+	-- updated Cython to 0.17.3 for all binary builds
 
 
 v0.7.7 (2013-01-03)
