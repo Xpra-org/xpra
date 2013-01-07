@@ -15,7 +15,7 @@ from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-DEBUG_SOUND = os.environ.get("XPRA_DEBUG_SOUND", "0")=="1"
+DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
 if DEBUG_SOUND:
     debug = log.info
 else:
