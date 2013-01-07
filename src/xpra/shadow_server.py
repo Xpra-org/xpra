@@ -30,6 +30,19 @@ def take_root_screenshot():
     rowstride = w*3
     return w, h, "png", rowstride, "".join(buf)
 
+def has_compositor(display):
+    try:
+        from wimpiggy.lowlevel.bindings import const,myGetSelectionOwner        #@UnresolvedImport
+        from wimpiggy.error import trap, XError                                 #@UnresolvedImport
+    except Exception, e:
+        raise Exception("failed to load bindings: %s" % e)
+    try:
+        owner = trap.call_synced(myGetSelectionOwner, display, "_NET_WM_CM_S0")
+        log.info("compositor: %s", owner)
+        return owner and owner!=const["XNone"]
+    except XError, e:
+        raise Exception("error testing for compositing window manager: %s" % e)
+
 
 class RootWindowModel(object):
 
@@ -84,6 +97,12 @@ class XpraShadowServer(XpraServerBase):
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
         DamageBatchConfig.RECALCULATE_DELAY = 0.1   #re-compute delay 10 times per second at most
+        display = gtk.gdk.display_get_default()
+        log("display=%s", display)
+        if display.supports_composite() and has_compositor(display):
+            log.error("display %s uses a compositing window manager, shadowing is not supported yet - sorry" % display.get_name())
+            self.quit(0)
+            return
 
     def start_refresh(self):
         gobject.timeout_add(50, self.refresh)
