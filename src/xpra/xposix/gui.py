@@ -259,7 +259,7 @@ class ClientExtras(ClientExtrasBase):
     def _handle_root_prop_changed(self, obj, prop, value):
         log("root_prop_changed: %s=%s", prop, value)
         assert prop in self.ROOT_PROPS
-        if value is not None:
+        if value is not None and self.client.xsettings_tuple:
             self.client.send("server-settings", {self.ROOT_PROPS[prop]: value.encode("utf-8")})
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
