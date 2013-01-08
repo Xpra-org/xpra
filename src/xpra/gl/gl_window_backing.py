@@ -15,7 +15,7 @@ log = Logger()
 
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
-from xpra.window_backing import PixmapBacking
+from xpra.window_backing import PixmapBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_COORD_ARRAY, GL_RGB, GL_UNPACK_ROW_LENGTH, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
@@ -177,7 +177,7 @@ class GLPixmapBacking(PixmapBacking):
         if not success:
             log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
                       coding, err, len(img_data), w, h, options)
-            gobject.idle_add(self.fire_paint_callbacks, callbacks, False)
+            gobject.idle_add(fire_paint_callbacks, callbacks, False)
             return
         gobject.idle_add(self.do_gl_paint, x, y, w, h, img_data, rowstrides, pixel_format, callbacks)
 
@@ -186,17 +186,17 @@ class GLPixmapBacking(PixmapBacking):
         drawable = self.gl_init()
         if not drawable:
             log("cannot paint, drawable is not set")
-            self.fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False)
             return
         try:
             try:
                 self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
                 if self.paint_screen:
                     self.render_image(x, y, x+w, y+h)
-                self.fire_paint_callbacks(callbacks, True)
+                fire_paint_callbacks(callbacks, True)
             except Exception, e:
                 log.error("OpenGL paint error: %s", e, exc_info=True)
-                self.fire_paint_callbacks(callbacks, False)
+                fire_paint_callbacks(callbacks, False)
         finally:
             self.gl_end(drawable)
 
