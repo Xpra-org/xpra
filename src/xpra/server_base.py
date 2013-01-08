@@ -667,7 +667,7 @@ class XpraServerBase(object):
         info["encodings"] = ",".join(ENCODINGS)
         info["platform"] = sys.platform
         info["python_version"] = python_platform.python_version()
-        info["windows"] = len(self._id_to_window)
+        info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info["keyboard_sync"] = self.keyboard_sync
         info["key_repeat_delay"] = self.key_repeat_delay
         info["key_repeat_interval"] = self.key_repeat_interval
