@@ -157,7 +157,7 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
                 return    None
             if len(monitor_devices)>1:
                 log.warn("found more than one monitor device: %s", monitor_devices)
-                log.warn("using: %s", monitor_devices[0][1])
+                log.warn("using: %s", monitor_devices.items()[0][1])
             monitor_device = monitor_devices.items()[0][0]
             sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
             log.info("starting sound using %s", monitor_device)
