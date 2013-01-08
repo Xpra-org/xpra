@@ -749,7 +749,7 @@ class WindowSource(object):
             return
         self._sequence += 1
         debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
-        def make_data_packet(*args):
+        def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
             packet = self.make_data_packet(*data)
             #NOTE: we have to send it (even if the window is cancelled by now..)
@@ -763,7 +763,7 @@ class WindowSource(object):
                 if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
                     gobject.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
-        self.queue_damage(make_data_packet)
+        self.queue_damage(make_data_packet_cb)
 
     def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
         """ Must be called from the UI thread: this makes it easier
