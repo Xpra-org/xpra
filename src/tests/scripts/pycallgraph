@@ -46,8 +46,12 @@ keyboard = ['xpra.keys.*', 'xpra.xkbhelper.*', 'wimpiggy.keys.*',
        'xpra.client.nn',
        'xpra.*._key_repeat',
        'xpra.*.clear_repeat',
-       'xpra.*._key_handled_as_shortcut',
+       'xpra.*.key_handled_as_shortcut',
        ]
+cursor = [
+          'xpra.*._process_cursor',
+          'xpra.*.set_windows_cursor',
+          ]
 bell = ['wimpiggy.window.WindowModel.do_wimpiggy_xkb_event',
         'wimpiggy.wm.Wm.bell_event',
         'wimpiggy.wm.Wm.do_bell_event',
@@ -79,6 +83,7 @@ std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
        '_weakrefset.*', 'weakref.*',
        'DLFCN.*',
+       'abc.*',
        're.*', 'sre_parse.*', 'sre_compile.*',
        'atexit.*', 'warnings.*',
        'posixpath.*', 'genericpath.*', 'stat.*',
@@ -128,8 +133,8 @@ one_offs = ['xpra.<module>',
             'xpra.client_base.InfoXpraClient',
             'xpra.client_base.VersionXpraClient',
             'xpra.client_base.StopXpraClient',
-            'xpra.client_base.GlibXpraClient',
-            'xpra.client_base.XpraClient',
+            'xpra.client_base.GLibXpraClient',
+            'xpra.client.XpraClient',
             'xpra.client_base.ClientSource',
             'xpra.client_base.*.__init__',
             'xpra.*.ClientExtras.__init__',
@@ -140,7 +145,7 @@ one_offs = ['xpra.<module>',
             'xpra.server_base.XpraServer.add_listen_socket',
             'xpra.server_base.XpraServer._process_shutdown_server',
             'socket._socketobject.meth',
-            'xpra.*Client.*hello',
+            'xpra.*.*hello',
             'xpra.xposix.get_machine_id',
             'xpra.*.init_packet_handlers',
             'xpra.*.get_screen_sizes',
@@ -290,17 +295,18 @@ connection = ['xpra.server_base.XpraServer.send_hello',
               'xpra.bytestreams.SocketConnection.close',
               'socket._socketobject.close']
 
-ALL = std + keyboard + bell + misc + xsettings + clipboard + sound + gl + logging + libs + one_offs + dialogs + connection
+ALL = std + keyboard + cursor + bell + misc + xsettings + clipboard + sound + gl + logging + libs + one_offs + dialogs + connection
 
 COMMON_THREAD_NAMES = ["write", "read", "parse"]
 SERVER_THREAD_NAMES = ["encode", "calculate_delay"]
 CLIENT_THREAD_NAMES = ["draw"]
 THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
-SETS = ["ALL", "std", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "logging", "libs", "one_offs", "dialogs", "connection"]
+SETS = ["ALL", "std", "cursor", "keyboard", "bell", "misc", "xsettings", "clipboard", "sound", "gl", "logging", "libs", "one_offs", "dialogs", "connection"]
 
 
-def usage(msg):
-    print(msg)
+def usage(msg=None):
+    if msg:
+        print(msg)
     cmd = os.path.basename(sys.argv[0])
     print("%s usage: -i include-set -e exclude-set -d DELAY -r RUNTIME -t thread-name -- XPRA ARGS" % sys.argv[0])
     print("The default thread is the main thread, other options are:")
@@ -317,16 +323,16 @@ def usage(msg):
     print("the time starts counting after the start delay.")
     print("")
     print("Examples:")
-    print("#profile server damage without network")
-    print("%s -i damage -e net -- start :10" % cmd)
-    print("#profile client, excluding ALL sets:")
+    print("#profile server:")
+    print("%s -i '*' -e ALL -- start :10" % cmd)
+    print("#profile client:")
     print("%s -i '*' -e ALL -- attach  :10" % cmd)
-    print("#profile the client's draw thread, excluding ALL sets:")
+    print("#profile the client's draw thread:")
     print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
     print("#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")
     print("%s -t write -i '*' -e logging -r 10 -- attach  :10  --no-mmap --encoding=x264" % cmd)
     print("#profile server data_to_packet thread, excluding standard libraries")
-    print("%s -t encode -i * -e std -e libs -- start :10" % cmd)
+    print("%s -t encode -i '*' -e std -e libs -- start :10" % cmd)
     sys.exit(1)
 
 
