@@ -49,6 +49,9 @@ FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
 #just for testing the CairoBacking with gtk2
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
 
+#logging in the draw path is expensive:
+DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
+
 
 def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
@@ -133,25 +136,30 @@ class Backing(object):
             self._video_decoder_lock.acquire()
             if self._video_decoder:
                 if self._video_decoder.get_type()!=coding:
-                    log("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
+                    if DRAW_DEBUG:
+                        log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
                     self._video_decoder.clean()
                     self._video_decoder = None
                 elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
-                    log("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                    if DRAW_DEBUG:
+                        log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
                     self._video_decoder.clean()
                     self._video_decoder.init_context(width, height, options)
             if self._video_decoder is None:
-                log("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, options)
+                if DRAW_DEBUG:
+                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, options)
                 self._video_decoder = factory()
                 self._video_decoder.init_context(width, height, options)
-            log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
+            if DRAW_DEBUG:
+                log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
             self.do_video_paint(coding, img_data, x, y, width, height, options, callbacks)
         finally:
             self._video_decoder_lock.release()
         return  False
 
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
-        log("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
+        if DRAW_DEBUG:
+            log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
         err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
         success = err==0 and rgb_image and rgb_image.get_size()>0
         if not success:
@@ -239,7 +247,8 @@ class CairoBacking(Backing):
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
-        log("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
+        if DRAW_DEBUG:
+            log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
         gc = cairo.Context(self._backing)
         if rowstride==0:
             rowstride = width*3
@@ -265,7 +274,6 @@ class CairoBacking(Backing):
             data_start.value = offset+length
         else:
             #re-construct the buffer from discontiguous chunks:
-            log("drawing from discontiguous area: %s", img_data)
             data = ""
             for offset, length in img_data:
                 self.mmap.seek(offset)
@@ -280,7 +288,8 @@ class CairoBacking(Backing):
         gobject.idle_add(self.do_draw_region, *args)
 
     def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
-        log.debug("do_draw_region(%s,%s,%s,%s,%s,..,%s,%s,%s)", x, y, width, height, coding, rowstride, options, callbacks)
+        if DRAW_DEBUG:
+            log.info("do_draw_region(%s,%s,%s,%s,%s,..,%s,%s,%s)", x, y, width, height, coding, rowstride, options, callbacks)
         if coding == "mmap":
             return  self.paint_mmap(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding in ["rgb24", "jpeg"]:
@@ -411,7 +420,6 @@ class PixmapBacking(Backing):
             data_start.value = offset+length
         else:
             #re-construct the buffer from discontiguous chunks:
-            log("drawing from discontiguous area: %s", img_data)
             data = ""
             for offset, length in img_data:
                 self.mmap.seek(offset)
@@ -421,7 +429,8 @@ class PixmapBacking(Backing):
         return  False
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
-        log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+        if DRAW_DEBUG:
+            log.info("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         if coding == "mmap":
             gobject.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
@@ -461,7 +470,8 @@ class FakeBacking(object):
         pass
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
-        log("draw_region(..) faking it after %sms", self.fake_delay)
+        if DRAW_DEBUG:
+            log.info("draw_region(..) faking it after %sms", self.fake_delay)
         gobject.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):

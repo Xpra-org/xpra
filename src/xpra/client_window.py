@@ -125,12 +125,15 @@ else:
                   }
 
 
+import os
 import cairo
 import re
 import sys
 
 from wimpiggy.log import Logger
 log = Logger()
+
+DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 
 try:
     from wimpiggy.prop import prop_get
@@ -380,7 +383,8 @@ class ClientWindow(gtk.Window):
         if not self._backing:
             return
         def after_draw_refresh(success):
-            log("after_draw_refresh(%s) options=%s", success, options)
+            if DRAW_DEBUG:
+                log.info("after_draw_refresh(%s) options=%s", success, options)
             if success:
                 queue_draw(self, x, y, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
@@ -404,13 +408,15 @@ class ClientWindow(gtk.Window):
 
     """ gtk3 """
     def do_draw(self, context):
-        log("do_draw(%s)", context)
+        if DRAW_DEBUG:
+            log.info("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context, 0, 0)
 
     """ gtk2 """
     def do_expose_event(self, event):
-        log("do_expose_event(%s) area=%s", event, event.area)
+        if DRAW_DEBUG:
+            log.info("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         x,y,_,_ = event.area

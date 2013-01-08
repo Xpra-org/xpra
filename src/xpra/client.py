@@ -84,13 +84,12 @@ from xpra.stats.base import std_unit
 from xpra.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 
-from xpra.client_window import ClientWindow
+from xpra.client_window import ClientWindow, DRAW_DEBUG
 
 def nn(x):
     if x is None:
         return  ""
     return x
-
 
 
 class XpraClient(XpraClientBase):
@@ -1053,7 +1052,8 @@ class XpraClient(XpraClientBase):
         options = {}
         if len(packet)>10:
             options = packet[10]
-        log("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
+        if DRAW_DEBUG:
+            log.info("process_draw %s bytes for window %s using %s encoding with options=%s", len(data), wid, coding, options)
         start = time.time()
         def record_decode_time(success):
             if success:
@@ -1064,7 +1064,8 @@ class XpraClient(XpraClientBase):
             else:
                 decode_time = -1
                 dms = "ERR"
-            log("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
+            if DRAW_DEBUG:
+                log.info("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
