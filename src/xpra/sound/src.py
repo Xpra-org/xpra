@@ -46,12 +46,11 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
 
     __gsignals__ = {
         "new-buffer": one_arg_signal,
+        "state-change": one_arg_signal,
         }
 
     def __init__(self, src_type="autoaudiosrc", src_options={}, codec=MP3, encoder_options={}):
         assert src_type in SOURCES
-        bitrate = encoder_options.get("bitrate", DEFAULT_BITRATE)
-        assert bitrate in BITRATES, "invalid bitrate %s" % bitrate
         encoders = get_encoders(codec)
         assert len(encoders)>0, "no encoders found for %s" % codec
         super(gobject.GObject, self).__init__()
@@ -59,6 +58,7 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
         self.codec = codec
         self.data = ""
         self.src_type = src_type
+        self.bitrate = -1
         source_str = plugin_str(src_type, src_options)
         encoder = encoders[0]
         encoder_str = plugin_str(encoder, encoder_options)
@@ -75,6 +75,7 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
         bus.connect("message", self.on_message)
         self.sink = self.pipeline.get_by_name("sink")
         debug("sink %s", self.sink)
+        self.state = "stopped"
         self.volume = self.pipeline.get_by_name("volume")
         self.sink.set_property("emit-signals", True)
         self.sink.set_property("drop", False)
@@ -82,6 +83,31 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
         self.sink.connect("new-buffer", self.on_new_buffer)
         self.sink.connect("new-preroll", self.on_new_preroll)
         #self.sink.set_property("max-buffers", 1)
+
+    def do_get_state(self):
+        if not self.pipeline:
+            return  "stopped"
+        state = self.pipeline.get_state()
+        if len(state)==3:
+            if state[1]==gst.STATE_PLAYING:
+                return  "active"
+            if state[1]==gst.STATE_NULL:
+                return  "stopped"
+        return  "unknown"
+
+    def get_state(self):
+        return  self.state_may_have_changed()
+
+    def state_may_have_changed(self, *args):
+        new_state = self.do_get_state()
+        if new_state!=self.state:
+            log.info("new sound source pipeline state: %s", new_state)
+            self.state = new_state
+            self.emit("state-change", self.get_state())
+        return new_state
+
+    def get_bitrate(self):
+        return self.bitrate
 
     def start(self):
         self.pipeline.set_state(gst.STATE_PLAYING)
@@ -96,37 +122,65 @@ class SoundSource(AutoPropGObjectMixin, gobject.GObject):
         self.pipeline = None
         self.volume = None
         self.sink = None
+        self.bitrate = -1
+        self.state = None
+
+    def set_mute(self, mute):
+        self.volume.set_property('mute', mute)
 
     def set_volume(self, volume):
-        assert volume>=0 and volume<=10
-        self.volume.set_property("volume", volume)
+        assert volume>=0 and volume<=100
+        self.volume.set_property('volume', float(volume)/100.0)
 
     def on_new_preroll(self, appsink):
         buf = appsink.emit('pull-preroll')
         debug('new preroll: %s bytes', len(buf))
         self.emit("new-buffer", str(buf))
-        return True
 
     def on_new_buffer_list(self, appsink):
         buf = appsink.emit('pull-buffer-list')
         debug('new buffer list', len(buf))
-        return True
 
     def on_new_buffer(self, bus, *args):
         buf = self.sink.emit("pull-buffer")
         debug("new-buffer: %s bytes", len(buf))
         self.emit("new-buffer", str(buf))
-        return True
 
     def on_message(self, bus, message):
         debug("on_message(%s, %s)", bus, message)
         t = message.type
         if t == gst.MESSAGE_EOS:
             self.pipeline.set_state(gst.STATE_NULL)
+            log.info("sound source EOS")
+            self.state_may_have_changed()
         elif t == gst.MESSAGE_ERROR:
             self.pipeline.set_state(gst.STATE_NULL)
             err, details = message.parse_error()
-            log.error("Pipeline error: %s / %s", err, details)
+            log.error("sound source pipeline error: %s / %s", err, details)
+            self.state_may_have_changed()
+        elif t == gst.MESSAGE_TAG:
+            if message.structure.has_field("bitrate"):
+                self.bitrate = int(message.structure["bitrate"])
+                log.info("bitrate: %s", self.bitrate)
+            if message.structure.has_field("codec"):
+                log.info("codec: %s", message.structure["codec"])
+            else:
+                log.info("unknown tag message: %s", message)
+        elif t == gst.MESSAGE_STREAM_STATUS:
+            debug("stream status: %s", message)
+            self.state_may_have_changed()
+        elif t in (gst.MESSAGE_LATENCY, gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
+            debug("%s", message)
+        elif t == gst.MESSAGE_STATE_CHANGED:
+            if isinstance(message.src, gst.Pipeline):
+                _, new, _ = message.parse_state_changed()
+                debug("new-state=%s", gst.element_state_get_name(new))
+            else:
+                debug("state changed: %s", message)
+            self.state_may_have_changed()
+        else:
+            log.info("unhandled bus message type %s: %s / %s", t, message, message.structure)
+            
 
 gobject.type_register(SoundSource)
 

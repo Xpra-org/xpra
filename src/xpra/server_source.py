@@ -765,6 +765,24 @@ class ServerSource(object):
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
         info["auto_refresh%s" % suffix] = int(self.auto_refresh_delay*1000.0)
+        def get_sound_state(supported, prop):
+            if not supported:
+                return "disabled"
+            if prop is None:
+                return "inactive"
+            return prop.get_state()
+        state = get_sound_state(self.supports_speaker, self.sound_source)
+        info["speaker.state"] = state
+        if state=="active":
+            bitrate = self.sound_source.get_bitrate()
+            if bitrate>0:
+                info["speaker.bitrate"] = bitrate
+        state = get_sound_state(self.supports_microphone, self.sound_sink)
+        info["microphone.state"] = state
+        if state=="active":
+            bitrate = self.sound_sink.get_bitrate()
+            if bitrate>0:
+                info["speaker.bitrate"] = bitrate
 
     def send_info_response(self, info):
         self.idle_send("info-response", info)

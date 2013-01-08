@@ -75,6 +75,17 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         #src.set_property("sync", False)
         #src.set_property("max-buffers", 1)
 
+    def get_state(self):
+        if not self.pipeline:
+            return  "stopped"
+        state = self.pipeline.get_state()
+        if len(state)==3:
+            if state[1]==gst.STATE_PLAYING:
+                return  "active"
+            if state[1]==gst.STATE_NULL:
+                return  "stopped"
+        return  "unknown"
+
     def start(self):
         assert self.pipeline
         self.pipeline.set_state(gst.STATE_PLAYING)
@@ -101,28 +112,10 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
 
     def add_data(self, data):
         debug("add_data(%s bytes) we already have %s bytes", len(data), len(self.data))
-        self.data += data
-        if self.data_needed>0:
-            self.push_buffer()
+        self.src.emit("push-buffer", gst.Buffer(data))
 
     def need_data(self, src_arg, needed):
         debug("need_data: %s bytes, we have %s", needed, len(self.data))
-        self.data_needed = needed
-        if len(self.data)>0:
-            self.push_buffer()
-
-    def push_buffer(self):
-        needed = self.data_needed
-        if len(self.data)<needed:
-            chunk = self.data
-            self.data_needed = needed-len(self.data)
-            self.data = ""
-        else:
-            chunk = self.data[:self.data_needed]
-            self.data = self.data[self.data_needed:]
-            self.data_needed = 0
-        debug("push_buffer() adding %s bytes, %s still needed", len(chunk), self.data_needed)
-        self.src.emit("push-buffer", gst.Buffer(chunk))
 
     def on_message(self, bus, message):
         debug("bus message: %s", message)
