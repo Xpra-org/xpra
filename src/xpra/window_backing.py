@@ -42,8 +42,20 @@ try:
 except:
     from StringIO import StringIO as IOClass   #@Reimport
 
+#pretend to draw the windows, but don't actually do anything
+USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
+FAKE_BACKING_DELAY = int(os.environ.get("XPRA_FAKE_BACKING_DELAY", "5"))
 
-PREFER_CAIRO = False        #just for testing the CairoBacking with gtk2
+#just for testing the CairoBacking with gtk2
+USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
+
+
+def fire_paint_callbacks(callbacks, success):
+    for x in callbacks:
+        try:
+            x(success)
+        except:
+            log.error("error calling %s(%s)", x, success, exc_info=True)
 
 """
 Generic superclass for Backing code,
@@ -80,14 +92,6 @@ class Backing(object):
         else:
             assert len(img_data) == width * 3 * height
         return Image.fromstring("RGB", (width, height), img_data, 'raw', 'RGB', rowstride, 1)
-
-    def fire_paint_callbacks(self, callbacks, success):
-        for x in callbacks:
-            try:
-                x(success)
-            except:
-                log.error("error calling %s(%s)", x, success, exc_info=True)
-
 
     def process_delta(self, raw_data, width, height, rowstride, options):
         """
@@ -218,7 +222,7 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
-        self.fire_paint_callbacks(callbacks, True)
+        fire_paint_callbacks(callbacks, True)
         return  False
 
     def paint_pil_image(self, pil_image, width, height, rowstride, options, callbacks):
@@ -243,7 +247,7 @@ class CairoBacking(Backing):
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
-        self.fire_paint_callbacks(callbacks, True)
+        fire_paint_callbacks(callbacks, True)
         del img_data
         return  False
 
@@ -341,10 +345,10 @@ class PixmapBacking(Backing):
         """
         try:
             self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-            self.fire_paint_callbacks(callbacks, True)
+            fire_paint_callbacks(callbacks, True)
         except:
             log.error("do_paint_rgb24 error", exc_info=True)
-            self.fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         gc = self._backing.new_gc()
@@ -383,7 +387,7 @@ class PixmapBacking(Backing):
         pixbuf = loader.get_pixbuf()
         if not pixbuf:
             log.error("failed %s pixbuf=%s data len=%s" % (coding, pixbuf, len(img_data)))
-            self.fire_paint_callbacks(callbacks, False)
+            fire_paint_callbacks(callbacks, False)
             return  False
         raw_data = pixbuf.get_pixels()
         rowstride = pixbuf.get_rowstride()
@@ -446,8 +450,28 @@ class PixmapBacking(Backing):
             return False
 
 
+class FakeBacking(object):
+
+    def __init__(self, wid):
+        self.wid = wid
+        self.fake_delay = FAKE_BACKING_DELAY
+        self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality = None, None, [], []
+
+    def close(self):
+        pass
+
+    def draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+        log("draw_region(..) faking it after %sms", self.fake_delay)
+        gobject.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
+
+    def cairo_draw(self, context, x, y):
+        pass
+
+
 def new_backing(wid, w, h, backing, mmap_enabled, mmap):
-    if is_gtk3() or PREFER_CAIRO:
+    if USE_FAKE_BACKING:
+        return FakeBacking(wid)
+    if is_gtk3() or USE_CAIRO:
         backing_class = CairoBacking
     else:
         backing_class = PixmapBacking
