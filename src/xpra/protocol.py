@@ -18,7 +18,8 @@ import struct
 import os
 import threading
 
-WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 1))
+WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 2))
+assert WRITE_QUEUE_BUSY_LEVEL>=2, "write queue busy level cannot be set lower than 2 - if you did so, you would eventually hit a race and deadlock"
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -225,12 +226,12 @@ class Protocol(object):
                     header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
                     self._write_queue.put((header, scb, None))
                     self._write_queue.put((data, None, ecb))
-                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed:
-                    self._write_queue_ready.set()
                 counter += 1
         finally:
             self.output_packetcount += 1
             self._write_lock.release()
+            if self._write_queue.qsize()>=WRITE_QUEUE_BUSY_LEVEL and not self._closed:
+                self._write_queue_ready.clear()
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -364,7 +365,7 @@ class Protocol(object):
                     if self._closed:
                         break
                     raise e
-                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed:
+                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
                     self._write_queue_ready.set()
         finally:
             log("write thread: ended, closing socket")
