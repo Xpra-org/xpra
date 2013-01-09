@@ -688,7 +688,7 @@ class XpraClient(XpraClientBase):
         sl = -1
         if len(self.server_ping_latency)>0:
             _, sl = self.server_ping_latency[-1]
-        self.idle_send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
 
     def _process_info_response(self, packet):
         self.info_request_pending = False

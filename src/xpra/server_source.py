@@ -472,7 +472,7 @@ class ServerSource(object):
 
     def new_sound_buffer(self, sound_source, data):
         assert self.sound_source
-        self.idle_send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
 
     def sound_control(self, action, *args):
         if action=="stop":
@@ -691,9 +691,6 @@ class ServerSource(object):
             have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.damage_packet_queue)>0)
         return packet, start_send_cb, end_send_cb, have_more
 
-    def idle_send(self, *parts):
-        gobject.idle_add(self.send, *parts)
-
     def send(self, *parts):
         """ This method queues non-damage packets (higher priority) """
         self.ordinary_packets.append(parts)
@@ -785,7 +782,7 @@ class ServerSource(object):
                 info["speaker.bitrate"] = bitrate
 
     def send_info_response(self, info):
-        self.idle_send("info-response", info)
+        self.send("info-response", info)
 
     def send_clipboard(self, packet):
         if self.clipboard_enabled:
@@ -842,7 +839,7 @@ class ServerSource(object):
             cl = int(1000.0*cl)
         else:
             cl = -1
-        self.idle_send("ping_echo", time_to_echo, l1, l2, l3, cl)
+        self.send("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
         gobject.timeout_add(500, self.ping)
 

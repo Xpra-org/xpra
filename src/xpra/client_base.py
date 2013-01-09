@@ -142,9 +142,6 @@ class XpraClientBase(gobject.GObject):
             u.update(str(os.getgid()))
         self.uuid = u.hexdigest()
 
-    def idle_send(self, *parts):
-        gobject.idle_add(self.send, *parts)
-
     def send(self, *parts):
         self._ordinary_packets.append(parts)
         self.have_more()
