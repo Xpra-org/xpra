@@ -8,19 +8,15 @@ import sys, os
 import gobject
 gobject.threads_init()
 
+from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoders, MP3, CODECS
 import gst
-from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal, no_arg_signal
+from wimpiggy.util import one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
-if DEBUG_SOUND:
-    debug = log.info
-else:
-    debug = log.debug
-
+QUEUE_TIME = 20*1000000        #in ns (or ms * 1000000)
 
 SINKS = ["autoaudiosink"]
 if has_pa():
@@ -36,7 +32,7 @@ def sink_has_device_attribute(sink):
     return sink not in ("autoaudiosink", "jackaudiosink", "directsoundsink")
 
 
-class SoundSink(AutoPropGObjectMixin, gobject.GObject):
+class SoundSink(SoundPipeline):
 
     __gsignals__ = {
         "underrun": one_arg_signal,
@@ -47,16 +43,14 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
         decoders = get_decoders(codec)
         assert len(decoders)>0, "no decoders found for %s" % codec
-        super(gobject.GObject, self).__init__()
-        super(AutoPropGObjectMixin, self).__init__()
-        self.codec = codec
-        self.data = ""
+        SoundPipeline.__init__(self, codec)
         self.data_needed = 0
         self.sink_type = sink_type
         decoder = decoders[0]
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = ["appsrc name=src",
                         decoder_str,
+                        "queue max-size-time=%s" % QUEUE_TIME,
                         "volume name=volume",
                         sink_type]
         pipeline_str = " ! ".join(pipeline_els)
@@ -68,37 +62,10 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         self.src = self.pipeline.get_by_name("src")
         debug("src %s", self.src)
         self.volume = self.pipeline.get_by_name("volume")
-        self.src.connect("need-data", self.need_data)
-        self.src.connect("enough-data", self.on_enough_data)
-        self.src.set_property("emit-signals", True)
-        #src.set_property("drop", False)
-        #src.set_property("sync", False)
-        #src.set_property("max-buffers", 1)
-
-    def get_state(self):
-        if not self.pipeline:
-            return  "stopped"
-        state = self.pipeline.get_state()
-        if len(state)==3:
-            if state[1]==gst.STATE_PLAYING:
-                return  "active"
-            if state[1]==gst.STATE_NULL:
-                return  "stopped"
-        return  "unknown"
-
-    def start(self):
-        assert self.pipeline
-        self.pipeline.set_state(gst.STATE_PLAYING)
-
-    def stop(self):
-        assert self.pipeline
-        self.pipeline.set_state(gst.STATE_NULL)
 
     def cleanup(self):
-        self.codec = None
-        self.data = ""
+        SoundPipeline.cleanup(self)
         self.sink_type = ""
-        self.pipeline = None
         self.volume = None
         self.src = None
 
@@ -111,24 +78,9 @@ class SoundSink(AutoPropGObjectMixin, gobject.GObject):
         self.volume.set_property("volume", volume)
 
     def add_data(self, data):
-        debug("add_data(%s bytes) we already have %s bytes", len(data), len(self.data))
+        debug("add_data(%s bytes)", len(data))
         self.src.emit("push-buffer", gst.Buffer(data))
 
-    def need_data(self, src_arg, needed):
-        debug("need_data: %s bytes, we have %s", needed, len(self.data))
-
-    def on_message(self, bus, message):
-        debug("bus message: %s", message)
-        t = message.type
-        if t == gst.MESSAGE_EOS:
-            self.pipeline.set_state(gst.STATE_NULL)
-        elif t == gst.MESSAGE_ERROR:
-            self.pipeline.set_state(gst.STATE_NULL)
-            err, details = message.parse_error()
-            log.error("Pipeline error: %s / %s", err, details)
-
-    def on_enough_data(self, *args):
-        debug("on_enough_data(%s)", args)
 
 gobject.type_register(SoundSink)
 
