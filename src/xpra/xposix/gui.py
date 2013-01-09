@@ -333,12 +333,11 @@ class ClientExtras(ClientExtrasBase):
     def exec_get_keyboard_data(self, cmd):
         # Find the client's current keymap so we can send it to the server:
         try:
-            import subprocess
-            process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-            (out,_) = process.communicate(None)
-            if process.returncode==0:
+            from xpra.scripts.exec_util import safe_exec
+            returncode, out, _ = safe_exec(cmd)
+            if returncode==0:
                 return out.decode('utf-8')
-            log.error("'%s' failed with exit code %s", cmd, process.returncode)
+            log.error("'%s' failed with exit code %s", cmd, returncode)
         except Exception, e:
             log.error("error running '%s': %s", cmd, e)
         return None

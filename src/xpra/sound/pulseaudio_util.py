@@ -6,7 +6,8 @@
 
 import sys
 import os.path
-import subprocess
+
+from xpra.scripts.exec_util import safe_exec
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -17,9 +18,8 @@ def which(name):
 		return	""
 	cmd = ["which", name]
 	try:
-		proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out, _ = proc.communicate()
-		if proc.returncode!=0 or not out:
+		returncode, out, _ = safe_exec(cmd)
+		if returncode!=0 or not out:
 			return ""
 		c = out.replace("\n", "").replace("\r", "")
 		if os.path.exists(c):
@@ -36,9 +36,7 @@ def pactl_output(pactl_cmd):
 	#ie: "pactl list"
 	cmd = [pactl_bin, pactl_cmd]
 	try:
-		proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out, _ = proc.communicate()
-		code = proc.wait()
+		code, out, _ = safe_exec(cmd)
 		return  code, out
 	except Exception, e:
 		log.error("failed to execute %s: %s", cmd, e)

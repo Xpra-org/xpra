@@ -5,7 +5,6 @@
 
 import os
 import re
-import subprocess
 
 from wimpiggy.error import trap
 from wimpiggy.lowlevel import (set_xmodmap,                 #@UnresolvedImport
@@ -23,27 +22,10 @@ debug = log.debug
 verbose = log.debug
 
 
-def signal_safe_exec(cmd, stdin):
-    """ this is a bit of a hack,
-    the problem is that we won't catch SIGCHLD at all while this command is running! """
-    import signal
-    try:
-        oldsignal = signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out,err) = process.communicate(stdin)
-        code = process.poll()
-        l=log.debug
-        if code!=0:
-            l=log.error
-        l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
-        l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
-        return  code
-    finally:
-        signal.signal(signal.SIGCHLD, oldsignal)
-
 def exec_keymap_command(args, stdin=None):
     try:
-        returncode = signal_safe_exec(args, stdin)
+        from xpra.scripts.exec_util import safe_exec
+        returncode, _, _ = safe_exec(args, stdin)
         def logstdin():
             if not stdin or len(stdin)<32:
                 return  stdin

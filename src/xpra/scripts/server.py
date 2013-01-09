@@ -70,8 +70,8 @@ class ChildReaper(object):
             print("all children have exited and --exit-with-children was specified, exiting")
             self._app.quit(False)
 
-    def __call__(self, signum, frame):
-        while 1:
+    def sigchld(self, signum, frame):
+        while True:
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
             except OSError:
@@ -432,7 +432,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     child_reaper = ChildReaper(app, opts.exit_with_children)
     # Always register the child reaper, because even if exit_with_children is
     # false, we still need to reap them somehow to avoid zombies:
-    signal.signal(signal.SIGCHLD, child_reaper)
+    signal.signal(signal.SIGCHLD, child_reaper.sigchld)
+    # From now on, we will suspend signal.SIGCHLD when using subprocess.Popen
+    from xpra.scripts.exec_util import PROTECTED_SIGNALS
+    PROTECTED_SIGNALS.append(signal.SIGCHLD)
     if opts.exit_with_children:
         assert opts.children
     if opts.children:
