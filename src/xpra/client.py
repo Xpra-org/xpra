@@ -193,7 +193,6 @@ class XpraClient(XpraClientBase):
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         self.keys_pressed = {}
-        self._remote_version = None
         self._keymap_changing = False
         try:
             self._keymap = gdk.keymap_get_default()
