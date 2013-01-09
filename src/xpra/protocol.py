@@ -15,12 +15,10 @@ import sys
 import socket # for socket.error
 import zlib
 import struct
-import time
 import os
 import threading
 
-NOYIELD = os.environ.get("XPRA_YIELD") is None
-CHECK_THREAD = os.environ.get("XPRA_CHECK_THREAD", "0")!="0"
+WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 2))
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -79,7 +77,7 @@ class Protocol(object):
     FLAGS_RENCODE = 0x1
     FLAGS_CIPHER = 0x2
 
-    def __init__(self, conn, process_packet_cb):
+    def __init__(self, conn, process_packet_cb, get_packet_cb=None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
@@ -89,7 +87,7 @@ class Protocol(object):
         self._write_queue = Queue()
         self._read_queue = Queue(5)
         # Invariant: if .source is None, then _source_has_more == False
-        self.source = None
+        self._get_packet_cb = get_packet_cb
         self._source_has_more = False
         #counters:
         self.input_packetcount = 0
@@ -114,8 +112,11 @@ class Protocol(object):
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
-        if CHECK_THREAD:
-            self._main_thread = threading.currentThread()
+        self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
+        self._can_format = threading.Event()
+
+    def set_packet_source(self, get_packet_cb):
+        self._get_packet_cb = get_packet_cb
 
     def get_cipher(self, ciphername, iv, password, key_salt, iterations):
         log("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
@@ -165,124 +166,28 @@ class Protocol(object):
                 self._write_thread.start()
                 self._read_thread.start()
                 self._read_parser_thread.start()
-                self._maybe_queue_more_writes()
+                self._write_format_thread.start()
         gobject.idle_add(do_start)
 
     def source_has_more(self):
+        if self._source_has_more:
+            return
         self._source_has_more = True
-        if self._write_queue.empty():
-            self._flush_one_packet_into_buffer()
+        if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
+            self._can_format.set()
 
-    def _maybe_queue_more_writes(self):
-        if self._write_queue.empty() and self._source_has_more:
-            self._flush_one_packet_into_buffer()
-        return False
-
-    def verify_packet(self, packet):
-        """ look for None values which may have caused the packet to fail encoding """
-        if type(packet)!=list:
-            return
-        assert len(packet)>0
-        tree = ["'%s' packet" % packet[0]]
-        self.do_verify_packet(tree, packet)
-
-    def do_verify_packet(self, tree, packet):
-        def err(msg):
-            log.error("%s in %s", msg, "->".join(tree))
-        def new_tree(append):
-            nt = tree[:]
-            nt.append(append)
-            return nt
-        if packet is None:
-            return err("None value")
-        if type(packet)==list:
-            i = 0
-            for x in packet:
-                self.do_verify_packet(new_tree("[%s]" % i), x)
-                i += 1
-        elif type(packet)==dict:
-            for k,v in packet.items():
-                self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
-                self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
-
-    def _flush_one_packet_into_buffer(self):
-        if CHECK_THREAD:
-            assert self._main_thread==threading.currentThread(), "queuing should only be called from the main thread!"
-        if not self.source or self._closed:
-            return
-        packet, start_send_cb, end_send_cb, self._source_has_more = self.source.next_packet()
-        if packet is not None:
-            self._add_packet_to_queue(packet, start_send_cb, end_send_cb)
-
-    def enable_rencode(self):
-        assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
-        log("enable_rencode()")
-        self._encoder = self.rencode
-
-    def bencode(self, data):
-        return bencode(data), 0
-
-    def rencode(self, data):
-        return  rencode_dumps(data), Protocol.FLAGS_RENCODE
-
-    def encode(self, packet_in):
-        """
-        Given a packet (tuple or list of items), converts it for the wire.
-        This method returns all the binary packets to send, as an array of:
-        (index, compression_level, binary_data)
-        The index, if positive indicates the item to populate in the packet
-        whose index is zero.
-        ie: ["blah", [large binary data], "hello", 200]
-        may get converted to:
-        [
-            (1, compression_level, [large binary data now zlib compressed]),
-            (0,                 0, bencoded/rencoded(["blah", '', "hello", 200]))
-        ]
-        """
-        packets = []
-        packet = list(packet_in)
-        level = self._compression_level
-        for i in range(len(packet)):
-            item = packet[i]
-            if type(item)==Compressed:
-                #already compressed data (but not using zlib), send as-is
-                packets.append((i, 0, item.data))
-                packet[i] = ''
-            elif type(item)==ZLibCompressed:
-                #already compressed data as zlib, send as-is with zlib level marker
-                assert item.level>0
-                packets.append((i, item.level, item.data))
-                packet[i] = ''
-            elif level>0 and type(item)==str and len(item)>=4096:
-                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
-                #add new binary packet with large item:
-                if sys.version>='3':
-                    item = item.encode("latin1")
-                packets.append((i, level, zlib.compress(item, level)))
-                #replace this item with an empty string placeholder:
-                packet[i] = ''
-        #now the main packet (or what is left of it):
-        try:
-            main_packet, proto_version = self._encoder(packet)
-        except (KeyError, TypeError), e:
+    def _write_format_thread_loop(self):
+        while not self._closed:
+            self._can_format.wait()
             if self._closed:
-                return [], 0
-            log.error("failed to encode packet: %s", packet)
-            import traceback
-            traceback.print_exc()
-            self.verify_packet(packet)
-            raise e
-        if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
-            log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
-                     len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
-        if level>0:
-            data = zlib.compress(main_packet, level)
-            packets.append((0, level, data))
-        else:
-            packets.append((0, 0, main_packet))
-        return packets, proto_version
+                return
+            self._can_format.clear()
+            self._add_packet_to_queue(*self._get_packet_cb())
 
-    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None):
+    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
+        self._source_has_more = has_more
+        if packet is None:
+            return
         packets, proto_flags = self.encode(packet)
         try:
             self._write_lock.acquire()
@@ -325,6 +230,101 @@ class Protocol(object):
             self.output_packetcount += 1
             self._write_lock.release()
 
+    def verify_packet(self, packet):
+        """ look for None values which may have caused the packet to fail encoding """
+        if type(packet)!=list:
+            return
+        assert len(packet)>0
+        tree = ["'%s' packet" % packet[0]]
+        self.do_verify_packet(tree, packet)
+
+    def do_verify_packet(self, tree, packet):
+        def err(msg):
+            log.error("%s in %s", msg, "->".join(tree))
+        def new_tree(append):
+            nt = tree[:]
+            nt.append(append)
+            return nt
+        if packet is None:
+            return err("None value")
+        if type(packet)==list:
+            i = 0
+            for x in packet:
+                self.do_verify_packet(new_tree("[%s]" % i), x)
+                i += 1
+        elif type(packet)==dict:
+            for k,v in packet.items():
+                self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
+                self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
+
+    def enable_rencode(self):
+        assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
+        log("enable_rencode()")
+        self._encoder = self.rencode
+
+    def bencode(self, data):
+        return bencode(data), 0
+
+    def rencode(self, data):
+        return  rencode_dumps(data), Protocol.FLAGS_RENCODE
+
+    def encode(self, packet_in):
+        """
+        Given a packet (tuple or list of items), converts it for the wire.
+        This method returns all the binary packets to send, as an array of:
+        (index, compression_level, binary_data)
+        The index, if positive indicates the item to populate in the packet
+        whose index is zero.
+        ie: ["blah", [large binary data], "hello", 200]
+        may get converted to:
+        [
+            (1, compression_level, [large binary data now zlib compressed]),
+            (0,                 0, bencoded/rencoded(["blah", '', "hello", 200]))
+        ]
+        """
+        packets = []
+        packet = list(packet_in)
+        level = self._compression_level
+        for i in range(1, len(packet)):
+            item = packet[i]
+            if type(item)==Compressed:
+                #already compressed data (but not using zlib), send as-is
+                packets.append((i, 0, item.data))
+                packet[i] = ''
+            elif type(item)==ZLibCompressed:
+                #already compressed data as zlib, send as-is with zlib level marker
+                assert item.level>0
+                packets.append((i, item.level, item.data))
+                packet[i] = ''
+            elif level>0 and type(item)==str and len(item)>=4096:
+                log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
+                #add new binary packet with large item:
+                if sys.version>='3':
+                    item = item.encode("latin1")
+                packets.append((i, level, zlib.compress(item, level)))
+                #replace this item with an empty string placeholder:
+                packet[i] = ''
+        #now the main packet (or what is left of it):
+        try:
+            main_packet, proto_version = self._encoder(packet)
+        except (KeyError, TypeError), e:
+            if self._closed:
+                return [], 0
+            log.error("failed to encode packet: %s", packet)
+            import traceback
+            traceback.print_exc()
+            self.verify_packet(packet)
+            raise e
+        if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
+            log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
+                     len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
+        if level>0:
+            data = zlib.compress(main_packet, level)
+            packets.append((0, level, data))
+        else:
+            packets.append((0, 0, main_packet))
+        return packets, proto_version
+
     def set_compression_level(self, level):
         #this may be used next time encode() is called
         self._compression_level = level
@@ -362,9 +362,8 @@ class Protocol(object):
                     if self._closed:
                         break
                     raise e
-                if self._write_queue.empty() and not self._closed:
-                    gobject.idle_add(self._maybe_queue_more_writes)
-                NOYIELD or time.sleep(0)
+                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed and self._source_has_more:
+                    self._can_format.set()
         finally:
             log("write thread: ended, closing socket")
             self.close()
@@ -550,7 +549,6 @@ class Protocol(object):
                     raise
                 except:
                     log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
-                NOYIELD or time.sleep(0)
 
     def flush_then_close(self, last_packet):
         self._add_packet_to_queue(last_packet)
@@ -589,7 +587,7 @@ class Protocol(object):
 
     def clean(self):
         #clear all references to ensure we can get garbage collected quickly:
-        self.source = None
+        self._get_packet_cb = None
         self._encoder = None
         self._write_thread = None
         self._read_thread = None
@@ -597,6 +595,8 @@ class Protocol(object):
         self._process_packet_cb = None
 
     def terminate_io_threads(self):
+        #the format thread will exit since closed is set too:
+        self._can_format.set()
         #make the threads exit by adding the empty marker:
         self._write_queue.put(None)
         try:

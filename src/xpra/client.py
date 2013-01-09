@@ -569,20 +569,6 @@ class XpraClient(XpraClientBase):
             return []
         return self._client_extras.mask_to_names(mask)
 
-    def send_positional(self, packet):
-        p = self._protocol
-        if p is not None:
-            s = p.source
-            if s:
-                s.queue_positional_packet(packet)
-
-    def send_mouse_position(self, packet):
-        p = self._protocol
-        if p is not None:
-            s = p.source
-            if s:
-                s.queue_mouse_position_packet(packet)
-
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
         add_gtk_version_info(capabilities, gtk)

@@ -37,46 +37,6 @@ EXIT_ENCRYPTION = 6
 DEFAULT_TIMEOUT = 20*1000
 
 
-class ClientSource(object):
-    def __init__(self, protocol):
-        self._priority_packets = []
-        self._ordinary_packets = []
-        self._mouse_position = None
-        self._protocol = protocol
-        self._protocol.source = self
-
-    def queue_priority_packet(self, packet):
-        self._priority_packets.append(packet)
-        self._protocol.source_has_more()
-
-    def queue_ordinary_packet(self, packet):
-        self._ordinary_packets.append(packet)
-        self._protocol.source_has_more()
-
-    def queue_positional_packet(self, packet):
-        self.queue_ordinary_packet(packet)
-        self._mouse_position = None
-
-    def queue_mouse_position_packet(self, packet):
-        self._mouse_position = packet
-        self._protocol.source_has_more()
-
-    def next_packet(self):
-        if self._priority_packets:
-            packet = self._priority_packets.pop(0)
-        elif self._ordinary_packets:
-            packet = self._ordinary_packets.pop(0)
-        elif self._mouse_position is not None:
-            packet = self._mouse_position
-            self._mouse_position = None
-        else:
-            packet = None
-        has_more = packet is not None and \
-                (bool(self._priority_packets) or bool(self._ordinary_packets) \
-                 or self._mouse_position is not None)
-        return packet, None, None, has_more
-
-
 class XpraClientBase(gobject.GObject):
     """Base class for Xpra clients.
         Provides the glue code for:
@@ -100,7 +60,12 @@ class XpraClientBase(gobject.GObject):
         self.encoding = opts.encoding
         self.encryption = opts.encryption
         self.quality = opts.quality
+        #protocol stuff:
         self._protocol = None
+        self._priority_packets = []
+        self._ordinary_packets = []
+        self._mouse_position = None
+        #server state and caps:
         self.server_capabilities = {}
         self._remote_version = None
         self._remote_revision = None
@@ -109,12 +74,12 @@ class XpraClientBase(gobject.GObject):
 
     def ready(self, conn):
         log.debug("ready(%s)", conn)
-        self._protocol = Protocol(conn, self.process_packet)
+        self._protocol = Protocol(conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
-        ClientSource(self._protocol)
         self._protocol.start()
+        self.have_more = self._protocol.source_has_more
 
     def init_packet_handlers(self):
         self._packet_handlers = {
@@ -181,12 +146,43 @@ class XpraClientBase(gobject.GObject):
         gobject.idle_add(self.send, *parts)
 
     def send(self, *parts):
-        if self._protocol and self._protocol.source:
-            self._protocol.source.queue_ordinary_packet(parts)
+        self._ordinary_packets.append(parts)
+        self.have_more()
 
     def send_now(self, *parts):
-        if self._protocol and self._protocol.source:
-            self._protocol.source.queue_priority_packet(parts)
+        self._priority_packets.append(parts)
+        self.have_more()
+
+    def send_positional(self, packet):
+        self._ordinary_packets.append(packet)
+        self._mouse_position = None
+        self.have_more()
+
+    def send_mouse_position(self, packet):
+        self._mouse_position = packet
+        self.have_more()
+
+    def have_more(self):
+        #this function is overridden in ready()
+        p = self._protocol
+        if p and p.source:
+            p.source_has_more()
+
+    def next_packet(self):
+        if self._priority_packets:
+            packet = self._priority_packets.pop(0)
+        elif self._ordinary_packets:
+            packet = self._ordinary_packets.pop(0)
+        elif self._mouse_position is not None:
+            packet = self._mouse_position
+            self._mouse_position = None
+        else:
+            packet = None
+        has_more = packet is not None and \
+                (bool(self._priority_packets) or bool(self._ordinary_packets) \
+                 or self._mouse_position is not None)
+        return packet, None, None, has_more
+
 
     def cleanup(self):
         if self._protocol:

@@ -286,7 +286,7 @@ class ServerSource(object):
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = time.time()
         # ready for processing:
-        protocol.source = self
+        protocol.set_packet_source(self.next_packet)
         self.datapacket_thread = make_daemon_thread(self.data_to_packet, "encode")
         self.datapacket_thread.start()
         self.calculate_window_ids = set()
