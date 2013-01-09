@@ -38,7 +38,7 @@ def has_compositor(display):
         raise Exception("failed to load bindings: %s" % e)
     try:
         owner = trap.call_synced(myGetSelectionOwner, display, "_NET_WM_CM_S0")
-        log.info("compositor: %s", owner)
+        log("compositor: %s", owner)
         return owner and owner!=const["XNone"]
     except XError, e:
         raise Exception("error testing for compositing window manager: %s" % e)
