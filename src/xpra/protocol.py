@@ -19,7 +19,7 @@ import os
 import threading
 
 WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 2))
-assert WRITE_QUEUE_BUSY_LEVEL>=2, "write queue busy level cannot be set lower than 2 - if you did so, you would eventually hit a race and deadlock"
+assert WRITE_QUEUE_BUSY_LEVEL>=1, "write queue busy level cannot be set lower than 1!"
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -182,17 +182,20 @@ class Protocol(object):
             self._write_queue_ready.wait()
             if self._closed:
                 return
+            self._source_has_more.clear()
+            self._write_queue_ready.clear()
             self._add_packet_to_queue(*self._get_packet_cb())
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
-        if not has_more:
-            self._source_has_more.clear()
+        if has_more:
+            self._source_has_more.set()
         if packet is None:
             return
         packets, proto_flags = self.encode(packet)
         try:
             self._write_lock.acquire()
             counter = 0
+            items = []
             for index,level,data in packets:
                 payload_size = len(data)
                 actual_size = payload_size
@@ -221,17 +224,18 @@ class Protocol(object):
                     if type(data)==unicode:
                         data = str(data)
                     header_and_data = struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
-                    self._write_queue.put((header_and_data, scb, ecb))
+                    items.append((header_and_data, scb, ecb))
                 else:
                     header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-                    self._write_queue.put((header, scb, None))
-                    self._write_queue.put((data, None, ecb))
+                    items.append((header, scb, None))
+                    items.append((data, None, ecb))
                 counter += 1
+            self._write_queue.put(items)
         finally:
             self.output_packetcount += 1
+            if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
+                self._write_queue_ready.set()
             self._write_lock.release()
-            if self._write_queue.qsize()>=WRITE_QUEUE_BUSY_LEVEL and not self._closed:
-                self._write_queue_ready.clear()
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -290,16 +294,19 @@ class Protocol(object):
         level = self._compression_level
         for i in range(1, len(packet)):
             item = packet[i]
-            if type(item)==Compressed:
+            ti = type(item)
+            if ti in (int, long, bool, dict, list):
+                continue
+            elif ti==Compressed:
                 #already compressed data (but not using zlib), send as-is
                 packets.append((i, 0, item.data))
                 packet[i] = ''
-            elif type(item)==ZLibCompressed:
+            elif ti==ZLibCompressed:
                 #already compressed data as zlib, send as-is with zlib level marker
                 assert item.level>0
                 packets.append((i, item.level, item.data))
                 packet[i] = ''
-            elif level>0 and type(item)==str and len(item)>=4096:
+            elif ti==str and level>0 and len(item)>=4096:
                 log.warn("found a large uncompressed item in packet '%s' at position %s: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
                 if sys.version>='3':
@@ -307,6 +314,8 @@ class Protocol(object):
                 packets.append((i, level, zlib.compress(item, level)))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
+            elif ti!=str:
+                log.info("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
         try:
             main_packet, proto_version = self._encoder(packet)
@@ -335,14 +344,15 @@ class Protocol(object):
     def _write_thread_loop(self):
         try:
             while not self._closed:
-                item = self._write_queue.get()
+                items = self._write_queue.get()
                 # Used to signal that we should exit:
-                if item is None:
+                if items is None:
                     log("write thread: empty marker, exiting")
                     break
-                buf, start_cb, end_cb = item
-                try:
-                    if start_cb and not self._closed:
+                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
+                    self._write_queue_ready.set()
+                for buf, start_cb, end_cb in items:
+                    if start_cb:
                         try:
                             start_cb(self._conn.output_bytecount)
                         except:
@@ -352,24 +362,23 @@ class Protocol(object):
                         if written:
                             buf = buf[written:]
                             self.output_raw_packetcount += 1
-                    if end_cb and not self._closed:
+                    if end_cb:
                         try:
                             end_cb(self._conn.output_bytecount)
                         except:
                             log.error("error on %s", end_cb, exc_info=True)
-                except (OSError, IOError, socket.error), e:
-                    self._call_connection_lost("Error writing to connection: %s" % e)
-                    break
-                except Exception, e:
-                    #can happen during close(), in which case we just ignore:
-                    if self._closed:
-                        break
-                    raise e
-                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
+                #we have to check again because the first check above is racy
+                #(only relevant if level is 1 - otherwise the race doesn't matter)
+                if WRITE_QUEUE_BUSY_LEVEL==1 and self._write_queue.empty():
                     self._write_queue_ready.set()
-        finally:
-            log("write thread: ended, closing socket")
-            self.close()
+            log("write thread: ended")
+        except (OSError, IOError, socket.error), e:
+            self._call_connection_lost("Error writing to connection: %s" % e)
+        except Exception, e:
+            #can happen during close(), in which case we just ignore:
+            if not self._closed:
+                self.close()
+                raise e
 
     def _read_thread_loop(self):
         try:
