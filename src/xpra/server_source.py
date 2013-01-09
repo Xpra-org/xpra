@@ -1065,7 +1065,7 @@ class ServerSource(object):
     def queue_packet(self, packet, wid, pixels, start_send_cb, end_send_cb):
         """
             Add a new 'draw' packet to the 'damage_packet_queue'.
-            Note: this code runs in the non-ui thread so we have to use idle_add to call into protocol.
+            Note: this code runs in the non-ui thread
         """
         now = time.time()
         self.statistics.damage_packet_qsizes.append((now, len(self.damage_packet_queue)))
@@ -1074,7 +1074,7 @@ class ServerSource(object):
         #if self.protocol._write_queue.empty():
         p = self.protocol
         if p:
-            gobject.idle_add(p.source_has_more)
+            p.source_has_more()
 
 #
 # The damage packet thread loop:
