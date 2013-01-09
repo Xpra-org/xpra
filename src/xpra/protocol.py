@@ -18,7 +18,7 @@ import struct
 import os
 import threading
 
-WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 2))
+WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 1))
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -88,7 +88,6 @@ class Protocol(object):
         self._read_queue = Queue(5)
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
-        self._source_has_more = False
         #counters:
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
@@ -113,7 +112,8 @@ class Protocol(object):
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
-        self._can_format = threading.Event()
+        self._source_has_more = threading.Event()
+        self._write_queue_ready = threading.Event()
 
     def set_packet_source(self, get_packet_cb):
         self._get_packet_cb = get_packet_cb
@@ -167,25 +167,25 @@ class Protocol(object):
                 self._read_thread.start()
                 self._read_parser_thread.start()
                 self._write_format_thread.start()
+                self._write_queue_ready.set()
         gobject.idle_add(do_start)
 
     def source_has_more(self):
-        if self._source_has_more:
-            return
-        self._source_has_more = True
-        if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
-            self._can_format.set()
+        self._source_has_more.set()
 
     def _write_format_thread_loop(self):
         while not self._closed:
-            self._can_format.wait()
+            self._source_has_more.wait()
             if self._closed:
                 return
-            self._can_format.clear()
+            self._write_queue_ready.wait()
+            if self._closed:
+                return
             self._add_packet_to_queue(*self._get_packet_cb())
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
-        self._source_has_more = has_more
+        if not has_more:
+            self._source_has_more.clear()
         if packet is None:
             return
         packets, proto_flags = self.encode(packet)
@@ -225,6 +225,8 @@ class Protocol(object):
                     header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
                     self._write_queue.put((header, scb, None))
                     self._write_queue.put((data, None, ecb))
+                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed:
+                    self._write_queue_ready.set()
                 counter += 1
         finally:
             self.output_packetcount += 1
@@ -362,8 +364,8 @@ class Protocol(object):
                     if self._closed:
                         break
                     raise e
-                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed and self._source_has_more:
-                    self._can_format.set()
+                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL and not self._closed:
+                    self._write_queue_ready.set()
         finally:
             log("write thread: ended, closing socket")
             self.close()
@@ -596,7 +598,8 @@ class Protocol(object):
 
     def terminate_io_threads(self):
         #the format thread will exit since closed is set too:
-        self._can_format.set()
+        self._source_has_more.set()
+        self._write_queue_ready.set()
         #make the threads exit by adding the empty marker:
         self._write_queue.put(None)
         try:

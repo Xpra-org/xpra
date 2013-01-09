@@ -1046,12 +1046,13 @@ class XpraClient(XpraClientBase):
                 end = time.time()
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((end, width*height))
-                dms = "%sms" % (int(decode_time/100)/10.0)
+                if DRAW_DEBUG:
+                    dms = "%sms" % (int(decode_time/100)/10.0)
+                    log.info("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
             else:
                 decode_time = -1
-                dms = "ERR"
-            if DRAW_DEBUG:
-                log.info("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)
+                if DRAW_DEBUG:
+                    log.info("record_decode_time(%s) decoding error on wid=%s, %s: %sx%s", success, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
