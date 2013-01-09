@@ -295,7 +295,7 @@ class Protocol(object):
         for i in range(1, len(packet)):
             item = packet[i]
             ti = type(item)
-            if ti in (int, long, bool, dict, list):
+            if ti in (int, long, bool, dict, list, tuple):
                 continue
             elif ti==Compressed:
                 #already compressed data (but not using zlib), send as-is
