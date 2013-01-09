@@ -577,9 +577,13 @@ class Protocol(object):
         if self._conn:
             try:
                 self._conn.close()
-                self._conn = None
+                log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
+                         self.input_packetcount, self._conn.input_bytecount,
+                         self.output_packetcount, self._conn.output_bytecount
+                         )
             except:
                 log.error("error closing %s", self._conn, exc_info=True)
+            self._conn = None
         self.terminate_io_threads()
         gobject.idle_add(self.clean)
 
