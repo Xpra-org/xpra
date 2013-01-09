@@ -694,8 +694,9 @@ class ServerSource(object):
     def send(self, *parts):
         """ This method queues non-damage packets (higher priority) """
         self.ordinary_packets.append(parts)
-        if self.protocol:
-            self.protocol.source_has_more()
+        p = self.protocol
+        if p:
+            p.source_has_more()
 
 #
 # Functions used by the server to request something
