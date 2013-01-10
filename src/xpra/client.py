@@ -338,6 +338,10 @@ class XpraClient(XpraClientBase):
         log("cleanup() client_extras=%s", self._client_extras)
         if self._client_extras:
             self._client_extras.cleanup()
+        if self.sound_sink:
+            self.stop_receiving_sound()
+        if self.sound_source:
+            self.stop_sending_sound()
         XpraClientBase.cleanup(self)
         self.clean_mmap()
 
@@ -839,6 +843,12 @@ class XpraClient(XpraClientBase):
 
     def stop_receiving_sound(self):
         self.send("sound-control", "stop")
+        if self.sound_sink:
+            try:
+                self.sound_sink.stop()
+                self.sound_sink.cleanup()
+            except:
+                log.error("stop sink", exc_info=True)
 
     def new_sound_buffer(self, sound_source, data):
         assert self.sound_source
