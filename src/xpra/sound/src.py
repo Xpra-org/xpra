@@ -10,8 +10,7 @@ gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS
-import gst
+from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS, gst
 from wimpiggy.util import one_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
@@ -123,6 +122,7 @@ def main():
     else:
         codec = MP3
 
+    from threading import Lock
     import logging
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.INFO)
@@ -137,22 +137,34 @@ def main():
         monitor_device = monitor_devices.items()[0][0]
         log.info("using pulseaudio source device: %s", monitor_device)
         ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
+    lock = Lock()
     def new_buffer(ss, data):
-        f.write(data)
+        try:
+            lock.acquire()
+            if f:
+                f.write(data)
+        finally:
+            lock.release()
     ss.connect("new-buffer", new_buffer)
     ss.start()
 
     import signal
     def deadly_signal(*args):
-        gtk.main_quit()
+        gobject.idle_add(gtk.main_quit)
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
     import gtk
     gtk.main()
 
+    f.flush()
     log.info("wrote %s bytes to %s", f.tell(), filename)
-    f.close()
+    try:
+        lock.acquire()
+        f.close()
+        f = None
+    finally:
+        lock.release()
 
 
 if __name__ == "__main__":

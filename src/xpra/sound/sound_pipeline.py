@@ -8,7 +8,7 @@ import os
 import gobject
 gobject.threads_init()
 
-import gst
+from xpra.sound.gstreamer_util import gst
 from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal
 from wimpiggy.log import Logger
 log = Logger()

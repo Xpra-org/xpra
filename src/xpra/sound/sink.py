@@ -10,13 +10,12 @@ gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoders, MP3, CODECS
-import gst
+from xpra.sound.gstreamer_util import plugin_str, get_decoders, MP3, CODECS, gst
 from wimpiggy.util import one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-QUEUE_TIME = 20*1000000        #in ns (or ms * 1000000)
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "20"))*1000000
 
 SINKS = ["autoaudiosink"]
 if has_pa():
@@ -49,10 +48,12 @@ class SoundSink(SoundPipeline):
         decoder = decoders[0]
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = ["appsrc name=src",
-                        decoder_str,
-                        "queue max-size-time=%s" % QUEUE_TIME,
-                        "volume name=volume",
-                        sink_type]
+                        decoder_str]
+        if QUEUE_TIME>0:
+            pipeline_els.append("queue max-size-time=%s" % QUEUE_TIME)
+        pipeline_els += ["volume name=volume",
+                         "audioconvert",
+                         sink_type]
         pipeline_str = " ! ".join(pipeline_els)
         debug("soundsink pipeline=%s", pipeline_str)
         self.pipeline = gst.parse_launch(pipeline_str)
@@ -72,6 +73,7 @@ class SoundSink(SoundPipeline):
     def eos(self):
         debug("eos()")
         self.src.emit('end-of-stream')
+        self.cleanup()
 
     def set_volume(self, volume):
         assert volume>=0 and volume<=10
@@ -79,7 +81,8 @@ class SoundSink(SoundPipeline):
 
     def add_data(self, data):
         debug("add_data(%s bytes)", len(data))
-        self.src.emit("push-buffer", gst.Buffer(data))
+        if self.src:
+            self.src.emit("push-buffer", gst.Buffer(data))
 
 
 gobject.type_register(SoundSink)
@@ -114,6 +117,10 @@ def main():
     print("loaded %s bytes from %s" % (len(data), filename))
     ss = SoundSink(codec=codec)
     ss.add_data(data)
+    def eos(*args):
+        print("eos")
+        gobject.idle_add(gtk.main_quit)
+    ss.connect("eos", eos)
     ss.start()
 
     import signal
@@ -123,8 +130,8 @@ def main():
     signal.signal(signal.SIGTERM, deadly_signal)
 
     def check_for_end(*args):
-        if not(ss.data):
-            log.info("no more data")
+        if not ss.pipeline:
+            log.info("pipeline closed")
             gtk.main_quit()
         return True
     gobject.timeout_add(1000, check_for_end)

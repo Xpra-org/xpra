@@ -446,8 +446,10 @@ if sys.platform.startswith("win"):
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     setup_options["console"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
-                    {'script': 'xpra/gl/gl_check.py',                   'icon_resources': [(1, "win32/opengl.ico")],  "dest_base": "OpenGL_check",},
-                    {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")],  "dest_base": "GStreamer_info",}
+                    {'script': 'xpra/gl/gl_check.py',                   'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",},
+                    {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
+                    {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
+                    {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
               ]
     py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
