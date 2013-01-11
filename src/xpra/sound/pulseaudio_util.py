@@ -22,15 +22,27 @@ def which(name):
 		if returncode!=0 or not out:
 			return ""
 		c = out.replace("\n", "").replace("\r", "")
-		if os.path.exists(c):
+		if os.path.exists(pactl_bin) and os.path.isfile(pactl_bin):
+			if os.name=="posix" and not os.access(pactl_bin, os.X_OK):
+				#odd, it's there but we can't run it!?
+				return ""
 			return	c
+		return False
 	except:
-		return	""
+		pass
+	return	""
 
-pactl_bin = which("pactl")
+pactl_bin = None
 has_pulseaudio = None
 
+def get_pactl_bin():
+	global pactl_bin
+	if pactl_bin is None:
+		pactl_bin = which("pactl")
+	return pactl_bin
+
 def pactl_output(pactl_cmd):
+	pactl_bin = get_pactl_bin()
 	if not pactl_bin:
 		return -1, None
 	#ie: "pactl list"
@@ -41,23 +53,6 @@ def pactl_output(pactl_cmd):
 	except Exception, e:
 		log.error("failed to execute %s: %s", cmd, e)
 		return  -1, None
-
-def detect_pa():
-	if not pactl_bin:
-		return False
-	if not os.path.exists(pactl_bin) or not os.path.isfile(pactl_bin):
-		return False
-	if os.name=="posix" and not os.access(pactl_bin, os.X_OK):
-		return False
-	status, _ = pactl_output("stat")
-	return status==0
-
-def has_pa():
-	global has_pulseaudio
-	if has_pulseaudio is None:
-		has_pulseaudio = detect_pa()
-	return has_pulseaudio
-
 
 def get_x11_property(atom_name):
 	if sys.platform.startswith("win"):
@@ -74,6 +69,25 @@ def get_x11_property(atom_name):
 		return v
 	except:
 		return ""
+
+def detect_pa():
+	if os.name=="posix":
+		#try root window property (faster)
+		ps = get_x11_property("PULSE_SERVER")
+		if ps:
+			return True
+	pactl_bin = get_pactl_bin()
+	if not pactl_bin:
+		return False
+	status, _ = pactl_output("stat")
+	return status==0
+
+def has_pa():
+	global has_pulseaudio
+	if has_pulseaudio is None:
+		has_pulseaudio = detect_pa()
+	return has_pulseaudio
+
 
 def get_pactl_server():
 	code, out = pactl_output("info")
