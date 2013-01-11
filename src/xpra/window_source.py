@@ -91,7 +91,6 @@ class DamageBatchConfig(object):
         self.min_delay = self.MIN_DELAY
         self.max_delay = self.MAX_DELAY
         self.delay = self.START_DELAY
-        self.recalculate_delay = self.RECALCULATE_DELAY
         self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
         self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
         self.last_updated = 0
@@ -542,9 +541,9 @@ class WindowSource(object):
             if actual_encoding in ("x264", "vpx") or window.is_tray():
                 x, y = 0, 0
                 w, h = ww, wh
-            self.process_damage_region(now, window, x, y, w, h, actual_encoding, options)
-            self.batch_config.last_delays.append((now, 0))
-            self.batch_config.last_actual_delays.append((now, 0))
+            self.batch_config.last_delays.append((now, delay))
+            self.batch_config.last_actual_delays.append((now, delay))
+            gobject.idle_add(self.process_damage_region, now, window, x, y, w, h, actual_encoding, options)
             return
 
         #create a new delayed region:
