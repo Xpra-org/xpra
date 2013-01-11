@@ -39,6 +39,9 @@ cdef class xcoder:
         self.width = width
         self.height = height
 
+    def is_closed(self):
+        return self.context==NULL
+
     def get_type(self):
         return  "vpx"
 
@@ -175,8 +178,8 @@ cdef class Encoder(xcoder):
         self.frames += 1
         return  coutv
 
-    def set_encoding_speed(self, pct):
+    def set_encoding_speed(self, int pct):
         return
 
-    def set_encoding_quality(self, pct):
+    def set_encoding_quality(self, int pct):
         return

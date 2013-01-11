@@ -70,6 +70,9 @@ cdef class xcoder:
         self.width = width
         self.height = height
 
+    def is_closed(self):
+        return self.context==NULL
+
     def __dealloc__(self):
         self.clean()
 
@@ -275,12 +278,12 @@ cdef class Encoder(xcoder):
         self.frames += 1
         return  coutv
 
-    def set_encoding_speed(self, pct):
-        ipct = int(pct)
-        assert ipct>=0 and ipct<=100, "invalid percentage: %s" % ipct
-        set_encoding_speed(self.context, ipct)
+    def set_encoding_speed(self, int pct):
+        assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
+        assert self.context!=NULL, "context is closed!"
+        set_encoding_speed(self.context, pct)
 
-    def set_encoding_quality(self, pct):
-        ipct = int(pct)
-        assert ipct>=0 and ipct<=100, "invalid percentage: %s" % ipct
-        set_encoding_quality(self.context, ipct)
+    def set_encoding_quality(self, int pct):
+        assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
+        assert self.context!=NULL, "context is closed!"
+        set_encoding_quality(self.context, pct)

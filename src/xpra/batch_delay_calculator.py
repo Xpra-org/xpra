@@ -204,7 +204,8 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
         add_DEBUG_DELAY_MESSAGE(msg)
     try:
         video_encoder_lock.acquire()
-        video_encoder.set_encoding_speed(new_speed)
-        video_encoder.set_encoding_quality(new_quality)
+        if not video_encoder.is_closed():
+            video_encoder.set_encoding_speed(new_speed)
+            video_encoder.set_encoding_quality(new_quality)
     finally:
         video_encoder_lock.release()
