@@ -645,7 +645,7 @@ class XpraClient(XpraClientBase):
         if is_gtk3():
             capabilities["encoding.supports_delta"] = []    #need implementing in window_backing
         else:
-            capabilities["encoding.supports_delta"] = ("jpeg", "png", "webp", "rgb24")
+            capabilities["encoding.supports_delta"] = ("png", "rgb24")
         try:
             import xpra.sound
             try:

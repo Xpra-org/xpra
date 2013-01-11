@@ -333,7 +333,7 @@ class WindowSource(object):
         self.uses_swscale = encoding_options.get("uses_swscale", True)
                                                         #client uses uses_swscale (has extra limits on sizes)
                                                         #unused since we still use swscale on the server...
-        self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("jpeg", "png", "webp", "rgb24")]
+        self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
         #auto-refresh:
