@@ -847,6 +847,7 @@ class XpraClient(XpraClientBase):
             try:
                 self.sound_sink.stop()
                 self.sound_sink.cleanup()
+                self.sound_sink = None
             except:
                 log.error("stop sink", exc_info=True)
 
