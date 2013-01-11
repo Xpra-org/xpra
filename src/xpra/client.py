@@ -140,14 +140,16 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.info_request_pending = False
 
         #sound:
-        self.speaker_enabled = bool(opts.speaker)
-        self.microphone_enabled = bool(opts.microphone)
+        self.speaker_allowed = bool(opts.speaker)
+        self.speaker_enabled = False
+        self.microphone_allowed = bool(opts.microphone)
+        self.microphone_enabled = False
         self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0:
-            self.speaker_enabled = False
+            self.speaker_allowed = False
         self.microphone_codecs = opts.microphone_codec
         if len(self.microphone_codecs)==0:
-            self.microphone_enabled = False
+            self.microphone_allowed = False
         self.sound_sink = None
         self.sound_source = None
         self.server_pulseaudio_id = None
@@ -656,7 +658,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
                 from xpra.sound.gstreamer_util import add_gst_capabilities
-                add_gst_capabilities(capabilities, receive=self.speaker_enabled, send=self.microphone_enabled,
+                add_gst_capabilities(capabilities, receive=self.speaker_allowed, send=self.microphone_allowed,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
@@ -814,9 +816,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.server_sound_encoders = capabilities.get("sound.encoders", [])
         self.server_sound_receive = capabilities.get("sound.receive", False)
         self.server_sound_send = capabilities.get("sound.send", False)
-        if self.server_sound_send and self.speaker_enabled:
+        if self.server_sound_send and self.speaker_allowed:
             self.start_receiving_sound()
-        if self.server_sound_receive and self.microphone_enabled:
+        if self.server_sound_receive and self.microphone_allowed:
             self.start_sending_sound()
 
         #ui may want to know this is now set:
@@ -832,28 +834,32 @@ class XpraClient(XpraClientBase, gobject.GObject):
 
     def start_sending_sound(self):
         assert self.sound_source is None
-        assert self.microphone_enabled
+        assert self.microphone_allowed
         assert self.server_sound_receive
+        self.microphone_enabled = True
+        self.emit("microphone-state-change", self.microphone_enabled)
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
             self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulsesound_server, self.server_pulseaudio_id)
             if self.sound_source:
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
-                self.emit("microphone-state-change", True)
         except Exception, e:
             log.error("error setting up sound: %s", e)
 
     def stop_sending_sound(self):
+        self.microphone_enabled = False
+        self.emit("microphone-state-change", self.microphone_enabled)
         if self.sound_source is None:
             log("stop_receiving_sound: sound not started!")
         else:
             self.sound_source.stop()
             self.sound_source.cleanup()
             self.sound_source = None
-            self.emit("microphone-state-change", False)
 
     def start_receiving_sound(self):
+        self.speaker_enabled = True
+        self.emit("speaker-state-change", self.speaker_enabled)
         if self.sound_sink is not None:
             log("start_receiving_sound: we are already receiving sound!")
         elif not self.server_sound_send:
@@ -862,13 +868,14 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.send("sound-control", "start")
 
     def stop_receiving_sound(self):
+        self.speaker_enabled = False
+        self.emit("speaker-state-change", self.speaker_enabled)
         self.send("sound-control", "stop")
         if self.sound_sink:
             try:
                 self.sound_sink.stop()
                 self.sound_sink.cleanup()
                 self.sound_sink = None
-                self.emit("speaker-state-change", False)
             except:
                 log.error("stop sink", exc_info=True)
 
@@ -877,6 +884,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
 
     def _process_sound_data(self, packet):
+        if not self.speaker_enabled:
+            log("speaker is now disabled - dropping packet")
+            return
         codec = packet[1]
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
@@ -888,7 +898,6 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 from xpra.sound.sink import SoundSink
                 self.sound_sink = SoundSink(codec=codec)
                 self.sound_sink.start()
-                self.emit("speaker-state-change", True)
             except:
                 log.error("failed to setup sound", exc_info=True)
                 return

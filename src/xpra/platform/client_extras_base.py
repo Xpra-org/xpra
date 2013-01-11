@@ -715,17 +715,19 @@ class ClientExtrasBase(object):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
         speaker.set_sensitive(False)
         def spk_on(*args):
+            log("spk_on(%s)", args)
             self.client.start_receiving_sound()
         def spk_off(*args):
+            log("spk_off(%s)", args)
             self.client.stop_receiving_sound()
         def speaker_state(*args):
-            if self.client.server_sound_send and self.client.speaker_enabled:
-                on = self.client.sound_sink is not None
-                speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off, "speaker-state-change"))
-                speaker.set_sensitive(True)
-            else:
+            if not self.client.server_sound_send:
                 speaker.set_sensitive(False)
                 set_tooltip_text(speaker, "Server does not support speaker forwarding")
+                return
+            speaker.set_sensitive(True)
+            on = self.client.speaker_enabled
+            speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off, "speaker-state-change"))
         self.client.connect("handshake-complete", speaker_state)
         return speaker
 
@@ -733,17 +735,19 @@ class ClientExtrasBase(object):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
         microphone.set_sensitive(False)
         def mic_on(*args):
+            log("mic_on(%s)", args)
             self.client.start_sending_sound()
         def mic_off(*args):
+            log("mic_off(%s)", args)
             self.client.stop_sending_sound()
         def microphone_state(*args):
-            if self.client.server_sound_send and self.client.microphone_enabled:
-                on = self.client.sound_source is not None
-                microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off, "microphone-state-change"))
-                microphone.set_sensitive(True)
-            else:
+            if not self.client.server_sound_receive:
                 microphone.set_sensitive(False)
                 set_tooltip_text(microphone, "Server does not support microphone forwarding")
+                return
+            microphone.set_sensitive(True)
+            on = self.client.microphone_enabled
+            microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off, "microphone-state-change"))
         self.client.connect("handshake-complete", microphone_state)
         return microphone
 
@@ -756,19 +760,24 @@ class ClientExtrasBase(object):
             def submenu_uncheck(item, menu):
                 ensure_item_selected(menu, item)
             c.connect('activate', submenu_uncheck, menu)
-            c.connect('activate', cb)
+            def check_enabled(item):
+                if item.get_active():
+                    cb()
+            c.connect('activate', check_enabled)
             return c
         on = onoffitem("On", on, on_cb)
         off = onoffitem("Off", not on, off_cb)
         menu.append(on)
         menu.append(off)
         def client_signalled_change(obj, value):
-            log.info("client_signalled_change(%s, %s)", obj, value)
+            log("sound: client_signalled_change(%s, %s)", obj, value)
             if bool(value):
                 if not on.get_active():
+                    on.set_active(True)
                     ensure_item_selected(menu, on)
             else:
                 if not off.get_active():
+                    off.set_active(True)
                     ensure_item_selected(menu, off)
         self.client.connect(client_signal, client_signalled_change)
         #menu.append(gtk.SeparatorMenuItem())
@@ -915,8 +924,10 @@ class ClientExtrasBase(object):
             menu.append(self.make_qualitymenuitem())
         else:
             self.quality = None
-        menu.append(self.make_speakermenuitem())
-        menu.append(self.make_microphonemenuitem())
+        if self.client.speaker_allowed:
+            menu.append(self.make_speakermenuitem())
+        if self.client.microphone_allowed:
+            menu.append(self.make_microphonemenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
         if not self.client.readonly:
