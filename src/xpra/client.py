@@ -660,6 +660,15 @@ class XpraClient(XpraClientBase):
                 log.error("failed to setup sound: %s", e)
         except ImportError, e:
             log("sound modules were not included in this installation")
+        #batch options:
+        for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
+            evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
+            if evalue:
+                try:
+                    capabilities["batch.%s" % bprop] = int(evalue)
+                except:
+                    log.error("invalid environment value for %s: %s", bprop, evalue)
+        log("batch props=%s", [("%s=%s" % (k,v)) for k,v in capabilities.items() if k.startswith("batch.")])
         return capabilities
 
     def send_ping(self):

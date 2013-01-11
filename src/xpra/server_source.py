@@ -370,11 +370,40 @@ class ServerSource(object):
 
     def parse_hello(self, capabilities):
         #batch options:
+        def batch_value(prop, default, minv=None, maxv=None):
+            assert default is not None
+            def parse_batch_int(value, varname):
+                if value is not None:
+                    try:
+                        return int(value)
+                    except:
+                        log.error("invalid value for batch option %s: %s", varname, value)
+                return None
+            #from client caps first:
+            cpname = "batch.%s" % prop
+            v = parse_batch_int(capabilities.get(cpname), cpname)
+            #try env:
+            if v is None:
+                evname = "XPRA_BATCH_%s" % prop.upper()
+                v = parse_batch_int(os.environ.get(evname), evname)
+            #fallback to default:
+            if v is None:
+                v = default
+            if minv is not None:
+                v = max(minv, v)
+            if maxv is not None:
+                v = min(maxv, v)
+            assert v is not None
+            return v
         self.default_batch_config = DamageBatchConfig()
-        self.default_batch_config.always = bool(capabilities.get("batch.always", DamageBatchConfig.ALWAYS))
-        self.default_batch_config.min_delay = min(1000, max(1, capabilities.get("batch.min_delay", DamageBatchConfig.MIN_DELAY)))
-        self.default_batch_config.max_delay = min(15000, max(1, capabilities.get("batch.max_delay", DamageBatchConfig.MAX_DELAY)))
-        self.default_batch_config.delay = min(1000, max(1, capabilities.get("batch.delay", DamageBatchConfig.START_DELAY)))
+        self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
+        self.default_batch_config.min_delay = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
+        self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
+        self.default_batch_config.max_events = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
+        self.default_batch_config.max_pixels = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
+        self.default_batch_config.time_unit = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
+        self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
+        log.debug("default batch config: %s", self.default_batch_config)
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
         self.hostname = capabilities.get("hostname", "")
@@ -472,7 +501,7 @@ class ServerSource(object):
 
     def new_sound_buffer(self, sound_source, data):
         assert self.sound_source
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data[0]), *data[1:])
 
     def sound_control(self, action, *args):
         if action=="stop":
