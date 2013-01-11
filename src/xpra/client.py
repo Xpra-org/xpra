@@ -67,7 +67,7 @@ except:
     from Queue import Queue     #@Reimport
 
 
-from wimpiggy.util import (n_arg_signal,
+from wimpiggy.util import (no_arg_signal, one_arg_signal,
                            gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 
@@ -92,13 +92,16 @@ def nn(x):
     return x
 
 
-class XpraClient(XpraClientBase):
+class XpraClient(XpraClientBase, gobject.GObject):
     __gsignals__ = {
-        "clipboard-toggled": n_arg_signal(0),
-        "keyboard-sync-toggled": n_arg_signal(0),
+        "clipboard-toggled"         : no_arg_signal,
+        "keyboard-sync-toggled"     : no_arg_signal,
+        "speaker-state-change"      : one_arg_signal,
+        "microphone-state-change"   : one_arg_signal,
         }
 
     def __init__(self, conn, opts):
+        gobject.GObject.__init__(self)
         XpraClientBase.__init__(self, opts)
         self.start_time = time.time()
         self._window_to_id = {}
@@ -837,18 +840,26 @@ class XpraClient(XpraClientBase):
             if self.sound_source:
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
+                self.emit("microphone-state-change", True)
         except Exception, e:
             log.error("error setting up sound: %s", e)
 
     def stop_sending_sound(self):
-        if self.sound_source:
+        if self.sound_source is None:
+            log("stop_receiving_sound: sound not started!")
+        else:
             self.sound_source.stop()
             self.sound_source.cleanup()
             self.sound_source = None
+            self.emit("microphone-state-change", False)
 
     def start_receiving_sound(self):
-        assert self.server_sound_send, "cannot start receiving sound: support not enabled on the server"
-        self.send("sound-control", "start")
+        if self.sound_sink is not None:
+            log("start_receiving_sound: we are already receiving sound!")
+        elif not self.server_sound_send:
+            log.error("cannot start receiving sound: support not enabled on the server")
+        else:
+            self.send("sound-control", "start")
 
     def stop_receiving_sound(self):
         self.send("sound-control", "stop")
@@ -857,6 +868,7 @@ class XpraClient(XpraClientBase):
                 self.sound_sink.stop()
                 self.sound_sink.cleanup()
                 self.sound_sink = None
+                self.emit("speaker-state-change", False)
             except:
                 log.error("stop sink", exc_info=True)
 
@@ -876,8 +888,9 @@ class XpraClient(XpraClientBase):
                 from xpra.sound.sink import SoundSink
                 self.sound_sink = SoundSink(codec=codec)
                 self.sound_sink.start()
-            except Exception, e:
-                log.error("failed to setup sound: %s", e)
+                self.emit("speaker-state-change", True)
+            except:
+                log.error("failed to setup sound", exc_info=True)
                 return
         data = packet[2]
         self.sound_sink.add_data(data)

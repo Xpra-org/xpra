@@ -721,7 +721,7 @@ class ClientExtrasBase(object):
         def speaker_state(*args):
             if self.client.server_sound_send and self.client.speaker_enabled:
                 on = self.client.sound_sink is not None
-                speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off))
+                speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off, "speaker-state-change"))
                 speaker.set_sensitive(True)
             else:
                 speaker.set_sensitive(False)
@@ -739,7 +739,7 @@ class ClientExtrasBase(object):
         def microphone_state(*args):
             if self.client.server_sound_send and self.client.microphone_enabled:
                 on = self.client.sound_source is not None
-                microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off))
+                microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off, "microphone-state-change"))
                 microphone.set_sensitive(True)
             else:
                 microphone.set_sensitive(False)
@@ -747,18 +747,33 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", microphone_state)
         return microphone
 
-    def make_soundsubmenu(self, on, on_cb, off_cb):
+    def make_soundsubmenu(self, on, on_cb, off_cb, client_signal):
         menu = gtk.Menu()
         def onoffitem(label, active, cb):
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
+            def submenu_uncheck(item, menu):
+                ensure_item_selected(menu, item)
+            c.connect('activate', submenu_uncheck, menu)
             c.connect('activate', cb)
             return c
-        menu.append(onoffitem("On", on, on_cb))
-        menu.append(onoffitem("Off", not on, off_cb))
+        on = onoffitem("On", on, on_cb)
+        off = onoffitem("Off", not on, off_cb)
+        menu.append(on)
+        menu.append(off)
+        def client_signalled_change(obj, value):
+            log.info("client_signalled_change(%s, %s)", obj, value)
+            if bool(value):
+                if not on.get_active():
+                    ensure_item_selected(menu, on)
+            else:
+                if not off.get_active():
+                    ensure_item_selected(menu, off)
+        self.client.connect(client_signal, client_signalled_change)
         #menu.append(gtk.SeparatorMenuItem())
         #...
+        self.popup_menu_workaround(menu)
         menu.show_all()
         return menu
 
