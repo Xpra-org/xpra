@@ -103,6 +103,10 @@ class DamageBatchConfig(object):
             setattr(c, x, getattr(self, x))
         return c
 
+    def __str__(self):
+        return  "DamageBatchConfig(wid=%s, always=%s, min=%s, max=%s, current=%s, max events=%s, max pixels=%s, time unit=%s)" % \
+                (self.wid, self.always, self.min_delay, self.max_delay, self.delay, self.max_events, self.max_pixels, self.time_unit)
+
 
 class WindowPerformanceStatistics(object):
     """
