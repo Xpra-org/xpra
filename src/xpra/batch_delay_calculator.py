@@ -17,41 +17,30 @@ from xpra.stats.base import dec1, dec2
 from xpra.stats.maths import time_weighted_average, queue_inspect, logp
 
 
-def env_bool(varname, defaultvalue=False):
-    v = os.environ.get(varname)
-    if v is None:
-        return  defaultvalue
-    v = v.lower()
-    if v in ["1", "true", "on"]:
-        return  True
-    if v in ["0", "false", "off"]:
-        return  False
-    return  defaultvalue
-
-
 MAX_DEBUG_MESSAGES = 1000
-DEBUG_DELAY = env_bool("XPRA_DEBUG_LATENCY", False)
+DEBUG_BATCH = os.environ.get("XPRA_DELAY_DEBUG", "0")=="1"
+DEBUG_VIDEO = os.environ.get("XPRA_VIDEO_DEBUG", "0")=="1"
 
-if DEBUG_DELAY:
+if DEBUG_BATCH or DEBUG_VIDEO:
     _debug_delay_messages = []
 
-    def dump_debug_delay_messages():
+    def dump_debug_messages():
         global _debug_delay_messages
-        log.info("dump_debug_delay_messages():")
+        log.info("dump_debug_messages():")
         for x in list(_debug_delay_messages):
             log.info(*x)
         _debug_delay_messages = []
         return  True
 
-    def add_DEBUG_DELAY_MESSAGE(message):
+    def add_DEBUG_MESSAGE(message):
         global _debug_delay_messages
         if len(_debug_delay_messages)>=MAX_DEBUG_MESSAGES:
-            dump_debug_delay_messages()
+            dump_debug_messages()
         _debug_delay_messages.append(message)
 
-    gobject.timeout_add(30*1000, dump_debug_delay_messages)
+    gobject.timeout_add(30*1000, dump_debug_messages)
 else:
-    def add_DEBUG_DELAY_MESSAGE(message):
+    def add_DEBUG_MESSAGE(message):
         pass
 
 
@@ -129,7 +118,7 @@ def update_batch_delay(batch, factors):
         tv += target_delay*w
     batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
-    if DEBUG_DELAY:
+    if DEBUG_BATCH:
         decimal_delays = [dec1(x) for _,x in batch.last_delays]
         if len(decimal_delays)==0:
             decimal_delays.append(0)
@@ -137,7 +126,7 @@ def update_batch_delay(batch, factors):
         rec = ("update_batch_delay: wid=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s\n %s",
                 batch.wid, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
                 dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
-        add_DEBUG_DELAY_MESSAGE(rec)
+        add_DEBUG_MESSAGE(rec)
 
 
 def update_video_encoder(window_dimensions, batch, global_statistics, statistics,
@@ -152,7 +141,7 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
     # here we try to minimize damage-latency and client decoding speed
     if fixed_speed>=0:
         new_speed = fixed_speed
-        msg = "video encoder using fixed speed: %s", fixed_speed
+        add_DEBUG_MESSAGE("video encoder using fixed speed: %s", fixed_speed)
     else:
         #20ms + 50ms per MPixel
         min_damage_latency = 0.020 + 0.050*low_limit/1024.0/1024.0
@@ -169,11 +158,11 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
         ves_copy.append((time.time(), target_speed))
         new_speed = time_weighted_average(ves_copy, rpow=1.2)
         video_encoder_speed.append((time.time(), new_speed))
-        msg = "video encoder speed factors: low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
+        if DEBUG_VIDEO:
+            msg = "video encoder speed factors: low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
                  low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
-    log(*msg)
-    if DEBUG_DELAY:
-        add_DEBUG_DELAY_MESSAGE(msg)
+            add_DEBUG_MESSAGE(msg)
+
     #***********************************************************
     # quality:
     #    0    for lowest quality (low bandwidth usage)
@@ -181,7 +170,7 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
     # here we try minimize client-latency, packet-backlog and batch.delay
     if fixed_quality>=0:
         new_quality = fixed_quality
-        msg = "video encoder using fixed quality: %s", fixed_quality
+        add_DEBUG_MESSAGE("video encoder using fixed quality: %s", fixed_quality)
     else:
         packets_backlog, _, _ = statistics.get_backlog()
         packets_bl = 1.0 - logp(packets_backlog/low_limit)
@@ -197,11 +186,11 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
         veq_copy.append((time.time(), target_quality))
         new_quality = time_weighted_average(veq_copy, rpow=1.4)
         video_encoder_quality.append((time.time(), new_quality))
-        msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
+        if DEBUG_VIDEO:
+            msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
                  dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
-    log(*msg)
-    if DEBUG_DELAY:
-        add_DEBUG_DELAY_MESSAGE(msg)
+            add_DEBUG_MESSAGE(msg)
+
     try:
         video_encoder_lock.acquire()
         if not video_encoder.is_closed():
