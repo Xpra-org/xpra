@@ -25,7 +25,7 @@ try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except:
     from Queue import Queue     #@Reimport
-from threading import Lock
+from threading import RLock
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -85,7 +85,7 @@ class Protocol(object):
         assert conn is not None
         self._conn = conn
         self._process_packet_cb = process_packet_cb
-        self._write_queue = Queue(2)
+        self._write_queue = Queue(1)
         self._read_queue = Queue(20)
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
@@ -108,7 +108,7 @@ class Protocol(object):
         self.cipher_out = None
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
-        self._write_lock = Lock()
+        self._write_lock = RLock()
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
@@ -181,7 +181,7 @@ class Protocol(object):
             self._source_has_more.clear()
             self._add_packet_to_queue(*self._get_packet_cb())
 
-    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False, block=True):
+    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
         if has_more:
             self._source_has_more.set()
         if packet is None:
@@ -225,7 +225,7 @@ class Protocol(object):
                     items.append((header, scb, None))
                     items.append((data, None, ecb))
                 counter += 1
-            self._write_queue.put(items, block=block)
+            self._write_queue.put(items)
         finally:
             self.output_packetcount += 1
             self._write_lock.release()
@@ -611,7 +611,10 @@ class Protocol(object):
         #the format thread will exit since closed is set too:
         self._source_has_more.set()
         #make the threads exit by adding the empty marker:
-        self._write_queue.put(None)
+        try:
+            self._write_queue.put_nowait(None)
+        except:
+            pass
         try:
             self._read_queue.put_nowait(None)
         except:
