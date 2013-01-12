@@ -85,8 +85,8 @@ class Protocol(object):
         assert conn is not None
         self._conn = conn
         self._process_packet_cb = process_packet_cb
-        self._write_queue = Queue()
-        self._read_queue = Queue(5)
+        self._write_queue = Queue(2)
+        self._read_queue = Queue(20)
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
         #counters:
@@ -114,7 +114,6 @@ class Protocol(object):
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
         self._write_format_thread = make_daemon_thread(self._write_format_thread_loop, "format")
         self._source_has_more = threading.Event()
-        self._write_queue_ready = threading.Event()
 
     def set_packet_source(self, get_packet_cb):
         self._get_packet_cb = get_packet_cb
@@ -168,7 +167,6 @@ class Protocol(object):
                 self._read_thread.start()
                 self._read_parser_thread.start()
                 self._write_format_thread.start()
-                self._write_queue_ready.set()
         gobject.idle_add(do_start)
 
     def source_has_more(self):
@@ -176,17 +174,14 @@ class Protocol(object):
 
     def _write_format_thread_loop(self):
         while not self._closed:
-            self._source_has_more.wait()
-            if self._closed:
-                return
-            self._write_queue_ready.wait()
+            if not self._source_has_more.wait(1.0):
+                log.info("source_has_more timedout")
             if self._closed:
                 return
             self._source_has_more.clear()
-            self._write_queue_ready.clear()
             self._add_packet_to_queue(*self._get_packet_cb())
 
-    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
+    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False, block=True):
         if has_more:
             self._source_has_more.set()
         if packet is None:
@@ -230,11 +225,9 @@ class Protocol(object):
                     items.append((header, scb, None))
                     items.append((data, None, ecb))
                 counter += 1
-            self._write_queue.put(items)
+            self._write_queue.put(items, block=block)
         finally:
             self.output_packetcount += 1
-            if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
-                self._write_queue_ready.set()
             self._write_lock.release()
 
     def verify_packet(self, packet):
@@ -349,8 +342,6 @@ class Protocol(object):
                 if items is None:
                     log("write thread: empty marker, exiting")
                     break
-                if self._write_queue.qsize()<WRITE_QUEUE_BUSY_LEVEL:
-                    self._write_queue_ready.set()
                 for buf, start_cb, end_cb in items:
                     if start_cb:
                         try:
@@ -367,10 +358,6 @@ class Protocol(object):
                             end_cb(self._conn.output_bytecount)
                         except:
                             log.error("error on %s", end_cb, exc_info=True)
-                #we have to check again because the first check above is racy
-                #(only relevant if level is 1 - otherwise the race doesn't matter)
-                if WRITE_QUEUE_BUSY_LEVEL==1 and self._write_queue.empty():
-                    self._write_queue_ready.set()
             log("write thread: ended")
         except (OSError, IOError, socket.error), e:
             self._call_connection_lost("Error writing to connection: %s" % e)
@@ -563,7 +550,21 @@ class Protocol(object):
                     log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
 
     def flush_then_close(self, last_packet):
-        self._add_packet_to_queue(last_packet)
+        try:
+            self._write_lock.acquire()
+            #try to wait for the queue to empty with the lock held
+            try:
+                import time
+                i = 0
+                while not self._closed and not self._write_queue.empty() and i<5:
+                    time.sleep(0.1)
+                    i += 1
+            except:
+                pass
+            #and send our last_packet to it:
+            self._add_packet_to_queue(last_packet, block=False)
+        finally:
+            self._write_lock.release()
         self.terminate_io_threads()
         #wait for last_packet to be sent:
         def wait_for_end_of_write(timeout=15):
@@ -609,7 +610,6 @@ class Protocol(object):
     def terminate_io_threads(self):
         #the format thread will exit since closed is set too:
         self._source_has_more.set()
-        self._write_queue_ready.set()
         #make the threads exit by adding the empty marker:
         self._write_queue.put(None)
         try:
