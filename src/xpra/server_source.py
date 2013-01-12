@@ -129,16 +129,19 @@ class GlobalPerformanceStatistics(object):
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)
             msg = "client latency:"
-            l = max(0.010, self.min_client_latency)
-            factors.append(calculate_for_target(msg, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt))
+            l = 0.005 + self.min_client_latency
+            wm = logp(l / 0.020)
+            factors.append(calculate_for_target(msg, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.client_ping_latency)>0:
             msg = "client ping latency:"
-            l = max(0.010, self.min_client_ping_latency)
-            factors.append(calculate_for_target(msg, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
+            l = 0.005 + self.min_client_ping_latency
+            wm = logp(l / 0.050)
+            factors.append(calculate_for_target(msg, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.server_ping_latency)>0:
             msg = "server ping latency:"
-            l = max(0.010, self.min_server_ping_latency)
-            factors.append(calculate_for_target(msg, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=0.25))
+            l = 0.005 + self.min_server_ping_latency
+            wm = logp(l / 0.050)
+            factors.append(calculate_for_target(msg, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         #damage packet queue size: (includes packets from all windows)
         factors.append(queue_inspect("damage packet queue size:", self.damage_packet_qsizes, smoothing=sqrt))
         #damage packet queue pixels (global):
