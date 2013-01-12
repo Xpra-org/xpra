@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import time
-from xpra.stats.base import dec3
 
 cdef extern from "math.h":
     double log(double x)
@@ -119,7 +118,7 @@ def calculate_for_target(msg_header, float target_value, float avg_value, float 
     cdef double aimed_average = target_factor*(1.0-aim) + avg_factor*aim
     factor = smoothing(aimed_average)
     weight = smoothing(max(0.0, 1.0-factor, factor-1.0)) * weight_multiplier
-    return  "%s avg=%s, recent=%s, target=%s, aim=%s, aimed avg factor=%s, div=%s, s=%s" % (msg_header, dec3(avg_value), dec3(recent_value), dec3(target_value), aim, dec3(aimed_average), div, smoothing), factor, weight
+    return  "%s avg=%.3f, recent=%.3f, target=%.3f, aim=%.3f, aimed avg factor=%.3f, div=%.3f, s=%s" % (msg_header, avg_value, recent_value, target_value, aim, aimed_average, div, smoothing), factor, weight
 
 def calculate_for_average(msg_header, float avg_value, float recent_value, float div=1.0, float weight_offset=0.5, float weight_div=1.0):
     """

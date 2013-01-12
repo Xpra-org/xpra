@@ -61,7 +61,7 @@ from xpra.deque import maxdeque
 from xpra.protocol import zlib_compress, Compressed
 from xpra.scripts.main import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.stats.base import dec1, add_list_stats, add_weighted_list_stats
+from xpra.stats.base import add_list_stats, add_weighted_list_stats
 from xpra.stats.maths import logp, \
     calculate_time_weighted_average, calculate_timesize_weighted_average, \
     calculate_for_target, calculate_for_average
@@ -202,7 +202,7 @@ class WindowPerformanceStatistics(object):
             factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
         #client decode time:
         if self.avg_decode_speed is not None and self.recent_decode_speed is not None:
-            msg = "client decode speed: avg=%s, recent=%s (MPixels/s)" % (dec1(self.avg_decode_speed/1000/1000), dec1(self.recent_decode_speed/1000/1000))
+            msg = "client decode speed: avg=%.1f, recent=%.1f (MPixels/s)" % (self.avg_decode_speed/1000/1000, self.recent_decode_speed/1000/1000)
             #our calculate methods aims for lower values, so invert speed
             #this is how long it takes to send 1MB:
             avg1MB = 1.0*1024*1024/self.avg_decode_speed
@@ -216,7 +216,7 @@ class WindowPerformanceStatistics(object):
             mtime = max(0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
-            msg = "no damage events for %s ms (highest latency is %s)" % (dec1(1000*elapsed), dec1(1000*self.max_latency))
+            msg = "no damage events for %.1f ms (highest latency is %.1f)" % (1000*elapsed, 1000*self.max_latency)
             factors.append((msg, 0, weight))
         return factors
 
@@ -520,8 +520,8 @@ class WindowSource(object):
                 for k,v in options.items():
                     if override or k not in existing_options:
                         existing_options[k] = v
-            debug("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %sms ago",
-                x, y, w, h, options, self.wid, self._damage_delayed[3], dec1(now-self._damage_delayed[0]))
+            debug("damage(%s, %s, %s, %s, %s) wid=%s, using existing delayed %s region created %.1fms ago",
+                x, y, w, h, options, self.wid, self._damage_delayed[3], now-self._damage_delayed[0])
             return
         elif self.batch_config.delay < self.batch_config.min_delay:
             #work out if we have too many damage requests
@@ -555,7 +555,7 @@ class WindowSource(object):
         region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
         self._damage_delayed_expired = False
         self._damage_delayed = now, window, region, self.encoding, options or {}
-        debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %s ms", x, y, w, h, options, self.wid, self._sequence, dec1(delay))
+        debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = gobject.timeout_add(int(delay), self.expire_delayed_region)
 
@@ -594,14 +594,14 @@ class WindowSource(object):
         actual_delay = 1000.0*(time.time()-damage_time)
         if packets_backlog>0:
             if actual_delay<self.batch_config.max_delay:
-                debug("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %s ms",
-                        self.wid, packets_backlog, self.batch_config.delay, dec1(actual_delay))
+                debug("send_delayed for wid %s, delaying again because of backlog: %s packets, batch delay is %s, elapsed time is %.1f ms",
+                        self.wid, packets_backlog, self.batch_config.delay, actual_delay)
                 #this method will get fired again damage_packet_acked
                 return False
             else:
-                warn("send_delayed for wid %s, elapsed time %s is above limit of %s - sending now", self.wid, dec1(actual_delay), dec1(self.batch_config.max_delay))
+                warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f - sending now", self.wid, actual_delay, self.batch_config.max_delay)
         else:
-            debug("send_delayed for wid %s, batch delay is %s, elapsed time is %s ms", self.wid, dec1(self.batch_config.delay), dec1(actual_delay))
+            debug("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed_region()
         return False
@@ -751,7 +751,7 @@ class WindowSource(object):
         if not data or self.is_cancelled(sequence):
             return
         self._sequence += 1
-        debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %s ms", data[:6], dec1(1000*(time.time()-damage_time)))
+        debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %.1f ms", data[:6], 1000*(time.time()-damage_time))
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
             packet = self.make_data_packet(*data)
@@ -1042,7 +1042,7 @@ class WindowSource(object):
         start = time.time()
         mmap_data = self._mmap_send(data)
         elapsed = time.time()-start+0.000000001 #make sure never zero!
-        debug("%s MBytes/s - %s bytes written to mmap in %s ms", int(len(data)/elapsed/1024/1024), len(data), dec1(1000*elapsed))
+        debug("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
         if mmap_data is not None:
             self.global_statistics.mmap_bytes_sent += len(data)
             coding = "mmap"

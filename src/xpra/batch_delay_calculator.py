@@ -13,15 +13,14 @@ from math import sqrt
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.stats.base import dec1, dec2
 from xpra.stats.maths import time_weighted_average, queue_inspect, logp
 
 
 MAX_DEBUG_MESSAGES = 1000
-DEBUG_BATCH = os.environ.get("XPRA_DELAY_DEBUG", "0")=="1"
+DEBUG_DELAY = int(os.environ.get("XPRA_DELAY_DEBUG", "0"))
 DEBUG_VIDEO = os.environ.get("XPRA_VIDEO_DEBUG", "0")=="1"
 
-if DEBUG_BATCH or DEBUG_VIDEO:
+if DEBUG_DELAY>0 or DEBUG_VIDEO:
     _debug_delay_messages = []
 
     def dump_debug_messages():
@@ -118,15 +117,17 @@ def update_batch_delay(batch, factors):
         tv += target_delay*w
     batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
-    if DEBUG_BATCH:
-        decimal_delays = [dec1(x) for _,x in batch.last_delays]
+    if DEBUG_DELAY>0:
+        decimal_delays = [x for _,x in list(batch.last_delays)]
         if len(decimal_delays)==0:
             decimal_delays.append(0)
-        logfactors = [(msg, dec2(f), dec2(w)) for (msg, f, w) in valid_factors]
-        rec = ("update_batch_delay: wid=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s\n %s",
-                batch.wid, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
-                dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
+        rec = ("update_batch_delay: wid=%s, last updated %.2f ms ago, decay=%.2fs, change factor=%.1f%%, delay min=%s, avg=%s, max=%s, cur=%.1f, w. average=%.1f, tot wgt=%.1f, hist_w=%.1f, new delay=%.1f\n",
+                batch.wid, 1000.0*now-1000.0*last_updated, decay, 100.0*(batch.delay/current_delay-1), min(decimal_delays), sum(decimal_delays)/len(decimal_delays), max(decimal_delays),
+                current_delay, avg, tw, hist_w, batch.delay)
         add_DEBUG_MESSAGE(*rec)
+        if DEBUG_DELAY>1:
+            logfactors = ["%.2f %.2f  %s" % (f, w, msg) for (msg, f, w) in valid_factors]
+            rec.append("Factors: "+("\n ".join([str(x) for x in logfactors])))
 
 
 def update_video_encoder(wid, window_dimensions, batch, global_statistics, statistics,
@@ -159,8 +160,8 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
         new_speed = time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2)
         video_encoder_speed.append((time.time(), new_speed))
         if DEBUG_VIDEO:
-            msg = "video encoder speed factors: wid=%s, low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
-                 wid, low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
+            msg = "video encoder speed factors: wid=%s, low_limit=%s, min_damage_latency=%.2f, target_damage_latency=%.2f, batch.delay=%.2f, dam_lat=%.2f, dec_lat=%.2f, target=%.2f, new_speed=%.2f", \
+                 wid, low_limit, min_damage_latency, target_damage_latency, batch.delay, dam_lat, dec_lat, int(target_speed), int(new_speed)
             add_DEBUG_MESSAGE(*msg)
 
     #***********************************************************
@@ -187,8 +188,8 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
         new_quality = time_weighted_average(veq_copy, min_offset=0.1, rpow=1.1)
         video_encoder_quality.append((time.time(), new_quality))
         if DEBUG_VIDEO:
-            msg = "video encoder quality factors: wid=%s, packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
-                 wid, dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
+            msg = "video encoder quality factors: wid=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target=%s, new_quality=%s", \
+                 wid, packets_bl, batch_q, latency_q, int(target_quality), int(new_quality)
             add_DEBUG_MESSAGE(*msg)
 
     try:

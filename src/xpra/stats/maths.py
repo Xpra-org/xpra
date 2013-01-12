@@ -8,7 +8,7 @@
 # see ServerSource, WindowSource and batch_delay_calculator
 # We load them from cymaths and fallback to pymaths
 
-from xpra.stats.base import (dec1, dec2, dec3,                      #@UnusedImport
+from xpra.stats.base import (
     to_std_unit, std_unit,                                          #@UnusedImport
     std_unit_dec, absolute_to_diff_values,                          #@UnusedImport
     values_to_scaled_values, values_to_diff_scaled_values,          #@UnusedImport

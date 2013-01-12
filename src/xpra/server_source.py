@@ -29,7 +29,7 @@ except:
 
 from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
-from xpra.stats.base import add_list_stats, dec1, std_unit
+from xpra.stats.base import add_list_stats, std_unit
 from xpra.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
 from xpra.scripts.main import ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
@@ -98,8 +98,8 @@ class GlobalPerformanceStatistics(object):
         echo_diff = now-end_send_at
         send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
         echo_latency = max(0, echo_diff-decode_time/1000.0/1000.0)
-        log("record_latency: took %s ms round trip (%s just for echo), %s for decoding of %s pixels, %s bytes sent over the network in %s ms (%s ms for echo)",
-                dec1(send_diff*1000), dec1(echo_diff*1000), dec1(decode_time/1000.0), pixels, bytecount, dec1(send_latency*1000), dec1(echo_latency*1000))
+        log("record_latency: took %.1f ms round trip (%.1f just for echo), %.1f for decoding of %s pixels, %s bytes sent over the network in %.1f ms (%.1f ms for echo)",
+                send_diff*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
         self.client_latency.append((wid, time.time(), pixels, send_latency))

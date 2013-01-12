@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import time
-from xpra.stats.base import dec3
 
 from math import log as mathlog
 def logp(x):
@@ -91,8 +90,8 @@ def calculate_for_target(msg_header, target_value, avg_value, recent_value, aim=
     factor = smoothing(aimed_average)
     weight = smoothing(max(0.0, 1.0-factor, factor-1.0)) * weight_multiplier
     #if DEBUG_DELAY:
-    #    msg += " [factors: target=%s, average=%s, aim=%s, aimed_average=%s]" % (dec2(target_factor), dec2(avg_factor), dec2(aim), dec2(aimed_average))
-    return  "%s avg=%s, recent=%s, target=%s, aim=%s, aimed avg factor=%s, div=%s, s=%s" % (msg_header, dec3(avg_value), dec3(recent_value), dec3(target_value), aim, dec3(aimed_average), div, smoothing), factor, weight
+    #    msg += " [factors: target=%.2f, average=%.2f, aim=%.2f, aimed_average=%.2f]" % (target_factor, avg_factor, aim, aimed_average)
+    return  "%s avg=%.3f, recent=%.3f, target=%.3f, aim=%.3f, aimed avg factor=%.3f, div=%.3f, s=%.3f" % (msg_header, avg_value, recent_value, target_value, aim, aimed_average, div, smoothing), factor, weight
 
 def calculate_for_average(msg_header, avg_value, recent_value, div=1.0, weight_offset=0.5, weight_div=1.0):
     """
