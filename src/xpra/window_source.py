@@ -184,10 +184,11 @@ class WindowPerformanceStatistics(object):
             factors.append(calculate_for_target(msg, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
         #ratio of "in" and "out" latency indicates network bottleneck:
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
-            msg = "damage network delay:"
             ad = max(0.001, self.avg_damage_out_latency-self.avg_damage_in_latency)
             rd = max(0.001, self.recent_damage_out_latency-self.recent_damage_in_latency)
-            factors.append(calculate_for_average(msg, ad, rd, weight_div=1.0))
+            div = 0.040 / max(ad, rd)       #reduce weight for low latencies (matter less)
+            msg = "damage network delay: avg delay=%.3f recent delay=%.3f" % (ad, rd)
+            factors.append(calculate_for_average(msg, ad, rd, weight_div=div))
         #send speed:
         if self.avg_send_speed is not None and self.recent_send_speed is not None:
             #our calculate methods aims for lower values, so invert speed
@@ -207,7 +208,8 @@ class WindowPerformanceStatistics(object):
             #this is how long it takes to send 1MB:
             avg1MB = 1.0*1024*1024/self.avg_decode_speed
             recent1MB = 1.0*1024*1024/self.recent_decode_speed
-            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0))
+            weight_div = max(0.25, self.recent_decode_speed/(4*1000*1000))
+            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
         if self.last_damage_event_time:
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high system latency
@@ -216,8 +218,9 @@ class WindowPerformanceStatistics(object):
             mtime = max(0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
+            target = max(0, 1.0-mtime)
             msg = "no damage events for %.1f ms (highest latency is %.1f)" % (1000*elapsed, 1000*self.max_latency)
-            factors.append((msg, 0, weight))
+            factors.append((msg, target, weight))
         return factors
 
     def add_stats(self, info, suffix=""):

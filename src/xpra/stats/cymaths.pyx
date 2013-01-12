@@ -11,10 +11,10 @@ cdef extern from "math.h":
 
 from math import sqrt
 def logp(double x):
-    return log(1.0+x)/4.0
+    return log(1.0+x)/2.0
 
 cdef double clogp(double x):
-    return log(1.0+x)/4.0
+    return log(1.0+x)/2.0
 
 def calculate_time_weighted_average(data):
     """
@@ -131,7 +131,7 @@ def calculate_for_average(msg_header, float avg_value, float recent_value, float
     cdef double weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
     return  msg_header, float(factor), float(weight)
 
-def queue_inspect(msg_header, time_values, target=1.0, div=1.0, smoothing=logp):
+def queue_inspect(msg_header, time_values, float target=1.0, float div=1.0, smoothing=logp):
     """
         Given an historical list of values and a current value,
         figure out if things are getting better or worse.
@@ -140,4 +140,5 @@ def queue_inspect(msg_header, time_values, target=1.0, div=1.0, smoothing=logp):
     if len(time_values)==0:
         return  "%s (empty)" % msg_header, 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
-    return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing)
+    weight_multiplier = sqrt(max(avg, recent) / div / target)
+    return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)

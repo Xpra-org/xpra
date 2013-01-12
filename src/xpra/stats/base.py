@@ -8,16 +8,6 @@
 
 from math import sqrt, pow
 
-def dec1(x):
-    #for pretty debug output of numbers with one decimal
-    return int(10.0*x)/10.0
-def dec2(x):
-    #for pretty debug output of numbers with two decimals
-    return int(100.0*x)/100.0
-def dec3(x):
-    #for pretty debug output of numbers with three decimals
-    return int(1000.0*x)/1000.0
-
 def to_std_unit(v):
     if v>=1000*1000*1000:
         return "G", v/1000.0/1000.0/1000.0

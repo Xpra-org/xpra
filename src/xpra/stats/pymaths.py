@@ -6,9 +6,9 @@
 
 import time
 
-from math import log as mathlog
+from math import log as mathlog, sqrt
 def logp(x):
-    return mathlog(1.0+x)/4.0
+    return mathlog(1.0+x)/2.0
 
 def calculate_time_weighted_average(data):
     """
@@ -113,4 +113,5 @@ def queue_inspect(msg_header, time_values, target=1.0, div=1.0, smoothing=logp):
     if len(time_values)==0:
         return  "%s (empty)" % msg_header, 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
-    return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing)
+    weight_multiplier = sqrt(max(avg, recent) / div / target)
+    return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)

@@ -121,13 +121,13 @@ def update_batch_delay(batch, factors):
         decimal_delays = [x for _,x in list(batch.last_delays)]
         if len(decimal_delays)==0:
             decimal_delays.append(0)
-        rec = ("update_batch_delay: wid=%s, last updated %.2f ms ago, decay=%.2fs, change factor=%.1f%%, delay min=%s, avg=%s, max=%s, cur=%.1f, w. average=%.1f, tot wgt=%.1f, hist_w=%.1f, new delay=%.1f\n",
+        rec = ("update_batch_delay: wid=%s, last updated %.2f ms ago, decay=%.2fs, change factor=%.1f%%, delay min=%i, avg=%i, max=%i, cur=%.1f, w. average=%.1f, tot wgt=%.1f, hist_w=%.1f, new delay=%.1f",
                 batch.wid, 1000.0*now-1000.0*last_updated, decay, 100.0*(batch.delay/current_delay-1), min(decimal_delays), sum(decimal_delays)/len(decimal_delays), max(decimal_delays),
                 current_delay, avg, tw, hist_w, batch.delay)
         add_DEBUG_MESSAGE(*rec)
         if DEBUG_DELAY>1:
-            logfactors = ["%.2f %.2f  %s" % (f, w, msg) for (msg, f, w) in valid_factors]
-            rec.append("Factors: "+("\n ".join([str(x) for x in logfactors])))
+            logfactors = [("{0:+}".format(int(100.0*f-100.0)).rjust(4) + str(int(100*w)).rjust(8) + "  "+ msg) for (msg, f, w) in valid_factors]
+            add_DEBUG_MESSAGE("Factors (change - weight - description):\n "+("\n ".join([str(x) for x in logfactors])))
 
 
 def update_video_encoder(wid, window_dimensions, batch, global_statistics, statistics,
