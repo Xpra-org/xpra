@@ -217,7 +217,7 @@ class ServerSource(object):
                  supports_mmap,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
-                 default_quality):
+                 default_quality, default_speed):
         self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol
@@ -234,7 +234,8 @@ class ServerSource(object):
         self.sound_source = None
         self.sound_sink = None
 
-        self.default_quality = default_quality      #default encoding quality for lossless encodings
+        self.default_quality = default_quality      #default encoding quality for lossy encodings
+        self.default_speed = default_speed          #encoding speed (only used by x264)
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.encoding_options = {}
@@ -443,6 +444,11 @@ class ServerSource(object):
             q = capabilities["quality"]
         if q>=0:
             self.default_damage_options["quality"] = q
+        s = self.default_speed
+        if "speed" in capabilities:
+            s = capabilities["speed"]
+        if s>=0:
+            self.default_damage_options["speed"] = s
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))/1000.0
         #keyboard:

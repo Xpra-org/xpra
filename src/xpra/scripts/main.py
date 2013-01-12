@@ -324,6 +324,11 @@ def main(script_file, cmdline):
                           metavar="LEVEL",
                           dest="quality", type="int", default=int_default("quality", -1),
                           help="Use image compression with the given quality - only relevant to lossy encodings (1-100, -1 to use automatic settings). Default: %default.")
+    if "x264" in ENCODINGS:
+        group.add_option("--speed", action="store",
+                          metavar="SPEED",
+                          dest="speed", type="int", default=int_default("speed", -1),
+                          help="Use x264 image compression with the given encoding speed (1-100, -1 to use automatic settings). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 1.0),
                       metavar="DELAY",

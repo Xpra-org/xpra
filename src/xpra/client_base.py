@@ -60,6 +60,7 @@ class XpraClientBase(gobject.GObject):
         self.encoding = opts.encoding
         self.encryption = opts.encryption
         self.quality = opts.quality
+        self.speed = opts.speed
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -120,6 +121,8 @@ class XpraClientBase(gobject.GObject):
         if self.quality>=0:
             capabilities["jpeg"] = self.quality
             capabilities["quality"] = self.quality
+        if self.speed>=0:
+            capabilities["speed"] = self.speed
         capabilities["platform"] = sys.platform
         capabilities["client_type"] = "Python/Gobject"
         capabilities["raw_packets"] = True

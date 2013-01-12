@@ -54,7 +54,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
-[\fB\-\-quality\fP=\fIVALUE\fP]
+[\fB\-\-quality\fP=\fIQUALITY\fP]
+[\fB\-\-speed\fP=\fISPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
 [\fB\-\-max\-bandwidth\fP=\fIBW\fP]
 [\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
@@ -462,9 +463,15 @@ First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP.
 The valid values range from 1 (lowest quality, high compression -
 generally unusable) to 100 (highest quality, low compression - not
 particularly useful).
-Note that the x264 encoding normally use a variable quality
+Note that the x264 encoding normally uses a variable quality
 determined by the connection's performance, this option forces
-a fixed quality setting.
+a fixed quality setting to be used instead.
+.TP
+\fB\-\-speed\fP=\fISPEED\fP
+This option sets the x264 encoding speed. Slower compresses more, faster
+will give better latency.
+The system normally uses a variable speed, this option forces
+a fixed speed setting to be used instead.
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically

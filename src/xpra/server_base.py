@@ -152,6 +152,7 @@ class XpraServerBase(object):
             log("failed to set pulseaudio audio tagging: %s", e)
 
         self.default_quality = opts.quality
+        self.default_speed = opts.speed
         self.pulseaudio = opts.pulseaudio
         self.sharing = opts.sharing
         self.bell = opts.bell
@@ -535,7 +536,7 @@ class XpraServerBase(object):
                           self.supports_mmap,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
-                          self.default_quality)
+                          self.default_quality, self.default_speed)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
@@ -599,6 +600,9 @@ class XpraServerBase(object):
         if self.session_name:
             capabilities["session_name"] = self.session_name
         capabilities["start_time"] = int(self.start_time)
+        now = time.time()
+        capabilities["current_time"] = int(now)
+        capabilities["elapsed_time"] = int(now - self.start_time)
         capabilities["notifications"] = self.notifications_forwarder is not None
         capabilities["toggle_cursors_bell_notify"] = True
         capabilities["toggle_keyboard_sync"] = True
