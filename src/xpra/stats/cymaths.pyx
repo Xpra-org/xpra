@@ -44,7 +44,7 @@ def calculate_time_weighted_average(data):
         rw += w
     return tv / tw, rv / rw
 
-def time_weighted_average(data, double rpow=2):
+def time_weighted_average(data, double min_offset=0.1, double rpow=2.0):
     """
         Given a list of items of the form [(event_time, value)],
         this method calculates a time-weighted average where
@@ -61,7 +61,7 @@ def time_weighted_average(data, double rpow=2):
     for event_time, value in data:
         delta = now-event_time
         assert delta>=0, "invalid event_time=%s, now=%s, delta=%s" % (event_time, now, delta)
-        w = 1.0/(0.1+delta**rpow)
+        w = 1.0/(min_offset+delta**rpow)
         tv += value*w
         tw += w
     return tv / tw

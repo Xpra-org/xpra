@@ -31,7 +31,7 @@ def calculate_time_weighted_average(data):
         rw += w
     return tv / tw, rv / rw
 
-def time_weighted_average(data, rpow=2):
+def time_weighted_average(data, min_offset=0.1, rpow=2):
     """
         Given a list of items of the form [(event_time, value)],
         this method calculates a time-weighted average where
@@ -43,7 +43,7 @@ def time_weighted_average(data, rpow=2):
     now = time.time()
     tv, tw = 0.0, 0.0
     for event_time, value in data:
-        w = 1.0/(0.1+(now-event_time)**rpow)
+        w = 1.0/(min_offset+(now-event_time)**rpow)
         tv += value*w
         tw += w
     return tv / tw
