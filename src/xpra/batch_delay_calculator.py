@@ -65,7 +65,7 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
 
     #for each indicator: (description, factor, weight)
-    factors = statistics.get_factors(low_limit)
+    factors = statistics.get_factors(low_limit, batch.delay)
     statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
     factors += global_statistics.get_factors(statistics.target_latency, low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
