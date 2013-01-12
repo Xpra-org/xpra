@@ -316,13 +316,14 @@ def main(script_file, cmdline):
                           metavar="LEVEL",
                           dest="quality", type="int", default=None,
                           help="Deprecated - use 'quality'")
+        group.add_option("-b", "--max-bandwidth", action="store",
+                          dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
+                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
+    if len(set("jpeg", "webp", "x264").intersection(set(ENCODINGS)))>0:
         group.add_option("--quality", action="store",
                           metavar="LEVEL",
                           dest="quality", type="int", default=int_default("quality", -1),
                           help="Use image compression with the given quality - only relevant to lossy encodings (1-100, -1 to disable). Default: %default.")
-        group.add_option("-b", "--max-bandwidth", action="store",
-                          dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
-                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 1.0),
                       metavar="DELAY",
