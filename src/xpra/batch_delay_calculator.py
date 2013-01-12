@@ -32,15 +32,15 @@ if DEBUG_BATCH or DEBUG_VIDEO:
         _debug_delay_messages = []
         return  True
 
-    def add_DEBUG_MESSAGE(message):
+    def add_DEBUG_MESSAGE(*recs):
         global _debug_delay_messages
         if len(_debug_delay_messages)>=MAX_DEBUG_MESSAGES:
             dump_debug_messages()
-        _debug_delay_messages.append(message)
+        _debug_delay_messages.append(recs)
 
     gobject.timeout_add(30*1000, dump_debug_messages)
 else:
-    def add_DEBUG_MESSAGE(message):
+    def add_DEBUG_MESSAGE(*recs):
         pass
 
 
@@ -126,10 +126,10 @@ def update_batch_delay(batch, factors):
         rec = ("update_batch_delay: wid=%s, last updated %s ms ago, decay=%s, change factor=%s%%, delay min=%s, avg=%s, max=%s, cur=%s, w. average=%s, tot wgt=%s, hist_w=%s, new delay=%s\n %s",
                 batch.wid, dec2(1000.0*now-1000.0*last_updated), dec2(decay), dec1(100*(batch.delay/current_delay-1)), min(decimal_delays), dec1(sum(decimal_delays)/len(decimal_delays)), max(decimal_delays),
                 dec1(current_delay), dec1(avg), dec1(tw), dec1(hist_w), dec1(batch.delay), "\n ".join([str(x) for x in logfactors]))
-        add_DEBUG_MESSAGE(rec)
+        add_DEBUG_MESSAGE(*rec)
 
 
-def update_video_encoder(window_dimensions, batch, global_statistics, statistics,
+def update_video_encoder(wid, window_dimensions, batch, global_statistics, statistics,
                           video_encoder=None, video_encoder_lock=None,
                           video_encoder_speed=None, video_encoder_quality=None,
                           fixed_quality=-1, fixed_speed=-1):
@@ -156,12 +156,12 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
         #make a copy to work on
         ves_copy = list(video_encoder_speed)
         ves_copy.append((time.time(), target_speed))
-        new_speed = time_weighted_average(ves_copy, rpow=1.2)
+        new_speed = time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2)
         video_encoder_speed.append((time.time(), new_speed))
         if DEBUG_VIDEO:
-            msg = "video encoder speed factors: low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
-                 low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
-            add_DEBUG_MESSAGE(msg)
+            msg = "video encoder speed factors: wid=%s, low_limit=%s, min_damage_latency=%s, target_damage_latency=%s, batch.delay=%s, dam_lat=%s, dec_lat=%s, target=%s, new_speed=%s", \
+                 wid, low_limit, dec2(min_damage_latency), dec2(target_damage_latency), dec2(batch.delay), dec2(dam_lat), dec2(dec_lat), int(target_speed), int(new_speed)
+            add_DEBUG_MESSAGE(*msg)
 
     #***********************************************************
     # quality:
@@ -184,12 +184,12 @@ def update_video_encoder(window_dimensions, batch, global_statistics, statistics
         #make a copy to work on
         veq_copy = list(video_encoder_quality)
         veq_copy.append((time.time(), target_quality))
-        new_quality = time_weighted_average(veq_copy, rpow=1.4)
+        new_quality = time_weighted_average(veq_copy, min_offset=0.1, rpow=1.1)
         video_encoder_quality.append((time.time(), new_quality))
         if DEBUG_VIDEO:
-            msg = "video encoder quality factors: packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
-                 dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
-            add_DEBUG_MESSAGE(msg)
+            msg = "video encoder quality factors: wid=%s, packets_bl=%s, batch_q=%s, latency_q=%s, target=%s, new_quality=%s", \
+                 wid, dec2(packets_bl), dec2(batch_q), dec2(latency_q), int(target_quality), int(new_quality)
+            add_DEBUG_MESSAGE(*msg)
 
     try:
         video_encoder_lock.acquire()
