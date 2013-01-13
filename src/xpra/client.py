@@ -277,7 +277,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.mmap_size = 0
 
     def init_opengl(self):
-        USE_OPENGL = os.environ.get("XPRA_OPENGL", "1")=="1"
+        USE_OPENGL = os.environ.get("XPRA_OPENGL", "0")=="1"
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
