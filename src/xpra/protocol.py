@@ -562,7 +562,7 @@ class Protocol(object):
             except:
                 pass
             #and send our last_packet to it:
-            self._add_packet_to_queue(last_packet, block=False)
+            self._add_packet_to_queue(last_packet)
         finally:
             self._write_lock.release()
         self.terminate_io_threads()
