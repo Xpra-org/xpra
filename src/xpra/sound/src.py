@@ -10,13 +10,11 @@ gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS, gst
-from wimpiggy.util import one_arg_signal
+from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS
+from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-BITRATES = [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
-DEFAULT_BITRATE=24
 
 SOURCES = ["autoaudiosrc"]
 if has_pa():
@@ -31,17 +29,20 @@ if os.name=="posix":
                 "osxaudiosrc", "jackaudiosrc"]
 SOURCES.append("audiotestsrc")
 
-def source_has_device_attribute(source):
-    return source not in ("autoaudiosrc", "jackaudiosink", "directsoundsrc")
+
+DEFAULT_SRC = os.environ.get("XPRA_SOUND_DEFAULT_SRC", SOURCES[0])
+if DEFAULT_SRC not in SOURCES:
+    log.error("invalid default sound source: '%s' is not in %s, using %s instead", DEFAULT_SRC, SOURCES, SOURCES[0])
+    DEFAULT_SRC = SOURCES[0]
 
 
 class SoundSource(SoundPipeline):
 
     __gsignals__ = {
-        "new-buffer": one_arg_signal,
+        "new-buffer": n_arg_signal(2),
         }
 
-    def __init__(self, src_type="autoaudiosrc", src_options={}, codec=MP3, encoder_options={}):
+    def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, encoder_options={}):
         assert src_type in SOURCES
         encoders = get_encoders(codec)
         assert len(encoders)>0, "no encoders found for %s" % codec
@@ -50,54 +51,46 @@ class SoundSource(SoundPipeline):
         source_str = plugin_str(src_type, src_options)
         encoder = encoders[0]
         encoder_str = plugin_str(encoder, encoder_options)
-        pipeline_els = [source_str,
-                        "volume name=volume",
-                        "audioconvert",
+        pipeline_els = [source_str]
+        pipeline_els += ["audioconvert",
+                         "audioresample",
                         encoder_str,
                         "appsink name=sink"]
-        pipeline_str = " ! ".join(pipeline_els)
-        debug("soundsource pipeline=%s", pipeline_str)
-        self.pipeline = gst.parse_launch(pipeline_str)
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect("message", self.on_message)
+        self.setup_pipeline_and_bus(pipeline_els)
         self.sink = self.pipeline.get_by_name("sink")
-        debug("sink %s", self.sink)
-        self.state = "stopped"
-        self.volume = self.pipeline.get_by_name("volume")
         self.sink.set_property("emit-signals", True)
+        self.sink.set_property("max-buffers", 10)
         self.sink.set_property("drop", False)
-        self.sink.set_property("sync", False)
+        self.sink.set_property("sync", True)
+        self.sink.set_property("qos", False)
         self.sink.connect("new-buffer", self.on_new_buffer)
         self.sink.connect("new-preroll", self.on_new_preroll)
-        #self.sink.set_property("max-buffers", 1)
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
         self.src_type = ""
-        self.volume = None
         self.sink = None
-
-    def set_mute(self, mute):
-        self.volume.set_property('mute', mute)
-
-    def set_volume(self, volume):
-        assert volume>=0 and volume<=100
-        self.volume.set_property('volume', float(volume)/100.0)
 
     def on_new_preroll(self, appsink):
         buf = appsink.emit('pull-preroll')
         debug('new preroll: %s bytes', len(buf))
-        self.emit("new-buffer", str(buf))
+        self.emit_buffer(buf)
 
-    def on_new_buffer_list(self, appsink):
-        buf = appsink.emit('pull-buffer-list')
-        debug('new buffer list', len(buf))
-
-    def on_new_buffer(self, bus, *args):
+    def on_new_buffer(self, bus):
         buf = self.sink.emit("pull-buffer")
-        debug("new-buffer: %s bytes", len(buf))
-        self.emit("new-buffer", str(buf))
+        self.emit_buffer(buf)
+
+    def emit_buffer(self, buf):
+        """ convert pygst structure into something more generic for the wire """
+        #none of the metadata is really needed at present, but it may be in the future:
+        #metadata = {"caps"      : buf.get_caps().to_string(),
+        #            "size"      : buf.size,
+        #            "timestamp" : buf.timestamp,
+        #            "duration"  : buf.duration,
+        #            "offset"    : buf.offset,
+        #            "offset_end": buf.offset_end}
+        metadata = {}
+        self.emit("new-buffer", buf.data, metadata)
 
 gobject.type_register(SoundSource)
 

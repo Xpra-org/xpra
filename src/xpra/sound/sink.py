@@ -15,17 +15,29 @@ from wimpiggy.util import one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "20"))*1000000
-
 SINKS = ["autoaudiosink"]
+DEFAULT_SINK = SINKS[0]
 if has_pa():
     SINKS.append("pulsesink")
 if sys.platform.startswith("darwin"):
     SINKS.append("osxaudiosink")
 elif sys.platform.startswith("win"):
     SINKS.append("directsoundsink")
+    DEFAULT_SINK = "directsoundsink"
 if os.name=="posix":
     SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
+
+GST_QUEUE_NO_LEAK             = 0
+GST_QUEUE_LEAK_UPSTREAM       = 1
+GST_QUEUE_LEAK_DOWNSTREAM     = 2
+
+QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_NO_LEAK))
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "20"))*1000000
+DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
+if DEFAULT_SINK not in SINKS:
+    log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
+    DEFAULT_SINK = SINKS[0]
+
 
 def sink_has_device_attribute(sink):
     return sink not in ("autoaudiosink", "jackaudiosink", "directsoundsink")
@@ -38,31 +50,46 @@ class SoundSink(SoundPipeline):
         "eos": no_arg_signal
         }
 
-    def __init__(self, sink_type="autoaudiosink", options={}, codec=MP3, decoder_options={}):
+    def __init__(self, sink_type=DEFAULT_SINK, options={}, codec=MP3, decoder_options={}):
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
         decoders = get_decoders(codec)
         assert len(decoders)>0, "no decoders found for %s" % codec
         SoundPipeline.__init__(self, codec)
-        self.data_needed = 0
         self.sink_type = sink_type
         decoder = decoders[0]
         decoder_str = plugin_str(decoder, decoder_options)
-        pipeline_els = ["appsrc name=src",
-                        decoder_str]
+        pipeline_els = []
+        pipeline_els.append("appsrc name=src")
+        pipeline_els.append("mp3parse")
+        pipeline_els.append(decoder_str)
+        pipeline_els.append("volume name=volume")
+        pipeline_els.append("audioconvert")
+        pipeline_els.append("audioresample")
         if QUEUE_TIME>0:
-            pipeline_els.append("queue max-size-time=%s" % QUEUE_TIME)
-        pipeline_els += ["volume name=volume",
-                         "audioconvert",
-                         sink_type]
-        pipeline_str = " ! ".join(pipeline_els)
-        debug("soundsink pipeline=%s", pipeline_str)
-        self.pipeline = gst.parse_launch(pipeline_str)
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect("message", self.on_message)
-        self.src = self.pipeline.get_by_name("src")
-        debug("src %s", self.src)
+            pipeline_els.append("queue name=queue max-size-time=%s leaky=%s" % (QUEUE_TIME, QUEUE_LEAK))
+        else:
+            pipeline_els.append("queue leaky=%s" % QUEUE_LEAK)
+        pipeline_els.append(sink_type)
+        self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
+        self.src = self.pipeline.get_by_name("src")
+        self.src.set_property('emit-signals', True)
+        self.src.set_property('stream-type', 'stream')
+        self.src.set_property('block', False)
+        self.src.set_property('format', 4)
+        self.src.set_property('is-live', True)
+        if QUEUE_TIME>0:
+            self.queue = self.pipeline.get_by_name("queue")
+            def overrun(*args):
+                debug("sound sink queue overrun")
+            def underrun(*args):
+                debug("sound sink queue underrun")
+            self.queue.connect("overrun", overrun)
+            self.queue.connect("underrun", underrun)
+        else:
+            self.queue = None
+        self.src.connect("need-data", self.need_data)
+        self.src.connect("enough-data", self.on_enough_data)
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
@@ -70,19 +97,46 @@ class SoundSink(SoundPipeline):
         self.volume = None
         self.src = None
 
-    def eos(self):
-        debug("eos()")
-        self.src.emit('end-of-stream')
-        self.cleanup()
+    def set_mute(self, mute):
+        self.volume.set_property('mute', mute)
+
+    def is_muted(self):
+        return bool(self.volume.get_property("mute"))
+
+    def get_volume(self):
+        assert self.volume
+        return  self.volume.get_property("volume")
 
     def set_volume(self, volume):
-        assert volume>=0 and volume<=10
-        self.volume.set_property("volume", volume)
+        assert self.volume
+        assert volume>=0 and volume<=100
+        self.volume.set_property('volume', float(volume)/10.0)
 
-    def add_data(self, data):
-        debug("add_data(%s bytes)", len(data))
+    def eos(self):
+        debug("eos()")
         if self.src:
-            self.src.emit("push-buffer", gst.Buffer(data))
+            self.src.emit('end-of-stream')
+        self.cleanup()
+
+    def add_data(self, data, metadata):
+        debug("sound sink: adding %s bytes, %s", len(data), metadata)
+        if self.src:
+            buf = gst.Buffer(data)
+            #buf.size = size
+            #buf.timestamp = timestamp
+            #buf.duration = duration
+            #buf.offset = offset
+            #buf.offset_end = offset_end
+            #buf.set_caps(gst.caps_from_string(caps))
+            r = self.src.emit("push-buffer", buf)
+            if r!=gst.FLOW_OK:
+                log.error("push-buffer error: %s", r)
+
+    def need_data(self, src_arg, needed):
+        debug("need_data: %s bytes in %s", needed, src_arg)
+
+    def on_enough_data(self, *args):
+        debug("on_enough_data(%s)", args)
 
 
 gobject.type_register(SoundSink)

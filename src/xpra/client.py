@@ -904,7 +904,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 log.error("failed to setup sound", exc_info=True)
                 return
         data = packet[2]
-        self.sound_sink.add_data(data)
+        metadata = packet[3]
+        self.sound_sink.add_data(data, metadata)
 
 
     def send_notify_enabled(self):

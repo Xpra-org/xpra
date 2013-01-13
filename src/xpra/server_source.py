@@ -508,9 +508,9 @@ class ServerSource(object):
             self.sound_source.cleanup()
             self.sound_source = None
 
-    def new_sound_buffer(self, sound_source, data):
+    def new_sound_buffer(self, sound_source, data, metadata):
         assert self.sound_source
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data[0]), *data[1:])
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def sound_control(self, action, *args):
         if action=="stop":

@@ -32,14 +32,20 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         self.codec = codec
         self.bitrate = -1
         self.pipeline = None
-        self.state = None
+        self.state = "stopped"
+
+    def setup_pipeline_and_bus(self, elements):
+        pipeline_str = " ! ".join(elements)
+        debug("pipeline=%s", pipeline_str)
+        self.pipeline = gst.parse_launch(pipeline_str)
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.on_message)
 
     def do_get_state(self):
         if not self.pipeline:
             return  "stopped"
-        log.info("do_get_state calling pipeline")
         state = self.pipeline.get_state()
-        log.info("state=%s", state)
         if len(state)==3:
             if state[1]==gst.STATE_PLAYING:
                 return  "active"
@@ -53,9 +59,8 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
 
     def state_may_have_changed(self, *args):
         new_state = self.do_get_state()
-        log.info("state=%s, new_state=%s", self.state, new_state)
         if new_state!=self.state:
-            log.info("new sound source pipeline state: %s", new_state)
+            log.info("new sound pipeline state: %s", new_state)
             self.state = new_state
             self.emit("state-change", new_state)
         return False
@@ -90,9 +95,11 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         elif t == gst.MESSAGE_TAG:
             if message.structure.has_field("bitrate"):
                 self.bitrate = int(message.structure["bitrate"])
-                log.info("bitrate: %s", self.bitrate)
+                log("bitrate: %s", self.bitrate)
             elif message.structure.has_field("codec"):
                 log.info("codec: %s", message.structure["codec"])
+            elif message.structure.has_field("audio-codec"):
+                log.info("codec: %s", message.structure["audio-codec"])
             else:
                 log.info("unknown tag message: %s", message)
         elif t == gst.MESSAGE_STREAM_STATUS:
@@ -107,6 +114,9 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
             else:
                 debug("state changed: %s", message)
             gobject.idle_add(self.state_may_have_changed)
+        elif t == gst.MESSAGE_DURATION:
+            d = message.parse_duration()
+            debug("duration changed: %s", d)
         else:
             log.info("unhandled bus message type %s: %s / %s", t, message, message.structure)
 
