@@ -22,12 +22,12 @@ def which(name):
 		if returncode!=0 or not out:
 			return ""
 		c = out.replace("\n", "").replace("\r", "")
-		if os.path.exists(pactl_bin) and os.path.isfile(pactl_bin):
-			if os.name=="posix" and not os.access(pactl_bin, os.X_OK):
+		if os.path.exists(c) and os.path.isfile(c):
+			if os.name=="posix" and not os.access(c, os.X_OK):
 				#odd, it's there but we can't run it!?
 				return ""
 			return	c
-		return False
+		return ""
 	except:
 		pass
 	return	""
