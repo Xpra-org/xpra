@@ -205,7 +205,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))
 
         # Features Table:
-        tb = self.table_tab("features.png", "Server\nFeatures", self.populate_features)
+        tb = self.table_tab("features.png", "Features", self.populate_features)
         randr_box = gtk.HBox(False, 20)
         self.server_randr_label = label()
         self.server_randr_icon = gtk.Image()
