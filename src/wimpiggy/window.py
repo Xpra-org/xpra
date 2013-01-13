@@ -353,7 +353,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = None
 
     def _read_initial_properties(self):
-        def pget(key, ptype, raise_xerrors):
+        def pget(key, ptype):
             return self.prop_get(key, ptype, raise_xerrors=True)
         transient_for = pget("WM_TRANSIENT_FOR", "window")
         # May be None
