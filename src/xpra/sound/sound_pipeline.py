@@ -32,6 +32,7 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         super(AutoPropGObjectMixin, self).__init__()
         self.codec = codec
         self.codec_description = codec
+        self.codec_mode = ""
         self.bus = None
         self.bus_message_handler_id = None
         self.bitrate = -1
@@ -112,8 +113,14 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
                     self.codec_description = desc
             elif message.structure.has_field("audio-codec"):
                 desc = message.structure["audio-codec"]
-                log.info("codec: %s", desc)
-                self.codec_description = desc
+                if self.codec_description!=desc:
+                    log.info("codec: %s", desc)
+                    self.codec_description = desc
+            elif message.structure.has_field("mode"):
+                mode = message.structure["mode"]
+                if self.codec_mode!=mode:
+                    log("mode: %s", mode)
+                    self.codec_mode = mode
             else:
                 log.info("unknown tag message: %s", message)
         elif t == gst.MESSAGE_STREAM_STATUS:
