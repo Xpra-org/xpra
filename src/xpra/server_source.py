@@ -810,15 +810,19 @@ class ServerSource(object):
         state = get_sound_state(self.supports_speaker, self.sound_source)
         info["speaker.state"] = state
         if state=="active":
+            info["speaker.codec"] = self.sound_source.codec
+            info["speaker.codec_description"] = self.sound_source.codec_description
             bitrate = self.sound_source.get_bitrate()
             if bitrate>0:
                 info["speaker.bitrate"] = bitrate
         state = get_sound_state(self.supports_microphone, self.sound_sink)
         info["microphone.state"] = state
         if state=="active":
+            info["microphone.codec"] = self.sound_sink.codec
+            info["microphone.codec_description"] = self.sound_sink.codec_description
             bitrate = self.sound_sink.get_bitrate()
             if bitrate>0:
-                info["speaker.bitrate"] = bitrate
+                info["microphone.bitrate"] = bitrate
 
     def send_info_response(self, info):
         self.send("info-response", info)
