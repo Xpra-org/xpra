@@ -470,7 +470,7 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_cursors_icon, scaps.get("cursors", False))
         self.bool_icon(self.server_speaker_icon, scaps.get("sound.send", False))
         if self.client.sound_sink and self.client.sound_sink.codec:
-            self.speaker_codec_label.set_text(self.client.sound_sink.codec)
+            self.speaker_codec_label.set_text("%s (%s)" % (self.client.sound_sink.get_state(), self.client.sound_sink.codec))
         else:
             self.speaker_codec_label.set_text("")
         if scaps.get("sound.send", False):
@@ -480,7 +480,7 @@ class SessionInfo(gtk.Window):
         self.client_speaker_codecs_label.set_text(", ".join(self.client.microphone_codecs or []))
         self.bool_icon(self.server_microphone_icon, scaps.get("sound.receive", False))
         if self.client.sound_source and self.client.sound_source.codec:
-            self.microphone_codec_label.set_text(self.client.sound_source.codec)
+            self.microphone_codec_label.set_text("%s (%s)" % (self.client.sound_source.get_state(), self.client.sound_source.codec))
         else:
             self.microphone_codec_label.set_text("")
         if scaps.get("sound.receive", False):
