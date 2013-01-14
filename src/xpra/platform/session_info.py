@@ -243,7 +243,7 @@ class SessionInfo(gtk.Window):
         microphone_box.add(self.microphone_codec_label)
         tb.new_row("Microphone Forwarding", microphone_box)
         self.server_microphone_codecs_label = label()
-        tb.new_row("Speaker Codecs", self.server_microphone_codecs_label)
+        tb.new_row("Server Codecs", self.server_microphone_codecs_label)
         self.client_microphone_codecs_label = label()
         tb.new_row("Client Codecs", self.client_microphone_codecs_label)
 
@@ -468,26 +468,22 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
         self.bool_icon(self.server_bell_icon, scaps.get("bell", False))
         self.bool_icon(self.server_cursors_icon, scaps.get("cursors", False))
-        self.bool_icon(self.server_speaker_icon, scaps.get("sound.send", False))
-        if self.client.sound_sink and self.client.sound_sink.codec:
-            self.speaker_codec_label.set_text("%s (%s)" % (self.client.sound_sink.get_state(), self.client.sound_sink.codec))
-        else:
-            self.speaker_codec_label.set_text("")
-        if scaps.get("sound.send", False):
-            self.server_speaker_codecs_label.set_text(", ".join(scaps.get("sound.encoders", [])))
-        else:
-            self.server_speaker_codecs_label.set_text("n/a")
-        self.client_speaker_codecs_label.set_text(", ".join(self.client.microphone_codecs or []))
-        self.bool_icon(self.server_microphone_icon, scaps.get("sound.receive", False))
-        if self.client.sound_source and self.client.sound_source.codec:
-            self.microphone_codec_label.set_text("%s (%s)" % (self.client.sound_source.get_state(), self.client.sound_source.codec))
-        else:
-            self.microphone_codec_label.set_text("")
-        if scaps.get("sound.receive", False):
-            self.server_microphone_codecs_label.set_text(", ".join(scaps.get("sound.decoders", [])))
-        else:
-            self.server_microphone_codecs_label.set_text("n/a")
-        self.client_microphone_codecs_label.set_text(", ".join(self.client.speaker_codecs or []))
+        def pipeline_info(sound_pipeline):
+            if sound_pipeline is None or sound_pipeline.codec is None:
+                return "inactive"
+            return "%s: %s" % (sound_pipeline.get_state(), sound_pipeline.codec_description)
+        def codec_info(enabled, codecs):
+            if not enabled:
+                return "n/a"
+            return ", ".join(codecs or [])
+        self.bool_icon(self.server_speaker_icon, scaps.get("sound.send", False) and self.client.speaker_allowed)
+        self.speaker_codec_label.set_text(pipeline_info(self.client.sound_sink))
+        self.server_speaker_codecs_label.set_text(codec_info(scaps.get("sound.send", False), scaps.get("sound.encoders", [])))
+        self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
+        self.bool_icon(self.server_microphone_icon, scaps.get("sound.receive", False) and self.client.microphone_allowed)
+        self.microphone_codec_label.set_text(pipeline_info(self.client.sound_source))
+        self.server_microphone_codecs_label.set_text(codec_info(scaps.get("sound.receive", False), scaps.get("sound.decoders", [])))
+        self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
         return False
 
     def populate_connection(self):
