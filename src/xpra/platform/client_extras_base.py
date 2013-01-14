@@ -720,14 +720,15 @@ class ClientExtrasBase(object):
         def spk_off(*args):
             log("spk_off(%s)", args)
             self.client.stop_receiving_sound()
+        def is_speaker_on(*args):
+            return self.client.speaker_enabled
         def speaker_state(*args):
             if not self.client.server_sound_send:
                 speaker.set_sensitive(False)
                 set_tooltip_text(speaker, "Server does not support speaker forwarding")
                 return
             speaker.set_sensitive(True)
-            on = self.client.speaker_enabled
-            speaker.set_submenu(self.make_soundsubmenu(on, spk_on, spk_off, "speaker-state-change"))
+            speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, spk_on, spk_off, "speaker-changed"))
         self.client.connect("handshake-complete", speaker_state)
         return speaker
 
@@ -740,18 +741,19 @@ class ClientExtrasBase(object):
         def mic_off(*args):
             log("mic_off(%s)", args)
             self.client.stop_sending_sound()
+        def is_microphone_on(*args):
+            return self.client.microphone_enabled
         def microphone_state(*args):
             if not self.client.server_sound_receive:
                 microphone.set_sensitive(False)
                 set_tooltip_text(microphone, "Server does not support microphone forwarding")
                 return
             microphone.set_sensitive(True)
-            on = self.client.microphone_enabled
-            microphone.set_submenu(self.make_soundsubmenu(on, mic_on, mic_off, "microphone-state-change"))
+            microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, mic_on, mic_off, "microphone-changed"))
         self.client.connect("handshake-complete", microphone_state)
         return microphone
 
-    def make_soundsubmenu(self, on, on_cb, off_cb, client_signal):
+    def make_soundsubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
         menu = gtk.Menu()
         def onoffitem(label, active, cb):
             c = CheckMenuItem(label)
@@ -765,13 +767,15 @@ class ClientExtrasBase(object):
                     cb()
             c.connect('activate', check_enabled)
             return c
-        on = onoffitem("On", on, on_cb)
-        off = onoffitem("Off", not on, off_cb)
+        is_on = is_on_cb()
+        on = onoffitem("On", is_on, on_cb)
+        off = onoffitem("Off", not is_on, off_cb)
         menu.append(on)
         menu.append(off)
-        def client_signalled_change(obj, value):
-            log("sound: client_signalled_change(%s, %s)", obj, value)
-            if bool(value):
+        def client_signalled_change(obj):
+            is_on = is_on_cb()
+            log("sound: client_signalled_change(%s) is_on=%s", obj, is_on)
+            if is_on:
                 if not on.get_active():
                     on.set_active(True)
                     ensure_item_selected(menu, on)

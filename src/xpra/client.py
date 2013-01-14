@@ -67,7 +67,7 @@ except:
     from Queue import Queue     #@Reimport
 
 
-from wimpiggy.util import (no_arg_signal, one_arg_signal,
+from wimpiggy.util import (no_arg_signal,
                            gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 
@@ -96,8 +96,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
     __gsignals__ = {
         "clipboard-toggled"         : no_arg_signal,
         "keyboard-sync-toggled"     : no_arg_signal,
-        "speaker-state-change"      : one_arg_signal,
-        "microphone-state-change"   : one_arg_signal,
+        "speaker-changed"           : no_arg_signal,        #bitrate or pipeline state has changed
+        "microphone-changed"        : no_arg_signal,        #bitrate or pipeline state has changed
         }
 
     def __init__(self, conn, opts):
@@ -833,53 +833,88 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.send_ping()
 
     def start_sending_sound(self):
-        assert self.sound_source is None
+        """ (re)start a sound source and emit client signal """
         assert self.microphone_allowed
         assert self.server_sound_receive
+        if self.sound_source:
+            if self.sound_source.get_state()=="active":
+                log.error("already sending sound!")
+                return
+            self.sound_source.start()
+        if not self.start_sound_source():
+            return
         self.microphone_enabled = True
-        self.emit("microphone-state-change", self.microphone_enabled)
+        self.emit("microphone-changed")
+
+    def start_sound_source(self):
+        assert self.sound_source is None
+        def sound_source_state_changed(*args):
+            self.emit("microphone-changed")
+        def sound_source_bitrate_changed(*args):
+            self.emit("microphone-changed")
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
             self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulsesound_server, self.server_pulseaudio_id)
-            if self.sound_source:
-                self.sound_source.connect("new-buffer", self.new_sound_buffer)
-                self.sound_source.start()
+            if not self.sound_source:
+                return False
+            self.sound_source.connect("new-buffer", self.new_sound_buffer)
+            self.sound_source.connect("state-changed", sound_source_state_changed)
+            self.sound_source.connect("bitrate-changed", sound_source_bitrate_changed)
+            self.sound_source.start()
+            return True
         except Exception, e:
             log.error("error setting up sound: %s", e)
+            return False
 
     def stop_sending_sound(self):
-        self.microphone_enabled = False
-        self.emit("microphone-state-change", self.microphone_enabled)
+        """ stop the sound source and emit client signal """
         if self.sound_source is None:
-            log("stop_sending_sound: sound not started!")
-        else:
-            self.sound_source.stop()
-            self.sound_source.cleanup()
-            self.sound_source = None
+            log.warn("stop_sending_sound: sound not started!")
+            return
+        self.microphone_enabled = False
+        self.sound_source.stop()
+        self.emit("microphone-changed")
 
     def start_receiving_sound(self):
-        self.speaker_enabled = True
-        self.emit("speaker-state-change", self.speaker_enabled)
-        if self.sound_sink is not None:
+        """ ask the server to start sending sound and emit the client signal """
+        if self.sound_sink is not None and self.sound_sink.get_state()=="active":
             log("start_receiving_sound: we are already receiving sound!")
         elif not self.server_sound_send:
             log.error("cannot start receiving sound: support not enabled on the server")
         else:
+            self.speaker_enabled = True
             self.send("sound-control", "start")
+            self.emit("speaker-changed")
 
     def stop_receiving_sound(self):
-        self.speaker_enabled = False
-        self.emit("speaker-state-change", self.speaker_enabled)
+        """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
         self.send("sound-control", "stop")
         if self.sound_sink is None:
             log("stop_receiving_sound: sound not started!")
-        else:
-            try:
-                self.sound_sink.stop()
-                self.sound_sink.cleanup()
-                self.sound_sink = None
-            except:
-                log.error("stop sink", exc_info=True)
+            return
+        self.speaker_enabled = False
+        self.sound_sink.stop()
+        self.emit("speaker-changed")
+
+
+    def start_sound_sink(self, codec):
+        assert self.sound_sink is None
+        def sound_sink_state_changed(*args):
+            self.emit("speaker-changed")
+        def sound_sink_bitrate_changed(*args):
+            self.emit("speaker-changed")
+        try:
+            log.info("starting %s sound sink", codec)
+            from xpra.sound.sink import SoundSink
+            self.sound_sink = SoundSink(codec=codec)
+            self.sound_sink.connect("state-changed", sound_sink_state_changed)
+            self.sound_sink.connect("bitrate-changed", sound_sink_bitrate_changed)
+            self.sound_sink.start()
+            log.info("%s sound sink started", codec)
+            return True
+        except:
+            log.error("failed to start sound sink", exc_info=True)
+            return False
 
     def new_sound_buffer(self, sound_source, data):
         assert self.sound_source
@@ -891,18 +926,14 @@ class XpraClient(XpraClientBase, gobject.GObject):
             return
         codec = packet[1]
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
-            log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
+            log.error("sound codec change not supported! (from %s to %s)", self.sound_sink.codec, codec)
             self.sound_sink.stop()
-            self.sound_sink.cleanup()
-            self.sound_sink = None
-        if not self.sound_sink:
-            try:
-                from xpra.sound.sink import SoundSink
-                self.sound_sink = SoundSink(codec=codec)
-                self.sound_sink.start()
-            except:
-                log.error("failed to setup sound", exc_info=True)
+            return
+        if self.sound_sink is None:
+            if not self.start_sound_sink(codec):
                 return
+        elif self.sound_sink.get_state()=="stopped":
+            self.sound_sink.start()
         data = packet[2]
         metadata = packet[3]
         self.sound_sink.add_data(data, metadata)
