@@ -174,8 +174,7 @@ class Protocol(object):
 
     def _write_format_thread_loop(self):
         while not self._closed:
-            if not self._source_has_more.wait(1.0):
-                log.info("source_has_more timedout")
+            self._source_has_more.wait()
             if self._closed:
                 return
             self._source_has_more.clear()
