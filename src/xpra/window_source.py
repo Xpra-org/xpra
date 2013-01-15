@@ -170,12 +170,12 @@ class WindowPerformanceStatistics(object):
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self, low_limit, delay):
+    def get_factors(self, pixel_count, delay):
         factors = []
         #damage "in" latency factors:
         if len(self.damage_in_latency)>0:
             msg = "damage processing latency:"
-            target_latency = 0.010 + (0.050*low_limit/1024.0/1024.0)
+            target_latency = 0.010 + (0.050*pixel_count/1024.0/1024.0)
             factors.append(calculate_for_target(msg, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
             #ratio to delay (aim for double the latency so we always have packets in flight):
             msg = "damage processing ratios %i - %i / %i" % (self.avg_damage_in_latency*1000, self.recent_damage_in_latency*1000, delay)
@@ -186,7 +186,7 @@ class WindowPerformanceStatistics(object):
         #damage "out" latency
         if len(self.damage_out_latency)>0:
             msg = "damage send latency:"
-            target_latency = 0.025 + (0.060*low_limit/1024.0/1024.0)
+            target_latency = 0.025 + (0.060*pixel_count/1024.0/1024.0)
             factors.append(calculate_for_target(msg, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
         #ratio of "in" and "out" latency indicates network bottleneck:
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:

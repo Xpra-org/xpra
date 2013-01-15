@@ -124,7 +124,7 @@ class GlobalPerformanceStatistics(object):
             self.min_server_ping_latency = min([x for _,x in data])
             self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
 
-    def get_factors(self, target_latency, low_limit):
+    def get_factors(self, target_latency, pixel_count):
         factors = []
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)
@@ -146,7 +146,7 @@ class GlobalPerformanceStatistics(object):
         factors.append(queue_inspect("damage packet queue size:", self.damage_packet_qsizes, smoothing=sqrt))
         #damage packet queue pixels (global):
         qpix_time_values = [(event_time, value) for event_time, _, value in list(self.damage_packet_qpixels)]
-        factors.append(queue_inspect("damage packet queue pixels:", qpix_time_values, div=low_limit, smoothing=sqrt))
+        factors.append(queue_inspect("damage packet queue pixels:", qpix_time_values, div=pixel_count, smoothing=sqrt))
         #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
         factors.append(queue_inspect("damage data queue:", self.damage_data_qsizes))
         if self.mmap_size>0:
