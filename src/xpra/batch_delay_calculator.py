@@ -142,7 +142,8 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
     # here we try to minimize damage-latency and client decoding speed
     if fixed_speed>=0:
         new_speed = fixed_speed
-        add_DEBUG_MESSAGE("video encoder using fixed speed: %s", fixed_speed)
+        if DEBUG_VIDEO:
+            add_DEBUG_MESSAGE("video encoder using fixed speed: %s", fixed_speed)
     else:
         #20ms + 50ms per MPixel
         min_damage_latency = 0.020 + 0.050*low_limit/1024.0/1024.0
@@ -171,7 +172,8 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
     # here we try minimize client-latency, packet-backlog and batch.delay
     if fixed_quality>=0:
         new_quality = fixed_quality
-        add_DEBUG_MESSAGE("video encoder using fixed quality: %s", fixed_quality)
+        if DEBUG_VIDEO:
+            add_DEBUG_MESSAGE("video encoder using fixed quality: %s", fixed_quality)
     else:
         packets_backlog, _, _ = statistics.get_backlog()
         packets_bl = 1.0 - logp(packets_backlog/low_limit)
