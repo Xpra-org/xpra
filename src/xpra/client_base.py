@@ -16,7 +16,7 @@ from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.protocol import Protocol, has_rencode
+from xpra.protocol import Protocol, has_rencode, use_rencode
 from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
@@ -271,7 +271,7 @@ class XpraClientBase(gobject.GObject):
         if not is_compatible_with(self._remote_version):
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version: %s" % self._remote_version)
             return False
-        if capabilities.get("rencode") and has_rencode:
+        if capabilities.get("rencode") and use_rencode:
             self._protocol.enable_rencode()
         if self.encryption:
             #server uses a new cipher after second hello:

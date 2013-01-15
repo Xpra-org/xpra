@@ -43,7 +43,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
 from xpra.server_uuid import save_uuid, get_uuid
 from xpra.bytestreams import SocketConnection
-from xpra.protocol import Protocol, has_rencode
+from xpra.protocol import Protocol, has_rencode, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
@@ -528,7 +528,7 @@ class XpraServerBase(object):
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
-        if capabilities.get("rencode") and has_rencode:
+        if capabilities.get("rencode") and use_rencode:
             proto.enable_rencode()
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
