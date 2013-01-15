@@ -19,7 +19,7 @@ v0.8.0 (2012-12-20)
 	-- sound forwarding
 	-- faster and more reliable client and server exit (from signal or otherwise)
 	-- SSH support on MS Windows
-	-- "xpra shadow" mode to clone an existing X11 display
+	-- "xpra shadow" mode to clone an existing X11 display (compositors not supported yet)
 	-- support for delta pixels mode (most useful for shadow mode)
 	-- avoid warnings and X11 errors with the screenshot command
 	-- better mouse cursor support: send cursors by name so their size matches the client's settings
@@ -42,6 +42,15 @@ v0.8.0 (2012-12-20)
 	-- OSX and MS Windows build updates: newer py2app, gtk-mac-bundler, pywin32 and support libraries
 	-- OSX command line path fix
 	-- updated Cython to 0.17.3 for all binary builds
+
+
+v0.7.8 (2013-01-15)
+======================
+	-- fix xsettings integer parsing
+	-- fix 'quality' command line option availibility check
+	-- workaround Ubuntu's global menus
+	-- better compatibility with old servers: don't send new xsettings format
+	-- avoid logging for normal "clipboard is disabled" case
 
 
 v0.7.7 (2013-01-03)
