@@ -312,10 +312,6 @@ def main(script_file, cmdline):
                       dest="encoding", type="str",
                       help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), default_encoding))
     if "jpeg" in ENCODINGS:
-        group.add_option("--jpeg-quality", action="store",
-                          metavar="LEVEL",
-                          dest="quality", type="int", default=None,
-                          help="Deprecated - use 'quality'")
         group.add_option("-b", "--max-bandwidth", action="store",
                           dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
@@ -430,8 +426,10 @@ def main(script_file, cmdline):
     if "jpeg" not in ENCODINGS:
         #ensure the default values are set even though
         #the option is not shown to the user as it is not available
-        options.quality = 80
+        options.quality = int_default("quality", -1)
         options.max_bandwidth = 0
+    if "x264" not in ENCODINGS:
+        options.speed = int_default("speed", -1)
     try:
         int(options.dpi)
     except Exception, e:
