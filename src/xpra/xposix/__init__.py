@@ -16,16 +16,18 @@ def add_client_options(parser):
     add_delaytray_option(parser)
 
 def get_machine_id():
+    v = u""
     for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
-        if os.path.exists(filename):
+        if os.path.exists(filename) and os.path.isfile(filename):
             f = None
             try:
                 try:
-                    f = open(filename, mode='rb')
-                    return f.read()
+                    f = open(filename, 'rb', 'utf-8')
+                    v = f.read()
+                    break
                 finally:
                     if f:
                         f.close()
             except:
                 pass
-    return  ""
+    return  v

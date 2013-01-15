@@ -16,4 +16,4 @@ def add_client_options(parser):
     pass
 
 def get_machine_id():
-    return  ""
+    return  u""

@@ -592,9 +592,10 @@ class ClientExtrasBase(object):
 
     def make_clipboardmenuitem(self):
         try:
-            from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
-            if self.clipboard_helper and isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
-                return self.make_translatedclipboard_optionsmenuitem()
+            if self.clipboard_helper:
+                from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
+                if isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
+                    return self.make_translatedclipboard_optionsmenuitem()
         except:
             log.error("make_clipboardmenuitem()", exc_info=True)
         return self.make_clipboard_togglemenuitem()

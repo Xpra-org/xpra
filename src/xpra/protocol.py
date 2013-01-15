@@ -13,7 +13,7 @@ gobject = import_gobject()
 gobject.threads_init()
 import sys
 import socket # for socket.error
-import zlib
+from zlib import compress, decompress, decompressobj
 import struct
 import os
 import threading
@@ -44,6 +44,16 @@ except Exception, e:
 has_rencode = rencode_dumps is not None and rencode_loads is not None
 use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1"
 
+#stupid python version breakage:
+if sys.version > '3':
+    long = int          #@ReservedAssignment
+    unicode = str           #@ReservedAssignment
+    def zcompress(packet, level):
+        return compress(bytes(packet, 'UTF-8'), level)
+else:
+    def zcompress(packet, level):
+        return compress(packet, level)
+
 
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str) and len(obj) > limit:
@@ -67,7 +77,7 @@ class ZLibCompressed(object):
         return len(self.data)
 
 def zlib_compress(datatype, data, level=5):
-    cdata = zlib.compress(data, level)
+    cdata = zcompress(data, level)
     return ZLibCompressed(datatype, cdata, level)
 
 
@@ -100,7 +110,7 @@ class Protocol(object):
         self.chunked_compression = True
         self._closed = False
         self._encoder = self.bencode
-        self._decompressor = zlib.decompressobj()
+        self._decompressor = decompressobj()
         self._compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
@@ -303,7 +313,7 @@ class Protocol(object):
                 #add new binary packet with large item:
                 if sys.version>='3':
                     item = item.encode("latin1")
-                packets.append((i, level, zlib.compress(item, level)))
+                packets.append((i, level, zcompress(item, level)))
                 #replace this item with an empty string placeholder:
                 packet[i] = ''
             elif ti!=str:
@@ -323,7 +333,7 @@ class Protocol(object):
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
                      len(main_packet), packet_in[0], [type(x) for x in packet[1:]], [len(str(x)) for x in packet[1:]], repr_ellipsized(packet))
         if level>0:
-            data = zlib.compress(main_packet, level)
+            data = zcompress(main_packet, level)
             packets.append((0, level, data))
         else:
             packets.append((0, 0, main_packet))
@@ -489,7 +499,7 @@ class Protocol(object):
                 #uncompress if needed:
                 if compression_level>0:
                     if self.chunked_compression:
-                        data = zlib.decompress(data)
+                        data = decompress(data)
                     else:
                         data = self._decompressor.decompress(data)
                 if sys.version>='3':

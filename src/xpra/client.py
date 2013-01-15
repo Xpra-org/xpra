@@ -593,7 +593,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
         root_w, root_h = get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         capabilities["screen_sizes"] = self.get_screen_sizes()
-        capabilities["client_type"] = "Python/Gtk"
+        if is_gtk3():
+            capabilities["client_type"] = "Python/Gtk3"
+        else:
+            capabilities["client_type"] = "Python/Gtk2"
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat
@@ -987,6 +990,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
 
     def get_screen_sizes(self):
         screen_sizes = []
+        if is_gtk3():
+            #where has this been moved to? - no docs to tell you :(
+            return screen_sizes
         display = gdk.display_get_default()
         i=0
         while i<display.get_n_screens():
@@ -1042,10 +1048,17 @@ class XpraClient(XpraClientBase, gobject.GObject):
             ClientWindowClass = self.GLClientWindowClass
         pid = metadata.get("pid", -1)
         group_leader = None
-        if pid>0:
+        if pid>0 and not is_gtk3():
             group_leader = self._pid_to_group_leader.get(pid)
             if not group_leader:
-                group_leader = gtk.gdk.Window(None, 1, 1, gtk.gdk.WINDOW_TOPLEVEL, 0, gtk.gdk.INPUT_ONLY,
+                if is_gtk3():
+                    #does not work yet - the new gtk documentation is just terrible
+                    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+                    INPUT_ONLY = gtk.WindowWindowClass.INPUT_ONLY
+                else:
+                    WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
+                    INPUT_ONLY = gdk.INPUT_ONLY
+                group_leader = gdk.Window(None, 1, 1, WINDOW_TOPLEVEL, 0, INPUT_ONLY,
                                               "group-leader-for-%s" % pid)
                 self._pid_to_group_leader[pid] = group_leader
                 log("new hidden group leader window %s for pid=%s", group_leader, pid)

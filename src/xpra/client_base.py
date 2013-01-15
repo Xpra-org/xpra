@@ -9,7 +9,7 @@ import sys
 import uuid
 import hashlib
 import socket
-from wimpiggy.gobject_compat import import_gobject
+from wimpiggy.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 
 from wimpiggy.util import n_arg_signal
@@ -137,12 +137,14 @@ class XpraClientBase(gobject.GObject):
 
     def make_uuid(self):
         u = hashlib.sha1()
-        u.update(str(get_machine_id()))
+        def uupdate(ustr):
+            u.update(ustr.encode("utf-8"))
+        uupdate(get_machine_id())
         if os.name=="posix":
-            u.update("/")
-            u.update(str(os.getuid()))
-            u.update("/")
-            u.update(str(os.getgid()))
+            uupdate(u"/")
+            uupdate(str(os.getuid()))
+            uupdate(u"/")
+            uupdate(str(os.getgid()))
         self.uuid = u.hexdigest()
 
     def send(self, *parts):
@@ -331,7 +333,7 @@ class GLibXpraClient(XpraClientBase):
             self._packet_handlers[t] = noop
 
     def run(self):
-        import glib
+        glib = import_glib()
         try:
             glib.threads_init()
         except AttributeError:

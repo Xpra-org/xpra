@@ -144,7 +144,12 @@ except ImportError, e:
 def xget_u32_property(target, name):
     try:
         if not has_wimpiggy_prop:
-            prop = target.property_get(name)
+            if is_gtk3():
+                name_atom = gdk.Atom.intern(name, False)
+                type_atom = gdk.Atom.intern("CARDINAL", False)
+                gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
+            else:
+                prop = target.property_get(name)
             if not prop or len(prop)!=3 or len(prop[2])!=1:
                 return  None
             log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])

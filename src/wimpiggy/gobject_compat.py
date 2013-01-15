@@ -43,6 +43,15 @@ def import_gobject3():
 def import_gobject():
     return  _try_import(import_gobject3, import_gobject2)
 
+def import_glib3():
+    from gi.repository import GLib                  #@UnresolvedImport @UnusedImport
+    return GLib
+def import_glib2():
+    import glib
+    return glib
+def import_glib():
+    return _try_import(import_glib3, import_glib2)
+
 def import_gtk2():
     import pygtk
     pygtk.require("2.0")

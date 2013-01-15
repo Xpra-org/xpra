@@ -4,13 +4,13 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from wimpiggy.gobject_compat import import_gdk, is_gtk3
+from wimpiggy.gobject_compat import import_gdk, is_gtk3, import_gobject
 gdk = import_gdk()
+gobject = import_gobject()
 
 import os
 import ctypes
 import cairo
-import gobject
 import zlib
 
 from wimpiggy.log import Logger
@@ -180,7 +180,7 @@ Instead we have to use PIL to convert via a PNG!
 This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(Backing):
-    def __init__(self, wid, w, h, old_backing, mmap_enabled, mmap):
+    def __init__(self, wid, w, h, mmap_enabled, mmap):
         Backing.__init__(self, wid, mmap_enabled, mmap)
 
     def init(self, w, h):

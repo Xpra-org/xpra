@@ -53,8 +53,9 @@
 # timeout. If the user ever stops pasting madly for a few seconds, though,
 # then everything should have a chance to return to equilibrium...
 
-import gobject
-import gtk
+from wimpiggy.gobject_compat import import_gobject, import_gtk
+gobject = import_gobject()
+gtk = import_gtk()
 
 from wimpiggy.log import Logger
 log = Logger()

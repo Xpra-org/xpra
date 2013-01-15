@@ -3,15 +3,19 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
+from wimpiggy.gobject_compat import import_gtk, is_gtk3
+gtk = import_gtk()
 
 from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.window_backing import make_new_backing, PixmapBacking
 
-ORIENTATION = {gtk.ORIENTATION_HORIZONTAL   : "HORIZONTAL",
-               gtk.ORIENTATION_VERTICAL     : "VERTICAL"}
+ORIENTATION = {}
+if not is_gtk3():
+    #where was this moved to??
+    ORIENTATION = {gtk.ORIENTATION_HORIZONTAL   : "HORIZONTAL",
+                   gtk.ORIENTATION_VERTICAL     : "VERTICAL"}
 
 
 class ClientTray(object):

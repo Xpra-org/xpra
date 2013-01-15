@@ -18,4 +18,4 @@ def add_client_options(parser):
     add_notray_option(parser, ", this will also disable notifications!")
 
 def get_machine_id():
-    return  ""
+    return  u""

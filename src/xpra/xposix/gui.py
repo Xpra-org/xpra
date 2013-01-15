@@ -9,7 +9,7 @@
 
 import sys
 import os
-from wimpiggy.gobject_compat import import_gtk, import_gdk
+from wimpiggy.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 _display = gdk.get_display()
@@ -25,12 +25,13 @@ log = Logger()
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
         ClientExtrasBase.__init__(self, client, opts, conn)
-        try:
-            from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-            self.setup_clipboard_helper(GDKClipboardProtocolHelper)
-        except ImportError, e:
-            log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+        if not is_gtk3():       #currently broken with gtk3
+            try:
+                from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+                self.setup_clipboard_helper(GDKClipboardProtocolHelper)
+            except ImportError, e:
+                log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
+                self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu(True)
         self.setup_tray(opts.no_tray, opts.delay_tray, opts.tray_icon)
         self.setup_xprops(opts.pulseaudio)

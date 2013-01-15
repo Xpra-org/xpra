@@ -5,11 +5,17 @@
 # later version. See the file COPYING for details.
 
 import os
-import pygtk
-pygtk.require("2.0")
 import struct
-import gobject
-import gtk
+
+from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+gobject = import_gobject()
+gtk = import_gtk()
+gdk = import_gdk()
+if is_gtk3():
+    PROPERTY_CHANGE_MASK = gdk.EventMask.PROPERTY_CHANGE_MASK
+else:
+    PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
+
 
 from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
@@ -213,7 +219,7 @@ class ClipboardProxy(gtk.Invisible):
 
     def __init__(self, selection):
         gtk.Invisible.__init__(self)
-        self.add_events(gtk.gdk.PROPERTY_CHANGE_MASK)
+        self.add_events(PROPERTY_CHANGE_MASK)
         self._selection = selection
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False

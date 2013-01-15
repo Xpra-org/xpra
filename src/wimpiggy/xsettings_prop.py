@@ -42,6 +42,8 @@ XSettingsNames = {
                 XSettingsTypeColor      : "Color",
                 }
 
+if sys.version>='3':
+    long = int              #@ReservedAssignment
 
 
 def get_settings(disp, d):
