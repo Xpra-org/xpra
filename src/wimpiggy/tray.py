@@ -64,7 +64,7 @@ TRANSPARENCY = True
 
 
 def get_tray_window(tray_window):
-    tray_window.get_data(XPRA_TRAY_WINDOW_PROPERTY)
+    return tray_window.get_data(XPRA_TRAY_WINDOW_PROPERTY)
 
 def set_tray_window(tray_window, window):
     tray_window.set_data(XPRA_TRAY_WINDOW_PROPERTY, get_xwindow(window))
