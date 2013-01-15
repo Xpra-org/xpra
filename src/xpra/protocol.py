@@ -18,8 +18,7 @@ import struct
 import os
 import threading
 
-WRITE_QUEUE_BUSY_LEVEL = int(os.environ.get("XPRA_WRITE_QUEUE_BUSY_LEVEL", 2))
-assert WRITE_QUEUE_BUSY_LEVEL>=1, "write queue busy level cannot be set lower than 1!"
+PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
 
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
@@ -35,8 +34,11 @@ from xpra.bytestreams import untilConcludes
 from xpra.bencode import bencode, bdecode
 rencode_dumps, rencode_loads = None, None
 try:
-    from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
-    from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
+    try:
+        from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
+        from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
+    except ImportError:
+        pass
 except Exception, e:
     log.error("xpra.rencode is missing: %s", e)
 has_rencode = rencode_dumps is not None and rencode_loads is not None
@@ -47,9 +49,6 @@ def repr_ellipsized(obj, limit=100):
         return repr(obj[:limit]) + "..."
     else:
         return repr(obj)
-
-def dump_packet(packet):
-    return "[" + ", ".join([repr_ellipsized(str(x), 50) for x in packet]) + "]"
 
 class Compressed(object):
     def __init__(self, datatype, data):
@@ -213,7 +212,7 @@ class Protocol(object):
                     data = self.cipher_out.encrypt(padded)
                     assert len(data)==actual_size
                     log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
-                if actual_size<16384:
+                if actual_size<PACKET_JOIN_SIZE:
                     #'p' + protocol-flags + compression_level + packet_index + data_size
                     if type(data)==unicode:
                         data = str(data)
