@@ -468,7 +468,9 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
         self.bool_icon(self.server_bell_icon, scaps.get("bell", False))
         self.bool_icon(self.server_cursors_icon, scaps.get("cursors", False))
-        def pipeline_info(sound_pipeline):
+        def pipeline_info(can_use, sound_pipeline):
+            if not can_use:
+                return ""   #the icon shows this is not available, status is irrelevant so leave it empty
             if sound_pipeline is None or sound_pipeline.codec is None:
                 return "inactive"
             state = sound_pipeline.get_state()
@@ -483,15 +485,17 @@ class SessionInfo(gtk.Window):
                 return "n/a"
             return ", ".join(codecs or [])
         def populate_speaker_info(*args):
-            self.bool_icon(self.server_speaker_icon, scaps.get("sound.send", False) and self.client.speaker_allowed)
-            self.speaker_codec_label.set_text(pipeline_info(self.client.sound_sink))
+            can = scaps.get("sound.send", False) and self.client.speaker_allowed
+            self.bool_icon(self.server_speaker_icon, can)
+            self.speaker_codec_label.set_text(pipeline_info(can, self.client.sound_sink))
             self.server_speaker_codecs_label.set_text(codec_info(scaps.get("sound.send", False), scaps.get("sound.encoders", [])))
             self.client_speaker_codecs_label.set_text(codec_info(self.client.speaker_allowed, self.client.speaker_codecs))
         populate_speaker_info()
         self.client.connect("speaker-changed", populate_speaker_info)
         def populate_microphone_info(*args):
-            self.bool_icon(self.server_microphone_icon, scaps.get("sound.receive", False) and self.client.microphone_allowed)
-            self.microphone_codec_label.set_text(pipeline_info(self.client.sound_source))
+            can = scaps.get("sound.receive", False) and self.client.microphone_allowed
+            self.bool_icon(self.server_microphone_icon, can)
+            self.microphone_codec_label.set_text(pipeline_info(can, self.client.sound_source))
             self.server_microphone_codecs_label.set_text(codec_info(scaps.get("sound.receive", False), scaps.get("sound.decoders", [])))
             self.client_microphone_codecs_label.set_text(codec_info(self.client.microphone_allowed, self.client.microphone_codecs))
         populate_microphone_info()
