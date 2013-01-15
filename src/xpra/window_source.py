@@ -710,6 +710,7 @@ class WindowSource(object):
             ww = ww & 0xFFFE
             wh = wh & 0xFFFE
         if ww<8 or wh<=2:
+            #swscale limitation
             return switch()
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
