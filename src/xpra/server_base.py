@@ -505,6 +505,7 @@ class XpraServerBase(object):
                 self.send_disconnect(proto, "screenshot failed")
             return
         if info_req:
+            log.info("processing info request from %s", proto._conn)
             thread.start_new_thread(self.send_hello_info, (proto,))
             return
 
