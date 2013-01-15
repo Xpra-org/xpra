@@ -13,7 +13,6 @@ gdk = import_gdk()
 
 #for the cursor stuff, we need both cursor_names and trap
 from xpra.cursor_names import cursor_names
-from wimpiggy.error import trap
 if is_gtk3():
     def get_root_size():
         return gdk.get_default_root_window().get_geometry()[2:]
@@ -33,6 +32,7 @@ else:
                     gdk_cursor = cursor_names.get(cursor_name.upper())
                     if gdk_cursor is not None:
                         try:
+                            from wimpiggy.error import trap
                             log("setting new cursor: %s=%s", cursor_name, gdk_cursor)
                             cursor = trap.call_synced(gdk.Cursor, gdk_cursor)
                         except:
