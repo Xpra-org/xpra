@@ -225,13 +225,7 @@ try:
 	ENCODING_OPTIONS = ENCODINGS
 except:
 	pass
-
-# find the default encoding (below list is in our hard-coded preferred order):
 DEFAULT_ENCODING = ENCODING_OPTIONS[0]
-for enc in [ "png", "x264", "vpx", "webp", "jpeg", "rgb24" ]:
-	if enc in ENCODING_OPTIONS:
-		DEFAULT_ENCODING = enc
-		break
 
 XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
 XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
