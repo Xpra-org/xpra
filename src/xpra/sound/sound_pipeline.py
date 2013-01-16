@@ -114,7 +114,7 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
             elif message.structure.has_field("audio-codec"):
                 desc = message.structure["audio-codec"]
                 if self.codec_description!=desc:
-                    log.info("codec: %s", desc)
+                    log.info("using audio codec: %s", desc)
                     self.codec_description = desc
             elif message.structure.has_field("mode"):
                 mode = message.structure["mode"]
