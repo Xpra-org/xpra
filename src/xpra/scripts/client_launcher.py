@@ -489,7 +489,7 @@ class ApplicationWindow:
 			if ssh:
 				self.username_entry.show()
 				self.username_label.show()
-				self.port_entry.set_text("22")
+				self.port_entry.set_text("")
 			else:
 				self.username_entry.hide()
 				self.username_label.hide()
