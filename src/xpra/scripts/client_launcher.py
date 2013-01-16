@@ -752,6 +752,8 @@ class ApplicationWindow:
 			if not os.path.exists(cmd):
 				self.info.set_text("Xpra command not found!")
 				return
+		elif sys.platform.startswith("darwin"):
+			cmd = os.path.join(os.path.dirname(sys.argv[0]), "xpra")
 		username = xpra_opts.username
 		mode = xpra_opts.mode.lower()
 		if username and mode=="ssh":
