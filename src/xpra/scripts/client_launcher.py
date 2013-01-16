@@ -34,10 +34,11 @@ import webbrowser
 import socket
 from xpra.client import XpraClient
 
+EXEC_DEBUG = os.environ.get("XPRA_EXEC_DEBUG", "0")=="1"
+
 APPLICATION_NAME = "Xpra Launcher"
 SITE_URL = "http://xpra.org/"
 SITE_DOMAIN = "xpra.org"
-SUBPROCESS_CREATION_FLAGS = 0
 APP_DIR = os.getcwd()
 ICONS_DIR = None
 GPL2 = None
@@ -136,16 +137,9 @@ def load_license(gpl2_file):
 prepare_window = None
 """
 	Start of crappy platform workarounds
-	SUBPROCESS_CREATION_FLAGS is for win32 to avoid creating DOS windows for console applications
 	ICONS_DIR is for location the icons
 """
 if sys.platform.startswith("win"):
-	try:
-		import win32process			#@UnresolvedImport
-		SUBPROCESS_CREATION_FLAGS = win32process.CREATE_NO_WINDOW
-	except:
-		pass		#tried our best...
-
 	if getattr(sys, 'frozen', ''):
 		#on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
 		#UAC in vista onwards will not allow us to write where the software is installed, so place the log file in "~/Application Data"
@@ -723,7 +717,7 @@ class ApplicationWindow:
 				password_warning = out.find("invalid password")>=0 or err.find("invalid password")
 				if password_warning:
 					self.password_warning()
-				if ret==0:
+				if ret==0 and not EXEC_DEBUG:
 					info = "command terminated OK"
 				else:
 					info = "command terminated with exitcode %s" % ret
@@ -785,9 +779,22 @@ class ApplicationWindow:
 			xpra_opts.password_file = create_password_file(xpra_opts.password)
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
+		if EXEC_DEBUG:
+			args.append("-d all")
 		print("Running %s" % args)
-		process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, creationflags=SUBPROCESS_CREATION_FLAGS)
-		return process
+		kwargs = {}
+		if os.name=="posix" and not sys.platform.startswith("darwin"):
+			def setsid():
+				#run in a new session
+				os.setsid()
+			kwargs["preexec_fn"] = setsid
+		elif sys.platform.startswith("win"):
+			try:
+				import win32process			#@UnresolvedImport
+				kwargs["creationflags"] = win32process.CREATE_NO_WINDOW
+			except:
+				pass		#tried our best...
+		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs)
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
