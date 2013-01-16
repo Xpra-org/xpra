@@ -2,6 +2,7 @@
 
 echo "Building and installing"
 pushd ../src
+./setup.py clean
 ./setup.py install
 popd
 ./setup.py py2app
