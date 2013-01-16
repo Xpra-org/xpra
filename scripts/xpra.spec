@@ -299,7 +299,7 @@ So basically it's screen for remote X apps.
 - correctly calculate min_batch_delay shown in statistics via "xpra info"
 - require x264-libs for x264 support on Fedora
 
-* Mon Jun 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.2-1
+* Wed Jun 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.2-1
 - fix missing 'a' key using OS X clients
 - fix debian packaging for xpra_launcher
 - fix unicode decoding problems in window title
@@ -367,7 +367,7 @@ So basically it's screen for remote X apps.
 - turn off compression over local connections (when mmap is enabled)
 - clients can specify maximum refresh rate and screen update batching options
 
-* Thu Feb 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.36-1
+* Wed Feb 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.36-1
 - fix clipboard bug which was causing Java applications to crash
 - ensure we always properly disconnect previous client when new connection is accepted
 - avoid warnings with Java applications, focus errors, etc
@@ -404,7 +404,7 @@ So basically it's screen for remote X apps.
 - keyboard: better modifiers detection, synchronization of capslock and numlock
 - keyboard: support all modifiers correctly with and without keyboard-sync option
 
-* Thu Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
+* Wed Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
 - bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
 - bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
 - bug fix: initial windows should get focus (partial fix)
@@ -419,7 +419,7 @@ So basically it's screen for remote X apps.
 - use dbus for tray notifications if available, prefered to pynotify
 - show full version information in about dialog
 
-* Wed Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
+* Mon Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
 - threaded server for much lower latency
 - fast memory mapped transfers for local connections
 - adaptive damage batching, fixes window refresh
@@ -459,11 +459,11 @@ So basically it's screen for remote X apps.
 - compensate for line jitter causing keys to repeat
 - fixed cython warnings, unused variables, etc
 
-* Fri Sep 22 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.27-1
+* Thu Sep 22 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.27-1
 - compatibility fix for python 2.4 (remove "with" statement)
 - slow down updates from windows that refresh continuously
 
-* Wed Sep 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.26-1
+* Tue Sep 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.26-1
 - minor changes to support the Android client (work in progress)
 - allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
 - clear modifiers when applying new keymaps to prevent timeouts
@@ -479,7 +479,7 @@ So basically it's screen for remote X apps.
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 
-* Fri Jul 27 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-2
+* Wed Jul 27 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-2
 - More keymap fixes..
 
 * Wed Jul 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-1
@@ -506,7 +506,7 @@ So basically it's screen for remote X apps.
 * Mon Apr 4 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-2
 - Fix for older distros (like CentOS) with old versions of pycairo
 
-* Sat Mar 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-1
+* Mon Mar 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-1
 - Fix jpeg compression on MS Windows
 - Add ability to disable clipboard code
 - Updated man page
@@ -514,20 +514,20 @@ So basically it's screen for remote X apps.
 * Wed Jan 19 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.17-1
 - Honour the pulseaudio flag on client
 
-* Thu Aug 25 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.16-1
+* Wed Aug 25 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.16-1
 - Merged upstream changes.
 
 * Thu Jul 01 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.15-1
 - Add option to disable Pulseaudio forwarding as this can be a real network hog.
 - Use logging rather than print statements.
 
-* Mon May 04 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.13-1
+* Tue May 04 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.13-1
 - Ignore minor version differences in the future (must bump to 0.0.8 to cause incompatibility error)
 
 * Tue Apr 13 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.12-1
 - bump screen resolution
 
-* Sun Jan 11 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.11-1
+* Mon Jan 11 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.11-1
 - first rpm spec file
 
 %prep
