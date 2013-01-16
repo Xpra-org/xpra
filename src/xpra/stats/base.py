@@ -8,18 +8,18 @@
 
 from math import sqrt, pow
 
-def to_std_unit(v):
-    if v>=1000*1000*1000:
-        return "G", v/1000.0/1000.0/1000.0
-    elif v>=1000*1000:
-        return "M", v/1000.0/1000.0
-    elif v>=1000:
-        return "K", v/1000.0
+def to_std_unit(v, unit=1000.0):
+    if v>=unit**3:
+        return "G", v/(unit**3)
+    elif v>=unit**2:
+        return "M", v/(unit**2)
+    elif v>=unit:
+        return "K", v/unit
     else:
         return "", v
 
-def std_unit(v):
-    unit, value = to_std_unit(v)
+def std_unit(v, unit=1000.0):
+    unit, value = to_std_unit(v, unit)
     return "%s%s" % (int(value), unit)
 
 def std_unit_dec(v):

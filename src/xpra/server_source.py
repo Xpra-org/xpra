@@ -476,7 +476,7 @@ class ServerSource(object):
         log.info(msg)
         if self.send_windows:
             if self.mmap_size>0:
-                log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), mmap_file)
+                log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_file)
             else:
                 log.info("using %s as primary encoding", self.encoding)
         else:

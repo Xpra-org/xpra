@@ -756,7 +756,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.change_quality = capabilities.get("change-quality", False)
         self.xsettings_tuple = capabilities.get("xsettings-tuple", False)
         if self.mmap_enabled:
-            log.info("mmap is enabled using %sBytes area in %s", std_unit(self.mmap_size), self.mmap_file)
+            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_file)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         self.server_start_time = capabilities.get("start_time", -1)
