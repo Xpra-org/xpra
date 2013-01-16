@@ -714,11 +714,14 @@ class ApplicationWindow:
 				password_warning = out.find("invalid password")>=0 or err.find("invalid password")
 				if password_warning:
 					self.password_warning()
-				info = "command terminated with exitcode %s" % ret
-				if out:
-					info += ",\noutput:\n%s" % out
-				if err:
-					info += ",\nerror:\n%s" % err
+				if ret==0:
+					info = "command terminated OK"
+				else:
+					info = "command terminated with exitcode %s" % ret
+					if out:
+						info += ",\noutput:\n%s" % out
+					if err:
+						info += ",\nerror:\n%s" % err
 				#red only for non-zero returncode:
 				self.set_info_color(ret!=0)
 				self.set_info_text(info)
