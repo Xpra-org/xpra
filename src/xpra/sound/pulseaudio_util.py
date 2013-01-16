@@ -38,7 +38,10 @@ has_pulseaudio = None
 def get_pactl_bin():
 	global pactl_bin
 	if pactl_bin is None:
-		pactl_bin = which("pactl")
+		if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+			pactl_bin = ""
+		else:
+			pactl_bin = which("pactl")
 	return pactl_bin
 
 def pactl_output(pactl_cmd):
