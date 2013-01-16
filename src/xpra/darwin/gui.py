@@ -49,6 +49,8 @@ def setup_menubar(quit_cb):
 
 class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
+        self.menu_bar = None
+        self.macapp = None
         ClientExtrasBase.__init__(self, client, opts, conn)
         self.locate_icon_filename(opts.tray_icon)
         self.setup_macdock()
@@ -70,15 +72,17 @@ class ClientExtras(ClientExtrasBase):
         self.remove_all_menus()
 
     def remove_all_menus(self):
-        for x in self.menu_bar.get_children():
-            self.menu_bar.remove(x)
-            x.hide()
+        if self.menu_bar:
+            for x in self.menu_bar.get_children():
+                self.menu_bar.remove(x)
+                x.hide()
         self.info_menu        = None
         self.features_menu    = None
         self.encodings_menu   = None
         self.quality_menu     = None
         self.actions_menu     = None
-        self.macapp.sync_menubar()
+        if self.macapp:
+            self.macapp.sync_menubar()
 
     def setup_macdock(self):
         log.debug("setup_macdock()")
