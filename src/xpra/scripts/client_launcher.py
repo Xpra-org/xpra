@@ -451,7 +451,8 @@ class ApplicationWindow:
 		self.password_entry.set_text("")
 		self.password_entry.set_visibility(False)
 		self.password_entry.connect("changed", self.password_ok)
-		hbox.pack_start(gtk.Label("Password: "))
+		self.password_label = gtk.Label("Password: ")
+		hbox.pack_start(self.password_label)
 		hbox.pack_start(self.password_entry)
 		vbox.pack_start(hbox)
 
@@ -494,6 +495,14 @@ class ApplicationWindow:
 				self.username_entry.hide()
 				self.username_label.hide()
 				self.port_entry.set_text("%s" % xpra_opts.port)
+			if not ssh or sys.platform.startswith("win"):
+				#password cannot be used with ssh
+				#(except on win32 with plink)
+				self.password_label.show()
+				self.password_entry.show()
+			else:
+				self.password_label.hide()
+				self.password_entry.hide()
 		self.mode_combo.connect("changed", mode_changed)
 		mode_changed()
 
@@ -763,9 +772,11 @@ class ApplicationWindow:
 				if xpra_opts.password:
 					username += ":%s" % xpra_opts.password
 				host = "%s@%s" % (username, host)
-			uri = "ssh/%s/%s" % (host, xpra_opts.port)
+			uri = "ssh/%s" % host
 		else:
-			uri = "%s/%s/%s" % (mode, xpra_opts.host, xpra_opts.port)
+			uri = "%s/%s" % (mode, xpra_opts.host)
+		if xpra_opts.port:
+			uri += "/%s" % xpra_opts.port
 		args = [cmd, "attach", uri]
 		args.append("--encoding=%s" % xpra_opts.encoding)
 		if xpra_opts.encoding in ["jpeg"]:
