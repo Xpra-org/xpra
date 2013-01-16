@@ -671,7 +671,7 @@ def connect_or_fail(display_desc):
         cmd += display_desc["remote_xpra"] + ["_proxy"] + display_desc["display_as_args"]
         try:
             kwargs = {}
-            if os.name=="posix":
+            if os.name=="posix" and not sys.platform.startswith("darwin"):
                 def setsid():
                     #run in a new session
                     os.setsid()
