@@ -51,26 +51,7 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
         ClientExtrasBase.__init__(self, client, opts, conn)
         self.locate_icon_filename(opts.tray_icon)
-        self.setup_growl(opts.notifications)
         self.setup_macdock()
-
-    def setup_growl(self, enabled):
-        self.growl_notifier = None
-        if not enabled:
-            return
-        try:
-            import Growl        #@UnresolvedImport
-            name = self.client.session_name or "Xpra"
-            self.growl_notifier = Growl.GrowlNotifier(name, ["highlight"])
-            self.growl_notifier.register()
-            log.info("using growl for notications")
-            def set_session_name(*args):
-                self.growl_notifier.applicationName = self.client.session_name
-            if not self.client.session_name:
-                #session_name will get set during handshake
-                self.client.connect("handshake-complete", set_session_name)
-        except Exception, e:
-            log("failed to load Growl: %s, notifications will not be shown", e)
 
     def locate_icon_filename(self, opts_tray_icon):
         # ensure icon_filename points to a valid file (or None)
@@ -167,18 +148,10 @@ class ClientExtras(ClientExtrasBase):
             i.set_sensitive(vq)
 
     def can_notify(self):
-        return  self.growl_notifier is not None
+        return  False
 
     def show_notify(self, dbus_id, nid, app_name, replaces_id, app_icon, summary, body, expire_timeout):
-        if not self.growl_notifier:
-            return
-        if self.icon_filename:
-            import Growl.Image  #@UnresolvedImport
-            icon = Growl.Image.imageFromPath(self.icon_filename)
-        else:
-            icon = None
-        sticky = expire_timeout>30*1000
-        self.growl_notifier.notify('highlight', summary, body, icon, sticky)
+        pass
 
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         import Carbon.Snd           #@UnresolvedImport
