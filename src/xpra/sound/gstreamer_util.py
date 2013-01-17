@@ -24,7 +24,7 @@ CODECS = {
             AAC : (["faac"], ["faad"]),
             MP3 : (["lamemp3enc"], ["mad"]),
             }
-CODEC_ORDER = [VORBIS, AAC, MP3, FLAC]
+CODEC_ORDER = [VORBIS, MP3, AAC, FLAC]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
