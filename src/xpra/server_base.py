@@ -642,7 +642,7 @@ class XpraServerBase(object):
     def _process_info_request(self, proto, packet):
         client_uuids, wids = packet[1:3]
         sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
-        log("info-request: sources=%s, wids=%s", proto, packet, sources, wids)
+        log("info-request: sources=%s, wids=%s", sources, wids)
         try:
             info = self.do_get_info(proto, sources, wids)
             self._server_sources.get(proto).send_info_response(info)
