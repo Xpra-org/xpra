@@ -118,7 +118,7 @@ class SoundSink(SoundPipeline):
             self.src.emit('end-of-stream')
         self.cleanup()
 
-    def add_data(self, data, metadata):
+    def add_data(self, data, metadata=None):
         debug("sound sink: adding %s bytes, %s", len(data), metadata)
         if self.src:
             buf = gst.Buffer(data)

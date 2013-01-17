@@ -525,7 +525,7 @@ class ServerSource(object):
         else:
             log.error("unknown sound action: %s", action)
 
-    def sound_data(self, codec, data, *args):
+    def sound_data(self, codec, data, metadata, *args):
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.stop()
@@ -539,7 +539,7 @@ class ServerSource(object):
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
                 return
-        self.sound_sink.add_data(data)
+        self.sound_sink.add_data(data, metadata)
 
     def set_screen_sizes(self, screen_sizes):
         self.screen_sizes = screen_sizes or []
