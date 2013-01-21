@@ -819,7 +819,7 @@ class WindowSource(object):
             debug("auto refresh: delayed region already exists")
             #there is already a new damage region pending, let it re-schedule when it gets sent
             return
-        delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay))
+        delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
         debug("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
         self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
 

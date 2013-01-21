@@ -326,7 +326,7 @@ def main(script_file, cmdline):
                           dest="speed", type="int", default=int_default("speed", -1),
                           help="Use x264 image compression with the given encoding speed (1-100, -1 to use automatic settings). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
-                      dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 1.0),
+                      dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 0.25),
                       metavar="DELAY",
                       help="Idle delay in seconds before doing an automatic lossless refresh."
                       + " 0.0 to disable."
