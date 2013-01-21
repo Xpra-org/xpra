@@ -18,6 +18,10 @@ try:
 except:
     pass
 
+AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
+AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
+AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
+
 #how many historical records to keep
 #for the various statistics we collect:
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
@@ -796,7 +800,7 @@ class WindowSource(object):
         if not window.is_managed():
             return
         ww, wh = window.get_dimensions()
-        if actual_quality>=90 and w*h>=ww*wh:
+        if actual_quality>=AUTO_REFRESH_THRESHOLD and w*h>=ww*wh:
             debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
             #got enough pixels at high quality, cancel timer:
             self.cancel_refresh_timer()
@@ -810,7 +814,8 @@ class WindowSource(object):
                 return
             self.refresh_timer = None
             new_options = damage_options.copy()
-            new_options["quality"] = 95
+            new_options["quality"] = AUTO_REFRESH_QUALITY
+            new_options["speed"] = AUTO_REFRESH_SPEED
             debug("full_quality_refresh() with options=%s", new_options)
             self.damage(window, 0, 0, ww, wh, options=new_options)
             #self.process_damage_region(time.time(), window, 0, 0, ww, wh, coding, new_options)
