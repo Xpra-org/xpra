@@ -302,6 +302,13 @@ class ServerSource(object):
         return self.close_event.is_set()
 
     def calculate_delay_thread(self):
+        try:
+            self.do_calculate_delay_thread()
+        except:
+            if not self.is_closed():
+                log.error("error in calculate thread!", exc_info=True)
+
+    def do_calculate_delay_thread(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
             no more often than every RECALCULATE_DELAY
