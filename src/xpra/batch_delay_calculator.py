@@ -159,7 +159,6 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
         ves_copy = list(video_encoder_speed)
         ves_copy.append((time.time(), target_speed))
         new_speed = time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2)
-        video_encoder_speed.append((time.time(), new_speed))
         if DEBUG_VIDEO:
             msg = "video encoder speed factors: wid=%s, low_limit=%s, min_damage_latency=%.2f, target_damage_latency=%.2f, batch.delay=%.2f, dam_lat=%.2f, dec_lat=%.2f, target=%.2f, new_speed=%.2f", \
                  wid, low_limit, min_damage_latency, target_damage_latency, batch.delay, dam_lat, dec_lat, int(target_speed), int(new_speed)
@@ -188,12 +187,13 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
         veq_copy = list(video_encoder_quality)
         veq_copy.append((time.time(), target_quality))
         new_quality = time_weighted_average(veq_copy, min_offset=0.1, rpow=1.1)
-        video_encoder_quality.append((time.time(), new_quality))
         if DEBUG_VIDEO:
             msg = "video encoder quality factors: wid=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target=%s, new_quality=%s", \
                  wid, packets_bl, batch_q, latency_q, int(target_quality), int(new_quality)
             add_DEBUG_MESSAGE(*msg)
 
+    video_encoder_speed.append((time.time(), new_speed))
+    video_encoder_quality.append((time.time(), new_quality))
     try:
         video_encoder_lock.acquire()
         if not video_encoder.is_closed():
