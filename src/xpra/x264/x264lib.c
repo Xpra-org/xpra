@@ -61,6 +61,7 @@ struct x264lib_ctx {
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
 
+	int speed;					//percentage 0-100
 	int quality;				//percentage 0-100
 	int supports_csc_option;	//can we change colour sampling
 	int encoding_preset;		//index in preset_names 0-9
@@ -100,6 +101,9 @@ int get_encoder_pixel_format(struct x264lib_ctx *ctx) {
 }
 int get_encoder_quality(struct x264lib_ctx *ctx) {
 	return ctx->quality;
+}
+int get_encoder_speed(struct x264lib_ctx *ctx) {
+	return ctx->speed;
 }
 
 #ifndef _WIN32
@@ -449,7 +453,7 @@ static void free_csc_image(x264_picture_t *image)
 	free(image);
 }
 
-int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override)
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
 {
 	if (!ctx->encoder || !ctx->rgb2yuv) {
 		free_csc_image(pic_in);
@@ -461,29 +465,17 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 
 	/* Encoding */
 	pic_in->i_pts = 1;
-	if (quality_override>=0) {
-		// Retrieve current parameters and override quality for this frame
-		float new_q = get_x264_quality(quality_override);
-		if (new_q!=ctx->x264_quality) {
-			x264_param_t *param = malloc(sizeof(x264_param_t));
-			x264_encoder_parameters(ctx->encoder, param);
-			param->rc.f_rf_constant = new_q;
-			pic_in->param = param;
-			pic_in->param->param_free = free;
-		}
-	}
-
 	x264_nal_t* nals;
 	int i_nals;
 	int frame_size = x264_encoder_encode(ctx->encoder, &nals, &i_nals, pic_in, &pic_out);
+	// Unconditional cleanup:
+	free_csc_image(pic_in);
 	if (frame_size < 0) {
 		fprintf(stderr, "Problem during x264_encoder_encode: frame_size is invalid!\n");
-		free_csc_image(pic_in);
 		*out = NULL;
 		*outsz = 0;
 		return 2;
 	}
-	free_csc_image(pic_in);
 	/* Do not clean that! */
 	*out = nals[0].p_payload;
 	*outsz = frame_size;
@@ -581,6 +573,7 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
+	ctx->speed = pct;
 	int new_preset = 7-MAX(0, MIN(7, pct/12.5));
 	if (new_preset==ctx->encoding_preset)
 		return;
@@ -590,7 +583,8 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	//however multiple psy tunings cannot be used.
 	//film, animation, grain, stillimage, psnr, and ssim are psy tunings.
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
-	x264_param_apply_profile(&param, "baseline");
+	param.rc.f_rf_constant = ctx->x264_quality;
+	x264_param_apply_profile(&param, ctx->profile);
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
 #else

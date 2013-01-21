@@ -46,9 +46,10 @@ cdef extern from "x264lib.h":
                               char *i420_profile, char *i422_profile, char *i444_profile)
     void clean_encoder(x264lib_ctx *context)
     x264_picture_t* csc_image_rgb2yuv(x264lib_ctx *ctx, uint8_t *input, int stride)
-    int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override) nogil
+    int compress_image(x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz) nogil
     int get_encoder_pixel_format(x264lib_ctx *ctx)
     int get_encoder_quality(x264lib_ctx *ctx)
+    int get_encoder_speed(x264lib_ctx *ctx)
     int get_pixel_format(int csc_format)
 
     x264lib_ctx* init_decoder(int width, int height, int csc_fmt)
@@ -243,14 +244,14 @@ cdef class Encoder(xcoder):
                 "csc_pixel_format" : get_encoder_pixel_format(self.context),
                 "frame" : self.frames
                 }
-        if "quality" in options:
-            #quality was overriden via options:
-            client_options["quality"] = options["quality"]
-            #print("quality specified: %s" % options["quality"])
-        else:
-            #current quality settings:
-            client_options["quality"] = get_encoder_quality(self.context)
-            #print("quality from encoder: %s" % client_options["quality"])
+        q = client_options.get("quality", -1)
+        if q<0:
+            q = get_encoder_quality(self.context)
+        client_options["quality"] = q
+        s = client_options.get("speed", -1)
+        if s<0:
+            s = get_encoder_speed(self.context)
+        client_options["speed"] = s
         return  client_options
 
     def compress_image(self, input, rowstride, options):
@@ -258,20 +259,33 @@ cdef class Encoder(xcoder):
         cdef uint8_t *pic_buf = NULL
         cdef Py_ssize_t pic_buf_len = 0
         cdef int quality_override = options.get("quality", -1)
+        cdef int speed_override = options.get("speed", -1)
+        cdef int saved_quality = get_encoder_quality(self.context)
+        cdef int saved_speed = get_encoder_speed(self.context)
+        if speed_override>=0 and saved_speed!=speed_override:
+            set_encoding_speed(self.context, speed_override)
+        if quality_override>=0 and saved_quality!=quality_override:
+            set_encoding_quality(self.context, quality_override)
         assert self.context!=NULL
         #colourspace conversion with gil held:
         PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
         pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
-        return self.do_compress_image(pic_in, quality_override), self.get_client_options(options)
+        try:
+            return self.do_compress_image(pic_in), self.get_client_options(options)
+        finally:
+            if speed_override>=0 and saved_speed!=speed_override:
+                set_encoding_speed(self.context, saved_speed)
+            if quality_override>=0 and saved_quality!=quality_override:
+                set_encoding_quality(self.context, saved_quality)
 
-    cdef do_compress_image(self, x264_picture_t *pic_in, int quality_override):
+    cdef do_compress_image(self, x264_picture_t *pic_in):
         #actual compression (no gil):
         cdef int i
         cdef uint8_t *cout
         cdef int coutsz
         with nogil:
-            i = compress_image(self.context, pic_in, &cout, &coutsz, quality_override)
+            i = compress_image(self.context, pic_in, &cout, &coutsz)
         if i!=0:
             return None
         coutv = (<char *>cout)[:coutsz]

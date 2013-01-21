@@ -26,8 +26,11 @@ struct x264lib_ctx;
 /** Expose the encoder pixel format so the decoder can use the same setting */
 int get_encoder_pixel_format(struct x264lib_ctx *ctx);
 
-/** Expose current quality setting so we can tell the client how good the frame was */
+/** Expose current quality setting */
 int get_encoder_quality(struct x264lib_ctx *ctx);
+
+/** Expose current speed setting */
+int get_encoder_speed(struct x264lib_ctx *ctx);
 
 /** Returns the pixel format using our own generic codec_constants */
 int get_pixel_format(int csc);
@@ -82,7 +85,7 @@ int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[
  @param outsz: Output size
  @param quality_override: Desired quality setting (0 to 100), -1 to use current settings.
 */
-int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz, int quality_override);
+int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz);
 
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
