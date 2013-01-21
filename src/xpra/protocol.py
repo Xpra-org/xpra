@@ -377,26 +377,22 @@ class Protocol(object):
                 raise e
 
     def _read_thread_loop(self):
-        try:
-            while not self._closed:
-                try:
-                    buf = untilConcludes(self._conn.read, 8192)
-                except (ValueError, OSError, IOError, socket.error), e:
+        while not self._closed:
+            try:
+                buf = untilConcludes(self._conn.read, 8192)
+            except (ValueError, OSError, IOError, socket.error), e:
+                self._call_connection_lost("Error reading from connection: %s" % e)
+                return
+            except Exception, e:
+                if not self._closed:
                     self._call_connection_lost("Error reading from connection: %s" % e)
-                    return
-                except Exception, e:
-                    if self._closed:
-                        return
-                    raise e
-                #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-                self._read_queue.put(buf)
-                if not buf:
-                    log("read thread: eof")
-                    break
-                self.input_raw_packetcount += 1
-        finally:
-            log("read thread: ended, closing socket")
-            self.close()
+                return
+            #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
+            self._read_queue.put(buf)
+            if not buf:
+                log("read thread: eof")
+                break
+            self.input_raw_packetcount += 1
 
     def _call_connection_lost(self, message="", exc_info=False):
         log("will call connection lost: %s", message)
