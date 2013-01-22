@@ -34,7 +34,7 @@ class ClientExtras(ClientExtrasBase):
                 self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu(True)
         self.setup_tray(opts.no_tray, opts.delay_tray, opts.tray_icon)
-        self.setup_xprops(opts.pulseaudio)
+        self.setup_xprops()
         self.setup_x11_bell()
         self.setup_pa_audio_tagging()
         self.has_dbusnotify = False
@@ -224,14 +224,10 @@ class ClientExtras(ClientExtrasBase):
         except ImportError, e:
             log.error("cannot import x11 bell bindings (will use gtk fallback) : %s", e)
 
-    def setup_xprops(self, pulseaudio):
+    def setup_xprops(self):
         self.ROOT_PROPS = {
             "RESOURCE_MANAGER": "resource-manager"
             }
-        if pulseaudio:
-            self.ROOT_PROPS["PULSE_COOKIE"] = "pulse-cookie"
-            self.ROOT_PROPS["PULSE_ID"] = "pulse-id"
-            self.ROOT_PROPS["PULSE_SERVER"] = "pulse-server"
         def setup_xprop_xsettings(client):
             log.debug("setup_xprop_xsettings(%s)", client)
             try:

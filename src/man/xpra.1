@@ -19,8 +19,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
-[\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-pulseaudio\fP]
+[\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
+[\fB\-\-no\-clipboard\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-system\-tray\fP]
@@ -41,7 +42,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-no\-mmap\fP]
 [\fB\-\-no\-windows\fP]
 [\fB\-\-no\-clipboard\fP]
-[\fB\-\-no\-pulseaudio\fP]
 [\fB\-\-no\-cursors\fP]
 [\fB\-\-no\-notifications\fP]
 [\fB\-\-no\-system\-tray\fP]
@@ -295,14 +295,11 @@ synchronization at all. If used on the client, only this particular
 connection will ignore clipboard data from the server.
 .TP
 \fB\-\-no\-pulseaudio\fP
-Disables pulseaudio information echange.
-If used on the server, no clients will be able to set the pulseaudio
-cookies seen by the application running within xpra.
-If used on the client, only this particular connection will avoid
-sending pulseaudio cookies and information to the server.
-
-Note: what the application does with this information is beyond the
-scope of this document.
+Disables the starting of a pulseaudio server with the session.
+.TP
+\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP
+Specifies the pulseaudio command to use to start the pulseaudio
+server, unless disabled with \fB\-\-no\-pulseaudio\fP.
 .TP
 \fB\-\-session\-name\fP=\fIVALUE\fP
 Sets the name of this session. This value may be used in

@@ -73,22 +73,21 @@ def get_x11_property(atom_name):
 	except:
 		return ""
 
-def detect_pa():
-	if os.name=="posix":
-		#try root window property (faster)
-		ps = get_x11_property("PULSE_SERVER")
-		if ps:
-			return True
-	pactl_bin = get_pactl_bin()
-	if not pactl_bin:
+def has_pa_x11_property():
+	if os.name!="posix":
 		return False
-	status, _ = pactl_output("stat")
-	return status==0
+	#try root window property (faster)
+	ps = get_x11_property("PULSE_SERVER")
+	return len(ps)>0
+
+def is_pa_installed():
+	pactl_bin = get_pactl_bin()
+	return len(pactl_bin)>0
 
 def has_pa():
 	global has_pulseaudio
 	if has_pulseaudio is None:
-		has_pulseaudio = detect_pa()
+		has_pulseaudio = has_pa_x11_property() or is_pa_installed()
 	return has_pulseaudio
 
 

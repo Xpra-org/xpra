@@ -290,6 +290,7 @@ xpra_opts.password = default_str("password", "")
 xpra_opts.password_file = default_str("password-file", "")
 xpra_opts.clipboard = default_bool("clipboard", True)
 xpra_opts.pulseaudio = default_bool("pulseaudio", True)
+xpra_opts.pulseaudio_command = default_str("pulseaudio_command", "")
 xpra_opts.mmap = default_bool("mmap", True)
 xpra_opts.mmap_group = default_bool("mmap-group", False)
 xpra_opts.speaker = default_bool("speaker", True)
@@ -606,6 +607,7 @@ class ApplicationWindow:
 		opts = AdHocStruct()
 		opts.clipboard = xpra_opts.clipboard
 		opts.pulseaudio = xpra_opts.pulseaudio
+		opts.pulseaudio_command = xpra_opts.pulseaudio_command
 		opts.password = xpra_opts.password
 		opts.password_file = xpra_opts.password_file
 		opts.title = "@title@ on @client-machine@"

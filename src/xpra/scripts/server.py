@@ -417,6 +417,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     else:
         try:
             from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
+            # This import is delayed because the module depends on gtk:
             from xpra.server import XpraServer
         except ImportError, e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
@@ -426,7 +427,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
 
-        # This import is delayed because the module depends on gtk:
         app = XpraServer(clobber, sockets, opts)
 
     child_reaper = ChildReaper(app, opts.exit_with_children)
@@ -436,6 +436,10 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # From now on, we will suspend signal.SIGCHLD when using subprocess.Popen
     from xpra.scripts.exec_util import PROTECTED_SIGNALS
     PROTECTED_SIGNALS.append(signal.SIGCHLD)
+
+    if opts.pulseaudio and len(opts.pulseaudio_command)>0:
+        pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
+        log.info("pulseaudio server started with pid %s", pa_proc.pid)
     if opts.exit_with_children:
         assert opts.children
     if opts.children:

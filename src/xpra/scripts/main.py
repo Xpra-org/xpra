@@ -104,12 +104,30 @@ def read_xpra_conf(conf_dir):
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         return  d
     f = open(conf_file, "rU")
+    lines = []
     for line in f:
-        sline = line.strip()
+        sline = line.strip().rstrip('\r\n').strip()
         if len(sline) == 0:
             continue
         if sline[0] in ( '!', '#' ):
             continue
+        lines.append(sline)
+    f.close()
+    #aggregate any lines with trailing bacakslash
+    agg_lines = []
+    l = ""
+    for line in lines:
+        if line.endswith("\\"):
+            l += line[:-1]
+        else:
+            l += line
+            agg_lines.append(l)
+            l = ""
+    if len(l)>0:
+        #last line had a trailing backslash... meh
+        agg_lines.append(l)
+    #parse name=value pairs:
+    for sline in agg_lines:
         if sline.find("=")<=0:
             continue
         props = sline.split("=", 1)
@@ -124,7 +142,6 @@ def read_xpra_conf(conf_dir):
                 d[name] = [current_value, value]
         else:
             d[name] = value
-    f.close()
     return  d
 
 def read_xpra_defaults():
@@ -253,6 +270,12 @@ def main(script_file, cmdline):
                           dest="bind_tcp", default=None,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (insecure)")
+        group.add_option("--no-pulseaudio", action="store_false",
+                      dest="pulseaudio", default=bool_default("pulseaudio", True),
+                      help="Disable starting of a pulseaudio server for the session")
+        group.add_option("--pulseaudio-command", action="store",
+                      dest="pulseaudio_command", default=defaults.get("pulseaudio-command", ""),
+                      help="The command used to start the pulseaudio server (default: '%default')")
         parser.add_option_group(group)
 
     group = OptionGroup(parser, "Server Controlled Features",
@@ -262,9 +285,6 @@ def main(script_file, cmdline):
     group.add_option("--no-clipboard", action="store_false",
                       dest="clipboard", default=bool_default("clipboard", True),
                       help="Disable clipboard support")
-    group.add_option("--no-pulseaudio", action="store_false",
-                      dest="pulseaudio", default=bool_default("pulseaudio", True),
-                      help="Disable pulseaudio support via X11 root window properties")
     group.add_option("--no-notifications", action="store_false",
                       dest="notifications", default=bool_default("notifications", True),
                       help="Disable forwarding of system notifications")
