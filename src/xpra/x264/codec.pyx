@@ -7,6 +7,7 @@ import os
 from libc.stdlib cimport free
 
 DEFAULT_INITIAL_QUALITY = 70
+DEFAULT_INITIAL_SPEED = 20
 ALL_PROFILES = ["baseline", "main", "high", "high10", "high422", "high444"]
 I420_PROFILES = ALL_PROFILES[:]
 I422_PROFILES = ["high422", "high444"]
@@ -40,7 +41,8 @@ cdef extern from "x264lib.h":
     void xmemfree(void* ptr)
 
     x264lib_ctx* init_encoder(int width, int height,
-                              int initial_quality, int supports_csc_option,
+                              int initial_quality, int initial_speed,
+                              int supports_csc_option,
                               int I422_quality, int I444_quality,
                               int I422_min, int I444_min,
                               char *i420_profile, char *i422_profile, char *i444_profile)
@@ -216,7 +218,7 @@ cdef class Encoder(xcoder):
         #enforce valid range:
         return min(100, max(-1, quality))
 
-    def init_context(self, width, height, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, options):    #@DuplicatedSignature
         self.init(width, height)
         self.frames = 0
         self.supports_options = int(options.get("encoding_client_options", False))
@@ -227,9 +229,13 @@ cdef class Encoder(xcoder):
         I444_quality = self._get_quality(options, "I444", DEFAULT_I444_QUALITY)
         I422_min = self._get_min_quality(options, "I422", DEFAULT_I422_MIN_QUALITY)
         I444_min = self._get_min_quality(options, "I444", DEFAULT_I444_MIN_QUALITY)
-        initial_quality = min(100, max(0, options.get("initial_quality", DEFAULT_INITIAL_QUALITY)))
+        initial_quality = options.get("initial_quality", options.get("quality", DEFAULT_INITIAL_QUALITY))
+        initial_speed = options.get("initial_speed", options.get("speed", DEFAULT_INITIAL_SPEED))
+        initial_quality = min(100, max(0, initial_quality))
+        initial_speed = min(100, max(0, initial_speed))
         self.context = init_encoder(width, height,
-                                    initial_quality, int(self.supports_options),
+                                    initial_quality, initial_speed,
+                                    int(self.supports_options),
                                     int(I422_quality), int(I444_quality),
                                     int(I422_min), int(I444_min),
                                     I420_profile, I422_profile, I444_profile)

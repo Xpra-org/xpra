@@ -190,6 +190,7 @@ int get_csc_algo_for_quality(int initial_quality) {
 }
 
 const int DEFAULT_INITIAL_QUALITY = 70;
+const int DEFAULT_INITIAL_SPEED = 20;
 const char I420[] = "I420";
 const char I422[] = "I422";
 const char I444[] = "I444";
@@ -257,7 +258,8 @@ struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
  * Configure values that will not change during the lifetime of the encoder.
  */
 void configure_encoder(struct x264lib_ctx *ctx, int width, int height,
-		int initial_quality, int supports_csc_option,
+		int initial_quality, int initial_speed,
+		int supports_csc_option,
 		int I422_quality, int I444_quality,
 		int I422_min, int I444_min,
 		char *i420_profile, char *i422_profile, char *i444_profile)
@@ -265,6 +267,10 @@ void configure_encoder(struct x264lib_ctx *ctx, int width, int height,
 	//printf("configure_encoder(%p, %i, %i, %i, %i, %i, %i, %s, %s, %s)\n", ctx, width, height, initial_quality, supports_csc_option, I422_quality, I444_quality, i420_profile, i422_profile, i444_profile);
 	ctx->width = width;
 	ctx->height = height;
+	if (initial_speed >= 0)
+		ctx->speed = initial_speed;
+	else
+		ctx->speed = DEFAULT_INITIAL_SPEED;
 	if (initial_quality >= 0)
 		ctx->quality = initial_quality;
 	else
@@ -331,7 +337,8 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 }
 
 struct x264lib_ctx *init_encoder(int width, int height,
-		int initial_quality, int supports_csc_option,
+		int initial_quality, int initial_speed,
+		int supports_csc_option,
 		int I422_quality, int I444_quality,
 		int I422_min, int I444_min,
         char *i420_profile, char *i422_profile, char *i444_profile)
@@ -339,7 +346,8 @@ struct x264lib_ctx *init_encoder(int width, int height,
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	configure_encoder(ctx, width, height, \
-					initial_quality, supports_csc_option, \
+					initial_quality, initial_speed, \
+					supports_csc_option, \
 					I422_quality, I444_quality, \
 					I422_min, I444_min, \
 					i420_profile, i422_profile, i444_profile);

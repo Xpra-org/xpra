@@ -37,7 +37,8 @@ int get_pixel_format(int csc);
 
 /** Create an encoding context for images of a given size.  */
 struct x264lib_ctx *init_encoder(int width, int height,
-		int initial_quality, int supports_csc_option,
+		int initial_quality, int initial_speed,
+		int supports_csc_option,
 		int I422_quality, int I444_quality,
 		int I422_min, int I444_min,
         char *i420_profile, char *i422_profile, char *i444_profile);
