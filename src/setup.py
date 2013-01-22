@@ -487,6 +487,11 @@ if sys.platform.startswith("win"):
                             "unittest", "difflib",  #avoid numpy warning (not an error)
                             "pydoc"]
 
+    if sound_ENABLED:
+        py2exe_includes += ["pygst", "gst", "gst.extend"]
+    else:
+        py2exe_excludes += ["xpra.sound", "pygst", "gst"]
+
     if opengl_ENABLED:
         py2exe_includes += ["ctypes", "platform"]
         py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]
@@ -645,10 +650,6 @@ elif sys.platform.startswith("win"):
 
 if sound_ENABLED:
     packages.append("xpra.sound")
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.sound")
-    py2exe_excludes.append("pygst")
-    py2exe_excludes.append("gst")
 
 
 
