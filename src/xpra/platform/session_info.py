@@ -328,8 +328,8 @@ class SessionInfo(gtk.Window):
         self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
         self.latency_graph = self.add_graph_button("The time it takes to send an echo packet and get the reply", self.save_graphs)
         self.pixel_in_data = maxdeque(N_SAMPLES+4)
-        self.net_in_data = maxdeque(N_SAMPLES+3)
-        self.net_out_data = maxdeque(N_SAMPLES+3)
+        self.net_in_data = maxdeque(N_SAMPLES+4)
+        self.net_out_data = maxdeque(N_SAMPLES+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -627,8 +627,8 @@ class SessionInfo(gtk.Window):
         w = max(360, rect.width-20)
         #bandwidth graph:
         #Note: we skip the first record because the timing isn't right so the values aren't either..:
-        in_scale, in_data = values_to_diff_scaled_values(list(self.net_in_data)[1:N_SAMPLES+2], scale_unit=1000, min_scaled_value=50)
-        out_scale, out_data = values_to_diff_scaled_values(list(self.net_out_data)[1:N_SAMPLES+2], scale_unit=1000, min_scaled_value=50)
+        in_scale, in_data = values_to_diff_scaled_values(list(self.net_in_data)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+        out_scale, out_data = values_to_diff_scaled_values(list(self.net_out_data)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
         if in_data and out_data:
             def unit(scale):
                 if scale==1:
