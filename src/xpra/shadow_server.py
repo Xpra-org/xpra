@@ -4,6 +4,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gtk.gdk
 gtk.gdk.threads_init()
 import gobject
@@ -15,6 +16,8 @@ log = Logger()
 from xpra.server_base import XpraServerBase
 from xpra.protocol import Compressed
 from xpra.window_source import DamageBatchConfig
+
+ALLOW_COMPOSITE_SHADOWING = os.environ.get("XPRA_ALLOW_COMPOSITE_SHADOWING", "0")=="1"
 
 
 def take_root_screenshot():
@@ -99,7 +102,7 @@ class XpraShadowServer(XpraServerBase):
         DamageBatchConfig.RECALCULATE_DELAY = 0.1   #re-compute delay 10 times per second at most
         display = gtk.gdk.display_get_default()
         log("display=%s", display)
-        if display.supports_composite() and has_compositor(display):
+        if not ALLOW_COMPOSITE_SHADOWING and display.supports_composite() and has_compositor(display):
             log.error("display %s uses a compositing window manager, shadowing is not supported yet - sorry" % display.get_name())
             self.quit(0)
             return
