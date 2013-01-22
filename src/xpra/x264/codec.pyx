@@ -240,8 +240,10 @@ cdef class Encoder(xcoder):
             self.context = NULL
 
     def get_client_options(self, options):
+        csc_pf = get_encoder_pixel_format(self.context)
         client_options = {
-                "csc_pixel_format" : get_encoder_pixel_format(self.context),
+                "csc_pixel_format" : csc_pf,
+                "pixel_format" : get_pixel_format(csc_pf),
                 "frame" : self.frames
                 }
         q = client_options.get("quality", -1)

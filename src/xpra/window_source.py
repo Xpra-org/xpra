@@ -71,6 +71,7 @@ from xpra.stats.maths import logp, \
     calculate_for_target, calculate_for_average
 from xpra.batch_delay_calculator import calculate_batch_delay, update_video_encoder
 from xpra.xor import xor_str        #@UnresolvedImport
+from xpra.codec_constants import YUV444P
 
 
 class DamageBatchConfig(object):
@@ -800,7 +801,13 @@ class WindowSource(object):
         if not window.is_managed():
             return
         ww, wh = window.get_dimensions()
-        if actual_quality>=AUTO_REFRESH_THRESHOLD and w*h>=ww*wh:
+        if coding in ("x264", ):
+            pf = client_options.get("pixel_format")
+            if pf==YUV444P:
+                debug("schedule_auto_refresh: high quality YUV444 frame (%s pixels), cancelling refresh timer %s", w*h, self.refresh_timer)
+                self.cancel_refresh_timer()
+                return
+        elif actual_quality>=AUTO_REFRESH_THRESHOLD and w*h>=ww*wh:
             debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
             #got enough pixels at high quality, cancel timer:
             self.cancel_refresh_timer()
@@ -814,6 +821,7 @@ class WindowSource(object):
                 return
             self.refresh_timer = None
             new_options = damage_options.copy()
+            #FIXME: with x264, the quality must be higher than the YUV444 threshold
             new_options["quality"] = AUTO_REFRESH_QUALITY
             new_options["speed"] = AUTO_REFRESH_SPEED
             debug("full_quality_refresh() with options=%s", new_options)
