@@ -134,6 +134,7 @@ class SessionInfo(gtk.Window):
         self.client = client
         self.session_name = session_name
         self.connection = conn
+        self.last_populate_time = 0
         self.is_closed = False
         self.get_pixbuf = get_pixbuf
         self.set_title(self.session_name or "Session Info")
@@ -343,6 +344,7 @@ class SessionInfo(gtk.Window):
         self.populate()
         self.populate_all()
         gobject.timeout_add(1000, self.populate)
+        gobject.timeout_add(100, self.populate_tab)
         self.connect("realize", self.populate_graphs)
         add_close_accel(self, self.destroy)
 
@@ -434,6 +436,7 @@ class SessionInfo(gtk.Window):
         if self.is_closed:
             return False
         self.client.send_ping()
+        self.last_populate_time = time.time()
         #record bytecount every second:
         self.net_in_data.append(self.connection.input_bytecount)
         self.net_out_data.append(self.connection.output_bytecount)
@@ -441,6 +444,9 @@ class SessionInfo(gtk.Window):
         since = time.time()-1
         decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
         self.pixel_in_data.append(sum(decoded))
+        return True
+
+    def populate_tab(self, *args):
         #now re-populate the tab we are seeing:
         if self.populate_cb:
             if not self.populate_cb():
@@ -622,6 +628,7 @@ class SessionInfo(gtk.Window):
         _, bh = self.tab_button_box.size_request()
         if h<=0:
             return True
+        start_x_offset = min(1.0, (time.time()-self.last_populate_time)*0.95)
         rect = box.get_allocation()
         h = max(200, h-bh-20, rect.height-bh-20)
         w = max(360, rect.width-20)
@@ -644,7 +651,10 @@ class SessionInfo(gtk.Window):
                 pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
                 datasets.append(in_pixels)
                 labels.append("%s pixels/s" % unit(pixel_scale))
-            pixmap = make_graph_pixmap(datasets, labels=labels, width=w, height=h/2, title="Bandwidth", min_y_scale=10, rounding=10)
+            pixmap = make_graph_pixmap(datasets, labels=labels,
+                                       width=w, height=h/2,
+                                       title="Bandwidth", min_y_scale=10, rounding=10,
+                                       start_x_offset=start_x_offset)
             self.bandwidth_graph.set_size_request(*pixmap.get_size())
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
         #latency graph:
@@ -656,8 +666,8 @@ class SessionInfo(gtk.Window):
                     l.insert(0, None)
         pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"],
                                     width=w, height=h/2,
-                                    min_y_scale=10, rounding=50,
-                                    title="Latency (ms)")
+                                    title="Latency (ms)", min_y_scale=10, rounding=50,
+                                    start_x_offset=start_x_offset)
         self.latency_graph.set_size_request(*pixmap.get_size())
         self.latency_graph.set_from_pixmap(pixmap, None)
         return True

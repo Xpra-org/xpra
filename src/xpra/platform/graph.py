@@ -23,6 +23,7 @@ def round_up_unit(i, rounding=10):
 def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                       show_y_scale=True, show_x_scale=False,
                       min_y_scale=None, rounding=10,
+                      start_x_offset = 0.0,
                       colours=DEFAULT_COLOURS, dots=False, curves=True):
     #print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
     #                  show_y_scale, show_x_scale, min_y_scale, colours))
@@ -119,7 +120,11 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
         context.move_to(x_offset+w/2-len(title)*14/2, 14)
         context.show_text(title)
         context.stroke()
-    #now draw the actual data
+    #now draw the actual data, clipped to the graph region:
+    context.new_path()
+    context.set_line_width(0.0)
+    context.rectangle(x_offset, y_offset, x_offset+w, y_offset+h)
+    context.clip()
     i = 0
     context.set_line_width(1.5)
     for line_data in data:
@@ -128,7 +133,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
         j = 0
         last_v = None
         for v in line_data:
-            x = x_offset + w*j/(max(1, max_x-1))
+            x = x_offset + w*(j - start_x_offset)/(max(1, max_x-2))
             if v is not None:
                 if max_y>0:
                     y = height-y_offset - h*v/scale_y
