@@ -130,7 +130,7 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
             log.error("no matching codecs between remote (%s) and local (%s) - sound disabled", remote_decoders, local_decoders)
             return    None
         codec = ordered_codecs[0]
-        log.info("will send sound using %s codec", codec)
+        log.info("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:
             sound_source = SoundSource("audiotestsrc", {"wave":2, "freq":110, "volume":0.4}, codec, {})
@@ -161,7 +161,7 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
                 log.warn("using: %s", monitor_devices.items()[0][1])
             monitor_device = monitor_devices.items()[0][0]
             sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
-            log.info("starting sound using %s", monitor_device)
+            log.info("starting sound using pulseaudio device %s", monitor_device)
         return sound_source
     except Exception, e:
         log.error("error setting up sound: %s", e, exc_info=True)
