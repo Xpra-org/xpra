@@ -1,5 +1,5 @@
 Description: For building the client only.
- Author: Antoine Martin <antoine@nagafix.co.uk>
+ Author: Antoine Martin <antoine@devloop.org.uk>
  Forwarded: not-needed
  
 --- a/xpra/xposix/__init__.py

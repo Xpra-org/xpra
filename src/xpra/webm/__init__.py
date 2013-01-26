@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Copyright (c) 2011, Daniele Esposti <expo@expobrain.net>
+Copyright (c) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

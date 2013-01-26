@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Parti.
-# Copyright (C) 2011, 2012 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
 
 import pygtk
 pygtk.require('2.0')

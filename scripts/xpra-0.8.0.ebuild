@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright 2010-2013 Antoine Martin <antoine@devloop.org.uk>
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 

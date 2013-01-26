@@ -1,7 +1,7 @@
 Source: xpra
 Section: x11
 Priority: optional
-Maintainer: Antoine Martin <antoine@nagafix.co.uk>
+Maintainer: Antoine Martin <antoine@devloop.org.uk>
 Build-Depends: debhelper (>= 8)
               ,quilt
               ,cython (>= 0.16)

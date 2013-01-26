@@ -1,3 +1,3 @@
 #!/usr/bin/env python
 # This file is part of Parti.
-# Copyright (C) 2012 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>

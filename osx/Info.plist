@@ -27,7 +27,7 @@
 	<key>CFBundleVersion</key>
 	<string>0.8.0</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright 2012 Antoine Martin, GNU General Public License.</string>
+	<string>Copyright 2012-2013 Antoine Martin <antoine@devloop.org.uk>, GNU General Public License.</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.5</string>
 	<key>LSUIElement</key>

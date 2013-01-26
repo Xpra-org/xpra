@@ -1,5 +1,5 @@
 # This file is part of Parti.
-# Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -91,7 +91,7 @@ Release: %{build_no}%{dist}
 License: GPL
 Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_vpx} %{requires_x264} %{requires_webp} %{requires_opengl} %{requires_sound}
 Group: Networking
-Packager: Antoine Martin <antoine@nagafix.co.uk>
+Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
 Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -117,10 +117,10 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Oct 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.8.0-1
+* Tue Oct 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.8.0-1
 - TODO
 
-* Mon Oct 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.7.0-1
+* Mon Oct 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
 - fix crash with x264 encoding
 - fix crash with fast disappearing tooltip windows
@@ -143,7 +143,7 @@ So basically it's screen for remote X apps.
 - client launcher improvements: prevent logging conflict, add version info
 - large source layout cleanup, compilation warnings fixed
 
-* Fri Oct 05 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.4-1
+* Fri Oct 05 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.4-1
 - fix bencoder to properly handle dicts with non-string keys
 - fix swscale bug with windows that are too small by switch encoding
 - fix locking of video encoder resizing leading to missing video frames
@@ -153,13 +153,13 @@ So basically it's screen for remote X apps.
 - prevent races during setup and cleanup of network connections
 - take shortcut if there is nothing to send
 
-* Thu Sep 27 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.3-1
+* Thu Sep 27 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.3-1
 - fix memory leak in server after client disconnection
 - fix launcher: clear socket timeout once connected and add missing options
 - fix potential bug in network code (prevent disconnection)
 - enable auto-refresh by default since we now use a lossy encoder by default
 
-* Tue Sep 25 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.2-1
+* Tue Sep 25 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.2-1
 - fix missing key frames with x264/vpx: always reset the video encoder when we skip some frames (forces a new key frame)
 - fix server crash on invalid keycodes (zero or negative)
 - fix latency: isolate per-window latency statistics from each other
@@ -172,10 +172,10 @@ So basically it's screen for remote X apps.
 - restore protocol main packet compression and single chunk sending
 - drop unnecessary OpenGL dependencies from some deb/rpm packages
 
-* Fri Sep 14 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.1-1
+* Fri Sep 14 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.1-1
 - fix compress clipboard data (previous fix was ineffectual)
 
-* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.6.0-1
+* Sat Sep 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.6.0-1
 - fix launcher: don't block the UI whilst connecting, and use a lower timeout, fix icon lookup on *nix
 - fix clipboard contents too big (was causing connection drops): try to compress them and just drop them if they are still too big
 - x264 or vpx are now the default encodings (if available)
@@ -188,28 +188,28 @@ So basically it's screen for remote X apps.
 - remove 'nogil' switch (as 'nogil' is much faster)
 - test all socket types with automated tests
 
-* Sat Sep 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.4-1
+* Sat Sep 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.4-1
 - fix man page typo
 - fix non bash login shell compatibility
 - fix xpra screenshot argument parsing error handling
 - fix video encoding mismatch when switching encoding
 - fix ssh mode on OpenBSD
 
-* Wed Sep 05 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.3-1
+* Wed Sep 05 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.3-1
 - zlib compatibility fix: use chunked decompression when supported (newer versions)
 
-* Wed Aug 29 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.2-1
+* Wed Aug 29 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.2-1
 - fix xpra launcher icon lookup on *nix
 - fix big clipboard packets causing disconnection: just drop them instead
 - fix zlib compression in raw packet mode: ensure we always flush the buffer for each chunk
 - force disconnection after irrecoverable network parsing error
 - fix window refresh: do not skip all windows after a hidden one!
 
-* Mon Aug 27 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.1-6
+* Mon Aug 27 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.1-6
 - fix xpra_launcher
 - build against rpmfusion repository, with build fix for Fedora 16
 
-* Sat Aug 25 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.1-1
+* Sat Aug 25 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.1-1
 - fix DPI issue with Xdummy: set virtual screen to 96dpi by default
 - avoid looping forever doing maths on 'infinity' value
 - fix incomplete cloning of attributes causing default values to be used for batch configuration
@@ -220,7 +220,7 @@ So basically it's screen for remote X apps.
 - fix test code compatibility with older xpra versions
 - statistics shown for 'damage_packet_queue_pixels' were incorrect
 
-* Mon Aug 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.5.0-1
+* Mon Aug 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.0-1
 - new packet encoder written in C (much faster and data is now smaller too) 
 - read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 - support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
@@ -240,7 +240,7 @@ So basically it's screen for remote X apps.
 - removed old "--no-randr" option
 - drop compatibility with versions older than 0.3: we now assume the "raw_packets" feature is supported
 
-* Mon Jul 23 2012 Antoine Martin <antoine@nagafix.co.uk> 0.4.0-1
+* Mon Jul 23 2012 Antoine Martin <antoine@devloop.org.uk> 0.4.0-1
 - fix client application resizing its own window
 - fix window dimensions hints not applied
 - fix memleak in x264 cleanup code
@@ -277,7 +277,7 @@ So basically it's screen for remote X apps.
 - CentOS static ffmpeg build with memalign for better performance
 - no longer bundle parti window manager
 
-* Tue Jul 10 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.3-1
+* Tue Jul 10 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.3-1
 - do not try to free the empty x264/vpx buffers after a decompression failure
 - fix xpra command exit code (zero) when no error occurred
 - fix Xvfb deadlock on shutdown
@@ -299,13 +299,13 @@ So basically it's screen for remote X apps.
 - correctly calculate min_batch_delay shown in statistics via "xpra info"
 - require x264-libs for x264 support on Fedora
 
-* Wed Jun 06 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.2-1
+* Wed Jun 06 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.2-1
 - fix missing 'a' key using OS X clients
 - fix debian packaging for xpra_launcher
 - fix unicode decoding problems in window title
 - fix latency issue
 
-* Tue May 29 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.1-1
+* Tue May 29 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.1-1
 - fix DoS in network connections setup code
 - fix for non-ascii characters in source file
 - log remote IP or socket address
@@ -315,7 +315,7 @@ So basically it's screen for remote X apps.
 - "xpra info" to report the number of clients connected
 - use xpra's own icon for its own windows (about and info dialogs)
 
-* Sun May 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.3.0-1
+* Sun May 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.3.0-1
 - zero-copy network code, per packet compression
 - fix race causing DoS in threaded network protocol setup
 - fix vpx encoder memory leak
@@ -332,7 +332,7 @@ So basically it's screen for remote X apps.
 - automated regression and performance tests
 - remove compatibility code for versions older than 0.1
 
-* Fri Apr 20 2012 Antoine Martin <antoine@nagafix.co.uk> 0.2.0-1
+* Fri Apr 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.2.0-1
 - x264 and vpx video encoding support
 - gtk3 and python 3 partial support (client only - no keyboard support)
 - detect missing X11 server extensions and exit with error
@@ -342,7 +342,7 @@ So basically it's screen for remote X apps.
 - show more system version information in session information dialog
 - hide window decorations for openoffice splash screen (workaround)
 
-* Wed Mar 21 2012 Antoine Martin <antoine@nagafix.co.uk> 0.1.0-1
+* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0-1
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
@@ -367,12 +367,12 @@ So basically it's screen for remote X apps.
 - turn off compression over local connections (when mmap is enabled)
 - clients can specify maximum refresh rate and screen update batching options
 
-* Wed Feb 08 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.36-1
+* Wed Feb 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.36-1
 - fix clipboard bug which was causing Java applications to crash
 - ensure we always properly disconnect previous client when new connection is accepted
 - avoid warnings with Java applications, focus errors, etc
 
-* Wed Feb 01 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.35-1
+* Wed Feb 01 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.35-1
 - ssh password input fix
 - ability to take screenshots ("xpra screenshot")
 - report server version ("xpra version")
@@ -382,7 +382,7 @@ So basically it's screen for remote X apps.
 - ignore missing properties when they are changed, and report correct source of the problem
 - code style cleanups and improvements
 
-* Thu Jan 19 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.34-1
+* Thu Jan 19 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.34-1
 - security: restrict access to run-xpra script (chmod)
 - security: cursor data sent to the client was too big (exposing server memory)
 - fix thread leak - properly this time, SIGUSR1 now dumps all threads
@@ -394,7 +394,7 @@ So basically it's screen for remote X apps.
 - logging formatting fixes (only shown with logging on)
 - hide picture encoding menu when mmap in use (since it is then ignored)
 
-* Fri Jan 13 2012 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.33-1
+* Fri Jan 13 2012 Antoine Martin <antoine@devloop.org.uk> 0.0.7.33-1
 - readonly command line option
 - correctly stop all network related threads on disconnection
 - faster pixel data transfers for large areas
@@ -404,7 +404,7 @@ So basically it's screen for remote X apps.
 - keyboard: better modifiers detection, synchronization of capslock and numlock
 - keyboard: support all modifiers correctly with and without keyboard-sync option
 
-* Wed Dec 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.32-1
+* Wed Dec 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.32-1
 - bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
 - bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
 - bug fix: initial windows should get focus (partial fix)
@@ -419,7 +419,7 @@ So basically it's screen for remote X apps.
 - use dbus for tray notifications if available, prefered to pynotify
 - show full version information in about dialog
 
-* Mon Nov 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.31-1
+* Mon Nov 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.31-1
 - threaded server for much lower latency
 - fast memory mapped transfers for local connections
 - adaptive damage batching, fixes window refresh
@@ -427,15 +427,15 @@ So basically it's screen for remote X apps.
 - fixed system tray for Ubuntu clients
 - fixed maximized windows on Ubuntu clients
 
-* Tue Nov 01 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.30-1
+* Tue Nov 01 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.30-1
 - fix for update batching causing screen corruption
 - fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
 - fix for jitter compensation code being a little bit too trigger-happy
 
-* Wed Oct 26 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.29-2
+* Wed Oct 26 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.29-2
 - fix partial packets on boundary causing connection to drop (properly this time)
 
-* Tue Oct 25 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.29-1
+* Tue Oct 25 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.29-1
 - fix partial packets on boundary causing connection to drop
 - improve disconnection diagnostic messages
 - scale cursor down to the client's default size
@@ -444,10 +444,10 @@ So basically it's screen for remote X apps.
 - support ubuntu's appindicator (yet another system tray implementation)
 - remove harmless warnings about missing properties on startup
 
-* Tue Oct 18 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.28-2
+* Tue Oct 18 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.28-2
 - fix password mode - oops
 
-* Tue Oct 18 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.28-1
+* Tue Oct 18 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.28-1
 - much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
 - forwarding of system notifications, system bell and custom cursors
 - system tray menu to make it easier to change settings and disconnect
@@ -459,11 +459,11 @@ So basically it's screen for remote X apps.
 - compensate for line jitter causing keys to repeat
 - fixed cython warnings, unused variables, etc
 
-* Thu Sep 22 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.27-1
+* Thu Sep 22 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.27-1
 - compatibility fix for python 2.4 (remove "with" statement)
 - slow down updates from windows that refresh continuously
 
-* Tue Sep 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.26-1
+* Tue Sep 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.26-1
 - minor changes to support the Android client (work in progress)
 - allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
 - clear modifiers when applying new keymaps to prevent timeouts
@@ -471,63 +471,63 @@ So basically it's screen for remote X apps.
 - try harder to close connections cleanly
 - removed some unused code, fixed some old test code
 
-* Wed Aug 31 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.25-1
+* Wed Aug 31 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.25-1
 - Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
 - Reset modifiers whenever we gain or lose focus, or when the keymap changes
 
-* Mon Aug 15 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.24-1
+* Mon Aug 15 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.24-1
 - Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
 - Keyboard fixes for AltGr and special keys for non Unix-like clients
 
-* Wed Jul 27 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-2
+* Wed Jul 27 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.23-2
 - More keymap fixes..
 
-* Wed Jul 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.23-1
+* Wed Jul 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.23-1
 - Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
 - Handle keyval level (shifted keys) explicitly, should fix missing key mappings
 - More generic option for setting window titles
 - Exit if the server dies
 
-* Thu Jun 02 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.22-1
+* Thu Jun 02 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.22-1
 - minor fixes: jpeg, man page, etc
 
-* Fri May 20 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.21-1
+* Fri May 20 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.21-1
 - ability to bind to an existing display with --use-display
 - --xvfb now specifies the full command used. The default is unchanged
 - --auto-refresh-delay does automatic refresh of idle displays in a lossless fashion
 
-* Wed May 04 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.20-1
+* Wed May 04 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.20-1
 - more reliable fix for keyboard mapping issues
 
-* Mon Apr 25 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.19-1
+* Mon Apr 25 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.19-1
 - xrandr support when running against Xdummy, screen resizes on demand
 - fixes for keyboard mapping issues: multiple keycodes for the same key
 
-* Mon Apr 4 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-2
+* Mon Apr 4 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.18-2
 - Fix for older distros (like CentOS) with old versions of pycairo
 
-* Mon Mar 28 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.18-1
+* Mon Mar 28 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.18-1
 - Fix jpeg compression on MS Windows
 - Add ability to disable clipboard code
 - Updated man page
 
-* Wed Jan 19 2011 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.17-1
+* Wed Jan 19 2011 Antoine Martin <antoine@devloop.org.uk> 0.0.7.17-1
 - Honour the pulseaudio flag on client
 
-* Wed Aug 25 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.16-1
+* Wed Aug 25 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.16-1
 - Merged upstream changes.
 
-* Thu Jul 01 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.15-1
+* Thu Jul 01 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.15-1
 - Add option to disable Pulseaudio forwarding as this can be a real network hog.
 - Use logging rather than print statements.
 
-* Tue May 04 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.13-1
+* Tue May 04 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.13-1
 - Ignore minor version differences in the future (must bump to 0.0.8 to cause incompatibility error)
 
-* Tue Apr 13 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.12-1
+* Tue Apr 13 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.12-1
 - bump screen resolution
 
-* Mon Jan 11 2010 Antoine Martin <antoine@nagafix.co.uk> 0.0.7.11-1
+* Mon Jan 11 2010 Antoine Martin <antoine@devloop.org.uk> 0.0.7.11-1
 - first rpm spec file
 
 %prep

@@ -1,5 +1,5 @@
 # This file is part of Parti.
-# Copyright (C) 2009-2012 Antoine Martin <antoine@nagafix.co.uk>
+# Copyright (C) 2009-2013 Antoine Martin <antoine@devloop.org.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -106,7 +106,7 @@ def about(*args):
 	dialog.set_name("Xpra")
 	from xpra import __version__
 	dialog.set_version(__version__)
-	dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',
+	dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
 						'Nathaniel Smith <njs@pobox.com>',
 						'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
 	dialog.set_license(GPL2 or "Your installation may be corrupted, the license text for GPL version 2 could not be found,\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
@@ -527,7 +527,7 @@ class ApplicationWindow:
 		from xpra import __version__
 		dialog.set_version(__version__)
 		dialog.set_copyright('Copyright (c) 2009-2012')
-		dialog.set_authors(('Antoine Martin <antoine@nagafix.co.uk>',
+		dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
 							'Nathaniel Smith <njs@pobox.com>',
 							'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
 		#dialog.set_artists ([""])

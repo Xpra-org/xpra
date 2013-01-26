@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Parti.
-# Copyright (C) 2010-2012 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -123,7 +123,7 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
 setup_options = {}
 setup_options["name"] = "parti-all"
 setup_options["author"] = "Antoine Martin"
-setup_options["author_email"] = "antoine@nagafix.co.uk"
+setup_options["author_email"] = "antoine@devloop.org.uk"
 setup_options["version"] = xpra.__version__
 setup_options["url"] = "http://xpra.org/"
 setup_options["download_url"] = "http://xpra.org/src/"
