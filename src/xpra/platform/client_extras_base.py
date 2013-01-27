@@ -709,7 +709,8 @@ class ClientExtrasBase(object):
     def make_speedsubmenu(self):
         speed_submenu = gtk.Menu()
         self.popup_menu_workaround(speed_submenu)
-        speed_options = {"Low latency"  : 10,
+        speed_options = {"Auto"         : 0,
+                         "Low latency"  : 10,
                          "Average"      : 50,
                          "Low bandwidth": 90}
         option_to_text = {}

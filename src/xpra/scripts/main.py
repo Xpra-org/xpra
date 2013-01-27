@@ -208,7 +208,7 @@ def main(script_file, cmdline):
     def int_auto_default(varname, default_value):
         def int_or_auto(val):
             if val=="auto":
-                return -1
+                return default_value
             return int(val)
         return parse_or_use_default(varname, default_value, int_or_auto)
     def float_default(varname, default_value):

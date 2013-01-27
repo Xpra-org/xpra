@@ -1071,13 +1071,21 @@ class ServerSource(object):
         self.default_damage_options["min-quality"] = min_quality
 
     def set_quality(self, quality):
-        self.default_damage_options["quality"] = max(quality, self.default_damage_options.get("min-quality", 0))
+        if quality<=0:
+            if "quality" in self.default_damage_options:
+                del self.default_damage_options["quality"]
+        else:
+            self.default_damage_options["quality"] = max(quality, self.default_damage_options.get("min-quality", 0))
 
     def set_min_speed(self, min_speed):
         self.default_damage_options["min-speed"] = min_speed
 
     def set_speed(self, speed):
-        self.default_damage_options["speed"] = max(speed, self.default_damage_options.get("min-speed", 0))
+        if speed<=0:
+            if "speed" in self.default_damage_options:
+                del self.default_damage_options["speed"]
+        else:
+            self.default_damage_options["speed"] = max(speed, self.default_damage_options.get("min-speed", 0))
 
 
     def refresh(self, wid, window, opts):
