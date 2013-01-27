@@ -121,6 +121,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
         context.show_text(title)
         context.stroke()
     #now draw the actual data, clipped to the graph region:
+    context.save()
     context.new_path()
     context.set_line_width(0.0)
     context.rectangle(x_offset, y_offset, x_offset+w, y_offset+h)
@@ -161,9 +162,15 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                 last_v = v, x, y
             j += 1
         context.stroke()
+        i += 1
+    context.restore()
+    i = 0
+    for line_data in data:
         #show label:
         if labels and len(labels)>i:
             label = labels[i]
+            colour = colours[i % len(colours)]
+            context.set_source_rgb(*colour)
             context.select_font_face('Serif')
             context.set_font_size(12)
             context.move_to(x_offset/2+(width-x_offset)*i/len(labels), height-4)
