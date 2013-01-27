@@ -1044,7 +1044,8 @@ class ServerSource(object):
 
     def set_quality(self, quality):
         if quality==-1:
-            del self.default_damage_options["quality"]
+            if "quality" in self.default_damage_options:
+                del self.default_damage_options["quality"]
         else:
             self.default_damage_options["quality"] = quality
 
