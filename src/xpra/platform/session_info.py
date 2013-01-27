@@ -135,6 +135,7 @@ class SessionInfo(gtk.Window):
         self.session_name = session_name
         self.connection = conn
         self.last_populate_time = 0
+        self.last_populate_statistics = 0
         self.is_closed = False
         self.get_pixbuf = get_pixbuf
         self.set_title(self.session_name or "Session Info")
@@ -444,17 +445,19 @@ class SessionInfo(gtk.Window):
         since = time.time()-1
         decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
         self.pixel_in_data.append(sum(decoded))
-        return True
+        return not self.is_closed
 
     def populate_tab(self, *args):
+        if self.is_closed:
+            return False
         #now re-populate the tab we are seeing:
         if self.populate_cb:
             if not self.populate_cb():
                 self.populate_cb = None
-        return True
+        return not self.is_closed
 
     def populate_package(self):
-        pass
+        return False
 
     def populate_features(self):
         from xpra.scripts.main import ENCODINGS
@@ -538,6 +541,10 @@ class SessionInfo(gtk.Window):
 
     def populate_statistics(self):
         log("populate_statistics()")
+        if time.time()-self.last_populate_statistics<1.0:
+            #don't repopulate more than every second
+            return True
+        self.last_populate_statistics = time.time()
         if self.client.server_info_request:
             self.client.send_info_request()
         def setall(labels, values):
