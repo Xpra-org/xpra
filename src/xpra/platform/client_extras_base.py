@@ -658,7 +658,7 @@ class ClientExtrasBase(object):
         return encodings_submenu
 
     def make_qualitymenuitem(self):
-        self.quality = self.menuitem("Quality", "slider.png", "Change quality setting", None)
+        self.quality = self.menuitem("Quality", "slider.png", "Minimum picture quality", None)
         self.quality.set_sensitive(False)
         def may_enable_qualitymenu(*args):
             self.quality.set_submenu(self.make_qualitysubmenu())
@@ -667,17 +667,13 @@ class ClientExtrasBase(object):
         return self.quality
 
     def make_qualitysubmenu(self):
+        #WARNING: this changes "min-quality", not "quality" (or at least it tries to..)
         quality_submenu = gtk.Menu()
         self.popup_menu_workaround(quality_submenu)
-        quality_options = [-1, 10, 50, 80, 95]
-        if self.client.quality>0 and self.client.quality not in quality_options:
+        quality_options = [20, 50, 80, 95]
+        if self.client.min_quality>0 and self.client.min_quality not in quality_options:
             """ add the current value to the list of options """
-            i = 0
-            for x in quality_options:
-                if self.client.quality<x:
-                    quality_options.insert(i, self.client.quality)
-                    break
-                i += 1
+            quality_options.append(self.client.min_quality)
         def set_quality(item):
             item = ensure_item_selected(quality_submenu, item)
             q = -1
@@ -685,18 +681,13 @@ class ClientExtrasBase(object):
                 q = int(item.get_label().replace("%", ""))
             except:
                 pass
-            if q!=self.client.quality:
-                log.debug("setting quality to %s", q)
-                self.client.send_quality(q)
-        self.auto_quality = None
-        for q in quality_options:
-            if q>=0:
-                qi = CheckMenuItem("%s%%" % q)
-            else:
-                self.auto_quality = CheckMenuItem("Auto")
-                qi = self.auto_quality
+            if q!=self.client.min_quality:
+                log.debug("setting minimum picture quality to %s", q)
+                self.client.send_min_quality(q)
+        for q in sorted(quality_options):
+            qi = CheckMenuItem("%s%%" % q)
             qi.set_draw_as_radio(True)
-            qi.set_active(q==self.client.quality)
+            qi.set_active(q==self.client.min_quality)
             qi.connect('activate', set_quality)
             quality_submenu.append(qi)
         quality_submenu.show_all()
@@ -705,12 +696,49 @@ class ClientExtrasBase(object):
     def set_qualitymenu(self, *args):
         if self.quality:
             self.quality.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264"))
-            is_x264 = self.client.encoding in ("x264")
-            self.auto_quality.set_sensitive(is_x264)
-            if is_x264:
-                self.auto_quality.set_label("Auto")
-            else:
-                self.auto_quality.set_label("Default")
+
+    def make_speedmenuitem(self):
+        self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)
+        self.speed.set_sensitive(False)
+        def may_enable_speedmenu(*args):
+            self.speed.set_submenu(self.make_speedsubmenu())
+            self.set_speedmenu()
+        self.client.connect("handshake-complete", may_enable_speedmenu)
+        return self.speed
+
+    def make_speedsubmenu(self):
+        speed_submenu = gtk.Menu()
+        self.popup_menu_workaround(speed_submenu)
+        speed_options = {"Low latency"  : 10,
+                         "Average"      : 50,
+                         "Low bandwidth": 90}
+        option_to_text = {}
+        for k,v in speed_options.items():
+            option_to_text[v] = k
+        def set_speed(item):
+            item = ensure_item_selected(speed_submenu, item)
+            s = -1
+            try:
+                s = speed_options.get(item.get_label())
+            except:
+                pass
+            if s!=self.client.speed:
+                log.debug("setting encoding speed to %s", s)
+                self.client.send_speed(s)
+        for s in sorted(speed_options.values()):
+            t = option_to_text.get(s)
+            qi = CheckMenuItem(t)
+            qi.set_draw_as_radio(True)
+            qi.set_active(s==self.client.min_speed)
+            qi.connect('activate', set_speed)
+            speed_submenu.append(qi)
+        speed_submenu.show_all()
+        return speed_submenu
+
+    def set_speedmenu(self, *args):
+        if self.speed:
+            self.speed.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("x264", ) and self.client.change_speed)
+
 
     def make_speakermenuitem(self):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
@@ -929,6 +957,10 @@ class ClientExtrasBase(object):
             menu.append(self.make_qualitymenuitem())
         else:
             self.quality = None
+        if self.client.windows_enabled and "x264" in ENCODINGS:
+            menu.append(self.make_speedmenuitem())
+        else:
+            self.speed = None
         if self.client.speaker_allowed:
             menu.append(self.make_speakermenuitem())
         if self.client.microphone_allowed:

@@ -220,7 +220,8 @@ class ServerSource(object):
                  supports_mmap,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
-                 default_quality, default_speed):
+                 default_quality, default_min_quality,
+                 default_speed, default_min_speed):
         self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol
@@ -238,7 +239,9 @@ class ServerSource(object):
         self.sound_sink = None
 
         self.default_quality = default_quality      #default encoding quality for lossy encodings
+        self.default_min_quality = default_min_quality #default minimum encoding quality
         self.default_speed = default_speed          #encoding speed (only used by x264)
+        self.default_min_speed = default_min_speed  #default minimum encoding speed
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.encoding_options = {}
@@ -436,12 +439,18 @@ class ServerSource(object):
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
         self.system_tray = capabilities.get("system_tray", False)
         #encoding options (filter):
+        #1: these properties are special cased here because we
+        #defined their name before the "encoding." prefix convention:
+        for k,ek in {"initial_quality"          : "initial_quality",
+                     "rgb24zlib"                : "rgb24zlib",
+                     "encoding_client_options"  : "client_options",
+                     "quality"                  : "quality",
+                     }.items():
+            if k in capabilities:
+                self.encoding_options[ek] = capabilities.get(k)
+        #2: standardized encoding options:
         for k, v in capabilities.items():
-            #these properties are special cased here because we
-            #defined their name before the "encoding." prefix convention:
-            if k in ("initial_quality", "rgb24zlib", "encoding_client_options"):
-                self.encoding_options[k] = v
-            elif k.startswith("encoding."):
+            if k.startswith("encoding."):
                 k = k[len("encoding."):]
                 self.encoding_options[k] = v
         #encodings:
@@ -450,15 +459,25 @@ class ServerSource(object):
         q = self.default_quality
         if "jpeg" in capabilities:      #pre 0.7 versions
             q = capabilities["jpeg"]
-        if "quality" in capabilities:   #0.7 onwards:
-            q = capabilities["quality"]
-        if q>=0:
+        if "quality" in self.encoding_options:   #0.7 onwards:
+            q = self.encoding_options["quality"]
+        if q>0:
             self.default_damage_options["quality"] = q
+        mq = self.default_min_quality
+        if "min-quality" in self.encoding_options:
+            mq = self.encoding_options["min-quality"]
+        if mq>0:
+            self.default_damage_options["min-quality"] = mq
         s = self.default_speed
-        if "speed" in capabilities:
-            s = capabilities["speed"]
-        if s>=0:
+        if "speed" in self.encoding_options:
+            s = self.encoding_options["speed"]
+        if s>0:
             self.default_damage_options["speed"] = s
+        ms = self.default_min_speed
+        if "min-speed" in capabilities:
+            ms = self.encoding_options["min-speed"]
+        if ms>0:
+            self.default_damage_options["min-speed"] = ms
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         #keyboard:
@@ -808,6 +827,12 @@ class ServerSource(object):
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
         info["auto_refresh%s" % suffix] = self.auto_refresh_delay
+        log.info("encoding_options=%s", self.encoding_options)
+        for k,v in self.encoding_options.items():
+            info["encoding.%s" % k] = v
+        log.info("default_damage_options=%s", self.default_damage_options)
+        for k,v in self.default_damage_options.items():
+            info["encoding.%s" % k] = v
         def get_sound_state(supported, prop):
             if not supported:
                 return "disabled"
@@ -1042,12 +1067,18 @@ class ServerSource(object):
             batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
+    def set_min_quality(self, min_quality):
+        self.default_damage_options["min-quality"] = min_quality
+
     def set_quality(self, quality):
-        if quality==-1:
-            if "quality" in self.default_damage_options:
-                del self.default_damage_options["quality"]
-        else:
-            self.default_damage_options["quality"] = quality
+        self.default_damage_options["quality"] = max(quality, self.default_damage_options.get("min-quality", 0))
+
+    def set_min_speed(self, min_speed):
+        self.default_damage_options["min-speed"] = min_speed
+
+    def set_speed(self, speed):
+        self.default_damage_options["speed"] = max(speed, self.default_damage_options.get("min-speed", 0))
+
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):

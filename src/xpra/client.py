@@ -172,6 +172,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.toggle_keyboard_sync = False
         self.window_configure = False
         self.change_quality = False
+        self.change_min_quality = False
+        self.change_speed = False
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows_enabled
         self._client_extras = ClientExtras(self, opts, conn)
@@ -222,7 +224,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             elif bw < self.max_bandwidth:
                 q += 5
             q = max(10, min(95 ,q))
-            self.send_quality(q)
+            self.send_min_quality(q)
             return True
         if (self.max_bandwidth):
             self.last_input_bytecount = 0
@@ -621,8 +623,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
+        capabilities["encoding.client_options"] = True
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
+        capabilities["encoding.rgb24zlib"] = True
         capabilities["named_cursors"] = len(cursor_names)>0
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
@@ -649,7 +653,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 if min_quality:
                     capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
-        capabilities["encoding.initial_quality"] = 70
+        iq = max(self.min_quality, self.quality)
+        if iq<0:
+            iq = 70
+        capabilities["encoding.initial_quality"] = iq
         if is_gtk3():
             capabilities["encoding.supports_delta"] = []    #need implementing in window_backing
         else:
@@ -722,13 +729,24 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.info_request_pending = True
             self.send("info-request", [self.uuid], self._id_to_window.keys())
 
-    def send_quality(self, q):
+    def send_min_quality(self, q):
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
-        self.quality = q
-        if self.change_quality:
-            self.send("quality", self.quality)
+        self.min_quality = q
+        if self.change_min_quality:
+            #v0.8 onwards: set min
+            self.send("min-quality", self.min_quality)
+        elif self.change_quality:
+            #v0.7 and earlier, can only set fixed quality..
+            self.send("quality", self.min_quality)
         else:
-            self.send("jpeg-quality", self.quality)
+            #this is really old..
+            self.send("jpeg-quality", self.min_quality)
+
+    def send_speed(self, s):
+        assert self.change_speed
+        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
+        self.speed = s
+        self.send("speed", self.speed)
 
     def send_refresh(self, wid):
         self.send("buffer-refresh", wid, True, 95)
@@ -754,6 +772,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
         self.change_quality = capabilities.get("change-quality", False)
+        self.change_min_quality = capabilities.get("change-min-quality", False)
+        self.change_speed = capabilities.get("change-speed", False)
+        self.change_min_speed = capabilities.get("change-min-speed", False)
         self.xsettings_tuple = capabilities.get("xsettings-tuple", False)
         if self.mmap_enabled:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_file)

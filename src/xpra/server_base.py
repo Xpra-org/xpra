@@ -152,7 +152,9 @@ class XpraServerBase(object):
             log("failed to set pulseaudio audio tagging: %s", e)
 
         self.default_quality = opts.quality
+        self.default_min_quality = opts.min_quality
         self.default_speed = opts.speed
+        self.default_min_speed = opts.min_speed
         self.pulseaudio = opts.pulseaudio
         self.sharing = opts.sharing
         self.bell = opts.bell
@@ -254,6 +256,9 @@ class XpraServerBase(object):
             "server-settings":                      self._process_server_settings,
             "jpeg-quality":                         self._process_quality,
             "quality":                              self._process_quality,
+            "min-quality":                          self._process_min_quality,
+            "speed":                                self._process_speed,
+            "min-speed":                            self._process_min_speed,
             "set_deflate":                          self._process_set_deflate,
             "desktop_size":                         self._process_desktop_size,
             "encoding":                             self._process_encoding,
@@ -537,7 +542,8 @@ class XpraServerBase(object):
                           self.supports_mmap,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
-                          self.default_quality, self.default_speed)
+                          self.default_quality, self.default_min_quality,
+                          self.default_speed, self.default_min_speed)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         if self.randr:
@@ -615,6 +621,9 @@ class XpraServerBase(object):
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
         capabilities["change-quality"] = True
+        capabilities["change-min-quality"] = True
+        capabilities["change-speed"] = True
+        capabilities["change-min-speed"] = True
         capabilities["client_window_properties"] = True
         capabilities["info-request"] = True
         return capabilities
@@ -1237,6 +1246,24 @@ class XpraServerBase(object):
         quality = packet[1]
         log("Setting quality to ", quality)
         self._server_sources.get(proto).set_quality(quality)
+        self.refresh_windows(proto, self._id_to_window)
+
+    def _process_min_quality(self, proto, packet):
+        min_quality = packet[1]
+        log("Setting min quality to ", min_quality)
+        self._server_sources.get(proto).set_min_quality(min_quality)
+        self.refresh_windows(proto, self._id_to_window)
+
+    def _process_speed(self, proto, packet):
+        speed = packet[1]
+        log("Setting speed to ", speed)
+        self._server_sources.get(proto).set_speed(speed)
+        self.refresh_windows(proto, self._id_to_window)
+
+    def _process_min_speed(self, proto, packet):
+        min_speed = packet[1]
+        log("Setting min speed to ", min_speed)
+        self._server_sources.get(proto).set_min_speed(min_speed)
         self.refresh_windows(proto, self._id_to_window)
 
 

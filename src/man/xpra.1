@@ -55,7 +55,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
 [\fB\-\-quality\fP=\fIQUALITY\fP]
+[\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP]
 [\fB\-\-speed\fP=\fISPEED\fP]
+[\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
 [\fB\-\-max\-bandwidth\fP=\fIBW\fP]
 [\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
@@ -454,21 +456,28 @@ Deprecated, use \fB\-\-quality\fP:
 .TP
 
 \fB\-\-quality\fP=\fIVALUE\fP
-This option sets the image compression quality of pixel data sent by
-the server when using some lossy encodings (\fBjpeg\fP, \fBwebp\fP or \fBx264\fP),
+This option sets a fixed image compression quality lossy encodings
+(\fBjpeg\fP, \fBwebp\fP or \fBx264\fP).
 First, one of those lossy encodings must be enabled with \fB\-\-encoding\fP.
-The valid values range from 1 (lowest quality, high compression -
-generally unusable) to 100 (highest quality, low compression - not
-particularly useful).
-Note that the x264 encoding normally uses a variable quality
-determined by the connection's performance, this option forces
-a fixed quality setting to be used instead.
+Values range from 1 (lowest quality, high compression - generally unusable)
+to 100 (highest quality, low compression - not particularly useful).
+Specify a value of zero to let the system tune the quality dynamically
+to achieve the best bandwidth usage possible.
+(currently only implemented with x264 encoding)
+.TP
+\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP
+This option sets the minimum encoding quality allowed when the quality option is
+set to automatic mode.
 .TP
 \fB\-\-speed\fP=\fISPEED\fP
 This option sets the x264 encoding speed. Slower compresses more, faster
 will give better latency.
 The system normally uses a variable speed, this option forces
 a fixed speed setting to be used instead.
+.TP
+\fB\-\-min\-speed\fP=\fIMIN\-SPEED\fP
+This option sets the minimum x264 encoding speed allowed when the speed option is
+set to automatic mode.
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically

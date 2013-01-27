@@ -205,6 +205,12 @@ def main(script_file, cmdline):
         return parse_or_use_default(varname, default_value, bool_parse)
     def int_default(varname, default_value):
         return parse_or_use_default(varname, default_value, int)
+    def int_auto_default(varname, default_value):
+        def int_or_auto(val):
+            if val=="auto":
+                return -1
+            return int(val)
+        return parse_or_use_default(varname, default_value, int_or_auto)
     def float_default(varname, default_value):
         return parse_or_use_default(varname, default_value, float)
     def string_list(varname, default_value):
@@ -310,7 +316,7 @@ def main(script_file, cmdline):
                       dest="speaker", default=bool_default("speaker", True),
                       help="Disable forwarding of sound output to the client(s)")
     group.add_option("--speaker-codec", action="append",
-                      dest="speaker_codec", default=string_list("speaker_codec", []),
+                      dest="speaker_codec", default=string_list("speaker-codec", []),
                       help="The audio codec to use for forwarding the speaker sound output "
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
@@ -318,14 +324,15 @@ def main(script_file, cmdline):
                       dest="microphone", default=bool_default("microphone", None),
                       help="Disable forwarding of sound input to the server")
     group.add_option("--microphone-codec", action="append",
-                      dest="microphone_codec", default=string_list("microphone_codec", []),
+                      dest="microphone_codec", default=string_list("microphone-codec", []),
                       help="The audio codec to use for forwaring the microphone sound input "
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
-                "These options are used by the client to specify the desired picture and network data compression.")
+                "These options are used by the client to specify the desired picture and network data compression."
+                "They may also be specified on the server as default values for those clients that do not set them.")
     default_encoding = defaults.get("encoding", ENCODINGS[0])
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=default_encoding,
@@ -336,15 +343,23 @@ def main(script_file, cmdline):
                           dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))>0:
+        group.add_option("--min-quality", action="store",
+                          metavar="MIN-LEVEL",
+                          dest="min_quality", type="int", default=int_default("min-quality", 0),
+                          help="Sets the minimum x264 encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
         group.add_option("--quality", action="store",
                           metavar="LEVEL",
-                          dest="quality", type="int", default=int_default("quality", -1),
-                          help="Use image compression with the given quality - only relevant to lossy encodings (1-100, -1 to use automatic settings). Default: %default.")
+                          dest="quality", type="int", default=int_auto_default("quality", 0),
+                          help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
     if "x264" in ENCODINGS:
+        group.add_option("--min-speed", action="store",
+                          metavar="SPEED",
+                          dest="min_speed", type="int", default=int_default("min-speed", 0),
+                          help="Sets the minimum x264 encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
         group.add_option("--speed", action="store",
                           metavar="SPEED",
-                          dest="speed", type="int", default=int_default("speed", -1),
-                          help="Use x264 image compression with the given encoding speed (1-100, -1 to use automatic settings). Default: %default.")
+                          dest="speed", type="int", default=int_auto_default("speed", 0),
+                          help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 0.25),
                       metavar="DELAY",
@@ -443,13 +458,16 @@ def main(script_file, cmdline):
     options, args = parser.parse_args(cmdline[1:])
     if not args:
         parser.error("need a mode")
+    #ensure the default values are set even though
+    #the option is not shown to the user as it is not available
     if "jpeg" not in ENCODINGS:
-        #ensure the default values are set even though
-        #the option is not shown to the user as it is not available
-        options.quality = int_default("quality", -1)
         options.max_bandwidth = 0
+    if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))==0:
+        options.min_quality = int_default("min-quality", 0)
+        options.quality = int_default("quality", 0)
     if "x264" not in ENCODINGS:
-        options.speed = int_default("speed", -1)
+        options.min_speed = int_default("min-speed", 0)
+        options.speed = int_default("speed", 0)
     try:
         int(options.dpi)
     except Exception, e:

@@ -342,9 +342,9 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.default_damage_options = default_damage_options    #default encoding options, like "quality"
+        self.default_damage_options = default_damage_options    #default encoding options, like "quality", "min-quality", etc
                                                         #may change at runtime (ie: see ServerSource.set_quality)
-        self.encoding_client_options = encoding_options.get("encoding_client_options", False)
+        self.encoding_client_options = encoding_options.get("client_options", False)
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
@@ -498,7 +498,10 @@ class WindowSource(object):
         if self._video_encoder and not self._video_encoder.is_closed():
             update_video_encoder(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics,
                               self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
-                              fixed_quality=self.default_damage_options.get("quality", -1), fixed_speed=self.default_damage_options.get("speed", -1))
+                              fixed_quality=self.default_damage_options.get("quality", -1),
+                              min_quality=self.default_damage_options.get("min-quality", -1),
+                              fixed_speed=self.default_damage_options.get("speed", -1),
+                              min_speed=self.default_damage_options.get("min-speed", -1))
 
 
     def damage(self, window, x, y, w, h, options={}):
