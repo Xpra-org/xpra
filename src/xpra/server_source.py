@@ -827,10 +827,8 @@ class ServerSource(object):
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
         info["auto_refresh%s" % suffix] = self.auto_refresh_delay
-        log.info("encoding_options=%s", self.encoding_options)
         for k,v in self.encoding_options.items():
             info["encoding.%s" % k] = v
-        log.info("default_damage_options=%s", self.default_damage_options)
         for k,v in self.default_damage_options.items():
             info["encoding.%s" % k] = v
         def get_sound_state(supported, prop):
