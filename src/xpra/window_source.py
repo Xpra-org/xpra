@@ -915,13 +915,12 @@ class WindowSource(object):
             data = rgbdata
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
-        if coding in self.supports_delta:
-            if self.last_pixmap_data is not None:
-                lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
-                if lw==w and lh==h and lcoding==coding and len(ldata)==len(rgbdata):
-                    #xor with the last frame:
-                    delta = lsequence
-                    data = xor_str(rgbdata, ldata)
+        if coding in self.supports_delta and self.last_pixmap_data is not None:
+            lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
+            if lw==w and lh==h and lcoding==coding and len(ldata)==len(rgbdata):
+                #xor with the last frame:
+                delta = lsequence
+                data = xor_str(rgbdata, ldata)
 
         if coding in ("jpeg", "png"):
             data, client_options = self.PIL_encode(w, h, coding, data, rowstride, options)
