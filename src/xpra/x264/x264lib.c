@@ -582,9 +582,10 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	x264_param_t param;
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->speed = pct;
-	int new_preset = 7-MAX(0, MIN(7, pct/12.5));
+	int new_preset = 7-MAX(0, MIN(6, pct/16.7));
 	if (new_preset==ctx->encoding_preset)
 		return;
+	//printf("set_encoding_speed(%i) old preset: %i=%s, new preset: %i=%s\n", pct, ctx->encoding_preset, x264_preset_names[ctx->encoding_preset], new_preset, x264_preset_names[new_preset]);
 	ctx->encoding_preset = new_preset;
 	//"tune" options: film, animation, grain, stillimage, psnr, ssim, fastdecode, zerolatency
 	//Multiple tunings can be used if separated by a delimiter in ",./-+"
@@ -610,6 +611,7 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
 	float new_quality = get_x264_quality(pct);
+	//printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
 	if (ctx->supports_csc_option) {
 		if (!can_keep_colour_sampling(ctx, pct)) {
 			int new_colour_sampling = get_x264_colour_sampling(ctx, pct);
@@ -620,6 +622,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 				ctx->quality = pct;
 				ctx->x264_quality = new_quality;
 				do_init_encoder(ctx);
+				//printf("new pixel format: %i / %i\n", get_encoder_pixel_format(ctx), get_pixel_format(get_encoder_pixel_format(ctx)));
 				return;
 			}
 		}
