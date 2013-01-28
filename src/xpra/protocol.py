@@ -366,7 +366,8 @@ class Protocol(object):
                         try:
                             end_cb(self._conn.output_bytecount)
                         except:
-                            log.error("error on %s", end_cb, exc_info=True)
+                            if not self._closed:
+                                log.error("error on %s", end_cb, exc_info=True)
             log("write thread: ended")
         except (OSError, IOError, socket.error), e:
             self._call_connection_lost("Error writing to connection: %s" % e)
