@@ -221,7 +221,7 @@ cdef class Encoder(xcoder):
     def init_context(self, int width, int height, options):    #@DuplicatedSignature
         self.init(width, height)
         self.frames = 0
-        self.supports_options = int(options.get("encoding_client_options", False))
+        self.supports_options = int(options.get("client_options", False))
         I420_profile = self._get_profile(options, "I420", DEFAULT_I420_PROFILE, I420_PROFILES)
         I422_profile = self._get_profile(options, "I422", DEFAULT_I422_PROFILE, I422_PROFILES)
         I444_profile = self._get_profile(options, "I444", DEFAULT_I444_PROFILE, I444_PROFILES)

@@ -246,7 +246,7 @@ class ServerSource(object):
         self.encodings = []                         #all the encodings supported by the client
         self.encoding_options = {}
         self.default_batch_config = DamageBatchConfig()
-        self.default_damage_options = {}
+        self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.window_metdata_cache = {}
@@ -337,6 +337,7 @@ class ServerSource(object):
                 try:
                     ws.statistics.update_averages()
                     ws.calculate_batch_delay()
+                    ws.update_video_encoder()
                 except:
                     log.error("error on window %s", wid, exc_info=True)
                 wait_time -= AFTER_EACH_WINDOW_WAIT
@@ -462,22 +463,22 @@ class ServerSource(object):
         if "quality" in self.encoding_options:   #0.7 onwards:
             q = self.encoding_options["quality"]
         if q>0:
-            self.default_damage_options["quality"] = q
+            self.default_encoding_options["quality"] = q
         mq = self.default_min_quality
         if "min-quality" in self.encoding_options:
             mq = self.encoding_options["min-quality"]
         if mq>0:
-            self.default_damage_options["min-quality"] = mq
+            self.default_encoding_options["min-quality"] = mq
         s = self.default_speed
         if "speed" in self.encoding_options:
             s = self.encoding_options["speed"]
         if s>0:
-            self.default_damage_options["speed"] = s
+            self.default_encoding_options["speed"] = s
         ms = self.default_min_speed
         if "min-speed" in capabilities:
             ms = self.encoding_options["min-speed"]
         if ms>0:
-            self.default_damage_options["min-speed"] = ms
+            self.default_encoding_options["min-speed"] = ms
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         #keyboard:
@@ -829,7 +830,7 @@ class ServerSource(object):
         info["auto_refresh%s" % suffix] = self.auto_refresh_delay
         for k,v in self.encoding_options.items():
             info["encoding.%s" % k] = v
-        for k,v in self.default_damage_options.items():
+        for k,v in self.default_encoding_options.items():
             info["encoding.%s" % k] = v
         def get_sound_state(supported, prop):
             if not supported:
@@ -1065,26 +1066,33 @@ class ServerSource(object):
             batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
+    def update_video_encoders(self):
+        for ws in self.window_sources.values():
+            ws.update_video_encoder()
+
     def set_min_quality(self, min_quality):
-        self.default_damage_options["min-quality"] = min_quality
+        self.default_encoding_options["min-quality"] = min_quality
+        self.update_video_encoders()
 
     def set_quality(self, quality):
         if quality<=0:
-            if "quality" in self.default_damage_options:
-                del self.default_damage_options["quality"]
+            if "quality" in self.default_encoding_options:
+                del self.default_encoding_options["quality"]
         else:
-            self.default_damage_options["quality"] = max(quality, self.default_damage_options.get("min-quality", 0))
+            self.default_encoding_options["quality"] = max(quality, self.default_encoding_options.get("min-quality", 0))
+        self.update_video_encoders()
 
     def set_min_speed(self, min_speed):
-        self.default_damage_options["min-speed"] = min_speed
+        self.default_encoding_options["min-speed"] = min_speed
+        self.update_video_encoders()
 
     def set_speed(self, speed):
         if speed<=0:
-            if "speed" in self.default_damage_options:
-                del self.default_damage_options["speed"]
+            if "speed" in self.default_encoding_options:
+                del self.default_encoding_options["speed"]
         else:
-            self.default_damage_options["speed"] = max(speed, self.default_damage_options.get("min-speed", 0))
-
+            self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
+        self.update_video_encoders()
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
@@ -1104,11 +1112,9 @@ class ServerSource(object):
         if options is None or options.get("calculate", True):
             self.may_recalculate(wid)
         assert window is not None
-        if options is None:
-            damage_options = self.default_damage_options
-        else:
-            damage_options = self.default_damage_options.copy()
-            damage_options.update(options)
+        damage_options = {}
+        if options:
+            damage_options = options.copy()
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
         ws = self.window_sources.get(wid)
         if ws is None:
@@ -1117,7 +1123,7 @@ class ServerSource(object):
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings, self.encoding_options,
-                              self.default_damage_options,
+                              self.default_encoding_options,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws
         ws.damage(window, x, y, w, h, damage_options)

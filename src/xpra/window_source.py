@@ -332,7 +332,7 @@ class WindowSource(object):
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
                     encoding, encodings, encoding_options,
-                    default_damage_options,
+                    default_encoding_options,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -342,7 +342,7 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.default_damage_options = default_damage_options    #default encoding options, like "quality", "min-quality", etc
+        self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
                                                         #may change at runtime (ie: see ServerSource.set_quality)
         self.encoding_client_options = encoding_options.get("client_options", False)
                                                         #does the client support encoding options?
@@ -495,13 +495,15 @@ class WindowSource(object):
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
+    
+    def update_video_encoder(self):
         if self._video_encoder and not self._video_encoder.is_closed():
             update_video_encoder(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics,
                               self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
-                              fixed_quality=self.default_damage_options.get("quality", -1),
-                              min_quality=self.default_damage_options.get("min-quality", -1),
-                              fixed_speed=self.default_damage_options.get("speed", -1),
-                              min_speed=self.default_damage_options.get("min-speed", -1))
+                              fixed_quality=self.default_encoding_options.get("quality", -1),
+                              min_quality=self.default_encoding_options.get("min-quality", -1),
+                              fixed_speed=self.default_encoding_options.get("speed", -1),
+                              min_speed=self.default_encoding_options.get("min-speed", -1))
 
 
     def damage(self, window, x, y, w, h, options={}):
@@ -810,18 +812,19 @@ class WindowSource(object):
                 debug("schedule_auto_refresh: high quality YUV444 frame (%s pixels), cancelling refresh timer %s", w*h, self.refresh_timer)
                 self.cancel_refresh_timer()
                 return
-        elif actual_quality>=AUTO_REFRESH_THRESHOLD and w*h>=ww*wh:
+        if actual_quality>=AUTO_REFRESH_THRESHOLD and w*h>=ww*wh:
             debug("schedule_auto_refresh: high quality (%s%%) full frame (%s pixels), cancelling refresh timer %s", actual_quality, w*h, self.refresh_timer)
             #got enough pixels at high quality, cancel timer:
             self.cancel_refresh_timer()
             return
         def full_quality_refresh():
+            debug("full_quality_refresh() for %sx%s window", w, h)
             if self._damage_delayed:
                 #there is already a new damage region pending
-                return
+                return  False
             if not window.is_managed():
                 #this window is no longer managed
-                return
+                return  False
             self.refresh_timer = None
             new_options = damage_options.copy()
             #FIXME: with x264, the quality must be higher than the YUV444 threshold
@@ -829,6 +832,7 @@ class WindowSource(object):
             new_options["speed"] = AUTO_REFRESH_SPEED
             debug("full_quality_refresh() with options=%s", new_options)
             self.damage(window, 0, 0, ww, wh, options=new_options)
+            return False
             #self.process_damage_region(time.time(), window, 0, 0, ww, wh, coding, new_options)
         self.cancel_refresh_timer()
         if self._damage_delayed:

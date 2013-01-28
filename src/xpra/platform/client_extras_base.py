@@ -710,9 +710,10 @@ class ClientExtrasBase(object):
         speed_submenu = gtk.Menu()
         self.popup_menu_workaround(speed_submenu)
         speed_options = {"Auto"         : 0,
-                         "Low latency"  : 10,
-                         "Average"      : 50,
-                         "Low bandwidth": 90}
+                         "Lowest Latency"  : 100,
+                         "Low Latency"     : 70,
+                         "Low Bandwidth"   : 30,
+                         "Lowest Bandwidth": 1}
         option_to_text = {}
         for k,v in speed_options.items():
             option_to_text[v] = k
@@ -727,6 +728,8 @@ class ClientExtrasBase(object):
                 log.debug("setting encoding speed to %s", s)
                 self.client.send_speed(s)
         for s in sorted(speed_options.values()):
+            if s<self.client.min_speed:
+                continue
             t = option_to_text.get(s)
             qi = CheckMenuItem(t)
             qi.set_draw_as_radio(True)
