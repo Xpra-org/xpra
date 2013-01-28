@@ -979,8 +979,8 @@ class WindowModel(BaseWindowModel):
     def _read_initial_properties(self):
         # Things that don't change:
         BaseWindowModel._read_initial_properties(self)
-        def pget(*args):
-            return self.prop_get(*args, raise_xerrors=True)
+        def pget(key, ptype):
+            return self.prop_get(key, ptype, raise_xerrors=True)
 
         geometry = self.client_window.get_geometry()
         self._internal_set_property("requested-position", (geometry[0], geometry[1]))
