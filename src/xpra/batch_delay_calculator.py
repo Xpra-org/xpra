@@ -147,14 +147,15 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
             add_DEBUG_MESSAGE("video encoder using fixed speed: %s", fixed_speed)
     else:
         #20ms + 50ms per MPixel
-        min_damage_latency = 0.020 + 0.050*low_limit/1024.0/1024.0
-        target_damage_latency = min_damage_latency + 10*batch.delay/1000.0
-        dam_lat = max(0, ((statistics.avg_damage_in_latency or 0)-target_damage_latency)*5)
-        target_decode_speed = 2*1000*1000      #2 MPixels/s
+        min_damage_latency = 0.010 + 0.025*low_limit/1024.0/1024.0
+        target_damage_latency = min_damage_latency + batch.delay/1000.0
+        dam_lat_abs = max(0, ((statistics.avg_damage_in_latency or 0)-min_damage_latency)*10.0)
+        dam_lat_rel = max(0, ((statistics.avg_damage_in_latency or 0)/target_damage_latency)/2.0)
+        target_decode_speed = 8*1000*1000      #8 MPixels/s
         dec_lat = 0.0
         if statistics.avg_decode_speed:
             dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
-        target = max(dam_lat, dec_lat, 0.0)
+        target = max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0)
         ms = min(100.0, max(min_speed, 0.0))
         target_speed = ms + (100.0-ms) * min(1.0, target)
         #make a copy to work on
@@ -162,8 +163,8 @@ def update_video_encoder(wid, window_dimensions, batch, global_statistics, stati
         ves_copy.append((time.time(), target_speed))
         new_speed = max(ms, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
         if DEBUG_VIDEO:
-            msg = "video encoder speed factors: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.2f, target_damage_latency=%.2f, batch.delay=%.2f, dam_lat=%.2f, dec_lat=%.2f, target=%.2f, new_speed=%.2f", \
-                 wid, low_limit, min_speed, min_damage_latency, target_damage_latency, batch.delay, dam_lat, dec_lat, int(target_speed), int(new_speed)
+            msg = "video encoder speed factors: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.3f, avg damage in latency=%.3f, target_damage_latency=%.3f, batch.delay=%.1f, dam_lat=%.3f / %.3f, dec_lat=%.3f, target=%i, new_speed=%i", \
+                 wid, low_limit, min_speed, min_damage_latency, statistics.avg_damage_in_latency, target_damage_latency, batch.delay, dam_lat_abs, dam_lat_rel, dec_lat, int(target_speed), int(new_speed)
             add_DEBUG_MESSAGE(*msg)
 
     #***********************************************************
