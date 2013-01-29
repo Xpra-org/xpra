@@ -570,7 +570,7 @@ class ApplicationWindow:
 
 	def connect_tcp(self):
 		thread.start_new_thread(self.do_connect_tcp, ())
-	
+
 	def do_connect_tcp(self):
 		def set_sensitive(s):
 			gobject.idle_add(self.window.set_sensitive, s)
@@ -688,9 +688,13 @@ class ApplicationWindow:
 		gobject.idle_add(self.window.hide)
 		try:
 			self.set_info_text("Launching")
-			process = self.start_xpra_process()
+			process, cb = self.start_xpra_process()
 			gobject.idle_add(self.window.hide)
-			out,err = process.communicate()
+			try:
+				out,err = process.communicate()
+			finally:
+				if cb:
+					cb()
 			print("stdout=%s" % out)
 			print("stderr=%s" % err)
 			ret = process.wait()
@@ -771,8 +775,13 @@ class ApplicationWindow:
 		args.append("--encoding=%s" % xpra_opts.encoding)
 		if xpra_opts.encoding in ["jpeg"]:
 			args.append("--quality=%s" % xpra_opts.quality)
+		cb = None
 		if xpra_opts.password:
-			xpra_opts.password_file = create_password_file(xpra_opts.password)
+			pw_file = create_password_file(xpra_opts.password)
+			def del_pw_file():
+				pw_file.close()
+			cb = del_pw_file
+			xpra_opts.password_file = pw_file.name
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
 		if EXEC_DEBUG:
@@ -790,7 +799,7 @@ class ApplicationWindow:
 				kwargs["creationflags"] = win32process.CREATE_NO_WINDOW
 			except:
 				pass		#tried our best...
-		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs)
+		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs), cb
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
@@ -811,10 +820,10 @@ class ApplicationWindow:
 		gtk.main_quit()
 
 def create_password_file(password):
-	pass_file = tempfile.NamedTemporaryFile(delete = False)
+	pass_file = tempfile.NamedTemporaryFile()
 	pass_file.write("%s" % password)
-	pass_file.close()
-	return pass_file.name
+	pass_file.flush()
+	return pass_file
 
 def update_options_from_file(filename):
 	propFile = open(filename, "rU")
@@ -861,8 +870,12 @@ def main():
 	try:
 		if xpra_opts.autoconnect:
 			#file says we should connect, do that only:
-			process = app.start_xpra_process()
-			return process.wait()
+			process, cb = app.start_xpra_process()
+			try:
+				return process.wait()
+			finally:
+				if cb:
+					cb()
 		else:
 			app.create_window()
 			app.run()
