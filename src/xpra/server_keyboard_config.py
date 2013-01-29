@@ -9,8 +9,6 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 
-import hashlib
-
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -55,7 +53,13 @@ class KeyboardConfig(object):
         self.is_native_keymap = True
 
     def get_hash(self):
-        m = hashlib.md5()
+        try:
+            import hashlib
+            m = hashlib.sha1()
+        except:
+            #try python2.4 variant:
+            import sha
+            m = sha.new()
         for x in (self.xkbmap_print, self.xkbmap_query, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):

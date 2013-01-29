@@ -7,7 +7,6 @@
 import os
 import sys
 import uuid
-import hashlib
 import socket
 from wimpiggy.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
@@ -144,7 +143,13 @@ class XpraClientBase(gobject.GObject):
         return capabilities
 
     def make_uuid(self):
-        u = hashlib.sha1()
+        try:
+            import hashlib
+            u = hashlib.sha1()
+        except:
+            #try python2.4 variant:
+            import sha
+            u = sha.new()
         def uupdate(ustr):
             u.update(ustr.encode("utf-8"))
         uupdate(get_machine_id())
