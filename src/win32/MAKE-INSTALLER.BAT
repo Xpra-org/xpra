@@ -17,8 +17,6 @@ SET PYGST=%GSTREAMER%\sdk\bindings\python\v2.7\lib\site-packages\gst-0.10
 SET PYGSTDLL=%GSTREAMER%\sdk\bindings\python\v2.7\lib\gstreamer-0.10
 SET BUILD_DIR=build
 
-SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
-
 SET SHOW_DEPENDENCIES=1
 
 REM "SET THESE TO 0 TO DISABLE VPX/X264/RENCODE/CLIPBOARD:"
@@ -37,9 +35,16 @@ REM support double-click on BAT file, so run from parent directory:
 set WORKING_DIRECTORY=%cd%
 IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
-ECHO ****** Clearing build directory
+SET PYTHONPATH=.;%PYTHONPATH%
+FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print __version__"') DO set VERSION=%%i
+ECHO Building Xpra Version %VERSION%
+
+SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
+
+
+ECHO ****** Clearing build directory (you can ignore any errors here)
 RMDIR /S /Q %BUILD_DIR% dist Output
-DEL /Q Xpra_Setup.exe
+DEL /Q Xpra_Setup*.exe
 DEL /Q xpra\x264\win32\codec.pyd
 DEL /Q xpra\x264\codec.pyd
 DEL /Q xpra\vpx\win32\codec.pyd
@@ -47,6 +52,7 @@ DEL /Q xpra\vpx\codec.pyd
 DEL /Q xpra\rencode\rencode.pyd
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd
 
+ECHO ***************************************************************
 SET BUILD_ARGS=
 IF %X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-x264
 IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
@@ -57,6 +63,7 @@ IF %CYMATHS% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cymaths
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
+ECHO Build arguments: %BUILD_ARGS%
 
 ECHO ***************************************************************
 ECHO ****** Hack for x264/vpx/rencode/gdk-clipboard:
@@ -158,11 +165,14 @@ if %errorlevel% NEQ 0 (
 	ECHO "InnoSetup error"
 	GOTO ERROR
 )
-dir Output
-MOVE /Y Output\Xpra_Setup.exe Xpra_Setup.exe
-RMDIR Output
 
-Xpra_Setup.exe %ARGS%
+ECHO ***************************************************************
+ECHO ****** Finished - running the new installer
+MOVE /Y Output\Xpra_Setup.exe Xpra_Setup_%VERSION%.exe
+RMDIR Output
+dir Xpra_Setup_%VERSION%.exe
+
+Xpra_Setup_%VERSION%.exe %ARGS%
 GOTO END
 
 :ERROR
