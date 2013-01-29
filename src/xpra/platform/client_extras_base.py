@@ -649,6 +649,7 @@ class ClientExtrasBase(object):
                     self.client.set_encoding(enc)
                     log.debug("setting encoding to %s", enc)
                     self.set_qualitymenu()
+                    self.set_speedmenu()
             encoding_item.set_active(encoding==self.client.encoding)
             encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
             encoding_item.set_draw_as_radio(True)
