@@ -184,10 +184,11 @@ class WindowPerformanceStatistics(object):
             factors.append(calculate_for_target(msg, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
             #ratio to delay (aim for double the latency so we always have packets in flight):
             msg = "damage processing ratios %i - %i / %i" % (self.avg_damage_in_latency*1000, self.recent_damage_in_latency*1000, delay)
-            fa = sqrt(self.avg_damage_in_latency / max(0.010, delay / 1000.0))
-            fr = sqrt(self.recent_damage_in_latency / max(0.010, delay / 1000.0))
+            md = 1.5 * max(0.005, delay / 1000.0)
+            fa = sqrt(self.avg_damage_in_latency / md)
+            fr = sqrt(self.recent_damage_in_latency / md)
             weight = max(abs(fa-1.0), abs(fr-1.0))
-            factors.append((msg, fa+fr, weight))
+            factors.append((msg, (fa+fr*2)/3.0, weight))
         #damage "out" latency
         if len(self.damage_out_latency)>0:
             msg = "damage send latency:"
