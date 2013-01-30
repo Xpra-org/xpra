@@ -50,6 +50,16 @@ all_plugin_names = []
 pygst_version = ""
 gst_version = ""
 try:
+    #ugly win32 hack to make it find the gstreamer plugins:
+    if sys.platform.startswith("win"):
+        log("is frozen: %s", hasattr(sys, "frozen"))
+        if hasattr(sys, "frozen"):
+            log("found frozen path: %s", sys.frozen)
+            if sys.frozen in ("windows_exe", "console_exe"):
+                main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+                log("main_dir=%s", main_dir)
+                os.environ["GST_PLUGIN_PATH"] = os.path.join(main_dir, "gstreamer-0.10")
+    #now do the import with stderr redirection:
     import pygst
     pygst.require("0.10")
     try:
