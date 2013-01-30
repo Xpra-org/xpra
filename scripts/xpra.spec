@@ -117,8 +117,45 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Oct 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.8.0-1
-- TODO
+* Thu Jan 31 2012 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
+- fix modal windows support
+- fix default mouse cursor: now uses the client's default cursor
+- fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers
+- fix limit the number of raw packets per client to prevent DoS via memory exhaustion
+- fix authentication: ensure salt is per connection
+- fix for ubuntu global application menus
+- fix proxy handling of deadly signals
+- fix pixel queue size calculations used for performance tuning decisions
+- edge resistance for colourspace conversion level changes to prevent yoyo effect
+- more aggressive picture quality tuning
+- better CPU utilization
+- new command line options and tray menu to trade latency for bandwidth
+- x264 disable unecessary I-frames and avoid IDR frames
+- performance and latency optimizations in critical sections
+- avoid server loops: prevent the client from connecting to itself
+- group windows according to the remote application they belong to
+- sound forwarding (initial code, high latency)
+- faster and more reliable client and server exit (from signal or otherwise)
+- "xpra shadow" mode to clone an existing X11 display (compositors not supported yet)
+- support for delta pixels mode (most useful for shadow mode)
+- avoid warnings and X11 errors with the screenshot command
+- better mouse cursor support: send cursors by name so their size matches the client's settings
+- mitigate bandwidth eating cursor change storms: introduce simple cursor update batching
+- support system tray icon forwarding (limited)
+- preserve window workspace
+- AES packet encryption for TCP mode (without key secure exchange for now)
+- launcher entry box for username in SSH mode
+- launcher improvements: highlight the password field if needed, prevent warnings, etc
+- better window manager specification compatibility (for broken applications or toolkits)
+- use lossless encoders more aggressively when possible
+- new x264 tuning options: profiles to use and thresholds
+- better detection of dead server sockets: retry and remove them if needed
+- improved session information dialog and graphs
+- more detailed hierarchical per-window details via "xpra info"
+- send window icons in dedicated compressed packet (smaller new-window packets, faster)
+- detect overly large main packets
+- partial/initial Java/AWT keyboard support
+
 
 * Mon Oct 08 2012 Antoine Martin <antoine@devloop.org.uk> 0.7.0-1
 - fix "AltGr" key handling with MS Windows clients (and others)
