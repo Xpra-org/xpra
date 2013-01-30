@@ -12,11 +12,13 @@ v0.8.0 (2012-12-20)
 	-- fix ^C exit on MS Windows: ensure we do cleanup the system tray on exit
 	-- edge resistance for colourspace conversion level changes to prevent yoyo effect
 	-- more aggressive picture quality tuning
+	-- better CPU utilization
+	-- new command line options and tray menu to trade latency for bandwidth
 	-- x264 disable unecessary I-frames and avoid IDR frames
 	-- performance and latency optimizations in critical sections
 	-- avoid server loops: prevent the client from connecting to itself
 	-- group windows according to the remote application they belong to
-	-- sound forwarding
+	-- sound forwarding (initial code, high latency)
 	-- faster and more reliable client and server exit (from signal or otherwise)
 	-- SSH support on MS Windows
 	-- "xpra shadow" mode to clone an existing X11 display (compositors not supported yet)
