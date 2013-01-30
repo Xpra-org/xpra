@@ -117,7 +117,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Jan 31 2012 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
+* Thu Jan 31 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
 - fix modal windows support
 - fix default mouse cursor: now uses the client's default cursor
 - fix short lived windows: avoid doing unnecessary work, avoid re-registering handlers

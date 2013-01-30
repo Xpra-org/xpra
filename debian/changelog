@@ -37,7 +37,7 @@ xpra (0.8.0-1) UNRELEASED; urgency=low
   * detect overly large main packets
   * partial/initial Java/AWT keyboard support
 
- -- Antoine Martin <antoine@devloop.org.uk>  Thu, 31 Jan 2012 00:55:50 +0700
+ -- Antoine Martin <antoine@devloop.org.uk>  Thu, 31 Jan 2013 00:55:50 +0700
 
 xpra (0.7.0-1) UNRELEASED; urgency=low
   * fix "AltGr" key handling with MS Windows clients (and others)
