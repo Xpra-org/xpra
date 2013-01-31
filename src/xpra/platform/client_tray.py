@@ -40,6 +40,9 @@ class ClientTray(object):
     def is_tray(self):
         return True
 
+    def is_GL(self):
+        return False
+
     def get_window(self):
         return None
 
