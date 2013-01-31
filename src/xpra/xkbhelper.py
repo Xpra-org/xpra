@@ -17,9 +17,16 @@ from wimpiggy.lowlevel import (set_xmodmap,                 #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
-debug = log.info
-debug = log.debug
-verbose = log.debug
+KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="1"
+if KEYBOARD_DEBUG:
+    debug = log.info
+else:
+    debug = log.debug
+KEYBOARD_VERBOSE = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="2"
+if KEYBOARD_VERBOSE:
+    verbose = log.info
+else:
+    verbose = log.debug
 
 
 def exec_keymap_command(args, stdin=None):
