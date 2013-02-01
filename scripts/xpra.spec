@@ -30,7 +30,7 @@
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
 %define requires_webp , libwebp
-%define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-python, pulseaudio, pulseaudio-utils
+%define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-ugly, gstreamer-python, pulseaudio, pulseaudio-utils
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
