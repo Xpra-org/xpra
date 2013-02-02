@@ -44,6 +44,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,xserver-xorg-video-dummy
         ,xserver-xorg-input-void
 Recommends: gstreamer0.10-plugins-base
+        ,gstreamer0.10-plugins-good
+        ,gstreamer0.10-plugins-ugly
         ,pulseaudio
         ,pulseaudio-utils
         ,python-gst0.10 
