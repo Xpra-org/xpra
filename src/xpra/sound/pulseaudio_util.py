@@ -92,7 +92,7 @@ def has_pa():
 
 
 def get_pactl_server():
-	code, out = pactl_output("info")
+	code, out = pactl_output("stat")
 	if code!=0:
 		return	""
 	for line in out.splitlines():
