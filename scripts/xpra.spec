@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.8.0
+%define version 0.8.1
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -30,7 +30,7 @@
 %define requires_vpx , libvpx
 %define requires_x264 , libx264
 %define requires_webp , libwebp
-%define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-ugly, gstreamer-python, pulseaudio, pulseaudio-utils
+%define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly, gstreamer-python, pulseaudio, pulseaudio-utils
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
@@ -45,7 +45,9 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define requires_sound %{nil}
 %define no_webp 1
+%define no_sound 1
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
@@ -59,7 +61,9 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define requires_sound %{nil}
 %define no_webp 1
+%define no_sound 1
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
 %if 0%{?static_video_libs}
@@ -117,6 +121,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Sat Feb 02 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-9
+- fix server daemonize on some platforms
+- fix detection of almost-lossless frames with x264
+- fix starting of a duplicate pulseaudio server on upgrade
+- fix compatibility with older versions of pulseaudio (pactl)
+- fix session-info window when a tray is being forwarded
+- disable tray forwarding by default as it causes problems with some apps
+- rename "Quality" to "Min Quality" in tray menu
+
 * Thu Jan 31 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
 - fix modal windows support
 - fix default mouse cursor: now uses the client's default cursor
@@ -600,6 +613,18 @@ CFLAGS=-O2 python setup.py build --without-parti
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
 %{__python} setup.py install -O1 --without-parti --prefix /usr --skip-build --root %{buildroot}
+
+#we should pass arguments to setup.py but rpm macros make this too difficult
+#so we delete after installation (ugly but this works)
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/win32
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/darwin
+
+%if 0%{?opengl}
+#included by default
+%else
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gl
+%endif
+
 %if 0%{?generic}
 # remove anything relying on dynamic libraries (not suitable for a generic RPM)
 # unless they're statically linked and enabled (static_vpx / static_x264):
@@ -619,11 +644,25 @@ echo "Note: static vpx included in generic rpm"
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/vpx
 %endif
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/webm
+
 %else
+#not a generic RPM
 %ifarch x86_64
 mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 %endif
+#exclude list for non-generic RPMs:
+%if 0%{?no_video}
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/vpx
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x264
 %endif
+%if 0%{?no_webp}
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/webm
+%endif
+%if 0%{?no_sound}
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
+%endif
+%endif
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
