@@ -659,7 +659,7 @@ class ClientExtrasBase(object):
         return encodings_submenu
 
     def make_qualitymenuitem(self):
-        self.quality = self.menuitem("Quality", "slider.png", "Minimum picture quality", None)
+        self.quality = self.menuitem("Min Quality", "slider.png", "Minimum picture quality", None)
         self.quality.set_sensitive(False)
         def may_enable_qualitymenu(*args):
             self.quality.set_submenu(self.make_qualitysubmenu())
