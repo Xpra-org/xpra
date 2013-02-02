@@ -437,7 +437,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     from xpra.scripts.exec_util import PROTECTED_SIGNALS
     PROTECTED_SIGNALS.append(signal.SIGCHLD)
 
-    if opts.pulseaudio and len(opts.pulseaudio_command)>0:
+    if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
         pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
         log.info("pulseaudio server started with pid %s", pa_proc.pid)
     if opts.exit_with_children:
