@@ -32,7 +32,10 @@ CODEC_ORDER = [VORBIS, MP3, AAC, FLAC]
 #so we can get rid of the stupid gst warning below:
 #"** Message: pygobject_register_sinkfunc is deprecated (GstObject)"
 #ideally we would redirect to a buffer so we could still capture and show these messages in debug out
+#we only do this on win32 because on Linux this interferes with server daemonizing
 def redirect_stderr():
+    if not sys.platform.startswith("win"):
+        return None
     sys.stderr.flush() # <--- important when redirecting to files
     newstderr = os.dup(2)
     devnull = os.open(os.devnull, os.O_WRONLY)
@@ -42,7 +45,8 @@ def redirect_stderr():
     return newstderr
 
 def unredirect_stderr(oldfd):
-    os.dup2(oldfd, 2)
+    if oldfd is not None:
+        os.dup2(oldfd, 2)
 
 
 has_gst = False
