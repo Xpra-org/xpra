@@ -34,7 +34,7 @@
     ${prefix}/lib/libgtk-quartz-2.0.0.dylib
   </binary>
   <binary>
-    ${prefix}/lib/libgtkmacintegration.0.dylib
+    ${prefix}/lib/libgtkmacintegration.2.dylib
   </binary>
   <binary>
     ${prefix}/lib/librsvg-2.2.dylib
