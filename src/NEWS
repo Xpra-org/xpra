@@ -1,7 +1,8 @@
-v0.8.1 (2013-02-03)
+v0.8.1 (2013-02-04)
 ======================
 	-- fix server daemonize on some platforms
 	-- fix server SSH support on platforms with old versions of glib
+	-- fix "xpra upgrade" closing applications
 	-- fix detection of almost-lossless frames with x264
 	-- fix starting of a duplicate pulseaudio server on upgrade
 	-- fix debian packaging: lint warnings, add missing sound dependencies

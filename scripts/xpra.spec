@@ -121,9 +121,10 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sat Feb 02 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
+* Mon Feb 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
 - fix server daemonize on some platforms
 - fix server SSH support on platforms with old versions of glib
+- fix "xpra upgrade" closing applications
 - fix detection of almost-lossless frames with x264
 - fix starting of a duplicate pulseaudio server on upgrade
 - fix compatibility with older versions of pulseaudio (pactl)
