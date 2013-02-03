@@ -464,10 +464,10 @@ def main(script_file, cmdline):
         options.max_bandwidth = 0
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))==0:
         options.min_quality = int_default("min-quality", 0)
-        options.quality = int_default("quality", 0)
+        options.quality = int_auto_default("quality", 0)
     if "x264" not in ENCODINGS:
         options.min_speed = int_default("min-speed", 0)
-        options.speed = int_default("speed", 0)
+        options.speed = int_auto_default("speed", 0)
     try:
         int(options.dpi)
     except Exception, e:
