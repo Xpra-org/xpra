@@ -700,15 +700,15 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("owner", None)
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
-            self.corral_window.destroy()
-            self.corral_window = None
-
             for prop in WindowModel.SCRUB_PROPERTIES:
                 XDeleteProperty(self.client_window, prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
             self.client_window.set_events(self.client_window_saved_events)
+            #it is now safe to destroy the corral window:
+            self.corral_window.destroy()
+            self.corral_window = None
             # It is important to remove from our save set, even after
             # reparenting, because according to the X spec, windows that are
             # in our save set are always Mapped when we exit, *even if those
