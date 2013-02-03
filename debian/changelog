@@ -1,14 +1,16 @@
 xpra (0.8.1-1) UNRELEASED; urgency=low
   * fix server daemonize on some platforms
+  * fix server SSH support on platforms with old versions of glib
   * fix detection of almost-lossless frames with x264
   * fix starting of a duplicate pulseaudio server on upgrade
   * fix debian packaging: lint warnings, add missing sound dependencies
   * fix compatibility with older versions of pulseaudio (pactl)
   * fix session-info window when a tray is being forwarded
+  * remove warning on builds with limited encoding support
   * disable tray forwarding by default as it causes problems with some apps
   * rename "Quality" to "Min Quality" in tray menu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 02 Feb 2013 23:24:19 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 03 Feb 2013 19:23:48 +0700
 
 xpra (0.8.0-1) UNRELEASED; urgency=low
   * fix modal windows support

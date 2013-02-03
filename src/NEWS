@@ -1,14 +1,17 @@
-v0.8.1 (2013-02-02)
+v0.8.1 (2013-02-03)
 ======================
 	-- fix server daemonize on some platforms
+	-- fix server SSH support on platforms with old versions of glib
 	-- fix detection of almost-lossless frames with x264
 	-- fix starting of a duplicate pulseaudio server on upgrade
 	-- fix debian packaging: lint warnings, add missing sound dependencies
 	-- fix compatibility with older versions of pulseaudio (pactl)
 	-- fix session-info window when a tray is being forwarded
+	-- remove warning on builds with limited encoding support
 	-- disable tray forwarding by default as it causes problems with some apps
 	-- rename "Quality" to "Min Quality" in tray menu
 	-- update to Cython 0.18 for binary builds
+	-- fix rpm packaging: remove unusable modules
 
 
 v0.8.0 (2012-12-20)

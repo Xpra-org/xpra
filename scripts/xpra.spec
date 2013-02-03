@@ -121,14 +121,17 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sat Feb 02 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-9
+* Sat Feb 02 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
 - fix server daemonize on some platforms
+- fix server SSH support on platforms with old versions of glib
 - fix detection of almost-lossless frames with x264
 - fix starting of a duplicate pulseaudio server on upgrade
 - fix compatibility with older versions of pulseaudio (pactl)
 - fix session-info window when a tray is being forwarded
+- remove warning on builds with limited encoding support
 - disable tray forwarding by default as it causes problems with some apps
 - rename "Quality" to "Min Quality" in tray menu
+- fix rpm packaging: remove unusable modules
 
 * Thu Jan 31 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.0-9
 - fix modal windows support
