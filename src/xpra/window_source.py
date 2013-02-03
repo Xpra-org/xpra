@@ -413,6 +413,7 @@ class WindowSource(object):
         if self.encoding==encoding:
             return
         self.video_encoder_cleanup()
+        self.last_pixmap_data = None
         self.encoding = encoding
         self.statistics.reset()
 
@@ -431,6 +432,7 @@ class WindowSource(object):
         #if a region was delayed, we can just drop it now:
         self._damage_delayed = None
         self._damage_delayed_expired = False
+        self.last_pixmap_data = None
         if self._last_sequence_queued<self._sequence:
             #we must clean the video encoder to ensure
             #we will resend a key frame because it looks like we will
