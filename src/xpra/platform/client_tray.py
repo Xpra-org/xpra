@@ -50,9 +50,11 @@ class ClientTray(object):
         #this function may be called numerous times from both init
         #and from events because the statusicon's geometry is not
         #reliable.. and later calls are more likely to be correct.
-        _, geom, _ = self.tray_widget.get_geometry()
-        self.set_geometry(geom.x, geom.y, geom.width, geom.height)
-        log("may_configure: geometry=%s, current geometry=%s", geom, self._geometry)
+        ag = self.tray_widget.get_geometry()
+        if ag:
+            _, geom, _ = ag
+            self.set_geometry(geom.x, geom.y, geom.width, geom.height)
+            log("may_configure: geometry=%s, current geometry=%s", geom, self._geometry)
 
     def set_geometry(self, x, y, w, h):
         geometry = x, y, w, h
