@@ -16,8 +16,8 @@ def get_OSXApplication():
     global macapp
     if macapp is None:
         try:
-            import gtk_osxapplication        #@UnresolvedImport
-            macapp = gtk_osxapplication.OSXApplication()
+            import gtkosx_application        #@UnresolvedImport
+            macapp = gtkosx_application.Application()
         except:
             pass
     return macapp
