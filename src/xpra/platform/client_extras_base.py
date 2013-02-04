@@ -637,9 +637,25 @@ class ClientExtrasBase(object):
         self.client.connect("handshake-complete", set_encodingsmenuitem)
         return encodings
 
-    def make_encodingssubmenu(self):
+    def make_encodingssubmenu(self, handshake_complete=True):
         encodings_submenu = gtk.Menu()
         self.popup_menu_workaround(encodings_submenu)
+        self.populate_encodingssubmenu(encodings_submenu)
+        encodings_submenu.show_all()
+        return encodings_submenu
+
+    def reset_encoding_options(self, encodings_menu):
+        server_encodings = self.client.server_capabilities.get("encodings", [])
+        for x in encodings_menu.get_children():
+            if isinstance(x, gtk.CheckMenuItem):
+                encoding = x.get_label()
+                active = encoding==self.client.encoding
+                if active!=x.get_active():
+                    x.set_active(active)
+                x.set_sensitive(encoding in server_encodings)
+    
+    def populate_encodingssubmenu(self, encodings_submenu):
+        server_encodings = self.client.server_capabilities.get("encodings", [])
         for encoding in ENCODINGS:
             encoding_item = CheckMenuItem(encoding)
             def encoding_changed(item):
@@ -651,12 +667,10 @@ class ClientExtrasBase(object):
                     self.set_qualitymenu()
                     self.set_speedmenu()
             encoding_item.set_active(encoding==self.client.encoding)
-            encoding_item.set_sensitive(encoding in self.client.server_capabilities.get("encodings", ["rgb24"]))
+            encoding_item.set_sensitive(encoding in server_encodings)
             encoding_item.set_draw_as_radio(True)
             encoding_item.connect("toggled", encoding_changed)
             encodings_submenu.append(encoding_item)
-        encodings_submenu.show_all()
-        return encodings_submenu
 
     def make_qualitymenuitem(self):
         self.quality = self.menuitem("Min Quality", "slider.png", "Minimum picture quality", None)

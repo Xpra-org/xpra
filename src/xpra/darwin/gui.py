@@ -101,9 +101,12 @@ class ClientExtras(ClientExtrasBase):
                 return submenu
             self.info_menu        = make_menu("Info", gtk.Menu())
             self.features_menu    = make_menu("Features", gtk.Menu())
-            self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu())
+            self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu(False))
             self.quality_menu     = make_menu("Quality", self.make_qualitysubmenu())
             self.actions_menu     = make_menu("Actions", gtk.Menu())
+            def reset_encodings(*args):
+                self.reset_encoding_options(self.encodings_menu)
+            self.client.connect("handshake-complete", reset_encodings)
 
             #info
             self.info_menu.add(self.make_aboutmenuitem())
