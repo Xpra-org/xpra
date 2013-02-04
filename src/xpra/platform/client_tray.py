@@ -14,8 +14,13 @@ from xpra.window_backing import make_new_backing, PixmapBacking
 ORIENTATION = {}
 if not is_gtk3():
     #where was this moved to??
-    ORIENTATION = {gtk.ORIENTATION_HORIZONTAL   : "HORIZONTAL",
-                   gtk.ORIENTATION_VERTICAL     : "VERTICAL"}
+    HORIZONTAL  = gtk.ORIENTATION_HORIZONTAL
+    VERTICAL    = gtk.ORIENTATION_VERTICAL
+else:
+    VERTICAL = "VERTICAL"
+    HORIZONTAL = "HORIZONTAL"
+ORIENTATION = {HORIZONTAL   : "HORIZONTAL",
+               VERTICAL     : "VERTICAL"}
 
 
 class ClientTray(object):
@@ -23,6 +28,8 @@ class ClientTray(object):
         self._client = client
         self._id = wid
         self._geometry = None
+        self._screen = -1
+        self._orientation = VERTICAL
         self.group_leader = None
 
         self._backing = None
@@ -52,27 +59,34 @@ class ClientTray(object):
         #reliable.. and later calls are more likely to be correct.
         ag = self.tray_widget.get_geometry()
         if ag:
-            _, geom, _ = ag
-            self.set_geometry(geom.x, geom.y, geom.width, geom.height)
-            log("may_configure: geometry=%s, current geometry=%s", geom, self._geometry)
+            screen, geom, orientation = ag
+            geometry = geom.x, geom.y, geom.width, geom.height
+            if self._geometry is None or self._geometry!=geometry:
+                self._geometry = geometry
+                self._screen = screen.get_number()
+                self._orientation = orientation
+                log("may_configure: geometry=%s, current geometry=%s", geometry, self._geometry)
+                self.reconfigure()
+        elif self._geometry is None:
+            #probably a platform that does not support geometry.. oh well
+            self._geometry = 200, 0, 48, 48
+            self.reconfigure()
 
-    def set_geometry(self, x, y, w, h):
-        geometry = x, y, w, h
-        if self._geometry is None or self._geometry!=geometry:
-            self._geometry = geometry
-            screen, _, orient = self.tray_widget.get_geometry()
-            client_properties = {"screen" : screen.get_number(), "orientation" : ORIENTATION.get(orient, "")}
-            log("configure-window: %s", [self._id, x, y, w, h, client_properties])
-            if geometry!=(0, 0, 200, 200):
-                self._client.send("configure-window", self._id, x, y, w, h, client_properties)
-            self.new_backing(w, h)
+    def reconfigure(self):
+        client_properties = {"orientation" : ORIENTATION.get(self._orientation, self._orientation)}
+        if self._screen>=0:
+            client_properties["screen"] = self._screen
+        x, y, w, h = self._geometry
+        if self._geometry!=(0, 0, 200, 200):
+            self._client.send("configure-window", self._id, x, y, w, h, client_properties)
+        self.new_backing(w, h)
 
     def move_resize(self, x, y, w, h):
         log("move_resize(%s, %s, %s, %s)", x, y, w, h)
         w = max(1, w)
         h = max(1, h)
-        self.set_geometry(x, y, w, h)
-        self.new_backing(w, h)
+        self._geometry = x, y, w, h
+        self.reconfigure()
 
     def new_backing(self, w, h):
         self._backing = make_new_backing(PixmapBacking, self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
