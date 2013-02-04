@@ -100,8 +100,11 @@ def get_pactl_server():
 			return line[len("Server String: "):]
 	return ""
 
-def get_pulse_server():
-	return get_x11_property("PULSE_SERVER") or get_pactl_server()
+def get_pulse_server(may_start_it=True):
+	xp = get_x11_property("PULSE_SERVER")
+	if xp or not may_start_it:
+		return xp
+	return get_pactl_server()
 
 def get_pulse_id():
 	return get_x11_property("PULSE_ID")
@@ -171,7 +174,7 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
 
 def add_pulseaudio_capabilities(capabilities):
 	capabilities["sound.pulseaudio.id"] = get_pulse_id()
-	capabilities["sound.pulseaudio.server"] = get_pulse_server()
+	capabilities["sound.pulseaudio.server"] = get_pulse_server(False)
 
 
 def main():
