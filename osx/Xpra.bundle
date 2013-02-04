@@ -57,6 +57,9 @@
   <binary>
 	${prefix}/lib/libwebp.*dylib
   </binary>
+ <binary>
+	${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
+  </binary>
 
   <data dest="${bundle}/Contents/Resources/">
     ${project}/dist/Xpra.app/Contents/Resources/

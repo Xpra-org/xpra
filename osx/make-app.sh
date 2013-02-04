@@ -51,15 +51,6 @@ echo "fix gdk-pixbuf.loaders"
 LOADERS="${RSCDIR}/etc/gtk-2.0/gdk-pixbuf.loaders"
 sed -i -e 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "${LOADERS}"
 
-echo "font tweaks: generating a new pangorc, pango.modules and adding fonts.conf"
-pango-querymodules | sed "s+$HOME/gtk/inst/lib/+@executable_path/../Resources/lib/+g" > ${RSCDIR}/etc/pango/pango.modules
-cp "${JHBUILD_PREFIX}/etc/fonts/fonts.conf" "${RSCDIR}/"
-cat > ${RSCDIR}/etc/pango/pangorc <<EOF
-[Pango]
-ModuleFiles=@executable_path/../Resources/etc/pango/pango.modules
-ModulesPath=@executable_path/../Resources/lib/pango/1.6.0/modules
-EOF
-
 echo "Add xpra/server/python scripts"
 mkdir ${HELPERS_DIR}
 cp ./Python "${HELPERS_DIR}/"
