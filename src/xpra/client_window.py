@@ -385,8 +385,8 @@ class ClientWindow(gtk.Window):
         self._client.send_refresh_all()
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        if not self._backing:
-            return
+        """ Note: this runs from the draw thread (not UI thread) """
+        assert self._backing, "window %s has no backing!" % self._id
         def after_draw_refresh(success):
             if DRAW_DEBUG:
                 log.info("after_draw_refresh(%s) options=%s", success, options)
