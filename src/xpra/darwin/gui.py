@@ -102,7 +102,8 @@ class ClientExtras(ClientExtrasBase):
             self.info_menu        = make_menu("Info", gtk.Menu())
             self.features_menu    = make_menu("Features", gtk.Menu())
             self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu(False))
-            self.quality_menu     = make_menu("Quality", self.make_qualitysubmenu())
+            self.quality_menu     = make_menu("Min Quality", self.make_qualitysubmenu())
+            self.speed_menu       = make_menu("Speed", self.make_speedsubmenu())
             self.actions_menu     = make_menu("Actions", gtk.Menu())
             def reset_encodings(*args):
                 self.reset_encoding_options(self.encodings_menu)
@@ -143,6 +144,11 @@ class ClientExtras(ClientExtrasBase):
             self.client.connect("handshake-complete", dock_ready)
         except Exception, e:
             log.error("failed to create dock: %s", e, exc_info=True)
+
+    def set_speedmenu(self, *args):
+        for x in self.speed_menu.get_children():
+            if isinstance(x, gtk.CheckMenuItem):
+                x.set_sensitive(self.client.encoding=="x264")
 
     def set_qualitymenu(self, *args):
         vq = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
