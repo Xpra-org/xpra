@@ -318,12 +318,12 @@ class XpraClient(XpraClientBase, gobject.GObject):
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
             "sound-data":           self._process_sound_data,
+            "draw":                 self._process_draw,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
             self._ui_packet_handlers[k] = v
         #these handlers can run directly from the network thread:
         for k,v in {
-            "draw":                 self._process_draw,
             "ping":                 self._process_ping,
             "ping_echo":            self._process_ping_echo,
             "info-response":        self._process_info_response,
