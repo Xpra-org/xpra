@@ -195,11 +195,12 @@ class SessionInfo(gtk.Window):
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk_version")))
         tb.new_row("Python", label(platform.python_version()), label(server_version_info("python_version")))
         cl_gst_v, cl_pygst_v = "", ""
-        try:
-            from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
-            pass
-        except:
-            pass
+        from xpra.scripts.main import HAS_SOUND
+        if HAS_SOUND:
+            try:
+                from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
+            except:
+                pass
         tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("gst_version")))
         tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("pygst_version")))
         tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))

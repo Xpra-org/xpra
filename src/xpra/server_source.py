@@ -799,10 +799,9 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        try:
-            import xpra.sound
+        from xpra.scripts.main import HAS_SOUND
+        if HAS_SOUND:
             try:
-                assert xpra.sound
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
                 from xpra.sound.gstreamer_util import add_gst_capabilities
@@ -812,8 +811,6 @@ class ServerSource(object):
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
-        except ImportError, e:
-            log("sound modules were not included in this installation")
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
         capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes

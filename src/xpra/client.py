@@ -661,10 +661,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
             capabilities["encoding.supports_delta"] = []    #need implementing in window_backing
         else:
             capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24") if x in ENCODINGS]
-        try:
-            import xpra.sound
+        from xpra.scripts.main import HAS_SOUND
+        if HAS_SOUND:
             try:
-                assert xpra.sound
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities
                 add_pulseaudio_capabilities(capabilities)
                 from xpra.sound.gstreamer_util import add_gst_capabilities
@@ -673,8 +672,6 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
-        except ImportError, e:
-            log("sound modules were not included in this installation")
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
