@@ -18,7 +18,7 @@ def which(name):
 		return	""
 	cmd = ["which", name]
 	try:
-		returncode, out, _ = safe_exec(cmd)
+		returncode, out, _ = safe_exec(cmd, log_errors=False)
 		if returncode!=0 or not out:
 			return ""
 		c = out.replace("\n", "").replace("\r", "")

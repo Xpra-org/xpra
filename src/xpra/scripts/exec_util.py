@@ -11,7 +11,7 @@ log = Logger()
 #the list of signals for which we will suspend the handler for the duration of the Popen call
 PROTECTED_SIGNALS = []
 
-def safe_exec(cmd, stdin=None):
+def safe_exec(cmd, stdin=None, log_errors=True):
     """ this is a bit of a hack,
     the problem is that we won't catch SIGCHLD at all while this command is running! """
     import signal
@@ -24,7 +24,7 @@ def safe_exec(cmd, stdin=None):
         out, err = process.communicate(stdin)
         code = process.poll()
         l=log.debug
-        if code!=0:
+        if code!=0 and log_errors:
             l=log.error
         l("signal_safe_exec(%s,%s) stdout='%s'", cmd, stdin, out)
         l("signal_safe_exec(%s,%s) stderr='%s'", cmd, stdin, err)
