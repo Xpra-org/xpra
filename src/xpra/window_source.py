@@ -14,7 +14,7 @@ try:
 except:
     pass
 try:
-    MAX_NONVIDEO_OR_INITIAL_PIXELS = int(os.environ.get("MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64))
+    MAX_NONVIDEO_OR_INITIAL_PIXELS = int(os.environ.get("XPRA_MAX_NONVIDEO_OR_INITIAL_PIXELS", 1024*64))
 except:
     pass
 
