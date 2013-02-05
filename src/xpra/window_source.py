@@ -18,6 +18,7 @@ try:
 except:
     pass
 
+AUTO_REFRESH_ENCODING = os.environ.get("XPRA_AUTO_REFRESH_ENCODING", "")
 AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
@@ -823,6 +824,8 @@ class WindowSource(object):
                 return  False
             self.refresh_timer = None
             new_options = damage_options.copy()
+            if AUTO_REFRESH_ENCODING:
+                new_options["encoding"] = AUTO_REFRESH_ENCODING
             #FIXME: with x264, the quality must be higher than the YUV444 threshold
             new_options["quality"] = AUTO_REFRESH_QUALITY
             new_options["speed"] = AUTO_REFRESH_SPEED
