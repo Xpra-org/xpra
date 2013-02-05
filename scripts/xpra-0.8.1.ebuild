@@ -2,7 +2,7 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=3
+EAPI=5
 
 PYTHON_DEPEND="*"
 RESTRICT_PYTHON_ABIS="2.4 2.5 3.*"
@@ -15,7 +15,7 @@ SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="amd64 x86 amd64-linux x86-linux"
 IUSE="+clipboard ffmpeg jpeg libnotify parti png sound +rencode server ssh x264 vpx webp opengl"
 
 S="${WORKDIR}/${PF}"
@@ -63,7 +63,7 @@ src_compile() {
 		$(use clipboard || echo '--without-clipboard') \
 		$(use rencode || echo '--without-rencode') \
 		$(use server || echo '--without-server') \
-		$(use sound || echo '--without-sound')
+		$(use sound || echo '--without-sound') \
 		$(use opengl || echo '--without-opengl')
 }
 
