@@ -6,7 +6,7 @@
 import os.path
 import gtk.gdk
 
-from xpra.platform.client_extras_base import ClientExtrasBase
+from xpra.platform.client_extras_base import ClientExtrasBase, CheckMenuItem
 from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
@@ -102,6 +102,9 @@ class ClientExtras(ClientExtrasBase):
             self.info_menu        = make_menu("Info", gtk.Menu())
             self.features_menu    = make_menu("Features", gtk.Menu())
             self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu(False))
+            if (self.client.speaker_allowed and len(self.client.speaker_codecs)>0) or \
+                (self.client.microphone_allowed and len(self.client.microphone_codecs)>0):
+                self.sound_menu       = make_menu("Sound", gtk.Menu())
             self.quality_menu     = make_menu("Min Quality", self.make_qualitysubmenu())
             self.speed_menu       = make_menu("Speed", self.make_speedsubmenu())
             self.actions_menu     = make_menu("Actions", gtk.Menu())
@@ -118,6 +121,11 @@ class ClientExtras(ClientExtrasBase):
             self.features_menu.add(self.make_notificationsmenuitem())
             if not self.client.readonly:
                 self.features_menu.add(self.make_layoutsmenuitem())
+            #sound:
+            if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
+                self.sound_menu.add(self.make_speakermenuitem())
+            if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
+                self.sound_menu.add(self.make_microphonemenuitem())
             #actions:
             self.actions_menu.add(self.make_refreshmenuitem())
             self.actions_menu.add(self.make_raisewindowsmenuitem())
@@ -144,6 +152,32 @@ class ClientExtras(ClientExtrasBase):
             self.client.connect("handshake-complete", dock_ready)
         except Exception, e:
             log.error("failed to create dock: %s", e, exc_info=True)
+
+    def make_speakermenuitem(self):
+        speaker = CheckMenuItem("Speaker", "Forward sound output from the server")
+        def speaker_toggled(*args):
+            if speaker.active:
+                self.spk_on()
+            else:
+                self.spk_off()
+        def set_speaker(*args):
+            speaker.set_active(self.client.speaker_enabled)
+            speaker.connect('toggled', speaker_toggled)
+        self.client.connect("handshake-complete", set_speaker)
+        return speaker
+
+    def make_microphonemenuitem(self):
+        microphone = CheckMenuItem("Microphone", "Forward sound input to the server")
+        def microphone_toggled(*args):
+            if microphone.active:
+                self.mic_on()
+            else:
+                self.mic_off()
+        def set_microphone(*args):
+            microphone.set_active(self.client.microphone_enabled)
+            microphone.connect('toggled', microphone_toggled)
+        self.client.connect("handshake-complete", set_microphone)
+        return microphone
 
     def set_speedmenu(self, *args):
         for x in self.speed_menu.get_children():

@@ -78,7 +78,7 @@ from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase, EXIT_TIMEOUT
 from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.main import ENCODINGS, get_codecs
 from xpra.version_util import add_gtk_version_info
 from xpra.stats.base import std_unit
 from xpra.protocol import Compressed
@@ -145,11 +145,13 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.microphone_allowed = bool(opts.microphone)
         self.microphone_enabled = False
         self.speaker_codecs = opts.speaker_codec
-        if len(self.speaker_codecs)==0:
-            self.speaker_allowed = False
+        if len(self.speaker_codecs)==0 and self.speaker_allowed:
+            self.speaker_codecs = get_codecs(True, False)
+            self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
-        if len(self.microphone_codecs)==0:
-            self.microphone_allowed = False
+        if len(self.microphone_codecs)==0 and self.microphone_allowed:
+            self.microphone_codecs = get_codecs(False, False)
+            self.microphone_allowed = len(self.microphone_codecs)>0
         self.sound_sink = None
         self.sound_source = None
         self.server_pulseaudio_id = None
@@ -839,8 +841,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.server_sound_send = capabilities.get("sound.send", False)
         if self.server_sound_send and self.speaker_allowed:
             self.start_receiving_sound()
-        if self.server_sound_receive and self.microphone_allowed:
-            self.start_sending_sound()
+        #dont' send sound automatically, wait for user to request it:
+        #if self.server_sound_receive and self.microphone_allowed:
+        #    self.start_sending_sound()
 
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")

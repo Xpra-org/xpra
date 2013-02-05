@@ -100,7 +100,7 @@ else:
     def set_tooltip_text(widget, text):
         widget.set_tooltip_text(text)
 
-def CheckMenuItem(label):
+def CheckMenuItem(label, tooltip=None):
     """ adds a get_label() method for older versions of gtk which do not have it
         beware that this label is not mutable!
     """
@@ -109,6 +109,8 @@ def CheckMenuItem(label):
         def get_label():
             return  label
         cmi.get_label = get_label
+    if tooltip:
+        cmi.set_tooltip_text(tooltip)
     return cmi
 
 class ClientExtrasBase(object):
@@ -759,15 +761,15 @@ class ClientExtrasBase(object):
             self.speed.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("x264", ) and self.client.change_speed)
 
 
+    def spk_on(self, *args):
+        log("spk_on(%s)", args)
+        self.client.start_receiving_sound()
+    def spk_off(self, *args):
+        log("spk_off(%s)", args)
+        self.client.stop_receiving_sound()
     def make_speakermenuitem(self):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
         speaker.set_sensitive(False)
-        def spk_on(*args):
-            log("spk_on(%s)", args)
-            self.client.start_receiving_sound()
-        def spk_off(*args):
-            log("spk_off(%s)", args)
-            self.client.stop_receiving_sound()
         def is_speaker_on(*args):
             return self.client.speaker_enabled
         def speaker_state(*args):
@@ -776,19 +778,19 @@ class ClientExtrasBase(object):
                 set_tooltip_text(speaker, "Server does not support speaker forwarding")
                 return
             speaker.set_sensitive(True)
-            speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, spk_on, spk_off, "speaker-changed"))
+            speaker.set_submenu(self.make_soundsubmenu(is_speaker_on, self.spk_on, self.spk_off, "speaker-changed"))
         self.client.connect("handshake-complete", speaker_state)
         return speaker
 
+    def mic_on(self, *args):
+        log("mic_on(%s)", args)
+        self.client.start_sending_sound()
+    def mic_off(self, *args):
+        log("mic_off(%s)", args)
+        self.client.stop_sending_sound()
     def make_microphonemenuitem(self):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
         microphone.set_sensitive(False)
-        def mic_on(*args):
-            log("mic_on(%s)", args)
-            self.client.start_sending_sound()
-        def mic_off(*args):
-            log("mic_off(%s)", args)
-            self.client.stop_sending_sound()
         def is_microphone_on(*args):
             return self.client.microphone_enabled
         def microphone_state(*args):
@@ -797,7 +799,7 @@ class ClientExtrasBase(object):
                 set_tooltip_text(microphone, "Server does not support microphone forwarding")
                 return
             microphone.set_sensitive(True)
-            microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, mic_on, mic_off, "microphone-changed"))
+            microphone.set_submenu(self.make_soundsubmenu(is_microphone_on, self.mic_on, self.mic_off, "microphone-changed"))
         self.client.connect("handshake-complete", microphone_state)
         return microphone
 

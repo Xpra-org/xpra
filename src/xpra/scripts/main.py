@@ -321,7 +321,7 @@ def main(script_file, cmdline):
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
     group.add_option("--no-microphone", action="store_false",
-                      dest="microphone", default=bool_default("microphone", None),
+                      dest="microphone", default=bool_default("microphone", True),
                       help="Disable forwarding of sound input to the server")
     group.add_option("--microphone-codec", action="append",
                       dest="microphone_codec", default=string_list("microphone-codec", []),

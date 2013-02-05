@@ -38,7 +38,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.scripts.main import python_platform
+from xpra.scripts.main import python_platform, get_codecs
 from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
 from xpra.server_uuid import save_uuid, get_uuid
@@ -141,10 +141,16 @@ class XpraServerBase(object):
         # note: not just True/False here: if None, allow it
         # (the client can then use this None value as False to
         # prevent microphone from being enabled by default whilst still being allowed)
-        self.supports_speaker = bool(opts.speaker) or opts.speaker is None
-        self.supports_microphone = bool(opts.microphone) or opts.microphone is None
+        self.supports_speaker = bool(opts.speaker)
+        self.supports_microphone = bool(opts.microphone)
         self.speaker_codecs = opts.speaker_codec
+        if len(self.speaker_codecs)==0 and self.supports_speaker:
+            self.speaker_codecs = get_codecs(True, True)
+            self.supports_speaker = len(self.speaker_codecs)>0
         self.microphone_codecs = opts.microphone_codec
+        if len(self.microphone_codecs)==0 and self.supports_microphone:
+            self.microphone_codecs = get_codecs(False, False)
+            self.supports_microphone = len(self.microphone_codecs)>0
         try:
             from xpra.sound.pulseaudio_util import add_audio_tagging_env
             add_audio_tagging_env()
