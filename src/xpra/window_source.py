@@ -891,6 +891,9 @@ class WindowSource(object):
             start_send_at, start_bytes, end_send_at, end_bytes, pixels = pending
             bytecount = end_bytes-start_bytes
             self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
+        else:
+            #something failed client-side, so we can't rely on the delta being available
+            self.last_pixmap_data = None
         if self._damage_delayed is not None and self._damage_delayed_expired:
             gobject.idle_add(self.may_send_delayed)
 
