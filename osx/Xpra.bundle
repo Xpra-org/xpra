@@ -57,12 +57,16 @@
   <binary>
 	${prefix}/lib/libwebp.*dylib
   </binary>
- <binary>
+  <binary>
 	${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
   </binary>
 
   <data dest="${bundle}/Contents/Resources/">
     ${project}/dist/Xpra.app/Contents/Resources/
+  </data>
+
+  <data dest="${bundle}/Contents/Helpers/gst-plugin-scanner">
+    ${prefix}/libexec/gstreamer-0.10/gst-plugin-scanner
   </data>
 
   <data>
