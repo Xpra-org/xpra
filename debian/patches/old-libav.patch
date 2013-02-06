@@ -1,0 +1,15 @@
+Description: Build against old versions of libav.
+ Author: Antoine Martin <antoine@devloop.org.uk>
+ Forwarded: not-needed
+ 
+--- a/xpra/x264/x264lib.c	(revision 2661)
++++ b/xpra/x264/x264lib.c	(working copy)
+@@ -440,7 +440,7 @@
+ 		sws_freeContext(ctx->yuv2rgb);
+ 		ctx->yuv2rgb = NULL;
+ 	}
+-	avcodec_free_frame(&ctx->frame);
++	av_free(&ctx->frame);
+ }
+ void clean_decoder(struct x264lib_ctx *ctx)
+ {
