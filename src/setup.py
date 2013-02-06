@@ -241,6 +241,8 @@ def pkgconfig(*packages_options, **ekw):
     if WARN_ALL:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
         add_to_keywords(kw, 'extra_link_args', "-Wall")
+    #these are almost certainly real errors since our code is "clean":
+    add_to_keywords(kw, 'extra_compile_args', "-Werror=implicit-function-declaration")
     PIC = True
     if PIC:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
