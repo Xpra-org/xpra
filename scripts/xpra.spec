@@ -64,6 +64,7 @@
 %define requires_sound %{nil}
 %define no_webp 1
 %define no_sound 1
+%define no_strict 1
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
 %if 0%{?static_video_libs}
@@ -111,6 +112,8 @@ Patch3: disable-webp.patch
 Patch4: use-static-x264lib.patch
 Patch5: use-static-vpxlib.patch
 Patch6: x264-limited-csc.patch
+Patch7: no-strict.patch
+Patch8: old-libav.patch
 
 
 %description
@@ -616,6 +619,13 @@ cd parti-all-%{version}
 %if 0%{?limited_csc}
 %patch6 -p1
 %endif
+%if 0%{?no_strict}
+%patch7 -p1
+%endif
+%if 0%{?old_libav}
+%patch8 -p1
+%endif
+
 
 %build
 cd parti-all-%{version}

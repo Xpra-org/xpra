@@ -1,0 +1,15 @@
+Description: Old versions of GCC will fail if strict is enabled.
+ Author: Antoine Martin <antoine@devloop.org.uk>
+ Forwarded: not-needed
+ 
+--- a/setup.py	(revision 2674)
++++ b/setup.py	(working copy)
+@@ -88,7 +88,7 @@
+ 
+ 
+ 
+-strict_ENABLED = True
++strict_ENABLED = False
+ 
+ 
+ 
