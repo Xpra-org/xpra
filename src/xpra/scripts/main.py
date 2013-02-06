@@ -231,8 +231,8 @@ def main(script_file, cmdline):
     if supports_server:
         start_str = "\t%prog start DISPLAY\n"
         list_str = "\t%prog list\n"
-        upgrade_str = "\t%prog upgrade DISPLAY"
-        shadow_str = "\t%prog upgrade DISPLAY"
+        upgrade_str = "\t%prog upgrade DISPLAY\n"
+        shadow_str = "\t%prog shadow DISPLAY\n"
         note_str = ""
         stop_str = "\t%prog stop [DISPLAY]\n"
     else:
