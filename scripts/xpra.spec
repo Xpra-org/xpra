@@ -3,7 +3,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.8.1
+%define version 0.8.2
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -121,6 +121,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Wed Feb 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
+- fix libav uninitialized structure crash
+- fix warning on installations without sound libraries
+- fix warning when pulseaudio utils are not installed
+- fix delta compression race
+- re-enable system tray forwarding
+- osx fixes: encodings wrongly grayed out
+- osx features: add sound and speed menus
+
 * Mon Feb 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
 - fix server daemonize on some platforms
 - fix server SSH support on platforms with old versions of glib

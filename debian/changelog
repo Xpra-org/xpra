@@ -1,3 +1,14 @@
+xpra (0.8.2-1) UNRELEASED; urgency=low
+  * fix libav uninitialized structure crash
+  * fix warning on installations without sound libraries
+  * fix warning when pulseaudio utils are not installed
+  * fix delta compression race
+  * re-enable system tray forwarding
+  * osx fixes: encodings wrongly grayed out
+  * osx features: add sound and speed menus
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Feb 2013 13:41:18 +0700
+
 xpra (0.8.1-1) UNRELEASED; urgency=low
   * fix server daemonize on some platforms
   * fix server SSH support on platforms with old versions of glib

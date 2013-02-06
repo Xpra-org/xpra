@@ -1,3 +1,14 @@
+v0.8.2 (2013-02-06)
+======================
+	-- fix libav uninitialized structure crash
+	-- fix warning on installations without sound libraries
+	-- fix warning when pulseaudio utils are not installed
+	-- fix delta compression race
+	-- re-enable system tray forwarding
+	-- osx fixes: encodings wrongly grayed out
+	-- osx features: add sound and speed menus
+
+
 v0.8.1 (2013-02-04)
 ======================
 	-- fix server daemonize on some platforms
