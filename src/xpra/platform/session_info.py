@@ -446,6 +446,9 @@ class SessionInfo(gtk.Window):
         since = time.time()-1
         decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
         self.pixel_in_data.append(sum(decoded))
+        #update latency values
+        self.server_latency = [1000.0*x for _,x in list(self.client.server_ping_latency)[-20:]]
+        self.client_latency = [1000.0*x for _,x in list(self.client.client_ping_latency)[-20:]]
         return not self.is_closed
 
     def populate_tab(self, *args):
@@ -666,13 +669,11 @@ class SessionInfo(gtk.Window):
             self.bandwidth_graph.set_size_request(*pixmap.get_size())
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
         #latency graph:
-        server_latency = [1000.0*x for _,x in list(self.client.server_ping_latency)[-20:]]
-        client_latency = [1000.0*x for _,x in list(self.client.client_ping_latency)[-20:]]
-        for l in (server_latency, client_latency):
+        for l in (self.server_latency, self.client_latency):
             if len(l)<20:
                 for _ in range(20-len(l)):
                     l.insert(0, None)
-        pixmap = make_graph_pixmap([server_latency, client_latency], labels=["server", "client"],
+        pixmap = make_graph_pixmap([self.server_latency, self.client_latency], labels=["server", "client"],
                                     width=w, height=h/2,
                                     title="Latency (ms)", min_y_scale=10, rounding=50,
                                     start_x_offset=start_x_offset)
