@@ -84,9 +84,19 @@ opengl_ENABLED = True
 
 
 
+warn_ENABLED = True
+
+
+
+strict_ENABLED = True
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
-SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server", "sound", "cyxor", "cymaths", "opengl", "parti")
+SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
+            "sound", "cyxor", "cymaths", "opengl", "parti",
+            "warn", "strict")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -237,12 +247,12 @@ def pkgconfig(*packages_options, **ekw):
             add_to_keywords(kw, 'extra_link_args', token)
         for k, v in kw.items(): # remove duplicates
             kw[k] = list(set(v))
-    WARN_ALL = True
-    if WARN_ALL:
+    if warn_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
         add_to_keywords(kw, 'extra_link_args', "-Wall")
-    #these are almost certainly real errors since our code is "clean":
-    add_to_keywords(kw, 'extra_compile_args', "-Werror=implicit-function-declaration")
+    if strict_ENABLED:
+        #these are almost certainly real errors since our code is "clean":
+        add_to_keywords(kw, 'extra_compile_args', "-Werror=implicit-function-declaration")
     PIC = True
     if PIC:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
