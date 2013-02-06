@@ -52,7 +52,6 @@ LOADERS="${RSCDIR}/etc/gtk-2.0/gdk-pixbuf.loaders"
 sed -i -e 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "${LOADERS}"
 
 echo "Add xpra/server/python scripts"
-mkdir ${HELPERS_DIR}
 cp ./Python "${HELPERS_DIR}/"
 cp ./xpra "${HELPERS_DIR}/"
 # copy "python" as "xpra" and "Xpra_Launcher" so we can have a process that is not called "python"...
