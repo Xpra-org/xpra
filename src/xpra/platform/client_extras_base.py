@@ -712,7 +712,13 @@ class ClientExtrasBase(object):
 
     def set_qualitymenu(self, *args):
         if self.quality:
-            self.quality.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264"))
+            can_use = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
+            self.quality.set_sensitive(can_use)
+            if can_use:
+                self.quality.set_tooltip_text("Minimum picture quality")
+            else:
+                self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
+                
 
     def make_speedmenuitem(self):
         self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)
@@ -758,7 +764,16 @@ class ClientExtrasBase(object):
 
     def set_speedmenu(self, *args):
         if self.speed:
-            self.speed.set_sensitive(not self.client.mmap_enabled and self.client.encoding in ("x264", ) and self.client.change_speed)
+            can_use = not self.client.mmap_enabled and self.client.encoding=="x264" and self.client.change_speed
+            self.speed.set_sensitive(can_use)
+            if self.client.mmap_enabled:
+                self.speed.set_tooltip_text("Quality is always 100% with mmap")
+            elif not self.client.change_speed:
+                self.speed.set_tooltip_text("Server does not support changing speed")
+            elif self.client.encoding!="x264":
+                self.speed.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
+            else:
+                self.speed.set_tooltip_text("Encoding latency vs size")
 
 
     def spk_on(self, *args):
