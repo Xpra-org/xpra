@@ -303,6 +303,7 @@ class CairoBacking(Backing):
         elif coding == "png":
             assert coding in ENCODINGS
             gobject.idle_add(self.paint_png, img_data, x, y, width, height, rowstride, options, callbacks)
+            return
         raise Exception("invalid picture encoding: %s" % coding)
 
     def cairo_draw(self, context, x, y):
