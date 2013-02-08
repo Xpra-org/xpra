@@ -43,23 +43,33 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
         ,xserver-xorg-input-void
-Recommends: gstreamer0.10-plugins-base
-        ,gstreamer0.10-plugins-good
-        ,gstreamer0.10-plugins-ugly
-        ,pulseaudio
-        ,pulseaudio-utils
-        ,python-gst0.10 
-        ,python-gtkglext1
+Recommends:
+# audio-related:
+#        ,gstreamer0.10-plugins-base
+#                 ^^ vorbis ^^
+#        ,gstreamer0.10-plugins-good
+#                  ^^ flac ^^
+         ,gstreamer0.10-plugins-ugly
+#                  ^^ mp3 ^^
+#        ,gstreamer0.10-plugins-bad
+#                  ^^ aac ^^
+        ,python-gst0.10
+# for opengl support:
+#        ,python-gtkglext1
+# for PNG and JPEG support:
         ,python-imaging
-# not strictly needed, but gets rid of ugly warnings in gtkgl:
-        ,python-numeric
-        ,python-numpy
-        ,python-opengl
+# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
+#        ,python-numeric
+#        ,python-numpy
+#        ,python-opengl
         ,openssh-client
         ,ssh-askpass
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
-Suggests: openssh-server, python-dbus
+Suggests: openssh-server
+        ,pulseaudio
+        ,pulseaudio-utils
+        ,python-dbus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
