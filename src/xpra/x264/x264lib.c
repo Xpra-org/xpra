@@ -39,6 +39,7 @@ typedef void x264_t;
 
 #include <libswscale/swscale.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/mem.h>
 #include "x264lib.h"
 
 //beware that these macros may evaluate a or b twice!
