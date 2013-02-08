@@ -12,7 +12,7 @@ from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 import sys
-import socket # for socket.error
+from socket import error as socket_error
 from zlib import compress, decompress, decompressobj
 import struct
 import os
@@ -369,8 +369,9 @@ class Protocol(object):
                             if not self._closed:
                                 log.error("error on %s", end_cb, exc_info=True)
             log("write thread: ended")
-        except (OSError, IOError, socket.error), e:
-            self._call_connection_lost("Error writing to connection: %s" % e)
+        except (OSError, IOError, socket_error), e:
+            if not self._closed:
+                self._call_connection_lost("Error writing to connection: %s" % e)
         except Exception, e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
@@ -378,22 +379,21 @@ class Protocol(object):
                 raise e
 
     def _read_thread_loop(self):
-        while not self._closed:
-            try:
+        try:
+            while not self._closed:
                 buf = untilConcludes(self._conn.read, 8192)
-            except (ValueError, OSError, IOError, socket.error), e:
+                #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
+                self._read_queue.put(buf)
+                if not buf:
+                    log("read thread: eof")
+                    break
+                self.input_raw_packetcount += 1
+        except (ValueError, OSError, IOError, socket_error), e:
+            if not self._closed:
                 self._call_connection_lost("Error reading from connection: %s" % e)
-                return
-            except Exception, e:
-                if not self._closed:
-                    self._call_connection_lost("Error reading from connection: %s" % e)
-                return
-            #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-            self._read_queue.put(buf)
-            if not buf:
-                log("read thread: eof")
-                break
-            self.input_raw_packetcount += 1
+        except Exception, e:
+            if not self._closed:
+                self._call_connection_lost("Error reading from connection: %s" % e)
 
     def _call_connection_lost(self, message="", exc_info=False):
         log("will call connection lost: %s", message)
