@@ -52,25 +52,28 @@ def deadly_signal(signum, frame):
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
 class ChildReaper(object):
-    def __init__(self, app, exit_with_children):
-        self._app = app
-        self._children_pids = None
-        self._dead_pids = set()
-        self._exit_with_children = exit_with_children
-
-    def set_children_pids(self, children_pids):
-        assert self._children_pids is None
+    def __init__(self, quit_cb, children_pids):
+        self._quit = quit_cb
         self._children_pids = children_pids
-        self.check()
+        self._dead_pids = set()
 
     def check(self):
         if (self._children_pids
-            and self._exit_with_children
             and self._children_pids.issubset(self._dead_pids)):
-            print("all children have exited and --exit-with-children was specified, exiting")
-            self._app.quit(False)
+            from wimpiggy.log import Logger
+            log = Logger()
+            log.info("all children have exited and --exit-with-children was specified, exiting")
+            self._quit()
 
     def sigchld(self, signum, frame):
+        self.reap()
+
+    def add_dead_pid(self, pid):
+        if pid not in self._dead_pids:
+            self._dead_pids.add(pid)
+            self.check()
+
+    def reap(self):
         while True:
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
@@ -78,8 +81,7 @@ class ChildReaper(object):
                 break
             if pid == 0:
                 break
-            self._dead_pids.add(pid)
-            self.check()
+            self.add_dead_pid(pid)
 
 def save_pid(pid):
     import gtk
@@ -429,13 +431,35 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
         app = XpraServer(clobber, sockets, opts)
 
-    child_reaper = ChildReaper(app, opts.exit_with_children)
-    # Always register the child reaper, because even if exit_with_children is
-    # false, we still need to reap them somehow to avoid zombies:
-    signal.signal(signal.SIGCHLD, child_reaper.sigchld)
-    # From now on, we will suspend signal.SIGCHLD when using subprocess.Popen
-    from xpra.scripts.exec_util import PROTECTED_SIGNALS
-    PROTECTED_SIGNALS.append(signal.SIGCHLD)
+    children_pids = set()
+    procs = []
+    if opts.exit_with_children:
+        def reaper_quit():
+            app.quit(False)
+        child_reaper = ChildReaper(reaper_quit, children_pids)
+        if sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0):
+                POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
+                log.warn("Warning: outdated/buggy version of Python (%s), switching to process polling every %s seconds to support 'exit-with-children'", ".".join(str(x) for x in sys.version_info), POLL_DELAY)
+                ChildReaper.processes = procs
+                def check_procs():
+                    for proc in ChildReaper.processes:
+                        if proc.poll() is not None:
+                            child_reaper.add_dead_pid(proc.pid)
+                            child_reaper.check()
+                    ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
+                    return True
+                gobject.timeout_add(POLL_DELAY*1000, check_procs)
+        else:
+            #with non-buggy python, we can just check the list of pids
+            #whenever we get a SIGCHLD
+            signal.signal(signal.SIGCHLD, child_reaper.sigchld)
+            # Check once after the mainloop is running, just in case the exit
+            # conditions are satisfied before we even enter the main loop.
+            # (Programming with unix the signal API sure is annoying.)
+            def check_once():
+                child_reaper.check()
+                return False # Only call once
+            gobject.timeout_add(0, check_once)
 
     if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
         pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
@@ -447,27 +471,24 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         env = os.environ.copy()
         env["UBUNTU_MENUPROXY"] = ""
         env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
-        children_pids = set()
         for child_cmd in opts.children:
             if child_cmd:
                 try:
-                    children_pids.add(subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True).pid)
+                    proc = subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True)
+                    children_pids.add(proc.pid)
+                    procs.append(proc)
                 except OSError, e:
                     sys.stderr.write("Error spawning child '%s': %s\n"
                                      % (child_cmd, e))
-        child_reaper.set_children_pids(children_pids)
-    # Check once after the mainloop is running, just in case the exit
-    # conditions are satisfied before we even enter the main loop.
-    # (Programming with unix the signal API sure is annoying.)
-    def check_once():
-        child_reaper.check()
-        return False # Only call once
-    gobject.timeout_add(0, check_once)
 
     _cleanups.insert(0, app.cleanup)
     signal.signal(signal.SIGTERM, app.signal_quit)
     signal.signal(signal.SIGINT, app.signal_quit)
-    if app.run():
+    try:
+        e = app.run()
+    except KeyboardInterrupt:
+        e = 0
+    if e>0:
         log.info("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running
         # and don't delete the new socket (not ours)
