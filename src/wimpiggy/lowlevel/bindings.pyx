@@ -2084,8 +2084,7 @@ def remove_event_receiver(window, receiver):
         return
     receivers.discard(receiver)
     if not receivers:
-        receivers = None
-        window.set_data(_ev_receiver_key, receivers)
+        window.set_data(_ev_receiver_key, None)
 
 
 CursorNotify = 0

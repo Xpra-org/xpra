@@ -340,11 +340,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.emit("unmanaged", exiting)
 
     def do_unmanaged(self, wm_exiting):
-        trap.swallow_synced(self.synced_unmanage, wm_exiting)
+        if not self._managed:
+            return
         self._managed = False
-
-    def synced_unmanage(self, wm_exiting):
-        log("synced_unmanage(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
+        log("do_unmanaged(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
         if self._composite:
             if self._damage_forward_handle:
@@ -695,13 +694,13 @@ class WindowModel(BaseWindowModel):
                         "_NET_WM_ALLOWED_ACTIONS",
                         ]
 
-    def synced_unmanage(self, exiting):
+    def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
         self._internal_set_property("owner", None)
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
             for prop in WindowModel.SCRUB_PROPERTIES:
-                XDeleteProperty(self.client_window, prop)
+                trap.swallow_synced(XDeleteProperty, self.client_window, prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
@@ -716,12 +715,12 @@ class WindowModel(BaseWindowModel):
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
             if self.in_save_set:
-                XRemoveFromSaveSet(self.client_window)
+                trap.swallow_synced(XRemoveFromSaveSet, self.client_window)
                 self.in_save_set = False
-            sendConfigureNotify(self.client_window)
-            if exiting:
+            trap.swallow_synced(sendConfigureNotify, self.client_window)
+            if wm_exiting:
                 self.client_window.show_unraised()
-        BaseWindowModel.synced_unmanage(self, exiting)
+        BaseWindowModel.do_unmanaged(self, wm_exiting)
 
     def ownership_election(self):
         candidates = self.emit("ownership-election")

@@ -66,9 +66,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         remove_event_receiver(self._window, self)
         self.invalidate_pixmap()
         if not self._already_composited:
-            xcomposite_unredirect_window(self._window)
+            trap.swallow_synced(xcomposite_unredirect_window, self._window)
         if self._damage_handle:
-            xdamage_stop(self._window, self._damage_handle)
+            trap.swallow_synced(xdamage_stop, self._window, self._damage_handle)
             self._damage_handle = None
         self._window = None
 
