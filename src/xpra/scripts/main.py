@@ -750,7 +750,7 @@ def set_signal_handlers(app):
         print("\ngot signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        gobject.timeout_add(0, app.quit, priority=gobject.PRIORITY_HIGH)
+        gobject.timeout_add(0, app.quit, 128 + signum, priority=gobject.PRIORITY_HIGH)
     signal.signal(signal.SIGINT, app_signal)
     signal.signal(signal.SIGTERM, app_signal)
 
