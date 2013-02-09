@@ -2066,12 +2066,12 @@ def selectFocusChange(pywindow):
 # clients that are selecting for that mask they are sent with.
 
 _ev_receiver_key = "wimpiggy-route-events-to"
-def add_event_receiver(window, receiver):
+def add_event_receiver(window, receiver, max_receivers=3):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
         receivers = set()
         window.set_data(_ev_receiver_key, receivers)
-    if len(receivers)>3:
+    if max_receivers>0 and len(receivers)>max_receivers:
         warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
         import traceback
         traceback.print_stack()

@@ -124,7 +124,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         # clobbering.  They are our friends!  X is driving me
                         # slowly mad.
                         addXSelectInput(win, const["StructureNotifyMask"])
-                        add_event_receiver(win, self)
+                        add_event_receiver(win, self, max_receivers=-1)
                         listening.append(win)
                         win = get_parent(win)
                     handle = xcomposite_name_window_pixmap(self._window)
