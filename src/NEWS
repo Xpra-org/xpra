@@ -1,12 +1,15 @@
-v0.8.2 (2013-02-06)
+v0.8.2 (2013-02-09)
 ======================
 	-- fix libav uninitialized structure crash
 	-- fix warning on installations without sound libraries
 	-- fix warning when pulseaudio utils are not installed
 	-- fix delta compression race
+	-- fix the return of some ghost windows
+	-- stop pulseaudio on exit, warn if it fails to start
 	-- re-enable system tray forwarding
 	-- osx fixes: encodings wrongly grayed out
 	-- osx features: add sound and speed menus
+	-- remove spurious "too many receivers" warnings
 
 
 v0.8.1 (2013-02-04)
@@ -26,7 +29,7 @@ v0.8.1 (2013-02-04)
 	-- fix rpm packaging: remove unusable modules
 
 
-v0.8.0 (2012-12-20)
+v0.8.0 (2013-01-31)
 ======================
 	-- fix modal windows support
 	-- fix default mouse cursor: now uses the client's default cursor

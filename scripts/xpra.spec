@@ -124,14 +124,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Wed Feb 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
+* Sat Feb 09 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
 - fix libav uninitialized structure crash
 - fix warning on installations without sound libraries
 - fix warning when pulseaudio utils are not installed
 - fix delta compression race
+- fix the return of some ghost windows
+- stop pulseaudio on exit, warn if it fails to start
 - re-enable system tray forwarding
-- osx fixes: encodings wrongly grayed out
-- osx features: add sound and speed menus
+- remove spurious "too many receivers" warnings
 
 * Mon Feb 04 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.1-1
 - fix server daemonize on some platforms
