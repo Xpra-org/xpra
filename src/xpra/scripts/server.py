@@ -295,7 +295,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
             sockets.append(tcp_socket)
             def cleanup_tcp_socket():
-                log.info("closing tcp socket %s" % opts.bind_tcp)
+                log.info("closing tcp socket %s", opts.bind_tcp)
                 try:
                     tcp_socket.close()
                 except:
@@ -432,38 +432,52 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app = XpraServer(clobber, sockets, opts)
 
     children_pids = set()
-    procs = []
-    if opts.exit_with_children:
-        def reaper_quit():
+    def reaper_quit():
+        if opts.exit_with_children:
             app.quit(False)
-        child_reaper = ChildReaper(reaper_quit, children_pids)
-        if sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0):
-                POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
-                log.warn("Warning: outdated/buggy version of Python (%s), switching to process polling every %s seconds to support 'exit-with-children'", ".".join(str(x) for x in sys.version_info), POLL_DELAY)
-                ChildReaper.processes = procs
-                def check_procs():
-                    for proc in ChildReaper.processes:
-                        if proc.poll() is not None:
-                            child_reaper.add_dead_pid(proc.pid)
-                            child_reaper.check()
-                    ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
-                    return True
-                gobject.timeout_add(POLL_DELAY*1000, check_procs)
-        else:
-            #with non-buggy python, we can just check the list of pids
-            #whenever we get a SIGCHLD
-            signal.signal(signal.SIGCHLD, child_reaper.sigchld)
-            # Check once after the mainloop is running, just in case the exit
-            # conditions are satisfied before we even enter the main loop.
-            # (Programming with unix the signal API sure is annoying.)
-            def check_once():
-                child_reaper.check()
-                return False # Only call once
-            gobject.timeout_add(0, check_once)
+    child_reaper = ChildReaper(reaper_quit, children_pids)
+    procs = []
+    if sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0):
+        POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
+        log.warn("Warning: outdated/buggy version of Python (%s), switching to process polling every %s seconds to support 'exit-with-children'", ".".join(str(x) for x in sys.version_info), POLL_DELAY)
+        ChildReaper.processes = procs
+        def check_procs():
+            for proc in ChildReaper.processes:
+                if proc.poll() is not None:
+                    child_reaper.add_dead_pid(proc.pid)
+                    child_reaper.check()
+            ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
+            return True
+        gobject.timeout_add(POLL_DELAY*1000, check_procs)
+    else:
+        #with non-buggy python, we can just check the list of pids
+        #whenever we get a SIGCHLD
+        signal.signal(signal.SIGCHLD, child_reaper.sigchld)
+        # Check once after the mainloop is running, just in case the exit
+        # conditions are satisfied before we even enter the main loop.
+        # (Programming with unix the signal API sure is annoying.)
+        def check_once():
+            child_reaper.check()
+            return False # Only call once
+        gobject.timeout_add(0, check_once)
 
     if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
         pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
+        procs.append(pa_proc)
         log.info("pulseaudio server started with pid %s", pa_proc.pid)
+        def check_pa_start():
+            if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
+                log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
+            return False
+        gobject.timeout_add(1000*2, check_pa_start)
+        def cleanup_pa():
+            if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
+                log.info("stopping pulseaudio with pid %s", pa_proc.pid)
+                try:
+                    pa_proc.terminate()
+                except:
+                    pass
+        _cleanups.append(cleanup_pa)
     if opts.exit_with_children:
         assert opts.children
     if opts.children:
