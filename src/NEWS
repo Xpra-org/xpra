@@ -1,4 +1,4 @@
-v0.8.2 (2013-02-09)
+v0.8.2 (2013-02-10)
 ======================
 	-- fix libav uninitialized structure crash
 	-- fix warning on installations without sound libraries
@@ -6,7 +6,7 @@ v0.8.2 (2013-02-09)
 	-- fix delta compression race
 	-- fix the return of some ghost windows
 	-- stop pulseaudio on exit, warn if it fails to start
-	-- re-enable system tray forwarding
+	-- re-enable system tray forwarding, fix location conflicts
 	-- osx fixes: encodings wrongly grayed out
 	-- osx features: add sound and speed menus
 	-- remove spurious "too many receivers" warnings

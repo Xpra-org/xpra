@@ -124,7 +124,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sat Feb 09 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
+* Sun Feb 10 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.2-1
 - fix libav uninitialized structure crash
 - fix warning on installations without sound libraries
 - fix warning when pulseaudio utils are not installed
