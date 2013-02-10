@@ -186,6 +186,7 @@ class SystemTray(gobject.GObject):
                                            event_mask = event_mask,
                                            wclass=gtk.gdk.INPUT_OUTPUT,
                                            title="TrayWindow",
+                                           x=-200, y=-200,
                                            override_redirect=True,
                                            visual=window.get_visual(),
                                            colormap=window.get_colormap())

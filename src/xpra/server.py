@@ -265,8 +265,12 @@ class XpraServer(gobject.GObject, XpraServerBase):
             if window.is_tray():
                 #code more or less duplicated from _send_new_tray_window_packet:
                 w, h = window.get_property("geometry")[2:4]
-                ss.new_tray(wid, window, w, h)
-                ss.damage(wid, window, 0, 0, w, h)
+                if ss.system_tray:
+                    ss.new_tray(wid, window, w, h)
+                    ss.damage(wid, window, 0, 0, w, h)
+                else:
+                    #park it outside the visible area
+                    window.move_resize(-200, -200, w, h)
             elif window.is_OR():
                 #code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
