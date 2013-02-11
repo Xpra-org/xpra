@@ -74,8 +74,14 @@ else:
         gtk.Window.__init__(gtkwindow, wintype)
     def is_mapped(win):
         return win.window is not None and win.window.is_visible()
+    if gtk.gtk_version>=(2,14):
+        def gdk_window(gtkwindow):
+            return gtkwindow.get_window()
+    else:
+        def gdk_window(gtkwindow):
+            return gtkwindow.window
     def get_window_geometry(gtkwindow):
-        gdkwindow = gtkwindow.get_window()
+        gdkwindow = gdk_window(gtkwindow)
         x, y = gdkwindow.get_origin()
         _, _, w, h, _ = gdkwindow.get_geometry()
         return (x, y, w, h)
@@ -83,7 +89,7 @@ else:
         gtkwindow.set_geometry_hints(None, **hints)
 
     def queue_draw(gtkwindow, x, y, width, height):
-        window = gtkwindow.get_window()
+        window = gdk_window(gtkwindow)
         if window:
             window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
         else:
@@ -233,14 +239,14 @@ class ClientWindow(gtk.Window):
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
             from wimpiggy.error import trap
-            root = self.get_window().get_screen().get_root_window()
+            root = gdk_window(self).get_screen().get_root_window()
             ndesktops = xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
             log("set_workspace() ndesktops=%s", ndesktops)
             if ndesktops is None or ndesktops<=1:
                 return
             workspace = max(0, min(ndesktops-1, workspace))
             event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
-            trap.call_synced(sendClientMessage, root, self.get_window(), False, event_mask, "_NET_WM_DESKTOP",
+            trap.call_synced(sendClientMessage, root, gdk_window(self), False, event_mask, "_NET_WM_DESKTOP",
                       workspace, const["CurrentTime"],
                       0, 0, 0)
         except Exception, e:
@@ -258,7 +264,7 @@ class ClientWindow(gtk.Window):
     def get_workspace(self):
         if sys.platform.startswith("win"):
             return  -1              #windows does not have workspaces
-        window = self.get_window()
+        window = gdk_window(self)
         root = window.get_screen().get_root_window()
         for target, prop in ((window, "_NET_WM_DESKTOP"), (root, "_NET_CURRENT_DESKTOP")):
             value = xget_u32_property(target, prop)
