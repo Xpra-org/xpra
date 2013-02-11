@@ -376,7 +376,12 @@ void do_clean_encoder(struct x264lib_ctx *ctx)
 }
 
 #else
-struct x264lib_ctx *init_encoder(int width, int height)
+struct x264lib_ctx *init_encoder(int width, int height,
+		int initial_quality, int initial_speed,
+		int supports_csc_option,
+		int I422_quality, int I444_quality,
+		int I422_min, int I444_min,
+        char *i420_profile, char *i422_profile, char *i444_profile)
 {
 	return NULL;
 }
