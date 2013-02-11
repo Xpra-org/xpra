@@ -487,9 +487,9 @@ class ApplicationWindow:
 				self.username_entry.hide()
 				self.username_label.hide()
 				self.port_entry.set_text("%s" % xpra_opts.port)
-			if not ssh or sys.platform.startswith("win"):
+			if not ssh or sys.platform.startswith("win") or sys.platform.startswith("darwin"):
 				#password cannot be used with ssh
-				#(except on win32 with plink)
+				#(except on win32 with plink, and on osx via the SSH_ASKPASS hack)
 				self.password_label.show()
 				self.password_entry.show()
 			else:
@@ -712,6 +712,8 @@ class ApplicationWindow:
 							continue
 						if x.startswith("** Message: pygobject_register_sinkfunc is deprecated"):
 							continue
+						if x.startswith("** ") and x.find("WARNING **: Trying to register gtype")>=0:
+							continue
 						r.append(x)
 					return "\n".join(r)
 				out = noswscalewarning(out)
@@ -751,6 +753,7 @@ class ApplicationWindow:
 
 
 	def start_xpra_process(self):
+		env = os.environ.copy()
 		cmd = "xpra"
 		if sys.platform.startswith("win"):
 			if hasattr(sys, "frozen"):
@@ -769,8 +772,6 @@ class ApplicationWindow:
 			host = xpra_opts.host
 			if xpra_opts.username:
 				username = xpra_opts.username
-				if xpra_opts.password:
-					username += ":%s" % xpra_opts.password
 				host = "%s@%s" % (username, host)
 			uri = "ssh/%s" % host
 		else:
@@ -788,11 +789,17 @@ class ApplicationWindow:
 				pw_file.close()
 			cb = del_pw_file
 			xpra_opts.password_file = pw_file.name
+			if sys.platform.startswith("darwin"):
+				mode = xpra_opts.mode.lower()
+				if mode=="ssh" and not os.path.exists("/usr/libexec/ssh-askpass"):
+					#SSH_ASKPASS hack
+					env["SSH_ASKPASS"] = os.path.join(APP_DIR, "Helpers", "SSH_ASKPASS")
+					env["XPRA_SSH_PASS"] = xpra_opts.password
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
 		if EXEC_DEBUG:
 			args.append("-d all")
-		print("Running %s" % args)
+		print("Running %s" % str(args))
 		kwargs = {}
 		if os.name=="posix" and not sys.platform.startswith("darwin"):
 			def setsid():
@@ -805,7 +812,7 @@ class ApplicationWindow:
 				kwargs["creationflags"] = win32process.CREATE_NO_WINDOW
 			except:
 				pass		#tried our best...
-		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs), cb
+		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=env, **kwargs), cb
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
@@ -887,7 +894,7 @@ def main():
 			app.run()
 	except KeyboardInterrupt:
 		pass
-	if xpra_opts.password_file:
+	if xpra_opts.password_file and os.path.exists(xpra_opts.password_file):
 		os.unlink(xpra_opts.password_file)
 	return 0
 
