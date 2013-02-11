@@ -160,7 +160,7 @@ elif sys.platform.startswith("darwin"):
 	rsc = None
 	try:
 		import gtkosx_application		#@UnresolvedImport
-		rsc = gtkosx_application.quartz_application_get_resource_path()
+		rsc = gtkosx_application.gtkosx_application_get_resource_path()
 		if rsc:
 			RESOURCES = "/Resources/"
 			CONTENTS = "/Contents/"
@@ -272,6 +272,9 @@ xpra_opts = AdHocStruct()
 xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
 xpra_opts.jpegquality = default_int("jpegquality", 90)
 xpra_opts.quality = default_int("quality", 90)
+xpra_opts.min_quality = default_int("min-quality", 50)
+xpra_opts.speed = default_int("speed", -1)
+xpra_opts.min_speed = default_int("min-speed", -1)
 xpra_opts.host = defaults.get("host", "127.0.0.1")
 xpra_opts.username = ""
 try:
@@ -613,6 +616,9 @@ class ApplicationWindow:
 		opts.title = "@title@ on @client-machine@"
 		opts.encoding = xpra_opts.encoding
 		opts.quality = xpra_opts.quality
+		opts.min_quality = xpra_opts.min_quality
+		opts.speed = xpra_opts.speed
+		opts.min_speed = xpra_opts.min_speed
 		opts.jpegquality = xpra_opts.jpegquality
 		opts.max_bandwidth = xpra_opts.max_bandwidth
 		opts.auto_refresh_delay = xpra_opts.auto_refresh_delay
