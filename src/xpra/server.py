@@ -384,7 +384,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
             gobject.timeout_add(10, self.send_cursor)
 
     def send_cursor(self):
-        self.send_cursor_pending = True
+        self.send_cursor_pending = False
         self.cursor_data = get_cursor_image()
         if not self.cursor_data:
             pixels = self.cursor_data[7]
