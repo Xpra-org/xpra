@@ -23,6 +23,9 @@ log = Logger()
 #compression is fine with default value (3), no need to clutter the UI
 SHOW_COMPRESSION_MENU = False
 
+#really old gtk versions aren't worth bothering about:
+LOAD_ICONS = is_gtk3() or (hasattr(gtk, "image_new_from_pixbuf") and hasattr(gdk, "pixbuf_new_from_file"))
+
 #utility method to ensure there is always only one CheckMenuItem
 #selected in a submenu:
 def ensure_item_selected(submenu, item):
@@ -368,7 +371,7 @@ class ClientExtrasBase(object):
 
     def get_pixbuf(self, icon_name):
         try:
-            if not icon_name:
+            if not icon_name or not LOAD_ICONS:
                 return None
             icon_filename = self.get_icon_filename(icon_name)
             if icon_filename:

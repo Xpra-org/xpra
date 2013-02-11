@@ -1022,8 +1022,16 @@ class XpraClient(XpraClientBase, gobject.GObject):
             monitors = []
             while j<screen.get_n_monitors():
                 geom = screen.get_monitor_geometry(j)
-                monitor = (screen.get_monitor_plug_name(j) or "", geom.x, geom.y, geom.width, geom.height,
-                            screen.get_monitor_width_mm(j), screen.get_monitor_height_mm(j))
+                plug_name = ""
+                if hasattr(screen, "get_monitor_plug_name"):
+                    plug_name = screen.get_monitor_plug_name(j)
+                wmm = -1
+                if hasattr(screen, "get_monitor_width_mm"):
+                    wmm = screen.get_monitor_width_mm(j)
+                hmm = -1
+                if hasattr(screen, "get_monitor_height_mm"):
+                    hmm = screen.get_monitor_height_mm(j)
+                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
                 monitors.append(monitor)
                 j += 1
             root = screen.get_root_window()
