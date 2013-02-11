@@ -20,6 +20,13 @@ import threading
 
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
 
+if sys.version_info[:2]>=(2,5):
+    def unpack_header(buf):
+        return struct.unpack_from('!cBBBL', buf)
+else:
+    def unpack_header(buf):
+        return struct.unpack('!cBBBL', "".join(buf))
+
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except:
@@ -443,15 +450,15 @@ class Protocol(object):
                 if bl<=0:
                     break
                 if payload_size<0:
-                    if read_buffer[0] not in ["P", ord("P")]:
-                        return self._call_connection_lost("invalid packet header: ('%s...'), not an xpra client?" % read_buffer[:32])
+                    if read_buffer[0] not in ("P", ord("P")):
+                        return self._call_connection_lost("invalid packet header byte: ('%s...'), not an xpra client?" % read_buffer[:32])
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
                     try:
-                        _, protocol_flags, compression_level, packet_index, data_size = struct.unpack_from('!cBBBL', read_buffer)
+                        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
                     except Exception, e:
-                        raise Exception("invalid packet header: %s" % list(read_buffer[:8]), e)
+                        raise Exception("failed to parse packet header: %s" % list(read_buffer[:8]), e)
                     read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
                     if protocol_flags & Protocol.FLAGS_CIPHER:
