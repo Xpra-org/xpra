@@ -113,7 +113,7 @@ def CheckMenuItem(label, tooltip=None):
             return  label
         cmi.get_label = get_label
     if tooltip:
-        cmi.set_tooltip_text(tooltip)
+        set_tooltip_text(cmi, tooltip)
     return cmi
 
 class ClientExtrasBase(object):
@@ -718,9 +718,9 @@ class ClientExtrasBase(object):
             can_use = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
             self.quality.set_sensitive(can_use)
             if can_use:
-                self.quality.set_tooltip_text("Minimum picture quality")
+                set_tooltip_text(self.quality, "Minimum picture quality")
             else:
-                self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
+                set_tooltip_text(self.quality, "Not supported with %s encoding" % self.client.encoding)
                 
 
     def make_speedmenuitem(self):
@@ -770,13 +770,13 @@ class ClientExtrasBase(object):
             can_use = not self.client.mmap_enabled and self.client.encoding=="x264" and self.client.change_speed
             self.speed.set_sensitive(can_use)
             if self.client.mmap_enabled:
-                self.speed.set_tooltip_text("Quality is always 100% with mmap")
+                set_tooltip_text(self.speed, "Quality is always 100% with mmap")
             elif not self.client.change_speed:
-                self.speed.set_tooltip_text("Server does not support changing speed")
+                set_tooltip_text(self.speed, "Server does not support changing speed")
             elif self.client.encoding!="x264":
-                self.speed.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
+                set_tooltip_text(self.speed, "Not supported with %s encoding" % self.client.encoding)
             else:
-                self.speed.set_tooltip_text("Encoding latency vs size")
+                set_tooltip_text(self.speed, "Encoding latency vs size")
 
 
     def spk_on(self, *args):
