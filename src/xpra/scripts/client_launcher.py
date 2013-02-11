@@ -159,8 +159,8 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("darwin"):
 	rsc = None
 	try:
-		import gtk_osxapplication		#@UnresolvedImport
-		rsc = gtk_osxapplication.quartz_application_get_resource_path()
+		import gtkosx_application		#@UnresolvedImport
+		rsc = gtkosx_application.quartz_application_get_resource_path()
 		if rsc:
 			RESOURCES = "/Resources/"
 			CONTENTS = "/Contents/"
