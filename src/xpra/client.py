@@ -51,7 +51,10 @@ else:
                     y = int(y/ratio)
                 cursor = gdk.Cursor(gdk.display_get_default(), pixbuf, x, y)
         for gtkwindow in gtkwindows:
-            gdkwin = gtkwindow.get_window()
+            if gtk.gtk_version>=(2,14):
+                gdkwin = gtkwindow.get_window()
+            else:
+                gdkwin = gtkwindow.window
             #trays don't have a gdk window
             if gdkwin:
                 gdkwin.set_cursor(cursor)
