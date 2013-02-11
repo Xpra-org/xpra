@@ -51,12 +51,16 @@ class ClientExtras(ClientExtrasBase):
             pass
 
     def handle_console_event(self, event):
-        log.info("handle_console_event(%s)", event)
+        log("handle_console_event(%s)", event)
         import win32con         #@UnresolvedImport
-        if event in (win32con.CTRL_C_EVENT, win32con.CTRL_LOGOFF_EVENT,
-                     win32con.CTRL_BREAK_EVENT, win32con.CTRL_SHUTDOWN_EVENT,
-                     win32con.CTRL_CLOSE_EVENT):
-            log.info("exiting")
+        events = {win32con.CTRL_C_EVENT         : "CTRL_C",
+                  win32con.CTRL_LOGOFF_EVENT    : "SHUTDOWN",
+                  win32con.CTRL_BREAK_EVENT     : "BREAK",
+                  win32con.CTRL_SHUTDOWN_EVENT  : "SHUTDOWN",
+                  win32con.CTRL_CLOSE_EVENT     : "CLOSE"
+                  }
+        if event in events:
+            log.info("exiting on event %s", events.get(event))
             self.setup_exit_handler(enable=0)       #disable our handler
             self.quit()
             return 1
