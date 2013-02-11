@@ -7,5 +7,5 @@ cp -apr etc scripts man parti wimpiggy xpra add_build_info.py setup.py make_cons
 pushd py3
 patch -p1 < ../patches/disable-posix-server.patch
 python3-2to3 --no-diffs -x all -f except -w -n .
-CFLAGS=-O2 python3 setup.py install
+CFLAGS=-O2 python3 setup.py install "$@"
 popd
