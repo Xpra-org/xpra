@@ -643,6 +643,15 @@ def parse_display_name(parser, opts, display_name):
             #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
             remote_xpra.append("--socket-dir=%s" % opts.sockdir)
         desc["remote_xpra"] = remote_xpra
+        if desc.get("password") is None and opts.password_file and os.path.exists(opts.password_file):
+            try:
+                try:
+                    passwordFile = open(opts.password_file, "rb")
+                    desc["password"] = passwordFile.read()
+                finally:
+                    passwordFile.close()
+            except Exception, e:
+                print("failed to read password file %s: %s", opts.password_file, e)
         return desc
     elif display_name.startswith(":"):
         desc["type"] = "unix-domain"

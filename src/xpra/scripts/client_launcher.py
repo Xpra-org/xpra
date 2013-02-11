@@ -694,7 +694,7 @@ class ApplicationWindow:
 		gobject.idle_add(self.window.hide)
 		try:
 			self.set_info_text("Launching")
-			process, cb = self.start_xpra_process()
+			process, args, cb = self.start_xpra_process()
 			gobject.idle_add(self.window.hide)
 			try:
 				out,err = process.communicate()
@@ -725,10 +725,14 @@ class ApplicationWindow:
 				password_warning = out.find("invalid password")>=0 or err.find("invalid password")
 				if password_warning:
 					self.password_warning()
-				if ret==0 and not EXEC_DEBUG:
-					info = "command terminated OK"
+				if EXEC_DEBUG:
+					info = "command %s terminated" % str(args)
 				else:
-					info = "command terminated with exitcode %s" % ret
+					info = "command terminated"
+				if ret==0 and not EXEC_DEBUG:
+					info += "OK"
+				else:
+					info += "with exitcode %s" % ret
 					if out:
 						info += ",\noutput:\n%s" % out
 					if err:
@@ -753,7 +757,7 @@ class ApplicationWindow:
 
 
 	def start_xpra_process(self):
-		env = os.environ.copy()
+		kwargs = {}
 		cmd = "xpra"
 		if sys.platform.startswith("win"):
 			if hasattr(sys, "frozen"):
@@ -772,6 +776,8 @@ class ApplicationWindow:
 			host = xpra_opts.host
 			if xpra_opts.username:
 				username = xpra_opts.username
+				if xpra_opts.password:
+					username += ":%s" % xpra_opts.password
 				host = "%s@%s" % (username, host)
 			uri = "ssh/%s" % host
 		else:
@@ -793,14 +799,15 @@ class ApplicationWindow:
 				mode = xpra_opts.mode.lower()
 				if mode=="ssh" and not os.path.exists("/usr/libexec/ssh-askpass"):
 					#SSH_ASKPASS hack
+					env = os.environ.copy()
 					env["SSH_ASKPASS"] = os.path.join(APP_DIR, "Helpers", "SSH_ASKPASS")
-					env["XPRA_SSH_PASS"] = xpra_opts.password
+					env["XPRA_SSH_PASS"] = str(xpra_opts.password)
+					kwargs = {"env" : env}
 		if xpra_opts.password_file:
 			args.append("--password-file=%s" % xpra_opts.password_file)
 		if EXEC_DEBUG:
 			args.append("-d all")
 		print("Running %s" % str(args))
-		kwargs = {}
 		if os.name=="posix" and not sys.platform.startswith("darwin"):
 			def setsid():
 				#run in a new session
@@ -812,7 +819,7 @@ class ApplicationWindow:
 				kwargs["creationflags"] = win32process.CREATE_NO_WINDOW
 			except:
 				pass		#tried our best...
-		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=env, **kwargs), cb
+		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs), args, cb
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
@@ -883,7 +890,7 @@ def main():
 	try:
 		if xpra_opts.autoconnect:
 			#file says we should connect, do that only:
-			process, cb = app.start_xpra_process()
+			process, _, cb = app.start_xpra_process()
 			try:
 				return process.wait()
 			finally:
