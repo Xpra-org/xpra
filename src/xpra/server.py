@@ -206,7 +206,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
 
         self.default_cursor_data = None
         self.last_cursor_serial = None
-        self.send_cursor_pending = True
+        self.send_cursor_pending = False
         self.cursor_data = None
         def get_default_cursor():
             self.default_cursor_data = get_cursor_image()
