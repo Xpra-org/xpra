@@ -9,6 +9,9 @@
 import gtk.gdk
 gtk.gdk.threads_init()
 
+import re
+from math import sqrt
+import os
 import time
 import gobject
 import ctypes
@@ -36,15 +39,25 @@ from xpra.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server_keyboard_config import KeyboardConfig
 
-from math import sqrt
-
-import os
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 
 NRECS = 500
 
 debug = log.debug
 
+def platform_name(sys_platform):
+    PLATFORMS = {"win32"    : "Microsoft Windows",
+                 "cygwin"   : "Windows/Cygwin",
+                 "linux2"   : "Linux",
+                 "darwin"   : "Mac OSX",
+                 "freebsd.*": "FreeBSD",
+                 "os2"      : "OS/2",
+                 }
+    for k,v in PLATFORMS.items():
+        regexp = re.compile(k)
+        if regexp.match(sys_platform):
+            return v
+    return sys_platform
 
 
 class GlobalPerformanceStatistics(object):
@@ -257,6 +270,9 @@ class ServerSource(object):
         self.client_type = None
         self.client_version = None
         self.client_platform = None
+        self.client_machine = None
+        self.client_processor = None
+        self.client_release = None
         self.png_window_icons = False
         self.auto_refresh_delay = 0
         self.server_window_resize = False
@@ -424,6 +440,9 @@ class ServerSource(object):
         self.hostname = capabilities.get("hostname", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_platform = capabilities.get("platform", "")
+        self.client_machine = capabilities.get("platform.machine", "")
+        self.client_processor = capabilities.get("platform.processor", "")
+        self.client_release = capabilities.get("platform.release", "")
         self.client_version = capabilities.get("version", None)
         #general features:
         self.send_windows = capabilities.get("windows", True)
@@ -497,7 +516,7 @@ class ServerSource(object):
                 self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
-        msg = "%s %s client version %s" % (self.client_type, self.client_platform, self.client_version)
+        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform), self.client_version)
         if self.hostname:
             msg += " connected from '%s'" % self.hostname
         log.info(msg)
@@ -824,6 +843,8 @@ class ServerSource(object):
         info["client_notifications%s" % suffix] = self.send_notifications
         info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
         info["client_hostname%s" % suffix] = self.hostname
+        for x in ("machine", "processor", "release"):
+            info["client.platform.%s%s" % (x, suffix)] = getattr(self, "client_%s" % x)
         info["auto_refresh%s" % suffix] = self.auto_refresh_delay
         for k,v in self.encoding_options.items():
             info["encoding.%s" % k] = v

@@ -16,7 +16,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol, has_rencode, use_rencode
-from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS
+from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
 
@@ -131,6 +131,9 @@ class XpraClientBase(gobject.GObject):
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
         capabilities["platform"] = sys.platform
+        capabilities["platform.release"] = python_platform.release()
+        capabilities["platform.machine"] = python_platform.machine()
+        capabilities["platform.processor"] = python_platform.processor()
         capabilities["client_type"] = "Python/Gobject"
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
