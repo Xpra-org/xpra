@@ -45,7 +45,7 @@ NRECS = 500
 
 debug = log.debug
 
-def platform_name(sys_platform):
+def platform_name(sys_platform, release):
     PLATFORMS = {"win32"    : "Microsoft Windows",
                  "cygwin"   : "Windows/Cygwin",
                  "linux2"   : "Linux",
@@ -53,11 +53,15 @@ def platform_name(sys_platform):
                  "freebsd.*": "FreeBSD",
                  "os2"      : "OS/2",
                  }
+    def rel(v):
+        if sys_platform=="win32" and release:
+            return "%s %s" % (v, release)
+        return v
     for k,v in PLATFORMS.items():
         regexp = re.compile(k)
         if regexp.match(sys_platform):
-            return v
-    return sys_platform
+            return rel(v)
+    return rel(sys_platform)
 
 
 class GlobalPerformanceStatistics(object):
@@ -516,7 +520,7 @@ class ServerSource(object):
                 self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
-        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform), self.client_version)
+        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
         if self.hostname:
             msg += " connected from '%s'" % self.hostname
         log.info(msg)
