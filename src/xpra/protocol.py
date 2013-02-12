@@ -39,16 +39,19 @@ log = Logger()
 from xpra.daemon_thread import make_daemon_thread
 from xpra.bytestreams import untilConcludes
 from xpra.bencode import bencode, bdecode
-rencode_dumps, rencode_loads = None, None
+rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
     try:
         from xpra.rencode import dumps as rencode_dumps  #@UnresolvedImport
         from xpra.rencode import loads as rencode_loads  #@UnresolvedImport
+        from xpra.rencode import __version__
+        rencode_version = __version__
+        log("found rencode version %s", rencode_version)
     except ImportError:
-        pass
+        log.error("rencode load error", exc_info=True)
 except Exception, e:
     log.error("xpra.rencode is missing: %s", e)
-has_rencode = rencode_dumps is not None and rencode_loads is not None
+has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
 use_rencode = has_rencode and not os.environ.get("XPRA_USE_BENCODER", "0")=="1"
 
 #stupid python version breakage:

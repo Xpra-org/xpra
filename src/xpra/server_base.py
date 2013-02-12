@@ -43,7 +43,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
 from xpra.server_uuid import save_uuid, get_uuid
 from xpra.bytestreams import SocketConnection
-from xpra.protocol import Protocol, has_rencode, use_rencode
+from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
@@ -624,6 +624,8 @@ class XpraServerBase(object):
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
+        if has_rencode:
+            capabilities["rencode.version"] = rencode_version
         capabilities["window_configure"] = True
         capabilities["xsettings-tuple"] = True
         capabilities["change-quality"] = True

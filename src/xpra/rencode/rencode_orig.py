@@ -67,8 +67,8 @@ import sys
 py3 = False
 if sys.version_info.major >= 3:
     py3 = True
-    long = int
-    unicode = str
+    long = int          #@ReservedAssignment
+    unicode = str       #@ReservedAssignment
     
 def int2byte(c):
     if py3:
@@ -196,13 +196,13 @@ def decode_dict(x, f):
     return (r, f + 1)
 
 def decode_true(x, f):
-  return (True, f+1)
+    return (True, f+1)
 
 def decode_false(x, f):
-  return (False, f+1)
+    return (False, f+1)
 
 def decode_none(x, f):
-  return (None, f+1)
+    return (None, f+1)
 
 decode_func = {}
 decode_func[b'0'] = decode_string
@@ -245,7 +245,7 @@ def make_fixed_length_list_decoders():
     def make_decoder(slen):
         def f(x, f):
             r, f = [], f+1
-            for i in range(slen):
+            for _ in range(slen):
                 v, f = decode_func[x[f:f+1]](x, f)
                 r.append(v)
             return (tuple(r), f)
@@ -271,7 +271,7 @@ def make_fixed_length_dict_decoders():
     def make_decoder(slen):
         def f(x, f):
             r, f = {}, f+1
-            for j in range(slen):
+            for _ in range(slen):
                 k, f = decode_func[x[f:f+1]](x, f)
                 r[k], f = decode_func[x[f:f+1]](x, f)
             return (r, f)
@@ -433,4 +433,4 @@ except ImportError:
 
 
 if __name__ == '__main__':
-  test()
+    test()

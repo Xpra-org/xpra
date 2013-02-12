@@ -15,7 +15,7 @@ from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.protocol import Protocol, has_rencode, use_rencode
+from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
@@ -138,6 +138,8 @@ class XpraClientBase(gobject.GObject):
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
+        if has_rencode:
+            capabilities["rencode.version"] = rencode_version
         capabilities["server-window-resize"] = True
         capabilities["hostname"] = socket.gethostname()
         capabilities["uuid"] = self.uuid
