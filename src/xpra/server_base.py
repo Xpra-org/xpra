@@ -299,7 +299,7 @@ class XpraServerBase(object):
             sys.stdout.flush()
         gobject.idle_add(print_ready)
         gtk.main()
-        log.info("xpra end of gtk.main().")
+        log("xpra end of gtk.main().")
         return self._upgrading
 
     def cleanup(self, *args):
