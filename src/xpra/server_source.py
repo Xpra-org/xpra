@@ -1070,6 +1070,8 @@ class ServerSource(object):
         if len(window_ids)>0:
             total_pixels = 0
             total_time = 0.0
+            in_latencies = []
+            out_latencies = []
             for wid in window_ids:
                 ws = self.window_sources.get(wid)
                 if ws:
@@ -1080,10 +1082,15 @@ class ServerSource(object):
                     for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
                         total_pixels += pixels
                         total_time += encoding_time
+                    in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
+                    out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)
             info["pixels_encoded_per_second%s" % suffix] = v
+            add_list_stats(info, "damage_in_latency",  in_latencies, show_percentile=[9])
+            add_list_stats(info, "damage_out_latency",  out_latencies, show_percentile=[9])
+
         if len(self.default_batch_config.last_delays)>0:
             batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
