@@ -262,9 +262,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
             self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
             log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
-            os.lseek(fd, self.mmap_size-1, os.SEEK_SET)
+            SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
+            os.lseek(fd, self.mmap_size-1, SEEK_SET)
             assert os.write(fd, '\x00')
-            os.lseek(fd, 0, os.SEEK_SET)
+            os.lseek(fd, 0, SEEK_SET)
             self.mmap = mmap.mmap(fd, length=self.mmap_size)
             #write the 16 byte token one byte at a time - no endianness
             self.mmap_token = uuid.uuid4().int
