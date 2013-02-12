@@ -610,30 +610,37 @@ zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
 cd parti-all-%{version}
 %if 0%{?no_server}
 %patch0 -p1
+(echo "xpra/xposix/__init__.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_video}
 %patch1 -p1
 %patch2 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_webp}
 %patch3 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?static_x264}
 %patch4 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?static_vpx}
 %patch5 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?limited_csc}
 %patch6 -p1
+(echo "xpra/x264/x264lib.c" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_strict}
 %patch7 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
+(echo "xpra/x264/x264lib.c" > %{S:ignored_changed_files.txt})
 %endif
-
 
 %build
 cd parti-all-%{version}
