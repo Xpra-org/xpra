@@ -348,7 +348,7 @@ class ApplicationWindow:
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
 		self.window.set_title(APPLICATION_NAME)
-		self.window.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color("white"))
+		self.window.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(red=255, green=255, blue=255))
 		icon_pixbuf = get_icon("xpra.png")
 		if icon_pixbuf:
 			self.window.set_icon(icon_pixbuf)

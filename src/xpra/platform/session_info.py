@@ -45,12 +45,12 @@ def label(text="", tooltip=None):
 def title_box(label_str):
     eb = gtk.EventBox()
     l = label(label_str)
-    l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color('#300000'))
+    l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(red=48, green=0, blue=0))
     al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_padding(0, 0, 10, 10)
     al.add(l)
     eb.add(al)
-    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color('#dbe2f2'))
+    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(red=219, green=226, blue=242))
     return eb
 
 def pixelstr(v):
