@@ -830,11 +830,14 @@ class XpraClient(XpraClientBase, gobject.GObject):
         if modifier_keycodes:
             self._client_extras.set_modifier_mappings(modifier_keycodes)
 
-        try:
-            import glib
-            glib.set_application_name(self.session_name)
-        except ImportError, e:
-            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
+        if sys.version_info[:2]<(2,5):
+            log.warn("Python %s is too old!", sys.version_info)
+        else:
+            try:
+                import glib
+                glib.set_application_name(self.session_name)
+            except ImportError, e:
+                log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
         #sound:
         self.server_pulseaudio_id = capabilities.get("sound.pulseaudio.id")
