@@ -1170,7 +1170,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             if success:
                 end = time.time()
                 decode_time = int(end*1000*1000-start*1000*1000)
-                self.pixel_counter.append((end, width*height))
+                self.pixel_counter.append((start, end, width*height))
                 if DRAW_DEBUG:
                     dms = "%sms" % (int(decode_time/100)/10.0)
                     log.info("record_decode_time(%s) wid=%s, %s: %sx%s, %s", success, wid, coding, width, height, dms)

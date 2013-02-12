@@ -71,7 +71,7 @@ def average(seconds, pixel_counter):
     avgs = 0
     mint = now-seconds      #ignore records older than N seconds
     startt = now            #when we actually start counting from
-    for t, count in pixel_counter:
+    for _, t, count in pixel_counter:
         if t>=mint:
             total += count
             total_n += 1
@@ -306,6 +306,8 @@ class SessionInfo(gtk.Window):
                 self.damage_labels = maths_labels()
                 tb.add_row(label("Damage Latency (ms)"), *self.damage_labels)
 
+            self.decoding_labels = maths_labels()
+            tb.add_row(label("Decoding Latency (ms)"), *self.decoding_labels)
             self.regions_per_second_labels = maths_labels()
             tb.add_row(label("Regions/s"), *self.regions_per_second_labels)
             self.regions_sizes_labels = maths_labels()
@@ -444,7 +446,7 @@ class SessionInfo(gtk.Window):
         self.net_out_data.append(self.connection.output_bytecount)
         #count pixels in the last second:
         since = time.time()-1
-        decoded = [0]+[pixels for t,pixels in self.client.pixel_counter if t>since]
+        decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
         self.pixel_in_data.append(sum(decoded))
         #update latency values
         self.server_latency = [1000.0*x for _,x in list(self.client.server_ping_latency)[-20:]]
@@ -590,21 +592,24 @@ class SessionInfo(gtk.Window):
                     return getv(prefix+".cur"), getv(prefix+".min"), getv(prefix+".avg"), getv(prefix+".90p"), getv(prefix+".max")
                 setall(self.batch_labels, values_from_info("batch_delay"))
                 setall(self.damage_labels, values_from_info("damage_out_latency"))
+
             region_sizes = []
             rps = []
             pps = []
+            decoding_latency = []
             if len(self.client.pixel_counter)>0:
                 min_time = None
                 max_time = None
                 regions_per_second = {}
                 pixels_per_second = {}
-                for event_time, size in self.client.pixel_counter:
+                for start_time, end_time, size in self.client.pixel_counter:
+                    decoding_latency.append(int(1000.0*(end_time-start_time)))
                     region_sizes.append(size)
-                    if min_time is None or min_time>event_time:
-                        min_time = event_time
-                    if max_time is None or max_time<event_time:
-                        max_time = event_time
-                    time_in_seconds = int(event_time)
+                    if min_time is None or min_time>end_time:
+                        min_time = end_time
+                    if max_time is None or max_time<end_time:
+                        max_time = end_time
+                    time_in_seconds = int(end_time)
                     regions = regions_per_second.get(time_in_seconds, 0)
                     regions_per_second[time_in_seconds] = regions+1
                     pixels = pixels_per_second.get(time_in_seconds, 0)
@@ -612,6 +617,7 @@ class SessionInfo(gtk.Window):
                 for t in xrange(int(min_time), int(max_time+1)):
                     rps.append(regions_per_second.get(t, 0))
                     pps.append(pixels_per_second.get(t, 0))
+            setlabels(self.decoding_labels, decoding_latency)
             setlabels(self.regions_per_second_labels, rps)
             setlabels(self.regions_sizes_labels, region_sizes, rounding=std_unit_dec)
             setlabels(self.pixels_per_second_labels, pps, rounding=std_unit_dec)
