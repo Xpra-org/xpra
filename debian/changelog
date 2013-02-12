@@ -1,3 +1,8 @@
+xpra (0.9.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Feb 2013 16:45:45 +0700
+
 xpra (0.8.3-1) UNRELEASED; urgency=low
   * Python 2.4 compatiblity fixes (CentOS 5.x)
   * fix static builds of vpx and x264
