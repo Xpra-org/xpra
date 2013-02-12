@@ -173,6 +173,8 @@ def nox():
     warnings.filterwarnings("error", "could not open display")
 
 def main(script_file, cmdline):
+    if os.name=="posix" and os.getuid()==0:
+        print("\nWarning: running as root")
     #################################################################
     ## NOTE NOTE NOTE
     ##
