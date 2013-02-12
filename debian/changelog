@@ -1,3 +1,9 @@
+xpra (0.8.3-1) UNRELEASED; urgency=low
+  * Python 2.4 compatiblity fixes (CentOS 5.x)
+  * fix static builds of vpx and x264
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Feb 2013 12:45:47 +0700
+
 xpra (0.8.2-1) UNRELEASED; urgency=low
   * fix libav uninitialized structure crash
   * fix warning on installations without sound libraries

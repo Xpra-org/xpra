@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/usr/lib64/java-gnome/gtk-4.1.jar"/>
 	<classpathentry kind="lib" path="/home/antoine/projects/Xpra/trunk/java/lib/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="/usr/lib64/java-gnome/gtk-4.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

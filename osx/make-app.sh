@@ -54,6 +54,7 @@ sed -i -e 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "$
 echo "Add xpra/server/python scripts"
 cp ./Python "${HELPERS_DIR}/"
 cp ./xpra "${HELPERS_DIR}/"
+cp ./SSH_ASKPASS "${HELPERS_DIR}/"
 # copy "python" as "xpra" and "Xpra_Launcher" so we can have a process that is not called "python"...
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra"
 cp "${RSCDIR}/bin/python" "${RSCDIR}/bin/Xpra_Launcher"
