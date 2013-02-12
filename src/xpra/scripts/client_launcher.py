@@ -113,7 +113,8 @@ def about(*args):
 	dialog.set_website(SITE_URL)
 	dialog.set_website_label(SITE_DOMAIN)
 	dialog.set_logo(get_icon("xpra.png"))
-	dialog.set_program_name(APPLICATION_NAME)
+	if hasattr(dialog, "set_program_name"):
+		dialog.set_program_name(APPLICATION_NAME)
 	def response(*args):
 		dialog.destroy()
 		global about_dialog
