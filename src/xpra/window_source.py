@@ -235,7 +235,7 @@ class WindowPerformanceStatistics(object):
             factors.append((msg, target, weight))
         return factors
 
-    def add_stats(self, info, suffix=""):
+    def add_stats(self, info, prefix, suffix=""):
         #encoding stats:
         if len(self.encoding_stats)>0:
             estats = list(self.encoding_stats)
@@ -252,23 +252,23 @@ class WindowPerformanceStatistics(object):
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                add_weighted_list_stats(info, "compression_ratio_pct"+suffix, comp_ratios_pct)
-                add_weighted_list_stats(info, "compression_pixels_per_ns"+suffix, comp_times_ns)
+                add_weighted_list_stats(info, prefix+"compression_ratio_pct"+suffix, comp_ratios_pct)
+                add_weighted_list_stats(info, prefix+"compression_pixels_per_ns"+suffix, comp_times_ns)
                 if total_time>0:
-                    info["pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
+                    info[prefix+"pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats, suffix=suffix)
             for encoding in encodings_used:
                 enc_stats = [x for x in estats if x[0]==encoding]
                 add_compression_stats(enc_stats, suffix="%s[%s]" % (suffix, encoding))
 
         latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]
-        add_list_stats(info, "damage_in_latency",  latencies)
+        add_list_stats(info, prefix+"damage_in_latency",  latencies, show_percentile=[9])
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
-        add_list_stats(info, "damage_out_latency",  latencies)
+        add_list_stats(info, prefix+"damage_out_latency",  latencies, show_percentile=[9])
         #per encoding totals:
         for encoding, totals in self.encoding_totals.items():
-            info["total_frames%s[%s]" % (suffix, encoding)] = totals[0]
-            info["total_pixels%s[%s]" % (suffix, encoding)] = totals[1]
+            info[prefix+"total_frames%s[%s]" % (suffix, encoding)] = totals[0]
+            info[prefix+"total_pixels%s[%s]" % (suffix, encoding)] = totals[1]
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency
@@ -478,7 +478,7 @@ class WindowSource(object):
                     continue
                 info[prefix+k] = v
         info[prefix+"encoding"+suffix] = self.encoding
-        self.statistics.add_stats(info, suffix)
+        self.statistics.add_stats(info, prefix, suffix)
         #batch stats:
         if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.batch_config.last_delays)]
