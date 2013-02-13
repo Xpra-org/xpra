@@ -554,7 +554,8 @@ if sys.platform.startswith("win"):
     if webp_ENABLED:
         #Note: confusingly, the python bindings are called webm...
         #add the webp DLL to the output:
-        webm_DLL = "C:\\libwebp-0.2.1-windows-x86\\bin\\libwebp_a.dll"
+        #And since 0.2.1, you have to compile the DLL yourself..
+        webm_DLL = "C:\\libwebp-0.2.1-windows-x86\\bin\\libwebp.dll"
         data_files.append(('', [webm_DLL]))
         #and its license:
         data_files.append(('webm', ["xpra/webm/LICENSE"]))
