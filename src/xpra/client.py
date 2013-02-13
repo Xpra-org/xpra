@@ -1031,7 +1031,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 geom = screen.get_monitor_geometry(j)
                 plug_name = ""
                 if hasattr(screen, "get_monitor_plug_name"):
-                    plug_name = screen.get_monitor_plug_name(j)
+                    plug_name = screen.get_monitor_plug_name(j) or ""
                 wmm = -1
                 if hasattr(screen, "get_monitor_width_mm"):
                     wmm = screen.get_monitor_width_mm(j)
