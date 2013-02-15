@@ -274,13 +274,15 @@ class XpraServer(gobject.GObject, XpraServerBase):
             elif window.is_OR():
                 #code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
-                ss.new_window("new-override-redirect", wid, window, x, y, w, h, self._OR_metadata, self.client_properties.get(ss.uuid))
+                wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+                ss.new_window("new-override-redirect", wid, window, x, y, w, h, self._OR_metadata, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
             else:
                 #code more or less duplicated from send_new_window_packet:
                 self._desktop_manager.hide_window(window)
                 x, y, w, h = self._desktop_manager.window_geometry(window)
-                ss.new_window("new-window", wid, window, x, y, w, h, self._all_metadata, self.client_properties.get(ss.uuid))
+                wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+                ss.new_window("new-window", wid, window, x, y, w, h, self._all_metadata, wprops)
         ss.send_cursor(self.cursor_data)
 
 
@@ -486,7 +488,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            self._set_client_properties(proto, packet[6])
+            self._set_client_properties(proto, wid, packet[6])
 
 
     def _process_unmap_window(self, proto, packet):
@@ -516,7 +518,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
             self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
-            self._set_client_properties(proto, packet[6])
+            self._set_client_properties(proto, wid, packet[6])
 
     def _process_move_window(self, proto, packet):
         wid, x, y = packet[1:4]

@@ -797,7 +797,8 @@ class XpraServerBase(object):
         wid = self._window_to_id[window]
         x, y, w, h = geometry
         for ss in self._server_sources.values():
-            ss.new_window(ptype, wid, window, x, y, w, h, properties, self.client_properties.get(ss.uuid))
+            wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+            ss.new_window(ptype, wid, window, x, y, w, h, properties, wprops)
 
 
     def _screen_size_changed(self, *args):
@@ -1050,9 +1051,9 @@ class XpraServerBase(object):
                         root_set("PULSE_SERVER")
 
 
-    def _set_client_properties(self, proto, new_client_properties):
+    def _set_client_properties(self, proto, wid, new_client_properties):
         ss = self._server_sources.get(proto)
-        client_properties = self.client_properties.setdefault(ss.uuid, {})
+        client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
         log("set_client_properties updating %s with %s", client_properties, new_client_properties)
         client_properties.update(new_client_properties)
 
