@@ -269,7 +269,9 @@ class ClientWindow(gtk.Window):
         for target, prop in ((window, "_NET_WM_DESKTOP"), (root, "_NET_CURRENT_DESKTOP")):
             value = xget_u32_property(target, prop)
             if value is not None:
+                log("get_workspace() found value=%s from %s / %s", value, target, prop)
                 return value
+        log("get_workspace() value not found!")
         return  -1
 
     def new_backing(self, w, h):
