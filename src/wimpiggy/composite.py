@@ -63,14 +63,21 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         if self._window is None:
             log.warn("composite window %s already destroyed!", self)
             return
-        remove_event_receiver(self._window, self)
+        #clear the reference to the window early:
+        win = self._window
+        #Note: invalidate_pixmap()/_cleanup_listening() use self._window, but won't care if it's None
+        self._window = None
+        remove_event_receiver(win, self)
         self.invalidate_pixmap()
         if not self._already_composited:
-            trap.swallow_synced(xcomposite_unredirect_window, self._window)
+            trap.swallow_synced(xcomposite_unredirect_window, win)
         if self._damage_handle:
-            trap.swallow_synced(xdamage_stop, self._window, self._damage_handle)
+            trap.swallow_synced(xdamage_stop, win, self._damage_handle)
             self._damage_handle = None
-        self._window = None
+        #note: this should be redundant since we cleared the
+        #reference to self._window and shortcut out in do_get_property_contents_handle
+        #but it's cheap anyway
+        self.invalidate_pixmap()
 
     def acknowledge_changes(self):
         if self._damage_handle is not None and self._window is not None:
@@ -86,13 +93,16 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self._contents_handle = None
 
     def _cleanup_listening(self, listening):
-        # Don't want to stop listening to self._window!:
-        if self._listening_to:
-            assert self._window not in self._listening_to
-            for w in self._listening_to:
+        if listening:
+            # Don't want to stop listening to self._window!:
+            assert self._window is None or self._window not in listening
+            for w in listening:
                 remove_event_receiver(w, self)
 
     def do_get_property_contents_handle(self, name):
+        if self._window is None:
+            #shortcut out
+            return  None
         if self._contents_handle is None:
             log("refreshing named pixmap")
             assert self._listening_to is None
