@@ -558,7 +558,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
         def raise_and_move():
             self._desktop_manager.raise_window(window)
             self._move_pointer(pointer)
-        trap.swallow_unsynced(raise_and_move)
+        trap.swallow_synced(raise_and_move)
 
 
     def _process_close_window(self, proto, packet):
