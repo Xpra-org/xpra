@@ -1322,6 +1322,6 @@ class XpraServerBase(object):
             log("will process ui packet %s", packet_type)
             gobject.idle_add(handler, proto, packet)
             return
-        log.error("unknown or invalid packet type: %s", packet_type)
+        log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
         if proto not in self._server_sources:
             proto.close()
