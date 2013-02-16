@@ -263,20 +263,16 @@ class ClipboardProxy(gtk.Invisible):
         elif target == "MULTIPLE":
             try:
                 from wimpiggy.prop import prop_get
-                from wimpiggy.error import trap
             except ImportError:
                 debug("MULTIPLE for property '%s' not handled due to missing wimpiggy bindings", event.property)
                 gtk.Invisible.do_selection_request_event(self, event)
                 return
-            def get_targets(targets):
-                atoms = prop_get(event.window, event.property, ["multiple-conversion"])
-                debug("MULTIPLE clipboard atoms: %r", atoms)
-                targets += atoms[::2]
-            targets = []
-            trap.swallow(get_targets, targets)
-            debug("MULTIPLE clipboard targets: %r", targets)
-            for target in targets:
-                self.selection_add_target(self._selection, target, 0)
+            atoms = prop_get(event.window, event.property, ["multiple-conversion"])
+            debug("MULTIPLE clipboard atoms: %r", atoms)
+            if atoms:
+                targets = atoms[::2]
+                for t in targets:
+                    self.selection_add_target(self._selection, t, 0)
         else:
             debug("target for %s: %r", self._selection, target)
             self.selection_add_target(self._selection, target, 0)
