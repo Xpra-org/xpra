@@ -60,9 +60,6 @@ class ChildReaper(object):
     def check(self):
         if (self._children_pids
             and self._children_pids.issubset(self._dead_pids)):
-            from wimpiggy.log import Logger
-            log = Logger()
-            log.info("all children have exited and --exit-with-children was specified, exiting")
             self._quit()
 
     def sigchld(self, signum, frame):
@@ -434,6 +431,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     children_pids = set()
     def reaper_quit():
         if opts.exit_with_children:
+            log.info("all children have exited and --exit-with-children was specified, exiting")
             app.quit(False)
     child_reaper = ChildReaper(reaper_quit, children_pids)
     procs = []
