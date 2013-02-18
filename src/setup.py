@@ -430,6 +430,7 @@ if sys.platform.startswith("win"):
             add_to_keywords(kw, 'libraries', "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
         elif "vpx" in packages[0]:
             add_to_PATH(ffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', "win32", vpx_include_dir, ffmpeg_include_dir)
@@ -438,6 +439,7 @@ if sys.platform.startswith("win"):
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
         elif "pygobject-2.0" in packages[0]:
             add_to_keywords(kw, 'include_dirs', python_include_PATH,
                             pygtk_include_dir, atk_include_dir, gtk2_include_dir,
