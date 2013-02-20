@@ -390,7 +390,7 @@ if sys.platform.startswith("win"):
     # This is where I keep them, you will obviously need to change this value:
     # you can also try to use libav:
     #ffmpeg_path="C:\\libav-win32"
-    ffmpeg_path="C:\\ffmpeg-win32-shared"
+    ffmpeg_path="C:\\libav-9.1-win32\\win32\\usr"
     ffmpeg_include_dir = "%s\\include" % ffmpeg_path
     ffmpeg_lib_dir = "%s\\lib" % ffmpeg_path
     ffmpeg_bin_dir = "%s\\bin" % ffmpeg_path
