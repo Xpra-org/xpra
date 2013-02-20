@@ -382,18 +382,13 @@ if sys.platform.startswith("win"):
         assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (dll_file, md5sum, digest)
         sys.stdout.write("OK\n")
         sys.stdout.flush()
-    # The x264 DLLs which you can grab from here:
-    # http://ffmpeg.zeranoe.com/builds/
-    # beware that some builds work, others crash.. here is one that is known to work ok:
-    # ffmpeg-git-4082198-win32-dev
-    # ffmpeg-20120708-git-299387e-win32-dev
-    # This is where I keep them, you will obviously need to change this value:
-    # you can also try to use libav:
-    #ffmpeg_path="C:\\libav-win32"
-    ffmpeg_path="C:\\libav-9.1-win32\\win32\\usr"
-    ffmpeg_include_dir = "%s\\include" % ffmpeg_path
-    ffmpeg_lib_dir = "%s\\lib" % ffmpeg_path
-    ffmpeg_bin_dir = "%s\\bin" % ffmpeg_path
+    #libav is needed for both swscale and x264,
+    #you can find binary builds here:
+    #http://win32.libav.org/win32/
+    libav_path="C:\\libav-9.1-win32\\win32\\usr"
+    libav_include_dir = "%s\\include" % libav_path
+    libav_lib_dir = "%s\\lib" % libav_path
+    libav_bin_dir = "%s\\bin" % libav_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
     vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
@@ -425,20 +420,20 @@ if sys.platform.startswith("win"):
                 sys.path.append(bindir)
         kw = dict(ekw)
         if "x264" in packages[0]:
-            add_to_PATH(ffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', "win32", ffmpeg_include_dir)
+            add_to_PATH(libav_bin_dir)
+            add_to_keywords(kw, 'include_dirs', "win32", libav_include_dir)
             add_to_keywords(kw, 'libraries', "swscale", "avcodec", "avutil")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
         elif "vpx" in packages[0]:
-            add_to_PATH(ffmpeg_bin_dir)
-            add_to_keywords(kw, 'include_dirs', "win32", vpx_include_dir, ffmpeg_include_dir)
+            add_to_PATH(libav_bin_dir)
+            add_to_keywords(kw, 'include_dirs', "win32", vpx_include_dir, libav_include_dir)
             add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % ffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
         elif "pygobject-2.0" in packages[0]:
             add_to_keywords(kw, 'include_dirs', python_include_PATH,
@@ -550,7 +545,7 @@ if sys.platform.startswith("win"):
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ('', glob.glob('%s\\bin\\*.dll' % ffmpeg_path)),
+                   ('', glob.glob('%s\\bin\\*.dll' % libav_path)),
                    ]
 
     if webp_ENABLED:
