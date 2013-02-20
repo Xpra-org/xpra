@@ -1684,7 +1684,7 @@ cdef argbdata_to_pixdata(unsigned long* data, len):
     cdef int i = 0
     cdef long rgba
     cdef long argb
-    cdef byte b1, b2, b3, b4
+    cdef char b1, b2, b3, b4
     while i < len:
         argb = data[i] & 0xffffffff
         rgba = (argb << 8) | (argb >> 24)
