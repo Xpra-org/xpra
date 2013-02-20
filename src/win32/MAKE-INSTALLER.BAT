@@ -139,6 +139,7 @@ if %SOUND% NEQ 1 GOTO NOGSTREAMER
 ECHO ****** Adding gstreamer DLLs
 XCOPY /I /Y /S /Q "%GSTREAMER%\bin\*.dll" dist\
 XCOPY /I /Y /S /Q "%GSTREAMER%\lib\gstreamer-0.10" dist\gstreamer-0.10
+DEL dist\gstreamer-0.10\libgstpython-v2.6.dll
 COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
 REM DEL dist\av*dll
