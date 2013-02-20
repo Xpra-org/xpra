@@ -566,8 +566,8 @@ class ApplicationWindow:
 		self.do_connect()
 
 	def do_connect(self):
-		if xpra_opts.mode=="tcp" and not sys.platform.startswith("win"):
-			""" Use built-in connector (faster and gives feedback) - does not work on win32... (dunno why) """
+		if xpra_opts.mode=="tcp":
+			""" Use built-in connector (faster and gives feedback) """
 			self.connect_tcp()
 		else:
 			self.launch_xpra()
