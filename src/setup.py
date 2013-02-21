@@ -384,7 +384,7 @@ if sys.platform.startswith("win"):
         sys.stdout.flush()
     #libav is needed for both swscale and x264,
     #you can find binary builds here:
-    #http://win32.libav.org/win32/
+    #http://win32.libav.org/releases/
     libav_path="C:\\libav-9.1-win32\\win32\\usr"
     libav_include_dir = "%s\\include" % libav_path
     libav_lib_dir = "%s\\lib" % libav_path
