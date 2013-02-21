@@ -43,11 +43,12 @@ class Connection(object):
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None, info=""):
+    def __init__(self, writeable, readable, abort_test=None, target=None, info="", close_cb=None):
         Connection.__init__(self, target)
         self._writeable = writeable
         self._readable = readable
         self._abort_test = abort_test
+        self._close_cb = close_cb
         self.filename = None
         self.info = info
 
@@ -65,8 +66,13 @@ class TwoFileConnection(Connection):
         return self._write(os.write, self._writeable.fileno(), buf)
 
     def close(self):
-        self._writeable.close()
-        self._readable.close()
+        try:
+            self._writeable.close()
+            self._readable.close()
+        except:
+            pass
+        if self._close_cb:
+            self._close_cb()
 
     def __str__(self):
         return "TwoFileConnection(%s)" % str(self.target)

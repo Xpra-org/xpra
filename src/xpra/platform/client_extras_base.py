@@ -13,6 +13,7 @@ gdk = import_gdk()
 gobject = import_gobject()
 import webbrowser
 
+from xpra.scripts.main import get_build_info
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.scripts.main import ENCODINGS
 from xpra.keys import get_gtk_keymap, mask_to_names
@@ -79,21 +80,6 @@ def set_checkeditems(submenu, is_match_func):
             v = is_match_func(x)
             if a!=v:
                 x.set_active(v)
-
-def get_build_info():
-    info = []
-    try:
-        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
-        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
-        if BUILD_DATE:
-            info.append(BUILD_DATE)
-        if int(LOCAL_MODIFICATIONS)==0:
-            info.append("revision %s" % REVISION)
-        else:
-            info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
-    except Exception, e:
-        log.error("could not find the build information: %s", e)
-    return info
 
 
 if hasattr(gtk, "pygtk_version") and gtk.pygtk_version<(2,12):

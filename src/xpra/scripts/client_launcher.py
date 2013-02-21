@@ -13,6 +13,7 @@ import sys
 import os.path
 import tempfile
 import inspect
+import shlex
 import logging
 logging.basicConfig(format="%(asctime)s %(message)s")
 
@@ -20,8 +21,6 @@ try:
 	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
 except:
 	import thread					#@Reimport
-import subprocess
-
 
 from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
@@ -31,14 +30,17 @@ import pango
 import gobject
 import webbrowser
 
-import socket
+from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
+gtk_main_quit_on_fatal_exceptions_enable()
+from xpra.platform import DEFAULT_SSH_CMD
+from xpra.scripts.main import connect_to, get_build_info, read_config
 from xpra.client import XpraClient
 
 EXEC_DEBUG = os.environ.get("XPRA_EXEC_DEBUG", "0")=="1"
 
 APPLICATION_NAME = "Xpra Launcher"
-SITE_URL = "http://xpra.org/"
 SITE_DOMAIN = "xpra.org"
+SITE_URL = "http://%s/" % SITE_DOMAIN
 APP_DIR = os.getcwd()
 ICONS_DIR = None
 GPL2 = None
@@ -95,14 +97,18 @@ def about(*args):
 		about_dialog.show()
 		about_dialog.present()
 		return
+	xpra_icon = get_icon("xpra.png")
 	dialog = gtk.AboutDialog()
-	def on_website_hook(dialog, web, *args):
-		''' called when the website item is selected '''
-		webbrowser.open(SITE_URL)
-	def on_email_hook(dialog, mail, *args):
-		webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
-	gtk.about_dialog_set_url_hook(on_website_hook)
-	gtk.about_dialog_set_email_hook(on_email_hook)
+	if not is_gtk3():
+		def on_website_hook(dialog, web, *args):
+			''' called when the website item is selected '''
+			webbrowser.open(SITE_URL)
+		def on_email_hook(dialog, mail, *args):
+			webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
+		gtk.about_dialog_set_url_hook(on_website_hook)
+		gtk.about_dialog_set_email_hook(on_email_hook)
+		if xpra_icon:
+			dialog.set_icon(xpra_icon)
 	dialog.set_name("Xpra")
 	from xpra import __version__
 	dialog.set_version(__version__)
@@ -110,9 +116,11 @@ def about(*args):
 						'Nathaniel Smith <njs@pobox.com>',
 						'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
 	dialog.set_license(GPL2 or "Your installation may be corrupted, the license text for GPL version 2 could not be found,\nplease refer to:\nhttp://www.gnu.org/licenses/gpl-2.0.txt")
+	dialog.set_comments("\n".join(get_build_info()))
 	dialog.set_website(SITE_URL)
 	dialog.set_website_label(SITE_DOMAIN)
-	dialog.set_logo(get_icon("xpra.png"))
+	if xpra_icon:
+		dialog.set_logo(xpra_icon)
 	if hasattr(dialog, "set_program_name"):
 		dialog.set_program_name(APPLICATION_NAME)
 	def response(*args):
@@ -122,6 +130,7 @@ def about(*args):
 	dialog.connect("response", response)
 	about_dialog = dialog
 	dialog.show()
+
 
 def load_license(gpl2_file):
 	global GPL2
@@ -133,7 +142,7 @@ def load_license(gpl2_file):
 			if f:
 				f.close()
 	return GPL2 is not None
-	
+
 
 prepare_window = None
 """
@@ -206,12 +215,10 @@ if not ICONS_DIR or not os.path.exists(ICONS_DIR):
 			break
 
 if not GPL2:
-	for x in [APP_DIR, "/usr/share/xpra", "/usr/local/share"]:
+	for x in set([APP_DIR, sys.exec_prefix+"/share/xpra", "/usr/share/xpra", "/usr/local/share/xpra"]):
 		gpl2_file = os.path.join(x, "COPYING")
 		if load_license(gpl2_file):
 			break
-
-
 
 
 
@@ -270,12 +277,15 @@ def default_bool(varname, default_value):
 
 from wimpiggy.util import AdHocStruct
 xpra_opts = AdHocStruct()
+xpra_opts.ssh = DEFAULT_SSH_CMD
+xpra_opts.title = default_str("title", "@title@ on @client-machine@")
 xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
 xpra_opts.jpegquality = default_int("jpegquality", 90)
 xpra_opts.quality = default_int("quality", 90)
 xpra_opts.min_quality = default_int("min-quality", 50)
 xpra_opts.speed = default_int("speed", -1)
 xpra_opts.min_speed = default_int("min-speed", -1)
+xpra_opts.sockdir = None
 xpra_opts.host = defaults.get("host", "127.0.0.1")
 xpra_opts.username = ""
 try:
@@ -283,8 +293,10 @@ try:
 	xpra_opts.username = getpass.getuser()
 except:
 	pass
+xpra_opts.remote_xpra = default_str("remote_xpra", ".xpra/run-xpra")
+xpra_opts.session_name = default_str("session_name", None)
 xpra_opts.port = default_int("port", 10000)
-xpra_opts.mode = default_str("mode", "tcp", ["tcp", "ssh"])
+xpra_opts.mode = default_str("mode", "tcp", ["tcp", "tcp + aes", "ssh"])
 xpra_opts.debug = default_bool("debug", False)
 xpra_opts.no_tray = default_bool("debug", False)
 xpra_opts.dock_icon = default_str("dock-icon", "")
@@ -315,7 +327,7 @@ xpra_opts.delay_tray = default_bool("delay-tray", False)
 xpra_opts.windows_enabled = default_bool("windows-enabled", True)
 xpra_opts.encryption = default_str("encryption", "")
 #these would need testing/work:
-xpra_opts.auto_refresh_delay = 1.0
+xpra_opts.auto_refresh_delay = 0.25
 xpra_opts.max_bandwidth = 0.0
 xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
 #these cannot be set in the xpra.conf (would not make sense):
@@ -342,7 +354,7 @@ class ApplicationWindow:
 
 	def	__init__(self):
 		pass
-	
+
 	def create_window(self):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.window.connect("destroy", self.destroy)
@@ -362,6 +374,8 @@ class ApplicationWindow:
 		hbox = gtk.HBox(False, 0)
 		if icon_pixbuf:
 			logo_button = gtk.Button("")
+			settings = logo_button.get_settings()
+			settings.set_property('gtk-button-images', True)
 			logo_button.connect("clicked", about)
 			if hasattr(logo_button, "set_tooltip_text"):
 				logo_button.set_tooltip_text("About")
@@ -371,7 +385,7 @@ class ApplicationWindow:
 			hbox.pack_start(logo_button, expand=False, fill=False)
 		label = gtk.Label("Connect to xpra server")
 		label.modify_font(pango.FontDescription("sans 13"))
-		hbox.pack_start(label)
+		hbox.pack_start(label, expand=True, fill=True)
 		vbox.pack_start(hbox)
 
 		# Mode:
@@ -383,10 +397,13 @@ class ApplicationWindow:
 		self.mode_combo.append_text("TCP")
 		self.mode_combo.append_text("TCP + AES")
 		self.mode_combo.append_text("SSH")
-		if xpra_opts.mode == "tcp" or sys.platform.startswith("win"):
+		if xpra_opts.mode == "tcp":
 			self.mode_combo.set_active(0)
+		elif xpra_opts.mode == "tcp + aes":
+			self.mode_combo.set_active(1)
 		else:
 			self.mode_combo.set_active(2)
+		self.mode_combo.connect("changed", self.mode_changed)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
 
@@ -471,82 +488,42 @@ class ApplicationWindow:
 
 		def accel_close(*args):
 			gtk.main_quit()
-
 		add_close_accel(self.window, accel_close)
+		vbox.show_all()
 		self.window.vbox = vbox
-
 		self.window.add(vbox)
-		self.window.show_all()
-
-		def mode_changed(*args):
-			ssh = self.mode_combo.get_active_text()=="SSH"
-			if ssh:
-				self.username_entry.show()
-				self.username_label.show()
-				self.port_entry.set_text("")
-			else:
-				self.username_entry.hide()
-				self.username_label.hide()
-				self.port_entry.set_text("%s" % xpra_opts.port)
-			if not ssh or sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-				#password cannot be used with ssh
-				#(except on win32 with plink, and on osx via the SSH_ASKPASS hack)
-				self.password_label.show()
-				self.password_entry.show()
-			else:
-				self.password_label.hide()
-				self.password_entry.hide()
-		self.mode_combo.connect("changed", mode_changed)
-		mode_changed()
 
 		global prepare_window
 		if prepare_window:
 			prepare_window(self.window)
 
 	def show(self):
+		self.mode_changed()
 		self.window.show()
 		self.window.present()
 		self.encoding_changed()
 
 	def run(self):
-		self.show()
 		gtk.main()
 
-	def about(self, *args):
-		if self.about_dialog:
-			self.about_dialog.present()
-			return
-		dialog = gtk.AboutDialog()
-		if not is_gtk3():
-			def on_website_hook(dialog, web, *args):
-				webbrowser.open("http://xpra.org/")
-			def on_email_hook(dialog, mail, *args):
-				webbrowser.open("mailto://"+mail)
-			gtk.about_dialog_set_url_hook(on_website_hook)
-			gtk.about_dialog_set_email_hook(on_email_hook)
-			xpra_icon = self.get_pixbuf("xpra.png")
-			if xpra_icon:
-				dialog.set_icon(xpra_icon)
-		dialog.set_name("Xpra")
-		from xpra import __version__
-		dialog.set_version(__version__)
-		dialog.set_copyright('Copyright (c) 2009-2012')
-		dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
-							'Nathaniel Smith <njs@pobox.com>',
-							'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
-		#dialog.set_artists ([""])
-		dialog.set_license(self.get_license_text())
-		dialog.set_website("http://xpra.org/")
-		dialog.set_website_label("xpra.org")
-		pixbuf = self.get_pixbuf("xpra.png")
-		if pixbuf:
-			dialog.set_logo(pixbuf)
-		dialog.set_program_name("Xpra")
-		dialog.set_comments("\n".join(self.get_build_info()))
-		dialog.connect("response", self.close_about)
-		self.about_dialog = dialog
-		dialog.show()
-		dialog.present()
+	def mode_changed(self, *args):
+		ssh = self.mode_combo.get_active_text()=="SSH"
+		if ssh:
+			self.username_entry.show()
+			self.username_label.show()
+			self.port_entry.set_text("")
+		else:
+			self.username_entry.hide()
+			self.username_label.hide()
+			self.port_entry.set_text("%s" % xpra_opts.port)
+		if not ssh or sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+			#password cannot be used with ssh
+			#(except on win32 with plink, and on osx via the SSH_ASKPASS hack)
+			self.password_label.show()
+			self.password_entry.show()
+		else:
+			self.password_label.hide()
+			self.password_entry.hide()
 
 	def encoding_changed(self, *args):
 		uses_quality_option = self.encoding_combo.get_active_text() in ["jpeg", "webp", "x264"]
@@ -561,102 +538,89 @@ class ApplicationWindow:
 		if self.info:
 			gobject.idle_add(self.info.set_text, text)
 
+	def set_sensitive(self, s):
+		gobject.idle_add(self.window.set_sensitive, s)
+
+
 	def connect_clicked(self, *args):
 		self.update_options_from_gui()
 		self.do_connect()
 
 	def do_connect(self):
-		if xpra_opts.mode=="tcp":
-			""" Use built-in connector (faster and gives feedback) """
-			self.connect_tcp()
-		else:
-			self.launch_xpra()
+		thread.start_new_thread(self.connect_builtin, ())
 
-	def connect_tcp(self):
-		thread.start_new_thread(self.do_connect_tcp, ())
+	def connect_builtin(self):
+		try:
+			self.do_connect_builtin()
+		except Exception, e:
+			self.set_sensitive(True)
+			print("%s" % e)
+			import traceback
+			traceback.print_stack()
 
-	def do_connect_tcp(self):
-		def set_sensitive(s):
-			gobject.idle_add(self.window.set_sensitive, s)
-		set_sensitive(False)
+	def do_connect_builtin(self):
+		self.set_sensitive(False)
 		self.set_info_text("Connecting.")
-		host = xpra_opts.host
-		port = xpra_opts.port
-		self.set_info_text("Connecting..")
+		#cooked vars used by connect_or_fail
+		params = {"type"	: xpra_opts.mode}
+		if xpra_opts.mode=="ssh":
+			remote_xpra = xpra_opts.remote_xpra.split()
+			if xpra_opts.sockdir:
+				remote_xpra.append("--socket-dir=%s" % xpra_opts.sockdir)
+			params["remote_xpra"] = remote_xpra
+			if xpra_opts.port:
+				params["display"] = ":%s" % xpra_opts.port
+				params["display_as_args"] = [params["display"]]
+			else:
+				params["display"] = "auto"
+				params["display_as_args"] = []
+			full_ssh = shlex.split(xpra_opts.ssh)
+			password = xpra_opts.password
+			username = xpra_opts.username
+			host = xpra_opts.host
+			upos = host.find("@")
+			if upos>=0:
+				#found at sign: username@host
+				username = host[:upos]
+				host = host[upos+1:]
+				ppos = username.find(":")
+				if ppos>=0:
+					#found separator: username:password@host
+					password = username[ppos+1:]
+					username = username[:ppos]
+			if username:
+				params["username"] = username
+				full_ssh += ["-l", username]
+			full_ssh += ["-T", host]
+			params["full_ssh"] = full_ssh
+			params["password"] = password
+			params["display_name"] = "ssh:%s:%s" % (xpra_opts.host, xpra_opts.port)
+		elif xpra_opts.mode=="unix-domain":
+			params["display"] = ":%s" % xpra_opts.port
+			params["display_name"] = "unix-domain:%s" % xpra_opts.port
+		else:
+			#tcp:
+			params["host"] = xpra_opts.host
+			params["port"] = int(xpra_opts.port)
+			params["display_name"] = "tcp:%s:%s" % (xpra_opts.host, xpra_opts.port)
+
+		#print("connect_or_fail(%s)" % params)
+		self.set_info_text("Connecting...")
 		try:
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.settimeout(10)
-			self.set_info_text("Connecting...")
-			sock.connect((host, int(port)))
+			conn = connect_to(params, self.set_info_text)
 		except Exception, e:
-			self.set_info_text("Socket error: %s" % e)
-			set_sensitive(True)
-			print("error %s" % e)
-			return
-		sock.settimeout(None)
-		self.set_info_text("Connection established")
-		try:
-			from xpra.bytestreams import SocketConnection
-			global socket_wrapper
-			socket_wrapper = SocketConnection(sock, sock.getsockname(), sock.getpeername(), "%s %s" % (host, port))
-		except Exception, e:
-			self.set_info_text("Xpra Client error: %s" % e)
-			set_sensitive(True)
-			print("Xpra Client error: %s" % e)
+			self.set_sensitive(True)
+			self.set_info_color(True)
+			self.set_info_text(str(e))
 			return
 		gobject.idle_add(self.window.hide)
-		# launch Xpra client in the same gtk.main():
-		from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
-		gtk_main_quit_on_fatal_exceptions_enable()
-		opts = AdHocStruct()
-		opts.clipboard = xpra_opts.clipboard
-		opts.pulseaudio = xpra_opts.pulseaudio
-		opts.pulseaudio_command = xpra_opts.pulseaudio_command
-		opts.password = xpra_opts.password
-		opts.password_file = xpra_opts.password_file
-		opts.title = "@title@ on @client-machine@"
-		opts.encoding = xpra_opts.encoding
-		opts.quality = xpra_opts.quality
-		opts.min_quality = xpra_opts.min_quality
-		opts.speed = xpra_opts.speed
-		opts.min_speed = xpra_opts.min_speed
-		opts.jpegquality = xpra_opts.jpegquality
-		opts.max_bandwidth = xpra_opts.max_bandwidth
-		opts.auto_refresh_delay = xpra_opts.auto_refresh_delay
-		opts.key_shortcuts = xpra_opts.key_shortcuts
-		opts.compression_level = xpra_opts.compression_level
-		from xpra.platform import DEFAULT_SSH_CMD
-		opts.ssh = DEFAULT_SSH_CMD
-		opts.remote_xpra = ".xpra/run-xpra"
-		opts.debug = xpra_opts.debug
-		opts.no_tray = xpra_opts.no_tray
-		opts.dock_icon = xpra_opts.dock_icon
-		opts.tray_icon = xpra_opts.tray_icon
-		opts.window_icon = xpra_opts.window_icon
-		opts.readonly = xpra_opts.readonly
-		opts.session_name = "Xpra session"
-		opts.mmap = xpra_opts.mmap
-		opts.mmap_group = xpra_opts.mmap_group
-		opts.speaker = xpra_opts.speaker
-		opts.speaker_codec = xpra_opts.speaker_codec
-		opts.microphone = xpra_opts.microphone
-		opts.microphone_codec = xpra_opts.microphone_codec
-		opts.keyboard_sync = xpra_opts.keyboard_sync
-		opts.send_pings = xpra_opts.send_pings
-		opts.dpi = xpra_opts.dpi
-		opts.cursors = xpra_opts.cursors
-		opts.bell = xpra_opts.bell
-		opts.notifications = xpra_opts.notifications
-		opts.system_tray = xpra_opts.system_tray
-		opts.delay_tray = xpra_opts.delay_tray
-		opts.sharing = xpra_opts.sharing
-		opts.windows_enabled = xpra_opts.windows_enabled
-		opts.encryption = xpra_opts.encryption
 
 		def start_XpraClient():
-			app = XpraClient(socket_wrapper, opts)
-			if opts.password:
-				app.password = opts.password
+			app = XpraClient(conn, xpra_opts)
+			if xpra_opts.password:
+				#pass the password to the class directly:
+				app.password = xpra_opts.password
+			#override exit code:
 			warn_and_quit_save = app.warn_and_quit
 			def warn_and_quit_override(exit_code, warning):
 				app.cleanup()
@@ -666,14 +630,15 @@ class ApplicationWindow:
 				err = exit_code!=0 or password_warning
 				self.set_info_color(err)
 				self.set_info_text(warning)
-				self.window.show()
-				self.window.set_sensitive(True)
 				if err:
 					def ignore_further_quit_events(*args):
 						pass
 					app.warn_and_quit = ignore_further_quit_events
+					self.set_sensitive(True)
+					gobject.idle_add(self.window.show)
 				else:
 					app.warn_and_quit = warn_and_quit_save
+					self.destroy()
 					gtk.main_quit()
 			app.warn_and_quit = warn_and_quit_override
 		gobject.idle_add(start_XpraClient)
@@ -687,67 +652,6 @@ class ApplicationWindow:
 		self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
 		self.password_entry.grab_focus()
 
-	def launch_xpra(self):
-		thread.start_new_thread(self.do_launch_xpra, ())
-
-	def do_launch_xpra(self):
-		""" Launches Xpra in a new process """
-		gobject.idle_add(self.window.hide)
-		try:
-			self.set_info_text("Launching")
-			process, args, cb = self.start_xpra_process()
-			gobject.idle_add(self.window.hide)
-			try:
-				out,err = process.communicate()
-			finally:
-				if cb:
-					cb()
-			print("stdout=%s" % out)
-			print("stderr=%s" % err)
-			ret = process.wait()
-			def show_result(out, err):
-				def noswscalewarning(s):
-					r = []
-					for x in s.splitlines():
-						if x.startswith("[swscaler "):
-							continue
-						if x.startswith("** Message: pygobject_register_sinkfunc is deprecated"):
-							continue
-						if x.startswith("** ") and x.find("WARNING **: Trying to register gtype")>=0:
-							continue
-						r.append(x)
-					return "\n".join(r)
-				out = noswscalewarning(out)
-				err = noswscalewarning(err)
-				if len(out)>255:
-					out = "..."+out[len(out)-255:]
-				if len(err)>255:
-					err = "..."+err[len(err)-255:]
-				password_warning = out.find("invalid password")>=0 or err.find("invalid password")
-				if password_warning:
-					self.password_warning()
-				if EXEC_DEBUG:
-					info = "command %s terminated" % str(args)
-				else:
-					info = "command terminated"
-				if ret==0 and not EXEC_DEBUG:
-					info += "OK"
-				else:
-					info += "with exitcode %s" % ret
-					if out:
-						info += ",\noutput:\n%s" % out
-					if err:
-						info += ",\nerror:\n%s" % err
-				#red only for non-zero returncode:
-				self.set_info_color(ret!=0)
-				self.set_info_text(info)
-				self.show()
-			gobject.idle_add(show_result, out, err)
-		except Exception, e:
-			print("error: %s" % e)
-			gobject.idle_add(self.show)
-			self.set_info_text("Error launching: %s" % (e))
-
 	def set_info_color(self, is_error=False):
 		if is_error:
 			color_obj = gtk.gdk.color_parse("red")
@@ -756,71 +660,6 @@ class ApplicationWindow:
 		if color_obj:
 			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
 
-
-	def start_xpra_process(self):
-		kwargs = {}
-		cmd = "xpra"
-		if sys.platform.startswith("win"):
-			if hasattr(sys, "frozen"):
-				exedir = os.path.dirname(sys.executable)
-			else:
-				exedir = os.path.dirname(sys.argv[0])
-			cmd = os.path.join(exedir, "xpra.exe")
-			if not os.path.exists(cmd):
-				self.info.set_text("Xpra command not found!")
-				return
-		elif sys.platform.startswith("darwin"):
-			cmd = os.path.join(os.path.dirname(sys.argv[0]), "xpra")
-		username = xpra_opts.username
-		mode = xpra_opts.mode.lower()
-		if username and mode=="ssh":
-			host = xpra_opts.host
-			if xpra_opts.username:
-				username = xpra_opts.username
-				if xpra_opts.password:
-					username += ":%s" % xpra_opts.password
-				host = "%s@%s" % (username, host)
-			uri = "ssh/%s" % host
-		else:
-			uri = "%s/%s" % (mode, xpra_opts.host)
-		if xpra_opts.port:
-			uri += "/%s" % xpra_opts.port
-		args = [cmd, "attach", uri]
-		args.append("--encoding=%s" % xpra_opts.encoding)
-		if xpra_opts.encoding in ["jpeg"]:
-			args.append("--quality=%s" % xpra_opts.quality)
-		cb = None
-		if xpra_opts.password:
-			pw_file = create_password_file(xpra_opts.password)
-			def del_pw_file():
-				pw_file.close()
-			cb = del_pw_file
-			xpra_opts.password_file = pw_file.name
-			if sys.platform.startswith("darwin"):
-				mode = xpra_opts.mode.lower()
-				if mode=="ssh" and not os.path.exists("/usr/libexec/ssh-askpass"):
-					#SSH_ASKPASS hack
-					env = os.environ.copy()
-					env["SSH_ASKPASS"] = os.path.join(APP_DIR, "Helpers", "SSH_ASKPASS")
-					env["XPRA_SSH_PASS"] = str(xpra_opts.password)
-					kwargs = {"env" : env}
-		if xpra_opts.password_file:
-			args.append("--password-file=%s" % xpra_opts.password_file)
-		if EXEC_DEBUG:
-			args.append("-d all")
-		print("Running %s" % str(args))
-		if os.name=="posix" and not sys.platform.startswith("darwin"):
-			def setsid():
-				#run in a new session
-				os.setsid()
-			kwargs["preexec_fn"] = setsid
-		elif sys.platform.startswith("win"):
-			try:
-				import win32process			#@UnresolvedImport
-				kwargs["creationflags"] = win32process.CREATE_NO_WINDOW
-			except:
-				pass		#tried our best...
-		return subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, **kwargs), args, cb
 
 	def update_options_from_gui(self):
 		xpra_opts.host = self.host_entry.get_text()
@@ -838,6 +677,8 @@ class ApplicationWindow:
 		xpra_opts.password = self.password_entry.get_text()
 
 	def destroy(self, *args):
+		self.window.destroy()
+		self.window = None
 		gtk.main_quit()
 
 def create_password_file(password):
@@ -847,29 +688,10 @@ def create_password_file(password):
 	return pass_file
 
 def update_options_from_file(filename):
-	propFile = open(filename, "rU")
-	propDict = dict()
-	for propLine in propFile:
-		propDef = propLine.strip()
-		if len(propDef) == 0:
-			continue
-		if propDef[0] in ( '!', '#' ):
-			continue
-		if propDef.find(":=")>0:
-			props = propDef.split(":=", 1)
-		elif propDef.find("=")>0:
-			props = propDef.split("=", 1)
-		else:
-			continue
-		assert len(props)==2
-		name = props[0].strip()
-		value = props[1].strip()
-		propDict[name] = value
-	propFile.close()
-
-	for prop in ["username", "host", "encoding", "mode"]:
+	propDict = read_config(filename)
+	for prop in ["username", "host", "encoding", "mode", "encryption"]:
 		val = propDict.get(prop)
-		if val:
+		if val is not None:
 			setattr(xpra_opts, prop, val)
 	xpra_opts.port = str_to_int(propDict.get("port"), 10000)
 	xpra_opts.autoconnect = str_to_bool(propDict.get("autoconnect"), False)
@@ -877,34 +699,24 @@ def update_options_from_file(filename):
 
 
 def main():
-	if sys.platform.startswith("win32"):
-		#win32 will launch a new xpra process with its own name
-		#so setting the default application name here is ok
-		try:
-			import glib
-			glib.set_application_name(APPLICATION_NAME)
-		except:
-			pass
 	if len(sys.argv) == 2:
 		update_options_from_file(sys.argv[1])
 	app = ApplicationWindow()
+	app.create_window()
 	try:
 		if xpra_opts.autoconnect:
-			#file says we should connect, do that only:
-			process, _, cb = app.start_xpra_process()
-			try:
-				return process.wait()
-			finally:
-				if cb:
-					cb()
+			#file says we should connect,
+			#do that only (not showing UI unless something goes wrong):
+			gobject.idle_add(app.do_connect)
 		else:
-			app.create_window()
-			app.run()
+			app.show()
+		app.run()
 	except KeyboardInterrupt:
 		pass
 	if xpra_opts.password_file and os.path.exists(xpra_opts.password_file):
 		os.unlink(xpra_opts.password_file)
 	return 0
+
 
 if __name__ == "__main__":
 	v = main()

@@ -96,13 +96,24 @@ except:
     pass
 
 
-def read_xpra_conf(conf_dir):
+def get_build_info():
+    info = []
+    try:
+        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
+        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
+        if BUILD_DATE:
+            info.append(BUILD_DATE)
+        if int(LOCAL_MODIFICATIONS)==0:
+            info.append("revision %s" % REVISION)
+        else:
+            info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
+    except Exception, e:
+        print("Error: could not find the build information: %s", e)
+    return info
+
+
+def read_config(conf_file):
     d = {}
-    if not os.path.exists(conf_dir) or not os.path.isdir(conf_dir):
-        return  d
-    conf_file = os.path.join(conf_dir, 'xpra.conf')
-    if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
-        return  d
     f = open(conf_file, "rU")
     lines = []
     for line in f:
@@ -143,6 +154,15 @@ def read_xpra_conf(conf_dir):
         else:
             d[name] = value
     return  d
+
+def read_xpra_conf(conf_dir):
+    d = {}
+    if not os.path.exists(conf_dir) or not os.path.isdir(conf_dir):
+        return  d
+    conf_file = os.path.join(conf_dir, 'xpra.conf')
+    if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
+        return  d
+    return read_config(conf_file)
 
 def read_xpra_defaults():
     #first, read the global defaults:
@@ -608,7 +628,7 @@ def show_codec_help(is_server, speaker_codecs, microphone_codecs):
 def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
 
-def parse_display_name(parser, opts, display_name):
+def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
@@ -617,8 +637,7 @@ def parse_display_name(parser, opts, display_name):
         parts = display_name.split(separator)
         if len(parts)>2:
             host = separator.join(parts[1:-1])
-            desc["display"] = parts[-1]
-            desc["display"] = ":" + desc["display"]
+            desc["display"] = ":" + parts[-1]
             desc["display_as_args"] = [desc["display"]]
         else:
             host = parts[1]
@@ -668,14 +687,14 @@ def parse_display_name(parser, opts, display_name):
         parts = display_name.split(separator)
         port = int(parts[-1])
         if port<=0 or port>=65536:
-            parser.error("invalid port number: %s" % port)
+            error_cb("invalid port number: %s" % port)
         desc["port"] = port
         desc["host"] = separator.join(parts[1:-1])
         if desc["host"] == "":
             desc["host"] = "127.0.0.1"
         return desc
     else:
-        parser.error("unknown format for display name: %s" % display_name)
+        error_cb("unknown format for display name: %s" % display_name)
 
 def pick_display(parser, opts, extra_args):
     if len(extra_args) == 0:
@@ -688,25 +707,26 @@ def pick_display(parser, opts, extra_args):
         if len(live_servers) == 0:
             parser.error("cannot find a live server to connect to")
         elif len(live_servers) == 1:
-            return parse_display_name(parser, opts, live_servers[0])
+            return parse_display_name(parser.error, opts, live_servers[0])
         else:
             parser.error("there are multiple servers running, please specify")
     elif len(extra_args) == 1:
-        return parse_display_name(parser, opts, extra_args[0])
+        return parse_display_name(parser.error, opts, extra_args[0])
     else:
         parser.error("too many arguments")
 
 def _socket_connect(sock, endpoint, description):
-    try:
-        sock.settimeout(10)
-        sock.connect(endpoint)
-    except socket.error, e:
-        sys.exit("Connection failed: %s" % (e,))
-        return
+    sock.connect(endpoint)
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description)
 
 def connect_or_fail(display_desc):
+    try:
+        return connect_to(display_desc)
+    except Exception, e:
+        sys.exit("connection failed: %s" % str(e))
+
+def connect_to(display_desc, debug_cb=None):
     display_name = display_desc["display_name"]
     if display_desc["type"] == "ssh":
         cmd = display_desc["full_ssh"]
@@ -724,9 +744,17 @@ def connect_or_fail(display_desc):
                     #run in a new session
                     os.setsid()
                 kwargs["preexec_fn"] = setsid
+            elif sys.platform.startswith("win"):
+                from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
+                flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
+                kwargs["creationflags"] = flags
+                kwargs["stderr"] = PIPE
+            if debug_cb:
+                debug_cb("starting %s tunnel" % str(cmd[0]))
+                #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError, e:
-            sys.exit("Error running ssh program '%s': %s" % (cmd[0], e))
+            raise Exception("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()
@@ -736,16 +764,30 @@ def connect_or_fail(display_desc):
                 from wimpiggy.util import gtk_main_quit_really
                 gtk_main_quit_really()
                 raise IOError(error_message)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH")
+        def stop_tunnel():
+            try:
+                if child.poll() is None:
+                    #only supported on win32 since Python 2.7
+                    if hasattr(child, "terminate"):
+                        child.terminate()
+                    elif hasattr(os, "kill"):
+                        os.kill(child.pid, signal.SIGTERM)
+                    else:
+                        raise Exception("cannot find function to kill subprocess")
+            except Exception, e:
+                print("error trying to stop ssh tunnel process: %s" % e)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH", close_cb=stop_tunnel)
 
     elif display_desc["type"] == "unix-domain":
         sockdir = DotXpra(display_desc["sockdir"])
         sock = socket.socket(socket.AF_UNIX)
+        sock.settimeout(5)
         sockfile = sockdir.socket_path(display_desc["display"])
         return _socket_connect(sock, sockfile, display_name)
 
     elif display_desc["type"] == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         return _socket_connect(sock, tcp_endpoint, display_name)
 
