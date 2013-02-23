@@ -277,7 +277,8 @@ class XpraClientBase(gobject.GObject):
 
     def load_password(self):
         try:
-            passwordFile = open(self.password_file, "rU")
+            filename = os.path.expanduser(self.password_file)
+            passwordFile = open(filename, "rU")
             self.password = passwordFile.read()
             passwordFile.close()
             while self.password.endswith("\n") or self.password.endswith("\r"):

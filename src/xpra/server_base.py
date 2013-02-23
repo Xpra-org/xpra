@@ -427,17 +427,20 @@ class XpraServerBase(object):
         return True
 
     def get_password(self):
-        if not self.password_file or not os.path.exists(self.password_file):
+        if not self.password_file:
+            return None
+        filename = os.path.expanduser(self.password_file)
+        if not filename:
             return  None
         try:
-            passwordFile = open(self.password_file, "rU")
+            passwordFile = open(filename, "rU")
             password  = passwordFile.read()
             passwordFile.close()
             while password.endswith("\n") or password.endswith("\r"):
                 password = password[:-1]
             return password
         except IOError, e:
-            log.error("cannot open password file %s: %s", self.password_file, e)
+            log.error("cannot open password file %s: %s", filename, e)
             return  None
 
 
