@@ -236,7 +236,8 @@ class XpraClientBase(gobject.GObject):
             self.warn_and_quit(EXIT_PASSWORD_REQUIRED, "password is required by the server")
             return
         if not self.password:
-            self.load_password()
+            if not self.load_password():
+                return
             assert self.password
         salt = packet[1]
         if self.encryption:
@@ -277,7 +278,9 @@ class XpraClientBase(gobject.GObject):
                 self.password = self.password[:-1]
         except IOError, e:
             self.warn_and_quit(EXIT_PASSWORD_FILE_ERROR, "failed to open password file %s: %s" % (self.password_file, e))
+            return False
         log("password read from file %s is %s", self.password_file, self.password)
+        return True
 
     def _process_hello(self, packet):
         if not self.password_sent and self.password_file:
