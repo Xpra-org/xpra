@@ -32,6 +32,7 @@ EXIT_PASSWORD_REQUIRED = 3
 EXIT_PASSWORD_FILE_ERROR = 4
 EXIT_INCOMPATIBLE_VERSION = 5
 EXIT_ENCRYPTION = 6
+EXIT_FAILURE = 7
 
 DEFAULT_TIMEOUT = 20*1000
 
@@ -226,7 +227,12 @@ class XpraClientBase(gobject.GObject):
             info = packet[1]
         else:
             info = packet[1:]
-        self.warn_and_quit(EXIT_OK, "server requested disconnect: %s" % info)
+        e = EXIT_OK
+        if self.server_capabilities is None or len(self.server_capabilities)==0:
+            #server never sent hello to us - so disconnect is an error
+            #(but we don't know which one - the info message may help)
+            e = EXIT_FAILURE
+        self.warn_and_quit(e, "server requested disconnect: %s" % info)
 
     def _process_connection_lost(self, packet):
         self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
