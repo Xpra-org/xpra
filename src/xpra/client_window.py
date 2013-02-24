@@ -450,8 +450,7 @@ class ClientWindow(gtk.Window):
     def do_map_event(self, event):
         log("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
-        #set group leader (but avoid ugly "not implemented" warning on win32):
-        if self.group_leader and not sys.platform.startswith("win"):
+        if self.group_leader:
             self.window.set_group(self.group_leader)
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)

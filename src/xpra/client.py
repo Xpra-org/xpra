@@ -1083,7 +1083,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
             ClientWindowClass = self.GLClientWindowClass
         pid = metadata.get("pid", -1)
         group_leader = None
-        if pid>0 and not is_gtk3():
+        #set group leader (but avoid ugly "not implemented" warning on win32):
+        if pid>0 and not is_gtk3() and not sys.platform.startswith("win"):
             group_leader = self._pid_to_group_leader.get(pid)
             if not group_leader:
                 if is_gtk3():
