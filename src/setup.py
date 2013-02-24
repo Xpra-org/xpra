@@ -385,13 +385,19 @@ if sys.platform.startswith("win"):
     #libav is needed for both swscale and x264,
     #you can find binary builds here:
     #http://win32.libav.org/releases/
-    libav_path="C:\\libav-9.1-win32\\win32\\usr"
+    #the path after unzipping may look like this:
+    #libav_path="C:\\libav-9.1-win32\\win32\\usr"
+    #but we use something more generic, without the version numbers:
+    libav_path="C:\\libav-win32\\win32\\usr"
     libav_include_dir = "%s\\include" % libav_path
     libav_lib_dir = "%s\\lib" % libav_path
     libav_bin_dir = "%s\\bin" % libav_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
-    vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
+    #the path after installing may look like this:
+    #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
+    #but we use something more generic, without the version numbers:
+    vpx_PATH="C:\\vpx-vp8"
     vpx_include_dir = "%s\\include" % vpx_PATH
     vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
     # Same for PyGTK:
@@ -552,7 +558,10 @@ if sys.platform.startswith("win"):
         #Note: confusingly, the python bindings are called webm...
         #add the webp DLL to the output:
         #And since 0.2.1, you have to compile the DLL yourself..
-        webm_DLL = "C:\\libwebp-0.2.1-windows-x86\\bin\\libwebp.dll"
+        #the path after installing may look like this:
+        #webm_DLL = "C:\\libwebp-0.2.1-windows-x86\\bin\\libwebp.dll"
+        #but we use something more generic, without the version numbers:
+        webm_DLL = "C:\\libwebp-windows-x86\\bin\\libwebp.dll"
         data_files.append(('', [webm_DLL]))
         #and its license:
         data_files.append(('webm', ["xpra/webm/LICENSE"]))
