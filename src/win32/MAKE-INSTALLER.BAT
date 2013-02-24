@@ -135,13 +135,49 @@ if %errorlevel% NEQ 0 (
 	GOTO ERROR
 )
 
+REM Delete all GStreamer DLLs and only add those we actually want
+DEL dist\gst*dll
 if %SOUND% NEQ 1 GOTO NOGSTREAMER
-ECHO ****** Adding gstreamer DLLs
-XCOPY /I /Y /S /Q "%GSTREAMER%\bin\*.dll" dist\
-XCOPY /I /Y /S /Q "%GSTREAMER%\lib\gstreamer-0.10" dist\gstreamer-0.10
-DEL dist\gstreamer-0.10\libgstpython-v2.6.dll
+ECHO ****** Adding GStreamer Main DLLs
+COPY /B /Y /V "%GSTREAMER%\bin\libgstaudio*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstbase*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstcontroller*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstdataprotocol*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstfft*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstinterfaces*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstnet*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstreamer*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstapp*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgsttag*.dll" dist\
+
+COPY /B /Y /V "%GSTREAMER%\bin\liba52*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libfaa*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libFLAC*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libid3tag*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libmad*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libmp3lame*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libogg*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\liborc*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libtheora*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libvorbis*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libwav*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" dist\
+ECHO ****** Adding GStreamer Plugin DLLs
+MKDIR dist\gstreamer-0.10
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgsta52dec.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstapp.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstaudio*.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstcoreelements.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstflac.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstlame.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstmad.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstmpegaudioparse.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstvolume.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstvorbis.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" dist\
 REM DEL dist\av*dll
 REM DEL dist\libdvd*dll
 
