@@ -217,6 +217,13 @@ class ClientWindow(gtk.Window):
 
         self.update_metadata(metadata)
 
+        display = gtk.gdk.display_get_default()
+        screen_num = client_properties.get("screen")
+        if screen_num and screen_num>=0 and screen_num<display.get_n_screens():
+            screen = display.get_screen(screen_num)
+            if screen:
+                self.set_screen(screen)
+
         self.set_app_paintable(True)
         self.add_events(WINDOW_EVENT_MASK)
         self.move(x, y)
@@ -231,11 +238,11 @@ class ClientWindow(gtk.Window):
 
     def set_workspace(self):
         if not CAN_SET_WORKSPACE or self._been_mapped:
-            return
+            return -1
         workspace = self._client_properties.get("workspace")
         log("set_workspace() workspace=%s", workspace)
         if not workspace or workspace==self.get_workspace():
-            return
+            return -1
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
             from wimpiggy.error import trap
@@ -249,8 +256,10 @@ class ClientWindow(gtk.Window):
             trap.call_synced(sendClientMessage, root, gdk_window(self), False, event_mask, "_NET_WM_DESKTOP",
                       workspace, const["CurrentTime"],
                       0, 0, 0)
+            return workspace
         except Exception, e:
             log.error("failed to set workspace: %s", e)
+            return -1
 
     def is_OR(self):
         return self._override_redirect
@@ -444,10 +453,13 @@ class ClientWindow(gtk.Window):
         #set group leader (but avoid ugly "not implemented" warning on win32):
         if self.group_leader and not sys.platform.startswith("win"):
             self.window.set_group(self.group_leader)
-        self.set_workspace()
+        workspace = self.set_workspace()
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
-            client_properties = {"workspace" : self.get_workspace()}
+            client_properties = {}
+            if workspace>=0:
+                client_properties["workspace"] = workspace
+            client_properties["screen"] = self.get_screen().get_number()
             self._client.send("map-window", self._id, x, y, w, h, client_properties)
             self._pos = (x, y)
             self._size = (w, h)
@@ -467,7 +479,10 @@ class ClientWindow(gtk.Window):
         self._pos = (x, y)
         if self._client.window_configure:
             #if we support configure-window, send that first
-            client_properties = {"workspace" : self.get_workspace()}
+            client_properties = {
+                                 "workspace"    : self.get_workspace(),
+                                 "screen"       : self.get_screen().get_number()
+                                 }
             self._client.send("configure-window", self._id, x, y, w, h, client_properties)
         if dx!=0 or dy!=0:
             #window has moved
