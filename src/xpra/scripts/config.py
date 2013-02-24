@@ -327,7 +327,7 @@ GLOBAL_DEFAULTS = {
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",
-                    "socket-dir"        : os.environ.get("XPRA_SOCKET_DIR") or '~/.xpra',
+                    "socket-dir"        : "",
                     "log-file"          : "$DISPLAY.log",
                     "quality"           : -1,
                     "min-quality"       : 50,
