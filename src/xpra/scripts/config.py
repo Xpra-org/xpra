@@ -260,7 +260,6 @@ ALL_OPTIONS = {
                     "mode"              : str,
                     "ssh"               : str,
                     "xvfb"              : str,
-                    "bind-tcp"          : str,
                     "socket-dir"        : str,
                     "mode"              : str,
                     #int options:
@@ -303,6 +302,7 @@ ALL_OPTIONS = {
                     "microphone-codec"  : list,
                     "key-shortcut"      : list,
                     "start-child"       : list,
+                    "bind-tcp"          : list,
                }
 #lowest common denominator here
 #(the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
@@ -329,7 +329,6 @@ GLOBAL_DEFAULTS = {
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",
-                    "bind-tcp"          : "",
                     "socket-dir"        : os.environ.get("XPRA_SOCKET_DIR") or '~/.xpra',
                     "jpegquality"       : -1,
                     "quality"           : -1,
@@ -366,6 +365,7 @@ GLOBAL_DEFAULTS = {
                     "speaker-codec"     : ["mp3"],
                     "microphone-codec"  : ["mp3"],
                     "key-shortcut"      : ["Meta+Shift+F4:quit"],
+                    "bind-tcp"          : None,
                     "start-child"       : None,
                     }
 MODES = ["tcp", "tcp + aes", "ssh"]

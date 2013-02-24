@@ -287,20 +287,23 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
     sockets = []
-    if opts.bind_tcp:
-        try:
-            tcp_socket = create_tcp_socket(parser, opts.bind_tcp)
-            sockets.append(tcp_socket)
-            def cleanup_tcp_socket():
-                log.info("closing tcp socket %s", opts.bind_tcp)
-                try:
-                    tcp_socket.close()
-                except:
-                    pass
-            _cleanups.append(cleanup_tcp_socket)
-        except Exception, e:
-            log.error("cannot start - failed to create tcp socket at %s: %s" % (opts.bind_tcp, e))
-            return  1
+    if opts.bind_tcp and len(opts.bind_tcp):
+        def setup_tcp_socket(bind_to):
+            try:
+                tcp_socket = create_tcp_socket(parser, bind_to)
+                sockets.append(tcp_socket)
+                def cleanup_tcp_socket():
+                    log.info("closing tcp socket %s", bind_to)
+                    try:
+                        tcp_socket.close()
+                    except:
+                        pass
+                _cleanups.append(cleanup_tcp_socket)
+            except Exception, e:
+                log.error("cannot start - failed to create tcp socket at %s: %s" % (bind_to, e))
+                return  1
+        for tcp_s in set(opts.bind_tcp):
+            setup_tcp_socket(tcp_s)
     #print("creating server socket %s" % sockpath)
     clobber = upgrading or opts.use_display
     try:

@@ -96,10 +96,11 @@ def main(script_file, cmdline):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
-        group.add_option("--bind-tcp", action="store",
+        group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=defaults.bind_tcp,
                           metavar="[HOST]:PORT",
-                          help="Listen for connections over TCP (use --password-file to secure it)")
+                          help="Listen for connections over TCP (use --password-file to secure it)."
+                            + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=defaults.pulseaudio,
                       help="Disable starting of a pulseaudio server for the session")
