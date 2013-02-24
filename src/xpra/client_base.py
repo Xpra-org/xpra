@@ -16,7 +16,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
-from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
+from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
 

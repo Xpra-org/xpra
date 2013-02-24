@@ -15,173 +15,14 @@ from subprocess import Popen, PIPE
 import signal
 import shlex
 
-#this is here so we can expose the "platform" module
-#before we import xpra.platform
-import platform as python_platform
-assert python_platform
-
 import xpra
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
-                           DEFAULT_SSH_CMD,
                            GOT_PASSWORD_PROMPT_SUGGESTION,
                            add_client_options)
 from xpra.bytestreams import TwoFileConnection, SocketConnection
-
-from wimpiggy.gobject_compat import import_gobject, is_gtk3
-gobject = import_gobject()
-try:
-    import Image
-    assert Image
-    _has_PIL = True
-except:
-    _has_PIL = False
-ENCODINGS = []
-if is_gtk3():
-    """ with gtk3, we get png via cairo out of the box
-        but we need PIL for the others:
-    """
-    ENCODINGS.append("png")
-    if _has_PIL:
-        ENCODINGS.append("jpeg")
-        ENCODINGS.append("rgb24")
-else:
-    """ with gtk2, we get rgb24 via gdk pixbuf out of the box
-        but we need PIL for the others:
-    """
-    if _has_PIL:
-        ENCODINGS.append("png")
-        ENCODINGS.append("jpeg")
-    ENCODINGS.append("rgb24")
-#we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
-if "rgb24" in ENCODINGS:
-    try:
-        from xpra import vpx            #@UnusedImport
-        try:
-            from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
-            ENCODINGS.insert(0, "vpx")
-        except Exception, e:
-            print("cannot load vpx codec: %s" % e)
-    except ImportError, e:
-        #the vpx module does not exist
-        #xpra was probably built with --without-vpx
-        pass
-    try:
-        from xpra import x264           #@UnusedImport
-        try:
-            from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
-            ENCODINGS.insert(0, "x264")
-        except Exception, e:
-            print("cannot load x264 codec: %s" % e)
-    except ImportError, e:
-        #the x264 module does not exist
-        #xpra was probably built with --without-x264
-        pass
-    try:
-        from xpra.webm.decode import DecodeRGB      #@UnusedImport
-        from xpra.webm.encode import EncodeRGB      #@UnusedImport
-        ENCODINGS.append("webp")
-    except ImportError, e:
-        #the webm module does not exist
-        #xpra was probably built with --without-webp
-        pass
-    except Exception, e:
-        print("cannot load webp: %s" % e)
-ENCRYPTION_CIPHERS = []
-try:
-    from Crypto.Cipher import AES
-    assert AES
-    ENCRYPTION_CIPHERS.append("AES")
-except:
-    pass
-
-
-def get_build_info():
-    info = []
-    try:
-        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, REVISION, LOCAL_MODIFICATIONS
-        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
-        if BUILD_DATE:
-            info.append(BUILD_DATE)
-        if int(LOCAL_MODIFICATIONS)==0:
-            info.append("revision %s" % REVISION)
-        else:
-            info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
-    except Exception, e:
-        print("Error: could not find the build information: %s", e)
-    return info
-
-
-def read_config(conf_file):
-    d = {}
-    f = open(conf_file, "rU")
-    lines = []
-    for line in f:
-        sline = line.strip().rstrip('\r\n').strip()
-        if len(sline) == 0:
-            continue
-        if sline[0] in ( '!', '#' ):
-            continue
-        lines.append(sline)
-    f.close()
-    #aggregate any lines with trailing bacakslash
-    agg_lines = []
-    l = ""
-    for line in lines:
-        if line.endswith("\\"):
-            l += line[:-1]
-        else:
-            l += line
-            agg_lines.append(l)
-            l = ""
-    if len(l)>0:
-        #last line had a trailing backslash... meh
-        agg_lines.append(l)
-    #parse name=value pairs:
-    for sline in agg_lines:
-        if sline.find("=")<=0:
-            continue
-        props = sline.split("=", 1)
-        assert len(props)==2
-        name = props[0].strip()
-        value = props[1].strip()
-        current_value = d.get(name)
-        if current_value:
-            if type(current_value)==list:
-                d[name] = current_value + [value]
-            else:
-                d[name] = [current_value, value]
-        else:
-            d[name] = value
-    return  d
-
-def read_xpra_conf(conf_dir):
-    d = {}
-    if not os.path.exists(conf_dir) or not os.path.isdir(conf_dir):
-        return  d
-    conf_file = os.path.join(conf_dir, 'xpra.conf')
-    if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
-        return  d
-    return read_config(conf_file)
-
-def read_xpra_defaults():
-    #first, read the global defaults:
-    if sys.platform.startswith("win"):
-        conf_dir = os.path.dirname(sys.executable)
-    elif sys.prefix == '/usr':
-        conf_dir = '/etc/xpra'
-    else:
-        conf_dir = sys.prefix + '/etc/xpra/'
-    defaults = read_xpra_conf(conf_dir)
-    #now load the per-user config over it:
-    if sys.platform.startswith("win"):
-        conf_dir = os.path.join(os.environ.get("APPDATA"), "Xpra")
-    else:
-        conf_dir = os.path.expanduser("~/.xpra")
-    user_defaults = read_xpra_conf(conf_dir)
-    for k,v in user_defaults.items():
-        defaults[k] = v
-    return defaults
+from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, get_default_socket_dir
+from wimpiggy.gobject_compat import import_gobject
 
 
 def nox():
@@ -191,6 +32,7 @@ def nox():
     # be noticed:
     import warnings
     warnings.filterwarnings("error", "could not open display")
+
 
 def main(script_file, cmdline):
     if os.name=="posix" and os.getuid()==0:
@@ -203,46 +45,6 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    defaults = read_xpra_defaults()
-    def parse_or_use_default(varname, default_value, parse_function):
-        """ Utility method for parsing defaults """
-        v = defaults.get(varname)
-        if not v:
-            return default_value
-        try:
-            pv = parse_function(v)
-            if pv is not None:
-                return pv
-        except Exception, e:
-            print("invalid value '%s' for %s: %s, using default value %s instead" % (v, varname, e, default_value))
-        return default_value
-    def bool_default(varname, default_value):
-        def bool_parse(v):
-            if type(v)==str:
-                v = v.lower()
-            if v in ["yes", "true", "1"]:
-                return  True
-            if v in ["no", "false", "0"]:
-                return  False
-        return parse_or_use_default(varname, default_value, bool_parse)
-    def int_default(varname, default_value):
-        return parse_or_use_default(varname, default_value, int)
-    def int_auto_default(varname, default_value):
-        def int_or_auto(val):
-            if val=="auto":
-                return default_value
-            return int(val)
-        return parse_or_use_default(varname, default_value, int_or_auto)
-    def float_default(varname, default_value):
-        return parse_or_use_default(varname, default_value, float)
-    def string_list(varname, default_value):
-        v = defaults.get(varname)
-        if v is None:
-            return default_value
-        if type(v)==list:
-            return v
-        return [str(v)]
-
     supports_server = XPRA_LOCAL_SERVERS_SUPPORTED
     if supports_server:
         try:
@@ -273,36 +75,36 @@ def main(script_file, cmdline):
                                          upgrade_str,
                                          shadow_str,
                                          note_str]))
+    defaults = make_defaults_struct()
     if supports_server:
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
         group.add_option("--start-child", action="append",
-                          dest="children", metavar="CMD", default=string_list("start-child", [""]),
-                          help="program to spawn in new server (may be repeated) (default: '%default')")
+                          dest="children", metavar="CMD", default=defaults.start_child,
+                          help="program to spawn in new server (may be repeated) (default: %default)")
         group.add_option("--exit-with-children", action="store_true",
-                          dest="exit_with_children", default=False,
+                          dest="exit_with_children", default=defaults.exit_with_children,
                           help="Terminate server when --start-child command(s) exit")
         group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")
         group.add_option("--use-display", action="store_true",
-                          dest="use_display", default=False,
+                          dest="use_display", default=defaults.use_display,
                           help="Use an existing display rather than starting one with xvfb")
-        DEFAULT_XVFB = "Xvfb -dpi 96 +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY"
         group.add_option("--xvfb", action="store",
                           dest="xvfb",
-                          default=defaults.get("xvfb", DEFAULT_XVFB),
+                          default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
         group.add_option("--bind-tcp", action="store",
-                          dest="bind_tcp", default=None,
+                          dest="bind_tcp", default=defaults.bind_tcp,
                           metavar="[HOST]:PORT",
-                          help="Listen for connections over TCP (insecure)")
+                          help="Listen for connections over TCP (use --password-file to secure it)")
         group.add_option("--no-pulseaudio", action="store_false",
-                      dest="pulseaudio", default=bool_default("pulseaudio", True),
+                      dest="pulseaudio", default=defaults.pulseaudio,
                       help="Disable starting of a pulseaudio server for the session")
         group.add_option("--pulseaudio-command", action="store",
-                      dest="pulseaudio_command", default=defaults.get("pulseaudio-command", ""),
+                      dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server (default: '%default')")
         parser.add_option_group(group)
 
@@ -311,42 +113,42 @@ def main(script_file, cmdline):
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
     group.add_option("--no-clipboard", action="store_false",
-                      dest="clipboard", default=bool_default("clipboard", True),
+                      dest="clipboard", default=defaults.clipboard,
                       help="Disable clipboard support")
     group.add_option("--no-notifications", action="store_false",
-                      dest="notifications", default=bool_default("notifications", True),
+                      dest="notifications", default=defaults.notifications,
                       help="Disable forwarding of system notifications")
     group.add_option("--no-system-tray", action="store_false",
-                      dest="system_tray", default=bool_default("system-tray", True),
+                      dest="system_tray", default=defaults.system_tray,
                       help="Disable forwarding of system tray icons")
     group.add_option("--no-cursors", action="store_false",
-                      dest="cursors", default=bool_default("cursors", True),
+                      dest="cursors", default=defaults.cursors,
                       help="Disable forwarding of custom application mouse cursors")
     group.add_option("--no-bell", action="store_false",
-                      dest="bell", default=bool_default("bell", True),
+                      dest="bell", default=defaults.bell,
                       help="Disable forwarding of the system bell")
     group.add_option("--no-mmap", action="store_false",
-                      dest="mmap", default=bool_default("mmap", True),
+                      dest="mmap", default=defaults.mmap,
                       help="Disable memory mapped transfers for local connections")
     group.add_option("--readonly", action="store_true",
-                      dest="readonly", default=bool_default("readonly", False),
+                      dest="readonly", default=defaults.readonly,
                       help="Ignore all keyboard input and mouse events from the clients")
     group.add_option("--enable-sharing", action="store_true",
-                      dest="sharing", default=bool_default("sharing", False),
+                      dest="sharing", default=defaults.sharing,
                       help="Allow more than one client to connect to the same session")
     group.add_option("--no-speaker", action="store_false",
-                      dest="speaker", default=bool_default("speaker", True),
+                      dest="speaker", default=defaults.speaker,
                       help="Disable forwarding of sound output to the client(s)")
     group.add_option("--speaker-codec", action="append",
-                      dest="speaker_codec", default=string_list("speaker-codec", []),
+                      dest="speaker_codec", default=defaults.speaker_codec,
                       help="The audio codec to use for forwarding the speaker sound output "
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
     group.add_option("--no-microphone", action="store_false",
-                      dest="microphone", default=bool_default("microphone", True),
+                      dest="microphone", default=defaults.microphone,
                       help="Disable forwarding of sound input to the server")
     group.add_option("--microphone-codec", action="append",
-                      dest="microphone_codec", default=string_list("microphone-codec", []),
+                      dest="microphone_codec", default=defaults.microphone_codec,
                       help="The audio codec to use for forwaring the microphone sound input "
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
@@ -355,52 +157,47 @@ def main(script_file, cmdline):
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default values for those clients that do not set them.")
-    default_encoding = defaults.get("encoding", ENCODINGS[0])
     group.add_option("--encoding", action="store",
-                      metavar="ENCODING", default=default_encoding,
+                      metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use: %s. Default: %s" % (", ".join(ENCODINGS), default_encoding))
+                      help="What image compression algorithm to use: %s." % (", ".join(ENCODINGS)) +
+                            " Default: %default."
+                      )
     if "jpeg" in ENCODINGS:
         group.add_option("-b", "--max-bandwidth", action="store",
-                          dest="max_bandwidth", type="float", default=0.0, metavar="BANDWIDTH (kB/s)",
-                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: disabled)")
+                          dest="max_bandwidth", type="float", default=defaults.max_bandwidth, metavar="BANDWIDTH (kB/s)",
+                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: %default)")
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))>0:
         group.add_option("--min-quality", action="store",
                           metavar="MIN-LEVEL",
-                          dest="min_quality", type="int", default=int_default("min-quality", 0),
+                          dest="min_quality", type="int", default=defaults.min_quality,
                           help="Sets the minimum x264 encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
         group.add_option("--quality", action="store",
                           metavar="LEVEL",
-                          dest="quality", type="int", default=int_auto_default("quality", 0),
+                          dest="quality", type="int", default=defaults.quality,
                           help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
     if "x264" in ENCODINGS:
         group.add_option("--min-speed", action="store",
                           metavar="SPEED",
-                          dest="min_speed", type="int", default=int_default("min-speed", 0),
+                          dest="min_speed", type="int", default=defaults.min_speed,
                           help="Sets the minimum x264 encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
         group.add_option("--speed", action="store",
                           metavar="SPEED",
-                          dest="speed", type="int", default=int_auto_default("speed", 0),
+                          dest="speed", type="int", default=defaults.speed,
                           help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
-                      dest="auto_refresh_delay", type="float", default=float_default("auto-refresh-delay", 0.25),
+                      dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
                       help="Idle delay in seconds before doing an automatic lossless refresh."
                       + " 0.0 to disable."
                       + " Default: %default.")
-    DEFAULT_COMPRESS = 1
-    compress_str = defaults.get("compress", str(DEFAULT_COMPRESS))
-    try:
-        compress = int(compress_str)
-    except:
-        print("WARNING: invalid default value for 'compress' option, using default: %s" % DEFAULT_COMPRESS)
-        compress = DEFAULT_COMPRESS
     group.add_option("-z", "--compress", action="store",
-                      dest="compression_level", type="int", default=compress,
+                      dest="compression_level", type="int", default=defaults.compression_level,
                       metavar="LEVEL",
                       help="How hard to work on compressing data."
                       + " You generally do not need to use this option,"
-                      + " the default value should be adequate."
+                      + " the default value should be adequate,"
+                      + " picture data is compressed separately (see --encoding)."
                       + " 0 to disable compression,"
                       + " 9 for maximal (slowest) compression. Default: %default.")
     parser.add_option_group(group)
@@ -408,47 +205,46 @@ def main(script_file, cmdline):
     group = OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
     group.add_option("--no-windows", action="store_false",
-                      dest="windows_enabled", default=True,
-                      help="Tells the server not to send any window data, only notifications and bell events will be forwarded - if enabled.")
+                      dest="windows", default=defaults.windows,
+                      help="Tells the server not to send any window data, only notifications and bell events will be forwarded (if enabled).")
     group.add_option("--session-name", action="store",
-                      dest="session_name", default=None,
+                      dest="session_name", default=defaults.session_name,
                       help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
     group.add_option("--title", action="store",
-                      dest="title", default="@title@ on @client-machine@",
-                      help="Text which is shown as window title, may use remote metadata variables (default: '@title@ on @client-machine@')")
+                      dest="title", default=defaults.title,
+                      help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
     group.add_option("--window-icon", action="store",
-                          dest="window_icon", default=None,
+                          dest="window_icon", default=defaults.window_icon,
                           help="Path to the default image which will be used for all windows (the application may override this)")
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(group)
     group.add_option("--tray-icon", action="store",
-                          dest="tray_icon", default=None,
+                          dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
     group.add_option("--key-shortcut", action="append",
-                      dest="key_shortcuts", type="str", default=[],
+                      dest="key_shortcut", type="str", default=defaults.key_shortcut,
                       help="Define key shortcuts that will trigger specific actions."
                       + " Defaults to 'Meta+Shift+F4:quit' if no shortcuts are defined.")
     group.add_option("--no-keyboard-sync", action="store_false",
-                      dest="keyboard_sync", default=bool_default("keyboard-sync", True),
+                      dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
     group.add_option("--password-file", action="store",
-                      dest="password_file", default=None,
+                      dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
     group.add_option("--dpi", action="store",
-                      dest="dpi", default=int_default("dpi", 96),
+                      dest="dpi", default=defaults.dpi,
                       help="The 'dots per inch' value that client applications should try to honour (default: %default)")
-    default_socket_dir = defaults.get("socket-dir")
-    default_socket_dir_str = default_socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
+    default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
-                      dest="sockdir", default=default_socket_dir,
+                      dest="sockdir", default=defaults.socket_dir,
                       help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
-    debug_default = None
-    if bool_default("debug", False):
+    debug_default = ""
+    if defaults.debug:
         debug_default = "all"
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
@@ -458,21 +254,21 @@ def main(script_file, cmdline):
     group = OptionGroup(parser, "Advanced Client Options",
                 "Please refer to the man page for details.")
     group.add_option("--ssh", action="store",
-                      dest="ssh", default=defaults.get("ssh", DEFAULT_SSH_CMD), metavar="CMD",
+                      dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
     group.add_option("--mmap-group", action="store_true",
-                      dest="mmap_group", default=bool_default("mmap-group", False),
+                      dest="mmap_group", default=defaults.mmap_group,
                       help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
     group.add_option("--enable-pings", action="store_true",
-                      dest="send_pings", default=bool_default("pings", False),
+                      dest="pings", default=defaults.pings,
                       help="Send ping packets every second to gather latency statistics")
     group.add_option("--remote-xpra", action="store",
-                      dest="remote_xpra", default=".xpra/run-xpra",
+                      dest="remote_xpra", default=defaults.remote_xpra,
                       metavar="CMD",
                       help="How to run xpra on the remote host (default: '%default')")
     if len(ENCRYPTION_CIPHERS)>0:
         group.add_option("--encryption", action="store",
-                          dest="encryption", default=None,
+                          dest="encryption", default=defaults.encryption,
                           metavar="CMD",
                           help="Specifies the encryption cipher to use, only %s is currently supported. (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
     parser.add_option_group(group)
@@ -485,11 +281,11 @@ def main(script_file, cmdline):
     if "jpeg" not in ENCODINGS:
         options.max_bandwidth = 0
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))==0:
-        options.min_quality = int_default("min-quality", 0)
-        options.quality = int_auto_default("quality", 0)
+        options.min_quality = defaults.min_quality
+        options.quality = defaults.quality
     if "x264" not in ENCODINGS:
-        options.min_speed = int_default("min-speed", 0)
-        options.speed = int_auto_default("speed", 0)
+        options.min_speed = defaults.min_speed
+        options.speed = defaults.speed
     try:
         int(options.dpi)
     except Exception, e:
@@ -542,7 +338,7 @@ def main(script_file, cmdline):
         logging.root.addHandler(logging.StreamHandler(sys.stdout))
 
     #set debug log on if required:
-    if options.debug is not None:
+    if options.debug:
         toggle_logging(logging.DEBUG)
     else:
         toggle_logging(logging.INFO)
@@ -575,58 +371,6 @@ def main(script_file, cmdline):
         parser.error("invalid mode '%s'" % mode)
         return 1
 
-# we end up initializing gstreamer here and it does things
-# we don't want with sys.argv, so hack around it:
-saved_args = sys.argv
-sys.argv = sys.argv[:1]
-try:
-    from xpra.sound import gstreamer_util   #@UnusedImport
-    HAS_SOUND = True
-except:
-    HAS_SOUND = False
-sys.argv = saved_args
-
-def get_codecs(is_speaker, is_server):
-    if not HAS_SOUND:
-        return []
-    try:
-        from xpra.sound.gstreamer_util import can_encode, can_decode
-        if (is_server and is_speaker) or (not is_server and not is_speaker):
-            return can_encode()
-        else:
-            return can_decode()
-    except Exception, e:
-        print("failed to get list of codecs: %s" % e)
-        return []
-
-def show_codec_help(is_server, speaker_codecs, microphone_codecs):
-    all_speaker_codecs = get_codecs(True, is_server)
-    invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
-    hs = "help" in speaker_codecs
-    if hs:
-        print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
-    elif len(invalid_sc):
-        print("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
-        for x in invalid_sc:
-            speaker_codecs.remove(x)
-    elif len(speaker_codecs)==0:
-        speaker_codecs += all_speaker_codecs
-
-    all_microphone_codecs = get_codecs(True, is_server)
-    invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
-    hm = "help" in microphone_codecs
-    if hm:
-        print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
-    elif len(invalid_mc):
-        print("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
-        for x in invalid_mc:
-            microphone_codecs.remove(x)
-    elif len(microphone_codecs)==0:
-        microphone_codecs += all_microphone_codecs
-    return hm or hs
-
-def get_default_socket_dir():
-    return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
 
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
@@ -724,11 +468,12 @@ def connect_or_fail(display_desc):
     try:
         return connect_to(display_desc)
     except Exception, e:
-        sys.exit("connection failed: %s" % str(e))
+        sys.exit("connection failed: %s" % e)
 
 def connect_to(display_desc, debug_cb=None):
     display_name = display_desc["display_name"]
-    if display_desc["type"] == "ssh":
+    dtype = display_desc["type"]
+    if dtype == "ssh":
         cmd = display_desc["full_ssh"]
         if sys.platform.startswith("win"):
             password = display_desc.get("password")
@@ -778,23 +523,24 @@ def connect_to(display_desc, debug_cb=None):
                 print("error trying to stop ssh tunnel process: %s" % e)
         return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH", close_cb=stop_tunnel)
 
-    elif display_desc["type"] == "unix-domain":
+    elif dtype == "unix-domain":
         sockdir = DotXpra(display_desc["sockdir"])
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(5)
         sockfile = sockdir.socket_path(display_desc["display"])
         return _socket_connect(sock, sockfile, display_name)
 
-    elif display_desc["type"] == "tcp":
+    elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
         return _socket_connect(sock, tcp_endpoint, display_name)
 
     else:
-        assert False, "unsupported display type in connect"
+        assert False, "unsupported display type in connect: %s" % dtype
 
 def set_signal_handlers(app):
+    gobject = import_gobject()
     def deadly_signal(signum, frame):
         print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         app.cleanup()
@@ -859,7 +605,7 @@ def run_client(parser, opts, extra_args, mode):
     try:
         try:
             return app.run()
-        except KeyboardInterrupt, e:
+        except KeyboardInterrupt:
             return -signal.SIGINT
     finally:
         app.cleanup()
@@ -959,6 +705,7 @@ def run_list(parser, opts, extra_args):
         state = sockdir.server_state(display)
         may_cleanup_socket(sockdir, state, display, clean_states=clean_states)
     return 0
+
 
 if __name__ == "__main__":
     code = main("xpra.exe", sys.argv)

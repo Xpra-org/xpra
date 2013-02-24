@@ -32,8 +32,8 @@ import webbrowser
 
 from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
-from xpra.platform import DEFAULT_SSH_CMD
-from xpra.scripts.main import connect_to, get_build_info, read_config
+from xpra.scripts.config import ENCODINGS, get_build_info, read_config, make_defaults_struct, validate_config
+from xpra.scripts.main import connect_to
 from xpra.client import XpraClient
 
 EXEC_DEBUG = os.environ.get("XPRA_EXEC_DEBUG", "0")=="1"
@@ -227,13 +227,7 @@ LOSSY_20 = "low quality"
 LOSSY_50 = "average quality"
 LOSSY_90 = "best lossy quality"
 
-ENCODING_OPTIONS = [ "jpeg", "x264", "png", "rgb24", "vpx" ]
-try:
-	from xpra.scripts.main import ENCODINGS
-	ENCODING_OPTIONS = ENCODINGS
-except:
-	pass
-DEFAULT_ENCODING = ENCODING_OPTIONS[0]
+DEFAULT_ENCODING = ENCODINGS[0]
 
 XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
 XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
@@ -243,95 +237,7 @@ XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 						}
 
 # Default connection options
-from xpra.scripts.main import read_xpra_defaults
-defaults = read_xpra_defaults()
-def default_str(varname, default_value, valid_values=None):
-	if varname not in defaults:
-		return default_value
-	v = defaults.get(varname)
-	if valid_values is not None and v not in valid_values:
-		return default_value
-	return v
-def str_to_int(s, default_value):
-	try:
-		return int(s)
-	except:
-		return default_value
-def default_int(varname, default_value):
-	if varname not in defaults:
-		return default_value
-	return str_to_int(defaults.get(varname), default_value)
-def str_to_bool(v, default_value):
-	if type(v)==str:
-		v = v.lower()
-	if v in ["yes", "true", "1"]:
-		return  True
-	if v in ["no", "false", "0"]:
-		return  False
-	return default_value
-def default_bool(varname, default_value):
-	if varname not in defaults:
-		return default_value
-	v = defaults.get(varname)
-	return str_to_bool(v, default_value)
-
-from wimpiggy.util import AdHocStruct
-xpra_opts = AdHocStruct()
-xpra_opts.ssh = DEFAULT_SSH_CMD
-xpra_opts.title = default_str("title", "@title@ on @client-machine@")
-xpra_opts.encoding = default_str("encoding", DEFAULT_ENCODING, ENCODING_OPTIONS)
-xpra_opts.jpegquality = default_int("jpegquality", 90)
-xpra_opts.quality = default_int("quality", 90)
-xpra_opts.min_quality = default_int("min-quality", 50)
-xpra_opts.speed = default_int("speed", -1)
-xpra_opts.min_speed = default_int("min-speed", -1)
-xpra_opts.sockdir = None
-xpra_opts.host = defaults.get("host", "127.0.0.1")
-xpra_opts.username = ""
-try:
-	import getpass
-	xpra_opts.username = getpass.getuser()
-except:
-	pass
-xpra_opts.remote_xpra = default_str("remote_xpra", ".xpra/run-xpra")
-xpra_opts.session_name = default_str("session_name", None)
-xpra_opts.port = default_int("port", 10000)
-xpra_opts.mode = default_str("mode", "tcp", ["tcp", "tcp + aes", "ssh"])
-xpra_opts.debug = default_bool("debug", False)
-xpra_opts.no_tray = default_bool("no-tray", False)
-xpra_opts.dock_icon = default_str("dock-icon", "")
-xpra_opts.tray_icon = default_str("tray-icon", "")
-xpra_opts.window_icon = default_str("window-icon", "")
-xpra_opts.password = default_str("password", "")
-xpra_opts.password_file = default_str("password-file", "")
-xpra_opts.clipboard = default_bool("clipboard", True)
-xpra_opts.pulseaudio = default_bool("pulseaudio", True)
-xpra_opts.pulseaudio_command = default_str("pulseaudio_command", "")
-xpra_opts.mmap = default_bool("mmap", True)
-xpra_opts.mmap_group = default_bool("mmap-group", False)
-xpra_opts.speaker = default_bool("speaker", True)
-xpra_opts.speaker_codec = [default_str("speaker_codec", "")]
-xpra_opts.microphone = default_bool("microphone", True)
-xpra_opts.microphone_codec = [default_str("microphone_codec", "")]
-xpra_opts.readonly = default_bool("readonly", False)
-xpra_opts.keyboard_sync = default_bool("keyboard-sync", True)
-xpra_opts.compression_level = default_int("compression", 3)
-xpra_opts.send_pings = default_bool("pings", False)
-xpra_opts.dpi = default_int("dpi", 96)
-xpra_opts.cursors = default_bool("cursors", True)
-xpra_opts.bell = default_bool("bell", True)
-xpra_opts.notifications = default_bool("notifications", True)
-xpra_opts.system_tray = default_bool("system-tray", True)
-xpra_opts.sharing = default_bool("sharing", False)
-xpra_opts.delay_tray = default_bool("delay-tray", False)
-xpra_opts.windows_enabled = default_bool("windows-enabled", True)
-xpra_opts.encryption = default_str("encryption", "")
-#these would need testing/work:
-xpra_opts.auto_refresh_delay = 0.25
-xpra_opts.max_bandwidth = 0.0
-xpra_opts.key_shortcuts = ["Meta+Shift+F4:quit"]
-#these cannot be set in the xpra.conf (would not make sense):
-xpra_opts.autoconnect = False
+config = make_defaults_struct()
 
 
 def add_close_accel(window, callback):
@@ -397,9 +303,9 @@ class ApplicationWindow:
 		self.mode_combo.append_text("TCP")
 		self.mode_combo.append_text("TCP + AES")
 		self.mode_combo.append_text("SSH")
-		if xpra_opts.mode == "tcp":
+		if config.mode == "tcp":
 			self.mode_combo.set_active(0)
-		elif xpra_opts.mode == "tcp + aes":
+		elif config.mode == "tcp + aes":
 			self.mode_combo.set_active(1)
 		else:
 			self.mode_combo.set_active(2)
@@ -413,9 +319,9 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Encoding: "))
 		self.encoding_combo = gtk.combo_box_new_text()
 		self.encoding_combo.get_model().clear()
-		for option in ENCODING_OPTIONS:
+		for option in ENCODINGS:
 			self.encoding_combo.append_text(option)
-		self.encoding_combo.set_active(ENCODING_OPTIONS.index(xpra_opts.encoding))
+		self.encoding_combo.set_active(ENCODINGS.index(config.encoding))
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
 
@@ -438,14 +344,14 @@ class ApplicationWindow:
 		hbox.set_spacing(5)
 		self.username_entry = gtk.Entry(max=128)
 		self.username_entry.set_width_chars(16)
-		self.username_entry.set_text(xpra_opts.username)
+		self.username_entry.set_text(config.username)
 		self.username_label = gtk.Label("@")
 		self.host_entry = gtk.Entry(max=128)
 		self.host_entry.set_width_chars(24)
-		self.host_entry.set_text(xpra_opts.host)
+		self.host_entry.set_text(config.host)
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
-		self.port_entry.set_text(str(xpra_opts.port))
+		self.port_entry.set_text(str(config.port))
 		hbox.pack_start(self.username_entry)
 		hbox.pack_start(self.username_label)
 		hbox.pack_start(self.host_entry)
@@ -515,7 +421,7 @@ class ApplicationWindow:
 		else:
 			self.username_entry.hide()
 			self.username_label.hide()
-			self.port_entry.set_text("%s" % xpra_opts.port)
+			self.port_entry.set_text("%s" % config.port)
 		if not ssh or sys.platform.startswith("win") or sys.platform.startswith("darwin"):
 			#password cannot be used with ssh
 			#(except on win32 with plink, and on osx via the SSH_ASKPASS hack)
@@ -561,23 +467,23 @@ class ApplicationWindow:
 	def do_connect_builtin(self):
 		self.set_sensitive(False)
 		self.set_info_text("Connecting.")
-		#cooked vars used by connect_or_fail
-		params = {"type"	: xpra_opts.mode}
-		if xpra_opts.mode=="ssh":
-			remote_xpra = xpra_opts.remote_xpra.split()
-			if xpra_opts.sockdir:
-				remote_xpra.append("--socket-dir=%s" % xpra_opts.sockdir)
+		#cooked vars used by connect_to
+		params = {"type"	: config.mode}
+		if config.mode=="ssh":
+			remote_xpra = config.remote_xpra.split()
+			if config.sockdir:
+				remote_xpra.append("--socket-dir=%s" % config.sockdir)
 			params["remote_xpra"] = remote_xpra
-			if xpra_opts.port:
-				params["display"] = ":%s" % xpra_opts.port
+			if config.port and config.port>0:
+				params["display"] = ":%s" % config.port
 				params["display_as_args"] = [params["display"]]
 			else:
 				params["display"] = "auto"
 				params["display_as_args"] = []
-			full_ssh = shlex.split(xpra_opts.ssh)
-			password = xpra_opts.password
-			username = xpra_opts.username
-			host = xpra_opts.host
+			full_ssh = shlex.split(config.ssh)
+			password = config.password
+			username = config.username
+			host = config.host
 			upos = host.find("@")
 			if upos>=0:
 				#found at sign: username@host
@@ -594,17 +500,17 @@ class ApplicationWindow:
 			full_ssh += ["-T", host]
 			params["full_ssh"] = full_ssh
 			params["password"] = password
-			params["display_name"] = "ssh:%s:%s" % (xpra_opts.host, xpra_opts.port)
-		elif xpra_opts.mode=="unix-domain":
-			params["display"] = ":%s" % xpra_opts.port
-			params["display_name"] = "unix-domain:%s" % xpra_opts.port
+			params["display_name"] = "ssh:%s:%s" % (config.host, config.port)
+		elif config.mode=="unix-domain":
+			params["display"] = ":%s" % config.port
+			params["display_name"] = "unix-domain:%s" % config.port
 		else:
 			#tcp:
-			params["host"] = xpra_opts.host
-			params["port"] = int(xpra_opts.port)
-			params["display_name"] = "tcp:%s:%s" % (xpra_opts.host, xpra_opts.port)
+			params["host"] = config.host
+			params["port"] = int(config.port)
+			params["display_name"] = "tcp:%s:%s" % (config.host, config.port)
 
-		#print("connect_or_fail(%s)" % params)
+		#print("connect_to(%s)" % params)
 		self.set_info_text("Connecting...")
 		try:
 			conn = connect_to(params, self.set_info_text)
@@ -612,14 +518,15 @@ class ApplicationWindow:
 			self.set_sensitive(True)
 			self.set_info_color(True)
 			self.set_info_text(str(e))
+			gobject.idle_add(self.window.show)
 			return
 		gobject.idle_add(self.window.hide)
 
 		def start_XpraClient():
-			app = XpraClient(conn, xpra_opts)
-			if xpra_opts.password:
+			app = XpraClient(conn, config)
+			if config.password:
 				#pass the password to the class directly:
-				app.password = xpra_opts.password
+				app.password = config.password
 			#override exit code:
 			warn_and_quit_save = app.warn_and_quit
 			def warn_and_quit_override(exit_code, warning):
@@ -662,19 +569,19 @@ class ApplicationWindow:
 
 
 	def update_options_from_gui(self):
-		xpra_opts.host = self.host_entry.get_text()
-		xpra_opts.port = self.port_entry.get_text()
-		xpra_opts.username = self.username_entry.get_text()
-		xpra_opts.encoding = self.encoding_combo.get_active_text()
-		xpra_opts.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
+		config.host = self.host_entry.get_text()
+		config.port = self.port_entry.get_text()
+		config.username = self.username_entry.get_text()
+		config.encoding = self.encoding_combo.get_active_text()
+		config.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
 		mode_enc = self.mode_combo.get_active_text()
 		if mode_enc.startswith("TCP"):
-			xpra_opts.mode = "tcp"
+			config.mode = "tcp"
 			if mode_enc.find("AES")>0:
-				xpra_opts.encryption = "AES"
+				config.encryption = "AES"
 		else:
-			xpra_opts.mode = "ssh"
-		xpra_opts.password = self.password_entry.get_text()
+			config.mode = "ssh"
+		config.password = self.password_entry.get_text()
 
 	def destroy(self, *args):
 		self.window.destroy()
@@ -689,13 +596,9 @@ def create_password_file(password):
 
 def update_options_from_file(filename):
 	propDict = read_config(filename)
-	for prop in ["username", "host", "encoding", "mode", "encryption"]:
-		val = propDict.get(prop)
-		if val is not None:
-			setattr(xpra_opts, prop, val)
-	xpra_opts.port = str_to_int(propDict.get("port"), 10000)
-	xpra_opts.autoconnect = str_to_bool(propDict.get("autoconnect"), False)
-	xpra_opts.password = propDict.get("password", None)
+	options = validate_config(propDict)
+	for k,v in options.items():
+		setattr(config, k, v)
 
 
 def main():
@@ -704,17 +607,17 @@ def main():
 	app = ApplicationWindow()
 	app.create_window()
 	try:
-		if xpra_opts.autoconnect:
+		if config.autoconnect:
 			#file says we should connect,
 			#do that only (not showing UI unless something goes wrong):
 			gobject.idle_add(app.do_connect)
-		else:
+		if not config.autoconnect or config.debug:
 			app.show()
 		app.run()
 	except KeyboardInterrupt:
 		pass
-	if xpra_opts.password_file and os.path.exists(xpra_opts.password_file):
-		os.unlink(xpra_opts.password_file)
+	if config.password_file and os.path.exists(config.password_file):
+		os.unlink(config.password_file)
 	return 0
 
 

@@ -34,7 +34,7 @@ from xpra.deque import maxdeque
 from xpra.window_source import WindowSource, DamageBatchConfig
 from xpra.stats.base import add_list_stats, std_unit
 from xpra.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.server_keyboard_config import KeyboardConfig
@@ -822,7 +822,6 @@ class ServerSource(object):
 
     def hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        from xpra.scripts.main import HAS_SOUND
         if HAS_SOUND:
             try:
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities

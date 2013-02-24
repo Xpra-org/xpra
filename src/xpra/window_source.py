@@ -64,7 +64,7 @@ warn = log.warn
 
 from xpra.deque import maxdeque
 from xpra.protocol import zlib_compress, Compressed
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.config import ENCODINGS
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.stats.base import add_list_stats, add_weighted_list_stats
 from xpra.stats.maths import logp, \

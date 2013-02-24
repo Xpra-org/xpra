@@ -16,6 +16,7 @@ import platform
 from xpra.platform.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.stats.base import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
+from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from wimpiggy.log import Logger
 from xpra.platform.client_extras_base import set_tooltip_text
 log = Logger()
@@ -195,7 +196,6 @@ class SessionInfo(gtk.Window):
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk_version")))
         tb.new_row("Python", label(platform.python_version()), label(server_version_info("python_version")))
         cl_gst_v, cl_pygst_v = "", ""
-        from xpra.scripts.main import HAS_SOUND
         if HAS_SOUND:
             try:
                 from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
@@ -466,7 +466,6 @@ class SessionInfo(gtk.Window):
         return False
 
     def populate_features(self):
-        from xpra.scripts.main import ENCODINGS
         size_info = ""
         if self.client.server_actual_desktop_size:
             w,h = self.client.server_actual_desktop_size

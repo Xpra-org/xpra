@@ -13,9 +13,8 @@ gdk = import_gdk()
 gobject = import_gobject()
 import webbrowser
 
-from xpra.scripts.main import get_build_info
+from xpra.scripts.config import ENCODINGS, get_build_info
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
-from xpra.scripts.main import ENCODINGS
 from xpra.keys import get_gtk_keymap, mask_to_names
 from xpra.platform.client_tray import ClientTray
 from wimpiggy.log import Logger

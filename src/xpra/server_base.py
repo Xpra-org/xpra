@@ -38,7 +38,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.scripts.main import python_platform, get_codecs
+from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, get_codecs
 from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
 from xpra.server_uuid import save_uuid, get_uuid
@@ -47,7 +47,6 @@ from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
-from xpra.scripts.main import ENCODINGS, ENCRYPTION_CIPHERS
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
 
 MAX_CONCURRENT_CONNECTIONS = 20

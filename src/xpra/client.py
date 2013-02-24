@@ -81,13 +81,13 @@ from xpra.deque import maxdeque
 from xpra.client_base import XpraClientBase, EXIT_TIMEOUT
 from xpra.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
 from xpra.platform.gui import ClientExtras
-from xpra.scripts.main import ENCODINGS, get_codecs
+from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
 from xpra.version_util import add_gtk_version_info
 from xpra.stats.base import std_unit
 from xpra.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
-
 from xpra.client_window import ClientWindow, DRAW_DEBUG
+
 
 def nn(x):
     if x is None:
@@ -180,7 +180,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.change_min_quality = False
         self.change_speed = False
         self.readonly = opts.readonly
-        self.windows_enabled = opts.windows_enabled
+        self.windows_enabled = opts.windows
         self._client_extras = ClientExtras(self, opts, conn)
         self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
         self.client_supports_system_tray = opts.system_tray and self._client_extras.supports_system_tray()
@@ -211,7 +211,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         except:
             self._keymap = None
         self._do_keys_changed()
-        self.key_shortcuts = self.parse_shortcuts(opts.key_shortcuts)
+        self.key_shortcuts = self.parse_shortcuts(opts.key_shortcut)
         self.send_hello()
 
         if self._keymap:
@@ -234,7 +234,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         if (self.max_bandwidth):
             self.last_input_bytecount = 0
             gobject.timeout_add(2000, compute_receive_bandwidth, 2000)
-        if opts.send_pings:
+        if opts.pings:
             gobject.timeout_add(1000, self.send_ping)
         else:
             gobject.timeout_add(20*1000, self.send_ping)
@@ -667,7 +667,6 @@ class XpraClient(XpraClientBase, gobject.GObject):
             capabilities["encoding.supports_delta"] = []    #need implementing in window_backing
         else:
             capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24") if x in ENCODINGS]
-        from xpra.scripts.main import HAS_SOUND
         if HAS_SOUND:
             try:
                 from xpra.sound.pulseaudio_util import add_pulseaudio_capabilities

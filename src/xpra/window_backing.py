@@ -18,7 +18,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from threading import Lock
-from xpra.scripts.main import ENCODINGS
+from xpra.scripts.config import ENCODINGS
 from xpra.xor import xor_str
 
 try:
