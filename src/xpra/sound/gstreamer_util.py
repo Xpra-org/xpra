@@ -184,7 +184,7 @@ def main():
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.INFO)
 
-    log.info("GStreamer plugins found: %s", ", ".join(all_plugin_names))
+    log.info("GStreamer plugins found: %s", ", ".join(get_all_plugin_names()))
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()
