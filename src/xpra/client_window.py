@@ -250,7 +250,7 @@ class ClientWindow(gtk.Window):
             ndesktops = xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
             log("set_workspace() ndesktops=%s", ndesktops)
             if ndesktops is None or ndesktops<=1:
-                return
+                return  -1
             workspace = max(0, min(ndesktops-1, workspace))
             event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
             trap.call_synced(sendClientMessage, root, gdk_window(self), False, event_mask, "_NET_WM_DESKTOP",
@@ -453,14 +453,14 @@ class ClientWindow(gtk.Window):
         #set group leader (but avoid ugly "not implemented" warning on win32):
         if self.group_leader and not sys.platform.startswith("win"):
             self.window.set_group(self.group_leader)
-        workspace = self.set_workspace()
         if not self._override_redirect:
             x, y, w, h = get_window_geometry(self)
-            client_properties = {}
-            if workspace>=0:
-                client_properties["workspace"] = workspace
-            client_properties["screen"] = self.get_screen().get_number()
-            self._client.send("map-window", self._id, x, y, w, h, client_properties)
+            if not self._been_mapped:
+                workspace = self.set_workspace()
+                if workspace>=0:
+                    self._client_properties["workspace"] = workspace
+            self._client_properties["screen"] = self.get_screen().get_number()
+            self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
         self._been_mapped = True
