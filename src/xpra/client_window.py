@@ -456,8 +456,10 @@ class ClientWindow(gtk.Window):
             x, y, w, h = get_window_geometry(self)
             if not self._been_mapped:
                 workspace = self.set_workspace()
-                if workspace>=0:
-                    self._client_properties["workspace"] = workspace
+            else:
+                workspace = self.get_workspace()
+            if workspace>=0:
+                self._client_properties["workspace"] = workspace
             self._client_properties["screen"] = self.get_screen().get_number()
             self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
