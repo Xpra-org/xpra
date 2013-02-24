@@ -471,8 +471,8 @@ class ApplicationWindow:
 		params = {"type"	: config.mode}
 		if config.mode=="ssh":
 			remote_xpra = config.remote_xpra.split()
-			if config.sockdir:
-				remote_xpra.append("--socket-dir=%s" % config.sockdir)
+			if config.socket_dir:
+				remote_xpra.append("--socket-dir=%s" % config.socket_dir)
 			params["remote_xpra"] = remote_xpra
 			if config.port and config.port>0:
 				params["display"] = ":%s" % config.port

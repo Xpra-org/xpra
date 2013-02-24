@@ -256,14 +256,13 @@ ALL_OPTIONS = {
                     "password-file"     : str,
                     "pulseaudio-command": str,
                     "encryption"        : str,
-                    "sockdir"           : str,
                     "mode"              : str,
                     "ssh"               : str,
                     "xvfb"              : str,
                     "socket-dir"        : str,
+                    "log-file"          : str,
                     "mode"              : str,
                     #int options:
-                    "jpegquality"       : int,
                     "quality"           : int,
                     "min-quality"       : int,
                     "speed"             : int,
@@ -325,12 +324,11 @@ GLOBAL_DEFAULTS = {
                     "password-file"     : "",
                     "pulseaudio_command": "",
                     "encryption"        : "",
-                    "sockdir"           : "",
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
                     "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",
                     "socket-dir"        : os.environ.get("XPRA_SOCKET_DIR") or '~/.xpra',
-                    "jpegquality"       : -1,
+                    "log-file"          : "$DISPLAY.log",
                     "quality"           : -1,
                     "min-quality"       : 50,
                     "speed"             : -1,
@@ -377,6 +375,10 @@ OPTIONS_VALIDATION = {
                     "encoding"          : lambda x : validate_in_list(x, ENCODINGS), 
                     "mode"              : lambda x : validate_in_list(x, MODES),
                     }
+#fields that got renamed:
+CLONES = {
+            "quality"       : "jpeg-quality",
+          }
 #TODO:
 #"speaker-codec"     : [""],
 #"microphone-codec"  : [""],
@@ -447,6 +449,9 @@ def make_defaults_struct():
     validated = validate_config(defaults)
     options = GLOBAL_DEFAULTS.copy()
     options.update(validated)
+    for k,v in CLONES.items():
+        if k in options:
+            options[v] = options[k]
     config = AdHocStruct()
     for k,v in options.items():
         attr_name = k.replace("-", "_")

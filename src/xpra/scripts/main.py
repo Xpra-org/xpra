@@ -88,6 +88,12 @@ def main(script_file, cmdline):
         group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")
+        group.add_option("--log-file", action="store",
+                      dest="log_file", default=defaults.log_file,
+                      help="When daemonizing, this is where the log messages will go (default: %s)."
+                      + " If a relative filename is specified the it is relative to --socket-dir,"
+                      + " the value of '$DISPLAY' will be substituted with the actual display used"
+                      )
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,
                           help="Use an existing display rather than starting one with xvfb")
@@ -242,7 +248,7 @@ def main(script_file, cmdline):
                       help="The 'dots per inch' value that client applications should try to honour (default: %default)")
     default_socket_dir_str = defaults.socket_dir or "$XPRA_SOCKET_DIR or '~/.xpra'"
     group.add_option("--socket-dir", action="store",
-                      dest="sockdir", default=defaults.socket_dir,
+                      dest="socket_dir", default=defaults.socket_dir,
                       help="Directory to place/look for the socket files in (default: %s)" % default_socket_dir_str)
     debug_default = ""
     if defaults.debug:
@@ -405,9 +411,9 @@ def parse_display_name(error_cb, opts, display_name):
         full_ssh += ["-T", desc["host"]]
         desc["full_ssh"] = full_ssh
         remote_xpra = opts.remote_xpra.split()
-        if opts.sockdir:
+        if opts.socket_dir:
             #ie: XPRA_SOCKET_DIR=/tmp .xpra/run-xpra _proxy :10
-            remote_xpra.append("--socket-dir=%s" % opts.sockdir)
+            remote_xpra.append("--socket-dir=%s" % opts.socket_dir)
         desc["remote_xpra"] = remote_xpra
         if desc.get("password") is None and opts.password_file and os.path.exists(opts.password_file):
             try:
@@ -423,7 +429,7 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "unix-domain"
         desc["local"] = True
         desc["display"] = display_name
-        desc["sockdir"] = opts.sockdir or get_default_socket_dir()
+        desc["socket_dir"] = opts.socket_dir or get_default_socket_dir()
         return desc
     elif display_name.startswith("tcp:") or display_name.startswith("tcp/"):
         separator = display_name[3] # ":" or "/"
@@ -444,7 +450,7 @@ def parse_display_name(error_cb, opts, display_name):
 def pick_display(parser, opts, extra_args):
     if len(extra_args) == 0:
         # Pick a default server
-        sockdir = DotXpra(opts.sockdir or get_default_socket_dir())
+        sockdir = DotXpra(opts.socket_dir or get_default_socket_dir())
         servers = sockdir.sockets()
         live_servers = [display
                         for (state, display) in servers
@@ -525,7 +531,7 @@ def connect_to(display_desc, debug_cb=None):
         return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH", close_cb=stop_tunnel)
 
     elif dtype == "unix-domain":
-        sockdir = DotXpra(display_desc["sockdir"])
+        sockdir = DotXpra(display_desc["socket_dir"])
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(5)
         sockfile = sockdir.socket_path(display_desc["display"])
@@ -626,7 +632,7 @@ def run_stop(parser, opts, extra_args):
     from xpra.client_base import StopXpraClient
 
     def show_final_state(display):
-        sockdir = DotXpra(opts.sockdir)
+        sockdir = DotXpra(opts.socket_dir)
         for _ in range(6):
             final_state = sockdir.server_state(display)
             if final_state is DotXpra.LIVE:
@@ -674,7 +680,7 @@ def run_list(parser, opts, extra_args):
     assert "gtk" not in sys.modules
     if extra_args:
         parser.error("too many arguments for mode")
-    sockdir = DotXpra(opts.sockdir)
+    sockdir = DotXpra(opts.socket_dir)
     results = sockdir.sockets()
     if not results:
         sys.stdout.write("No xpra sessions found\n")

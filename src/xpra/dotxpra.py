@@ -13,19 +13,24 @@ import time
 import sys
 
 o0700 = 448     #0o700
+DEFAULT_DOTDIR = "~/.xpra"
+
 
 class ServerSockInUse(Exception):
     pass
 
 class DotXpra(object):
     def __init__(self, sockdir=None, confdir=None):
-        self._confdir = os.path.expanduser(confdir or "~/.xpra")
-        self._sockdir = os.path.expanduser(sockdir or "~/.xpra")
+        self._confdir = os.path.expanduser(confdir or DEFAULT_DOTDIR)
+        self._sockdir = os.path.expanduser(sockdir or DEFAULT_DOTDIR)
         if not os.path.exists(self._confdir):
             os.mkdir(self._confdir, o0700)
         if not os.path.exists(self._sockdir):
             os.mkdir(self._sockdir, o0700)
         self._prefix = "%s-" % (socket.gethostname(),)
+
+    def sockdir(self):
+        return self._sockdir
 
     def confdir(self):
         return self._confdir

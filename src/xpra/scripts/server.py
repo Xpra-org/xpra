@@ -221,7 +221,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     signal.signal(signal.SIGTERM, deadly_signal)
 
     from xpra.scripts.config import get_default_socket_dir
-    dotxpra = DotXpra(opts.sockdir or get_default_socket_dir())
+    dotxpra = DotXpra(opts.socket_dir or get_default_socket_dir())
 
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
@@ -239,7 +239,14 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Daemonize:
     if opts.daemon:
-        logpath = dotxpra.log_path(display_name) + ".log"
+        if opts.log_file:
+            if os.path.isabs(opts.log_file):
+                logpath = opts.log_file
+            else:
+                logpath = os.path.join(dotxpra.sockdir(), opts.log_file)
+            logpath = logpath.replace("$DISPLAY", display_name)
+        else:
+            logpath = dotxpra.log_path(display_name) + ".log"
         sys.stderr.write("Entering daemon mode; "
                          + "any further errors will be reported to:\n"
                          + ("  %s\n" % logpath))
@@ -277,7 +284,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         os.fchmod(scriptfile.fileno(), o0700 & ~umask)
     else:
         os.chmod(scriptpath, o0700 & ~umask)
-    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.sockdir))
+    scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.socket_dir))
     scriptfile.close()
 
     from wimpiggy.log import Logger
