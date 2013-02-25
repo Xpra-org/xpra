@@ -1087,8 +1087,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 else:
                     WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
                     INPUT_ONLY = gdk.INPUT_ONLY
-                group_leader = gdk.Window(None, 1, 1, WINDOW_TOPLEVEL, 0, INPUT_ONLY,
-                                              "group-leader-for-%s" % pid)
+                title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
+                group_leader = gdk.Window(None, 1, 1, WINDOW_TOPLEVEL, 0, INPUT_ONLY, title)
                 self._pid_to_group_leader[pid] = group_leader
                 log("new hidden group leader window %s for pid=%s", group_leader, pid)
             self._group_leader_wids.setdefault(group_leader, []).append(wid)
