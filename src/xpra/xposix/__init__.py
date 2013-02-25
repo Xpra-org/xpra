@@ -5,10 +5,14 @@
 
 # Platform-specific code for Posix systems with X11 display.
 import os.path
+import sys
 
 XPRA_LOCAL_SERVERS_SUPPORTED = True
 DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
+
+def do_init():
+    pass
 
 def add_client_options(parser):
     from xpra.platform import add_notray_option, add_delaytray_option
@@ -31,3 +35,6 @@ def get_machine_id():
             except:
                 pass
     return  v
+
+def get_app_dir():
+    return os.path.join(sys.exec_prefix, "share", "xpra")

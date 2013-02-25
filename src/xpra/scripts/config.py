@@ -10,7 +10,6 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.platform import DEFAULT_SSH_CMD
 
 from wimpiggy.util import AdHocStruct
 from wimpiggy.gobject_compat import import_gobject, is_gtk3
@@ -241,7 +240,7 @@ def read_xpra_defaults():
     return defaults
 
 
-ALL_OPTIONS = {
+OPTION_TYPES = {
                     #string options:
                     "encoding"          : str,
                     "title"             : str,
@@ -303,14 +302,21 @@ ALL_OPTIONS = {
                     "start-child"       : list,
                     "bind-tcp"          : list,
                }
+
+GLOBAL_DEFAULTS = None
 #lowest common denominator here
 #(the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
-try:
-    import getpass
-    username = getpass.getuser()
-except:
-    username = ""
-GLOBAL_DEFAULTS = {
+def get_defaults():
+    global GLOBAL_DEFAULTS
+    if GLOBAL_DEFAULTS is not None:
+        return GLOBAL_DEFAULTS
+    from xpra.platform import DEFAULT_SSH_CMD
+    try:
+        import getpass
+        username = getpass.getuser()
+    except:
+        username = ""
+    GLOBAL_DEFAULTS = {
                     "encoding"          : ENCODINGS[0],
                     "title"             : "@title@ on @client-machine@",
                     "host"              : "",
@@ -366,6 +372,7 @@ GLOBAL_DEFAULTS = {
                     "bind-tcp"          : None,
                     "start-child"       : None,
                     }
+    return GLOBAL_DEFAULTS
 MODES = ["tcp", "tcp + aes", "ssh"]
 def validate_in_list(x, options):
     if x in options:
@@ -389,11 +396,11 @@ def validate_config(d={}):
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
         Each option is strongly typed and invalid value are discarded.
-        We get the required datatype from GLOBAL_DEFAULTS
+        We get the required datatype from OPTION_TYPES
     """
     nd = {}
     for k, v in d.items():
-        vt = ALL_OPTIONS.get(k)
+        vt = OPTION_TYPES.get(k)
         if vt is None:
             print("invalid key: %s" % k)
             continue
@@ -447,7 +454,7 @@ def make_defaults_struct():
     #populate config with default values:
     defaults = read_xpra_defaults()
     validated = validate_config(defaults)
-    options = GLOBAL_DEFAULTS.copy()
+    options = get_defaults().copy()
     options.update(validated)
     for k,v in CLONES.items():
         if k in options:

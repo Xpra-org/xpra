@@ -11,13 +11,13 @@ from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_g
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
-import webbrowser
 
-from xpra.scripts.config import ENCODINGS, get_build_info
+from xpra.scripts.config import ENCODINGS
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.keys import get_gtk_keymap, mask_to_names
 from xpra.platform.client_tray import ClientTray
 from xpra.gtk_util import set_tooltip_text
+from xpra.scripts.about import about, close_about
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -102,7 +102,6 @@ class ClientExtrasBase(object):
         self.connection = conn
         self.license_text = None
         self.session_info_window = None
-        self.about_dialog = None
         self.tray_icon = opts.tray_icon
         self.session_name = opts.session_name
         self.clipboard_helper = None
@@ -144,7 +143,7 @@ class ClientExtrasBase(object):
         self.client.quit(0)
 
     def cleanup(self):
-        self.close_about()
+        close_about()
         if self.session_info_window:
             self.session_info_window.destroy()
             self.session_info_window = None
@@ -244,51 +243,6 @@ class ClientExtrasBase(object):
         if self.client.session_name:
             return "%s\non %s" % (self.client.session_name, self.connection.target)
         return self.connection.target
-
-
-    def about(self, *args):
-        if self.about_dialog:
-            self.about_dialog.present()
-            return
-        dialog = gtk.AboutDialog()
-        if not is_gtk3():
-            def on_website_hook(dialog, web, *args):
-                webbrowser.open("http://xpra.org/")
-            def on_email_hook(dialog, mail, *args):
-                webbrowser.open("mailto://"+mail)
-            gtk.about_dialog_set_url_hook(on_website_hook)
-            gtk.about_dialog_set_email_hook(on_email_hook)
-            xpra_icon = self.get_pixbuf("xpra.png")
-            if xpra_icon:
-                dialog.set_icon(xpra_icon)
-        dialog.set_name("Xpra")
-        from xpra import __version__
-        dialog.set_version(__version__)
-        dialog.set_copyright('Copyright (c) 2009-2012')
-        dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
-                            'Nathaniel Smith <njs@pobox.com>',
-                            'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
-        #dialog.set_artists ([""])
-        dialog.set_license(self.get_license_text())
-        dialog.set_website("http://xpra.org/")
-        dialog.set_website_label("xpra.org")
-        pixbuf = self.get_pixbuf("xpra.png")
-        if pixbuf:
-            dialog.set_logo(pixbuf)
-        dialog.set_program_name("Xpra")
-        dialog.set_comments("\n".join(get_build_info()))
-        dialog.connect("response", self.close_about)
-        self.about_dialog = dialog
-        dialog.show()
-        dialog.present()
-
-    def close_about(self, *args):
-        try:
-            if self.about_dialog:
-                self.about_dialog.destroy()
-                self.about_dialog = None
-        except:
-            log.error("closing about dialog", exc_info=True)
 
 
     def session_info(self, *args):
@@ -444,7 +398,7 @@ class ClientExtrasBase(object):
         self.menu_shown = True
 
     def make_aboutmenuitem(self):
-        return  self.menuitem("About Xpra", "information.png", None, self.about)
+        return  self.menuitem("About Xpra", "information.png", None, about)
 
     def make_sessioninfomenuitem(self):
         title = "Session Info"
