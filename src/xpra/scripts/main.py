@@ -37,6 +37,11 @@ def nox():
 def main(script_file, cmdline):
     if os.name=="posix" and os.getuid()==0:
         print("\nWarning: running as root")
+    try:
+        import glib
+        glib.set_prgname("Xpra")
+    except:
+        pass
     #################################################################
     ## NOTE NOTE NOTE
     ##

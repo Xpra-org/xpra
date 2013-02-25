@@ -48,6 +48,7 @@ from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
+from xpra.gtk_util import set_application_name
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -75,11 +76,7 @@ class XpraServerBase(object):
         self.default_encoding = opts.encoding
         assert self.default_encoding in ENCODINGS
         self.session_name = opts.session_name
-        try:
-            import glib
-            glib.set_application_name(self.session_name or "Xpra")
-        except ImportError, e:
-            log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
+        set_application_name(self.session_name)
 
         self._window_to_id = {}
         self._id_to_window = {}

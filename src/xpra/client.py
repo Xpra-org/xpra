@@ -87,6 +87,7 @@ from xpra.stats.base import std_unit
 from xpra.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.client_window import ClientWindow, DRAW_DEBUG
+from xpra.gtk_util import set_application_name
 
 
 def nn(x):
@@ -762,6 +763,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             return
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
+        set_application_name(self.session_name)
         self.window_configure = capabilities.get("window_configure", False)
         self.server_supports_notifications = capabilities.get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
@@ -828,15 +830,6 @@ class XpraClient(XpraClientBase, gobject.GObject):
         modifier_keycodes = capabilities.get("modifier_keycodes")
         if modifier_keycodes:
             self._client_extras.set_modifier_mappings(modifier_keycodes)
-
-        if sys.version_info[:2]<(2,5):
-            log.warn("Python %s is too old!", sys.version_info)
-        else:
-            try:
-                import glib
-                glib.set_application_name(self.session_name)
-            except ImportError, e:
-                log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
         #sound:
         self.server_pulseaudio_id = capabilities.get("sound.pulseaudio.id")

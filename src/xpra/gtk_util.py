@@ -4,6 +4,7 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 
 from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
@@ -15,8 +16,30 @@ from wimpiggy.log import Logger
 log = Logger()
 
 
+def set_prgname(name):
+    try:
+        import glib
+        glib.set_prgname(name)
+    except:
+        pass
+
+NAME_SET = False
+def set_application_name(name):
+    global NAME_SET
+    if NAME_SET:
+        return
+    NAME_SET = True
+    if sys.version_info[:2]<(2,5):
+        log.warn("Python %s is too old!", sys.version_info)
+        return
+    try:
+        import glib
+        glib.set_application_name(name or "Xpra")
+    except ImportError, e:
+        log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
+
 def scaled_image(pixbuf, icon_size):
-    return    gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size,gtk.gdk.INTERP_BILINEAR))
+    return    gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, gdk.INTERP_BILINEAR))
 
 
 def get_icon_from_file(filename):
@@ -27,7 +50,7 @@ def get_icon_from_file(filename):
         f = open(filename, mode='rb')
         data = f.read()
         f.close()
-        loader = gtk.gdk.PixbufLoader()
+        loader = gdk.PixbufLoader()
         loader.write(data)
         loader.close()
     except Exception, e:
@@ -46,7 +69,7 @@ def add_close_accel(window, callback):
     if is_gtk3():
         return      #TODO: implement accel for gtk3
     accel_group = gtk.AccelGroup()
-    accel_group.connect_group(ord('w'), gtk.gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
+    accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
     window.add_accel_group(accel_group)
     accel_group = gtk.AccelGroup()
     key, mod = gtk.accelerator_parse('<Alt>F4')
@@ -66,10 +89,10 @@ def label(text="", tooltip=None):
 def title_box(label_str):
     eb = gtk.EventBox()
     l = label(label_str)
-    l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(red=48*256, green=0, blue=0))
+    l.modify_fg(gtk.STATE_NORMAL, gdk.Color(red=48*256, green=0, blue=0))
     al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
     al.set_padding(0, 0, 10, 10)
     al.add(l)
     eb.add(al)
-    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(red=219*256, green=226*256, blue=242*256))
+    eb.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=219*256, green=226*256, blue=242*256))
     return eb
