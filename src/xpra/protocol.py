@@ -18,6 +18,7 @@ import struct
 import os
 import threading
 
+USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
 
 if sys.version_info[:2]>=(2,5):
@@ -331,7 +332,7 @@ class Protocol(object):
                 log.info("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
         packet_type = packet[0]
-        if self.aliases and packet_type in self.aliases:
+        if USE_ALIASES and self.aliases and packet_type in self.aliases:
             #replace the packet type with the alias:
             packet[0] = self.aliases[packet_type]
         try:
