@@ -112,7 +112,7 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
         # as they are either irrelevant or simply do not match
         # the new environment used by xpra
         # TODO: use a whitelist
-        if var in ["XDG_SESSION_COOKIE", "LS_COLORS"]:
+        if var in ["XDG_SESSION_COOKIE", "LS_COLORS", "DISPLAY"]:
             continue
         #XPRA_SOCKET_DIR is a special case, it is handled below
         if var=="XPRA_SOCKET_DIR":
@@ -212,7 +212,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         except:
             pass
 
-    if opts.exit_with_children and not opts.children:
+    if opts.exit_with_children and not opts.start_child:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
         return  1
 
@@ -487,13 +487,13 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                     pass
         _cleanups.append(cleanup_pa)
     if opts.exit_with_children:
-        assert opts.children
-    if opts.children:
+        assert opts.start_child
+    if opts.start_child:
         #disable ubuntu's global menu using env vars:
         env = os.environ.copy()
         env["UBUNTU_MENUPROXY"] = ""
         env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
-        for child_cmd in opts.children:
+        for child_cmd in opts.start_child:
             if child_cmd:
                 try:
                     proc = subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True)

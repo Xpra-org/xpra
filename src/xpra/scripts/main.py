@@ -85,7 +85,7 @@ def main(script_file, cmdline):
         group = OptionGroup(parser, "Server Options",
                     "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
         group.add_option("--start-child", action="append",
-                          dest="children", metavar="CMD", default=defaults.start_child,
+                          dest="start_child", metavar="CMD", default=defaults.start_child,
                           help="program to spawn in new server (may be repeated) (default: %default)")
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=defaults.exit_with_children,
@@ -366,6 +366,10 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR2, sigusr2)
 
     if mode in ("start", "upgrade", "shadow") and supports_server:
+        if len(args)>0:
+            #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
+            if args[0].startswith("ssh/") or args[0].startswith("ssh:"):
+                return run_remote_server(parser, options, args)
         nox()
         from xpra.scripts.server import run_server
         return run_server(parser, options, mode, script_file, args)
@@ -376,9 +380,9 @@ def main(script_file, cmdline):
         return run_stop(parser, options, args)
     elif mode == "list" and supports_server:
         return run_list(parser, options, args)
-    elif mode == "_proxy" and supports_server:
+    elif mode in ("_proxy", "_proxy_start") and supports_server:
         nox()
-        return run_proxy(parser, options, args)
+        return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
     else:
         parser.error("invalid mode '%s'" % mode)
         return 1
@@ -389,6 +393,7 @@ def parse_display_name(error_cb, opts, display_name):
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
         desc["type"] = "ssh"
+        desc["proxy_command"] = ["_proxy"]
         desc["local"] = False
         parts = display_name.split(separator)
         if len(parts)>2:
@@ -499,7 +504,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 cmd += ["-pw", password]
             cmd.append("-ssh")
             cmd.append("-agent")
-        cmd += display_desc["remote_xpra"] + ["_proxy"] + display_desc["display_as_args"]
+        cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
         try:
             kwargs = {}
             if os.name=="posix" and not sys.platform.startswith("darwin"):
@@ -558,12 +563,13 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
 
 def set_signal_handlers(app):
     gobject = import_gobject()
+    SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
     def deadly_signal(signum, frame):
-        print("got deadly signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        print("got deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
         app.cleanup()
         os._exit(128 + signum)
     def app_signal(signum, frame):
-        print("\ngot signal %s, exiting" % {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        print("\ngot signal %s, exiting" % SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         gobject.timeout_add(0, app.quit, 128 + signum, priority=gobject.PRIORITY_HIGH)
@@ -599,6 +605,9 @@ def run_client(parser, opts, extra_args, mode):
     else:
         from xpra.client import XpraClient
         app = XpraClient(conn, opts)
+    do_run_client(app, conn.target, mode)
+
+def do_run_client(app, target, mode):
     def got_gibberish_msg(obj, data):
         if str(data).find("assword")>0:
             sys.stdout.write("Your ssh program appears to be asking for a password.\n"
@@ -616,7 +625,7 @@ def run_client(parser, opts, extra_args, mode):
             log.info("handshake-complete: detaching")
             app.quit(0)
         elif mode=="attach":
-            log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
+            log.info("Attached to %s (press Control-C to detach)\n" % target)
     app.connect("handshake-complete", handshake_complete)
     set_signal_handlers(app)
     try:
@@ -627,10 +636,44 @@ def run_client(parser, opts, extra_args, mode):
     finally:
         app.cleanup()
 
-def run_proxy(parser, opts, extra_args):
+def run_remote_server(parser, opts, args):
+    """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
+    params = parse_display_name(parser.error, opts, args[0])
+    #add special flags to "display_as_args"
+    proxy_args = [params["display"]]
+    if opts.start_child:
+        for c in opts.start_child:
+            proxy_args.append("--start-child=%s" % c)
+    params["display_as_args"] = proxy_args
+    #and use _proxy_start subcommand:
+    params["proxy_command"] = ["_proxy_start"]
+    conn = connect_or_fail(params)
+    from xpra.client import XpraClient
+    app = XpraClient(conn, opts)
+    do_run_client(app, params["display_name"], "attach")
+
+def run_proxy(parser, opts, script_file, args, start_server=False):
     from xpra.proxy import XpraProxy
     assert "gtk" not in sys.modules
-    server_conn = connect_or_fail(pick_display(parser, opts, extra_args))
+    if start_server:
+        assert len(args)==1
+        display_name = args[0]
+        #we must use a subprocess to avoid messing things up - yuk
+        cmd = [script_file, "start"]+args
+        if opts.start_child and len(opts.start_child)>0:
+            for x in opts.start_child:
+                cmd.append("--start-child=%s" % x)
+        def setsid():
+            os.setsid()
+        Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, preexec_fn=setsid)
+        dotxpra = DotXpra()
+        start = time.time()
+        while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
+            if time.time()-start>5:
+                print("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
+                return
+            time.sleep(0.10)
+    server_conn = connect_or_fail(pick_display(parser, opts, args))
     app = XpraProxy(TwoFileConnection(sys.stdout, sys.stdin, info="stdin/stdout"), server_conn)
     signal.signal(signal.SIGINT, app.quit)
     signal.signal(signal.SIGTERM, app.quit)

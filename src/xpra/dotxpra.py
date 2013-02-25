@@ -59,12 +59,12 @@ class DotXpra(object):
     LIVE = "LIVE"
     DEAD = "DEAD"
     UNKNOWN = "UNKNOWN"
-    def server_state(self, local_display_name):
+    def server_state(self, local_display_name, timeout=5):
         path = self.socket_path(local_display_name)
         if not os.path.exists(path):
             return self.DEAD
         sock = socket.socket(socket.AF_UNIX)
-        sock.settimeout(5)
+        sock.settimeout(timeout)
         try:
             sock.connect(path)
         except socket.error, e:

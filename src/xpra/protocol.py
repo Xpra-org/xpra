@@ -458,7 +458,7 @@ class Protocol(object):
                     break
                 if payload_size<0:
                     if read_buffer[0] not in ("P", ord("P")):
-                        return self._call_connection_lost("invalid packet header byte: ('%s...'), not an xpra client?" % read_buffer[:32])
+                        return self._call_connection_lost("invalid packet header byte: ('%s...'), not an xpra client?" % read_buffer[:48])
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
