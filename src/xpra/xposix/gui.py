@@ -17,6 +17,7 @@ assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
 from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
+from xpra.gtk_util import set_tooltip_text
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -99,10 +100,7 @@ class ClientExtras(ClientExtrasBase):
                 log.info("showing tray")
                 #session_name will get set during handshake
                 self.tray_widget.set_visible(True)
-            if hasattr(self.tray_widget, "set_tooltip_text"):
-                self.tray_widget.set_tooltip_text(self.get_tray_tooltip())
-            else:
-                self.tray_widget.set_tooltip(self.get_tray_tooltip())
+            set_tooltip_text(self.tray_widget, self.get_tray_tooltip())
             self.tray_widget.connect('popup-menu', self.popup_menu)
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)

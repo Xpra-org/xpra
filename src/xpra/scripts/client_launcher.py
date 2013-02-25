@@ -33,6 +33,7 @@ import webbrowser
 from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, get_build_info, read_config, make_defaults_struct, validate_config
+from xpra.gtk_util import set_tooltip_text, add_close_accel, scaled_image
 from xpra.scripts.main import connect_to
 from xpra.client import XpraClient
 
@@ -240,22 +241,6 @@ XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 config = make_defaults_struct()
 
 
-def add_close_accel(window, callback):
-	# key accelerators
-	accel_group = gtk.AccelGroup()
-	accel_group.connect_group(ord('w'), gtk.gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
-	window.add_accel_group(accel_group)
-	accel_group = gtk.AccelGroup()
-	key, mod = gtk.accelerator_parse('<Alt>F4')
-	accel_group.connect_group(key, mod, gtk.ACCEL_LOCKED, callback)
-	escape_key, modifier = gtk.accelerator_parse('Escape')
-	accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
-	window.add_accel_group(accel_group)
-
-def scaled_image(pixbuf, icon_size):
-	return	gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size,gtk.gdk.INTERP_BILINEAR))
-
-
 class ApplicationWindow:
 
 	def	__init__(self):
@@ -283,8 +268,7 @@ class ApplicationWindow:
 			settings = logo_button.get_settings()
 			settings.set_property('gtk-button-images', True)
 			logo_button.connect("clicked", about)
-			if hasattr(logo_button, "set_tooltip_text"):
-				logo_button.set_tooltip_text("About")
+			set_tooltip_text(logo_button, "About")
 			image = gtk.Image()
 			image.set_from_pixbuf(icon_pixbuf)
 			logo_button.set_image(image)

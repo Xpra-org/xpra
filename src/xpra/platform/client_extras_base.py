@@ -17,6 +17,7 @@ from xpra.scripts.config import ENCODINGS, get_build_info
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.keys import get_gtk_keymap, mask_to_names
 from xpra.platform.client_tray import ClientTray
+from xpra.gtk_util import set_tooltip_text
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -80,13 +81,6 @@ def set_checkeditems(submenu, is_match_func):
             if a!=v:
                 x.set_active(v)
 
-
-if hasattr(gtk, "pygtk_version") and gtk.pygtk_version<(2,12):
-    def set_tooltip_text(widget, text):
-        pass
-else:
-    def set_tooltip_text(widget, text):
-        widget.set_tooltip_text(text)
 
 def CheckMenuItem(label, tooltip=None):
     """ adds a get_label() method for older versions of gtk which do not have it

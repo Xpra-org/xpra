@@ -18,41 +18,12 @@ from xpra.deque import maxdeque
 from xpra.stats.base import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from wimpiggy.log import Logger
-from xpra.platform.client_extras_base import set_tooltip_text
+from xpra.gtk_util import add_close_accel, label, title_box, set_tooltip_text
 log = Logger()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
 
-
-def add_close_accel(window, callback):
-    if is_gtk3():
-        return      #TODO: implement accel for gtk3
-    # key accelerators
-    accel_group = gtk.AccelGroup()
-    accel_group.connect_group(ord('w'), gdk.CONTROL_MASK, gtk.ACCEL_LOCKED, callback)
-    window.add_accel_group(accel_group)
-    accel_group = gtk.AccelGroup()
-    escape_key, modifier = gtk.accelerator_parse('Escape')
-    accel_group.connect_group(escape_key, modifier, gtk.ACCEL_LOCKED |  gtk.ACCEL_VISIBLE, callback)
-    window.add_accel_group(accel_group)
-
-def label(text="", tooltip=None):
-    l = gtk.Label(text)
-    if tooltip:
-        set_tooltip_text(l, tooltip)
-    return l
-
-def title_box(label_str):
-    eb = gtk.EventBox()
-    l = label(label_str)
-    l.modify_fg(gtk.STATE_NORMAL, gtk.gdk.Color(red=48*256, green=0, blue=0))
-    al = gtk.Alignment(xalign=0.0, yalign=0.5, xscale=0.0, yscale=0.0)
-    al.set_padding(0, 0, 10, 10)
-    al.add(l)
-    eb.add(al)
-    eb.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(red=219*256, green=226*256, blue=242*256))
-    return eb
 
 def pixelstr(v):
     if v<0:
