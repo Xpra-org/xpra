@@ -392,8 +392,11 @@ CLONES = {
 #"speaker-codec"     : [""],
 #"microphone-codec"  : [""],
 
+#these options should not be specified in config files:
+NO_FILE_OPTIONS = ["daemon"]
 
-def validate_config(d={}):
+
+def validate_config(d={}, discard=NO_FILE_OPTIONS):
     """
         Validates all the options given in a dict with fields as keys and
         strings or arrays of strings as values.
@@ -402,9 +405,12 @@ def validate_config(d={}):
     """
     nd = {}
     for k, v in d.items():
+        if k in discard:
+            print("Warning: option '%s' is not allowed in configuration files" % k)
+            continue
         vt = OPTION_TYPES.get(k)
         if vt is None:
-            print("invalid key: %s" % k)
+            print("Warning: invalid option: '%s'" % k)
             continue
         if vt==str:
             if type(v)!=str:
@@ -418,7 +424,7 @@ def validate_config(d={}):
             try:
                 v = vt(v)
             except Exception, e:
-                print("cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, vt, e))
+                print("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, vt, e))
                 continue
         elif vt==bool:
             if type(v)==str:
@@ -428,7 +434,7 @@ def validate_config(d={}):
             elif v in ["no", "false", "0", "off"]:
                 v = False
             else:
-                print("cannot parse value '%s' for '%s' as a boolean" % (v, k))
+                print("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
                 continue
         elif vt==list:
             if type(v)==str:
@@ -438,7 +444,7 @@ def validate_config(d={}):
                 #ok so far..
                 pass
             else:
-                print("invalid value for '%s': %s (a string or list of strings is required)" % (k, type(v)))
+                print("Warning: invalid value for '%s': %s (a string or list of strings is required)" % (k, type(v)))
                 continue
         else:
             print("Error: unknown option type for '%s': %s" % (k, vt))
@@ -446,7 +452,7 @@ def validate_config(d={}):
         if validation and v is not None:
             msg = validation(v)
             if msg:
-                print("invalid value for '%s': %s, %s" % (k, v, msg))
+                print("Warning: invalid value for '%s': %s, %s" % (k, v, msg))
                 continue
         nd[k] = v
     return nd
