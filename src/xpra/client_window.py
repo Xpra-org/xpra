@@ -135,6 +135,8 @@ import os
 import cairo
 import re
 import sys
+import time
+import math
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -287,6 +289,10 @@ class ClientWindow(gtk.Window):
         from xpra.window_backing import new_backing
         self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
 
+    def full_redraw(self):
+        w, h = self.get_size()
+        queue_draw(self, 0, 0, w, h)
+
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
 
@@ -433,7 +439,7 @@ class ClientWindow(gtk.Window):
         if DRAW_DEBUG:
             log.info("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
-            self._backing.cairo_draw(context, 0, 0)
+            self._backing.cairo_draw(context)
 
     """ gtk2 """
     def do_expose_event(self, event):
@@ -441,11 +447,31 @@ class ClientWindow(gtk.Window):
             log.info("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
-        x,y,_,_ = event.area
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
-        self._backing.cairo_draw(context, x, y)
+        self._backing.cairo_draw(context)
+        if not self._client.server_ok():
+            #add grey semi-opaque layer on top:
+            context.set_operator(cairo.OPERATOR_OVER)
+            context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
+            context.rectangle(event.area)
+            context.fill()
+            #add spinner:
+            w, h = self.get_size()
+            dim = min(w/3.0, h/3.0, 100.0)
+            context.set_line_width(dim/10.0)
+            context.set_line_cap(cairo.LINE_CAP_ROUND)
+            context.translate(w/2, h/2)
+            from xpra.gtk_spinner import cv
+            count = int(time.time()*5.0)
+            for i in range(8):      #8 lines
+                context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
+                context.move_to(0.0, -dim/4.0)
+                context.line_to(0.0, -dim)
+                context.rotate(math.pi/4)
+                context.stroke()
+            
 
     def do_map_event(self, event):
         log("Got map event: %s", event)

@@ -95,6 +95,8 @@ def nn(x):
         return  ""
     return x
 
+FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
+
 
 class XpraClient(XpraClientBase, gobject.GObject):
     __gsignals__ = {
@@ -134,10 +136,12 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.server_max_desktop_size = None
         self.server_display = None
         self.server_randr = False
+        self.server_auto_refresh_delay = 0
         self.pixel_counter = maxdeque(maxlen=100)
         self.server_ping_latency = maxdeque(maxlen=100)
         self.server_load = None
         self.client_ping_latency = maxdeque(maxlen=100)
+        self._server_ok = True
         self.last_ping_echoed_time = 0
         self.server_info_request = False
         self.server_last_info = None
@@ -238,7 +242,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         if opts.pings:
             gobject.timeout_add(1000, self.send_ping)
         else:
-            gobject.timeout_add(20*1000, self.send_ping)
+            gobject.timeout_add(10*1000, self.send_ping)
 
     def init_mmap(self, mmap_group, socket_filename):
         log("init_mmap(%s, %s)", mmap_group, socket_filename)
@@ -689,19 +693,51 @@ class XpraClient(XpraClientBase, gobject.GObject):
         log("batch props=%s", [("%s=%s" % (k,v)) for k,v in capabilities.items() if k.startswith("batch.")])
         return capabilities
 
+    def server_ok(self):
+        return self._server_ok
+
+    def check_server_echo(self, ping_sent_time):
+        last = self._server_ok
+        self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
+        if last!=self._server_ok:
+            #changed, so redraw the windows
+            self.redraw_all_windows()
+            if not self._server_ok:
+                #server has just timed out: redraw regularly until the server is ok:
+                def timer_redraw():
+                    if self.server_ok():
+                        #it's ok now, things are already redrawn
+                        return False
+                    self.redraw_all_windows()
+                    return True
+                gobject.timeout_add(100, timer_redraw)
+        return False
+
+    def redraw_all_windows(self):
+        for w in self._id_to_window.values():
+            w.full_redraw()
+
     def send_ping(self):
         now_ms = int(1000*time.time())
         self.send("ping", now_ms)
-        wait = 60
-        def check_echo_received(*args):
+        timeout = 60
+        def check_echo_timeout(*args):
             if self.last_ping_echoed_time<now_ms:
                 self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % wait)
-        gobject.timeout_add(wait*1000, check_echo_received)
+        gobject.timeout_add(timeout*1000, check_echo_timeout)
+        wait = 2.0
+        if len(self.server_ping_latency)>0:
+            l = [x for _,x in list(self.server_ping_latency)]
+            avg = sum(l) / len(l)
+            wait = 1.0+avg*2.0
+            log("average server latency=%s, using max wait=%s", avg, wait)
+        gobject.timeout_add(int(wait*1000), self.check_server_echo, now_ms)
         return True
 
     def _process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
+        self.check_server_echo(0)
         server_ping_latency = time.time()-echoedtime/1000.0
         self.server_ping_latency.append((time.time(), server_ping_latency))
         self.server_load = l1, l2, l3
@@ -1298,6 +1334,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = str(packet[0])
+        self.check_server_echo(0)
         if packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 gobject.idle_add(self._client_extras.process_clipboard_packet, packet)

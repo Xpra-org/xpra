@@ -170,6 +170,17 @@ class Backing(object):
         gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
 
 
+    def cairo_draw(self, context):
+        try:
+            context.set_source_pixmap(self._backing, 0, 0)
+            context.set_operator(cairo.OPERATOR_SOURCE)
+            context.paint()
+            return True
+        except:
+            log.error("cairo_draw(%s)", context, exc_info=True)
+            return False
+
+
 """
 An area we draw onto with cairo
 This must be used with gtk3 since gtk3 no longer supports gdk pixmaps
@@ -306,16 +317,6 @@ class CairoBacking(Backing):
             return
         raise Exception("invalid picture encoding: %s" % coding)
 
-    def cairo_draw(self, context, x, y):
-        try:
-            context.set_source_surface(self._backing, x, y)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            return True
-        except:
-            log.error("cairo_draw(%s)", context, exc_info=True)
-            return False
-
 
 """
 This is the gtk2 version.
@@ -449,16 +450,6 @@ class PixmapBacking(Backing):
             self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
             self.paint_image(coding, img_data, x, y, width, height, rowstride, options, callbacks)
-
-    def cairo_draw(self, context, x, y):
-        try:
-            context.set_source_pixmap(self._backing, 0, 0)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            return True
-        except:
-            log.error("cairo_draw(%s)", context, exc_info=True)
-            return False
 
 
 class FakeBacking(object):
