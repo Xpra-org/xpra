@@ -477,7 +477,13 @@ def connect_or_fail(display_desc):
     except Exception, e:
         sys.exit("connection failed: %s" % e)
 
-def connect_to(display_desc, debug_cb=None):
+def ssh_connect_failed(message):
+    #by the time ssh fails, we may have entered the gtk main loop
+    #(and more than once thanks to the clipboard code..)
+    from wimpiggy.util import gtk_main_quit_really
+    gtk_main_quit_really()
+
+def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     if dtype == "ssh":
@@ -512,9 +518,8 @@ def connect_to(display_desc, debug_cb=None):
             e = child.poll()
             if e is not None:
                 error_message = "cannot %s using %s: the SSH process has terminated with exit code=%s" % (action, display_desc["full_ssh"], e)
-                print(error_message)
-                from wimpiggy.util import gtk_main_quit_really
-                gtk_main_quit_really()
+                debug_cb(error_message)
+                ssh_fail_cb(error_message)
                 raise IOError(error_message)
         def stop_tunnel():
             try:

@@ -161,6 +161,8 @@ def read_config(conf_file):
         the value for this key will be an array of strings.
     """
     d = {}
+    if not os.path.isfile(conf_file):
+        return d
     f = open(conf_file, "rU")
     lines = []
     for line in f:

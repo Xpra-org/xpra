@@ -11,8 +11,6 @@ This is a simple GUI for starting the xpra client.
 """
 
 import sys
-import os.path
-import tempfile
 import shlex
 
 try:
@@ -25,23 +23,23 @@ gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
 import pango
-import gobject
+
 
 from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
 from xpra.gtk_util import set_tooltip_text, add_close_accel, scaled_image
 from xpra.scripts.about import about
-from xpra.platform import get_icon
 from xpra.scripts.main import connect_to
+from xpra.platform import get_icon
 from xpra.client import XpraClient
+from wimpiggy.log import Logger
+log = Logger()
 
 
 APPLICATION_NAME = "Xpra Launcher"
 SITE_DOMAIN = "xpra.org"
 SITE_URL = "http://%s/" % SITE_DOMAIN
-APP_DIR = os.getcwd()
-ICONS_DIR = None
 GPL2 = None
 LOSSY_5 = "lowest quality"
 LOSSY_20 = "low quality"
@@ -70,7 +68,7 @@ class ApplicationWindow:
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
 		self.window.set_title(APPLICATION_NAME)
-		self.window.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color(red=65535, green=65535, blue=65535))
+		self.window.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 		icon_pixbuf = get_icon("xpra.png")
 		if icon_pixbuf:
 			self.window.set_icon(icon_pixbuf)
@@ -147,13 +145,16 @@ class ApplicationWindow:
 		self.username_entry = gtk.Entry(max=128)
 		self.username_entry.set_width_chars(16)
 		self.username_entry.set_text(self.config.username)
+		self.username_entry.connect("changed", self.validate)
 		self.username_label = gtk.Label("@")
 		self.host_entry = gtk.Entry(max=128)
 		self.host_entry.set_width_chars(24)
 		self.host_entry.set_text(self.config.host)
+		self.host_entry.connect("changed", self.validate)
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
 		self.port_entry.set_text(str(self.config.port))
+		self.port_entry.connect("changed", self.validate)
 		hbox.pack_start(self.username_entry)
 		hbox.pack_start(self.username_label)
 		hbox.pack_start(self.host_entry)
@@ -169,6 +170,7 @@ class ApplicationWindow:
 		self.password_entry.set_text("")
 		self.password_entry.set_visibility(False)
 		self.password_entry.connect("changed", self.password_ok)
+		self.password_entry.connect("changed", self.validate)
 		self.password_label = gtk.Label("Password: ")
 		hbox.pack_start(self.password_label)
 		hbox.pack_start(self.password_entry)
@@ -178,7 +180,7 @@ class ApplicationWindow:
 		self.info = gtk.Label()
 		self.info.set_line_wrap(True)
 		self.info.set_size_request(360, -1)
-		color_obj = gtk.gdk.color_parse("red")
+		color_obj = gdk.color_parse("red")
 		if color_obj:
 			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
 		vbox.pack_start(self.info)
@@ -200,12 +202,38 @@ class ApplicationWindow:
 		vbox.show_all()
 		self.window.vbox = vbox
 		self.window.add(vbox)
+		self.mode_changed()
+		self.encoding_changed()
+		self.validate()
+
+	def validate(self, *args):
+		self.update_options_from_gui()
+		ssh = self.mode_combo.get_active_text()=="SSH"
+		errs = []
+		host = self.config.host
+		errs.append((self.host_entry, not bool(host), "specify the host"))
+		if ssh and not self.config.port:
+			port = 0		#port optional with ssh
+		else:
+			try:
+				port = int(self.config.port)
+			except:
+				port = -1
+		errs.append((self.port_entry, port<0 or port>=2**16, "invalid port number"))
+		err_text = []
+		for w, e, text in errs:
+			self.set_widget_bg_color(w, e)
+			if e:
+				err_text.append(text)
+		log.debug("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
+		self.set_info_text(", ".join(err_text))
+		self.set_info_color(len(err_text)>0)
+		self.button.set_sensitive(len(err_text)==0)
+		return errs
 
 	def show(self):
-		self.mode_changed()
 		self.window.show()
 		self.window.present()
-		self.encoding_changed()
 
 	def run(self):
 		gtk.main()
@@ -229,6 +257,7 @@ class ApplicationWindow:
 		else:
 			self.password_label.hide()
 			self.password_entry.hide()
+		self.validate()
 
 	def encoding_changed(self, *args):
 		uses_quality_option = self.encoding_combo.get_active_text() in ["jpeg", "webp", "x264"]
@@ -239,33 +268,36 @@ class ApplicationWindow:
 			self.quality_combo.hide()
 			self.jpeg_label.hide()
 
+	def reset_errors(self):
+		self.set_sensitive(True)
+		self.set_info_text("")
+		for widget in (self.info, self.password_entry, self.username_entry, self.host_entry, self.port_entry):
+			self.set_widget_fg_color(self.info, False)
+			self.set_widget_bg_color(widget, False)
+
 	def set_info_text(self, text):
 		if self.info:
 			gobject.idle_add(self.info.set_text, text)
 
+	def set_info_color(self, is_error=False):
+		self.set_widget_fg_color(self.info, is_error)
+
+
 	def set_sensitive(self, s):
 		gobject.idle_add(self.window.set_sensitive, s)
-
 
 	def connect_clicked(self, *args):
 		self.update_options_from_gui()
 		self.do_connect()
 
 	def do_connect(self):
-		thread.start_new_thread(self.connect_builtin, ())
+		try:
+			self.connect_builtin()
+		except:
+			self.set_sensitive(True)
+			log.error("cannot connect:", exc_info=True)
 
 	def connect_builtin(self):
-		try:
-			self.do_connect_builtin()
-		except Exception, e:
-			self.set_sensitive(True)
-			print("%s" % e)
-			import traceback
-			traceback.print_stack()
-
-	def do_connect_builtin(self):
-		self.set_sensitive(False)
-		self.set_info_text("Connecting.")
 		#cooked vars used by connect_to
 		params = {"type"	: self.config.mode}
 		if self.config.mode=="ssh":
@@ -311,8 +343,17 @@ class ApplicationWindow:
 
 		#print("connect_to(%s)" % params)
 		self.set_info_text("Connecting...")
+		thread.start_new_thread(self.do_connect_builtin, (params,))
+
+	def ssh_failed(self, message):
+		self.set_info_text(message)
+		self.set_info_color(True)
+
+	def do_connect_builtin(self, params):
+		self.set_info_text("Connecting.")
+		self.set_sensitive(False)
 		try:
-			conn = connect_to(params, self.set_info_text)
+			conn = connect_to(params, self.set_info_text, ssh_fail_cb=self.ssh_failed)
 		except Exception, e:
 			self.set_sensitive(True)
 			self.set_info_color(True)
@@ -350,21 +391,29 @@ class ApplicationWindow:
 		gobject.idle_add(start_XpraClient)
 
 	def password_ok(self, *args):
-		color_obj = gtk.gdk.color_parse("black")
+		color_obj = gdk.color_parse("black")
 		self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
 
 	def password_warning(self, *args):
-		color_obj = gtk.gdk.color_parse("red")
+		color_obj = gdk.color_parse("red")
 		self.password_entry.modify_text(gtk.STATE_NORMAL, color_obj)
 		self.password_entry.grab_focus()
 
-	def set_info_color(self, is_error=False):
+	def set_widget_bg_color(self, widget, is_error=False):
 		if is_error:
-			color_obj = gtk.gdk.color_parse("red")
+			color_obj = gdk.color_parse("red")
 		else:
-			color_obj = gtk.gdk.color_parse("black")
+			color_obj = gdk.color_parse("white")
 		if color_obj:
-			self.info.modify_fg(gtk.STATE_NORMAL, color_obj)
+			widget.modify_base(gtk.STATE_NORMAL, color_obj)
+
+	def set_widget_fg_color(self, widget, is_error=False):
+		if is_error:
+			color_obj = gdk.color_parse("red")
+		else:
+			color_obj = gdk.color_parse("black")
+		if color_obj:
+			widget.modify_fg(gtk.STATE_NORMAL, color_obj)
 
 
 	def update_options_from_gui(self):
@@ -388,17 +437,10 @@ class ApplicationWindow:
 		gtk.main_quit()
 
 	def update_options_from_file(self, filename):
-		propDict = read_config(filename)
-		options = validate_config(propDict)
+		props = read_config(filename)
+		options = validate_config(props)
 		for k,v in options.items():
 			setattr(self.config, k, v)
-
-def create_password_file(password):
-	pass_file = tempfile.NamedTemporaryFile()
-	pass_file.write("%s" % password)
-	pass_file.flush()
-	return pass_file
-
 
 
 def main():
@@ -412,17 +454,18 @@ def main():
 			#do that only (not showing UI unless something goes wrong):
 			gobject.idle_add(app.do_connect)
 		if not app.config.autoconnect or app.config.debug:
+			app.reset_errors()
 			app.show()
 		app.run()
 	except KeyboardInterrupt:
 		pass
-	if app.config.password_file and os.path.exists(app.config.password_file):
-		os.unlink(app.config.password_file)
 	return 0
 
 
 if __name__ == "__main__":
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
+	logging.root.addHandler(logging.StreamHandler(sys.stdout))
+	logging.root.setLevel(logging.INFO)
 	v = main()
 	sys.exit(v)
