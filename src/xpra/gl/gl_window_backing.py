@@ -17,11 +17,11 @@ from xpra.codec_constants import YUV420P, YUV422P, YUV444P
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
-    GL_TEXTURE_COORD_ARRAY, GL_RGB, GL_UNPACK_ROW_LENGTH, \
+    GL_TEXTURE_COORD_ARRAY, GL_UNPACK_ROW_LENGTH, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, \
-    glActiveTexture, glTexSubImage2D, glTexCoord2i, \
+    glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glEnableClientState, glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
@@ -132,40 +132,9 @@ class GLPixmapBacking(PixmapBacking):
             finally:
                 self.gl_end(drawable)
 
-    def _do_paint_rgb24(self, img_data, x, y, w, h, rowstride, options, callbacks):
-        log("do_paint_rgb24(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, w, h, rowstride, options, callbacks)
-        ww, wh = self.size
-        if x+w>ww or y+h>wh:
-            log("do_paint_rgb24: ignoring paint which would overflow the backing area")
-            return
-        drawable = self.gl_init()
-        if not drawable:
-            log("do_paint_rgb24: cannot paint yet..")
-            return
-        try:
-            #cleanup if we were doing yuv previously:
-            if self.pixel_format!=GLPixmapBacking.RGB24:
-                self.remove_shader()
-                self.pixel_format = GLPixmapBacking.RGB24
-
-            glEnable(GL_TEXTURE_RECTANGLE_ARB)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[0])
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
-            for texture in (GL_TEXTURE1, GL_TEXTURE2):
-                glActiveTexture(texture)
-                glDisable(GL_TEXTURE_RECTANGLE_ARB)
-
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-
-            glBegin(GL_QUADS)
-            for rx,ry in ((x, y), (x, y+h), (x+w, y+h), (x+w, y)):
-                glTexCoord2i(rx, ry)
-                glVertex2i(rx, ry)
-            glEnd()
-        finally:
-            self.gl_end(drawable)
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        gc = self._backing.new_gc()
+        self.glarea.window.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
