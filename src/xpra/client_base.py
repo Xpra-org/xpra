@@ -68,12 +68,14 @@ class XpraClientBase(gobject.GObject):
         self._priority_packets = []
         self._ordinary_packets = []
         self._mouse_position = None
+        self._aliases = {}
         #server state and caps:
         self.server_capabilities = {}
         self._remote_version = None
         self._remote_revision = None
         self.make_uuid()
         self.init_packet_handlers()
+        self.init_aliases()
 
     def ready(self, conn):
         log.debug("ready(%s)", conn)
@@ -95,6 +97,14 @@ class XpraClientBase(gobject.GObject):
             Protocol.CONNECTION_LOST: self._process_connection_lost,
             Protocol.GIBBERISH: self._process_gibberish,
             }
+
+    def init_aliases(self):
+        packet_types = list(self._packet_handlers.keys())
+        packet_types += list(self._ui_packet_handlers.keys())
+        i = 1
+        for key in packet_types:
+            self._aliases[i] = key
+            i += 1
 
     def send_hello(self, challenge_response=None):
         hello = self.make_hello(challenge_response)
@@ -146,6 +156,11 @@ class XpraClientBase(gobject.GObject):
         capabilities["uuid"] = self.uuid
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this
+        if self._aliases:
+            raliases = {}
+            for k,v in self._aliases.items():
+                raliases[v] = k
+            capabilities["aliases"] = raliases
         return capabilities
 
     def make_uuid(self):
@@ -307,6 +322,7 @@ class XpraClientBase(gobject.GObject):
             #server uses a new cipher after second hello:
             self.set_server_encryption(capabilities)
         self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
+        self._protocol.aliases = capabilities.get("aliases", {})
         return True
 
     def _process_set_deflate(self, packet):
@@ -320,6 +336,8 @@ class XpraClientBase(gobject.GObject):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
+        if type(packet_type)==int:
+            packet_type = self._aliases.get(packet_type)
         handler = self._packet_handlers.get(packet_type)
         if handler:
             handler(packet)

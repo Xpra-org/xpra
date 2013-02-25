@@ -65,6 +65,7 @@ class XpraServerBase(object):
         # This must happen early, before loading in windows at least:
         self._potential_protocols = []
         self._server_sources = {}
+        self._aliases = {}
 
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
@@ -175,8 +176,9 @@ class XpraServerBase(object):
                 log.info("  you should use the '--no-notifications' flag")
                 log.info("")
 
-        ### All right, we're ready to accept customers:
         self.init_packet_handlers()
+        self.init_aliases()
+        ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
 
@@ -274,6 +276,15 @@ class XpraServerBase(object):
             "disconnect":                           self._process_disconnect,
             # Note: "clipboard-*" packets are handled via a special case..
             })
+
+    def init_aliases(self):
+        packet_types = list(self._default_packet_handlers.keys())
+        packet_types += list(self._authenticated_packet_handlers.keys())
+        packet_types += list(self._authenticated_ui_packet_handlers.keys())
+        i = 1
+        for key in packet_types:
+            self._aliases[i] = key
+            i += 1
 
     def signal_quit(self, signum, frame):
         log.info("\ngot signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
@@ -543,6 +554,7 @@ class XpraServerBase(object):
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
+        proto.aliases = capabilities.get("aliases", {})
         ss = ServerSource(proto, self.get_transient_for,
                           self.supports_mmap,
                           self.supports_speaker, self.supports_microphone,
@@ -633,6 +645,11 @@ class XpraServerBase(object):
         capabilities["change-min-speed"] = True
         capabilities["client_window_properties"] = True
         capabilities["info-request"] = True
+        if self._aliases:
+            raliases = {}
+            for k,v in self._aliases.items():
+                raliases[v] = k
+            capabilities["aliases"] = raliases
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -1296,6 +1313,8 @@ class XpraServerBase(object):
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
+        if type(packet_type)==int:
+            packet_type = self._aliases.get(packet_type)
         assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
         if packet_type.startswith("clipboard-"):
             ss = self._server_sources.get(proto)

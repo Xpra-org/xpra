@@ -117,6 +117,7 @@ class Protocol(object):
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 32*1024
         self.large_packets = ["hello"]
+        self.aliases = {}
         self.chunked_compression = True
         self._closed = False
         self._encoder = self.bencode
@@ -329,14 +330,16 @@ class Protocol(object):
             elif ti!=str:
                 log.info("unexpected data type in %s packet: %s", packet[0], ti)
         #now the main packet (or what is left of it):
+        packet_type = packet[0]
+        if self.aliases and packet_type in self.aliases:
+            #replace the packet type with the alias:
+            packet[0] = self.aliases[packet_type]
         try:
             main_packet, proto_version = self._encoder(packet)
         except (KeyError, TypeError), e:
             if self._closed:
                 return [], 0
-            log.error("failed to encode packet: %s", packet)
-            import traceback
-            traceback.print_exc()
+            log.error("failed to encode packet: %s", packet, exc_info=True)
             self.verify_packet(packet)
             raise e
         if len(main_packet)>=1024 and packet_in[0] not in self.large_packets:
