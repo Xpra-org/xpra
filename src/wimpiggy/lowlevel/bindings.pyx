@@ -129,6 +129,7 @@ def premultiply_argb_in_place(buf):
     cdef Py_ssize_t cbuf_len = 0
     cdef unsigned int a, r, g, b
     assert sizeof(int) == 4
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)
     cdef int i
     for 0 <= i < cbuf_len / 4:
