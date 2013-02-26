@@ -97,7 +97,10 @@ else:
 
     WINDOW_POPUP = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
-    WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK
+    WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
+            | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
+            | gdk.PROPERTY_CHANGE_MASK
+
     OR_TYPE_HINTS = [gdk.WINDOW_TYPE_HINT_DIALOG,
                 gdk.WINDOW_TYPE_HINT_MENU, gdk.WINDOW_TYPE_HINT_TOOLBAR,
                 #gdk.WINDOW_TYPE_HINT_SPLASHSCREEN, gdk.WINDOW_TYPE_HINT_UTILITY,
@@ -236,14 +239,22 @@ class ClientWindow(gtk.Window):
             if transient_for is not None and transient_for.window is not None and type_hint in OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
-        #deal with workspace mapping:
+        if CAN_SET_WORKSPACE:
+            self.connect("property-notify-event", self.property_changed)
+
+    def property_changed(self, widget, event):
+        log("property_changed: %s", event.atom)
+        if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
+            #fake a configure event to send the new client_properties with
+            #the updated workspace number:
+            self.process_configure_event()
 
     def set_workspace(self):
         if not CAN_SET_WORKSPACE or self._been_mapped:
             return -1
         workspace = self._client_properties.get("workspace", -1)
         log("set_workspace() workspace=%s", workspace)
-        if workspace<0 or workspace==self.get_workspace():
+        if workspace<0 or workspace==self.get_current_workspace():
             return -1
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
@@ -272,17 +283,22 @@ class ClientWindow(gtk.Window):
     def is_GL(self):
         return False
 
-    def get_workspace(self):
-        if sys.platform.startswith("win"):
-            return  -1              #windows does not have workspaces
+    def get_current_workspace(self):
         window = gdk_window(self)
         root = window.get_screen().get_root_window()
-        for target, prop in ((window, "_NET_WM_DESKTOP"), (root, "_NET_CURRENT_DESKTOP")):
-            value = xget_u32_property(target, prop)
-            if value is not None:
-                log("get_workspace() found value=%s from %s / %s", value, target, prop)
-                return value
-        log("get_workspace() value not found!")
+        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
+
+    def get_window_workspace(self):
+        return self.do_get_workspace(gdk_window(self), "_NET_WM_DESKTOP")
+
+    def do_get_workspace(self, target, prop):
+        if sys.platform.startswith("win"):
+            return  -1              #windows does not have workspaces
+        value = xget_u32_property(target, prop)
+        if value is not None:
+            log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
+            return value
+        log("do_get_workspace() value not found!")
         return  -1
 
     def new_backing(self, w, h):
@@ -483,10 +499,13 @@ class ClientWindow(gtk.Window):
             if not self._been_mapped:
                 workspace = self.set_workspace()
             else:
-                workspace = self.get_workspace()
+                workspace = self.get_window_workspace()
+                if workspace<0:
+                    workspace = self.get_current_workspace()
             if workspace>=0:
                 self._client_properties["workspace"] = workspace
             self._client_properties["screen"] = self.get_screen().get_number()
+            log("map-window for wid=%s with client props=%s", self._id, self._client_properties)
             self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
@@ -496,8 +515,10 @@ class ClientWindow(gtk.Window):
     def do_configure_event(self, event):
         log("Got configure event: %s", event)
         gtk.Window.do_configure_event(self, event)
-        if self._override_redirect:
-            return
+        if not self._override_redirect:
+            self.process_configure_event()
+
+    def process_configure_event(self):
         x, y, w, h = get_window_geometry(self)
         w = max(1, w)
         h = max(1, h)
@@ -506,11 +527,16 @@ class ClientWindow(gtk.Window):
         self._pos = (x, y)
         if self._client.window_configure:
             #if we support configure-window, send that first
-            client_properties = {
-                                 "workspace"    : self.get_workspace(),
-                                 "screen"       : self.get_screen().get_number()
-                                 }
-            self._client.send("configure-window", self._id, x, y, w, h, client_properties)
+            if self._been_mapped:
+                #if the window has been mapped already, the workspace should be set:
+                workspace = self.get_window_workspace()
+                if workspace<0:
+                    workspace = self.get_current_workspace()
+                if workspace>=0:
+                    self._client_properties["workspace"] = workspace
+            log("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
+            self._client_properties["screen"] = self.get_screen().get_number()
+            self._client.send("configure-window", self._id, x, y, w, h, self._client_properties)
         if dx!=0 or dy!=0:
             #window has moved
             if not self._client.window_configure:
