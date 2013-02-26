@@ -439,6 +439,10 @@ struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
 
 void do_clean_decoder(struct x264lib_ctx *ctx)
 {
+	if (ctx->frame) {
+		avcodec_free_frame(&ctx->frame);
+		ctx->frame = NULL;
+	}
 	if (ctx->codec_ctx) {
 		avcodec_close(ctx->codec_ctx);
 		av_free(ctx->codec_ctx);
@@ -447,10 +451,6 @@ void do_clean_decoder(struct x264lib_ctx *ctx)
 	if (ctx->yuv2rgb) {
 		sws_freeContext(ctx->yuv2rgb);
 		ctx->yuv2rgb = NULL;
-	}
-	if (ctx->frame) {
-		avcodec_free_frame(&ctx->frame);
-		ctx->frame = NULL;
 	}
 }
 void clean_decoder(struct x264lib_ctx *ctx)
