@@ -14,7 +14,7 @@ xpra \- viewer for remote, persistent X applications
 .SH SYNOPSIS
 .PD 0
 .HP \w'xpra\ 'u
-\fBxpra\fP \fBstart\fP \fI:DISPLAY\fP
+\fBxpra\fP \fBstart\fP \fI:DISPLAY\fP | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP 
 [\fB\-\-start\-child\fP=\fICHILD\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP] [\fB\-\-no\-daemon\fP]
 [\fB\-\-use\-display\fP]
@@ -138,6 +138,9 @@ Xpra can also be used to shadow an existing X11 display.
 \fBxpra start\fP \fI:7\fP
 Start an xpra server using display number \fI:7\fP.
 .TP
+\fBxpra start\fP \fIssh:bigbox:8 --start-child=xterm\fP
+Start an xpra server on \fIbigbox\fP with an xterm in it,
+and connect to it.
 \fBDISPLAY=\fP\fI:7 firefox\fP
 Start \fIfirefox\fP running inside the xpra server.  No window will
 appear.
@@ -217,6 +220,8 @@ number.)
 .SH SUBCOMMANDS
 .SS xpra start
 This command starts a new xpra server, including any necessary setup.
+(when starting a remote server with the \fBssh:HOST:PORT\fP syntax,
+the new session will also be attached)
 .SS xpra attach
 This command attachs to a running xpra server, and forwards any
 applications using that server to appear on your current screen.
