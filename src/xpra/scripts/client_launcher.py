@@ -444,6 +444,10 @@ class ApplicationWindow:
 
 
 def main():
+	import logging
+	logging.basicConfig(format="%(asctime)s %(message)s")
+	logging.root.addHandler(logging.StreamHandler(sys.stdout))
+	logging.root.setLevel(logging.INFO)
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
 	if len(sys.argv) == 2:
@@ -464,9 +468,5 @@ def main():
 
 
 if __name__ == "__main__":
-	import logging
-	logging.basicConfig(format="%(asctime)s %(message)s")
-	logging.root.addHandler(logging.StreamHandler(sys.stdout))
-	logging.root.setLevel(logging.INFO)
 	v = main()
 	sys.exit(v)
