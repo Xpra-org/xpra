@@ -37,10 +37,6 @@ from wimpiggy.log import Logger
 log = Logger()
 
 
-APPLICATION_NAME = "Xpra Launcher"
-SITE_DOMAIN = "xpra.org"
-SITE_URL = "http://%s/" % SITE_DOMAIN
-GPL2 = None
 LOSSY_5 = "lowest quality"
 LOSSY_20 = "low quality"
 LOSSY_50 = "average quality"
@@ -67,7 +63,7 @@ class ApplicationWindow:
 		self.window.connect("destroy", self.destroy)
 		self.window.set_default_size(400, 300)
 		self.window.set_border_width(20)
-		self.window.set_title(APPLICATION_NAME)
+		self.window.set_title("Xpra Launcher")
 		self.window.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 		icon_pixbuf = get_icon("xpra.png")
 		if icon_pixbuf:

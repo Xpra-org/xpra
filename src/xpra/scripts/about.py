@@ -24,15 +24,12 @@ from wimpiggy.log import Logger
 log = Logger()
 
 
-APPLICATION_NAME = "Xpra Launcher"
+APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
 SITE_URL = "http://%s/" % SITE_DOMAIN
-APP_DIR = os.getcwd()
-ICONS_DIR = None
+
+
 GPL2 = None
-
-
-
 def load_license():
 	global GPL2
 	if GPL2 is None:
