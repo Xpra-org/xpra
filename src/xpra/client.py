@@ -66,7 +66,7 @@ import time
 import ctypes
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
-except:
+except ImportError:
     from Queue import Queue     #@Reimport
 
 
@@ -445,6 +445,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
             return  True
         try:
             method()
+        except KeyboardInterrupt:
+            raise
         except Exception, e:
             log.error("key_handled_as_shortcut(%s,%s,%s,%s) failed to execute shortcut=%s: %s", window, key_name, modifiers, depressed, shortcut, e)
         return  True
@@ -750,7 +752,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         try:
             (fl1, fl2, fl3) = os.getloadavg()
             l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-        except:
+        except OSError:
             l1,l2,l3 = 0,0,0
         sl = -1
         if len(self.server_ping_latency)>0:
@@ -1167,6 +1169,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
             try:
                 self._do_draw(packet)
                 time.sleep(0)
+            except KeyboardInterrupt:
+                raise
             except:
                 log.error("error processing draw packet", exc_info=True)
 
@@ -1210,6 +1214,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time)
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride, packet_sequence, options, [record_decode_time])
+        except KeyboardInterrupt:
+            raise
         except:
             log.error("draw error", exc_info=True)
             gobject.idle_add(record_decode_time, False)

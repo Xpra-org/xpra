@@ -58,6 +58,8 @@ def fire_paint_callbacks(callbacks, success):
     for x in callbacks:
         try:
             x(success)
+        except KeyboardInterrupt:
+            raise
         except:
             log.error("error calling %s(%s)", x, success, exc_info=True)
 
@@ -176,6 +178,8 @@ class Backing(object):
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
             return True
+        except KeyboardInterrupt:
+            raise
         except:
             log.error("cairo_draw(%s)", context, exc_info=True)
             return False
@@ -234,7 +238,7 @@ class CairoBacking(Backing):
             else:
                 data = bytearray(img_data)
             buf = BytesIO(data)
-        except:
+        except ImportError:
             from StringIO import StringIO   #@Reimport
             buf = StringIO(img_data)
         surf = cairo.ImageSurface.create_from_png(buf)
@@ -249,7 +253,7 @@ class CairoBacking(Backing):
         try:
             from io import BytesIO
             buf = BytesIO()
-        except:
+        except ImportError:
             from StringIO import StringIO   #@Reimport
             buf = StringIO()
         pil_image.save(buf, format="PNG")
@@ -358,6 +362,8 @@ class PixmapBacking(Backing):
         try:
             self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
             fire_paint_callbacks(callbacks, True)
+        except KeyboardInterrupt:
+            raise
         except:
             log.error("do_paint_rgb24 error", exc_info=True)
             fire_paint_callbacks(callbacks, False)
