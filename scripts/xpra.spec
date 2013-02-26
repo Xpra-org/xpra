@@ -102,6 +102,18 @@ Source: parti-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
 BuildRequires: python, setuptool
+BuildRequires: ffmpeg-devel
+BuildRequires: libvpx-devel
+BuildRequires: x264-devel
+BuildRequires: pkgconfig
+BuildRequires: Cython
+BuildRequires: pygtk2-devel
+BuildRequires: pygobject2-devel
+BuildRequires: libXtst-devel
+BuildRequires: libXfixes-devel
+BuildRequires: libXcomposite-devel
+BuildRequires: libXdamage-devel
+BuildRequires: libXrandr-devel
 %endif
 
 ### Patches ###
