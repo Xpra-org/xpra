@@ -4,12 +4,22 @@ Description: Build against old versions of libav.
  
 --- a/xpra/x264/x264lib.c	(revision 2661)
 +++ b/xpra/x264/x264lib.c	(working copy)
-@@ -440,7 +440,7 @@
+@@ -417,7 +417,8 @@
+ 		fprintf(stderr, "could not open codec\n");
+ 		return 1;
+ 	}
+-	ctx->frame = avcodec_alloc_frame();
++	ctx->frame = malloc(sizeof(struct AVFrame));
++	memset(ctx->frame, 0, sizeof(struct AVFrame));
+ 	if (!ctx->frame) {
+ 	    fprintf(stderr, "could not allocate an AVFrame for decoding\n");
+ 	    return 1;
+@@ -440,7 +441,7 @@
  void do_clean_decoder(struct x264lib_ctx *ctx)
  {
  	if (ctx->frame) {
 -		avcodec_free_frame(&ctx->frame);
-+		av_free(&ctx->frame);
++		free(ctx->frame);
  		ctx->frame = NULL;
  	}
  	if (ctx->codec_ctx) {
