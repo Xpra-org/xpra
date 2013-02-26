@@ -3,6 +3,18 @@ v0.9.0 (2013-02-12)
 	-- TODO
 
 
+v0.8.7 (2013-02-27)
+======================
+	-- fix x264 crash with older versions of libav
+	-- fix 32-bit builds breakage introduce by python2.4 fix in 0.8.6
+	-- fix missing sound forwarding when using the GUI launcher
+	-- fix microphone forwarding errors
+	-- fix client window properties store
+	-- fix first workspace not preserved and other workspace issues
+	-- fix GStreamer-Info.exe output
+	-- avoid creating unused hidden "group" windows on MS Windows clients
+
+
 v0.8.6 (2013-02-22)
 ======================
 	-- fix launcher on MS Windows, better SSH support
