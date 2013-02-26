@@ -446,7 +446,10 @@ void do_clean_decoder(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->yuv2rgb);
 		ctx->yuv2rgb = NULL;
 	}
-	avcodec_free_frame(&ctx->frame);
+	if (ctx->frame) {
+		avcodec_free_frame(&ctx->frame);
+		ctx->frame = NULL;
+	}
 }
 void clean_decoder(struct x264lib_ctx *ctx)
 {
