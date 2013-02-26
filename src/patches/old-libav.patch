@@ -4,12 +4,12 @@ Description: Build against old versions of libav.
  
 --- a/xpra/x264/x264lib.c	(revision 2661)
 +++ b/xpra/x264/x264lib.c	(working copy)
-@@ -449,7 +449,7 @@
- 		ctx->yuv2rgb = NULL;
- 	}
+@@ -440,7 +440,7 @@
+ void do_clean_decoder(struct x264lib_ctx *ctx)
+ {
  	if (ctx->frame) {
 -		avcodec_free_frame(&ctx->frame);
 +		av_free(&ctx->frame);
  		ctx->frame = NULL;
  	}
- }
+ 	if (ctx->codec_ctx) {
