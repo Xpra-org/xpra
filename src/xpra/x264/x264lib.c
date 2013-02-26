@@ -427,9 +427,11 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc
 struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
+	if (ctx==NULL)
+		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	if (init_decoder_context(ctx, width, height, csc_fmt)) {
-		free(ctx);
+		clean_decoder(ctx);
 		return NULL;
 	}
 	return ctx;
