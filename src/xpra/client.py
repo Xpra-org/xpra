@@ -913,7 +913,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.emit("microphone-changed")
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulsesound_server, self.server_pulseaudio_id)
+            self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not self.sound_source:
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)
@@ -975,9 +975,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
             log.error("failed to start sound sink", exc_info=True)
             return False
 
-    def new_sound_buffer(self, sound_source, data):
+    def new_sound_buffer(self, sound_source, data, metadata):
         assert self.sound_source
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data))
+        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
         if not self.speaker_enabled:
