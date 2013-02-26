@@ -1687,8 +1687,8 @@ cdef argbdata_to_pixdata(unsigned long* data, len):
     cdef char b1, b2, b3, b4
     while i < len:
         argb = data[i] & 0xffffffff
-        rgba = (argb << 8) | (argb >> 24)
-        b1 = (rgba >> 24)  & 0xff
+        rgba = ((argb << 8) | (argb >> 24)) 0xffffffff
+        b1 = (rgba >> 24) & 0xff
         b2 = (rgba >> 16) & 0xff
         b3 = (rgba >> 8) & 0xff
         b4 = rgba & 0xff
