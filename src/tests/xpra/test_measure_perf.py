@@ -67,7 +67,7 @@ TCBENCH_LOG = "./tcbench.log"
 XORG_BIN = "/usr/local/bin/Xorg"
 
 #the glx tests:
-GLX_SPHERES = ["/opt/VirtualGL/bin/glxspheres64"]
+GLX_SPHERES = ["/usr/bin/glxspheres"]
 GLX_GEARS = ["/usr/bin/glxgears", "-geometry", "1240x900"]
 GLX_TESTS = [GLX_SPHERES, GLX_GEARS]
 
