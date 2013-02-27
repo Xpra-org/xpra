@@ -9,9 +9,13 @@ assert gdk
 import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
 import gobject
+import os
 
 from wimpiggy.log import Logger
 log = Logger()
+debug = log.debug
+if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":
+    debug = log.info
 
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
@@ -71,7 +75,7 @@ class GLPixmapBacking(PixmapBacking):
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
-        log("GL Pixmap backing size: %d x %d, drawable=%s", w, h, drawable)
+        debug("GL Pixmap backing size: %d x %d, drawable=%s", w, h, drawable)
         if not drawable:
             return  None
         if not self.gl_setup:
@@ -85,6 +89,7 @@ class GLPixmapBacking(PixmapBacking):
             glDisable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
                 self.textures = glGenTextures(3)
+                debug("textures for wid=%s of size %s : %s", self.wid, self.size, self.textures)
             self.gl_setup = True
         return drawable
 
@@ -121,11 +126,11 @@ class GLPixmapBacking(PixmapBacking):
         drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
-        log("gl_expose_event(%s, %s)", glarea, event)
+        debug("gl_expose_event(%s, %s)", glarea, event)
         area = event.area
         x, y, w, h = area.x, area.y, area.width, area.height
         drawable = self.gl_init()
-        log("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
+        debug("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
         if drawable:
             try:
                 self.render_image(x, y, w, h)
@@ -137,7 +142,7 @@ class GLPixmapBacking(PixmapBacking):
         self.glarea.window.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
-        log("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
+        debug("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
         err, rowstrides, img_data = self._video_decoder.decompress_image_to_yuv(img_data, options)
         csc_pixel_format = options.get("csc_pixel_format", -1)
         #this needs to be done here so we still hold the video_decoder lock:
@@ -154,7 +159,7 @@ class GLPixmapBacking(PixmapBacking):
         #this function runs in the UI thread, no video_decoder lock held
         drawable = self.gl_init()
         if not drawable:
-            log("cannot paint, drawable is not set")
+            debug("cannot paint, drawable is not set")
             fire_paint_callbacks(callbacks, False)
             return
         try:
@@ -186,7 +191,7 @@ class GLPixmapBacking(PixmapBacking):
         if self.pixel_format is None or self.pixel_format!=pixel_format:
             self.pixel_format = pixel_format
             divs = self.get_subsampling_divs(pixel_format)
-            log("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
+            debug("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -202,7 +207,7 @@ class GLPixmapBacking(PixmapBacking):
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, window_width/div, window_height/div, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0)
 
-            log("Assigning fragment program")
+            debug("Assigning fragment program")
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if not self.yuv_shader:
                 self.yuv_shader = [ 1 ]
@@ -232,7 +237,7 @@ class GLPixmapBacking(PixmapBacking):
         glFlush()
 
     def render_image(self, rx, ry, rw, rh):
-        log("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
+        debug("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
             return
