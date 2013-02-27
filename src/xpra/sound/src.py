@@ -10,7 +10,7 @@ gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_encoders, MP3, CODECS
+from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
 from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
@@ -36,6 +36,10 @@ if DEFAULT_SRC not in SOURCES:
     DEFAULT_SRC = SOURCES[0]
 
 
+AUDIOCONVERT = True
+AUDIORESAMPLE = False
+
+
 class SoundSource(SoundPipeline):
 
     __gsignals__ = {
@@ -44,17 +48,20 @@ class SoundSource(SoundPipeline):
 
     def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, encoder_options={}):
         assert src_type in SOURCES
-        encoders = get_encoders(codec)
-        assert len(encoders)>0, "no encoders found for %s" % codec
+        encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
         self.src_type = src_type
         source_str = plugin_str(src_type, src_options)
-        encoder = encoders[0]
         encoder_str = plugin_str(encoder, encoder_options)
         pipeline_els = [source_str]
-        pipeline_els += ["audioconvert",
+        if AUDIOCONVERT:
+            pipeline_els += ["audioconvert"]
+        if AUDIORESAMPLE:
+            pipeline_els += [
                          "audioresample",
-                        encoder_str,
+                         "audio/x-raw-int,rate=44100,channels=2"]
+        pipeline_els += [encoder_str,
+                        fmt,
                         "appsink name=sink"]
         self.setup_pipeline_and_bus(pipeline_els)
         self.sink = self.pipeline.get_by_name("sink")
@@ -106,6 +113,7 @@ def main():
         print("file %s already exists" % filename)
         sys.exit(2)
         return
+    codec = None
     if len(sys.argv)==3:
         codec = sys.argv[2]
         if codec not in CODECS:
@@ -113,8 +121,15 @@ def main():
             sys.exit(2)
             return
     else:
-        codec = MP3
-        print("using default codec: %s" % codec)
+        parts = filename.split(".")
+        if len(parts)>1:
+            extension = parts[-1]
+            if extension.lower() in CODECS:
+                codec = extension.lower()
+                print("guessed codec %s from file extension %s" % (codec, extension))
+        if codec is None:
+            codec = MP3
+            print("using default codec: %s" % codec)
 
     from threading import Lock
     import logging

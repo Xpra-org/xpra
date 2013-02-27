@@ -14,17 +14,21 @@ SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 
 
 VORBIS = "vorbis"
-FLAC = "flac"
 AAC = "aac"
+FLAC = "flac"
 MP3 = "mp3"
+WAV = "wav"
+#TODO: amr, dca?
 
+#format: encoder, formatter, decoder, parser
 CODECS = {
-#            VORBIS : (["vorbisenc"], ["vorbisdec"]),
-#            FLAC : (["flacenc"], ["flacdec"]),
-            AAC : (["faac"], ["faad"]),
-            MP3 : (["lamemp3enc"], ["mad"]),
+            #VORBIS : ("vorbisenc", "oggmux", "vorbisdec", "oggdemux"),
+            #AAC : ("faac", "mp4mux", "faad", "aacparse"),
+            FLAC : ("flacenc", "oggmux", "flacdec", "oggdemux"),
+            MP3 : ("lamemp3enc", None, "mad", "mp3parse"),
+            WAV : ("wavenc", None, None, "wavparse")
             }
-CODEC_ORDER = [VORBIS, MP3, AAC, FLAC]
+CODEC_ORDER = [MP3, FLAC, WAV]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
@@ -89,23 +93,29 @@ def has_plugins(*names):
             return    False
     return    True
 
-def get_encoders(name):
-    if name not in CODECS:
-        return []
-    encoders, _ = CODECS.get(name)
-    return [e for e in encoders if has_plugins(e)]
+def get_encoder_formatter(name):
+    assert name in CODECS, "invalid codec: %s" % name
+    encoder, formatter, _, _ = CODECS.get(name)
+    assert encoder is None or has_plugins(encoder), "encoder %s not found" % encoder
+    assert formatter is None or has_plugins(formatter), "formatter %s not found" % formatter
+    return encoder, formatter
 
-def get_decoders(name):
-    if name not in CODECS:
-        return []
-    _, decoders = CODECS.get(name)
-    return [e for e in decoders if has_plugins(e)]
+def get_decoder_parser(name):
+    assert name in CODECS, "invalid codec: %s" % name
+    _, _, decoder, parser = CODECS.get(name)
+    assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
+    assert parser is None or has_plugins(parser), "parser %s not found" % parser
+    return decoder, parser    
 
 def has_encoder(name):
-    return len(get_encoders(name))>0
+    assert name in CODECS, "invalid codec: %s" % name
+    encoder, fmt, _, _ = CODECS.get(name)
+    return has_plugins(encoder, fmt)
 
 def has_decoder(name):
-    return len(get_decoders(name))>0
+    assert name in CODECS, "invalid codec: %s" % name
+    _, decoder, parser = CODECS.get(name)
+    return has_plugins(decoder, parser)
 
 def has_codec(name):
     return has_encoder(name) and has_decoder(name)
@@ -118,6 +128,8 @@ def can_decode():
 
 
 def plugin_str(plugin, options):
+    if plugin is None:
+        return None
     s = "%s" % plugin
     if options:
         s += " "
@@ -188,6 +200,9 @@ def main():
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()
+    log.info("")
+    log.info("encoders supported: %s", [x for x in CODEC_ORDER if has_encoder(x)])
+    log.info("decoders supported: %s", [x for x in CODEC_ORDER if has_decoder(x)])
 
 
 if __name__ == "__main__":

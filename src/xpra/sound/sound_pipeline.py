@@ -40,7 +40,8 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         self.state = "stopped"
 
     def setup_pipeline_and_bus(self, elements):
-        pipeline_str = " ! ".join(elements)
+        debug("pipeline elements=%s", elements)
+        pipeline_str = " ! ".join([x for x in elements if x is not None])
         debug("pipeline=%s", pipeline_str)
         self.pipeline = gst.parse_launch(pipeline_str)
         self.bus = self.pipeline.get_bus()

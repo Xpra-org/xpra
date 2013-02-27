@@ -10,7 +10,7 @@ gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
-from xpra.sound.gstreamer_util import plugin_str, get_decoders, MP3, CODECS, gst
+from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
 from wimpiggy.util import one_arg_signal, no_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
@@ -38,6 +38,9 @@ if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
     DEFAULT_SINK = SINKS[0]
 
+VOLUME = True
+QUEUE = True
+
 
 def sink_has_device_attribute(sink):
     return sink not in ("autoaudiosink", "jackaudiosink", "directsoundsink")
@@ -52,23 +55,23 @@ class SoundSink(SoundPipeline):
 
     def __init__(self, sink_type=DEFAULT_SINK, options={}, codec=MP3, decoder_options={}):
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
-        decoders = get_decoders(codec)
-        assert len(decoders)>0, "no decoders found for %s" % codec
+        decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
         self.sink_type = sink_type
-        decoder = decoders[0]
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = []
         pipeline_els.append("appsrc name=src")
-        pipeline_els.append("mp3parse")
+        pipeline_els.append(parser)
         pipeline_els.append(decoder_str)
-        pipeline_els.append("volume name=volume")
+        if VOLUME:
+            pipeline_els.append("volume name=volume")
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        if QUEUE_TIME>0:
-            pipeline_els.append("queue name=queue max-size-time=%s leaky=%s" % (QUEUE_TIME, QUEUE_LEAK))
-        else:
-            pipeline_els.append("queue leaky=%s" % QUEUE_LEAK)
+        if QUEUE:
+            if QUEUE_TIME>0:
+                pipeline_els.append("queue name=queue max-size-time=%s leaky=%s" % (QUEUE_TIME, QUEUE_LEAK))
+            else:
+                pipeline_els.append("queue leaky=%s" % QUEUE_LEAK)
         pipeline_els.append(sink_type)
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
@@ -78,7 +81,7 @@ class SoundSink(SoundPipeline):
         self.src.set_property('block', False)
         self.src.set_property('format', 4)
         self.src.set_property('is-live', True)
-        if QUEUE_TIME>0:
+        if QUEUE:
             self.queue = self.pipeline.get_by_name("queue")
             def overrun(*args):
                 debug("sound sink queue overrun")
@@ -145,7 +148,7 @@ gobject.type_register(SoundSink)
 def main():
     import os.path
     if len(sys.argv) not in (2, 3):
-        print("usage: %s mp3filename [codec]" % sys.argv[0])
+        print("usage: %s filename [codec]" % sys.argv[0])
         sys.exit(1)
         return
     filename = sys.argv[1]
@@ -160,7 +163,16 @@ def main():
             sys.exit(2)
             return
     else:
-        codec = MP3
+        codec = None
+        parts = filename.split(".")
+        if len(parts)>1:
+            extension = parts[-1]
+            if extension.lower() in CODECS:
+                codec = extension.lower()
+                print("guessed codec %s from file extension %s" % (codec, extension))
+        if codec is None:
+            print("assuming this is an mp3 file...")
+            codec = MP3
 
     import logging
     logging.basicConfig(format="%(asctime)s %(message)s")
