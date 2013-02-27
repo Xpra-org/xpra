@@ -98,7 +98,7 @@ gobject.type_register(SoundSource)
 def main():
     import os.path
     if len(sys.argv) not in (2, 3):
-        print("usage: %s mp3filename" % sys.argv[0])
+        print("usage: %s filename [codec]" % sys.argv[0])
         sys.exit(1)
         return
     filename = sys.argv[1]
@@ -109,11 +109,12 @@ def main():
     if len(sys.argv)==3:
         codec = sys.argv[2]
         if codec not in CODECS:
-            print("invalid codec: %s" % codec)
+            print("invalid codec: %s, codecs supported: %s" % (codec, CODECS))
             sys.exit(2)
             return
     else:
         codec = MP3
+        print("using default codec: %s" % codec)
 
     from threading import Lock
     import logging
@@ -131,7 +132,8 @@ def main():
         log.info("using pulseaudio source device: %s", monitor_device)
         ss = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
     lock = Lock()
-    def new_buffer(ss, data):
+    def new_buffer(ss, data, metadata):
+        log.info("new buffer: %s bytes, metadata=%s" % (len(data), metadata))
         try:
             lock.acquire()
             if f:
