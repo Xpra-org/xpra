@@ -18,17 +18,23 @@ AAC = "aac"
 FLAC = "flac"
 MP3 = "mp3"
 WAV = "wav"
-#TODO: amr, dca?
+OPUS = "opus"
+SPEEX = "speex"
+WAVPACK = "wavpack"
+#TODO: ac3, amr, dca?
 
 #format: encoder, formatter, decoder, parser
 CODECS = {
             #VORBIS : ("vorbisenc", "oggmux", "vorbisdec", "oggdemux"),
             #AAC : ("faac", "mp4mux", "faad", "aacparse"),
-            FLAC : ("flacenc", "oggmux", "flacdec", "oggdemux"),
-            MP3 : ("lamemp3enc", None, "mad", "mp3parse"),
-            WAV : ("wavenc", None, None, "wavparse")
+            FLAC    : ("flacenc",       "oggmux",   "flacdec",      "oggdemux"),
+            MP3     : ("lamemp3enc",    None,       "mad",          "mp3parse"),
+            WAV     : ("wavenc",        None,       None,           "wavparse"),
+            OPUS    : ("opusenc",       "oggmux",   "opusdec",      "oggdemux"),
+            SPEEX   : ("speexenc",      "oggmux",   "speexdec",     "oggdemux"),
+            WAVPACK : ("wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             }
-CODEC_ORDER = [MP3, FLAC, WAV]
+CODEC_ORDER = [MP3, OPUS, FLAC, WAVPACK, WAV, SPEEX]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
