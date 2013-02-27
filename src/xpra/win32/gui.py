@@ -54,7 +54,7 @@ class ClientExtras(ClientExtrasBase):
         log("handle_console_event(%s)", event)
         import win32con         #@UnresolvedImport
         events = {win32con.CTRL_C_EVENT         : "CTRL_C",
-                  win32con.CTRL_LOGOFF_EVENT    : "SHUTDOWN",
+                  win32con.CTRL_LOGOFF_EVENT    : "LOGOFF",
                   win32con.CTRL_BREAK_EVENT     : "BREAK",
                   win32con.CTRL_SHUTDOWN_EVENT  : "SHUTDOWN",
                   win32con.CTRL_CLOSE_EVENT     : "CLOSE"
