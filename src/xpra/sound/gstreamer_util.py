@@ -120,7 +120,7 @@ def has_encoder(name):
 
 def has_decoder(name):
     assert name in CODECS, "invalid codec: %s" % name
-    _, decoder, parser = CODECS.get(name)
+    _, _, decoder, parser = CODECS.get(name)
     return has_plugins(decoder, parser)
 
 def has_codec(name):
