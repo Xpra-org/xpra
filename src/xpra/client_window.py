@@ -224,7 +224,7 @@ class ClientWindow(gtk.Window):
 
         display = gtk.gdk.display_get_default()
         screen_num = client_properties.get("screen")
-        if screen_num and screen_num>=0 and screen_num<display.get_n_screens():
+        if screen_num is not None and screen_num>=0 and screen_num<display.get_n_screens():
             screen = display.get_screen(screen_num)
             if screen:
                 self.set_screen(screen)
@@ -499,12 +499,13 @@ class ClientWindow(gtk.Window):
             if not self._been_mapped:
                 workspace = self.set_workspace()
             else:
+                #window has been mapped, so these attributes can be read (if present):
+                self._client_properties["screen"] = self.get_screen().get_number()
                 workspace = self.get_window_workspace()
                 if workspace<0:
                     workspace = self.get_current_workspace()
             if workspace>=0:
                 self._client_properties["workspace"] = workspace
-            self._client_properties["screen"] = self.get_screen().get_number()
             log("map-window for wid=%s with client props=%s", self._id, self._client_properties)
             self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
@@ -529,13 +530,13 @@ class ClientWindow(gtk.Window):
             #if we support configure-window, send that first
             if self._been_mapped:
                 #if the window has been mapped already, the workspace should be set:
+                self._client_properties["screen"] = self.get_screen().get_number()
                 workspace = self.get_window_workspace()
                 if workspace<0:
                     workspace = self.get_current_workspace()
                 if workspace>=0:
                     self._client_properties["workspace"] = workspace
             log("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
-            self._client_properties["screen"] = self.get_screen().get_number()
             self._client.send("configure-window", self._id, x, y, w, h, self._client_properties)
         if dx!=0 or dy!=0:
             #window has moved
