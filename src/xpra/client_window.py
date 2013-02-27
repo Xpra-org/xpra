@@ -222,12 +222,13 @@ class ClientWindow(gtk.Window):
 
         self.update_metadata(metadata)
 
-        display = gtk.gdk.display_get_default()
-        screen_num = client_properties.get("screen")
-        if screen_num is not None and screen_num>=0 and screen_num<display.get_n_screens():
-            screen = display.get_screen(screen_num)
-            if screen:
-                self.set_screen(screen)
+        if not self._override_redirect:
+            display = gtk.gdk.display_get_default()
+            screen_num = client_properties.get("screen")
+            if screen_num is not None and screen_num>=0 and screen_num<display.get_n_screens():
+                screen = display.get_screen(screen_num)
+                if screen:
+                    self.set_screen(screen)
 
         self.set_app_paintable(True)
         self.add_events(WINDOW_EVENT_MASK)
