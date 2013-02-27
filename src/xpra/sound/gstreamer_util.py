@@ -94,6 +94,8 @@ def get_all_plugin_names():
 def has_plugins(*names):
     allp = get_all_plugin_names()
     for name in names:
+        if name is None:
+            continue
         if name not in allp:
             #logger.sdebug("missing %s" % name, *names)
             return    False
