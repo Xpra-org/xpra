@@ -322,7 +322,7 @@ class ServerSource(object):
         self.calculate_thread.start()
 
     def is_closed(self):
-        return self.close_event.is_set()
+        return self.close_event.isSet()
 
     def calculate_delay_thread(self):
         try:
