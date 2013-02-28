@@ -37,6 +37,9 @@ class ManagerSelection(gobject.GObject):
         "wimpiggy-destroy-event": one_arg_signal,
         }
 
+    def __str__(self):
+        return "ManagerSelection(%s)" % self.atom
+
     def __init__(self, display, selection):
         gobject.GObject.__init__(self)
         self.atom = selection

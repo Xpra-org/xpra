@@ -48,8 +48,11 @@ def wm_check(display):
         screen = display.get_screen(i)
         root = screen.get_root_window()
         prop = "WM_S%s" % i
+        cm_prop = "_NEW_WM_CM_S%s" % i
         ewmh_so = myGetSelectionOwner(display, prop)
+        cm_so = myGetSelectionOwner(display, cm_prop)
         log("ewmh selection owner for %s: %s", prop, ewmh_so)
+        log("compositing window manager %s: %s", cm_prop, cm_so)
 
         try:
             ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
@@ -64,8 +67,8 @@ def wm_check(display):
             except:
                 name = None
             log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unknown")
-            if ewmh_so is None or ewmh_so==0:
-                log.error("it does not own the selection '%s' so we cannot take over and make it exit", prop)
+            if (ewmh_so is None or ewmh_so==0) and (cm_so is None or cm_so==0):
+                log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", prop, cm_prop)
                 log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
                 return False
     return True
@@ -206,17 +209,16 @@ class Wm(gobject.GObject):
 
         # Become the Official Window Manager of this year's display:
         self._wm_selection = wimpiggy.selection.ManagerSelection(self._display, "WM_S0")
+        self._cm_wm_selection = wimpiggy.selection.ManagerSelection(self._display, "_NET_WM_CM_S0")
         self._wm_selection.connect("selection-lost", self._lost_wm_selection)
+        self._cm_wm_selection.connect("selection-lost", self._lost_wm_selection)
         # May throw AlreadyOwned:
         if replace_other_wm:
             mode = self._wm_selection.FORCE
         else:
             mode = self._wm_selection.IF_UNOWNED
         self._wm_selection.acquire(mode)
-        # (If we become a compositing manager, then we will want to do the
-        # same thing with the _NET_WM_CM_S0 selection (says EWMH).  AFAICT
-        # this basically will just be used by clients to know that they can
-        # use RGBA visuals.)
+        self._cm_wm_selection.acquire(mode)
 
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
@@ -351,7 +353,7 @@ class Wm(gobject.GObject):
         log("do_wimpiggy_client_message_event(%s)", event)
 
     def _lost_wm_selection(self, selection):
-        log.info("Lost WM selection, exiting")
+        log.info("Lost WM selection %s, exiting", selection)
         self.emit("quit")
 
     def do_quit(self):
