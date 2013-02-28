@@ -70,13 +70,13 @@ class ClipboardProtocolHelperBase(object):
         loop = NestedMainLoop()
         self._clipboard_outstanding_requests[request_id] = loop
         if self.progress_cb:
-            self.progress_cb(len(self._clipboard_outstanding_requests))
+            self.progress_cb(len(self._clipboard_outstanding_requests), None)
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
         result = loop.main(1 * 1000, 2 * 1000)
         debug("get clipboard from remote result(%s)=%s", request_id, result)
         del self._clipboard_outstanding_requests[request_id]
         if self.progress_cb:
-            self.progress_cb(len(self._clipboard_outstanding_requests))
+            self.progress_cb(len(self._clipboard_outstanding_requests), None)
         return result
 
     def _clipboard_got_contents(self, request_id, dtype, dformat, data):
@@ -191,11 +191,17 @@ class ClipboardProtocolHelperBase(object):
         request_id = packet[1]
         self._clipboard_got_contents(request_id, None, None, None)
 
+    def _process_clipboard_pending_requests(self, packet):
+        pending = packet[1]
+        if self.progress_cb:
+            self.progress_cb(None, pending)
+
     _packet_handlers = {
         "clipboard-token": _process_clipboard_token,
         "clipboard-request": _process_clipboard_request,
         "clipboard-contents": _process_clipboard_contents,
         "clipboard-contents-none": _process_clipboard_contents_none,
+        "clipboard-pending-requests": _process_clipboard_pending_requests,
         }
 
     def process_clipboard_packet(self, packet):

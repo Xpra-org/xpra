@@ -287,6 +287,7 @@ class ServerSource(object):
         self.randr_notify = False
         self.named_cursors = False
         self.clipboard_enabled = False
+        self.clipboard_notifications = False
         self.share = False
         self.desktop_size = None
         self.screen_sizes = []
@@ -456,6 +457,7 @@ class ServerSource(object):
         self.send_notifications = capabilities.get("notifications", False)
         self.randr_notify = capabilities.get("randr_notify", False)
         self.clipboard_enabled = capabilities.get("clipboard", True)
+        self.clipboard_notifications = capabilities.get("clipboard.notifications", False)
         self.share = capabilities.get("share", False)
         self.desktop_size = capabilities.get("desktop_size")
         self.set_screen_sizes(capabilities.get("screen_sizes"))

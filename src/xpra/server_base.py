@@ -115,7 +115,7 @@ class XpraServerBase(object):
         self._clipboard_helper = None
         self._clipboard_client = None
         if opts.clipboard:
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet)
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress)
 
         self.compression_level = opts.compression_level
         self.password_file = opts.password_file
@@ -742,6 +742,11 @@ class XpraServerBase(object):
         log("get_info took %s", time.time()-start)
         return info
 
+    def clipboard_progress(self, local_requests, remote_requests):
+        assert self._clipboard_helper is not None
+        if self._clipboard_client and self._clipboard_client.clipboard_notifications:
+            log("sending clipboard-pending-requests=%s to %s", local_requests, self._clipboard_client)
+            self._clipboard_client.send("clipboard-pending-requests", local_requests)
 
     def send_clipboard_packet(self, *parts):
         assert self._clipboard_helper is not None

@@ -105,6 +105,8 @@ class ClientExtrasBase(object):
         self.tray_icon = opts.tray_icon
         self.session_name = opts.session_name
         self.clipboard_helper = None
+        self.local_clipboard_requests = 0
+        self.remote_clipboard_requests = 0
         #modifier bits:
         self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
         self.modifier_keys = {}             #{"Control_L" : "control", ...}
@@ -175,17 +177,21 @@ class ClientExtrasBase(object):
                 self.client.send(*parts)
             else:
                 log("clipboard is disabled, not sending clipboard packet")
-        def clipboard_progress(requests):
-            log("clipboard_progress(%s)", requests)
-            if requests>0:
+        def clipboard_progress(local_requests, remote_requests):
+            log("clipboard_progress(%s, %s)", local_requests, remote_requests)
+            if local_requests is not None:
+                self.local_clipboard_requests = local_requests
+            if remote_requests is not None:
+                self.remote_clipboard_requests = remote_requests
+            n = self.local_clipboard_requests+self.remote_clipboard_requests
+            if n>0:
                 self.set_icon("clipboard")
-                self.set_tooltip("%s clipboard requests in progress" % requests)
+                self.set_tooltip("%s clipboard requests in progress" % n)
                 self.set_blinking(True)
             else:
                 self.set_icon("xpra")
                 self.set_tooltip("Xpra")
                 self.set_blinking(False)
-
         self.clipboard_helper = helperClass(clipboard_send, clipboard_progress)
         def clipboard_toggled(*args):
             log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)

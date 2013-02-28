@@ -633,6 +633,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         capabilities["compressible_cursors"] = True
         capabilities["dpi"] = self.dpi
         capabilities["clipboard"] = self.client_supports_clipboard
+        capabilities["clipboard.notifications"] = self.client_supports_clipboard
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
