@@ -563,7 +563,14 @@ class PropertyOverflow(PropertyError):
     pass
 class NoSuchProperty(PropertyError):
     pass
+
+
 def XGetWindowProperty(pywindow, property, req_type):
+    display_source = pywindow
+    xid = get_xwindow(pywindow)
+    return doXGetWindowProperty(display_source, xid, property, req_type)
+
+def doXGetWindowProperty(display_source, xid, property, req_type):
     # NB: Accepts req_type == 0 for AnyPropertyType
     # "64k is enough for anybody"
     # (Except, I've found window icons that are strictly larger, hence the
@@ -578,8 +585,8 @@ def XGetWindowProperty(pywindow, property, req_type):
     # This is the most bloody awful API I have ever seen.  You will probably
     # not be able to understand this code fully without reading
     # XGetWindowProperty's man page at least 3 times, slowly.
-    status = cXGetWindowProperty(get_xdisplay_for(pywindow),
-                                 get_xwindow(pywindow),
+    status = cXGetWindowProperty(get_xdisplay_for(display_source),
+                                 xid,
                                  get_xatom(property),
                                  0,
                                  # This argument has to be divided by 4.  Thus

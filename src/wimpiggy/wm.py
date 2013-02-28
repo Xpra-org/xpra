@@ -18,7 +18,7 @@ else:
 from wimpiggy.error import trap
 import wimpiggy.selection
 from wimpiggy.world_window import WorldWindow
-from wimpiggy.prop import prop_set
+from wimpiggy.prop import prop_set, prop_get
 from wimpiggy.util import no_arg_signal, one_arg_signal
 
 from wimpiggy.window import WindowModel, Unmanageable
@@ -28,7 +28,9 @@ from wimpiggy.lowlevel import (
                add_event_receiver,                          #@UnresolvedImport
                substructureRedirect,                        #@UnresolvedImport
                configureAndNotify,                          #@UnresolvedImport
+               myGetSelectionOwner,                         #@UnresolvedImport
                get_children,                                #@UnresolvedImport
+               get_xwindow,                                 #@UnresolvedImport
                is_override_redirect,                        #@UnresolvedImport
                is_mapped,                                   #@UnresolvedImport
                selectFocusChange,                           #@UnresolvedImport
@@ -38,6 +40,28 @@ from wimpiggy.lowlevel import (
 
 from wimpiggy.log import Logger
 log = Logger()
+
+
+def wm_check(display):
+    #there should only be one screen... but let's check all of them
+    for i in range(display.get_n_screens()):
+        screen = display.get_screen(i)
+        root = screen.get_root_window()
+        prop = "WM_S%s" % i
+        ewmh_so = myGetSelectionOwner(display, prop)
+        log("ewmh selection owner for %s: %s", prop, ewmh_so)
+    
+        ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False, raise_xerrors=False)
+        log("_NET_SUPPORTING_WM_CHECK for screen %s: %s", i, ewmh_wm)
+        if ewmh_wm:
+            name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
+            log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unnamed")
+            if ewmh_so is None or ewmh_so==0:
+                log.error("it does not own the selection '%s' so we cannot take over and make it exit", prop)
+                log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
+                return False
+    return True
+
 
 class Wm(gobject.GObject):
     _NET_SUPPORTED = [
@@ -208,7 +232,19 @@ class Wm(gobject.GObject):
         add_event_receiver(self._root, self)
         substructureRedirect(self._root)
 
-        for w in get_children(self._root):
+        import time
+        children = None
+        for _ in range(5):
+            try:
+                children = trap.call(get_children, self._root)
+                log.info("children=%s", children)
+                break
+            except Exception, e:
+                log.info("error getting the list of windows: %s", e)
+                time.sleep(0.1)
+        if children is None:
+            raise Exception("failed to get the list of windows - maybe another window manager is running?")
+        for w in children:
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.

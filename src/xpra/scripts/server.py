@@ -420,6 +420,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_pid is not None and not opts.use_display and not shadowing:
         _cleanups.append(kill_xvfb)
 
+    #check for an existing window manager:
+    from wimpiggy.wm import wm_check
+    if not wm_check(display):
+        return 1
+
     if shadowing:
         from xpra.shadow_server import XpraShadowServer
         app = XpraShadowServer(sockets, opts)
