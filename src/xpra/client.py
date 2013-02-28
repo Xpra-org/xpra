@@ -1342,9 +1342,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         log("set maximum packet size to %s", self._protocol.max_packet_size)
 
     def process_packet(self, proto, packet):
-        packet_type = str(packet[0])
+        packet_type = packet[0]
         self.check_server_echo(0)
-        if packet_type.startswith("clipboard-"):
+        if type(packet_type) in (unicode, str) and packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
                 gobject.idle_add(self._client_extras.process_clipboard_packet, packet)
         else:
