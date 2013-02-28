@@ -32,6 +32,18 @@ class Win32Tray:
 			self.tray_widget.close()
 			self.tray_widget = None
 
+	def set_tooltip(self, name):
+		if self.tray_widget:
+			self.tray_widget.set_tooltip(name)
+
+	def set_icon(self, iconPathName):
+		if self.tray_widget:
+			self.tray_widget.set_icon(iconPathName)
+
+	def set_blinking(self, on):
+		if self.tray_widget:
+			self.tray_widget.set_blinking(on)
+
 
 	#****************************************************************
 	# Events detection (screensaver / login / logout)

@@ -87,6 +87,36 @@ class ClientExtras(ClientExtrasBase):
             return  f
         return  None
 
+    def set_tooltip(self, text=None):
+        """ sets the tray tooltip, pass an empty string to use the default """
+        tooltip = text or self.get_tray_tooltip()
+        if hasattr(self.tray_widget, "set_label"):
+            self.tray_widget.set_label(tooltip)
+        else:
+            set_tooltip_text(self.tray_widget, tooltip)
+
+    def set_blinking(self, on):
+        if hasattr(self.tray_widget, "set_blinking"):
+            self.tray_widget.set_blinking(on)
+
+    def set_icon(self, basefilename):
+        filename = os.path.join(self.get_icons_dir(), "%s.png" % basefilename)
+        self.set_icon_from_file(filename)
+
+    def set_icon_from_file(self, filename):
+        if not self.tray_widget:
+            return
+        if not os.path.exists(filename):
+            log.error("could not find icon %s", filename)
+            return
+        if hasattr(self.tray_widget, "set_from_file"):
+            self.tray_widget.set_from_file(filename)
+        elif hasattr(self.tray_widget, "set_icon_from_file"):
+            self.tray_widget.set_icon_from_file(filename)
+        else:
+            pixbuf = gdk.pixbuf_new_from_file(filename)
+            self.tray_widget.set_from_pixbuf(pixbuf)
+
     def setup_statusicon(self, delay_tray, tray_icon_filename):
         self.tray_widget = None
         try:
@@ -105,11 +135,7 @@ class ClientExtras(ClientExtrasBase):
             self.tray_widget.connect('activate', self.activate_menu)
             filename = self.get_tray_icon_filename(tray_icon_filename)
             if filename:
-                if hasattr(self.tray_widget, "set_from_file"):
-                    self.tray_widget.set_from_file(filename)
-                else:
-                    pixbuf = gdk.pixbuf_new_from_file(filename)
-                    self.tray_widget.set_from_pixbuf(pixbuf)
+                self.set_icon_from_file(filename)
             if delay_tray:
                 self.client.connect("first-ui-received", show_tray)
             return True

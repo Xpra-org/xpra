@@ -63,6 +63,8 @@ def get_icon_from_file(filename):
 def set_tooltip_text(widget, text):
     if hasattr(widget, "set_tooltip_text"):
         widget.set_tooltip_text(text)
+        return True
+    return False
 
 
 def add_close_accel(window, callback):

@@ -548,6 +548,7 @@ if sys.platform.startswith("win"):
                    ('', ['xpra.README']),
                    ('', ['win32/website.url']),
                    ('', ['etc/xpra/client-only/xpra.conf']),
+                   ('icons', glob.glob('win32\\*.ico')),
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),

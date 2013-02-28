@@ -74,6 +74,23 @@ class ClientExtras(ClientExtrasBase):
             self.notify(self.tray.getHWND(), summary, body, expire_timeout)
 
 
+    def set_tooltip(self, text=None):
+        if self.tray:
+            self.tray.set_tooltip(text or self.get_tray_tooltip())
+
+    def set_blinking(self, on):
+        if self.tray:
+            self.tray.set_blinking(on)
+
+    def set_icon(self, basefilename):
+        if not self.tray:
+            return
+        filename = os.path.join(self.get_data_dir(), "icons", "%s.ico" % basefilename)
+        if not os.path.exists(filename):
+            log.error("could not find icon %s", filename)
+            return
+        self.tray.set_icon(filename)
+
     def setup_tray(self, no_tray, notifications, tray_icon_filename):
         self.tray = None
         self.notify = None

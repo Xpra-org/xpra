@@ -11,6 +11,10 @@ from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
+#for attention_request:
+CRITICAL_REQUEST = 0
+INFO_REQUEST = 10
+
 macapp = None
 def get_OSXApplication():
     global macapp
@@ -51,6 +55,7 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
         self.menu_bar = None
         self.macapp = None
+        self.last_attention_request_id = -1
         ClientExtrasBase.__init__(self, client, opts, conn)
         self.locate_icon_filename(opts.tray_icon)
         self.setup_macdock()
@@ -62,7 +67,7 @@ class ClientExtras(ClientExtrasBase):
             self.icon_filename = opts_tray_icon
         else:
             #try to find the default icon:
-            x = os.path.join(self.get_data_dir(), "icons", "xpra.png")
+            x = os.path.join(self.get_data_dir(), "xpra", "icons", "xpra.png")
             if os.path.exists(x):
                 self.icon_filename = x
         log("darwin client extras using icon_filename=%s", self.icon_filename)
@@ -83,6 +88,28 @@ class ClientExtras(ClientExtrasBase):
         self.actions_menu     = None
         if self.macapp:
             self.macapp.sync_menubar()
+
+    def set_tooltip(self, text=None):
+        pass        #label cannot be set on the dock icon?
+
+    def set_blinking(self, on):
+        if on:
+            if self.last_attention_request_id<0:
+                self.last_attention_request_id = self.macapp.attention_request(INFO_REQUEST)
+        else:
+            if self.last_attention_request_id>=0:
+                self.macapp.cancel_attention_request(self.last_attention_request_id)
+                self.last_attention_request_id = -1
+
+    def set_icon(self, basefilename):
+        if not self.macapp:
+            return
+        filename = os.path.join(self.get_data_dir(), "xpra", "icons", "%s.png" % basefilename)
+        if not os.path.exists(filename):
+            log.error("could not find icon %s", filename)
+            return
+        pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+        self.macapp.set_dock_icon_pixbuf(pixbuf)
 
     def setup_macdock(self):
         log.debug("setup_macdock()")

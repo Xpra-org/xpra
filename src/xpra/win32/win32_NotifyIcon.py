@@ -23,16 +23,18 @@ from wimpiggy.log import Logger
 log = Logger()
 
 class win32NotifyIcon:
-	def __init__(self, application_name, notify_callback, exit_callback, command_callback=None, iconPathName=None):
-		self.application_name = application_name
+	def __init__(self, title, notify_callback, exit_callback, command_callback=None, iconPathName=None):
+		self.title = title[:127]
 		self.notify_callback = notify_callback
 		self.exit_callback = exit_callback
 		self.command_callback = command_callback
+		self.current_icon = None
 		self.closed = False
+		self._message_id = win32con.WM_USER+20		#a message id we choose
 		message_map = {
-			win32con.WM_DESTROY: self.OnDestroy,
-			win32con.WM_COMMAND: self.OnCommand,
-			win32con.WM_USER+20: self.OnTaskbarNotify,
+			win32con.WM_DESTROY	: self.OnDestroy,
+			win32con.WM_COMMAND	: self.OnCommand,
+			self._message_id	: self.OnTaskbarNotify,
 		}
 		# Register the Window class.
 		wc = WNDCLASS()
@@ -42,20 +44,27 @@ class win32NotifyIcon:
 		classAtom = RegisterClass(wc)
 		# Create the Window.
 		style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-		self.hwnd = CreateWindow(classAtom, self.application_name+" StatusIcon Window", style, \
+		self.hwnd = CreateWindow(classAtom, self.title+" StatusIcon Window", style, \
 		0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
 		0, 0, self.hinst, None)
 		UpdateWindow(self.hwnd)
-		hicon = self.win32LoadIcon(iconPathName)
-		flags = NIF_ICON | NIF_MESSAGE | NIF_TIP
-		nid = (self.hwnd, 0, flags, win32con.WM_USER+20, hicon, self.application_name)
-		Shell_NotifyIcon(NIM_ADD, nid)
+		self.current_icon = self.win32LoadIcon(iconPathName)
+		Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
+
+	def make_nid(self, flags):
+		return (self.hwnd, 0, flags, self._message_id, self.current_icon, self.title)
+
+	def set_blinking(self, on):
+		#FIXME: implement blinking on win32 using a timer
+		pass
+
+	def set_tooltip(self, name):
+		self.title = name[:127]
+		Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
 	def set_icon(self, iconPathName):
-		new_icon = self.win32LoadIcon(iconPathName)
-		flags = NIF_ICON | NIF_MESSAGE | NIF_TIP
-		nid = (self.hwnd, 0, flags, win32con.WM_USER+20, new_icon, self.application_name)
-		Shell_NotifyIcon(NIM_MODIFY, nid)
+		self.current_icon = self.win32LoadIcon(iconPathName)
+		Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
 	def win32LoadIcon(self, iconPathName):
 		icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
