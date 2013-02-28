@@ -50,12 +50,20 @@ def wm_check(display):
         prop = "WM_S%s" % i
         ewmh_so = myGetSelectionOwner(display, prop)
         log("ewmh selection owner for %s: %s", prop, ewmh_so)
-    
-        ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False, raise_xerrors=False)
+
+        try:
+            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
+        except:
+            #errors here generally indicate that the window is gone
+            #which is fine: it means the previous window manager is no longer active
+            continue
         log("_NET_SUPPORTING_WM_CHECK for screen %s: %s", i, ewmh_wm)
         if ewmh_wm:
-            name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
-            log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unnamed")
+            try:
+                name = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=False, raise_xerrors=False)
+            except:
+                name = None
+            log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unknown")
             if ewmh_so is None or ewmh_so==0:
                 log.error("it does not own the selection '%s' so we cannot take over and make it exit", prop)
                 log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
@@ -232,19 +240,7 @@ class Wm(gobject.GObject):
         add_event_receiver(self._root, self)
         substructureRedirect(self._root)
 
-        import time
-        children = None
-        for _ in range(5):
-            try:
-                children = trap.call(get_children, self._root)
-                log.info("children=%s", children)
-                break
-            except Exception, e:
-                log.info("error getting the list of windows: %s", e)
-                time.sleep(0.1)
-        if children is None:
-            raise Exception("failed to get the list of windows - maybe another window manager is running?")
-        for w in children:
+        for w in get_children(self._root):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.

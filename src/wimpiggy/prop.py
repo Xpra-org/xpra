@@ -336,10 +336,10 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     try:
         return _prop_decode(target, etype, data)
     except:
-        log.warn("Error parsing property %s (type %s); this may be a"
-                 + " misbehaving application, or bug in Wimpiggy\n"
-                 + "  Data: %r[...?]",
-                 key, etype, data[:160])
         if not ignore_errors:
+            log.warn("Error parsing property %s (type %s); this may be a"
+                     + " misbehaving application, or bug in Wimpiggy\n"
+                     + "  Data: %r[...?]",
+                     key, etype, data[:160])
             traceback.print_exc()
         raise
