@@ -749,11 +749,13 @@ class XpraClient(XpraClientBase, gobject.GObject):
 
     def _process_ping(self, packet):
         echotime = packet[1]
-        try:
-            (fl1, fl2, fl3) = os.getloadavg()
-            l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-        except OSError:
-            l1,l2,l3 = 0,0,0
+        l1,l2,l3 = 0,0,0
+        if os.name=="posix":
+            try:
+                (fl1, fl2, fl3) = os.getloadavg()
+                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+            except (OSError, AttributeError):
+                pass
         sl = -1
         if len(self.server_ping_latency)>0:
             _, sl = self.server_ping_latency[-1]
