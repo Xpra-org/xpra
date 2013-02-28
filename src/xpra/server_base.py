@@ -66,6 +66,7 @@ class XpraServerBase(object):
         self._potential_protocols = []
         self._server_sources = {}
         self._aliases = {}
+        self._reverse_aliases = {}
 
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
@@ -284,6 +285,7 @@ class XpraServerBase(object):
         i = 1
         for key in packet_types:
             self._aliases[i] = key
+            self._reverse_aliases[key] = i
             i += 1
 
     def signal_quit(self, signum, frame):
@@ -645,11 +647,8 @@ class XpraServerBase(object):
         capabilities["change-min-speed"] = True
         capabilities["client_window_properties"] = True
         capabilities["info-request"] = True
-        if self._aliases:
-            raliases = {}
-            for k,v in self._aliases.items():
-                raliases[v] = k
-            capabilities["aliases"] = raliases
+        if self._reverse_aliases:
+            capabilities["aliases"] = self._reverse_aliases
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):

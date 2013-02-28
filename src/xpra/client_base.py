@@ -69,6 +69,7 @@ class XpraClientBase(gobject.GObject):
         self._ordinary_packets = []
         self._mouse_position = None
         self._aliases = {}
+        self._reverse_aliases = {}
         #server state and caps:
         self.server_capabilities = {}
         self._remote_version = None
@@ -104,6 +105,7 @@ class XpraClientBase(gobject.GObject):
         i = 1
         for key in packet_types:
             self._aliases[i] = key
+            self._reverse_aliases[key] = i
             i += 1
 
     def send_hello(self, challenge_response=None):
@@ -156,11 +158,8 @@ class XpraClientBase(gobject.GObject):
         capabilities["uuid"] = self.uuid
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this
-        if self._aliases:
-            raliases = {}
-            for k,v in self._aliases.items():
-                raliases[v] = k
-            capabilities["aliases"] = raliases
+        if self._reverse_aliases:
+            capabilities["aliases"] = self._reverse_aliases
         return capabilities
 
     def make_uuid(self):
