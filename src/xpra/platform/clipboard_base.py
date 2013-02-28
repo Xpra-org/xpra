@@ -16,7 +16,6 @@ if is_gtk3():
 else:
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
 
-
 from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
@@ -27,10 +26,14 @@ from xpra.protocol import zlib_compress
 #debug = log.info
 debug = log.debug
 
+MAX_CLIPBOARD_PACKET_SIZE = 256*1024
+
+
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, clipboards=["CLIPBOARD"]):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"]):
         self.send = send_packet_cb
-        self.max_clipboard_packet_size = 32*1024 - 1024
+        self.progress_cb = progress_cb
+        self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
         self._clipboard_proxies = {}
         for clipboard in clipboards:
             proxy = ClipboardProxy(clipboard)
@@ -66,10 +69,14 @@ class ClipboardProtocolHelperBase(object):
         debug("get clipboard from remote handler id=%s", request_id)
         loop = NestedMainLoop()
         self._clipboard_outstanding_requests[request_id] = loop
+        if self.progress_cb:
+            self.progress_cb(len(self._clipboard_outstanding_requests))
         self.send("clipboard-request", request_id, self.local_to_remote(selection), target)
         result = loop.main(1 * 1000, 2 * 1000)
         debug("get clipboard from remote result(%s)=%s", request_id, result)
         del self._clipboard_outstanding_requests[request_id]
+        if self.progress_cb:
+            self.progress_cb(len(self._clipboard_outstanding_requests))
         return result
 
     def _clipboard_got_contents(self, request_id, dtype, dformat, data):
@@ -162,7 +169,8 @@ class ClipboardProtocolHelperBase(object):
                 if len(wire_data)>256:
                     wire_data = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_data)
                     if len(wire_data)>self.max_clipboard_packet_size:
-                        log.warn("even compressed, clipboard contents are too big and have not been sent: %s compressed bytes dropped" % len(wire_data))
+                        log.warn("even compressed, clipboard contents are too big and have not been sent:"
+                                 " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
                         no_contents()
                         return
                 self.send("clipboard-contents", request_id, selection,
@@ -202,8 +210,8 @@ class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
         But without gdk atom support, see gdk_clipboard for a better one!
     """
 
-    def __init__(self, send_packet_cb):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
+    def __init__(self, send_packet_cb, progress_cb=None):
+        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
 
 
 class ClipboardProxy(gtk.Invisible):

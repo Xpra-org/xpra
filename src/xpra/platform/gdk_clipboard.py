@@ -19,8 +19,8 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
         to and from a form suitable for transport over the wire.
     """
 
-    def __init__(self, send_packet_cb):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
+    def __init__(self, send_packet_cb, progress_cb=None):
+        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD", "PRIMARY", "SECONDARY"])
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
         if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):
@@ -65,10 +65,10 @@ class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):
         and we generally want to map it to X11's "PRIMARY"...
     """
 
-    def __init__(self, send_packet_cb, local_clipboard="CLIPBOARD", remote_clipboard="PRIMARY"):
+    def __init__(self, send_packet_cb, progress_cb=None, local_clipboard="CLIPBOARD", remote_clipboard="PRIMARY"):
         self.local_clipboard = local_clipboard
         self.remote_clipboard = remote_clipboard
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, [local_clipboard])
+        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, [local_clipboard])
 
     def local_to_remote(self, selection):
         debug("local_to_remote(%s) local_clipboard=%s, remote_clipboard=%s", selection, self.local_clipboard, self.remote_clipboard)
