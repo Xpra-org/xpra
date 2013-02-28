@@ -320,10 +320,15 @@ class XpraServer(gobject.GObject, XpraServerBase):
         self._send_new_window_packet(window)
 
     def _add_new_or_window(self, raw_window):
+        xid = get_xwindow(raw_window)
+        if raw_window.get_window_type()==gtk.gdk.WINDOW_TEMP:
+            #ignoring one of gtk's temporary windows
+            #all the windows we manage should be gtk.gdk.WINDOW_FOREIGN
+            log("ignoring TEMP window %s", xid)
+            return
         WINDOW_MODEL_KEY = "_xpra_window_model_"
         wid = raw_window.get_data(WINDOW_MODEL_KEY)
         window = self._id_to_window.get(wid)
-        xid = get_xwindow(raw_window)
         if window:
             if window.is_managed():
                 log("found existing window model %s for %s, will refresh it", type(window), xid)
