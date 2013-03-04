@@ -398,8 +398,10 @@ class ServerSource(object):
         self.window_sources = {}
         self.window_metdata_cache = {}
         self.close_mmap()
-        self.protocol = None
         self.stop_sending_sound()
+        if self.protocol:
+            self.protocol.close()
+            self.protocol = None
 
     def user_event(self):
         self.last_user_event = time.time()
