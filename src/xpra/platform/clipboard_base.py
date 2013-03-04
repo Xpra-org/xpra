@@ -23,8 +23,10 @@ log = Logger()
 from xpra.nested_main import NestedMainLoop
 from xpra.protocol import zlib_compress
 
-#debug = log.info
-debug = log.debug
+if os.environ.get("XPRA_CLIPBOARD_DEBUG", "0")=="1":
+    debug = log.info
+else:
+    debug = log.debug
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
@@ -34,6 +36,21 @@ class ClipboardProtocolHelperBase(object):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
+        self._clipboard_request_counter = 0
+        self._clipboard_outstanding_requests = {}
+        self.init_packet_handlers()
+        self.init_proxies(clipboards)
+
+    def init_packet_handlers(self):
+        self._packet_handlers = {
+            "clipboard-token":              self._process_clipboard_token,
+            "clipboard-request":            self._process_clipboard_request,
+            "clipboard-contents":           self._process_clipboard_contents,
+            "clipboard-contents-none":      self._process_clipboard_contents_none,
+            "clipboard-pending-requests":   self._process_clipboard_pending_requests,
+            }
+
+    def init_proxies(self, clipboards):
         self._clipboard_proxies = {}
         for clipboard in clipboards:
             proxy = ClipboardProxy(clipboard)
@@ -41,8 +58,6 @@ class ClipboardProtocolHelperBase(object):
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
-        self._clipboard_request_counter = 0
-        self._clipboard_outstanding_requests = {}
 
     def local_to_remote(self, selection):
         return  selection
@@ -196,18 +211,10 @@ class ClipboardProtocolHelperBase(object):
         if self.progress_cb:
             self.progress_cb(None, pending)
 
-    _packet_handlers = {
-        "clipboard-token": _process_clipboard_token,
-        "clipboard-request": _process_clipboard_request,
-        "clipboard-contents": _process_clipboard_contents,
-        "clipboard-contents-none": _process_clipboard_contents_none,
-        "clipboard-pending-requests": _process_clipboard_pending_requests,
-        }
-
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]
         debug("process clipboard packet type=%s", packet_type)
-        self._packet_handlers[packet_type](self, packet)
+        self._packet_handlers[packet_type](packet)
 
 
 class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
@@ -310,7 +317,7 @@ class ClipboardProxy(gtk.Invisible):
             debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)", selection_data, info, time, dtype, dformat, type(data), len(data or ""))
             selection_data.set(dtype, dformat, data)
         else:
-            debug("remote selection fetch timed out")
+            debug("remote selection fetch timed out or empty")
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
@@ -338,14 +345,14 @@ class ClipboardProxy(gtk.Invisible):
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
     def get_contents(self, target, cb):
-        debug("get_contents(%s,%s)", target, cb)
+        debug("get_contents(%s,%s) selection=%s", target, cb, self._selection)
         if self._have_token:
             log.warn("Our peer requested the contents of the clipboard, but "
                      + "*I* thought *they* had it... weird.")
             cb(None, None, None)
             return
         def unpack(clipboard, selection_data, data):
-            debug("unpack(%s, %s, %s:%s)", clipboard, selection_data, type(data), len(data or ""))
+            debug("unpack: %s, %s", type(data), len(data or ""))
             if selection_data is None:
                 cb(None, None, None)
             else:

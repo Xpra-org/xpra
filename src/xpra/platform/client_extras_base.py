@@ -513,9 +513,12 @@ class ClientExtrasBase(object):
             log("set_clipboard_menu(%s) can_clipboard=%s, server=%s, client=%s", args, can_clipboard, c.server_supports_clipboard, c.client_supports_clipboard)
             clipboard_menu.set_sensitive(can_clipboard)
             LABEL_TO_NAME = {"Disabled"  : None,
+                            "Auto"      : "AUTO",
                             "Clipboard" : "CLIPBOARD",
                             "Primary"   : "PRIMARY",
                             "Secondary" : "SECONDARY"}
+            from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
+            from xpra.platform.merged_clipboard import MergedClipboardProtocolHelper
             for label, remote_clipboard in LABEL_TO_NAME.items():
                 clipboard_item = CheckMenuItem(label)
                 def remote_clipboard_changed(item):
@@ -524,19 +527,41 @@ class ClientExtrasBase(object):
                     label = item.get_label()
                     remote_clipboard = LABEL_TO_NAME.get(label)
                     old_state = self.client.clipboard_enabled
-                    if remote_clipboard:
-                        self.clipboard_helper.remote_clipboard = remote_clipboard
+                    log("remote_clipboard_changed(%s) remote_clipboard=%s, old_state=%s", item, remote_clipboard, old_state)
+                    send_tokens = False
+                    if remote_clipboard is not None:
+                        #clipboard is not disabled
+                        if remote_clipboard=="AUTO":
+                            cclass = MergedClipboardProtocolHelper
+                        else:
+                            cclass = TranslatedClipboardProtocolHelper
+                        if type(self.clipboard_helper)!=cclass:
+                            #clipboard helper class has changed (or was None):
+                            self.setup_clipboard_helper(cclass)
+                        if cclass==TranslatedClipboardProtocolHelper:
+                            #ensure the translated keyboard class uses the designated remote clipboard
+                            self.clipboard_helper.remote_clipboard = remote_clipboard
+                        log("remote_clipboard_changed: class=%s", cclass)
+                        send_tokens = True
                         new_state = True
                     else:
+                        self.clipboard_helper = None
+                        send_tokens = False
                         new_state = False
                     log("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
                              item, label, remote_clipboard, old_state, new_state)
                     if new_state!=old_state:
                         self.client.clipboard_enabled = new_state
                         self.client.emit("clipboard-toggled")
-                    if new_state:
+                        send_tokens = True
+                    if send_tokens and self.clipboard_helper:
                         self.clipboard_helper.send_all_tokens()
-                clipboard_item.set_active(self.clipboard_helper.remote_clipboard==remote_clipboard)
+                active = (isinstance(self.clipboard_helper, MergedClipboardProtocolHelper)
+                            and remote_clipboard=="AUTO") \
+                            or \
+                         (isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper)
+                            and   self.clipboard_helper.remote_clipboard==remote_clipboard)
+                clipboard_item.set_active(active)
                 clipboard_item.set_sensitive(can_clipboard)
                 clipboard_item.set_draw_as_radio(True)
                 clipboard_item.connect("toggled", remote_clipboard_changed)
@@ -548,8 +573,10 @@ class ClientExtrasBase(object):
     def make_clipboardmenuitem(self):
         try:
             if self.clipboard_helper:
-                from xpra.platform.gdk_clipboard import TranslatedClipboardProtocolHelper
-                if isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
+                from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
+                from xpra.platform.merged_clipboard import MergedClipboardProtocolHelper
+                if isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper) or \
+                    isinstance(self.clipboard_helper, MergedClipboardProtocolHelper):
                     return self.make_translatedclipboard_optionsmenuitem()
         except:
             log.error("make_clipboardmenuitem()", exc_info=True)
