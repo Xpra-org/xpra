@@ -343,6 +343,7 @@ class ClipboardProxy(gtk.Invisible):
             log.warn("Our peer requested the contents of the clipboard, but "
                      + "*I* thought *they* had it... weird.")
             cb(None, None, None)
+            return
         def unpack(clipboard, selection_data, data):
             debug("unpack(%s, %s, %s:%s)", clipboard, selection_data, type(data), len(data or ""))
             if selection_data is None:
