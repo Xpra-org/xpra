@@ -1,0 +1,39 @@
+Index: a/etc/xpra/Xdummy/xpra.conf
+===================================================================
+--- a/etc/xpra/Xdummy/xpra.conf	(revision 2845)
++++ b/etc/xpra/Xdummy/xpra.conf	(working copy)
+@@ -22,7 +22,7 @@
+ system-tray = yes
+ 
+ # Start a pulseaudio server with each session:
+-pulseaudio = yes
++pulseaudio = no
+ 
+ # pulseaudio server start command:
+ pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
+Index: a/etc/xpra/Xvfb/xpra.conf
+===================================================================
+--- a/etc/xpra/Xvfb/xpra.conf	(revision 2845)
++++ b/etc/xpra/Xvfb/xpra.conf	(working copy)
+@@ -22,7 +22,7 @@
+ system-tray = yes
+ 
+ # Start a pulseaudio server with each session:
+-pulseaudio = yes
++pulseaudio = no
+ 
+ # pulseaudio server start command:
+ pulseaudio-command = pulseaudio --start --daemonize=false --system=false \
+Index: a/etc/xpra/xpra_Xdummy/xpra.conf
+===================================================================
+--- a/etc/xpra/xpra_Xdummy/xpra.conf	(revision 2845)
++++ b/etc/xpra/xpra_Xdummy/xpra.conf	(working copy)
+@@ -22,7 +22,7 @@
+ system-tray = yes
+ 
+ # Start a pulseaudio server with each session:
+-pulseaudio = yes
++pulseaudio = no
+ 
+ # pulseaudio server start command:
+ pulseaudio-command = pulseaudio --start --daemonize=false --system=false \

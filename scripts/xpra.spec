@@ -17,6 +17,7 @@
 %define no_webp 1
 %define no_video 1
 %define no_sound 1
+%define no_pulseaudio 1
 %endif
 
 #python and gtk bits:
@@ -47,7 +48,10 @@
 %define requires_webp %{nil}
 %define requires_sound %{nil}
 %define no_webp 1
-%define no_sound 1
+#do not disable sound support, but do not declare deps for it either
+#(so it can be installed if desired):
+%define no_sound 0
+%define requires_sound %{nil}
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
@@ -64,6 +68,7 @@
 %define requires_sound %{nil}
 %define no_webp 1
 %define no_sound 1
+%define no_pulseaudio 1
 %define no_strict 1
 %define requires_extra , python-uuid, python-ctypes
 %define include_egg 0
@@ -126,6 +131,7 @@ Patch5: use-static-vpxlib.patch
 Patch6: x264-limited-csc.patch
 Patch7: no-strict.patch
 Patch8: old-libav.patch
+Patch9: disable-pulseaudio.patch
 
 
 %description
@@ -652,6 +658,10 @@ cd parti-all-%{version}
 %if 0%{?old_libav}
 %patch8 -p1
 (echo "xpra/x264/x264lib.c" > %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?no_pulseaudio}
+%patch9 -p1
+(echo "etc/*/xpra.conf" > %{S:ignored_changed_files.txt})
 %endif
 
 %build
