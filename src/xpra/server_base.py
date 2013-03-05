@@ -45,7 +45,7 @@ class ServerBase(object):
         This is the base class for servers.
         It provides all the generic functions but is not tied
         to a specific backend (X11 or otherwise).
-        See X11ServerBase, XpraServer and XpraShadowServer
+        See X11ServerBase, XpraServer and XpraX11ShadowServer
     """
 
     def __init__(self, clobber, sockets, opts):

@@ -55,7 +55,7 @@ class X11ServerBase(ServerBase):
     """
         Base class for X11 servers,
         adds X11 specific methods to ServerBase.
-        (see XpraServer or XpraShadowServer for actual implementations)
+        (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
     def __init__(self, clobber, sockets, opts):
