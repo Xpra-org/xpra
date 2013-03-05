@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-gtk.gdk.threads_init()
 import gobject
 import socket
 
@@ -106,6 +105,10 @@ class ShadowServerBase(object):
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
+    def set_keyboard_repeat(self, key_repeat):
+        """ don't override the existing desktop """
+        pass
+
     def set_best_screen_size(self):
         """ we don't change resolutions when shadowing """
         return gtk.gdk.get_default_root_window().get_size()
@@ -114,6 +117,7 @@ class ShadowServerBase(object):
         log.info("shadow server: not setting keymap")
 
     def load_existing_windows(self, system_tray):
+        log("loading existing windows")
         self.root_window_model = RootWindowModel(self.root)
         self._add_new_window(self.root_window_model)
 

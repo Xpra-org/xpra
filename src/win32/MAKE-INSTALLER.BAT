@@ -45,12 +45,16 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 ECHO ****** Clearing build directory (you can ignore any errors here)
 RMDIR /S /Q %BUILD_DIR% dist Output
 DEL /Q Xpra_Setup*.exe
-DEL /Q xpra\x264\win32\codec.pyd
 DEL /Q xpra\x264\codec.pyd
-DEL /Q xpra\vpx\win32\codec.pyd
+DEL /Q xpra\x264\codec.c
 DEL /Q xpra\vpx\codec.pyd
+DEL /Q xpra\vpx\codec.c
 DEL /Q xpra\rencode\rencode.pyd
+DEL /Q xpra\rencode\rencode.c
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd
+DEL /Q wimpiggy\gdk\gdk_atoms.c
+DEL /Q wimpiggy\gdk\region.pyd
+DEL /Q wimpiggy\gdk\region.c
 
 ECHO ***************************************************************
 SET BUILD_ARGS=
@@ -63,6 +67,8 @@ IF %CYMATHS% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-cymaths
 IF %CLIPBOARD% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-clipboard
 IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
+IF %SHADOW% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-shadow
+
 ECHO Build arguments: %BUILD_ARGS%
 
 ECHO ***************************************************************

@@ -6,7 +6,6 @@
 
 import sys, os
 import gobject
-gobject.threads_init()
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa

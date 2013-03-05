@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-gtk.gdk.threads_init()
 
 from wimpiggy.prop import prop_set, prop_get
 

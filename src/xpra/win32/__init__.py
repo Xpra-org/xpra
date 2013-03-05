@@ -10,6 +10,7 @@ import os
 import sys
 
 XPRA_LOCAL_SERVERS_SUPPORTED = False
+XPRA_SHADOW_SUPPORTED = True
 os.environ["PLINK_PROTOCOL"] = "ssh"
 DEFAULT_SSH_CMD = "plink"
 GOT_PASSWORD_PROMPT_SUGGESTION = \

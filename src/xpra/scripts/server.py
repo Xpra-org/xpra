@@ -16,7 +16,6 @@ import atexit
 import signal
 import socket
 
-from xpra.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
 from xpra.dotxpra import DotXpra, ServerSockInUse
 
 o0117 = 79
@@ -212,7 +211,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         except:
             pass
 
-    if opts.exit_with_children and not opts.start_child:
+    if not shadowing and opts.exit_with_children and not opts.start_child:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
         return  1
 
@@ -311,22 +310,24 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                 return  1
         for tcp_s in set(opts.bind_tcp):
             setup_tcp_socket(tcp_s)
-    #print("creating server socket %s" % sockpath)
+
     clobber = upgrading or opts.use_display
-    try:
-        sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
-    except ServerSockInUse:
-        parser.error("You already have an xpra server running at %s\n"
-                     "  (did you want 'xpra upgrade'?)"
-                     % (display_name,))
-    sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
-    def cleanup_socket():
-        log.info("removing socket %s", sockpath)
+    if not sys.platform.startswith("win"):
+        #print("creating server socket %s" % sockpath)
         try:
-            os.unlink(sockpath)
-        except:
-            pass
-    _cleanups.append(cleanup_socket)
+            sockpath = dotxpra.server_socket_path(display_name, clobber, wait_for_unknown=5)
+        except ServerSockInUse:
+            parser.error("You already have an xpra server running at %s\n"
+                         "  (did you want 'xpra upgrade'?)"
+                         % (display_name,))
+        sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
+        def cleanup_socket():
+            log.info("removing socket %s", sockpath)
+            try:
+                os.unlink(sockpath)
+            except:
+                pass
+        _cleanups.append(cleanup_socket)
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
@@ -381,24 +382,31 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     if xvfb_error():
         return  1
-    # Whether we spawned our server or not, it is now running -- or at least
-    # starting.  First wait for it to start up:
-    try:
-        wait_for_x_server(display_name, 3) # 3s timeout
-    except Exception, e:
-        sys.stderr.write("%s\n" % e)
-        return  1
-    if xvfb_error(True):
-        return  1
-    # Now we can safely load gtk and connect:
-    assert "gtk" not in sys.modules
-    import gtk
-    display = gtk.gdk.Display(display_name)
-    manager = gtk.gdk.display_manager_get()
-    default_display = manager.get_default_display()
-    if default_display is not None:
-        default_display.close()
-    manager.set_default_display(display)
+
+    if not sys.platform.startswith("win"):
+        from xpra.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+        # Whether we spawned our server or not, it is now running -- or at least
+        # starting.  First wait for it to start up:
+        try:
+            wait_for_x_server(display_name, 3) # 3s timeout
+        except Exception, e:
+            sys.stderr.write("%s\n" % e)
+            return  1
+        if xvfb_error(True):
+            return  1
+        # Now we can safely load gtk and connect:
+        assert "gtk" not in sys.modules
+        import gtk          #@Reimport
+        gtk.threads_init()
+        display = gtk.gdk.Display(display_name)
+        manager = gtk.gdk.display_manager_get()
+        default_display = manager.get_default_display()
+        if default_display is not None:
+            default_display.close()
+        manager.set_default_display(display)
+    else:
+        assert "gtk" not in sys.modules
+        import gtk          #@Reimport
 
     if shadowing:
         xvfb_pid = None
@@ -421,8 +429,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         _cleanups.append(kill_xvfb)
 
     if shadowing:
-        from xpra.shadow_server import XpraX11ShadowServer
-        app = XpraX11ShadowServer(sockets, opts)
+        if sys.platform.startswith("win"):
+            from xpra.win32.shadow_server import XpraWin32ShadowServer
+            app = XpraWin32ShadowServer(sockets, opts)
+        else:
+            from xpra.shadow_server import XpraX11ShadowServer
+            app = XpraX11ShadowServer(sockets, opts)
     else:
         #check for an existing window manager:
         from wimpiggy.wm import wm_check
@@ -439,7 +451,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if not displayHasXComposite(root):
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
-
         app = XpraServer(clobber, sockets, opts)
 
     children_pids = set()
@@ -447,31 +458,35 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if opts.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             app.quit(False)
-    child_reaper = ChildReaper(reaper_quit, children_pids)
+    
     procs = []
-    if sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0):
-        POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
-        log.warn("Warning: outdated/buggy version of Python (%s), switching to process polling every %s seconds to support 'exit-with-children'", ".".join(str(x) for x in sys.version_info), POLL_DELAY)
-        ChildReaper.processes = procs
-        def check_procs():
-            for proc in ChildReaper.processes:
-                if proc.poll() is not None:
-                    child_reaper.add_dead_pid(proc.pid)
-                    child_reaper.check()
-            ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
-            return True
-        gobject.timeout_add(POLL_DELAY*1000, check_procs)
-    else:
-        #with non-buggy python, we can just check the list of pids
-        #whenever we get a SIGCHLD
-        signal.signal(signal.SIGCHLD, child_reaper.sigchld)
-        # Check once after the mainloop is running, just in case the exit
-        # conditions are satisfied before we even enter the main loop.
-        # (Programming with unix the signal API sure is annoying.)
-        def check_once():
-            child_reaper.check()
-            return False # Only call once
-        gobject.timeout_add(0, check_once)
+    if os.name=="posix":
+        child_reaper = ChildReaper(reaper_quit, children_pids)
+        old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
+        if old_python:
+            POLL_DELAY = int(os.environ.get("XPRA_POLL_DELAY", 2))
+            log.warn("Warning: outdated/buggy version of Python: %s", ".".join(str(x) for x in sys.version_info))
+            log.warn("switching to process polling every %s seconds to support 'exit-with-children'", POLL_DELAY)
+            ChildReaper.processes = procs
+            def check_procs():
+                for proc in ChildReaper.processes:
+                    if proc.poll() is not None:
+                        child_reaper.add_dead_pid(proc.pid)
+                        child_reaper.check()
+                ChildReaper.processes = [proc for proc in ChildReaper.processes if proc.poll() is None]
+                return True
+            gobject.timeout_add(POLL_DELAY*1000, check_procs)
+        else:
+            #with non-buggy python, we can just check the list of pids
+            #whenever we get a SIGCHLD
+            signal.signal(signal.SIGCHLD, child_reaper.sigchld)
+            # Check once after the mainloop is running, just in case the exit
+            # conditions are satisfied before we even enter the main loop.
+            # (Programming with unix the signal API sure is annoying.)
+            def check_once():
+                child_reaper.check()
+                return False # Only call once
+            gobject.timeout_add(0, check_once)
 
     if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
         pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
@@ -493,10 +508,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if opts.exit_with_children:
         assert opts.start_child
     if opts.start_child:
+        assert os.name=="posix"
         #disable ubuntu's global menu using env vars:
         env = os.environ.copy()
-        env["UBUNTU_MENUPROXY"] = ""
-        env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
+        if os.name=="posix":
+            env["UBUNTU_MENUPROXY"] = ""
+            env["QT_X11_NO_NATIVE_MENUBAR"] = "1"
         for child_cmd in opts.start_child:
             if child_cmd:
                 try:

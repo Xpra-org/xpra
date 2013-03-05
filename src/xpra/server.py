@@ -12,8 +12,6 @@
 #   any other interesting metadata? _NET_WM_TYPE, WM_TRANSIENT_FOR, etc.?
 
 import gtk.gdk
-gtk.gdk.threads_init()
-
 import gobject
 
 try:
@@ -205,6 +203,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def is_shown(self, window):
         return self._desktop_manager.is_shown(window)
+
+    def cleanup(self, *args):
+        if self._tray:
+            self._tray.cleanup()
+        X11ServerBase.cleanup(self)
 
     def load_existing_windows(self, system_tray):
         # Tray handler:

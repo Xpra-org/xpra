@@ -9,6 +9,7 @@
 # useful. So if you want to do that, use xposix instead.
 
 XPRA_LOCAL_SERVERS_SUPPORTED = False
+XPRA_SHADOW_SUPPORTED = False
 DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 

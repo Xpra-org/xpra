@@ -4,18 +4,23 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 import errno
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
+CONTINUE = [errno.EINTR]
+if sys.platform.startswith("win"):
+    WSAEWOULDBLOCK = 10035
+    CONTINUE.append(WSAEWOULDBLOCK)
 def untilConcludes(f, *a, **kw):
     while True:
         try:
             return f(*a, **kw)
         except (IOError, OSError), e:
-            if e.args[0] == errno.EINTR:
+            if e.args[0] in CONTINUE:
                 continue
             raise
 

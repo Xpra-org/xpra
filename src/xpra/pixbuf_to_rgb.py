@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-gtk.gdk.threads_init()
 import time
 
 from wimpiggy.log import Logger

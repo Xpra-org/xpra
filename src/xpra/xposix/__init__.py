@@ -8,6 +8,7 @@ import os.path
 import sys
 
 XPRA_LOCAL_SERVERS_SUPPORTED = True
+XPRA_SHADOW_SUPPORTED = True
 DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 

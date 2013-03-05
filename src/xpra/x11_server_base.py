@@ -7,8 +7,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-gtk.gdk.threads_init()
-
 import gobject
 
 from xpra.server_base import ServerBase
@@ -23,11 +21,13 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                )
 from wimpiggy.prop import prop_set
+from xpra.server_uuid import save_uuid, get_uuid
 from wimpiggy.error import XError, trap
 
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
 
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -60,14 +60,6 @@ class X11ServerBase(ServerBase):
 
     def __init__(self, clobber, sockets, opts):
         self.x11_init(clobber)
-
-        self.default_dpi = int(opts.dpi)
-        self.dpi = self.default_dpi
-
-        ### Misc. state:
-        self._settings = {}
-        self._xsettings_manager = None
-        self._tray = None
 
         ServerBase.__init__(self, clobber, sockets, opts)
 
@@ -111,6 +103,17 @@ class X11ServerBase(ServerBase):
                           ]:
             get_xatom(atom_name)
 
+    def init_keyboard(self):
+        ServerBase.init_keyboard(self)
+        #clear all modifiers
+        clean_keyboard_state()
+
+
+    def get_uuid(self):
+        return get_uuid()
+
+    def save_uuid(self):
+        save_uuid(self.uuid)
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:
@@ -125,6 +128,11 @@ class X11ServerBase(ServerBase):
             #but do set a default repeat rate:
             set_key_repeat_rate(500, 30)
 
+
+    def make_hello(self):
+        capabilities = ServerBase.make_hello(self)
+        capabilities["resize_screen"] = self.randr
+        return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = ServerBase.do_get_info(self, proto, server_sources, window_ids)

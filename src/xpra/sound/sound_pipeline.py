@@ -6,7 +6,6 @@
 
 import os
 import gobject
-gobject.threads_init()
 
 from xpra.sound.gstreamer_util import gst
 from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal

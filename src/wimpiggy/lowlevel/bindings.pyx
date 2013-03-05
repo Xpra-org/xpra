@@ -84,12 +84,6 @@ cdef extern from "pygtk-2.0/pygobject.h":
     ctypedef void** const_void_pp "const void**"
     object pygobject_new(cGObject * contents)
 
-    # I am naughty; the exposed accessor for PyGBoxed objects is a macro that
-    # takes a type name as one of its arguments, and thus is impossible to
-    # wrap from Pyrex; so I just peek into the object directly:
-    ctypedef struct PyGBoxed:
-        void * boxed
-
 cdef cGObject * unwrap(box, pyclass) except? NULL:
     # Extract a raw GObject* from a PyGObject wrapper.
     assert issubclass(pyclass, gobject.GObject)
@@ -109,13 +103,6 @@ cdef cGObject * unwrap(box, pyclass) except? NULL:
 cdef object wrap(cGObject * contents):
     # Put a raw GObject* into a PyGObject wrapper.
     return pygobject_new(contents)
-
-cdef void * unwrap_boxed(box, pyclass):
-    # Extract a raw object from a PyGBoxed wrapper
-    assert issubclass(pyclass, gobject.GBoxed)
-    if not isinstance(box, pyclass):
-        raise TypeError("object %r is not a %r" % (box, pyclass))
-    return (<PyGBoxed *>box).boxed
 
 ###################################
 # Simple speed-up code
@@ -391,13 +378,6 @@ cdef extern from "X11/Xlib.h":
 
 # gdk_region_get_rectangles (pygtk bug #517099)
 cdef extern from "gtk-2.0/gdk/gdktypes.h":
-    ctypedef struct GdkRegion:
-        pass
-    ctypedef struct GdkRectangle:
-        int x, y, width, height
-    void gdk_region_get_rectangles(GdkRegion *, GdkRectangle **, int *)
-    void g_free(void *)
-
     ctypedef struct cGdkVisual "GdkVisual":
         pass
     Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
@@ -764,20 +744,6 @@ def calc_constrained_size(width, height, hints):
 
     return (new_width, new_height, vis_width, vis_height)
 
-
-def get_rectangle_from_region(region):
-    cdef GdkRegion * cregion
-    cdef GdkRectangle * rectangles = <GdkRectangle*> 0
-    cdef int count = 0
-    cregion = <GdkRegion *>unwrap_boxed(region, gtk.gdk.Region)
-    gdk_region_get_rectangles(cregion, &rectangles, &count)
-    if count == 0:
-        g_free(rectangles)
-        raise ValueError("empty region")
-    (x, y, w, h) = (rectangles[0].x, rectangles[0].y,
-                    rectangles[0].width, rectangles[0].height)
-    g_free(rectangles)
-    return (x, y, w, h)
 
 ###################################
 # Keyboard binding

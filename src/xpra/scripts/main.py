@@ -18,6 +18,7 @@ import shlex
 import xpra
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
+                           XPRA_SHADOW_SUPPORTED,
                            GOT_PASSWORD_PROMPT_SUGGESTION,
                            add_client_options)
 from xpra.bytestreams import TwoFileConnection, SocketConnection
@@ -50,6 +51,7 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
+    supports_shadow = XPRA_SHADOW_SUPPORTED
     supports_server = XPRA_LOCAL_SERVERS_SUPPORTED
     if supports_server:
         try:
@@ -57,39 +59,43 @@ def main(script_file, cmdline):
         except:
             supports_server = False
 
+    command_options = [
+                        "\t%prog attach [DISPLAY]\n",
+                        "\t%prog detach [DISPLAY]\n",
+                        "\t%prog screenshot filename [DISPLAY]\n",
+                        "\t%prog info [DISPLAY]\n",
+                        "\t%prog version [DISPLAY]\n"
+                      ]
     if supports_server:
-        start_str = "\t%prog start DISPLAY\n"
-        list_str = "\t%prog list\n"
-        upgrade_str = "\t%prog upgrade DISPLAY\n"
-        shadow_str = "\t%prog shadow DISPLAY\n"
-        note_str = ""
-        stop_str = "\t%prog stop [DISPLAY]\n"
-    else:
-        start_str, list_str, upgrade_str, shadow_str, stop_str = "", "", "", "", ""
-        note_str = "(This xpra installation does not support starting local servers.)"
+        command_options = ["\t%prog start DISPLAY\n",
+                           "\t%prog stop [DISPLAY]\n",
+                           "\t%prog list\n",
+                           "\t%prog upgrade DISPLAY\n",
+                           ] + command_options
+    if supports_shadow:
+        command_options.append("\t%prog shadow DISPLAY\n")
+    if not supports_server:
+        command_options.append("(This xpra installation does not support starting local servers.)")
+
+    hidden_options = {}
     parser = OptionParser(version="xpra v%s" % xpra.__version__,
-                          usage="".join(["\n",
-                                         start_str,
-                                         "\t%prog attach [DISPLAY]\n",
-                                         "\t%prog detach [DISPLAY]\n",
-                                         "\t%prog screenshot filename [DISPLAY]\n",
-                                         "\t%prog info [DISPLAY]\n",
-                                         "\t%prog version [DISPLAY]\n",
-                                         stop_str,
-                                         list_str,
-                                         upgrade_str,
-                                         shadow_str,
-                                         note_str]))
+                          usage="\n" + "".join(command_options))
     defaults = make_defaults_struct()
-    if supports_server:
+    if supports_server or supports_shadow:
         group = OptionGroup(parser, "Server Options",
-                    "These options are only relevant on the server when using the 'start' or 'upgrade' mode.")
+                    "These options are only relevant on the server when using the 'start', 'upgrade' or 'shadow' mode.")
+        parser.add_option_group(group)
+    if supports_server:
         group.add_option("--start-child", action="append",
                           dest="start_child", metavar="CMD", default=defaults.start_child,
                           help="program to spawn in new server (may be repeated) (default: %default)")
         group.add_option("--exit-with-children", action="store_true",
                           dest="exit_with_children", default=defaults.exit_with_children,
                           help="Terminate server when --start-child command(s) exit")
+    else:
+        hidden_options["start_child"] = None
+        hidden_options["exit_with_children"] = False
+    if supports_server or supports_shadow:
         group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")
@@ -99,6 +105,10 @@ def main(script_file, cmdline):
                       + " If a relative filename is specified the it is relative to --socket-dir,"
                       + " the value of '$DISPLAY' will be substituted with the actual display used"
                       )
+    else:
+        hidden_options["daemon"] = False
+        hidden_options["log_file"] = defaults.log_file
+    if supports_server:
         group.add_option("--use-display", action="store_true",
                           dest="use_display", default=defaults.use_display,
                           help="Use an existing display rather than starting one with xvfb")
@@ -107,23 +117,33 @@ def main(script_file, cmdline):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server (default: '%default')")
+    else:
+        hidden_options["use_display"] = False
+        hidden_options["xvfb"] = ''
+    if supports_server or supports_shadow:
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=defaults.bind_tcp,
                           metavar="[HOST]:PORT",
                           help="Listen for connections over TCP (use --password-file to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
+    else:
+        hidden_options["bind_tcp"] = []
+    if supports_server:
         group.add_option("--no-pulseaudio", action="store_false",
                       dest="pulseaudio", default=defaults.pulseaudio,
                       help="Disable starting of a pulseaudio server for the session")
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server (default: '%default')")
-        parser.add_option_group(group)
+    else:
+        hidden_options["pulseaudio"] = False
+        hidden_options["pulseaudio_command"] = ""
 
     group = OptionGroup(parser, "Server Controlled Features",
                 "These options can be used to turn certain features on or off, "
                 "they can be specified on the client or on the server, "
                 "but the client cannot enable them if they are disabled on the server.")
+    parser.add_option_group(group)
     group.add_option("--no-clipboard", action="store_false",
                       dest="clipboard", default=defaults.clipboard,
                       help="Disable clipboard support")
@@ -164,11 +184,11 @@ def main(script_file, cmdline):
                       help="The audio codec to use for forwaring the microphone sound input "
                       "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
                       "when unspecified all available codecs are allowed and the first one is used)")
-    parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
                 "They may also be specified on the server as default values for those clients that do not set them.")
+    parser.add_option_group(group)
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
@@ -179,6 +199,8 @@ def main(script_file, cmdline):
         group.add_option("-b", "--max-bandwidth", action="store",
                           dest="max_bandwidth", type="float", default=defaults.max_bandwidth, metavar="BANDWIDTH (kB/s)",
                           help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: %default)")
+    else:
+        hidden_options["max_bandwidth"] = 0
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))>0:
         group.add_option("--min-quality", action="store",
                           metavar="MIN-LEVEL",
@@ -188,6 +210,9 @@ def main(script_file, cmdline):
                           metavar="LEVEL",
                           dest="quality", type="int", default=defaults.quality,
                           help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
+    else:
+        hidden_options["min_quality"] = defaults.min_quality
+        hidden_options["quality"] = defaults.quality
     if "x264" in ENCODINGS:
         group.add_option("--min-speed", action="store",
                           metavar="SPEED",
@@ -197,6 +222,9 @@ def main(script_file, cmdline):
                           metavar="SPEED",
                           dest="speed", type="int", default=defaults.speed,
                           help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
+    else:
+        hidden_options["min_speed"] = defaults.min_speed
+        hidden_options["quality"] = defaults.quality
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
@@ -212,10 +240,10 @@ def main(script_file, cmdline):
                       + " picture data is compressed separately (see --encoding)."
                       + " 0 to disable compression,"
                       + " 9 for maximal (slowest) compression. Default: %default.")
-    parser.add_option_group(group)
 
     group = OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
+    parser.add_option_group(group)
     group.add_option("--no-windows", action="store_false",
                       dest="windows", default=defaults.windows,
                       help="Tells the server not to send any window data, only notifications and bell events will be forwarded (if enabled).")
@@ -261,10 +289,10 @@ def main(script_file, cmdline):
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\")")
-    parser.add_option_group(group)
 
     group = OptionGroup(parser, "Advanced Client Options",
                 "Please refer to the man page for details.")
+    parser.add_option_group(group)
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
@@ -281,35 +309,27 @@ def main(script_file, cmdline):
     if len(ENCRYPTION_CIPHERS)>0:
         group.add_option("--encryption", action="store",
                           dest="encryption", default=defaults.encryption,
-                          metavar="CMD",
+                          metavar="ALGO",
                           help="Specifies the encryption cipher to use, only %s is currently supported. (default: None)" % (", ".join(ENCRYPTION_CIPHERS)))
-    parser.add_option_group(group)
+    else:
+        hidden_options["encryption"] = ''
 
     options, args = parser.parse_args(cmdline[1:])
     if not args:
         parser.error("need a mode")
-    #ensure the default values are set even though
-    #the option is not shown to the user as it is not available
-    if "jpeg" not in ENCODINGS:
-        options.max_bandwidth = 0
-    if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))==0:
-        options.min_quality = defaults.min_quality
-        options.quality = defaults.quality
-    if "x264" not in ENCODINGS:
-        options.min_speed = defaults.min_speed
-        options.speed = defaults.speed
+
+    #ensure all the option fields are set even though
+    #some options are not shown to the user:
+    for k,v in hidden_options.items():
+        setattr(options, k, v)
     try:
         int(options.dpi)
     except Exception, e:
         parser.error("invalid dpi: %s" % e)
-    if len(ENCRYPTION_CIPHERS)==0:
-        #if no encryption options are available the option is not shown
-        #but we still need to set a value to avoid errors later on:
-        options.encryption = ""
     if options.encoding and options.encoding not in ENCODINGS:
         parser.error("encoding %s is not supported, try: %s" % (options.encoding, ", ".join(ENCODINGS)))
     if options.encryption:
-        assert len(ENCRYPTION_CIPHERS)>0
+        assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:
             parser.error("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
         if not options.password_file:
@@ -365,8 +385,9 @@ def main(script_file, cmdline):
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
-    if mode in ("start", "upgrade", "shadow") and supports_server:
-        if len(args)>0:
+    if (mode in ("start", "upgrade") and supports_server) or \
+        (mode=="shadow" and supports_shadow):
+        if len(args)>0 and mode=="start":
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             if args[0].startswith("ssh/") or args[0].startswith("ssh:"):
                 return run_remote_server(parser, options, args)

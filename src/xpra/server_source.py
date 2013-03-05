@@ -6,9 +6,6 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
-gtk.gdk.threads_init()
-
 import re
 from math import sqrt
 import os
@@ -37,7 +34,6 @@ from xpra.stats.maths import logp, calculate_time_weighted_average, calculate_fo
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from xpra.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.server_keyboard_config import KeyboardConfig
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 
@@ -365,7 +361,7 @@ class ServerSource(object):
                 self.close_event.wait(AFTER_EACH_WINDOW_WAIT)
                 if self.is_closed():
                     return
-            #calculate weighted average as new globale default delay:
+            #calculate weighted average as new global default delay:
             now = time.time()
             wdimsum, wdelay = 0, 0
             for ws in list(self.window_sources.values()):
@@ -509,11 +505,16 @@ class ServerSource(object):
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         #keyboard:
-        self.keyboard_config = KeyboardConfig()
-        self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
-        self.assign_keymap_options(capabilities)
-        self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
-        self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
+        try:
+            from xpra.server_keyboard_config import KeyboardConfig
+            self.keyboard_config = KeyboardConfig()
+            self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
+            self.assign_keymap_options(capabilities)
+            self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
+            self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
+        except ImportError, e:
+            log.error("failed to load keyboard support: %s", e)
+            self.keyboard_config = None
         #mmap:
         if self.send_windows:
             #we don't need mmap if not sending pixels
@@ -731,15 +732,16 @@ class ServerSource(object):
         return modded
 
     def keys_changed(self):
-        self.keyboard_config.compute_modifier_map()
-        self.keyboard_config.compute_modifier_keynames()
+        if self.keyboard_config:
+            self.keyboard_config.compute_modifier_map()
+            self.keyboard_config.compute_modifier_keynames()
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
-        if self.keyboard_config.enabled:
+        if self.keyboard_config and self.keyboard_config.enabled:
             self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
 
     def set_keymap(self, current_keyboard_config, keys_pressed, force):
-        if self.keyboard_config.enabled:
+        if self.keyboard_config and self.keyboard_config.enabled:
             current_id = None
             if current_keyboard_config and current_keyboard_config.enabled:
                 current_id = current_keyboard_config.get_hash()
@@ -755,7 +757,7 @@ class ServerSource(object):
         return current_keyboard_config
 
     def get_keycode(self, client_keycode, keyname, modifiers):
-        if not self.keyboard_config.enabled:
+        if self.keyboard_config is None or not self.keyboard_config.enabled:
             log.info("ignoring keycode since keyboard is turned off")
             return -1
         server_keycode = self.keyboard_config.keycode_translation.get((client_keycode, keyname))
@@ -839,7 +841,8 @@ class ServerSource(object):
                 log.error("failed to setup sound: %s", e)
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
-        capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
+        if self.keyboard_config:
+            capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
         capabilities["auto_refresh_delay"] = self.auto_refresh_delay
         self.send("hello", capabilities)
 

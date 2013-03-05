@@ -25,7 +25,7 @@ assert wimpiggy.__version__ == xpra.__version__
 
 print(" ".join(sys.argv))
 
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED, XPRA_SHADOW_SUPPORTED
 #*******************************************************************************
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
@@ -56,6 +56,10 @@ rencode_ENABLED = True
 
 
 xdummy_ENABLED = False
+
+
+
+shadow_ENABLED = XPRA_SHADOW_SUPPORTED
 
 
 
@@ -96,7 +100,7 @@ strict_ENABLED = True
 filtered_args = []
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
             "sound", "cyxor", "cymaths", "opengl", "parti",
-            "warn", "strict")
+            "warn", "strict", "shadow")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -201,7 +205,9 @@ def add_to_keywords(kw, key, *args):
     for arg in args:
         values.append(arg)
 
-PYGTK_PACKAGES = ["pygobject-2.0", "gdk-x11-2.0", "gtk+-x11-2.0"]
+PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
+if os.name=="posix":
+    PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
 X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
@@ -451,6 +457,7 @@ if sys.platform.startswith("win"):
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % gtk2_lib_dir)
         else:
             sys.exit("ERROR: unknown package config: %s" % str(packages))
+        print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
         return kw
 
     import py2exe    #@UnresolvedImport
@@ -621,6 +628,7 @@ else:
     setup_options["scripts"] = scripts
 
 
+
 #*******************************************************************************
 if server_ENABLED:
     packages.append("wimpiggy.lowlevel")
@@ -647,12 +655,9 @@ elif sys.platform.startswith("win"):
     packages.remove("xpra")
     packages.remove("xpra.scripts")
     packages.remove("xpra.platform")
-    py2exe_excludes += ["xpra.scripts.server",
-                        "xpra.server", "xpra.shadow_server", "xpra.server_base",
-                        "xpra.server_source", "xpra.window_source",
+    py2exe_excludes += ["xpra.server", "xpra.x11_server_base", "xpra.shadow_server",
                         "xpra.xkbhelper", "xpra.wait_for_x_server",
                         "xpra.dbus_notifications_forwarder",
-                        "xpra.pixbuf_to_rgb",
                         "wimpiggy.lowlevel",  "wimpiggy.tray""wimpiggy.selection",
                         "wimpiggy.prop", "wimpiggy.composite",
                         "wimpiggy.keys", "wimpiggy.wm",

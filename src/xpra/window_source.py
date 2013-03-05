@@ -28,10 +28,7 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS = 100
 
-
 import gtk.gdk
-gtk.gdk.threads_init()
-
 import gobject
 try:
     from StringIO import StringIO   #@UnusedImport
@@ -41,9 +38,6 @@ import time
 import ctypes
 from threading import Lock
 from math import sqrt
-
-#it would be nice to be able to get rid of this import here:
-from wimpiggy.lowlevel import get_rectangle_from_region   #@UnresolvedImport
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -72,6 +66,8 @@ from xpra.stats.maths import logp, \
     calculate_for_target, calculate_for_average
 from xpra.batch_delay_calculator import calculate_batch_delay, update_video_encoder
 from xpra.xor import xor_str        #@UnresolvedImport
+
+RECTANGLE_WARNING = False
 
 
 class DamageBatchConfig(object):
@@ -652,6 +648,14 @@ class WindowSource(object):
             send_full_screen_update()
             return
 
+        if not hasattr(damage, "get_rectangles"):
+            global RECTANGLE_WARNING
+            if not RECTANGLE_WARNING:
+                log.warn("your version of pygtk is too old! using fullscreen update fallback which is sloooow")
+                RECTANGLE_WARNING = True
+            send_full_screen_update()
+            return
+
         try:
             count_threshold = 60
             pixels_threshold = ww*wh*9/10
@@ -662,20 +666,13 @@ class WindowSource(object):
                 pixels_threshold = ww*wh/2
                 packet_cost = 4096
             pixel_count = 0
-            while not damage.empty():
-                try:
-                    x, y, w, h = get_rectangle_from_region(damage)
-                    pixel_count += w*h
-                    #favor full screen updates over many regions:
-                    if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
-                        send_full_screen_update()
-                        return
-                    regions.append((x, y, w, h))
-                    rect = gtk.gdk.Rectangle(x, y, w, h)
-                    damage.subtract(gtk.gdk.region_rectangle(rect))
-                except ValueError:
-                    error("send_delayed_regions: damage is empty: %s", damage)
-                    break
+            for rect in damage.get_rectangles():
+                pixel_count += rect.width*rect.height
+                #favor full screen updates over many regions:
+                if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
+                    send_full_screen_update()
+                    return
+                regions.append((rect.x, rect.y, rect.width, rect.height))
             debug("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
         except Exception, e:
             error("send_delayed_regions: error processing region %s: %s", damage, e, exc_info=True)

@@ -7,8 +7,6 @@
 # later version. See the file COPYING for details.
 
 import gtk.gdk
-gtk.gdk.threads_init()
-
 import os.path
 import threading
 import gobject
@@ -28,12 +26,10 @@ import xpra
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, get_codecs
 from xpra.scripts.server import deadly_signal
 from xpra.server_source import ServerSource
-from xpra.server_uuid import save_uuid, get_uuid
 from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.platform.uuid_wrapper import get_hex_uuid
-from xpra.xkbhelper import clean_keyboard_state
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
 from xpra.gtk_util import set_application_name
 
@@ -49,7 +45,7 @@ class ServerBase(object):
     """
 
     def __init__(self, clobber, sockets, opts):
-
+        log("ServerBase.__init__(%s, %s, %s)", clobber, sockets, opts)
         self.init_uuid()
         self.start_time = time.time()
 
@@ -88,7 +84,14 @@ class ServerBase(object):
         self.sharing = opts.sharing
         self.bell = opts.bell
         self.cursors = opts.cursors
+        self.default_dpi = int(opts.dpi)
+        self.dpi = self.default_dpi
 
+        ### Misc. state:
+        self._settings = {}
+        self._xsettings_manager = None
+
+        log("starting component init")
         self.init_clipboard(opts.clipboard)
         self.init_keyboard()
         self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
@@ -98,6 +101,7 @@ class ServerBase(object):
 
         self.init_packet_handlers()
         self.init_aliases()
+        log("enabling all sockets: %s", sockets)
         ### All right, we're ready to accept customers:
         for sock in sockets:
             self.add_listen_socket(sock)
@@ -105,15 +109,21 @@ class ServerBase(object):
 
     def init_uuid(self):
         # Define a server UUID if needed:
-        self.uuid = get_uuid()
+        self.uuid = self.get_uuid()
         if not self.uuid:
             self.uuid = unicode(get_hex_uuid())
-            save_uuid(self.uuid)
+            self.save_uuid()
         log.info("server uuid is %s", self.uuid)
+
+    def get_uuid(self):
+        return  None
+
+    def save_uuid(self):
+        pass
 
     def init_notification_forwarder(self, notifications):
         self.notifications_forwarder = None
-        if notifications:
+        if notifications and os.name=="posix":
             try:
                 from xpra.dbus_notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
@@ -168,8 +178,6 @@ class ServerBase(object):
         self.keys_repeat_timers = {}
         ### Set up keymap change notification:
         gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
-        #clear all modifiers
-        clean_keyboard_state()
 
     def load_existing_windows(self, system_tray):
         pass
@@ -178,6 +186,7 @@ class ServerBase(object):
         return True
 
     def init_packet_handlers(self):
+        log("initializing packet handlers")
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
@@ -262,13 +271,12 @@ class ServerBase(object):
             log.info("xpra is ready.")
             sys.stdout.flush()
         gobject.idle_add(print_ready)
+        log("calling gtk.main")
         gtk.main()
         log("xpra end of gtk.main().")
         return self._upgrading
 
     def cleanup(self, *args):
-        if self._tray:
-            self._tray.cleanup()
         if self.notifications_forwarder:
             try:
                 self.notifications_forwarder.release()
@@ -571,7 +579,6 @@ class ServerBase(object):
         capabilities["platform"] = sys.platform
         capabilities["python_version"] = python_platform.python_version()
         capabilities["encodings"] = ENCODINGS
-        capabilities["resize_screen"] = self.randr
         if self.session_name:
             capabilities["session_name"] = self.session_name
         capabilities["start_time"] = int(self.start_time)
@@ -1079,13 +1086,16 @@ class ServerBase(object):
         self.refresh_windows(proto, wid_windows, opts)
 
     def refresh_windows(self, proto, wid_windows, opts=None):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         for wid, window in wid_windows.items():
             if window is None or not window.is_managed():
                 continue
             if not window.is_OR() and not self.is_shown(window):
                 log("window is no longer shown, ignoring buffer refresh which would fail")
                 continue
-            self._server_sources.get(proto).refresh(wid, window, opts)
+            ss.refresh(wid, window, opts)
 
     def _process_quality(self, proto, packet):
         quality = packet[1]
