@@ -40,7 +40,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 import xpra
-from xpra.server_base import XpraServerBase
+from xpra.x11_server_base import X11ServerBase
 from xpra.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.protocol import zlib_compress, Compressed
 
@@ -153,25 +153,8 @@ class DesktopManager(gtk.Widget):
 
 gobject.type_register(DesktopManager)
 
-def window_name(window):
-    from wimpiggy.prop import prop_get
-    return prop_get(window, "_NET_WM_NAME", "utf8", True) or "unknown"
 
-def window_info(window):
-    from wimpiggy.prop import prop_get
-    net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
-    return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
-
-def dump_windows():
-    root = gtk.gdk.get_default_root_window()
-    log("root window: %s" % root)
-    children = get_children(root)
-    log("%s windows" % len(children))
-    for window in get_children(root):
-        log("found window: %s", window_info(window))
-
-
-class XpraServer(gobject.GObject, XpraServerBase):
+class XpraServer(gobject.GObject, X11ServerBase):
     __gsignals__ = {
         "wimpiggy-child-map-event": one_arg_signal,
         "wimpiggy-cursor-event": one_arg_signal,
@@ -179,11 +162,11 @@ class XpraServer(gobject.GObject, XpraServerBase):
 
     def __init__(self, clobber, sockets, opts):
         gobject.GObject.__init__(self)
-        XpraServerBase.__init__(self, clobber, sockets, opts)
+        X11ServerBase.__init__(self, clobber, sockets, opts)
 
     def x11_init(self, clobber):
+        X11ServerBase.x11_init(self, clobber)
         init_x11_filter()
-        self.init_x11_atoms()
 
         self._has_focus = 0
         # Do this before creating the Wm object, to avoid clobbering its
@@ -304,7 +287,7 @@ class XpraServer(gobject.GObject, XpraServerBase):
             self._add_new_or_window(event.window)
 
     def _add_new_window_common(self, window):
-        wid = XpraServerBase._add_new_window_common(self, window)
+        wid = X11ServerBase._add_new_window_common(self, window)
         window.connect("client-contents-changed", self._contents_changed)
         window.connect("unmanaged", self._lost_window)
         return wid
@@ -576,6 +559,9 @@ class XpraServer(gobject.GObject, XpraServerBase):
 
 
     def make_screenshot_packet(self):
+        trap.call_synced(self.do_make_screenshot_packet)
+
+    def do_make_screenshot_packet(self):
         log("grabbing screenshot")
         regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):

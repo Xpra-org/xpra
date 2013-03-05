@@ -12,7 +12,7 @@ import socket
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.server_base import XpraServerBase
+from xpra.x11_server_base import X11ServerBase
 from xpra.protocol import Compressed
 from xpra.window_source import DamageBatchConfig
 
@@ -86,12 +86,12 @@ class RootWindowModel(object):
         return self.window.get_size()
 
 
-class XpraShadowServer(XpraServerBase):
+class XpraShadowServer(X11ServerBase):
 
     def __init__(self, sockets, opts):
         self.root = gtk.gdk.get_default_root_window()
         self.mapped_at = None
-        XpraServerBase.__init__(self, True, sockets, opts)
+        X11ServerBase.__init__(self, True, sockets, opts)
         self.pulseaudio = False
         self.sharing = False
         DamageBatchConfig.ALWAYS = True             #always batch
@@ -161,7 +161,7 @@ class XpraShadowServer(XpraServerBase):
         x, y = pointer
         wx, wy = self.mapped_at[:2]
         pointer = x-wx, y-wy
-        XpraServerBase._process_mouse_common(self, proto, wid, pointer, modifiers)
+        X11ServerBase._process_mouse_common(self, proto, wid, pointer, modifiers)
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)
@@ -229,11 +229,13 @@ class XpraShadowServer(XpraServerBase):
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
 
     def make_hello(self):
-        capabilities = XpraServerBase.make_hello(self)
+        capabilities = X11ServerBase.make_hello(self)
         capabilities["shadow"] = True
+        capabilities["server_type"] = "gtk-shadow"
         return capabilities
 
     def get_info(self, proto):
-        info = XpraServerBase.get_info(self, proto)
+        info = X11ServerBase.get_info(self, proto)
         info["shadow"] = True
+        info["server_type"] = "gtk-shadow"
         return info
