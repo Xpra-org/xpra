@@ -14,7 +14,6 @@ import threading
 import gobject
 import sys
 import hmac
-import uuid
 import time
 import socket
 import thread
@@ -45,6 +44,7 @@ from xpra.server_uuid import save_uuid, get_uuid
 from xpra.bytestreams import SocketConnection
 from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+from xpra.platform.uuid_wrapper import get_hex_uuid
 from xpra.xkbhelper import clean_keyboard_state
 from xpra.xposix.xsettings import XSettingsManager
 from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
@@ -187,7 +187,7 @@ class XpraServerBase(object):
         # Define a server UUID if needed:
         self.uuid = get_uuid()
         if not self.uuid:
-            self.uuid = unicode(uuid.uuid4().hex)
+            self.uuid = unicode(get_hex_uuid())
             save_uuid(self.uuid)
         log.info("server uuid is %s", self.uuid)
 
@@ -413,7 +413,7 @@ class XpraServerBase(object):
 
 
     def _send_password_challenge(self, proto, server_cipher):
-        proto.salt = uuid.uuid4().hex
+        proto.salt = get_hex_uuid()
         log.info("Password required, sending challenge")
         packet = ("challenge", proto.salt, server_cipher)
         proto._add_packet_to_queue(packet)
@@ -495,8 +495,8 @@ class XpraServerBase(object):
                 return
             proto.set_cipher_out(cipher, cipher_iv, password, key_salt, iterations)
             #use the same cipher as used by the client:
-            iv = uuid.uuid4().hex[:16]
-            key_salt = uuid.uuid4().hex
+            iv = get_hex_uuid()[:16]
+            key_salt = get_hex_uuid()
             iterations = 1000
             proto.set_cipher_in(cipher, iv, password, key_salt, iterations)
             server_cipher = {

@@ -70,7 +70,8 @@
 %define no_sound 1
 %define no_pulseaudio 1
 %define no_strict 1
-%define requires_extra , python-uuid, python-ctypes
+#uuidgen is in e2fsprogs! (no we don't do any fs stuff)
+%define requires_extra , e2fsprogs, python-ctypes
 %define include_egg 0
 %if 0%{?static_video_libs}
 %define static_x264 1

@@ -6,7 +6,6 @@
 
 import os
 import sys
-import uuid
 import socket
 from wimpiggy.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
@@ -19,6 +18,7 @@ from xpra.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
+from xpra.platform.uuid_wrapper import get_hex_uuid
 
 def nn(x):
     if x is None:
@@ -122,9 +122,9 @@ class XpraClientBase(gobject.GObject):
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
             capabilities["cipher"] = self.encryption
-            iv = uuid.uuid4().hex[:16]
+            iv = get_hex_uuid()[:16]
             capabilities["cipher.iv"] = iv
-            key_salt = uuid.uuid4().hex
+            key_salt = get_hex_uuid()
             capabilities["cipher.key_salt"] = key_salt
             iterations = 1000
             capabilities["cipher.key_stretch_iterations"] = iterations

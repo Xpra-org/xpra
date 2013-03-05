@@ -60,7 +60,6 @@ else:
                 gdkwin.set_cursor(cursor)
 
 import sys
-import uuid
 import os
 import time
 import ctypes
@@ -247,6 +246,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
     def init_mmap(self, mmap_group, socket_filename):
         log("init_mmap(%s, %s)", mmap_group, socket_filename)
         try:
+            from xpra.platform.uuid_wrapper import get_int_uuid
             import mmap
             import tempfile
             from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
@@ -273,7 +273,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
             os.lseek(fd, 0, SEEK_SET)
             self.mmap = mmap.mmap(fd, length=self.mmap_size)
             #write the 16 byte token one byte at a time - no endianness
-            self.mmap_token = uuid.uuid4().int
+            self.mmap_token = get_int_uuid()
             log.debug("mmap_token=%s", self.mmap_token)
             v = self.mmap_token
             for i in range(0,16):
