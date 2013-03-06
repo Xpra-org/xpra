@@ -21,7 +21,8 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            XPRA_SHADOW_SUPPORTED,
                            GOT_PASSWORD_PROMPT_SUGGESTION,
                            add_client_options,
-                           get_default_socket_dir)
+                           get_default_socket_dir,
+                           init as platform_init)
 from xpra.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help
 from wimpiggy.gobject_compat import import_gobject
@@ -37,6 +38,7 @@ def nox():
 
 
 def main(script_file, cmdline):
+    platform_init()
     if os.name=="posix" and os.getuid()==0:
         print("\nWarning: running as root")
     try:

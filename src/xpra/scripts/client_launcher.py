@@ -31,7 +31,7 @@ from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, va
 from xpra.gtk_util import set_tooltip_text, add_close_accel, scaled_image, set_prgname
 from xpra.scripts.about import about
 from xpra.scripts.main import connect_to
-from xpra.platform import get_icon
+from xpra.platform import get_icon, init as platform_init
 from xpra.client import XpraClient
 from wimpiggy.log import Logger
 log = Logger()
@@ -444,6 +444,7 @@ def main():
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.addHandler(logging.StreamHandler(sys.stdout))
 	logging.root.setLevel(logging.INFO)
+	platform_init()
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
 	if len(sys.argv) == 2:
