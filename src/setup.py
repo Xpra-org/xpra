@@ -388,6 +388,14 @@ if sys.platform.startswith("win"):
         assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (dll_file, md5sum, digest)
         sys.stdout.write("OK\n")
         sys.stdout.flush()
+    #this should all be done with pkgconfig...
+    #but until someone figures this out, the ugly path code below works
+    #as long as you install in the same place or tweak the paths.
+
+    #first some header crap so codecs can find the inttypes.h
+    #and stdint.h:
+    win32_include_dir = os.path.join(os.getcwd(), "win32")
+
     #libav is needed for both swscale and x264,
     #you can find binary builds here:
     #http://win32.libav.org/releases/
@@ -395,34 +403,42 @@ if sys.platform.startswith("win"):
     #libav_path="C:\\libav-9.1-win32\\win32\\usr"
     #but we use something more generic, without the version numbers:
     libav_path="C:\\libav-win32\\win32\\usr"
-    libav_include_dir = "%s\\include" % libav_path
-    libav_lib_dir = "%s\\lib" % libav_path
-    libav_bin_dir = "%s\\bin" % libav_path
+    libav_include_dir   = os.path.join(libav_path, "include")
+    libav_lib_dir       = os.path.join(libav_path, "lib")
+    libav_bin_dir       = os.path.join(libav_path, "bin")
+    #x264:
+    x264_path ="C:\\x264"
+    x264_include_dir    = x264_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
     #the path after installing may look like this:
     #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
     #but we use something more generic, without the version numbers:
-    vpx_PATH="C:\\vpx-vp8"
-    vpx_include_dir = "%s\\include" % vpx_PATH
-    vpx_lib_dir = "%s\\lib\\Win32" % vpx_PATH
+    vpx_path="C:\\vpx-vp8"
+    vpx_include_dir     = os.path.join(vpx_path, "include")
+    vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
     # Same for PyGTK:
     # http://www.pygtk.org/downloads.html
-    gtk2_PATH = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
-    python_include_PATH = "C:\\Python27\\include"
-    gtk2runtime_PATH = "%s\\runtime" % gtk2_PATH
-    gtk2_lib_dir = "%s\\bin" % gtk2runtime_PATH
+    gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
+    python_include_path = "C:\\Python27\\include"
+    gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
+    gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
+    gtk2_base_include_dir   = os.path.join(gtk2runtime_path, "include")
 
-    pygtk_include_dir = "%s\\pygtk-2.0" % python_include_PATH
-    atk_include_dir = "%s\\include\\atk-1.0" % gtk2runtime_PATH
-    gtk2_include_dir = "%s\\include\\gtk-2.0" % gtk2runtime_PATH
-    gdkconfig_include_dir = "%s\\lib\\gtk-2.0\\include" % gtk2runtime_PATH
-    gdkpixbuf_include_dir = "%s\\include\gdk-pixbuf-2.0" % gtk2runtime_PATH
-    gdk_include_dir = "%s\\include\\" % gtk2runtime_PATH
-    glib_include_dir = "%s\\include\\glib-2.0" % gtk2runtime_PATH
-    glibconfig_include_dir = "%s\\lib\\glib-2.0\\include" % gtk2runtime_PATH
-    cairo_include_dir = "%s\\include\\cairo" % gtk2runtime_PATH
-    pango_include_dir = "%s\\include\\pango-1.0" % gtk2runtime_PATH
+    pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
+    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0") 
+    gtk2_include_dir        = os.path.join(gtk2_base_include_dir, "gtk-2.0")
+    gdkpixbuf_include_dir   = os.path.join(gtk2_base_include_dir, "gdk-pixbuf-2.0")
+    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0") 
+    cairo_include_dir       = os.path.join(gtk2_base_include_dir, "cairo")
+    pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
+    gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
+    glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
+
+    def checkdirs(*dirs):
+        for d in dirs:
+            if not os.path.exists(d) or not os.path.isdir(d):
+                raise Exception("cannot find a directory which is required for building: %s" % d)
 
     def pkgconfig(*packages, **ekw):
         def add_to_PATH(bindir):
@@ -433,28 +449,30 @@ if sys.platform.startswith("win"):
         kw = dict(ekw)
         if "x264" in packages[0]:
             add_to_PATH(libav_bin_dir)
-            add_to_keywords(kw, 'include_dirs', "win32", libav_include_dir)
-            add_to_keywords(kw, 'libraries', "swscale", "avcodec", "avutil")
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, libav_include_dir, x264_include_dir)
+            add_to_keywords(kw, 'libraries', "x264", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(libav_include_dir, libav_lib_dir, libav_bin_dir)
         elif "vpx" in packages[0]:
             add_to_PATH(libav_bin_dir)
-            add_to_keywords(kw, 'include_dirs', "win32", vpx_include_dir, libav_include_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir, libav_include_dir)
             add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(libav_include_dir, vpx_lib_dir, libav_lib_dir, libav_bin_dir)
         elif "pygobject-2.0" in packages[0]:
-            add_to_keywords(kw, 'include_dirs', python_include_PATH,
-                            pygtk_include_dir, atk_include_dir, gtk2_include_dir,
-                            gdk_include_dir, gdkconfig_include_dir, gdkpixbuf_include_dir,
-                            glib_include_dir, glibconfig_include_dir,
-                            cairo_include_dir, pango_include_dir)
-            #add_to_keywords(kw, 'libraries', "")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % gtk2_lib_dir)
+            dirs = (python_include_path,
+                    pygtk_include_dir, atk_include_dir, gtk2_include_dir,
+                    gtk2_base_include_dir, gdkconfig_include_dir, gdkpixbuf_include_dir,
+                    glib_include_dir, glibconfig_include_dir,
+                    cairo_include_dir, pango_include_dir)
+            add_to_keywords(kw, 'include_dirs', *dirs)
+            checkdirs(*dirs)
         else:
             sys.exit("ERROR: unknown package config: %s" % str(packages))
         print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
