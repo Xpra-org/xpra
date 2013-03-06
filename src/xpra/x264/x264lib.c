@@ -11,7 +11,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <math.h>
+#include <malloc.h>
+#include <stdint.h>
+#include <inttypes.h>
+
+#ifdef _WIN32
+#define _STDINT_H
+static inline double round(double val)
+{
+    return floor(val + 0.5);
+}
+#endif
+
+#include "x264lib.h"
+#include <x264.h>
+#include <libswscale/swscale.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/mem.h>
+
 
 //not honoured on MS Windows:
 #define MEMALIGN 1
@@ -21,26 +38,6 @@
 //(ie: when not supported by the library we build against)
 #define SUPPORT_CSC_MODES 1
 
-#ifdef _WIN32
-#include <malloc.h>
-#include "stdint.h"
-#include "inttypes.h"
-#else
-#include <stdint.h>
-#include <unistd.h>
-#endif
-
-#ifdef _WIN32
-typedef void x264_t;
-#define inline __inline
-#else
-#include <x264.h>
-#endif
-
-#include <libswscale/swscale.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/mem.h>
-#include "x264lib.h"
 
 //beware that these macros may evaluate a or b twice!
 //ie: do not use them for something like: MAX(i++, N)
@@ -108,11 +105,10 @@ int get_encoder_speed(struct x264lib_ctx *ctx) {
 	return ctx->speed;
 }
 
-#ifndef _WIN32
 //Given a quality percentage (0 to 100),
 //return the x264 quality constant to use
 float get_x264_quality(int pct) {
-	return	roundf(50.0 - (MIN(100, MAX(0, pct)) * 49.0 / 100.0));
+	return	50.0f - (MIN(100, MAX(0, pct)) * 49.0f / 100.0f);
 }
 
 //Given a quality percentage (0 to 100),
@@ -169,7 +165,6 @@ int get_csc_format_for_x264_format(int i_csp)
 		return -1;
 	}
 }
-#endif
 
 //Given a csc colour sampling constant,
 //return our own generic csc constant (see codec_constants.py)
@@ -211,7 +206,6 @@ const char *DEFAULT_I444_PROFILE = PROFILE_HIGH444_PREDICTIVE;
 const int DEFAULT_I422_MIN_QUALITY = 80;
 const int DEFAULT_I444_MIN_QUALITY = 90;
 
-#ifndef _WIN32
 //Given a quality percentage (0 to 100)
 //return the profile to use
 //IMPORTANT: changes here must be reflected in get_x264_colour_sampling
@@ -232,9 +226,9 @@ const char *get_profile_for_quality(struct x264lib_ctx *ctx, int pct) {
 const char *get_valid_profile(const char* csc_mode, const char *profile, const char *profiles[], const char *default_profile)
 {
 	//printf("get_valid_profile(%s, %s, %p, %s)\n", csc_mode, profile, profiles, default_profile);
+	int i = 0;
 	if (profile==NULL)
 		return	default_profile;
-	int i = 0;
 	while (profiles[i]!=NULL)
 	{
 		if (strcmp(profiles[i], profile)==0) {
@@ -312,6 +306,7 @@ void configure_encoder(struct x264lib_ctx *ctx, int width, int height,
  */
 void do_init_encoder(struct x264lib_ctx *ctx)
 {
+	x264_param_t param;
 	ctx->colour_sampling = get_x264_colour_sampling(ctx, ctx->quality);
 	ctx->x264_quality = get_x264_quality(ctx->quality);
 	ctx->csc_format = get_csc_format_for_x264_format(ctx->colour_sampling);
@@ -321,7 +316,6 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 	ctx->csc_algo = get_csc_algo_for_quality(ctx->quality);
 	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
 
-	x264_param_t param;
 	x264_param_default_preset(&param, ctx->preset, "zerolatency");
 	param.i_threads = 1;
 	param.i_width = ctx->width;
@@ -375,22 +369,6 @@ void do_clean_encoder(struct x264lib_ctx *ctx)
 	}
 }
 
-#else
-struct x264lib_ctx *init_encoder(int width, int height,
-		int initial_quality, int initial_speed,
-		int supports_csc_option,
-		int I422_quality, int I444_quality,
-		int I422_min, int I444_min,
-        char *i420_profile, char *i422_profile, char *i444_profile)
-{
-	return NULL;
-}
-
-void clean_encoder(struct x264lib_ctx *ctx)
-{
-	return;
-}
-#endif
 
 int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc_fmt)
 {
@@ -459,13 +437,14 @@ void clean_decoder(struct x264lib_ctx *ctx)
 	free(ctx);
 }
 
-#ifndef _WIN32
+
 x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
 {
+	x264_picture_t *pic_in = NULL;
 	if (!ctx->encoder || !ctx->rgb2yuv)
 		return NULL;
 
-	x264_picture_t *pic_in = malloc(sizeof(x264_picture_t));
+	pic_in = malloc(sizeof(x264_picture_t));
 	x264_picture_alloc(pic_in, ctx->colour_sampling, ctx->width, ctx->height);
 
 	/* Colorspace conversion (RGB -> I4??) */
@@ -481,19 +460,21 @@ static void free_csc_image(x264_picture_t *image)
 
 int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
 {
+	x264_nal_t* nals = NULL;
+	int i_nals = 0;
+	x264_picture_t pic_out;
+	int frame_size = 0;
+
 	if (!ctx->encoder || !ctx->rgb2yuv) {
 		free_csc_image(pic_in);
 		*out = NULL;
 		*outsz = 0;
 		return 1;
 	}
-	x264_picture_t pic_out;
 
 	/* Encoding */
 	pic_in->i_pts = 1;
-	x264_nal_t* nals;
-	int i_nals;
-	int frame_size = x264_encoder_encode(ctx->encoder, &nals, &i_nals, pic_in, &pic_out);
+	frame_size = x264_encoder_encode(ctx->encoder, &nals, &i_nals, pic_in, &pic_out);
 	// Unconditional cleanup:
 	free_csc_image(pic_in);
 	if (frame_size < 0) {
@@ -507,16 +488,7 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 	*outsz = frame_size;
 	return 0;
 }
-#else
-x264_picture_t* csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
-{
-	return	NULL;
-}
-int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
-{
-	return 1;
-}
-#endif
+
 
 int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
 {
@@ -594,13 +566,12 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
  * Change the speed of encoding (x264 preset).
  * @param percent: 100 for maximum ("ultrafast") with lowest compression, 0 for highest compression (slower)
  */
-#ifndef _WIN32
 void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
+	int new_preset = 7-MAX(0, MIN(6, (int) round(pct/16.7)));
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->speed = pct;
-	int new_preset = 7-MAX(0, MIN(6, pct/16.7));
 	if (new_preset==ctx->encoding_preset)
 		return;
 	//printf("set_encoding_speed(%i) old preset: %i=%s, new preset: %i=%s\n", pct, ctx->encoding_preset, x264_preset_names[ctx->encoding_preset], new_preset, x264_preset_names[new_preset]);
@@ -614,20 +585,14 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 	x264_param_apply_profile(&param, ctx->profile);
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
-#else
-void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
-{
-	;
-}
-#endif
 
 /**
  * Change the quality of encoding (x264 f_rf_constant).
  * @param percent: 100 for best quality, 0 for lowest quality.
  */
-#ifndef _WIN32
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
+	int old_csc_algo = ctx->csc_algo;
 	float new_quality = get_x264_quality(pct);
 	//printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
 	if (ctx->supports_csc_option) {
@@ -658,18 +623,11 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 		param.rc.f_rf_constant = new_quality;
 		x264_encoder_reconfig(ctx->encoder, &param);
 	}
-	int old_csc_algo = ctx->csc_algo;
 	ctx->csc_algo = get_csc_algo_for_quality(pct);
 	if (old_csc_algo!=ctx->csc_algo) {
 		ctx->rgb2yuv = init_encoder_csc(ctx);
 	}
 }
-#else
-void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
-{
-	;
-}
-#endif
 
 
 void* xmemalign(size_t size)

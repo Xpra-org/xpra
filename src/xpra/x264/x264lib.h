@@ -5,20 +5,15 @@
  * later version. See the file COPYING for details.
  */
 
+#include <stdint.h>
+#include <inttypes.h>
+
 #ifdef _WIN32
-#include "stdint.h"
-#include "inttypes.h"
-#else
-#include "stdint.h"
-#include "stdlib.h"
+#define _STDINT_H
 #endif
 
-#ifndef _WIN32
-#include <x264.h>
-#else
 #define inline __inline
-typedef void * x264_picture_t;
-#endif
+#include <x264.h>
 
 /** Opaque structure - "context". You must have a context to encode images of a given size */
 struct x264lib_ctx;

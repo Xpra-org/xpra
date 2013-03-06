@@ -406,9 +406,11 @@ if sys.platform.startswith("win"):
     libav_include_dir   = os.path.join(libav_path, "include")
     libav_lib_dir       = os.path.join(libav_path, "lib")
     libav_bin_dir       = os.path.join(libav_path, "bin")
-    #x264:
+    #x264 (direct from build dir.. yuk - sorry!):
     x264_path ="C:\\x264"
     x264_include_dir    = x264_path
+    x264_lib_dir        = x264_path
+    x264_bin_dir        = x264_path
     # Same for vpx:
     # http://code.google.com/p/webm/downloads/list
     #the path after installing may look like this:
@@ -426,10 +428,10 @@ if sys.platform.startswith("win"):
     gtk2_base_include_dir   = os.path.join(gtk2runtime_path, "include")
 
     pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
-    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0") 
+    atk_include_dir         = os.path.join(gtk2_base_include_dir, "atk-1.0")
     gtk2_include_dir        = os.path.join(gtk2_base_include_dir, "gtk-2.0")
     gdkpixbuf_include_dir   = os.path.join(gtk2_base_include_dir, "gdk-pixbuf-2.0")
-    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0") 
+    glib_include_dir        = os.path.join(gtk2_base_include_dir, "glib-2.0")
     cairo_include_dir       = os.path.join(gtk2_base_include_dir, "cairo")
     pango_include_dir       = os.path.join(gtk2_base_include_dir, "pango-1.0")
     gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
@@ -449,10 +451,12 @@ if sys.platform.startswith("win"):
         kw = dict(ekw)
         if "x264" in packages[0]:
             add_to_PATH(libav_bin_dir)
+            add_to_PATH(x264_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, libav_include_dir, x264_include_dir)
-            add_to_keywords(kw, 'libraries', "x264", "swscale", "avcodec", "avutil")
+            add_to_keywords(kw, 'libraries', "libx264", "swscale", "avcodec", "avutil")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
             checkdirs(libav_include_dir, libav_lib_dir, libav_bin_dir)
         elif "vpx" in packages[0]:
