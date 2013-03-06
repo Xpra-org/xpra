@@ -4,30 +4,59 @@
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import win32api         #@UnresolvedImport
+import win32con         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.server_base import ServerBase
 from xpra.shadow_server_base import ShadowServerBase
 
+BUTTON_EVENTS = {
+                 #(button,up-or-down)  : win-event-name
+                 (1, True)  : (win32con.MOUSEEVENTF_LEFTDOWN,   0),
+                 (1, False) : (win32con.MOUSEEVENTF_LEFTUP,     0),
+                 (2, True)  : (win32con.MOUSEEVENTF_MIDDLEDOWN, 0),
+                 (2, False) : (win32con.MOUSEEVENTF_MIDDLEUP,   0),
+                 (3, True)  : (win32con.MOUSEEVENTF_RIGHTDOWN,  0),
+                 (3, False) : (win32con.MOUSEEVENTF_RIGHTUP,    0),
+                 (4, True)  : (win32con.MOUSEEVENTF_WHEEL,      win32con.WHEEL_DELTA),
+                 (5, True)  : (win32con.MOUSEEVENTF_WHEEL,      -win32con.WHEEL_DELTA),
+                 }
 
 class XpraWin32ShadowServer(ShadowServerBase, ServerBase):
 
     def __init__(self, sockets, opts):
         ShadowServerBase.__init__(self)
         ServerBase.__init__(self, True, sockets, opts)
+        self.keycodes = {}
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
-        #TODO: implement!
-        pass
+        #adjust pointer position for offset in client:
+        x, y = pointer
+        wx, wy = self.mapped_at[:2]
+        pointer = x-wx, y-wy
+        win32api.SetCursorPos((x,y))
 
     def fake_key(self, keycode, press):
-        #TODO: implement!
-        pass
+        kc = self.keycodes.get(keycode)
+        if kc is None:
+            log.warn("no keycode found for %s", keycode)
+            return
+        #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
+        win32api.keybd_event(win32con.SHIFT_PRESSED, 0, win32con.KEYEVENTF_EXTENDEDKEY, 0)
 
     def _process_button_action(self, proto, packet):
-        #TODO: implement!
-        pass
+        wid, button, pressed, pointer, modifiers = packet[1:6]
+        self._process_mouse_common(proto, wid, pointer, modifiers)
+        self._server_sources.get(proto).user_event()
+        event = BUTTON_EVENTS.get((button, pressed))
+        if event is None:
+            log.warn("no matching event found for button=%s, pressed=%s", button, pressed)
+            return
+        x, y = pointer
+        dwFlags, dwData = event
+        win32api.mouse_event(dwFlags, x, y, dwData, 0)
 
     def make_hello(self):
         capabilities = ServerBase.make_hello(self)
