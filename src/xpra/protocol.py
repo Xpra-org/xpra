@@ -573,21 +573,24 @@ class Protocol(object):
                     log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
 
     def flush_then_close(self, last_packet):
-        try:
-            self._write_lock.acquire()
-            #try to wait for the queue to empty with the lock held
+        """ note: this is best effort only
+            the packet may not get sent.
+        """
+        if self._write_lock.acquire(False):
             try:
-                import time
-                i = 0
-                while not self._closed and not self._write_queue.empty() and i<5:
-                    time.sleep(0.1)
-                    i += 1
-            except:
-                pass
-            #and send our last_packet to it:
-            self._add_packet_to_queue(last_packet)
-        finally:
-            self._write_lock.release()
+                #try to wait for the queue to empty with the lock held
+                try:
+                    import time
+                    i = 0
+                    while not self._closed and not self._write_queue.empty() and i<5:
+                        time.sleep(0.1)
+                        i += 1
+                except:
+                    pass
+                #and send our last_packet to it:
+                self._add_packet_to_queue(last_packet)
+            finally:
+                self._write_lock.release()
         self.terminate_io_threads()
         #wait for last_packet to be sent:
         def wait_for_end_of_write(timeout=15):
