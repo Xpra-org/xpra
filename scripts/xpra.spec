@@ -143,8 +143,34 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Feb 12 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
+* Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
 - TODO
+
+* Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
+- fix server deadlock on dead connections
+- fix compatiblity with older versions of Python
+- fix sound capture script usage via command line
+- fix screen number preserve code
+- fix error in logs in shadow mode
+
+* Wed Feb 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.7-1
+- fix x264 crash with older versions of libav
+- fix 32-bit builds breakage introduce by python2.4 fix in 0.8.6
+- fix missing sound forwarding when using the GUI launcher
+- fix microphone forwarding errors
+- fix client window properties store
+- fix first workspace not preserved and other workspace issues
+
+* Fri Feb 22 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.6-1
+- fix python2.4 compatibility in icon grabbing code
+- fix exit message location
+
+* Sun Feb 17 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.5-1
+- fix server crash with transient windows
+
+* Wed Feb 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.4-1
+- fix hello packet encoding bug
+- fix colours in launcher and session-info windows
 
 * Tue Feb 12 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.3-1
 - Python 2.4 compatiblity fixes (CentOS 5.x)
