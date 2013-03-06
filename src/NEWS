@@ -6,7 +6,7 @@ v0.9.0 (2013-03-07)
 v0.8.8 (2013-03-07)
 ======================
 	-- fix server deadlock on dead connections
-	-- fix compatiblity with older versions of Python
+	-- fix compatibility with older versions of Python
 	-- fix sound capture script usage via command line
 	-- fix screen number preserve code
 	-- fix error in logs in shadow mode

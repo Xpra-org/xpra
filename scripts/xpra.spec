@@ -148,7 +148,7 @@ So basically it's screen for remote X apps.
 
 * Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
 - fix server deadlock on dead connections
-- fix compatiblity with older versions of Python
+- fix compatibility with older versions of Python
 - fix sound capture script usage via command line
 - fix screen number preserve code
 - fix error in logs in shadow mode
