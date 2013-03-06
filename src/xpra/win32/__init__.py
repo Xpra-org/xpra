@@ -23,18 +23,26 @@ def add_client_options(parser):
 def get_machine_id():
     return  u""
 
-def do_init():
+def _get_data_dir():
     if not getattr(sys, 'frozen', ''):
-        return
+        return  os.getcwd()
     #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
-    #UAC in vista onwards will not allow us to write where the software is installed, so place the log file in "~/Application Data"
+    #UAC in vista onwards will not allow us to write where the software is installed,
+    #so we place the log file (etc) in "~/Application Data"
     appdata = os.environ.get("APPDATA")
     if not os.path.exists(appdata):
         os.mkdir(appdata)
-    log_path = os.path.join(appdata, "Xpra")
-    if not os.path.exists(log_path):
-        os.mkdir(log_path)
-    log_file = os.path.join(log_path, "Xpra.log")
+    data_dir = os.path.join(appdata, "Xpra")
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+    return data_dir
+
+def get_default_socket_dir():
+    return _get_data_dir()
+
+def do_init():
+    d = _get_data_dir()
+    log_file = os.path.join(d, "Xpra.log")
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
 

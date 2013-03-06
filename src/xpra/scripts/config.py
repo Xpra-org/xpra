@@ -135,9 +135,6 @@ def show_codec_help(is_server, speaker_codecs, microphone_codecs):
     return hm or hs
 
 
-def get_default_socket_dir():
-    return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
-
 def get_build_info():
     info = []
     try:

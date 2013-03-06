@@ -219,7 +219,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
-    from xpra.scripts.config import get_default_socket_dir
+    from xpra.platform import get_default_socket_dir
     dotxpra = DotXpra(opts.socket_dir or get_default_socket_dir())
 
     # This used to be given a display-specific name, but now we give it a

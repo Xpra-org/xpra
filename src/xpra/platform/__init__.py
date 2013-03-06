@@ -29,6 +29,10 @@ def valid_dir(path):
     except:
         return False
 
+
+def get_default_socket_dir():
+    return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
+
 #overriden in platform code:
 def get_app_dir():
     return default_get_app_dir()
