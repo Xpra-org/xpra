@@ -357,57 +357,60 @@ class Protocol(object):
         #this may be used next time encode() is called
         self._compression_level = level
 
-    def _write_thread_loop(self):
+    def _io_thread_loop(self, name, callback):
         try:
             while not self._closed:
-                items = self._write_queue.get()
-                # Used to signal that we should exit:
-                if items is None:
-                    log("write thread: empty marker, exiting")
-                    break
-                for buf, start_cb, end_cb in items:
-                    if start_cb:
-                        try:
-                            start_cb(self._conn.output_bytecount)
-                        except:
-                            log.error("error on %s", start_cb, exc_info=True)
-                    while buf and not self._closed:
-                        written = untilConcludes(self._conn.write, buf)
-                        if written:
-                            buf = buf[written:]
-                            self.output_raw_packetcount += 1
-                    if end_cb:
-                        try:
-                            end_cb(self._conn.output_bytecount)
-                        except:
-                            if not self._closed:
-                                log.error("error on %s", end_cb, exc_info=True)
-            log("write thread: ended")
+                callback()
+        except KeyboardInterrupt, e:
+            raise e
         except (OSError, IOError, socket_error), e:
             if not self._closed:
-                self._call_connection_lost("Error writing to connection: %s" % e)
+                log.error("%s error to %s", name, self._conn, exc_info=True)
+                self._call_connection_lost("%s error on connection: %s" % (name, e))
         except Exception, e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
+                log.error("%s error on %s", name, self._conn, exc_info=True)
                 self.close()
-                raise e
+
+    def _write_thread_loop(self):
+        self._io_thread_loop("write", self._write)
+    def _write(self):
+        items = self._write_queue.get()
+        # Used to signal that we should exit:
+        if items is None:
+            log("write thread: empty marker, exiting")
+            self.close()
+            return
+        for buf, start_cb, end_cb in items:
+            if start_cb:
+                try:
+                    start_cb(self._conn.output_bytecount)
+                except:
+                    log.error("error on %s", start_cb, exc_info=True)
+            while buf and not self._closed:
+                written = untilConcludes(self._conn.write, buf)
+                if written:
+                    buf = buf[written:]
+                    self.output_raw_packetcount += 1
+            if end_cb:
+                try:
+                    end_cb(self._conn.output_bytecount)
+                except:
+                    if not self._closed:
+                        log.error("error on %s", end_cb, exc_info=True)
 
     def _read_thread_loop(self):
-        try:
-            while not self._closed:
-                buf = untilConcludes(self._conn.read, 8192)
-                #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
-                self._read_queue.put(buf)
-                if not buf:
-                    log("read thread: eof")
-                    break
-                self.input_raw_packetcount += 1
-        except (ValueError, OSError, IOError, socket_error), e:
-            if not self._closed:
-                self._call_connection_lost("Error reading from connection: %s" % e)
-        except Exception, e:
-            if not self._closed:
-                self._call_connection_lost("Error reading from connection: %s" % e)
+        self._io_thread_loop("read", self._read)
+    def _read(self):
+        buf = untilConcludes(self._conn.read, 8192)
+        #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
+        self._read_queue.put(buf)
+        if not buf:
+            log("read thread: eof")
+            self.close()
+            return
+        self.input_raw_packetcount += 1
 
     def _call_connection_lost(self, message="", exc_info=False):
         log("will call connection lost: %s", message)
