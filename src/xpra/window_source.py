@@ -67,7 +67,29 @@ from xpra.stats.maths import logp, \
 from xpra.batch_delay_calculator import calculate_batch_delay, update_video_encoder
 from xpra.xor import xor_str        #@UnresolvedImport
 
-RECTANGLE_WARNING = False
+#old gtk versions lack gtk.gdk.Region().get_rectangles()
+#so for those we just keep them in a list..
+#(which isn't as good since we don't merge rectangles
+#or discard subsets, but better than carrying ugly crufty code
+#just for those outdated pygtk versions..)
+tmp_region = gtk.gdk.Region()
+if hasattr(tmp_region, "get_rectangles") and os.environ.get("XPRA_FAKE_OLD_PYGTK", "0")=="0":
+    def new_region():
+        return gtk.gdk.Region()
+    def add_rectangle(region, rectangle):
+        region.union_with_rect(rectangle)
+    def get_rectangles(region):
+        return region.get_rectangles()
+else:
+    log.warn("using get_rectangles workaround for old pygtk versions")
+    def new_region():
+        return list()
+    def add_rectangle(region, rectangle):
+        if rectangle not in region:
+            region.append(rectangle)
+    def get_rectangles(region):
+        return region
+del tmp_region
 
 
 class DamageBatchConfig(object):
@@ -530,7 +552,7 @@ class WindowSource(object):
         if self._damage_delayed:
             #use existing delayed region:
             region = self._damage_delayed[2]
-            region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+            add_rectangle(region, gtk.gdk.Rectangle(x, y, w, h))
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
@@ -569,8 +591,8 @@ class WindowSource(object):
             return
 
         #create a new delayed region:
-        region = gtk.gdk.Region()
-        region.union_with_rect(gtk.gdk.Rectangle(x, y, w, h))
+        region = new_region()
+        add_rectangle(region, gtk.gdk.Rectangle(x, y, w, h))
         self._damage_delayed_expired = False
         self._damage_delayed = now, window, region, self.encoding, options or {}
         debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
@@ -648,14 +670,6 @@ class WindowSource(object):
             send_full_screen_update()
             return
 
-        if not hasattr(damage, "get_rectangles"):
-            global RECTANGLE_WARNING
-            if not RECTANGLE_WARNING:
-                log.warn("your version of pygtk is too old! using fullscreen update fallback which is sloooow")
-                RECTANGLE_WARNING = True
-            send_full_screen_update()
-            return
-
         try:
             count_threshold = 60
             pixels_threshold = ww*wh*9/10
@@ -666,7 +680,7 @@ class WindowSource(object):
                 pixels_threshold = ww*wh/2
                 packet_cost = 4096
             pixel_count = 0
-            for rect in damage.get_rectangles():
+            for rect in get_rectangles(damage):
                 pixel_count += rect.width*rect.height
                 #favor full screen updates over many regions:
                 if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
