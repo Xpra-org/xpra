@@ -16,6 +16,11 @@ DEFAULT_SSH_CMD = "plink"
 GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 
+REDIRECT_OUTPUT = True
+def set_redirect_output(on):
+    global REDIRECT_OUTPUT
+    REDIRECT_OUTPUT = on
+
 def add_client_options(parser):
     from xpra.platform import add_notray_option
     add_notray_option(parser, ", this will also disable notifications!")
@@ -41,6 +46,8 @@ def get_default_socket_dir():
     return _get_data_dir()
 
 def do_init():
+    if not REDIRECT_OUTPUT:
+        return
     d = _get_data_dir()
     log_file = os.path.join(d, "Xpra.log")
     sys.stdout = open(log_file, "a")
