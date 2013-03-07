@@ -25,7 +25,7 @@
 import sys
 
 py3 = False
-if sys.version_info.major >= 3:
+if sys.version_info[0] >= 3:
     py3 = True
     unicode = str
 
