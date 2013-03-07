@@ -62,9 +62,13 @@ if "rgb24" in ENCODINGS:
         #xpra was probably built with --without-x264
         pass
     try:
+        bytearray()
         from xpra.webm.decode import DecodeRGB      #@UnusedImport
         from xpra.webm.encode import EncodeRGB      #@UnusedImport
         ENCODINGS.append("webp")
+    except NameError, e:
+        #we need bytearray to use the bindings
+        pass
     except ImportError, e:
         #the webm module does not exist
         #xpra was probably built with --without-webp
