@@ -613,7 +613,9 @@ class Protocol(object):
             else:
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
-                self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=self.close)
+                def close_cb(*args):
+                    self.close()
+                self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=close_cb)
                 self._write_lock.release()
                 gobject.timeout_add(5*1000, self.close)
 
