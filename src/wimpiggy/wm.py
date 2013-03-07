@@ -47,12 +47,12 @@ def wm_check(display):
     for i in range(display.get_n_screens()):
         screen = display.get_screen(i)
         root = screen.get_root_window()
-        prop = "WM_S%s" % i
-        cm_prop = "_NEW_WM_CM_S%s" % i
-        ewmh_so = myGetSelectionOwner(display, prop)
-        cm_so = myGetSelectionOwner(display, cm_prop)
-        log("ewmh selection owner for %s: %s", prop, ewmh_so)
-        log("compositing window manager %s: %s", cm_prop, cm_so)
+        wm_prop = "WM_S%s" % i
+        cwm_prop = "_NEW_WM_CM_S%s" % i
+        wm_so = myGetSelectionOwner(display, wm_prop)
+        cwm_so = myGetSelectionOwner(display, cwm_prop)
+        log("ewmh selection owner for %s: %s", wm_prop, wm_so)
+        log("compositing window manager %s: %s", cwm_prop, cwm_so)
 
         try:
             ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
@@ -67,8 +67,8 @@ def wm_check(display):
             except:
                 name = None
             log.warn("Warning: found an existing window manager on screen %s using window id %s: %s", i, hex(get_xwindow(ewmh_wm)), name or "unknown")
-            if (ewmh_so is None or ewmh_so==0) and (cm_so is None or cm_so==0):
-                log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", prop, cm_prop)
+            if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
+                log.error("it does not own the selection '%s' or '%s' so we cannot take over and make it exit", wm_prop, cwm_prop)
                 log.error("please stop %s so you can run xpra on this display", name or "the existing window manager")
                 return False
     return True
