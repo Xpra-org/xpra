@@ -378,11 +378,14 @@ class GLibXpraClient(XpraClientBase):
             self._packet_handlers[t] = noop
 
     def run(self):
-        glib = import_glib()
         try:
-            glib.threads_init()
-        except AttributeError:
-            #old versions of glib may not have this method
+            glib = import_glib()
+            try:
+                glib.threads_init()
+            except AttributeError:
+                #old versions of glib may not have this method
+                pass
+        except ImportError:
             pass
         try:
             gobject.threads_init()
