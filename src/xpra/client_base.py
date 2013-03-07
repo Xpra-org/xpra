@@ -399,7 +399,7 @@ class GobjectXpraClient(XpraClientBase):
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
         capabilities["keyboard"] = False
-        capabilities["client_type"] = "Python/Glib"
+        capabilities["client_type"] = "Python/Gobject"
         return capabilities
 
     def quit(self, exit_code):
