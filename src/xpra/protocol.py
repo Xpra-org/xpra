@@ -560,9 +560,7 @@ class Protocol(object):
                         packet, l = bdecode(data)
                         assert l==len(data)
                 except ValueError, e:
-                    import traceback
-                    traceback.print_exc()
-                    log.error("value error reading packet: %s", e)
+                    log.error("value error reading packet: %s", e, exc_info=True)
                     if self._closed:
                         return
                     def gibberish(buf):
