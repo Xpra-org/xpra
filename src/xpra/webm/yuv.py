@@ -62,8 +62,10 @@ def _init_yuv_module():
 
     for i in xrange(YUV_RANGE_MIN, YUV_RANGE_MAX):
         k = ((i - 16) * 76283 + YUV_HALF) >> YUV_FIX
-        k = 0 if k < 0 else 255 if k > 255 else k
-
+        if k < 0:
+            k = 0
+        elif k > 255:
+            k = 255
         VP8kClip[i - YUV_RANGE_MIN] = k
 
 
