@@ -326,7 +326,7 @@ class ServerBase(object):
         def force_disconnect(*args):
             self.cleanup_source(proto)
             proto.close()
-        proto._add_packet_to_queue(["disconnect", reason])
+        proto.send_now(["disconnect", reason])
         gobject.timeout_add(1000, force_disconnect)
 
     def cleanup_source(self, protocol):
@@ -378,8 +378,7 @@ class ServerBase(object):
     def _send_password_challenge(self, proto, server_cipher):
         proto.salt = get_hex_uuid()
         log.info("Password required, sending challenge")
-        packet = ("challenge", proto.salt, server_cipher)
-        proto._add_packet_to_queue(packet)
+        proto.send_now(("challenge", proto.salt, server_cipher))
 
     def _verify_password(self, proto, client_hash, password):
         salt = proto.salt
@@ -421,8 +420,7 @@ class ServerBase(object):
         log("process_hello: capabilities=%s", capabilities)
         if capabilities.get("version_request", False):
             response = {"version" : xpra.__version__}
-            packet = ["hello", response]
-            proto._add_packet_to_queue(packet)
+            proto.send_now(("hello", response))
             gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
         if not self.sanity_checks(proto, capabilities):
@@ -484,7 +482,7 @@ class ServerBase(object):
             #this is a screenshot request, handle it and disconnect
             try:
                 packet = self.make_screenshot_packet()
-                proto._add_packet_to_queue(packet)
+                proto.send_now(packet)
                 gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
             except:
                 log.error("failed to capture screenshot", exc_info=True)
@@ -624,8 +622,7 @@ class ServerBase(object):
         server_source.hello(capabilities)
 
     def send_hello_info(self, proto):
-        packet = ["hello", self.get_info(proto)]
-        proto._add_packet_to_queue(packet)
+        proto.send_now(("hello", self.get_info(proto)))
         gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
 
     def _process_info_request(self, proto, packet):
