@@ -169,7 +169,8 @@ class ClipboardProtocolHelperBase(object):
         if name in self._clipboard_proxies:
             proxy = self._clipboard_proxies[name]
             def got_contents(dtype, dformat, data):
-                debug("got_contents(%s, %s, %s:%s) data=%s, str(data)=%s", dtype, dformat, type(data), len(data or ""), list(bytearray(data or "")[:200]), str(data)[:200])
+                debug("got_contents(%s, %s, %s:%s) str(data)=%s..",
+                      dtype, dformat, type(data), len(data or ""), str(data)[:200])
                 def no_contents():
                     self.send("clipboard-contents-none", request_id, selection)
                 if dtype is None or data is None:
