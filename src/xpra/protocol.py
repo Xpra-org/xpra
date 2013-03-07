@@ -32,7 +32,7 @@ try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except:
     from Queue import Queue     #@Reimport
-from threading import RLock
+from threading import Lock
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -130,7 +130,7 @@ class Protocol(object):
         self.cipher_out = None
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
-        self._write_lock = RLock()
+        self._write_lock = Lock()
         self._write_thread = make_daemon_thread(self._write_thread_loop, "write")
         self._read_thread = make_daemon_thread(self._read_thread_loop, "read")
         self._read_parser_thread = make_daemon_thread(self._read_parse_thread_loop, "parse")
@@ -207,49 +207,53 @@ class Protocol(object):
             self._source_has_more.set()
         if packet is None:
             return
-        packets, proto_flags = self.encode(packet)
+        chunks, proto_flags = self.encode(packet)
         try:
             self._write_lock.acquire()
-            counter = 0
-            items = []
-            for index,level,data in packets:
-                payload_size = len(data)
-                actual_size = payload_size
-                scb, ecb = None, None
-                #fire the start_send_callback just before the first packet is processed:
-                if counter==0:
-                    scb = start_send_cb
-                #fire the end_send callback when the last packet (index==0) makes it out:
-                if index==0:
-                    ecb = end_send_cb
-                if self.cipher_out:
-                    proto_flags |= Protocol.FLAGS_CIPHER
-                    #note: since we are padding: l!=len(data)
-                    padding = (self.cipher_out_block_size - len(data) % self.cipher_out_block_size) * " "
-                    if len(padding)==0:
-                        padded = data
-                    else:
-                        padded = data+padding
-                    actual_size = payload_size + len(padding)
-                    assert len(padded)==actual_size
-                    data = self.cipher_out.encrypt(padded)
-                    assert len(data)==actual_size
-                    log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
-                if actual_size<PACKET_JOIN_SIZE:
-                    #'p' + protocol-flags + compression_level + packet_index + data_size
-                    if type(data)==unicode:
-                        data = str(data)
-                    header_and_data = struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
-                    items.append((header_and_data, scb, ecb))
-                else:
-                    header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-                    items.append((header, scb, None))
-                    items.append((data, None, ecb))
-                counter += 1
-            self._write_queue.put(items)
+            self._add_chunks_to_queue(chunks, proto_flags, start_send_cb, end_send_cb)
         finally:
-            self.output_packetcount += 1
             self._write_lock.release()
+
+    def _add_chunks_to_queue(self, chunks, proto_flags, start_send_cb=None, end_send_cb=None):
+        """ the write_lock must be held when calling this function """
+        counter = 0
+        items = []
+        for index,level,data in chunks:
+            scb, ecb = None, None
+            #fire the start_send_callback just before the first packet is processed:
+            if counter==0:
+                scb = start_send_cb
+            #fire the end_send callback when the last packet (index==0) makes it out:
+            if index==0:
+                ecb = end_send_cb
+            payload_size = len(data)
+            actual_size = payload_size
+            if self.cipher_out:
+                proto_flags |= Protocol.FLAGS_CIPHER
+                #note: since we are padding: l!=len(data)
+                padding = (self.cipher_out_block_size - len(data) % self.cipher_out_block_size) * " "
+                if len(padding)==0:
+                    padded = data
+                else:
+                    padded = data+padding
+                actual_size = payload_size + len(padding)
+                assert len(padded)==actual_size
+                data = self.cipher_out.encrypt(padded)
+                assert len(data)==actual_size
+                log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
+            if actual_size<PACKET_JOIN_SIZE:
+                #'p' + protocol-flags + compression_level + packet_index + data_size
+                if type(data)==unicode:
+                    data = str(data)
+                header_and_data = struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
+                items.append((header_and_data, scb, ecb))
+            else:
+                header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
+                items.append((header, scb, None))
+                items.append((data, None, ecb))
+            counter += 1
+        self._write_queue.put(items)
+        self.output_packetcount += 1
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -573,38 +577,51 @@ class Protocol(object):
                     log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
 
     def flush_then_close(self, last_packet):
-        """ note: this is best effort only
+        """ Note: this is best effort only
             the packet may not get sent.
+
+            We try to get the write lock,
+            we try to wait for the write queue to flush
+            we queue our last packet,
+            we wait again for the queue to flush,
+            then no matter what, we close the connection and stop the threads.
         """
-        if self._write_lock.acquire(False):
-            try:
-                #try to wait for the queue to empty with the lock held
-                try:
-                    import time
-                    i = 0
-                    while not self._closed and not self._write_queue.empty() and i<5:
-                        time.sleep(0.1)
-                        i += 1
-                except:
-                    pass
-                #and send our last_packet to it:
-                self._add_packet_to_queue(last_packet)
-            finally:
-                self._write_lock.release()
-        self.terminate_io_threads()
-        #wait for last_packet to be sent:
-        def wait_for_end_of_write(timeout=15):
-            log("wait_for_end_of_write(%s) closed=%s, size=%s", timeout, self._closed, self._write_queue.qsize())
-            if self._closed:
-                """ client has disconnected """
-                return
-            if self._write_queue.empty() or timeout<=0:
-                """ threads have terminated or we timedout """
-                self.close()
+        def wait_for_queue(timeout=10):
+            #IMPORTANT: if we are here, we have the write lock held!
+            if not self._write_queue.empty():
+                #write queue still has stuff in it..
+                if timeout<=0:
+                    log("flush_then_close: queue still busy, closing without sending the last packet")
+                    self._write_lock.release()
+                    self.close()
+                else:
+                    log("flush_then_close: still waiting for queue to flush")
+                    gobject.timeout_add(100, wait_for_queue, timeout-1)
             else:
-                """ check again soon: """
-                gobject.timeout_add(200, wait_for_end_of_write, timeout-1)
-        wait_for_end_of_write()
+                log("flush_then_close: queue is now empty, sending the last packet and closing")
+                chunks, proto_flags = self.encode(last_packet)
+                self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=self.close)
+                self._write_lock.release()
+                gobject.timeout_add(5*1000, self.close)
+
+        def wait_for_write_lock(timeout=100):
+            if not self._write_lock.acquire(False):
+                if timeout<=0:
+                    log("flush_then_close: timeout waiting for the write lock")
+                    self.close()
+                else:
+                    log("flush_then_close: write lock is busy, will retry %s more times", timeout)
+                    gobject.timeout_add(10, wait_for_write_lock, timeout-1)
+            else:
+                log("flush_then_close: acquired the write lock")
+                #we have the write lock - we MUST free it!
+                wait_for_queue()
+        #normal codepath:
+        # -> wait_for_write_lock
+        # -> wait_for_queue
+        # -> _add_chunks_to_queue
+        # -> close
+        wait_for_write_lock()
 
     def close(self):
         if self._closed:
