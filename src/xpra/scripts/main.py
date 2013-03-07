@@ -227,7 +227,7 @@ def main(script_file, cmdline):
                           help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
     else:
         hidden_options["min_speed"] = defaults.min_speed
-        hidden_options["quality"] = defaults.quality
+        hidden_options["speed"] = defaults.speed
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
