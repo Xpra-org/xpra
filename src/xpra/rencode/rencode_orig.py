@@ -69,6 +69,12 @@ if sys.version_info.major >= 3:
     py3 = True
     long = int          #@ReservedAssignment
     unicode = str       #@ReservedAssignment
+    import codecs
+    def b(x):
+        return codecs.latin_1_encode(x)[0]
+else:
+    def b(x):
+        return x
     
 def int2byte(c):
     if py3:
@@ -168,7 +174,7 @@ def decode_float64(x, f):
     return (n, f+8)
 
 def decode_string(x, f):
-    colon = x.index(b':', f)
+    colon = x.index(b(':'), f)
     try:
         n = int(x[f:colon])
     except (OverflowError, ValueError):
@@ -205,16 +211,16 @@ def decode_none(x, f):
     return (None, f+1)
 
 decode_func = {}
-decode_func[b'0'] = decode_string
-decode_func[b'1'] = decode_string
-decode_func[b'2'] = decode_string
-decode_func[b'3'] = decode_string
-decode_func[b'4'] = decode_string
-decode_func[b'5'] = decode_string
-decode_func[b'6'] = decode_string
-decode_func[b'7'] = decode_string
-decode_func[b'8'] = decode_string
-decode_func[b'9'] = decode_string
+decode_func[b('0')] = decode_string
+decode_func[b('1')] = decode_string
+decode_func[b('2')] = decode_string
+decode_func[b('3')] = decode_string
+decode_func[b('4')] = decode_string
+decode_func[b('5')] = decode_string
+decode_func[b('6')] = decode_string
+decode_func[b('7')] = decode_string
+decode_func[b('8')] = decode_string
+decode_func[b('9')] = decode_string
 decode_func[CHR_LIST   ] = decode_list
 decode_func[CHR_DICT   ] = decode_dict
 decode_func[CHR_INT    ] = decode_int
@@ -333,7 +339,7 @@ def encode_string(x, r):
         s = str(len(x))
         if py3:
             s = bytes(s, "ascii")
-        r.extend((s, b':', x))
+        r.extend((s, b(':'), x))
 
 def encode_unicode(x, r):
     encode_string(x.encode("utf8"), r)
@@ -394,29 +400,29 @@ def dumps(x, float_bits=DEFAULT_FLOAT_BITS):
     finally:
         lock.release()
         
-    return b''.join(r)
+    return b('').join(r)
 
 def test():
     f1 = struct.unpack('!f', struct.pack('!f', 25.5))[0]
     f2 = struct.unpack('!f', struct.pack('!f', 29.3))[0]
     f3 = struct.unpack('!f', struct.pack('!f', -0.6))[0]
-    L = (({b'a':15, b'bb':f1, b'ccc':f2, b'':(f3,(),False,True,b'')},(b'a',10**20),tuple(range(-100000,100000)),b'b'*31,b'b'*62,b'b'*64,2**30,2**33,2**62,2**64,2**30,2**33,2**62,2**64,False,False, True, -1, 2, 0),)
+    L = (({b('a'):15, b('bb'):f1, b('ccc'):f2, b(''):(f3,(),False,True,b(''))},(b('a'),10**20),tuple(range(-100000,100000)),b('b')*31,b('b')*62,b('b')*64,2**30,2**33,2**62,2**64,2**30,2**33,2**62,2**64,False,False, True, -1, 2, 0),)
     assert loads(dumps(L)) == L
     d = dict(zip(range(-100000,100000),range(-100000,100000)))
-    d.update({b'a':20, 20:40, 40:41, f1:f2, f2:f3, f3:False, False:True, True:False})
-    L = (d, {}, {5:6}, {7:7,True:8}, {9:10, 22:39, 49:50, 44: b''})
+    d.update({b('a'):20, 20:40, 40:41, f1:f2, f2:f3, f3:False, False:True, True:False})
+    L = (d, {}, {5:6}, {7:7,True:8}, {9:10, 22:39, 49:50, 44: b('')})
     assert loads(dumps(L)) == L
-    L = (b'', b'a'*10, b'a'*100, b'a'*1000, b'a'*10000, b'a'*100000, b'a'*1000000, b'a'*10000000)
+    L = (b(''), b('a')*10, b('a')*100, b('a')*1000, b('a')*10000, b('a')*100000, b('a')*1000000, b('a')*10000000)
     assert loads(dumps(L)) == L
-    L = tuple([dict(zip(range(n),range(n))) for n in range(100)]) + (b'b',)
+    L = tuple([dict(zip(range(n),range(n))) for n in range(100)]) + (b('b'),)
     assert loads(dumps(L)) == L
-    L = tuple([dict(zip(range(n),range(-n,0))) for n in range(100)]) + (b'b',)
+    L = tuple([dict(zip(range(n),range(-n,0))) for n in range(100)]) + (b('b'),)
     assert loads(dumps(L)) == L
-    L = tuple([tuple(range(n)) for n in range(100)]) + (b'b',)
+    L = tuple([tuple(range(n)) for n in range(100)]) + (b('b'),)
     assert loads(dumps(L)) == L
-    L = tuple([b'a'*n for n in range(1000)]) + (b'b',)
+    L = tuple([b('a')*n for n in range(1000)]) + (b('b'),)
     assert loads(dumps(L)) == L
-    L = tuple([b'a'*n for n in range(1000)]) + (None,True,None)
+    L = tuple([b('a')*n for n in range(1000)]) + (None,True,None)
     assert loads(dumps(L)) == L
     assert loads(dumps(None)) == None
     assert loads(dumps({None:None})) == {None:None}
