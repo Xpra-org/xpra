@@ -396,8 +396,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return  1
         # Now we can safely load gtk and connect:
         assert "gtk" not in sys.modules
-        import gtk          #@Reimport
-        gtk.threads_init()
+        import gtk.gdk          #@Reimport
+        gtk.gdk.threads_init()
         display = gtk.gdk.Display(display_name)
         manager = gtk.gdk.display_manager_get()
         default_display = manager.get_default_display()
