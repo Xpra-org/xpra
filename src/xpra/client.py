@@ -726,7 +726,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         timeout = 60
         def check_echo_timeout(*args):
             if self.last_ping_echoed_time<now_ms:
-                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % wait)
+                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % timeout)
         gobject.timeout_add(timeout*1000, check_echo_timeout)
         wait = 2.0
         if len(self.server_ping_latency)>0:
