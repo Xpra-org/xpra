@@ -236,7 +236,10 @@ class CairoBacking(Backing):
             if sys.version>='3':
                 data = bytearray(img_data.encode("latin1"))
             else:
-                data = bytearray(img_data)
+                try:
+                    data = bytearray(img_data)
+                except:
+                    data = str(img_data)
             buf = BytesIO(data)
         except ImportError:
             from StringIO import StringIO   #@Reimport
