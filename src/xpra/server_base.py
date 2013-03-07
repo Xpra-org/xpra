@@ -106,6 +106,11 @@ class ServerBase(object):
         for sock in sockets:
             self.add_listen_socket(sock)
 
+        if opts.pings:
+            gobject.timeout_add(1000, self.send_ping)
+        else:
+            gobject.timeout_add(10*1000, self.send_ping)
+
 
     def init_uuid(self):
         # Define a server UUID if needed:
@@ -518,7 +523,10 @@ class ServerBase(object):
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
         proto.aliases = capabilities.get("aliases", {})
-        ss = ServerSource(proto, self.get_transient_for,
+        def drop_client(reason="unknown"):
+            self.disconnect_client(proto, reason)
+        ss = ServerSource(proto, drop_client,
+                          self.get_transient_for,
                           self.supports_mmap,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
@@ -840,6 +848,7 @@ class ServerBase(object):
     def send_ping(self):
         for ss in self._server_sources.values():
             ss.ping()
+        return True
 
     def _process_ping_echo(self, proto, packet):
         self._server_sources.get(proto).process_ping_echo(packet)

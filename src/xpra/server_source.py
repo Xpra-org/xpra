@@ -94,6 +94,7 @@ class GlobalPerformanceStatistics(object):
         self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
                                                         #(event_time, elapsed_time_in_seconds)
         self.client_load = None
+        self.last_ping_echoed_time = 0
         #these values are calculated from the values above (see update_averages)
         self.min_client_latency = self.DEFAULT_LATENCY
         self.avg_client_latency = self.DEFAULT_LATENCY
@@ -229,7 +230,8 @@ class ServerSource(object):
     damage_packet_queue.
     """
 
-    def __init__(self, protocol, get_transient_for,
+    def __init__(self, protocol, disconnect_cb,
+                 get_transient_for,
                  supports_mmap,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
@@ -238,6 +240,7 @@ class ServerSource(object):
         self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol
+        self.disconnect = disconnect_cb
         self.get_transient_for = get_transient_for
         # mmap:
         self.supports_mmap = supports_mmap
@@ -926,9 +929,16 @@ class ServerSource(object):
 
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
-        self.send("ping", int(1000*time.time()))
+        now_ms = int(1000*time.time())
+        self.send("ping", now_ms)
+        timeout = 60
+        def check_echo_timeout(*args):
+            if self.last_ping_echoed_time<now_ms and not self.is_closed():
+                self.disconnect("client ping timeout, - waited %s seconds without a response" % timeout)
+        gobject.timeout_add(timeout*1000, check_echo_timeout)
 
     def process_ping(self, time_to_echo):
+        self.last_ping_echoed_time = time_to_echo
         #send back the load average:
         try:
             (fl1, fl2, fl3) = os.getloadavg()
