@@ -23,7 +23,7 @@
 #python and gtk bits:
 %define requires_python_gtk ,pygtk2, python-imaging, dbus-python
 #Vfb (Xvfb or Xdummy):
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth
 #OpenGL bits:
 %define requires_opengl %{nil}
 #Anything extra (distro specific):
@@ -36,7 +36,7 @@
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
 %define requires_x264 , x264-libs
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
 %endif
@@ -81,7 +81,7 @@
 
 %if %is_suse
 %define requires_python_gtk , python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
-%define requires_xorg , xorg-x11-server-utils, xf86-video-dummy, xf86-input-void
+%define requires_xorg , xorg-x11-server-utils, xf86-video-dummy, xf86-input-void, xorg-x11-xauth
 %define requires_extra %{nil}
 %define requires_sound %{nil}
 %endif
