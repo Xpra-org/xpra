@@ -769,6 +769,12 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/icons/xpra.png
 /etc/xpra/*
 
+%post
+%if 0%{?static_video_libs}
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/x264/codec.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/vpx/codec.so
+%endif
+
 ###
 ### eof
 ###
