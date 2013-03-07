@@ -196,7 +196,7 @@ class Protocol(object):
         assert self._get_packet_cb==None, "cannot use send_now when a packet source exists!"
         def packet_cb():
             self._get_packet_cb = None
-            return packet
+            return (packet, )
         self._get_packet_cb = packet_cb
         self.source_has_more()
 
