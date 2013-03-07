@@ -350,7 +350,7 @@ class XpraClientBase(gobject.GObject):
 gobject.type_register(XpraClientBase)
 
 
-class GLibXpraClient(XpraClientBase):
+class GobjectXpraClient(XpraClientBase):
     """
         Utility superclass for glib clients
     """
@@ -392,8 +392,8 @@ class GLibXpraClient(XpraClientBase):
         except AttributeError:
             #old versions of gobject may not have this method
             pass
-        self.glib_mainloop = glib.MainLoop()
-        self.glib_mainloop.run()
+        self.gobject_mainloop = gobject.MainLoop()
+        self.gobject_mainloop.run()
         return  self.exit_code
 
     def make_hello(self, challenge_response=None):
@@ -406,10 +406,10 @@ class GLibXpraClient(XpraClientBase):
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()
-        gobject.timeout_add(50, self.glib_mainloop.quit)
+        gobject.timeout_add(50, self.gobject_mainloop.quit)
 
 
-class ScreenshotXpraClient(GLibXpraClient):
+class ScreenshotXpraClient(GobjectXpraClient):
     """ This client does one thing only:
         it sends the hello packet with a screenshot request
         and exits when the resulting image is received (or timedout)
@@ -417,7 +417,7 @@ class ScreenshotXpraClient(GLibXpraClient):
 
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
-        GLibXpraClient.__init__(self, conn, opts)
+        GobjectXpraClient.__init__(self, conn, opts)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
@@ -434,16 +434,16 @@ class ScreenshotXpraClient(GLibXpraClient):
         self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):
-        GLibXpraClient.init_packet_handlers(self)
+        GobjectXpraClient.init_packet_handlers(self)
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
-        capabilities = GLibXpraClient.make_hello(self, challenge_response)
+        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
         capabilities["screenshot_request"] = True
         return capabilities
 
 
-class InfoXpraClient(GLibXpraClient):
+class InfoXpraClient(GobjectXpraClient):
     """ This client does one thing only:
         it queries the server with an 'info' request
     """
@@ -461,13 +461,13 @@ class InfoXpraClient(GLibXpraClient):
         self.quit(0)
 
     def make_hello(self, challenge_response=None):
-        capabilities = GLibXpraClient.make_hello(self, challenge_response)
+        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
         log.debug("make_hello(%s) adding info_request to %s", challenge_response, capabilities)
         capabilities["info_request"] = True
         return capabilities
 
 
-class VersionXpraClient(GLibXpraClient):
+class VersionXpraClient(GobjectXpraClient):
     """ This client does one thing only:
         it queries the server for version information and prints it out
     """
@@ -481,13 +481,13 @@ class VersionXpraClient(GLibXpraClient):
         self.warn_and_quit(EXIT_OK, str(props.get("version")))
 
     def make_hello(self, challenge_response=None):
-        capabilities = GLibXpraClient.make_hello(self, challenge_response)
+        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
         log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
         capabilities["version_request"] = True
         return capabilities
 
 
-class StopXpraClient(GLibXpraClient):
+class StopXpraClient(GobjectXpraClient):
     """ stop a server """
 
     def timeout(self, *args):
