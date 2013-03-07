@@ -16,7 +16,10 @@ except ImportError, e:
         log("numpyxor loaded")
     except ImportError, e:
         log("numpyxor not present")
-        assert bytearray is not None, "your python version lacks bytearray, you must install numpy or compile the xpra.xor.cyxor module"
+        try:
+            bytearray()
+        except NameError:
+            raise Exception("your python version lacks the bytearray type, you must install numpy or compile the xpra.xor.cyxor module")
         log.warn("using python xor fallback (much slower)")
         def xor_str(a, b):
             assert len(a)==len(b), "cannot xor strings of different lengths (pyxor)"
