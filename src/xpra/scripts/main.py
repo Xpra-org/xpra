@@ -556,6 +556,19 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 ssh_fail_cb(error_message)
                 raise IOError(error_message)
         def stop_tunnel():
+            if os.name=="posix":
+                #on posix, the tunnel may be shared with other processes
+                #so don't kill it... which may leave it behind after use.
+                #but at least make sure we close all the pipes:
+                for name,fd in {"stdin" : child.stdin,
+                                "stdout" : child.stdout,
+                                "stderr" : child.stderr}.items():
+                    try:
+                        if fd:
+                            fd.close()
+                    except Exception, e:
+                        print("error closing ssh tunnel %s: %s" % (name, e))
+                return
             try:
                 if child.poll() is None:
                     #only supported on win32 since Python 2.7
