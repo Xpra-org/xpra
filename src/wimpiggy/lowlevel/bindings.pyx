@@ -1301,8 +1301,7 @@ cdef _ensure_extension_support(display_source, major, minor, extension,
                     raise ValueError("%s v%s.%s not supported; required: v%s.%s"
                                      % (extension, cmajor, cminor, major, minor))
         else:
-            raise ValueError("X server does not support required extension %s"
-                             % extension)
+            raise ValueError("X11 extension %s not available" % extension)
     if not display.get_data(key):
         raise ValueError("insufficient %s support in server" % extension)
 
