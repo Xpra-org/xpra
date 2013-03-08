@@ -896,9 +896,13 @@ class WindowModel(BaseWindowModel):
                 self.set_property("attention-requested", True)
 
             log("wm_hints.input = %s", wm_hints.input)
-            if wm_hints.input is not None:
-                self._input_field = wm_hints.input
-                self.notify("can-focus")
+            #we only set this value once:
+            #(input_field always starts as True, and we then set it to an int)
+            if self._input_field is True and wm_hints.input is not None:
+                #keep the value as an int to differentiate from the start value:
+                self._input_field = int(wm_hints.input)
+                if bool(self._input_field):
+                    self.notify("can-focus")
 
     _property_handlers["WM_HINTS"] = _handle_wm_hints
 
@@ -1044,6 +1048,7 @@ class WindowModel(BaseWindowModel):
                         "WM_NAME", "_NET_WM_NAME",
                         "WM_ICON_NAME", "_NET_WM_ICON_NAME",
                         "_NET_WM_STRUT", "_NET_WM_STRUT_PARTIAL"]:
+            log("reading initial value for %s", mutable)
             self._handle_property_change(mutable)
         for mutable in ["_NET_WM_ICON"]:
             try:
@@ -1116,7 +1121,7 @@ class WindowModel(BaseWindowModel):
 
     def do_get_property_can_focus(self, name):
         assert name == "can-focus"
-        return self._input_field or "WM_TAKE_FOCUS" in self.get_property("protocols")
+        return bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
 
     def do_get_property(self, pspec):
         if pspec.name in self._state_properties:
@@ -1181,7 +1186,7 @@ class WindowModel(BaseWindowModel):
         # XSetInputFocus well, while Qt apps ignore (!!!) WM_TAKE_FOCUS
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.
-        if self._input_field:
+        if bool(self._input_field):
             log("... using XSetInputFocus")
             XSetInputFocus(self.client_window, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
