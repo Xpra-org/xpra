@@ -29,6 +29,7 @@ SET CYMATHS=1
 SET CLIPBOARD=1
 SET SOUND=1
 SET OPENGL=1
+SET SHADOW=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM support double-click on BAT file, so run from parent directory:
@@ -53,8 +54,6 @@ DEL /Q xpra\rencode\rencode.pyd
 DEL /Q xpra\rencode\rencode.c
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd
 DEL /Q wimpiggy\gdk\gdk_atoms.c
-DEL /Q wimpiggy\gdk\region.pyd
-DEL /Q wimpiggy\gdk\region.c
 
 ECHO ***************************************************************
 SET BUILD_ARGS=
