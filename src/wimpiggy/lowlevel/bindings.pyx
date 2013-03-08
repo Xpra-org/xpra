@@ -2142,6 +2142,8 @@ def init_x11_events():
         names_to_event_type[v] = k
 
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
+    if XPRA_X11_DEBUG_EVENTS=="*":
+        XPRA_X11_DEBUG_EVENTS = names_to_event_type.keys()
     for n in XPRA_X11_DEBUG_EVENTS.split(","):
         name = n.strip()
         if len(name)==0:
