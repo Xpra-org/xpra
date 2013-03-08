@@ -10,6 +10,7 @@ import pango
 import gobject
 
 from xpra.deque import maxdeque
+from xpra.platform import get_icon
 
 
 modifier_names = {
@@ -68,6 +69,10 @@ class KeyboardStateInfoWindow:
 		self.window.connect("key-release-event", self.key_release)
 		self.window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
 
+		icon = get_icon("keyboard.png")
+		if icon:
+			self.window.set_icon(icon)
+
 	def populate_modifiers(self, *args):
 		(x, y, current_mask) = gtk.gdk.get_default_root_window().get_pointer()
 		self.mouse.set_text("%s %s" % (x, y))
@@ -106,9 +111,14 @@ class KeyboardStateInfoWindow:
 	def destroy(self, *args):
 		gtk.main_quit()
 
+
 def main():
+	from xpra.gtk_util import set_application_name, set_prgname
+	set_prgname("Keyboard Test Tool")
+	set_application_name("Keyboard Test Tool")
 	KeyboardStateInfoWindow()
 	gtk.main()
+
 
 if __name__ == "__main__":
 	main()
