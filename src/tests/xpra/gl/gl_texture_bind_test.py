@@ -38,7 +38,7 @@ HEIGHT = 480
 def draw_square():
     """
     Draws a square of 2 x 2 size centered at 0, 0
-    
+
     Make sure to call glDisable(GL_TEXTURE_RECTANGLE_ARB) first.
     """
     glBegin(GL_QUADS)
@@ -51,7 +51,7 @@ def draw_square():
 def draw_textured_square(w=None, h=None):
     """
     Draws a texture square of 2 x 2 size centered at 0, 0
-    
+
     Make sure to call glEnable(GL_TEXTURE_RECTANGLE_ARB) first.
 
     :param w: width of the image in pixels
@@ -85,14 +85,14 @@ def draw_line(from_x, from_y, to_x, to_y):
     Draws a line between given points.
     """
     glBegin(GL_LINES)
-    glVertex2f(from_x, from_y) 
-    glVertex2f(to_x, to_y) 
+    glVertex2f(from_x, from_y)
+    glVertex2f(to_x, to_y)
     glEnd()
 
 class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
     """
     OpenGL drawing area for simple demo.
-    
+
     OpenGL-capable gtk.DrawingArea by subclassing
     gtk.gtkgl.Widget mixin.
     """
@@ -132,7 +132,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
         Sets up the orthographic projection.
 
         Height is always 1.0 in GL modelview coordinates.
-        
+
         Coordinates should give a rendering area height of 1
         and a width of 1.33, when in 4:3 ratio.
         """
@@ -183,7 +183,7 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
             return False
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        
+
         self.draw()
 
         if gldrawable.is_double_buffered():
@@ -192,12 +192,12 @@ class GlDrawingArea(gtk.DrawingArea, gtk.gtkgl.Widget):
             glFlush()
         gldrawable.gl_end()
         return False
-    
+
     def _create_texture(self):
         pixels = "\0" * 320 * 240 * 4
         w = 320
         h = 240
-        
+
         # Create Texture
         tex_id = glGenTextures(1)
         print("glBindTexture(GL_TEXTURE_RECTANGLE_ARB)")
@@ -300,7 +300,7 @@ class App(object):
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
             glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
- 
+
     def on_delete_event(self, widget, event=None):
         """
         Closing the window quits.

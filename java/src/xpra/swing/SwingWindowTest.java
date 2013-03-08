@@ -31,7 +31,7 @@ public class SwingWindowTest {
 
 		/*
 		 * Client c = new Client() {
-		 * 
+		 *
 		 * @Override public void send(String type, Object... data) {
 		 * System.out.println("send(" + type + ", " + Arrays.asList(data)); } };
 		 * SwingWindow w = new SwingWindow(c, 1, 20, 60, 640, 480, new

@@ -58,7 +58,7 @@ def test_logp():
 	end = time.time()
 	print("logp:")
 	print("elapsed time: %sms" % dec1(1000*(end-start)))
-		
+
 
 def main():
 	#test_values_to_diff_scaled_values()

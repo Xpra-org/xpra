@@ -1,8 +1,8 @@
 /*
  * This is a modified version of a class from the Android Open Source Project.
- 
+
  * The original copyright and license information follows.
- * 
+ *
  * Copyright (C) 2006 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import android.widget.RemoteViews.RemoteView;
  * A layout that lets you specify exact locations (x/y coordinates) of its
  * children. Absolute layouts are less flexible and harder to maintain than
  * other types of layouts without absolute positioning.
- * 
+ *
  * <p>
  * <strong>XML attributes</strong>
  * </p>
@@ -38,7 +38,7 @@ import android.widget.RemoteViews.RemoteView;
  * See {@link android.R.styleable#ViewGroup ViewGroup Attributes},
  * {@link android.R.styleable#View View Attributes}
  * </p>
- * 
+ *
  * <p>
  * Note: This class is a clone of AbsoluteLayout, which is now deprecated.
  */
@@ -169,7 +169,7 @@ public class MyAbsoluteLayout extends ViewGroup {
 		/**
 		 * Creates a new set of layout parameters with the specified width,
 		 * height and location.
-		 * 
+		 *
 		 * @param width
 		 *			the width, either {@link #MATCH_PARENT},
 		 *			{@link #WRAP_CONTENT} or a fixed size in pixels
@@ -191,14 +191,14 @@ public class MyAbsoluteLayout extends ViewGroup {
 		 * Creates a new set of layout parameters. The values are extracted from
 		 * the supplied attributes set and context. The XML attributes mapped to
 		 * this set of layout parameters are:
-		 * 
+		 *
 		 * <ul>
 		 * <li><code>layout_x</code>: the X location of the child</li>
 		 * <li><code>layout_y</code>: the Y location of the child</li>
 		 * <li>All the XML attributes from
 		 * {@link android.view.ViewGroup.LayoutParams}</li>
 		 * </ul>
-		 * 
+		 *
 		 * @param c
 		 *			the application environment
 		 * @param attrs
@@ -239,11 +239,11 @@ public class MyAbsoluteLayout extends ViewGroup {
 
 		/**
 		 * Converts the specified size to a readable String.
-		 * 
+		 *
 		 * @param size
 		 *			the size to convert
 		 * @return a String instance representing the supplied size
-		 * 
+		 *
 		 * @hide
 		 */
 		protected static String sizeToString(int size) {

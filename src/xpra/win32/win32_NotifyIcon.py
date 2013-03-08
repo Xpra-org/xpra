@@ -73,13 +73,13 @@ class win32NotifyIcon:
 		except Exception, e:
 			log.error("Failed to load icon at %s: %s", iconPathName, e)
 			return	LoadIcon(0, win32con.IDI_APPLICATION)
-	
+
 	def OnCommand(self, hwnd, msg, wparam, lparam):
 		log.debug("OnCommand(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
 		cid = LOWORD(wparam)
 		if self.command_callback:
 			self.command_callback(self.hwnd, cid)
-		
+
 	def OnDestroy(self, hwnd, msg, wparam, lparam):
 		log.debug("OnDestroy(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
 		if self.closed:
@@ -105,7 +105,7 @@ class win32NotifyIcon:
 
 	def get_geometry(self):
 		return	GetWindowRect(self.hwnd)
-	
+
 
 def main():
 	def notify_callback(hwnd):
@@ -116,7 +116,7 @@ def main():
 		SetForegroundWindow(hwnd)
 		TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos[0], pos[1], 0, hwnd, None)
 		PostMessage(hwnd, win32con.WM_NULL, 0, 0)
-	
+
 	def command_callback(hwnd, cid):
 		if cid == 1024:
 			from winswitch.ui.win32_balloon import notify
@@ -126,7 +126,7 @@ def main():
 			DestroyWindow(hwnd)
 		else:
 			print("OnCommand for ID=%s" % cid)
-	
+
 	def win32_quit():
 		PostQuitMessage(0) # Terminate the app.
 
@@ -134,6 +134,7 @@ def main():
 	w=win32StatusIcon(notify_callback, win32_quit, command_callback, iconPathName)
 	print("win32StatusIcon=%s" % w)
 	PumpMessages()
-	
+
+
 if __name__=='__main__':
 	main()

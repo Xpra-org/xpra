@@ -12,7 +12,7 @@ from xpra.gl.gl_window_backing import GLPixmapBacking
 
 
 class GLClientWindow(ClientWindow):
-    
+
     gl_pixmap_backing_class = GLPixmapBacking
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):

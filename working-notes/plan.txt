@@ -3,7 +3,7 @@ basic window managing:
   save set handling
   detect clients on startup
   manage clients as they arrive
-  
+
 "manage client": keep track of windows, get them on the screen and
 decorated, track their hints and modify their properties
 manage world properties (like desktop geometries)
@@ -29,7 +29,7 @@ layout manager:
 "make window visible" -- if it is somewhere in the current tray, make
 it visible.  else if it is visible on some other tray, make that tray
 visible.  else of all the trays it is on, find the one where it would
-be the largest if it became visible, 
+be the largest if it became visible,
 
 maybe we should distinguish windows and "window instances" or
 something, 1-many relationship, to get a nice way to talk about this.

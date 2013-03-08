@@ -10,7 +10,7 @@ import xpra.InputContextClient;
 /**
  * This is just a proof of concept and this client does not work properly at
  * present.
- * 
+ *
  */
 public class AWTClient extends InputContextClient {
 

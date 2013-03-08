@@ -113,7 +113,7 @@ def get_decoder_parser(name):
     _, _, decoder, parser = CODECS.get(name)
     assert decoder is None or has_plugins(decoder), "decoder %s not found" % decoder
     assert parser is None or has_plugins(parser), "parser %s not found" % parser
-    return decoder, parser    
+    return decoder, parser
 
 def has_encoder(name):
     assert name in CODECS, "invalid codec: %s" % name

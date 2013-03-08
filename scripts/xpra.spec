@@ -243,7 +243,7 @@ So basically it's screen for remote X apps.
 - fix "AltGr" key handling with MS Windows clients (and others)
 - fix crash with x264 encoding
 - fix crash with fast disappearing tooltip windows
-- avoid storing password in a file when using the launcher (except on MS Windows) 
+- avoid storing password in a file when using the launcher (except on MS Windows)
 - many latency fixes and improvements: lower latency, better line congestion handling, etc
 - lower client latency: decompress pictures in a dedicated thread (including rgb24+zlib)
 - better launcher command feedback
@@ -340,7 +340,7 @@ So basically it's screen for remote X apps.
 - statistics shown for 'damage_packet_queue_pixels' were incorrect
 
 * Mon Aug 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.5.0-1
-- new packet encoder written in C (much faster and data is now smaller too) 
+- new packet encoder written in C (much faster and data is now smaller too)
 - read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
 - support Xdummy out of the box on platforms with recent enough versions of Xorg (and not installed suid)
 - pass dpi to server and allow clients to specify dpi on the command line

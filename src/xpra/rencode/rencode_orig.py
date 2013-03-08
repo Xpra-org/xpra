@@ -75,13 +75,13 @@ if sys.version_info.major >= 3:
 else:
     def b(x):
         return x
-    
+
 def int2byte(c):
     if py3:
         return bytes([c])
     else:
         return chr(c)
-       
+
 import struct
 from threading import Lock
 
@@ -315,7 +315,7 @@ def encode_int(x, r):
         s = str(x)
         if py3:
             s = bytes(s, "ascii")
-            
+
         if len(s) >= MAX_INT_LENGTH:
             raise ValueError('overflow')
         r.extend((CHR_INT, s, CHR_TERM))
@@ -399,7 +399,7 @@ def dumps(x, float_bits=DEFAULT_FLOAT_BITS):
         encode_func[type(x)](x, r)
     finally:
         lock.release()
-        
+
     return b('').join(r)
 
 def test():

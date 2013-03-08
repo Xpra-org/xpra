@@ -11,10 +11,10 @@ import android.widget.Toast;
 /**
  * This activity presents two images and a text view and allows them to be
  * dragged around. Press and hold on a view initiates a drag.
- * 
+ *
  * <p>
  * This activity is derviced from the Android Launcher class.
- * 
+ *
  */
 
 public class DragActivity extends Activity implements View.OnLongClickListener, View.OnClickListener {
@@ -27,11 +27,11 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * onCreate - called when the activity is first created.
-	 * 
+	 *
 	 * Creates a drag controller and sets up three views so click and long click
 	 * on the views are sent to this activity. The onLongClick method starts a
 	 * drag sequence.
-	 * 
+	 *
 	 */
 
 	@Override
@@ -45,7 +45,7 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * Handle a click on a view.
-	 * 
+	 *
 	 */
 	@Override
 	public void onClick(View v) {
@@ -54,7 +54,7 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * Handle a long click.
-	 * 
+	 *
 	 * @param v
 	 *            View
 	 * @return boolean - true indicates that the event was handled
@@ -77,7 +77,7 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * Start dragging a view.
-	 * 
+	 *
 	 */
 
 	public boolean startDrag(View v) {
@@ -91,7 +91,7 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 	/**
 	 * Finds all the views we need and configure them to send click events to
 	 * the activity.
-	 * 
+	 *
 	 */
 	private void setupViews() {
 		this.mDragLayer = (DragLayer) findViewById(R.id.drag_layer);
@@ -103,7 +103,7 @@ public class DragActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * Show a string on the screen via Toast.
-	 * 
+	 *
 	 * @param msg
 	 *            String
 	 * @return void

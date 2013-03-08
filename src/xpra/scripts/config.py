@@ -382,7 +382,7 @@ def validate_in_list(x, options):
         return None
     return "must be in %s" % (", ".join(options))
 OPTIONS_VALIDATION = {
-                    "encoding"          : lambda x : validate_in_list(x, ENCODINGS), 
+                    "encoding"          : lambda x : validate_in_list(x, ENCODINGS),
                     "mode"              : lambda x : validate_in_list(x, MODES),
                     }
 #fields that got renamed:

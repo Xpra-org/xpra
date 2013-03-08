@@ -86,7 +86,7 @@ class PyNOTIFYICONDATA:
 			raise NameError(name)
 		self.__dict__[name] = value
 
-	
+
 def notify(hwnd, title, message, timeout=5000):
 	# For this message I can't use the win32gui structure because
 	# it doesn't declare the new, required fields

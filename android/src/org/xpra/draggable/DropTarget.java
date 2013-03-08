@@ -1,7 +1,7 @@
 /*
- * This is a modified version of a class from the Android Open Source Project. 
+ * This is a modified version of a class from the Android Open Source Project.
  * The original copyright and license information follows.
- * 
+ *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,13 +24,13 @@ import android.graphics.Rect;
 /**
  * Interface defining an object that can receive a view at the end of a drag
  * operation.
- * 
+ *
  */
 public interface DropTarget {
 
 	/**
 	 * Handle an object being dropped on the DropTarget
-	 * 
+	 *
 	 * @param source
 	 *			DragSource where the drag started
 	 * @param x
@@ -47,7 +47,7 @@ public interface DropTarget {
 	 *			The DragView that's being dragged around on screen.
 	 * @param dragInfo
 	 *			Data associated with the object being dragged
-	 * 
+	 *
 	 */
 	void onDrop(DragSource source, int x, int y, int xOffset, int yOffset, DragView dragView, Object dragInfo);
 
@@ -61,7 +61,7 @@ public interface DropTarget {
 	 * Check if a drop action can occur at, or near, the requested location.
 	 * This may be called repeatedly during a drag, so any calls should return
 	 * quickly.
-	 * 
+	 *
 	 * @param source
 	 *			DragSource where the drag started
 	 * @param x
@@ -85,7 +85,7 @@ public interface DropTarget {
 	/**
 	 * Estimate the surface area where this object would land if dropped at the
 	 * given location.
-	 * 
+	 *
 	 * @param source
 	 *			DragSource where the drag started
 	 * @param x

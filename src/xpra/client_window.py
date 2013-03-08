@@ -488,7 +488,7 @@ class ClientWindow(gtk.Window):
                 context.line_to(0.0, -dim)
                 context.rotate(math.pi/4)
                 context.stroke()
-            
+
 
     def do_map_event(self, event):
         log("Got map event: %s", event)

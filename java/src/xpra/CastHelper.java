@@ -5,7 +5,7 @@ import java.math.BigInteger;
 
 /**
  * Utility class for doing type casting
- * 
+ *
  */
 public class CastHelper {
 

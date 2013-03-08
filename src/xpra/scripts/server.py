@@ -458,7 +458,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if opts.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             app.quit(False)
-    
+
     procs = []
     if os.name=="posix":
         child_reaper = ChildReaper(reaper_quit, children_pids)

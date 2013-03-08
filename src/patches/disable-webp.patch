@@ -3,7 +3,7 @@ Description: Disable webp encoding support.
  Forwarded: not-needed
  
 --- a/setup.py
-+++ b/setup.py	
++++ b/setup.py
 @@ -47,7 +47,7 @@
  
  

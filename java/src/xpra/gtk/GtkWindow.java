@@ -108,7 +108,7 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 		});
 		/*
 		 * this.drawingArea.connect(new ExposeEvent() {
-		 * 
+		 *
 		 * @Override public boolean onExposeEvent(Widget arg0, EventExpose arg1)
 		 * { do_expose_event(arg0, arg1); return false; } });
 		 */
@@ -220,7 +220,7 @@ public class GtkWindow extends org.gnome.gtk.Window implements ClientWindow {
 		 * "Xpra"))) if not (self.flags() & gtk.REALIZED):
 		 * self.set_wmclass(*self._metadata.get("class-instance", ("xpra",
 		 * "Xpra"))) }
-		 * 
+		 *
 		 * List<Object> icon = (List<Object>) metadata.get("icon"); if
 		 * (icon!=null) { Integer width = (Integer) icon.get(0); Integer height
 		 * = (Integer) icon.get(1); String coding = (String) icon.get(2); byte[]

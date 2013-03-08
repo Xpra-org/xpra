@@ -93,7 +93,7 @@ public class Keys {
 		addKey(KeyEvent.VK_SHIFT, "Shift");
 		addKey(KeyEvent.VK_PERIOD, ".");
 		addKey(KeyEvent.VK_SLASH, "/");
-		
+
 		addKey(KeyEvent.VK_A, "A");
 		addKey(KeyEvent.VK_B, "B");
 		addKey(KeyEvent.VK_C, "C");

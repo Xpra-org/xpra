@@ -1,7 +1,7 @@
 /*
- * This is a modified version of a class from the Android Open Source Project. 
+ * This is a modified version of a class from the Android Open Source Project.
  * The original copyright and license information follows.
- * 
+ *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import android.view.View;
 
 /**
  * A ViewGroup that coordinates dragging across its dscendants.
- * 
+ *
  * <p>
  * This class used DragLayer in the Android Launcher activity as a model. It is
  * a bit different in several respects: (1) It extends MyAbsoluteLayout rather
@@ -44,7 +44,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 
 	/**
 	 * Used to create a new DragLayer from XML.
-	 * 
+	 *
 	 * @param context
 	 *            The application's context.
 	 * @param attrs
@@ -82,7 +82,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 
 	/**
 	 * onDropCompleted
-	 * 
+	 *
 	 */
 	@Override
 	public void onDropCompleted(View target, boolean success) {
@@ -93,7 +93,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	/**
 	 * Handle an object being dropped on the DropTarget. This is the where a
 	 * dragged view gets repositioned at the end of a drag.
-	 * 
+	 *
 	 * @param source
 	 *            DragSource where the drag started
 	 * @param x
@@ -110,7 +110,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	 *            The DragView that's being dragged around on screen.
 	 * @param dragInfo
 	 *            Data associated with the object being dragged
-	 * 
+	 *
 	 */
 	@Override
 	public void onDrop(DragSource source, int x, int y, int xOffset, int yOffset, DragView dragView, Object dragInfo) {
@@ -143,7 +143,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	 * Check if a drop action can occur at, or near, the requested location.
 	 * This may be called repeatedly during a drag, so any calls should return
 	 * quickly.
-	 * 
+	 *
 	 * @param source
 	 *            DragSource where the drag started
 	 * @param x
@@ -170,7 +170,7 @@ public class DragLayer extends MyAbsoluteLayout implements DragSource, DropTarge
 	/**
 	 * Estimate the surface area where this object would land if dropped at the
 	 * given location.
-	 * 
+	 *
 	 * @param source
 	 *            DragSource where the drag started
 	 * @param x

@@ -422,7 +422,7 @@ public class BencodingInputStream extends FilterInputStream implements DataInput
 
 	/**
 	 * Reads and returns a {@link String}.
-	 * 
+	 *
 	 * @see #readString().
 	 */
 	@Override

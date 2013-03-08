@@ -20,7 +20,7 @@ How click/doubleclick/drags work:
      GDK_BUTTON_PRESS, GDK_BUTTON_RELEASE,
      GDK_BUTTON_PRESS, GDK_2BUTTON_PRESS, GDK_BUTTON_RELEASE
   (extend that for triple-clicks, if you care)
-  
+
   drags using the gtk dnd support look like:
      GDK_BUTTON_PRESS, GTK_MOTION_NOTIFY (...),
      drag-begin emitted, drag-motion emitted (...),
@@ -28,7 +28,7 @@ How click/doubleclick/drags work:
   one can also implement drag behavior without using gtk's dnd support
   directly; the critical function here is
   gtk.Widget.drag_check_threshold.
-     
+
   docs on gtk dnd support:
     http://live.gnome.org/GnomeLove/DragNDropTutorial
     http://www.pygtk.org/pygtk2tutorial/ch-DragAndDrop.html
@@ -193,7 +193,7 @@ and cause us to issue a focus change request.  It does do the
 timestamp on that focus change correctly.  Also it is sort of stupid
 to send the timestamp first to the main window and then to a client,
 if a client is getting it -- this is also a small race with keyboard
-entry.  
+entry.
 
 
 Focus-stealing prevention: I guess this means detecting whenever focus

@@ -111,7 +111,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.maximise = (ImageButton) this.findViewById(R.id.xpra_window_maximize);
 		this.close = (ImageButton) this.findViewById(R.id.xpra_window_close);
 		this.imageView = (ImageView) this.findViewById(R.id.xpra_window_contents);
-		
+
 		int[] location = new int[2];
 		context.mDragLayer.getLocationOnScreen(location);
 		this.notificationHeight = location[1];
@@ -353,7 +353,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 		this.log("onKeyPreIme(" + keyCode + ", " + event + ")");
 		return super.onKeyPreIme(keyCode, event);
 	}
-	
+
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
 		this.log("onKey(" + v + ", " + keyCode + ", " + event + ")");

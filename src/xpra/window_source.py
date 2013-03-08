@@ -516,7 +516,7 @@ class WindowSource(object):
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
-    
+
     def update_video_encoder(self):
         if self._video_encoder and not self._video_encoder.is_closed():
             update_video_encoder(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics,

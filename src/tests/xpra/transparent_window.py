@@ -45,7 +45,7 @@ def expose(widget, event):
         radius = float(width)/2 - 0.8
     else:
         radius = float(height)/2 - 0.8
- 
+
     cr.arc(float(width)/2, float(height)/2, radius, 0, 2.0*3.14)
     cr.fill()
     cr.stroke()

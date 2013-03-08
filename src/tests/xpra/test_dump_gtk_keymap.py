@@ -21,7 +21,7 @@ def print_keycodes():
 					names.append(name)
 			if len(names)>0:
 				keynames[i] = names
-	
+
 	print("keycodes=%s" % keycodes)
 	print("keynames=%s" % keynames)
 
@@ -48,7 +48,7 @@ def main():
 	print("keymap.get_direction()=%s" % keymap.get_direction())
 	print("keymap.have_bidi_layouts()=%s" % keymap.have_bidi_layouts())
 	print("keymap=%s" % str(dir(keymap)))
-	
+
 	print_keycodes()
 	print("")
 	print_keycodes_with_names()

@@ -264,7 +264,7 @@ public class AndroidKeyboardUtil {
 
     //private static final int LAST_KEYCODE           = KEYCODE_CALCULATOR;
 
-    
+
 	public static List<List<Object>> getAllKeycodes() {
 		List<List<Object>> keycodes = new ArrayList<List<Object>>(256);
 		for (int keyCode = 0; keyCode < KeyEvent.getMaxKeyCode(); keyCode++) {
@@ -324,8 +324,8 @@ public class AndroidKeyboardUtil {
 		names.put("ENTER", "Return");
 		names.put("HOME", "Super_R");		//"Windows" key
 		names.put("BACK", "XF86Back");
-		names.put("CALL", "");				//ignore 
-		names.put("ENDCALL", "");			//ignore 
+		names.put("CALL", "");				//ignore
+		names.put("ENDCALL", "");			//ignore
 		names.put("STAR", "asterisk");
 		names.put("POUND", "sterling");
 		names.put("SOFT_LEFT", "Left");

@@ -635,7 +635,7 @@ class ClientExtrasBase(object):
                 if active!=x.get_active():
                     x.set_active(active)
                 x.set_sensitive(encoding in server_encodings)
-    
+
     def populate_encodingssubmenu(self, encodings_submenu):
         server_encodings = self.client.server_capabilities.get("encodings", [])
         for encoding in ENCODINGS:
@@ -698,7 +698,7 @@ class ClientExtrasBase(object):
                 set_tooltip_text(self.quality, "Minimum picture quality")
             else:
                 set_tooltip_text(self.quality, "Not supported with %s encoding" % self.client.encoding)
-                
+
 
     def make_speedmenuitem(self):
         self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)

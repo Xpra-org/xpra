@@ -47,13 +47,13 @@ class KeyboardStateInfoWindow:
 		label = gtk.Label("Keyboard State")
 		label.modify_font(pango.FontDescription("sans 13"))
 		vbox.pack_start(label)
-		
+
 		self.modifiers = gtk.Label()
 		vbox.add(self.modifiers)
 
 		self.mouse = gtk.Label()
 		vbox.add(self.mouse)
-		
+
 		self.keys = gtk.Label()
 		fixed = pango.FontDescription('monospace 9')
 		self.keys.modify_font(fixed)

@@ -101,7 +101,7 @@ Master -> Slave:
   current cursor changed (to ...)
   start/release active grab on keyboard or mouse
   redraw region
-  
+
 Issues:
   maintaining stacking sync is reasonably hard -- require
     a WM on the slave side that supports _NET_CLIENT_LIST (and monitor

@@ -362,7 +362,7 @@ public class AWTWindow extends Frame implements ClientWindow {
 	/*
 	 * protected void saveFailedPixbuf(String img_data) { if
 	 * (!save_failed_pixbufs && this.failed_pixbuf_index>=10) return;
-	 * 
+	 *
 	 * this.failed_pixbuf_index++; String failed_pixbuf_file =
 	 * "failed-pixbuf-"+System.currentTimeMillis()+".rgb24";
 	 * this.savePixbuf(failed_pixbuf_file, img_data); }

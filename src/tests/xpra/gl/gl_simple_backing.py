@@ -87,7 +87,7 @@ class GLTestBacking(object):
     def config_texture(self):
         w, h = self.size
         pixels = "\0" * w * h * 4
-       
+
         # Create Texture
         print("glBindTexture(GL_TEXTURE_RECTANGLE_ARB) size=%s" % str(self.size))
         self.texture_id = glGenTextures(1)

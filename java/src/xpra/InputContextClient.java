@@ -13,7 +13,7 @@ import xpra.awt.Keys;
 /**
  * Abstract utility superclass for all Xpra client implementations.
  * Adds InputContext / KeyCode support
- * 
+ *
  */
 public abstract class InputContextClient extends AbstractClient {
 

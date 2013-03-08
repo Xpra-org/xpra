@@ -28,7 +28,7 @@ import org.ardverk.coding.BencodingOutputStream;
 
 /**
  * Abstract utility superclass for all Xpra client implementations.
- * 
+ *
  */
 public abstract class AbstractClient implements Runnable, Client {
 
@@ -516,11 +516,11 @@ public abstract class AbstractClient implements Runnable, Client {
 		caps.put("xkbmap_keycodes", this.getKeycodes());
 		return caps;
 	}
-	
+
 	protected abstract String getKeyboardLayout();
 
 	protected abstract List<?>[]	getKeycodes();
-	
+
 	protected void process_challenge(String salt) {
 		if (this.password == null || this.password.length == 0) {
 			this.warnUser("This session requires a password");

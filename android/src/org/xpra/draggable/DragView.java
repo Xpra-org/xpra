@@ -1,7 +1,7 @@
 /*
- * This is a modified version of a class from the Android Open Source Project. 
+ * This is a modified version of a class from the Android Open Source Project.
  * The original copyright and license information follows.
- * 
+ *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ import android.view.WindowManager;
  * A DragView is a special view used by a DragController. During a drag
  * operation, what is actually moving on the screen is a DragView. A DragView is
  * constructed using a bitmap of the view the user really wants to move.
- * 
+ *
  */
 
 public class DragView extends View {
@@ -59,7 +59,7 @@ public class DragView extends View {
 	 * <p>
 	 * The registration point is the point inside our view that the touch events
 	 * should be centered upon.
-	 * 
+	 *
 	 * @param context
 	 *            A context
 	 * @param bitmap
@@ -117,7 +117,7 @@ public class DragView extends View {
 
 	/**
 	 * Create a window containing this view and show it.
-	 * 
+	 *
 	 * @param windowToken
 	 *            obtained from v.getWindowToken() from one of your views
 	 * @param touchX
@@ -144,7 +144,7 @@ public class DragView extends View {
 
 	/**
 	 * Move the window containing this view.
-	 * 
+	 *
 	 * @param touchX
 	 *            the x coordinate the user touched in screen coordinates
 	 * @param touchY

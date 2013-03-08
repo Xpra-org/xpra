@@ -32,7 +32,7 @@ have to read:
   X extension specs:
      Xdamage:
        http://gitweb.freedesktop.org/?p=xorg/proto/damageproto.git;a=tree
-     Composite: 
+     Composite:
        http://gitweb.freedesktop.org/?p=xorg/proto/compositeproto.git;a=tree
      XFixes:
        http://gitweb.freedesktop.org/?p=xorg/proto/fixesproto.git;a=tree
@@ -88,7 +88,7 @@ because we violate their assumptions:
   -- EWMH desktop stuff will need some work.  _NET_DESKTOP_LAYOUT will
      just be ignored.  We might want to support _NET_DESKTOP_NAMES,
      but make it readonly for everyone else -- e.g., if a pager tries
-     to change it, notice and change it back.  
+     to change it, notice and change it back.
   -- If/when we get multiple viewport (xinerama) support, the EWMH
      desktop stuff becomes even more useless -- _NET_CURRENT_DESKTOP
      does not make sense when there are multiple desktops.

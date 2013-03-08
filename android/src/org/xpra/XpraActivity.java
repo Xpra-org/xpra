@@ -135,7 +135,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 
 	/**
 	 * Start dragging a view.
-	 * 
+	 *
 	 */
 
 	public boolean startDrag(View v) {
@@ -238,7 +238,7 @@ public class XpraActivity extends Activity implements View.OnLongClickListener, 
 	        }
 	    });
 	}
-	
+
 	public void toast(String msg) {
 		Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
 	}

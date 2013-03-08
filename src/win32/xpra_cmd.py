@@ -8,6 +8,6 @@ import sys
 from xpra.win32 import set_redirect_output
 set_redirect_output(False)
 
-from xpra.scripts.main import main 
+from xpra.scripts.main import main
 code = main("Xpra.exe", sys.argv)
 sys.exit(code)

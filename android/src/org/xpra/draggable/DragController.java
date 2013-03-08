@@ -1,7 +1,7 @@
 /*
  * This is a modified version of a class from the Android
  * Open Source Project. The original copyright and license information follows.
- * 
+ *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,7 @@ import android.view.inputmethod.InputMethodManager;
  * When a drag starts it creates a special view (a DragView) that moves around
  * the screen until the user ends the drag. As feedback to the user, this object
  * causes the device to vibrate as the drag begins.
- * 
+ *
  */
 
 public class DragController {
@@ -113,7 +113,7 @@ public class DragController {
 
 		/**
 		 * A drag has begun
-		 * 
+		 *
 		 * @param source
 		 *            An object representing where the drag originated
 		 * @param info
@@ -133,7 +133,7 @@ public class DragController {
 
 	/**
 	 * Used to create a new DragLayer from XML.
-	 * 
+	 *
 	 * @param context
 	 *            The application's context.
 	 */
@@ -146,7 +146,7 @@ public class DragController {
 	 * Starts a drag. It creates a bitmap of the view being dragged. That bitmap
 	 * is what you see moving. The actual view can be repositioned if that is
 	 * what the onDrop handle chooses to do.
-	 * 
+	 *
 	 * @param v
 	 *            The view that is being dragged
 	 * @param source
@@ -180,7 +180,7 @@ public class DragController {
 
 	/**
 	 * Starts a drag.
-	 * 
+	 *
 	 * @param b
 	 *            The bitmap to display as the drag image. It will be re-scaled
 	 *            to the enlarged size.
@@ -270,7 +270,7 @@ public class DragController {
 
 	/**
 	 * Call this from a drag source view like this:
-	 * 
+	 *
 	 * <pre>
 	 *  @Override
 	 *  public boolean dispatchKeyEvent(KeyEvent event) {
