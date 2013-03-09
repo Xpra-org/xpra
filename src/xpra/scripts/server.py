@@ -330,6 +330,15 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
+    #Some tweaks to disable stuff we don't need or want:
+    #force 'simple' / 'xim', as 'ibus' 'immodule' breaks keyboard handling
+    #unless its daemon is also running - and we don't know if it is..
+    #this should override any XSETTINGS too.
+    os.environ["DISABLE_IMSETTINGS"] = "true"
+    os.environ["GTK_IM_MODULE"] = "xim"                     #or "gtk-im-context-simple"?
+    os.environ["QT_IM_MODULE"] = "xim"                      #or "simple"?
+    os.environ["IMSETTINGS_MODULE"] = "none"                #or "xim"?
+    os.environ["XMODIFIERS"] = ""
 
     if not clobber and not shadowing:
         # We need to set up a new server environment

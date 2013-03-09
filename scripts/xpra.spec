@@ -32,6 +32,7 @@
 %define requires_x264 , libx264
 %define requires_webp , libwebp
 %define requires_sound , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly, gstreamer-python, pulseaudio, pulseaudio-utils
+%define xim gtk2-immodule-xim
 
 # distro-specific creative land of wonderness
 %if %{defined Fedora}
@@ -66,6 +67,7 @@
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
 %define requires_sound %{nil}
+%define xim %{nil}
 %define no_webp 1
 %define no_sound 1
 %define no_pulseaudio 1
