@@ -233,7 +233,9 @@ def getoutput_lines(cmd, pattern, setup_info):
 
 def getoutput_line(cmd, pattern, setup_info):
     lines = getoutput_lines(cmd, pattern, setup_info)
-    assert len(lines)==1, "expected 1 line matching '%s' from %s but found %s" % (pattern, cmd, len(lines))
+    if len(lines)!=1:
+        print("WARNING: expected 1 line matching '%s' from %s but found %s" % (pattern, cmd, len(lines)))
+        return "not found"
     return  lines[0]
 
 def get_cpu_info():
