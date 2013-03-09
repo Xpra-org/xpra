@@ -13,8 +13,6 @@ import time
 import sys
 
 o0700 = 448     #0o700
-DEFAULT_CONFDIR = os.environ.get("XPRA_CONF_DIR") or '~/.xpra'
-DEFAULT_SOCKDIR = os.environ.get("XPRA_SOCKET_DIR") or '~/.xpra'
 
 
 class ServerSockInUse(Exception):
@@ -22,8 +20,9 @@ class ServerSockInUse(Exception):
 
 class DotXpra(object):
     def __init__(self, sockdir=None, confdir=None):
-        self._confdir = os.path.expanduser(confdir or DEFAULT_CONFDIR)
-        self._sockdir = os.path.expanduser(sockdir or DEFAULT_SOCKDIR)
+        from xpra.platform import get_default_socket_dir, get_default_conf_dir
+        self._confdir = os.path.expanduser(confdir or get_default_conf_dir())
+        self._sockdir = os.path.expanduser(sockdir or get_default_socket_dir())
         if not os.path.exists(self._confdir):
             os.mkdir(self._confdir, o0700)
         if not os.path.exists(self._sockdir):

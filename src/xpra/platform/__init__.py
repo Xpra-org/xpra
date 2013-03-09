@@ -30,6 +30,9 @@ def valid_dir(path):
         return False
 
 
+def get_default_conf_dir():
+    return os.environ.get("XPRA_CONF_DIR", "~/.xpra")
+
 def get_default_socket_dir():
     return os.environ.get("XPRA_SOCKET_DIR", "~/.xpra")
 

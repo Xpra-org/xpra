@@ -46,6 +46,9 @@ def _get_data_dir():
         os.mkdir(data_dir)
     return data_dir
 
+def get_default_conf_dir():
+    return _get_data_dir()
+
 def get_default_socket_dir():
     return _get_data_dir()
 
