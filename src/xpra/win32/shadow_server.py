@@ -35,8 +35,8 @@ class XpraWin32ShadowServer(ShadowServerBase, ServerBase):
         #adjust pointer position for offset in client:
         x, y = pointer
         wx, wy = self.mapped_at[:2]
-        pointer = x-wx, y-wy
-        win32api.SetCursorPos((x,y))
+        rx, ry = x-wx, y-wy
+        win32api.SetCursorPos((rx, ry))
 
     def fake_key(self, keycode, press):
         kc = self.keycodes.get(keycode)
