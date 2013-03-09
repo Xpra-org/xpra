@@ -330,7 +330,22 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     # Do this after writing out the shell script:
     os.environ["DISPLAY"] = display_name
-    #Some tweaks to disable stuff we don't need or want:
+    def unsetenv(*varnames):
+        for x in varnames:
+            if os.environ.get(x):
+                del os.environ[x]
+    #we don't want client apps to think these mean anything:
+    #(if set, they belong to the desktop the server was started from)
+    #TODO: simply whitelisting the env would be safer/better
+    unsetenv("DESKTOP_SESSION",
+             "GDMSESSION",
+             "SESSION_MANAGER",
+             "XDG_VTNR",
+             "XDG_MENU_PREFIX",
+             "XDG_SEAT",
+             #"XDG_RUNTIME_DIR",
+             "QT_GRAPHICSSYSTEM_CHECKED",
+             )
     #force 'simple' / 'xim', as 'ibus' 'immodule' breaks keyboard handling
     #unless its daemon is also running - and we don't know if it is..
     #this should override any XSETTINGS too.
