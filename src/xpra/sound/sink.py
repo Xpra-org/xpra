@@ -20,6 +20,7 @@ if has_pa():
     SINKS.append("pulsesink")
 if sys.platform.startswith("darwin"):
     SINKS.append("osxaudiosink")
+    DEFAULT_SINK = "osxaudiosink"
 elif sys.platform.startswith("win"):
     SINKS.append("directsoundsink")
     DEFAULT_SINK = "directsoundsink"
