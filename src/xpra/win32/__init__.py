@@ -16,10 +16,14 @@ DEFAULT_SSH_CMD = "plink"
 GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 
+LOG_FILENAME = "Xpra.log"
 REDIRECT_OUTPUT = True
 def set_redirect_output(on):
     global REDIRECT_OUTPUT
     REDIRECT_OUTPUT = on
+def set_log_filename(filename):
+    global LOG_FILENAME
+    LOG_FILENAME = filename
 
 def add_client_options(parser):
     from xpra.platform import add_notray_option
@@ -48,8 +52,9 @@ def get_default_socket_dir():
 def do_init():
     if not REDIRECT_OUTPUT:
         return
+    global LOG_FILENAME
     d = _get_data_dir()
-    log_file = os.path.join(d, "Xpra.log")
+    log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
 
