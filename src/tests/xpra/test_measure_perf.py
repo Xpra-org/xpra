@@ -81,7 +81,11 @@ X11_TESTS = [X11_PERF, XTERM_TEST, FAKE_CONSOLE_USER_TEST, GTKPERF_TEST]
 #the screensaver tests:
 XSCREENSAVERS_PATH = "/usr/libexec/xscreensaver"
 def screensaver(x):
-    return  ["%s/%s" % (XSCREENSAVERS_PATH, x)]
+    for d in [os.path.join(sys.prefix, "bin"), XSCREENSAVERS_PATH, "/usr/bin", "/usr/local/bin"]:
+        f = os.path.join(d, x)
+        if os.path.exists(f) and os.path.isfile(f):
+            return f
+    return  None
 ALL_SCREENSAVER_TESTS = [screensaver(x) for x in
                             ["rss-glx-lattice", "rss-glx-plasma", "deluxe", "eruption", "memscroller", "moebiusgears", "polytopes"]
                          ]
@@ -111,6 +115,8 @@ TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS
 print("Checking for test commands:")
 X11_TEST_COMMANDS = []
 for x in TEST_CANDIDATES:
+    if x is None:
+        continue
     if x!=GTKPERF_TEST and not os.path.exists(x[0]):
         print("* WARNING: cannot find %s - removed from tests" % str(x))
     else:
@@ -151,7 +157,7 @@ XPRA_SERVER_STOP_COMMANDS = [
                              "ps -ef | grep -i [X]org-for-Xpra-:%s | awk '{print $2}' | xargs kill" % DISPLAY_NO
                              ]
 XPRA_INFO_COMMAND = [XPRA_BIN, "info", "tcp:%s:%s" % (IP, PORT)]
-XPRA_USE_XDUMMY = True
+XPRA_FORCE_XDUMMY = False
 XPRA_QUALITY_OPTIONS = [40, 90]
 XPRA_QUALITY_OPTIONS = [80]
 XPRA_QUALITY_OPTIONS = [10, 40, 80, 90]
@@ -416,7 +422,9 @@ def measure_client(server_pid, name, cmd, get_stats_cb):
 def with_server(start_server_command, stop_server_commands, in_tests, get_stats_cb):
     tests = in_tests[:LIMIT_TESTS]
     print("going to run %s tests: %s" % (len(tests), [x[0] for x in tests]))
+    print("*******************************************")
     print("ETA: %s minutes" % int((SERVER_SETTLE_TIME+DEFAULT_TEST_COMMAND_SETTLE_TIME+SETTLE_TIME+MEASURE_TIME+1)*len(tests)/60))
+    print("*******************************************")
 
     server_process = None
     test_command_process = None
@@ -602,7 +610,7 @@ def xpra_get_stats(last_record=None):
 
 def get_xpra_start_server_command():
     cmd = [XPRA_BIN, "--no-daemon", "--bind-tcp=0.0.0.0:%s" % PORT]
-    if XPRA_USE_XDUMMY:
+    if XPRA_FORCE_XDUMMY:
         cmd.append("--xvfb=%s -nolisten tcp +extension GLX +extension RANDR +extension RENDER -logfile %s -config %s" % (XORG_BIN, XORG_LOG, XORG_CONFIG))
     if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
