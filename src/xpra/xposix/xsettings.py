@@ -19,18 +19,23 @@ from wimpiggy.lowlevel import (
 from wimpiggy.log import Logger
 log = Logger()
 
+#the X11 atom name for the XSETTINGS property:
+XSETTINGS = "_XSETTINGS_SETTINGS"
+#constant type in prop.py:
+XSETTINGS_TYPE = "xsettings-settings"
+
 
 class XSettingsManager(object):
-    def __init__(self, settings_blob):
-        self._selection = ManagerSelection(gtk.gdk.display_get_default(),
-                                           "_XSETTINGS_S0")
+    def __init__(self, settings_blob, screen_number=0):
+        selection = "_XSETTINGS_S%s" % screen_number
+        self._manager = ManagerSelection(gtk.gdk.display_get_default(), selection)
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
         # things up before you can do anything... as soon as the selection is
         # gone, the settings are gone. (Also, if we're stealing from
         # ourselves, we probably don't clean up the window properly.)
-        self._selection.acquire(self._selection.FORCE_AND_RETURN)
-        self._window = self._selection.window()
+        self._manager.acquire(self._manager.FORCE_AND_RETURN)
+        self._window = self._manager.window()
         self._set_blob_in_place(settings_blob)
 
     # This is factored out as a separate function to make it easier to test
@@ -39,8 +44,7 @@ class XSettingsManager(object):
         if type(settings_blob)!=tuple:
             log.warn("discarding xsettings because of incompatible format: %s", type(settings_blob))
             return
-        prop_set(self._window, "_XSETTINGS_SETTINGS", "xsettings-settings",
-                 settings_blob)
+        prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings_blob)
 
 class XSettingsWatcher(gobject.GObject):
     __gsignals__ = {
@@ -49,17 +53,17 @@ class XSettingsWatcher(gobject.GObject):
         "wimpiggy-property-notify-event": one_arg_signal,
         "wimpiggy-client-message-event": one_arg_signal,
         }
-    def __init__(self):
+    def __init__(self, screen_number=0):
         gobject.GObject.__init__(self)
-        self._clipboard = gtk.Clipboard(gtk.gdk.display_get_default(),
-                                        "_XSETTINGS_S0")
+        self._selection = "_XSETTINGS_S%s" % screen_number
+        self._clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), self._selection)
         self._current = None
         self._root = self._clipboard.get_display().get_default_screen().get_root_window()
         add_event_receiver(self._root, self)
         self._add_watch()
 
     def _owner(self):
-        owner_x = myGetSelectionOwner(self._clipboard, "_XSETTINGS_S0")
+        owner_x = myGetSelectionOwner(self._clipboard, self._selection)
         if owner_x == const["XNone"]:
             return None
         try:
@@ -76,13 +80,13 @@ class XSettingsWatcher(gobject.GObject):
     def do_wimpiggy_client_message_event(self, event):
         if (event.window is self._root
             and event.message_type == "MANAGER"
-            and event.data[1] == get_xatom("_XSETTINGS_S0")):
+            and event.data[1] == get_xatom(self._selection)):
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
 
     def do_wimpiggy_property_notify_event(self, event):
-        if event.atom == "_XSETTINGS_SETTINGS":
+        if event.atom == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")
 
@@ -90,7 +94,7 @@ class XSettingsWatcher(gobject.GObject):
         owner = self._owner()
         if owner is None:
             return None
-        return prop_get(owner, "_XSETTINGS_SETTINGS", "xsettings-settings")
+        return prop_get(owner, XSETTINGS, XSETTINGS_TYPE)
 
     def get_settings_blob(self):
         log("Fetching current XSettings data")
