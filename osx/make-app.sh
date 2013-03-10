@@ -30,9 +30,10 @@ if [ "$?" != "0" ]; then
 fi
 
 IMAGE_DIR="./image/Xpra.app"
-MACOS_DIR="${IMAGE_DIR}/Contents/MacOS"
-RSCDIR="${IMAGE_DIR}/Contents/Resources"
-HELPERS_DIR="${IMAGE_DIR}/Contents/Helpers"
+CONTENTS_DIR="${IMAGE_DIR}/Contents"
+MACOS_DIR="${CONTENTS_DIR}/MacOS"
+RSCDIR="${CONTENTS_DIR}/Resources"
+HELPERS_DIR="${CONTENTS_DIR}/Helpers"
 LIBDIR="${RSCDIR}/lib"
 UNAME_ARCH=`uname -p`
 ARCH="x86"
@@ -110,6 +111,10 @@ rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
 PYGTK_LIBDIR="$LIBDIR/pygtk/2.0/"
 rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
+#gst bits expect to find dylibs in Frameworks!?
+pushd ${CONTENTS_DIR}
+ln -sf Resources/lib Frameworks
+popd
 
 echo
 echo "*******************************************************************************"

@@ -1,91 +1,98 @@
 <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
 <app-bundle>
 
-  <meta>
-    <prefix name="default">${env:JHBUILD_PREFIX}</prefix>
-    <destination overwrite="yes">./image</destination>
+	<meta>
+		<prefix name="default">${env:JHBUILD_PREFIX}</prefix>
+		<destination overwrite="yes">./image</destination>
+		
+		<!-- Comment this out to keep the install names in binaries.  -->
+		<run-install-name-tool/>
+		
+		<launcher-script>${project}/Xpra_Launcher</launcher-script>
+	</meta>
 
-    <!-- Comment this out to keep the install names in binaries.  -->
-    <run-install-name-tool/>
+	<plist>${project}/Info.plist</plist>
+	<main-binary>
+		${prefix}/bin/xpra_launcher
+	</main-binary>
 
-    <launcher-script>${project}/Xpra_Launcher</launcher-script>
-  </meta>
+	<!-- We need to pack our own Python to avoid compatibility problems. -->
+	<binary>${prefix}/bin/python</binary>
 
-  <plist>${project}/Info.plist</plist>
-  <main-binary>
-     ${prefix}/bin/xpra_launcher
-  </main-binary>
+	<data dest="${bundle}/Contents/MacOS/">
+		${project}/Xpra
+	</data>
 
-  <!-- We need to pack our own Python to avoid compatibility problems. -->
-  <binary>${prefix}/bin/python</binary>
-
-  <data dest="${bundle}/Contents/MacOS/">
-    ${project}/xpra
-  </data>
-
-  <binary>
-    ${prefix}/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.so
-  </binary>
-  <!-- Copy in libpyglib, which will pull in other dependencies we need -->
-  <binary>
-    ${prefix}/lib/libpyglib-2.0-python.0.dylib
-  </binary>
-  <binary>
-    ${prefix}/lib/libgtk-quartz-2.0.0.dylib
-  </binary>
-  <binary>
-    ${prefix}/lib/libgtkmacintegration.2.dylib
-  </binary>
-  <binary>
-    ${prefix}/lib/librsvg-2.2.dylib
-  </binary>
-  <binary>
-  	${prefix}/lib/pango/1.8.0/modules/pango*.so
-  </binary>
-  <binary>
+	<binary>
+		${prefix}/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.so
+	</binary>
+	<!-- Copy in libpyglib, which will pull in other dependencies we need -->
+	<binary>
+		${prefix}/lib/libpyglib-2.0-python.0.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libgtk-quartz-2.0.0.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libgtkmacintegration.2.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/librsvg-2.2.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/pango/1.8.0/modules/pango*.so
+	</binary>
+	<binary>
 	${prefix}/lib/libx264.*.dylib
-  </binary>
-  <binary>
-	${prefix}/lib/libavcodec.*.dylib
-  </binary>
-  <binary>
-	${prefix}/lib/libswscale.*.dylib
-  </binary>
-  <binary>
-	${prefix}/lib/libvpx.*.dylib
-  </binary>
-  <binary>
-	${prefix}/lib/libwebp.*dylib
-  </binary>
-  <binary>
-	${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
-  </binary>
+	</binary>
+	<binary>
+		${prefix}/lib/libavcodec.*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libswscale.*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libvpx.*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libwebp.*dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libgst*.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/pango/${pkg:pango:pango_module_version}/modules/*.so
+	</binary>
 
-  <data dest="${bundle}/Contents/Resources/">
-    ${project}/dist/Xpra.app/Contents/Resources/
-  </data>
+	<binary>
+		${prefix}/lib/gstreamer-0.10/*.so
+	</binary>
 
-  <data dest="${bundle}/Contents/Helpers/gst-plugin-scanner">
-    ${prefix}/libexec/gstreamer-0.10/gst-plugin-scanner
-  </data>
+	<data dest="${bundle}/Contents/Resources/">
+		${project}/dist/Xpra.app/Contents/Resources/
+	</data>
 
-  <data>
-    ${prefix}/lib/pygtk/2.0/
-  </data>
+	<data dest="${bundle}/Contents/Helpers/gst-plugin-scanner">
+		${prefix}/libexec/gstreamer-0.10/gst-plugin-scanner
+	</data>
 
-  <data>
-    ${prefix}/share/themes/Quartz
-  </data>
-  <data dest="${bundle}/Contents/Resources/etc/gtk-2.0/gtkrc">
-    ${project}/gtkrc
-  </data>
+	<data>
+		${prefix}/lib/pygtk/2.0/
+	</data>
 
-  <data dest="${bundle}/Contents/Resources">
-    ${project}/xpra.icns
-  </data>
+	<data>
+		${prefix}/share/themes/Quartz
+	</data>
+	<data dest="${bundle}/Contents/Resources/etc/gtk-2.0/gtkrc">
+		${project}/gtkrc
+	</data>
 
-  <icon-theme icons="auto">
+	<data dest="${bundle}/Contents/Resources">
+		${project}/xpra.icns
+	</data>
+
+	<icon-theme icons="auto">
     Tango
-  </icon-theme>
+	</icon-theme>
 
 </app-bundle>
