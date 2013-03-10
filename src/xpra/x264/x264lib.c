@@ -567,7 +567,7 @@ int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*
 void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
-	int new_preset = 7-MAX(0, MIN(6, (int) floor(pct/16.7)));
+	int new_preset = 7-MAX(0, MIN(6, (int) (pct/16.7)));
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->speed = pct;
 	if (new_preset==ctx->encoding_preset)
