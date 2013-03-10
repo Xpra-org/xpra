@@ -193,7 +193,7 @@ class SessionInfo(gtk.Window):
         if self.client.server_platform:
             tb.new_row("Server Platform", label(self.client.server_platform))
         self.server_load_label = label()
-        tb.new_row("Server Load", self.server_load_label, label_text="Average over 1, 5 and 15 minutes")
+        tb.new_row("Server Load", self.server_load_label, label_tooltip="Average over 1, 5 and 15 minutes")
         self.session_started_label = label()
         tb.new_row("Session Started", self.session_started_label)
         self.session_connected_label = label()
