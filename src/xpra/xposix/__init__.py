@@ -39,3 +39,6 @@ def get_machine_id():
 
 def get_app_dir():
     return os.path.join(sys.exec_prefix, "share", "xpra")
+
+def get_icon_dir():
+    return os.path.join(get_app_dir(), "icons")

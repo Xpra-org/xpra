@@ -18,6 +18,7 @@ assert _display, "cannot open the display with GTK, is DISPLAY set?"
 from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.gtk_util import set_tooltip_text
+from xpra.platform import get_icon_dir
 
 from wimpiggy.log import Logger
 log = Logger()
@@ -74,14 +75,11 @@ class ClientExtras(ClientExtrasBase):
                 return x
         return  os.getcwd()
 
-    def get_icons_dir(self):
-        return os.path.join(self.get_data_dir(), "icons")
-
     def get_tray_icon_filename(self, cmdlineoverride):
         if cmdlineoverride and os.path.exists(cmdlineoverride):
             log.debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
             return  cmdlineoverride
-        f = os.path.join(self.get_icons_dir(), "xpra.png")
+        f = os.path.join(get_icon_dir(), "xpra.png")
         if os.path.exists(f):
             log.debug("get_tray_icon_filename using default: %s", f)
             return  f
@@ -100,7 +98,9 @@ class ClientExtras(ClientExtrasBase):
             self.tray_widget.set_blinking(on)
 
     def set_icon(self, basefilename):
-        filename = os.path.join(self.get_icons_dir(), "%s.png" % basefilename)
+        with_ext = "%s.png" % basefilename
+        icon_dir = get_icon_dir()
+        filename = os.path.join(icon_dir, with_ext)
         self.set_icon_from_file(filename)
 
     def set_icon_from_file(self, filename):
@@ -156,7 +156,7 @@ class ClientExtras(ClientExtrasBase):
             def show_appindicator(*args):
                 self.tray_widget.set_status(appindicator.STATUS_ACTIVE)
             if hasattr(self.tray_widget, "set_icon_theme_path"):
-                self.tray_widget.set_icon_theme_path(self.get_icons_dir())
+                self.tray_widget.set_icon_theme_path(get_icon_dir())
             self.tray_widget.set_attention_icon("xpra.png")
             if filename:
                 self.tray_widget.set_icon(filename)

@@ -7,6 +7,7 @@ import os.path
 import gtk.gdk
 
 from xpra.platform.client_extras_base import ClientExtrasBase, CheckMenuItem
+from xpra.platform import get_icon_dir
 from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
@@ -104,9 +105,11 @@ class ClientExtras(ClientExtrasBase):
     def set_icon(self, basefilename):
         if not self.macapp:
             return
-        filename = os.path.join(self.get_data_dir(), "xpra", "icons", "%s.png" % basefilename)
+        with_ext = "%s.png" % basefilename
+        icon_dir = get_icon_dir()
+        filename = os.path.join(icon_dir, with_ext)
         if not os.path.exists(filename):
-            log.error("could not find icon %s", filename)
+            log.error("could not find icon '%s' in osx icon dir: %s", with_ext, icon_dir)
             return
         pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)

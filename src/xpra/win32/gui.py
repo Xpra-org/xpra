@@ -10,8 +10,9 @@ import os.path
 
 from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
-from xpra.keys import get_gtk_keymap
 from xpra.platform.keyboard_layouts import WIN32_LAYOUTS
+from xpra.platform import get_icon_dir
+from xpra.keys import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -87,9 +88,11 @@ class ClientExtras(ClientExtrasBase):
     def set_icon(self, basefilename):
         if not self.tray:
             return
-        filename = os.path.join(self.get_data_dir(), "icons", "%s.ico" % basefilename)
+        with_ext = "%s.ico" % basefilename
+        icon_dir = get_icon_dir()
+        filename = os.path.join(icon_dir, with_ext)
         if not os.path.exists(filename):
-            log.error("could not find icon %s", filename)
+            log.error("could not find icon '%s' in win32 icon dir: %s", with_ext, icon_dir)
             return
         self.tray.set_icon(filename)
 
