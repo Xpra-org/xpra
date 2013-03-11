@@ -45,6 +45,8 @@ TEST_XPRA = True
 TEST_VNC = True
 USE_IPTABLES = True         #this requires iptables to be setup so we can use it for accounting
 USE_VIRTUALGL = True        #allows us to run GL games and benchmarks using the GPU
+PREVENT_SLEEP = True
+PREVENT_SLEEP_COMMAND = ["xdotool", "keydown", "Shift_L", "keyup", "Shift_L"]
 
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999         #to limit the total number of tests being run
@@ -473,6 +475,10 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                         
                     print("starting test command: %s, settle time=%s" % (str(cmd), test_command_settle_time))
                     test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(cmd)==str)
+
+                    if PREVENT_SLEEP:
+                        subprocess.Popen(PREVENT_SLEEP_COMMAND)
+                    
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
                     assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
