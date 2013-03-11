@@ -44,6 +44,7 @@ DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the tes
 TEST_XPRA = True
 TEST_VNC = True
 USE_IPTABLES = True         #this requires iptables to be setup so we can use it for accounting
+USE_VIRTUALGL = True        #allows us to run GL games and benchmarks using the GPU
 
 LIMIT_TESTS = 2
 LIMIT_TESTS = 99999         #to limit the total number of tests being run
@@ -65,6 +66,7 @@ TRICKLE_BIN = "/usr/bin/trickle"
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
 XORG_BIN = "/usr/local/bin/Xorg"
+VGLRUN_BIN = "/usr/bin/vglrun"
 
 #the glx tests:
 GLX_SPHERES = ["/usr/bin/glxspheres"]
@@ -459,8 +461,18 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
 
                 try:
                     #start the test command:
-                    print("starting test command: %s, settle time=%s" % (str(test_command), test_command_settle_time))
-                    test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(test_command)==str)
+                    if USE_VIRTUALGL:
+                        if type(test_command)==str:
+                            cmd = VGLRUN_BIN + test_command
+                        elif type(test_command)==list:
+                            cmd = [VGLRUN_BIN] + test_command
+                        else:
+                            raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
+                    else:
+                        cmd = test_command
+                        
+                    print("starting test command: %s, settle time=%s" % (str(cmd), test_command_settle_time))
+                    test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(cmd)==str)
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
                     assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)
