@@ -128,7 +128,7 @@ echo "removing extra gstreamer plugins:"
 GST_PLUGIN_DIR=./gstreamer-0.10
 KEEP=./gstreamer-0.10.keep
 mkdir ${KEEP}
-for x in "libgstapp*" "libgstaudio*" "libgstcoreelements*" \
+for x in "libgstapp.*" "libgstaudio*" "libgstcoreelements*" \
 	"libgstfaac*" "libgstfaad*" \
     "libgstflac*" "libgstlame*" "libgstmad*" "libgstmpegaudioparse*" \
     "libgstpython*" \
