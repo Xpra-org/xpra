@@ -44,7 +44,7 @@ export ARCH
 
 echo
 echo "*******************************************************************************"
-echo "Fixing permissions on file we will need to relocate"
+echo "Fixing permissions on libpython dylib"
 if [ ! -z "${JHBUILD_PREFIX}" ]; then
 	chmod 755 "${JHBUILD_PREFIX}/lib/"libpython*.dylib
 fi
@@ -114,6 +114,33 @@ rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
 #gst bits expect to find dylibs in Frameworks!?
 pushd ${CONTENTS_DIR}
 ln -sf Resources/lib Frameworks
+pushd Resources/lib
+echo "removing extra gstreamer dylib deps:"
+for x in "libgstbasevideo*" "libgstcdda*" \
+    "libgstcheck*" "libgstnetbuffer*" "libgstpbutils*" "libgstphotography*" \
+    "libgstrtp*" "libgstrtsp*" "libgstsdp*" "libgstsignalprocessor*" \
+    "libgstvideo*" \
+    ; do
+	echo "* removing "$x
+	rm $x
+done
+echo "removing extra gstreamer plugins:"
+GST_PLUGIN_DIR=./gstreamer-0.10
+KEEP=./gstreamer-0.10.keep
+mkdir ${KEEP}
+for x in "libgstapp*" "libgstaudio*" "libgstcoreelements*" \
+	"libgstfaac*" "libgstfaad*" \
+    "libgstflac*" "libgstlame*" "libgstmad*" "libgstmpegaudioparse*" \
+    "libgstpython*" \
+    "libgstogg*" "libgstoss*" "libgstosxaudio*" "libgstspeex*" \
+    "libgstvolume*" "libgstvorbis*" \
+    "libgstwav*"; do
+	echo "* keeping "$x
+	mv ${GST_PLUGIN_DIR}/$x ${KEEP}/
+done
+rm -fr ${GST_PLUGIN_DIR}
+mv ${KEEP} ${GST_PLUGIN_DIR}
+popd
 popd
 
 echo
