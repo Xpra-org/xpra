@@ -157,14 +157,16 @@ def main():
     ss.connect("new-buffer", new_buffer)
     ss.start()
 
+    gobject_mainloop = gobject.MainLoop()
+    gobject.threads_init()
+
     import signal
     def deadly_signal(*args):
-        gobject.idle_add(gtk.main_quit)
+        gobject.idle_add(gobject_mainloop.quit)
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
-    import gtk
-    gtk.main()
+    gobject_mainloop.run()
 
     f.flush()
     log.info("wrote %s bytes to %s", f.tell(), filename)

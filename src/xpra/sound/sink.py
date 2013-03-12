@@ -31,8 +31,8 @@ GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
 
-QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_NO_LEAK))
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "20"))*1000000
+QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DOWNSTREAM))
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "80"))*1000000
 DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
 if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
@@ -99,6 +99,12 @@ class SoundSink(SoundPipeline):
         self.sink_type = ""
         self.volume = None
         self.src = None
+
+    def set_queue_delay(self, ms):
+        assert self.queue
+        assert ms>0
+        self.queue.set_property("max-size-time", ms*1000000)
+        log("queue delay set to %s, current-level-time=%s", ms, int(self.queue.get_property("current-level-time")/1000/1000))
 
     def set_mute(self, mute):
         self.volume.set_property('mute', mute)
@@ -185,25 +191,27 @@ def main():
     ss.add_data(data)
     def eos(*args):
         print("eos")
-        gobject.idle_add(gtk.main_quit)
+        gobject.idle_add(gobject_mainloop.quit)
     ss.connect("eos", eos)
     ss.start()
 
+    gobject_mainloop = gobject.MainLoop()
+    gobject.threads_init()
+
     import signal
     def deadly_signal(*args):
-        gtk.main_quit()
+        gobject.idle_add(gobject_mainloop.quit)
     signal.signal(signal.SIGINT, deadly_signal)
     signal.signal(signal.SIGTERM, deadly_signal)
 
     def check_for_end(*args):
         if not ss.pipeline:
             log.info("pipeline closed")
-            gtk.main_quit()
+            gobject_mainloop.quit()
         return True
     gobject.timeout_add(1000, check_for_end)
 
-    import gtk
-    gtk.main()
+    gobject_mainloop.run()
 
 
 if __name__ == "__main__":
