@@ -10,6 +10,7 @@
 
 from wimpiggy.gobject_compat import import_gobject
 gobject = import_gobject()
+gobject.threads_init()
 import sys
 from socket import error as socket_error
 from zlib import compress, decompress, decompressobj
