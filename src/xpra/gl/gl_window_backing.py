@@ -243,6 +243,10 @@ class GLPixmapBacking(PixmapBacking):
             return
         divs = self.get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
+        for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
+            glActiveTexture(texture)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])        
+
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
