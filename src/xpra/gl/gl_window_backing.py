@@ -219,7 +219,6 @@ class GLPixmapBacking(PixmapBacking):
                 if err:
                     #FIXME: maybe we should do something else here?
                     log.error(err)
-                glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
 
         # Clamp width and height to the actual texture size
         if x + width > window_width:
@@ -242,6 +241,7 @@ class GLPixmapBacking(PixmapBacking):
             #not ready to render yet
             return
         divs = self.get_subsampling_divs(self.pixel_format)
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
