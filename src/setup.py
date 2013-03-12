@@ -141,7 +141,7 @@ setup_options["author_email"] = "antoine@devloop.org.uk"
 setup_options["version"] = xpra.__version__
 setup_options["url"] = "http://xpra.org/"
 setup_options["download_url"] = "http://xpra.org/src/"
-setup_options["description"] = "A window manager library, a window manager, and a 'screen for X' utility"
+setup_options["description"] = "Xpra: 'screen for X' utility"
 
 wimpiggy_desc = "A library for writing window managers, using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
