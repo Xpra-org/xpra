@@ -12,6 +12,9 @@ import os as _os
 import sys as _sys
 import inspect
 
+from wimpiggy.log import Logger
+log = Logger()
+
 
 _init_done = False
 def init():
