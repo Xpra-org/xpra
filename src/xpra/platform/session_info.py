@@ -148,6 +148,12 @@ class SessionInfo(gtk.Window):
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
+        opengl_box = gtk.HBox(False, 20)
+        self.server_opengl_label = label()
+        self.server_opengl_icon = gtk.Image()
+        opengl_box.add(self.server_opengl_icon)
+        opengl_box.add(self.server_opengl_label)
+        tb.new_row("Client OpenGL", opengl_box)
         self.server_encodings_label = label()
         tb.new_row("Server Encodings", self.server_encodings_label)
         self.client_encodings_label = label()
@@ -407,6 +413,12 @@ class SessionInfo(gtk.Window):
                 size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
+        self.bool_icon(self.server_opengl_icon, self.client.opengl_enabled)
+        glinfo = ""
+        if self.client.opengl_enabled:
+            glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
+        self.server_opengl_label.set_text(glinfo)
+        
         scaps = self.client.server_capabilities
         self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
         self.client_encodings_label.set_text(", ".join(ENCODINGS))
