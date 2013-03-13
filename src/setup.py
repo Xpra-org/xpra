@@ -120,7 +120,11 @@ if HELP:
             with_str += " "
         while len(without_str)<22:
             without_str += " "
-        print("%s or %s (default: %s)" % (with_str, without_str, d))
+        if d is True or d is False:
+            default_str = str(d)
+        else:
+            default_str = "auto-detect"
+        print("%s or %s (default: %s)" % (with_str, without_str, default_str))
     sys.exit(0)
 
 filtered_args = []
