@@ -86,7 +86,7 @@ class GLPixmapBacking(PixmapBacking):
             glMatrixMode(GL_MODELVIEW)
             glEnableClientState(GL_VERTEX_ARRAY)
             glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-            glDisable(GL_FRAGMENT_PROGRAM_ARB)
+            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
                 self.textures = glGenTextures(3)
                 debug("textures for wid=%s of size %s : %s", self.wid, self.size, self.textures)
@@ -246,8 +246,8 @@ class GLPixmapBacking(PixmapBacking):
             #not ready to render yet
             return
         divs = self.get_subsampling_divs(self.pixel_format)
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])        
