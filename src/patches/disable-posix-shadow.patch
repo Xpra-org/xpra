@@ -1,15 +1,15 @@
-Description: For building the client only.
+Description: For disabling shadow server support.
  Author: Antoine Martin <antoine@devloop.org.uk>
  Forwarded: not-needed
  
 --- a/xpra/xposix/__init__.py
 +++ b/xpra/xposix/__init__.py
-@@ -10,7 +10,7 @@
+@@ -14,7 +14,7 @@
  
  
  
--XPRA_LOCAL_SERVERS_SUPPORTED = True
-+XPRA_LOCAL_SERVERS_SUPPORTED = False
+-XPRA_SHADOW_SUPPORTED = True
++XPRA_SHADOW_SUPPORTED = False
  
  
  
