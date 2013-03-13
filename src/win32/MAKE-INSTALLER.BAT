@@ -79,8 +79,9 @@ IF %DEBUG% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
 
 ECHO ***************************************************************
-ECHO ****** build cython pyd files inplace:SET CYTHON_ARGS=%BUILD_ARGS%
-IF %DEBUG% EQU 1 SET CYTHON_ARGS=%CYTHON_ARGS% --pyrex-gdb
+ECHO ****** build cython pyd files inplace
+SET CYTHON_ARGS=%BUILD_ARGS%
+IF %DEBUG% EQU 1 SET CYTHON_ARGS=%BUILD_ARGS% --pyrex-gdb
 
 ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace
 %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace > build-xpra.log
@@ -92,7 +93,7 @@ if %errorlevel% NEQ 0 (
 ECHO ***************************************************************
 ECHO ****** py2exe
 SET PY2EXE_ARGS=%BUILD_ARGS%
-IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%PY2EXE_ARGS% -x
+IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%BUILD_ARGS% -x
 
 ECHO %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS%
 %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% > py2exe-xpra.log
