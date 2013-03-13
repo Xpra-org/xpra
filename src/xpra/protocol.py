@@ -38,7 +38,6 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.daemon_thread import make_daemon_thread
-from xpra.bytestreams import untilConcludes
 from xpra.bencode import bencode, bdecode
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
@@ -402,7 +401,7 @@ class Protocol(object):
                 except:
                     log.error("error on %s", start_cb, exc_info=True)
             while buf and not self._closed:
-                written = untilConcludes(self._conn.write, buf)
+                written = self._conn.write(buf)
                 if written:
                     buf = buf[written:]
                     self.output_raw_packetcount += 1
@@ -416,7 +415,7 @@ class Protocol(object):
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
     def _read(self):
-        buf = untilConcludes(self._conn.read, 8192)
+        buf = self._conn.read(8192)
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         self._read_queue.put(buf)
         if not buf:
