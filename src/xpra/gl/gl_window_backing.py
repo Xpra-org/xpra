@@ -101,8 +101,13 @@ class GLPixmapBacking(PixmapBacking):
 
     def remove_shader(self):
         if self.yuv_shader:
-            glDisable(GL_FRAGMENT_PROGRAM_ARB)
-            glDeleteProgramsARB(1, self.yuv_shader)
+            drawable = self.gl_init()
+            if drawable:
+                try:
+                    glDisable(GL_FRAGMENT_PROGRAM_ARB)
+                    glDeleteProgramsARB(1, self.yuv_shader)
+                finally:
+                    self.gl_end(drawable)
             self.yuv_shader = None
 
     def gl_begin(self):
