@@ -96,11 +96,19 @@ strict_ENABLED = True
 
 
 
+debug_ENABLED = False
+
+
+
+PIC_ENABLED = True
+
+
+
 #allow some of these flags to be modified on the command line:
 filtered_args = []
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
             "sound", "cyxor", "cymaths", "opengl", "parti",
-            "warn", "strict", "shadow")
+            "warn", "strict", "shadow", "debug", "PIC")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
@@ -116,7 +124,11 @@ for arg in sys.argv:
     else:
         matched = False
         for x in SWITCHES:
-            if arg=="--without-%s" % x:
+            if arg=="--with-%s" % x:
+                vars()["%s_ENABLED" % x] = True
+                matched = True
+                break
+            elif arg=="--without-%s" % x:
                 vars()["%s_ENABLED" % x] = False
                 matched = True
                 break
@@ -259,9 +271,12 @@ def pkgconfig(*packages_options, **ekw):
     if strict_ENABLED:
         #these are almost certainly real errors since our code is "clean":
         add_to_keywords(kw, 'extra_compile_args', "-Werror=implicit-function-declaration")
-    PIC = True
-    if PIC:
+    if PIC_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
+    if debug_ENABLED:
+        add_to_keywords(kw, 'extra_compile_args', '-g')
+    if debug_ENABLED:
+        kw['pyrex_gdb'] = True
     print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
     return kw
 

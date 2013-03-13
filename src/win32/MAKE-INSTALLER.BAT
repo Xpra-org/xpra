@@ -30,6 +30,7 @@ SET CLIPBOARD=1
 SET SOUND=1
 SET OPENGL=1
 SET SHADOW=1
+SET DEBUG=1
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM support double-click on BAT file, so run from parent directory:
@@ -54,6 +55,10 @@ DEL /Q xpra\rencode\rencode.pyd
 DEL /Q xpra\rencode\rencode.c
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd
 DEL /Q wimpiggy\gdk\gdk_atoms.c
+DEL /Q xpraz\xor\cyxor.pyd
+DEL /Q xpra\xor\cyxor.c
+DEL /Q xpra\stats\cymaths.pyd
+DEL /Q xpra\stats\cymaths.c
 
 ECHO ***************************************************************
 SET BUILD_ARGS=
@@ -68,66 +73,19 @@ IF %SOUND% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-sound
 IF %OPENGL% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-opengl
 IF %SHADOW% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-shadow
 
+IF %DEBUG% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-debug
+IF %DEBUG% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-debug
+
 ECHO Build arguments: %BUILD_ARGS%
 
 ECHO ***************************************************************
-ECHO ****** Hack for x264/vpx/rencode/gdk-clipboard:
-ECHO ****** build pyd file and place it where py2exe can find it
-ECHO %PYTHON_EXE% -OO setup.py build %BUILD_ARGS%
-%PYTHON_EXE% -OO setup.py build %BUILD_ARGS% > build-xpra.log
+ECHO ****** build cython pyd files inplace:
+ECHO %PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace
+%PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO ERROR
 )
-
-IF %X264% NEQ 1 GOTO NO_X264
-SET X264_CODEC_PYD=build\lib.win32-2.7\xpra\x264\codec.pyd
-COPY %X264_CODEC_PYD% xpra\x264\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled x264 codec.pyd"
-	GOTO ERROR
-)
-:NO_X264
-IF %VPX% NEQ 1 GOTO NO_VPX
-SET VPX_CODEC_PYD=build\lib.win32-2.7\xpra\vpx\codec.pyd
-COPY %VPX_CODEC_PYD% xpra\vpx\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled vpx codec.pyd"
-	GOTO ERROR
-)
-:NO_VPX
-IF %RENCODE% NEQ 1 GOTO NO_RENCODE
-SET RENCODE_PYD=build\lib.win32-2.7\xpra\rencode\_rencode.pyd
-COPY %RENCODE_PYD% xpra\rencode\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled _rencode.pyd"
-	GOTO ERROR
-)
-:NO_RENCODE
-IF %CYXOR% NEQ 1 GOTO NO_CYXOR
-SET CYXOR_PYD=build\lib.win32-2.7\xpra\xor\cyxor.pyd
-COPY %CYXOR_PYD% xpra\xor\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled cyxor.pyd"
-	GOTO ERROR
-)
-:NO_CYXOR
-IF %CYMATHS% NEQ 1 GOTO NO_CYMATHS
-SET CYMATHS_PYD=build\lib.win32-2.7\xpra\stats\cymaths.pyd
-COPY %CYMATHS_PYD% xpra\stats\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled cymaths.pyd"
-	GOTO ERROR
-)
-:NO_CYMATHS
-IF %CLIPBOARD% NEQ 1 GOTO NO_CLIPBOARD
-SET CLIPBOARD_PYD=build\lib.win32-2.7\wimpiggy\gdk\gdk_atoms.pyd
-COPY %CLIPBOARD_PYD% wimpiggy\gdk\
-if %errorlevel% NEQ 0 (
-	ECHO "build error: cannot find compiled gdk_atoms.pyd"
-	GOTO ERROR
-)
-:NO_CLIPBOARD
 
 ECHO ***************************************************************
 ECHO ****** py2exe
