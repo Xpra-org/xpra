@@ -181,12 +181,14 @@ class GLPixmapBacking(PixmapBacking):
 
 
     def get_subsampling_divs(self, pixel_format):
+        # Return size dividers for the given pixel format
+        #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
         if pixel_format==YUV420P:
-            return 1, 2, 2
+            return (1, 1), (2, 2), (2, 2)
         elif pixel_format==YUV422P:
-            return 1, 2, 1
+            return (1, 1), (2, 1), (2, 1)
         elif pixel_format==YUV444P:
-            return 1, 1, 1
+            return (1, 1), (1, 1), (1, 1)
         raise Exception("invalid pixel format: %s" % pixel_format)
 
     def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
@@ -201,16 +203,16 @@ class GLPixmapBacking(PixmapBacking):
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
-                div = divs[index]
+                (div_w, div_h) = divs[index]
                 glActiveTexture(texture)
                 glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
                 glEnable(GL_TEXTURE_RECTANGLE_ARB)
                 mag_filter = GL_NEAREST
-                if div>1:
+                if div_w > 1 or div_h > 1:
                     mag_filter = GL_LINEAR
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, window_width/div, window_height/div, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0)
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, window_width/div_w, window_height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0)
 
             debug("Assigning fragment program")
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -232,12 +234,22 @@ class GLPixmapBacking(PixmapBacking):
             height = window_height - y
 
         divs = self.get_subsampling_divs(pixel_format)
+        U_width = 0
+        U_height = 0   
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
-            div = divs[index]
+            (div_w, div_h) = divs[index]
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div, height/div, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
+            if index == 1:
+                U_width = width/div_w
+                U_height = height/div_h
+            elif index == 2:
+                if width/div_w != U_width:
+                    log.error("Width of V plane is %d, differs from width of corresponding U plane (%d), pixel_format is %d", width/div_w, U_width, pixel_format)
+                if height/div_h != U_height:
+                    log.error("Height of V plane is %d, differs from height of corresponding U plane (%d)", height/div_h, U_height)
         glFlush()
 
     def render_image(self, rx, ry, rw, rh):
@@ -255,8 +267,8 @@ class GLPixmapBacking(PixmapBacking):
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
-                div = divs[index]
-                glMultiTexCoord2i(texture, x/div, y/div)
+                (div_w, div_h) = divs[index]
+                glMultiTexCoord2i(texture, x/div_w, y/div_h)
             glVertex2i(x, y)
         glEnd()
         glFlush()
