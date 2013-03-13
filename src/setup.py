@@ -55,7 +55,7 @@ rencode_ENABLED = True
 
 
 
-xdummy_ENABLED = False
+Xdummy_ENABLED = None
 
 
 
@@ -105,42 +105,49 @@ PIC_ENABLED = True
 
 
 #allow some of these flags to be modified on the command line:
-filtered_args = []
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
             "sound", "cyxor", "cymaths", "opengl", "parti",
-            "warn", "strict", "shadow", "debug", "PIC")
+            "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
     setup()
-    print("Xpra specific build switches:")
+    print("Xpra specific build and install switches:")
     for x in SWITCHES:
-        print("  --without-%s" % x)
-    print("  --enable-Xdummy")
+        d = vars()["%s_ENABLED" % x]
+        with_str = "  --with-%s" % x
+        without_str = "  --without-%s" % x
+        while len(with_str)<22:
+            with_str += " "
+        while len(without_str)<22:
+            without_str += " "
+        print("%s or %s (default: %s)" % (with_str, without_str, d))
     sys.exit(0)
 
+filtered_args = []
 for arg in sys.argv:
+    #deprecated flag:
     if arg == "--enable-Xdummy":
-        xdummy_ENABLED = True
-    else:
-        matched = False
-        for x in SWITCHES:
-            if arg=="--with-%s" % x:
-                vars()["%s_ENABLED" % x] = True
-                matched = True
-                break
-            elif arg=="--without-%s" % x:
-                vars()["%s_ENABLED" % x] = False
-                matched = True
-                break
-        if not matched:
-            filtered_args.append(arg)
+        Xdummy_ENABLED = True
+        continue
+    matched = False
+    for x in SWITCHES:
+        if arg=="--with-%s" % x:
+            vars()["%s_ENABLED" % x] = True
+            matched = True
+            break
+        elif arg=="--without-%s" % x:
+            vars()["%s_ENABLED" % x] = False
+            matched = True
+            break
+    if not matched:
+        filtered_args.append(arg)
 sys.argv = filtered_args
 switches_info = {}
 for x in SWITCHES:
     switches_info[x] = vars()["%s_ENABLED" % x]
 print("build switches: %s" % switches_info)
 if XPRA_LOCAL_SERVERS_SUPPORTED:
-    print("force Xdummy=%s" % xdummy_ENABLED)
+    print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
 
 #*******************************************************************************
@@ -285,8 +292,14 @@ def pkgconfig(*packages_options, **ekw):
 def get_xorg_conf_and_script():
     if not server_ENABLED:
         return "etc/xpra/client-only/xpra.conf", False
-    if xdummy_ENABLED:
+    def Xvfb():
+        return "etc/xpra/Xvfb/xpra.conf", False
+    if Xdummy_ENABLED is True:
         return "etc/xpra/Xdummy/xpra.conf", False
+    elif Xdummy_ENABLED is False:
+        return Xvfb()
+    else:
+        print("Xdummy support unspecified, will try to detect")
     XORG_BIN = None
     PATHS = os.environ.get("PATH").split(os.pathsep)
     for x in PATHS:
@@ -294,8 +307,6 @@ def get_xorg_conf_and_script():
         if os.path.isfile(xorg):
             XORG_BIN = xorg
             break
-    def Xvfb():
-        return "etc/xpra/Xvfb/xpra.conf", False
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()

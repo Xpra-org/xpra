@@ -20,6 +20,8 @@
 %define no_pulseaudio 1
 %endif
 
+#leave it to auto-detect by default:
+%define dummy %{nil}
 #python and gtk bits:
 %define requires_python_gtk ,pygtk2, python-imaging, dbus-python
 #Vfb (Xvfb or Xdummy):
@@ -59,6 +61,11 @@
 %if 0%{?static_video_libs}
 %define static_x264 1
 %define static_vpx 1
+%endif
+#6.4 has dummy support, but detection fails because of console ownership issues..
+#so override and set it for 6.4 and later
+%if %(egrep -q 'release 7|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
+%define dummy --with-Xdummy
 %endif
 %endif
 
@@ -701,7 +708,7 @@ CFLAGS=-O2 python setup.py build --without-parti
 %install
 rm -rf $RPM_BUILD_ROOT
 cd parti-all-%{version}
-%{__python} setup.py install -O1 --without-parti --prefix /usr --skip-build --root %{buildroot}
+%{__python} setup.py install -O1 %{dummy} --without-parti --prefix /usr --skip-build --root %{buildroot}
 
 #we should pass arguments to setup.py but rpm macros make this too difficult
 #so we delete after installation (ugly but this works)
