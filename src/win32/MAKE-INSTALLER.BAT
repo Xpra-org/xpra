@@ -62,6 +62,7 @@ DEL /Q xpra\stats\cymaths.c
 
 ECHO ***************************************************************
 SET BUILD_ARGS=
+
 IF %X264% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-x264
 IF %VPX% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-vpx
 IF %WEBP% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-webp
@@ -76,12 +77,13 @@ IF %SHADOW% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-shadow
 IF %DEBUG% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-debug
 IF %DEBUG% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
-ECHO Build arguments: %BUILD_ARGS%
 
 ECHO ***************************************************************
-ECHO ****** build cython pyd files inplace:
-ECHO %PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace
-%PYTHON_EXE% -OO setup.py build_ext %BUILD_ARGS% --inplace > build-xpra.log
+ECHO ****** build cython pyd files inplace:SET CYTHON_ARGS=%BUILD_ARGS%
+IF %DEBUG% EQU 1 SET CYTHON_ARGS=%CYTHON_ARGS% --pyrex-gdb
+
+ECHO %PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace
+%PYTHON_EXE% -OO setup.py build_ext %CYTHON_ARGS% --inplace > build-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "build error, see build-xpra.log"
 	GOTO ERROR
@@ -92,6 +94,7 @@ ECHO ****** py2exe
 SET PY2EXE_ARGS=%BUILD_ARGS%
 IF %SHOW_DEPENDENCIES% NEQ 0 SET PY2EXE_ARGS=%PY2EXE_ARGS% -x
 
+ECHO %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS%
 %PYTHON_EXE% -OO setup.py py2exe %PY2EXE_ARGS% > py2exe-xpra.log
 if %errorlevel% NEQ 0 (
 	ECHO "py2exe error, see py2exe-xpra.log"
