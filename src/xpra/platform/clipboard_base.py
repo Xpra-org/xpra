@@ -6,6 +6,7 @@
 
 import os
 import struct
+import re
 
 from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
@@ -32,10 +33,17 @@ MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
 
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"]):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"], filter_res=None):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
+        self.filter_res = []
+        if filter_res:
+            for x in filter_res:
+                try:
+                    self.filter_res.append(re.compile(x))
+                except:
+                    log.error("invalid regular expression '%s' in clipboard filter")
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self.init_packet_handlers()
@@ -138,6 +146,10 @@ class ClipboardProtocolHelperBase(object):
             ints = struct.unpack(binfmt, data)
             return "integers", ints
         elif dformat == 8:
+            for x in self.filter_res:
+                if x.match(data):
+                    log.warn("clipboard buffer contains blacklisted pattern '%s' and has been dropped!", x.pattern)
+                    return None, None
             return "bytes", data
         else:
             log.error("unhandled format %s for clipboard data type %s" % (dformat, dtype))
