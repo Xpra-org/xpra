@@ -30,7 +30,7 @@ SET CLIPBOARD=1
 SET SOUND=1
 SET OPENGL=1
 SET SHADOW=1
-SET DEBUG=1
+SET DEBUG=0
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 
 REM support double-click on BAT file, so run from parent directory:
