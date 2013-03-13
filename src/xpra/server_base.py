@@ -92,7 +92,7 @@ class ServerBase(object):
         self._xsettings_manager = None
 
         log("starting component init")
-        self.init_clipboard(opts.clipboard)
+        self.init_clipboard(opts.clipboard, opts.clipboard_filter_file)
         self.init_keyboard()
         self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
         self.init_notification_forwarder(opts.notifications)
@@ -158,13 +158,30 @@ class ServerBase(object):
         except Exception, e:
             log("failed to set pulseaudio audio tagging: %s", e)
 
-    def init_clipboard(self, clipboard_enabled):
+    def init_clipboard(self, clipboard_enabled, clipboard_filter_file):
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
-        if clipboard_enabled:
-            clipboards = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, clipboards)
+        if not clipboard_enabled:
+            return
+        clipboards = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
+        clipboard_filter_res = []
+        if clipboard_filter_file:
+            if not os.path.exists(clipboard_filter_file):
+                log.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", clipboard_filter_file)
+                return
+            try:
+                f = open(clipboard_filter_file, "r" )
+                try:
+                    for line in f:
+                        clipboard_filter_res.append(line.strip())
+                    log("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), clipboard_filter_file)
+                finally:
+                    f.close()
+            except:
+                log.error("error reading clipboard filter file %s - clipboard disabled!", clipboard_filter_file, exc_info=True)
+                return
+        self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, clipboards, clipboard_filter_res)
 
     def init_keyboard(self):
         ## These may get set by the client:

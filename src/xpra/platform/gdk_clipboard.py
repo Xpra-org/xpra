@@ -19,8 +19,8 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
         to and from a form suitable for transport over the wire.
     """
 
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD", "PRIMARY", "SECONDARY"]):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, clipboards)
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD", "PRIMARY", "SECONDARY"], filter_res=None):
+        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, clipboards, filter_res)
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
         if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):

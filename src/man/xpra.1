@@ -33,6 +33,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-enable-sharing\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-password\-file\fP=\fIfilename\fP]
+[\fB\-\-clipboard-filter\-file\fP=\fIfilename\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
@@ -412,6 +413,11 @@ file. You should use this if you use the \fB\-\-bind-\-tcp\fP option.
 If this is used on the server, it will reject any client connections
 that do not provide the same password value.
 .TP
+\fB\-\-clipboard-filter\-file\fP=\fIfilename\fP
+Name of a file containing regular expressions, any clipboard data
+that matches one of these regular expressions will be dropped.
+Note: at present this only applies to copying from the machine where
+this option is used, not to it.
 \fB\-\-dpi\fP=\fIVALUE\fP
 The 'dots per inch' value that client applications should try to honour.
 This numeric value should be in the range 10 to 500 to be useful.
