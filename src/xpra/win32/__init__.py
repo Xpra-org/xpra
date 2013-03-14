@@ -47,7 +47,7 @@ def _get_data_dir():
     return data_dir
 
 def get_icon_dir():
-    return os.path.join(_get_data_dir(), "icons")
+    return os.path.join(get_app_dir(), "icons")
 
 def get_default_conf_dir():
     return _get_data_dir()
