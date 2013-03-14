@@ -34,6 +34,7 @@
 
 struct vpx_context {
 	vpx_codec_ctx_t codec;
+	int use_swscale;
 	struct SwsContext *rgb2yuv;
 	struct SwsContext *yuv2rgb;
 	int width;
@@ -65,9 +66,11 @@ struct vpx_context *init_encoder(int width, int height)
 		free(ctx);
 		return NULL;
 	}
+	ctx->use_swscale = 1;
 	ctx->width = width;
 	ctx->height = height;
-	ctx->rgb2yuv = sws_getContext(width, height, PIX_FMT_RGB24, width, height, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	if (ctx->use_swscale)
+		ctx->rgb2yuv = sws_getContext(width, height, PIX_FMT_RGB24, width, height, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 	return ctx;
 }
 
@@ -77,7 +80,7 @@ void clean_encoder(struct vpx_context *ctx)
 	free(ctx);
 }
 
-struct vpx_context *init_decoder(int width, int height)
+struct vpx_context *init_decoder(int width, int height, int use_swscale)
 {
 	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
 	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx();
@@ -89,9 +92,11 @@ struct vpx_context *init_decoder(int width, int height)
 		free(ctx);
 		return NULL;
 	}
+	ctx->use_swscale = use_swscale;
 	ctx->width = width;
 	ctx->height = height;
-	ctx->yuv2rgb = sws_getContext(width, height, PIX_FMT_YUV420P, width, height, PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	if (ctx->use_swscale)
+		ctx->yuv2rgb = sws_getContext(width, height, PIX_FMT_YUV420P, width, height, PIX_FMT_RGB24, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 	return	ctx;
 }
 

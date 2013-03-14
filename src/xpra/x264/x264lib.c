@@ -57,6 +57,7 @@ struct x264lib_ctx {
 	// Encoding
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
+	int use_swscale;
 
 	int speed;					//percentage 0-100
 	int quality;				//percentage 0-100
@@ -259,6 +260,7 @@ void configure_encoder(struct x264lib_ctx *ctx, int width, int height,
 		char *i420_profile, char *i422_profile, char *i444_profile)
 {
 	//printf("configure_encoder(%p, %i, %i, %i, %i, %i, %i, %s, %s, %s)\n", ctx, width, height, initial_quality, supports_csc_option, I422_quality, I444_quality, i420_profile, i422_profile, i444_profile);
+	ctx->use_swscale = 1;
 	ctx->width = width;
 	ctx->height = height;
 	if (initial_speed >= 0)
@@ -327,7 +329,8 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 	param.b_open_gop = 1;			//allow open gop
 	x264_param_apply_profile(&param, ctx->profile);
 	ctx->encoder = x264_encoder_open(&param);
-	ctx->rgb2yuv = init_encoder_csc(ctx);
+	if (ctx->use_swscale)
+		ctx->rgb2yuv = init_encoder_csc(ctx);
 }
 
 struct x264lib_ctx *init_encoder(int width, int height,
@@ -368,15 +371,17 @@ void do_clean_encoder(struct x264lib_ctx *ctx)
 }
 
 
-int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc_fmt)
+int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int use_swscale, int csc_fmt)
 {
 	if (csc_fmt<0)
 		csc_fmt = PIX_FMT_YUV420P;
+	ctx->use_swscale = use_swscale;
 	ctx->width = width;
 	ctx->height = height;
 	ctx->csc_format = csc_fmt;
 	ctx->csc_algo = get_csc_algo_for_quality(100);
-	ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_format, ctx->width, ctx->height, PIX_FMT_RGB24, ctx->csc_algo, NULL, NULL, NULL);
+	if (use_swscale)
+		ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_format, ctx->width, ctx->height, PIX_FMT_RGB24, ctx->csc_algo, NULL, NULL, NULL);
 
 	avcodec_register_all();
 
@@ -404,13 +409,13 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc
 	}
 	return 0;
 }
-struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
+struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
 	if (ctx==NULL)
 		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
-	if (init_decoder_context(ctx, width, height, csc_fmt)) {
+	if (init_decoder_context(ctx, width, height, use_swscale, csc_fmt)) {
 		clean_decoder(ctx);
 		return NULL;
 	}
@@ -518,7 +523,7 @@ void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt)
 	if (ctx->csc_format!=csc_fmt) {
 		//we need to re-initialize with the new format:
 		do_clean_decoder(ctx);
-		if (init_decoder_context(ctx, ctx->width, ctx->height, csc_fmt)) {
+		if (init_decoder_context(ctx, ctx->width, ctx->height, ctx->use_swscale, csc_fmt)) {
 			fprintf(stderr, "Failed to reconfigure decoder\n");
 		}
 	}

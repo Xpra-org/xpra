@@ -54,7 +54,7 @@ cdef extern from "x264lib.h":
     int get_encoder_speed(x264lib_ctx *ctx)
     int get_pixel_format(int csc_format)
 
-    x264lib_ctx* init_decoder(int width, int height, int csc_fmt)
+    x264lib_ctx* init_decoder(int width, int height, int use_swscale, int csc_fmt)
     void set_decoder_csc_format(x264lib_ctx *context, int csc_fmt)
     void clean_decoder(x264lib_ctx *context)
     int decompress_image(x264lib_ctx *context, uint8_t *input, int size, uint8_t *(*out)[3], int (*outstride)[3]) nogil
@@ -118,10 +118,11 @@ cdef class RGBImage:
 
 cdef class Decoder(xcoder):
 
-    def init_context(self, width, height, options):
+    def init_context(self, width, height, use_swscale, options):
         self.init(width, height)
+        self.use_swscale = use_swscale
         csc_fmt = options.get("csc_pixel_format", -1)
-        self.context = init_decoder(width, height, csc_fmt)
+        self.context = init_decoder(width, height, use_swscale, csc_fmt)
 
     def clean(self):
         if self.context!=NULL:
@@ -169,6 +170,7 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
         cdef int i = 0
         assert self.context!=NULL
+        assert self.use_swscale, "cannot decompress to rgb without swscale!"
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
         if padded_buf==NULL:

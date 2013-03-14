@@ -20,7 +20,7 @@ struct vpx_context;
 struct vpx_context *init_encoder(int width, int height);
 
 /** Create a decoding context for images of a given size. */
-struct vpx_context *init_decoder(int width, int height);
+struct vpx_context *init_decoder(int width, int height, int use_swscale);
 
 /** Cleanup encoding context. Must be freed after calling this function. */
 void clean_encoder(struct vpx_context *ctx);

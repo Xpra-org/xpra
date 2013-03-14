@@ -25,7 +25,7 @@ cdef extern from "vpxlib.h":
     int csc_image_yuv2rgb(vpx_codec_ctx_t *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     int compress_image(vpx_codec_ctx_t *ctx, vpx_image_t *image, uint8_t **out, int *outsz) nogil
 
-    vpx_codec_ctx_t* init_decoder(int width, int height)
+    vpx_codec_ctx_t* init_decoder(int width, int height, int use_swscale)
     void clean_decoder(vpx_codec_ctx_t *context)
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
@@ -83,10 +83,12 @@ cdef class RGBImage:
 
 
 cdef class Decoder(xcoder):
+    cdef int use_swscale
 
-    def init_context(self, width, height, options):
+    def init_context(self, width, height, use_swscale, options):
         self.init(width, height)
-        self.context = init_decoder(width, height)
+        self.use_swscale = use_swscale
+        self.context = init_decoder(width, height, use_swscale)
 
     def clean(self):
         if self.context!=NULL:
@@ -128,6 +130,7 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0         #@DuplicatedSignature
         cdef int i = 0                      #@DuplicatedSignature
         assert self.context!=NULL
+        assert self.use_swscale, "cannot decompress to rgb without swscale!"
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:

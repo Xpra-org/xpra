@@ -61,6 +61,7 @@ class GLPixmapBacking(PixmapBacking):
         self.size = 0, 0
         self.gl_setup = False
         self.paint_screen = False
+        self._video_use_swscale = False
 
     def init(self, w, h):
         #re-init gl context with new dimensions:

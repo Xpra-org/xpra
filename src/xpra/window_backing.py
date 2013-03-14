@@ -74,6 +74,7 @@ class Backing(object):
         self.mmap = mmap
         self._backing = None
         self._last_pixmap_data = None
+        self._video_use_swscale = True
         self._video_decoder = None
         self._video_decoder_lock = Lock()
 
@@ -147,12 +148,12 @@ class Backing(object):
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
                     self._video_decoder.clean()
-                    self._video_decoder.init_context(width, height, options)
+                    self._video_decoder.init_context(width, height, self._video_use_swscale, options)
             if self._video_decoder is None:
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, options)
                 self._video_decoder = factory()
-                self._video_decoder.init_context(width, height, options)
+                self._video_decoder.init_context(width, height, self._video_use_swscale, options)
             if DRAW_DEBUG:
                 log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
             self.do_video_paint(coding, img_data, x, y, width, height, options, callbacks)

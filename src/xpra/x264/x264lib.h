@@ -39,7 +39,7 @@ struct x264lib_ctx *init_encoder(int width, int height,
         char *i420_profile, char *i422_profile, char *i444_profile);
 
 /** Create a decoding context for images of a given size. */
-struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt);
+struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt);
 
 /** Call this before decoding, the decoder may need to be re-initialized with the new csc format */
 void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt);
