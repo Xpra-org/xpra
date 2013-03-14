@@ -507,6 +507,10 @@ class ServerSource(object):
             self.default_encoding_options["min-speed"] = ms
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
+        elog = log
+        if os.environ.get("XPRA_ENCODING_DEBUG", "0")!="0":
+            elog = log.info
+        elog("encoding_options: %s", self.encoding_options)
         #keyboard:
         try:
             from xpra.server_keyboard_config import KeyboardConfig
