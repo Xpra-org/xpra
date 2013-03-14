@@ -120,7 +120,6 @@ cdef class Decoder(xcoder):
 
     def init_context(self, width, height, use_swscale, options):
         self.init(width, height)
-        self.use_swscale = use_swscale
         csc_fmt = options.get("csc_pixel_format", -1)
         self.context = init_decoder(width, height, use_swscale, csc_fmt)
 
