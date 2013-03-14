@@ -386,6 +386,10 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int csc
 		return 1;
 	}
 	ctx->codec_ctx = avcodec_alloc_context3(ctx->codec);
+	if (!ctx->codec_ctx) {
+		fprintf(stderr, "failed to allocate codec context!\n");
+		return 1;
+	}
 	ctx->codec_ctx->width = ctx->width;
 	ctx->codec_ctx->height = ctx->height;
 	ctx->codec_ctx->pix_fmt = csc_fmt;
