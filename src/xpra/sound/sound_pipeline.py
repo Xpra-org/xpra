@@ -138,6 +138,8 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         elif t == gst.MESSAGE_DURATION:
             d = message.parse_duration()
             debug("duration changed: %s", d)
+        elif t == gst.MESSAGE_LATENCY:
+            log.info("Latency message from %s: %s", message.src, message)            
         elif t == gst.MESSAGE_WARNING:
             w = message.parse_warning()
             log.warn("pipeline warning: %s", w[0].message)
