@@ -42,7 +42,6 @@ from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 This is the gtk2 + OpenGL version.
 """
 class GLPixmapBacking(PixmapBacking):
-    RGB24 = 1   #make sure this never clashes with codec_constants!
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
         PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
