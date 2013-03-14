@@ -83,11 +83,9 @@ cdef class RGBImage:
 
 
 cdef class Decoder(xcoder):
-    cdef int use_swscale
 
     def init_context(self, width, height, use_swscale, options):
         self.init(width, height)
-        self.use_swscale = use_swscale
         self.context = init_decoder(width, height, use_swscale)
 
     def clean(self):
@@ -130,7 +128,6 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0         #@DuplicatedSignature
         cdef int i = 0                      #@DuplicatedSignature
         assert self.context!=NULL
-        assert self.use_swscale, "cannot decompress to rgb without swscale!"
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:

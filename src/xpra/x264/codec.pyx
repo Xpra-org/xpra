@@ -169,7 +169,6 @@ cdef class Decoder(xcoder):
         cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
         cdef int i = 0
         assert self.context!=NULL
-        assert self.use_swscale, "cannot decompress to rgb without swscale!"
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
         if padded_buf==NULL:
