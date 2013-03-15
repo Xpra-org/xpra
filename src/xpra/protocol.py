@@ -17,6 +17,7 @@ from zlib import compress, decompress, decompressobj
 import struct
 import os
 import threading
+import errno
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
@@ -377,8 +378,12 @@ class Protocol(object):
             raise e
         except (OSError, IOError, socket_error), e:
             if not self._closed:
-                log.error("%s error to %s", name, self._conn, exc_info=True)
-                self._call_connection_lost("%s error on connection: %s" % (name, e))
+                if e.args[0] in (errno.ECONNRESET, errno.EPIPE):
+                    log.error("%s connection reset for %s", name, self._conn)
+                    self._call_connection_lost("%s connection reset: %s" % (name, e))
+                else:
+                    log.error("%s error for %s", name, self._conn, exc_info=True)
+                    self._call_connection_lost("%s error on connection: %s" % (name, e))
         except Exception, e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
