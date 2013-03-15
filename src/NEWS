@@ -1,6 +1,26 @@
-v0.9.0 (2013-03-07)
+v0.9.0 (2013-03-15)
 ======================
-	-- TODO
+	-- fix focus problems with old Xvfb display servers
+	-- fix RPM SELinux labelling of static codec builds (CentOS)
+	-- fix CentOS 5.x compatibility
+	-- fix Python 2.4 and 2.5 compatibility (many)
+	-- support for many more audio codecs: flac, opus, wavpack, wav, speex
+	-- support starting remote sessions with "xpra start"
+	-- support for Xdummy with CentOS 6.4 onwards
+	-- add --log-file command line option
+	-- add clipboard regex string filtering
+	-- add clipboard transfer in progress animation via system tray
+	-- detect broken/slow connections and temporarily grey out windows
+	-- reduce regular packet header sizes using numeric lookup tables
+	-- allow more options in xpra config and launcher files
+	-- MS Windows and OSX builds trim the amount of GStreamer plugins shipped
+	-- MS Windows, OSX and static codec builds (Ubuntu Lucid, Debian Squeeze) now use libav 9.3
+	-- MS Windows builds updated to numpy 1.7
+	-- OSX library updates, fix sound packaging
+	-- safer test for windows to ignore (window IDs starts at 1 again)
+	-- better OpenGL client support (but still disabled by default)
+	-- expose more version and statistical data via xpra info
+	-- upgrade to rencode 1.0.2
 
 
 v0.8.8 (2013-03-07)
