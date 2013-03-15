@@ -248,7 +248,6 @@ class GLPixmapBacking(PixmapBacking):
                     log.error("Width of V plane is %d, differs from width of corresponding U plane (%d), pixel_format is %d", width/div_w, U_width, pixel_format)
                 if height/div_h != U_height:
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d)", height/div_h, U_height)
-        glFlush()
 
     def render_image(self, rx, ry, rw, rh):
         debug("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
@@ -269,4 +268,3 @@ class GLPixmapBacking(PixmapBacking):
                 glMultiTexCoord2i(texture, x/div_w, y/div_h)
             glVertex2i(x, y)
         glEnd()
-        glFlush()
