@@ -174,8 +174,11 @@ class Backing(object):
 
 
     def cairo_draw(self, context):
+        self.cairo_draw_from_drawable(context, self._backing)
+
+    def cairo_draw_from_drawable(self, context, drawable):
         try:
-            context.set_source_pixmap(self._backing, 0, 0)
+            context.set_source_pixmap(drawable, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
             return True
