@@ -8,7 +8,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.client_window import ClientWindow
-from xpra.gl.gl_window_backing import GLPixmapBacking
+from xpra.gl.gl_window_backing import GLPixmapBacking, debug
 
 
 class GLClientWindow(ClientWindow):
@@ -16,7 +16,7 @@ class GLClientWindow(ClientWindow):
     gl_pixmap_backing_class = GLPixmapBacking
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        log("GLClientWindow(..)")
+        debug("GLClientWindow(..)")
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self.set_reallocate_redraws(True)
         self.add(self._backing.glarea)
@@ -25,7 +25,7 @@ class GLClientWindow(ClientWindow):
         return True
 
     def do_configure_event(self, event):
-        log("GL do_configure_event(%s)", event)
+        debug("GL do_configure_event(%s)", event)
         ClientWindow.do_configure_event(self, event)
         self._backing.paint_screen = True
 
@@ -34,7 +34,7 @@ class GLClientWindow(ClientWindow):
         ClientWindow.destroy(self)
 
     def new_backing(self, w, h):
-        log("GL new_backing(%s, %s)", w, h)
+        debug("GL new_backing(%s, %s)", w, h)
         w = max(2, w)
         h = max(2, h)
         lock = None
