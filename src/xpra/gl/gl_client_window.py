@@ -24,6 +24,9 @@ class GLClientWindow(ClientWindow):
     def is_GL(self):
         return True
 
+    def do_expose_event(self, event):
+        debug("GL do_expose_event(%s)", event)
+
     def do_configure_event(self, event):
         debug("GL do_configure_event(%s)", event)
         ClientWindow.do_configure_event(self, event)
