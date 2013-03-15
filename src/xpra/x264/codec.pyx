@@ -144,7 +144,7 @@ cdef class Decoder(xcoder):
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
         i = 0
         with nogil:
-            i = decompress_image(self.context, buf, buf_len, &dout, &outstrides)
+            i = decompress_image(self.context, padded_buf, buf_len, &dout, &outstrides)
         xmemfree(padded_buf)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
