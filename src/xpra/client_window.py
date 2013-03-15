@@ -203,7 +203,7 @@ class ClientWindow(gtk.Window):
         self.group_leader = group_leader
         self._id = wid
         self._pos = (-1, -1)
-        self._size = (1, 1)
+        self._size = (w, h)
         self._backing = None
         self.new_backing(w, h)
         self._metadata = {}
@@ -559,7 +559,9 @@ class ClientWindow(gtk.Window):
         w = max(1, w)
         h = max(1, h)
         self.window.move_resize(x, y, w, h)
-        self.new_backing(w, h)
+        if (w, h) != self._size:
+            self._size = (w, h)
+            self.new_backing(w, h)
 
     def destroy(self):
         if self._refresh_timer:
