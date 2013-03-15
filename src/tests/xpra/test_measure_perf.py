@@ -108,11 +108,34 @@ TEST_COMMAND_SETTLE_TIME[NEXUIZ_TEST[0]] = 10
 TEST_COMMAND_SETTLE_TIME[XONOTIC_TEST[0]] = 20
 GAMES_TESTS = [NEXUIZ_TEST, XONOTIC_TEST]
 
+#sound and video tests:
+VIDEO_TESTS = []
+SOUND_TESTS = []
+VLC_BIN = "/usr/bin/vlc"
+MPLAYER_BIN = "/usr/bin/mplayer"
+
+MPLAYER_SOUND_LOOP_TEST = "while true; do %s ./test.mp3; done" % MPLAYER_BIN
+VLC_SOUND_TEST = (VLC_BIN, "-L", "--audio-visual=visual", "./test.mp3")
+if not os.path.exists("test.mp3"):
+    print("test.mp3 not found, the corresponding sound mplayer sound and vlc video tests are disabled")
+else:
+    SOUND_TESTS.append(MPLAYER_SOUND_LOOP_TEST)
+    VIDEO_TESTS.append(VLC_SOUND_TEST)
+
+#video tests
+VLC_VIDEO_TEST = (VLC_BIN, "-L", "./test.avi")
+MPLAYER_VIDEO_TEST = "while true; do %s test.avi; done" % MPLAYER_BIN
+if not os.path.exists("test.avi"):
+    print("test.avi not found, vlc and mplayer video tests are disabled")
+else:
+    VIDEO_TESTS.append(VLC_VIDEO_TEST)
+    VIDEO_TESTS.append(MPLAYER_VIDEO_TEST)
+
 #our selection:
 TEST_CANDIDATES = [screensaver("deluxe")]
 TEST_CANDIDATES = X11_TESTS + SOME_SCREENSAVER_TESTS + GAMES_TESTS
 TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + GAMES_TESTS
-TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS
+TEST_CANDIDATES = GLX_TESTS + X11_TESTS + ALL_SCREENSAVER_TESTS + SOUND_TESTS + VIDEO_TESTS
 
 
 #now we filter all the test commands and only keep the valid ones:
@@ -121,12 +144,17 @@ X11_TEST_COMMANDS = []
 for x in TEST_CANDIDATES:
     if x is None:
         continue
-    if x!=GTKPERF_TEST and not os.path.exists(x[0]):
+    if type(x) in (list, tuple) and not os.path.exists(x[0]):
         print("* WARNING: cannot find %s - removed from tests" % str(x))
     else:
         print("* adding test: %s" % str(x))
         X11_TEST_COMMANDS.append(x)
-TEST_NAMES = {GTKPERF_TEST: "gtkperf"}
+TEST_NAMES = {GTKPERF_TEST: "gtkperf",
+              MPLAYER_SOUND_LOOP_TEST : "mplayer sound",
+              VLC_SOUND_TEST : "vlc sound visual",
+              MPLAYER_VIDEO_TEST : "mplayer video",
+              VLC_VIDEO_TEST : "vlc video",
+              }
 
 
 XVNC_BIN = "/usr/bin/Xvnc"
