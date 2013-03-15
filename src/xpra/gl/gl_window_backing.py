@@ -68,7 +68,7 @@ class GLPixmapBacking(PixmapBacking):
         self.size = w, h
         # Re-create textures and shader
         self.pixel_format = None
-        self.yuv_shader = None
+        self.remove_shader()
 
     def gl_init(self):
         drawable = self.gl_begin()
