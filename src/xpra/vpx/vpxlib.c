@@ -102,6 +102,10 @@ struct vpx_context *init_decoder(int width, int height, int use_swscale)
 
 void clean_decoder(struct vpx_context *ctx)
 {
+	if (ctx->rgb2yuv) {
+		sws_freeContext(ctx->rgb2yuv);
+		ctx->rgb2yuv = NULL;
+	}
 	vpx_codec_destroy(&ctx->codec);
 	free(ctx);
 }
