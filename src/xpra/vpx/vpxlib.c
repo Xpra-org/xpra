@@ -77,6 +77,8 @@ struct vpx_context *init_encoder(int width, int height)
 
 void clean_encoder(struct vpx_context *ctx)
 {
+	if (ctx->rgb2yuv)
+		sws_freeContext(ctx->rgb2yuv);
 	vpx_codec_destroy(&ctx->codec);
 	free(ctx);
 }
@@ -86,14 +88,15 @@ struct vpx_context *init_decoder(int width, int height, int use_swscale)
 	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
 	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx();
 	int              flags = 0;
-	int i = vpx_codec_dec_init(&ctx->codec, codec_iface, NULL, flags);
-	if (i) {
+	int err = 0;
+	memset(ctx, 0, sizeof(struct vpx_context));
+	err = vpx_codec_dec_init(&ctx->codec, codec_iface, NULL, flags);
+	if (err) {
 		codec_error(&ctx->codec, "vpx_codec_dec_init");
-		printf("vpx_codec_dec_init(..) failed with error %d\n", i);
+		printf("vpx_codec_dec_init(..) failed with error %d\n", err);
 		free(ctx);
 		return NULL;
 	}
-	memset(ctx, 0, sizeof(struct vpx_context));
 	ctx->use_swscale = use_swscale;
 	ctx->width = width;
 	ctx->height = height;
@@ -104,10 +107,8 @@ struct vpx_context *init_decoder(int width, int height, int use_swscale)
 
 void clean_decoder(struct vpx_context *ctx)
 {
-	if (ctx->rgb2yuv) {
-		sws_freeContext(ctx->rgb2yuv);
-		ctx->rgb2yuv = NULL;
-	}
+	if (ctx->yuv2rgb)
+		sws_freeContext(ctx->yuv2rgb);
 	vpx_codec_destroy(&ctx->codec);
 	free(ctx);
 }
@@ -116,7 +117,7 @@ vpx_image_t* csc_image_rgb2yuv(struct vpx_context *ctx, const uint8_t *in, int s
 {
 	vpx_image_t *image = malloc(sizeof(vpx_image_t));
 	if (!vpx_img_alloc(image, VPX_IMG_FMT_I420, ctx->width, ctx->height, 1)) {
-		printf("Failed to allocate image %dx%d", ctx->width, ctx->height);
+		printf("Failed to allocate image %dx%d\n", ctx->width, ctx->height);
 		return NULL;
 	}
 	/* Colorspace conversion (RGB -> I420) */
