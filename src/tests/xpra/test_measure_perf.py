@@ -42,8 +42,8 @@ DEFAULT_TEST_COMMAND_SETTLE_TIME = 1    #how long we wait after starting the tes
                             #this is the default value, some tests may override this below
 
 TEST_XPRA = True
-TEST_VNC = True
-USE_IPTABLES = True         #this requires iptables to be setup so we can use it for accounting
+TEST_VNC = False
+USE_IPTABLES = False        #this requires iptables to be setup so we can use it for accounting
 USE_VIRTUALGL = True        #allows us to run GL games and benchmarks using the GPU
 PREVENT_SLEEP = True
 PREVENT_SLEEP_COMMAND = ["xdotool", "keydown", "Shift_L", "keyup", "Shift_L"]
