@@ -61,6 +61,7 @@ struct vpx_context *init_encoder(int width, int height)
 	cfg.g_w = width;
 	cfg.g_h = height;
 	ctx = malloc(sizeof(struct vpx_context));
+	memset(ctx, 0, sizeof(struct vpx_context));
 	if (vpx_codec_enc_init(&ctx->codec, codec_iface, &cfg, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_enc_init");
 		free(ctx);
@@ -92,6 +93,7 @@ struct vpx_context *init_decoder(int width, int height, int use_swscale)
 		free(ctx);
 		return NULL;
 	}
+	memset(ctx, 0, sizeof(struct vpx_context));
 	ctx->use_swscale = use_swscale;
 	ctx->width = width;
 	ctx->height = height;
