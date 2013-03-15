@@ -167,8 +167,8 @@ class Backing(object):
         err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
         success = err==0 and rgb_image and rgb_image.get_size()>0
         if not success:
-            raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
-                      coding, err, len(img_data), width, height, options)
+            raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s" % (
+                      coding, err, len(img_data), width, height, options))
         #this will also take care of firing callbacks (from the UI thread):
         gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
 
