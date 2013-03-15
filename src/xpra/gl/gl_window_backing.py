@@ -69,8 +69,6 @@ class GLPixmapBacking(PixmapBacking):
         # Re-create textures and shader
         self.pixel_format = None
         self.yuv_shader = None
-        #also init the pixmap as backup:
-        PixmapBacking.init(self, w, h)
 
     def gl_init(self):
         drawable = self.gl_begin()
@@ -143,7 +141,7 @@ class GLPixmapBacking(PixmapBacking):
                 self.gl_end(drawable)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        gc = self._backing.new_gc()
+        gc = self.glarea.window.new_gc()
         self.glarea.window.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
