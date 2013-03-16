@@ -2,12 +2,12 @@ Index: xpra/x264/x264lib.c
 ===================================================================
 --- a/xpra/x264/x264lib.c	(revision 1394)
 +++ b/xpra/x264/x264lib.c	(working copy)
-@@ -19,7 +19,7 @@
+@@ -34,7 +34,7 @@
  #define MEMALIGN_ALIGNMENT 32
  //comment this out to turn off csc 422 and 444 colourspace modes
  //(ie: when not supported by the library we build against)
 -#define SUPPORT_CSC_MODES 1
 +//#define SUPPORT_CSC_MODES 1
  
- #ifdef _WIN32
- #include <malloc.h>
+ 
+ //beware that these macros may evaluate a or b twice!

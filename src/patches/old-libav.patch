@@ -4,7 +4,7 @@ Description: Build against old versions of libav.
  
 --- a/xpra/x264/x264lib.c	(revision 2661)
 +++ b/xpra/x264/x264lib.c	(working copy)
-@@ -417,11 +417,12 @@
+@@ -402,11 +402,12 @@
  		fprintf(stderr, "could not open codec\n");
  		return 1;
  	}
@@ -17,8 +17,8 @@ Description: Build against old versions of libav.
 +	memset(ctx->frame, 0, sizeof(struct AVFrame));
  	return 0;
  }
- struct x264lib_ctx *init_decoder(int width, int height, int csc_fmt)
-@@ -440,7 +441,7 @@
+ struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
+@@ -425,7 +426,7 @@
  void do_clean_decoder(struct x264lib_ctx *ctx)
  {
  	if (ctx->frame) {
