@@ -16,6 +16,8 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 #(other platforms should fix their packages instead)
 SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win")
 
+BLACKLIST = {"vendor" : ["nouveau"]}
+
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -38,7 +40,7 @@ def check_functions(*functions):
             log("Function %s is available" % name)
 
 #sanity checks: OpenGL version and fragment program support:
-def check_GL_support(gldrawable, glcontext):
+def check_GL_support(gldrawable, glcontext, force_enable=False):
     if not gldrawable.gl_begin(glcontext):
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
@@ -74,6 +76,14 @@ def check_GL_support(gldrawable, glcontext):
             v = gluGetString(s)
             log("%s: %s", d, v)
             props[d] = v
+
+        for k,vlist in BLACKLIST.items():
+            v = props.get(k)
+            if v in vlist:
+                if force_enable:
+                    log.warn("Warning: %s %s is blacklisted!", k, v)
+                else:
+                    gl_check_error("%s %s is blacklisted!" % (k, v))
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
@@ -126,7 +136,7 @@ def check_GL_support(gldrawable, glcontext):
                 pass
         gldrawable.gl_end()
 
-def check_support():
+def check_support(force_enable=False):
     #tricks to get py2exe to include what we need / load it from its unusual path:
     opengl_icon = os.path.join(os.getcwd(), "icons", "opengl.png")
     if sys.platform.startswith("win"):
@@ -191,7 +201,7 @@ def check_support():
             gldrawable = glext.set_gl_capability(glconfig)
             glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
 
-        gl_props = check_GL_support(gldrawable, glcontext)
+        gl_props = check_GL_support(gldrawable, glcontext, force_enable)
     finally:
         if w:
             w.destroy()
@@ -208,7 +218,7 @@ def main():
     def log_error(msg):
         log.error("ERROR: %s", msg)
     gl_check_error = log_error
-    check_support()
+    check_support(os.environ.get("XPRA_OPENGL", "0")=="1")
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()

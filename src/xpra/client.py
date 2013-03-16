@@ -290,17 +290,18 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.mmap_size = 0
 
     def init_opengl(self):
-        USE_OPENGL = os.environ.get("XPRA_OPENGL", "0")=="1"
+        #0 value to disable, 1 to force enable, other values to auto-detect
+        OPENGL = os.environ.get("XPRA_OPENGL", "")
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
         #the GL backend only works with gtk2:
-        if USE_OPENGL and not is_gtk3():
+        if OPENGL!="0" and not is_gtk3():
             try:
                 from xpra import gl     #@UnusedImport
                 try:
                     from xpra.gl.gl_check import check_support
-                    self.opengl_props = check_support()
+                    self.opengl_props = check_support(OPENGL=="1")
 
                     from xpra.gl.gl_client_window import GLClientWindow
                     self.GLClientWindowClass = GLClientWindow
