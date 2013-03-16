@@ -164,13 +164,13 @@ class Backing(object):
     def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
         if DRAW_DEBUG:
             log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
-        err, rgb_image = self._video_decoder.decompress_image_to_rgb(img_data, options)
-        success = err==0 and rgb_image and rgb_image.get_size()>0
+        err, data, rowstride = self._video_decoder.decompress_image_to_rgb(img_data, options)
+        success = err==0 and data is not None and rowstride>0
         if not success:
             raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s" % (
                       coding, err, len(img_data), width, height, options))
         #this will also take care of firing callbacks (from the UI thread):
-        gobject.idle_add(self.do_paint_rgb24, rgb_image.get_data(), x, y, width, height, rgb_image.get_rowstride(), options, callbacks)
+        gobject.idle_add(self.do_paint_rgb24, data, x, y, width, height, rowstride, options, callbacks)
 
 
     def cairo_draw(self, context):

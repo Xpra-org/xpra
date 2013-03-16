@@ -88,33 +88,6 @@ cdef class xcoder:
     def get_type(self):
         return  "x264"
 
-cdef class RGBImage:
-    cdef uint8_t *data
-    cdef int size
-    cdef int rowstride
-
-    cdef init(self, uint8_t *data, int size, int rowstride):
-        self.data = data
-        self.size = size
-        self.rowstride = rowstride
-
-    cdef free(self):
-        assert self.data!=NULL
-        xmemfree(self.data)
-        self.data = NULL
-
-    def get_data(self):
-        return (<char *>self.data)[:self.size]
-
-    def get_size(self):
-        return self.size
-
-    def get_rowstride(self):
-        return self.rowstride
-
-    def __dealloc__(self):                  #@DuplicatedSignature
-        self.free()
-
 
 cdef class Decoder(xcoder):
 
@@ -183,9 +156,7 @@ cdef class Decoder(xcoder):
         xmemfree(padded_buf)
         if i!=0:
             return i, None
-        rgb_image = RGBImage()
-        rgb_image.init(dout, outsize, outstride)
-        return  i, rgb_image
+        return  i, (<char *>dout)[:outsize], outstride
 
 
 cdef class Encoder(xcoder):
