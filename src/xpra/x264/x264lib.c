@@ -315,7 +315,6 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 	ctx->profile = get_profile_for_quality(ctx, ctx->quality);
 	ctx->csc_algo = get_csc_algo_for_quality(ctx->quality);
 	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
-	printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
 
 	x264_param_default_preset(&param, ctx->preset, "zerolatency");
 	param.i_threads = 1;
@@ -602,7 +601,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
 	int old_csc_algo = ctx->csc_algo;
 	float new_quality = get_x264_quality(pct);
-	printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
+	//printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
 	if (ctx->supports_csc_option) {
 		if (!can_keep_colour_sampling(ctx, pct)) {
 			int new_colour_sampling = get_x264_colour_sampling(ctx, pct);
