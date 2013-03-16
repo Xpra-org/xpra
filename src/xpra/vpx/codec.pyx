@@ -79,8 +79,8 @@ cdef class Decoder(xcoder):
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
         doutvY = (<char *>dout[0])[:self.height * outstrides[0]]
-        doutvU = (<char *>dout[1])[:self.height * outstrides[1]]
-        doutvV = (<char *>dout[2])[:self.height * outstrides[2]]
+        doutvU = (<char *>dout[1])[:((self.height+1)>>1) * outstrides[1]]
+        doutvV = (<char *>dout[2])[:((self.height+1)>>1) * outstrides[2]]
         out = [doutvY, doutvU, doutvV]
         strides = [outstrides[0], outstrides[1], outstrides[2]]
         return  i, strides, out
