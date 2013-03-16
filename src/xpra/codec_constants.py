@@ -7,3 +7,14 @@
 YUV420P = 420
 YUV422P = 422
 YUV444P = 444
+
+def get_subsampling_divs(pixel_format):
+    # Return size dividers for the given pixel format
+    #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
+    if pixel_format==YUV420P:
+        return (1, 1), (2, 2), (2, 2)
+    elif pixel_format==YUV422P:
+        return (1, 1), (2, 1), (2, 1)
+    elif pixel_format==YUV444P:
+        return (1, 1), (1, 1), (1, 1)
+    raise Exception("invalid pixel format: %s" % pixel_format)

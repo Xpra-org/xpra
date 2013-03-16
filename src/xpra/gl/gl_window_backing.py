@@ -17,7 +17,7 @@ debug = log.debug
 if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":
     debug = log.info
 
-from xpra.codec_constants import YUV420P, YUV422P, YUV444P
+from xpra.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
@@ -146,17 +146,17 @@ class GLPixmapBacking(PixmapBacking):
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         debug("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
-        err, rowstrides, img_data = self._video_decoder.decompress_image_to_yuv(img_data, options)
+        err, rowstrides, data = self._video_decoder.decompress_image_to_yuv(img_data, options)
         csc_pixel_format = options.get("csc_pixel_format", -1)
         #this needs to be done here so we still hold the video_decoder lock:
         pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
-        success = err==0 and img_data and len(img_data)==3
+        success = err==0 and data and len(data)==3
         if not success:
-            log.error("do_video_paint: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s",
+            log.error("do_video_paint: %s decompression error %s on %s bytes of compressed picture data for %sx%s pixels, options=%s",
                       coding, err, len(img_data), w, h, options)
             gobject.idle_add(fire_paint_callbacks, callbacks, False)
             return
-        gobject.idle_add(self.do_gl_paint, x, y, w, h, img_data, rowstrides, pixel_format, callbacks)
+        gobject.idle_add(self.do_gl_paint, x, y, w, h, data, rowstrides, pixel_format, callbacks)
 
     def do_gl_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
@@ -178,24 +178,13 @@ class GLPixmapBacking(PixmapBacking):
             self.gl_end(drawable)
 
 
-    def get_subsampling_divs(self, pixel_format):
-        # Return size dividers for the given pixel format
-        #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
-        if pixel_format==YUV420P:
-            return (1, 1), (2, 2), (2, 2)
-        elif pixel_format==YUV422P:
-            return (1, 1), (2, 1), (2, 1)
-        elif pixel_format==YUV444P:
-            return (1, 1), (1, 1), (1, 1)
-        raise Exception("invalid pixel format: %s" % pixel_format)
-
     def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
         window_width, window_height = self.size
         assert self.textures is not None, "no OpenGL textures!"
 
         if self.pixel_format is None or self.pixel_format!=pixel_format:
             self.pixel_format = pixel_format
-            divs = self.get_subsampling_divs(pixel_format)
+            divs = get_subsampling_divs(pixel_format)
             debug("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
@@ -231,9 +220,9 @@ class GLPixmapBacking(PixmapBacking):
         if y + height > window_height:
             height = window_height - y
 
-        divs = self.get_subsampling_divs(pixel_format)
+        divs = get_subsampling_divs(pixel_format)
         U_width = 0
-        U_height = 0   
+        U_height = 0
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
@@ -254,12 +243,12 @@ class GLPixmapBacking(PixmapBacking):
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
             return
-        divs = self.get_subsampling_divs(self.pixel_format)
+        divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])        
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):

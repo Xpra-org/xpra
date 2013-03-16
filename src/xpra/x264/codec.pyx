@@ -6,6 +6,8 @@
 import os
 from libc.stdlib cimport free
 
+from xpra.codec_constants import get_subsampling_divs
+
 DEFAULT_INITIAL_QUALITY = 70
 DEFAULT_INITIAL_SPEED = 20
 ALL_PROFILES = ["baseline", "main", "high", "high10", "high422", "high444"]
@@ -107,6 +109,7 @@ cdef class Decoder(xcoder):
         cdef unsigned char * padded_buf = NULL
         cdef unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef int i = 0
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
@@ -114,19 +117,30 @@ cdef class Decoder(xcoder):
             return 1, [0, 0, 0], ["", "", ""]
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
-        set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
-        i = 0
+        csc_pixel_format = int(options.get("csc_pixel_format", -1))
+        set_decoder_csc_format(self.context, csc_pixel_format)
         with nogil:
             i = decompress_image(self.context, padded_buf, buf_len, &dout, &outstrides)
         xmemfree(padded_buf)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
-        doutvY = (<char *>dout[0])[:self.height * outstrides[0]]
-        doutvU = (<char *>dout[1])[:self.height * outstrides[1]]
-        doutvV = (<char *>dout[2])[:self.height * outstrides[2]]
-        out = [doutvY, doutvU, doutvV]
-        strides = [outstrides[0], outstrides[1], outstrides[2]]
-        return  i, strides, out
+        out = []
+        strides = []
+        pixel_format = self.get_pixel_format(csc_pixel_format)
+        divs = get_subsampling_divs(pixel_format)
+        for i in (0, 1, 2):
+            _, dy = divs[i]
+            if dy==1:
+                height = self.height
+            elif dy==2:
+                height = (self.height+1)>>1
+            else:
+                raise Exception("invalid height divisor %s" % dy)
+            stride = outstrides[i]
+            plane = (<char *>dout[i])[:(height * stride)]
+            out.append(plane)
+            strides.append(outstrides[i])
+        return  0, strides, out
 
     def get_pixel_format(self, csc_pixel_format):
         return get_pixel_format(csc_pixel_format)
@@ -140,7 +154,7 @@ cdef class Decoder(xcoder):
         cdef unsigned char * padded_buf = NULL  #@DuplicatedSignature
         cdef unsigned char * buf = NULL         #@DuplicatedSignature
         cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
-        cdef int i = 0
+        cdef int i = 0                          #@DuplicatedSignature
         assert self.context!=NULL
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
