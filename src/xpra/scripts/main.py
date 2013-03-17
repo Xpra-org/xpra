@@ -24,7 +24,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            get_default_socket_dir,
                            init as platform_init)
 from xpra.bytestreams import TwoFileConnection, SocketConnection
-from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help
+from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
 from wimpiggy.gobject_compat import import_gobject
 
 
@@ -247,6 +247,9 @@ def main(script_file, cmdline):
     group = OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
+    group.add_option("--opengl", action="store",
+                      dest="opengl", default=defaults.opengl,
+                      help="Use OpenGL accelerated rendering, options: yes,no,auto. Default: %default.")
     group.add_option("--no-windows", action="store_false",
                       dest="windows", default=defaults.windows,
                       help="Tells the server not to send any window data, only notifications and bell events will be forwarded (if enabled).")
@@ -340,6 +343,8 @@ def main(script_file, cmdline):
             parser.error("encryption %s is not supported, try: %s" % (options.encryption, ", ".join(ENCRYPTION_CIPHERS)))
         if not options.password_file:
             parser.error("encryption %s cannot be used without a password (see --password-file option)" % options.encryption)
+    #ensure opengl is either True, False or None
+    options.opengl = parse_bool("opengl", options.opengl)
 
     def toggle_logging(level):
         if not options.debug:

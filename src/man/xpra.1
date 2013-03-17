@@ -55,6 +55,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
+[\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
 [\fB\-\-quality\fP=\fIQUALITY\fP]
 [\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP]
 [\fB\-\-speed\fP=\fISPEED\fP]
@@ -336,6 +337,12 @@ for clients that do not specify which encoding they want to use.
 
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
 \fBvpx\fP and \fBx264\fP require their respective shared libraries.
+.TP
+\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+Use OpenGL accelerated rendering on the client.
+The default is to detect if the graphics card and drivers are
+supported (\fIauto\fP mode), but one can also disable OpenGL (\fIno\fP)
+or force it enabled (\fIyes\fP).
 .TP
 \fB\-\-socket\-dir\fP=\fIDIR\fP
 Location where to write and look for the Xpra socket files.

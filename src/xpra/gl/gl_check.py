@@ -81,9 +81,9 @@ def check_GL_support(gldrawable, glcontext, force_enable=False):
             v = props.get(k)
             if v in vlist:
                 if force_enable:
-                    log.warn("Warning: %s %s is blacklisted!", k, v)
+                    log.warn("Warning: %s '%s' is blacklisted!", k, v)
                 else:
-                    gl_check_error("%s %s is blacklisted!" % (k, v))
+                    gl_check_error("%s '%s' is blacklisted!" % (k, v))
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \

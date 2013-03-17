@@ -176,7 +176,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.mmap_size = 0
 
         #features:
-        self.init_opengl()
+        self.init_opengl(opts.opengl)
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
@@ -289,28 +289,26 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.mmap_file = None
             self.mmap_size = 0
 
-    def init_opengl(self):
-        #0 value to disable, 1 to force enable, other values to auto-detect
-        OPENGL = os.environ.get("XPRA_OPENGL", "")
+    def init_opengl(self, enable_opengl):
+        #enable_opengl can be True, False or None (auto-detect)
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
         #the GL backend only works with gtk2:
-        if OPENGL!="0" and not is_gtk3():
+        if enable_opengl is not False and not is_gtk3():
             try:
-                from xpra import gl     #@UnusedImport
                 try:
+                    from xpra import gl     #@UnusedImport
                     from xpra.gl.gl_check import check_support
-                    self.opengl_props = check_support(OPENGL=="1")
+                    self.opengl_props = check_support(enable_opengl is True)
 
                     from xpra.gl.gl_client_window import GLClientWindow
                     self.GLClientWindowClass = GLClientWindow
                     self.opengl_enabled = True
-                except Exception, e:
-                    log.error("Error loading OpenGL support: %s", e, exc_info=True)
-            except ImportError, e:
-                log("OpenGL support not installed: %s", e)
-        return self.GLClientWindowClass is not None
+                except ImportError, e:
+                    log.info("OpenGL support not enabled: %s", e)
+            except Exception, e:
+                log.error("Error loading OpenGL support: %s", e, exc_info=True)
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)

@@ -299,6 +299,7 @@ OPTION_TYPES = {
                     "windows"           : bool,
                     "autoconnect"       : bool,
                     "exit-with-children": bool,
+                    "opengl"            : bool,
                     #arrays of strings (default value, allowed options):
                     "speaker-codec"     : list,
                     "microphone-codec"  : list,
@@ -371,6 +372,7 @@ def get_defaults():
                     "windows"           : True,
                     "autoconnect"       : False,
                     "exit-with-children": False,
+                    "opengl"            : None,
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "key-shortcut"      : ["Meta+Shift+F4:quit"],
@@ -399,6 +401,31 @@ CLONES = {
 NO_FILE_OPTIONS = ["daemon"]
 
 
+
+def parse_bool(k, v):
+    if type(v)==str:
+        v = v.lower()
+    if v in ["yes", "true", "1", "on", True]:
+        return True
+    elif v in ["no", "false", "0", "off", False]:
+        return False
+    elif v in ["auto", None]:
+        #keep default - which may be None!
+        return None
+    else:
+        print("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+
+def parse_number(numtype, k, v, auto=-1):
+    if type(v)==str:
+        v = v.lower()
+    if v=="auto":
+        return auto
+    try:
+        return numtype(v)
+    except Exception, e:
+        print("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
+        return None
+
 def validate_config(d={}, discard=NO_FILE_OPTIONS):
     """
         Validates all the options given in a dict with fields as keys and
@@ -419,25 +446,17 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS):
             if type(v)!=str:
                 print("invalid value for '%s': %s (string required)" % (k, type(v)))
                 continue
-        elif vt==int or vt==float:
-            if type(v)==str:
-                v = v.lower()
-            if v=="auto":
-                v = -1
-            try:
-                v = vt(v)
-            except Exception, e:
-                print("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, vt, e))
+        elif vt==int:
+            v = parse_number(int, k, v)
+            if v==None:
+                continue
+        elif vt==float:
+            v = parse_number(float, k, v)
+            if v==None:
                 continue
         elif vt==bool:
-            if type(v)==str:
-                v = v.lower()
-            if v in ["yes", "true", "1", "on"]:
-                v = True
-            elif v in ["no", "false", "0", "off"]:
-                v = False
-            else:
-                print("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+            v = parse_bool(k, v)
+            if v is None:
                 continue
         elif vt==list:
             if type(v)==str:
