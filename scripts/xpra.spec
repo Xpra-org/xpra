@@ -8,7 +8,6 @@
 %if 0%{?build_no} == 0
 %define build_no 0
 %endif
-%define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 %define include_egg 1
 
 #if building a generic rpm: exclude anything that requires cython modules:
@@ -40,9 +39,7 @@
 %if %{defined Fedora}
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
-%if 0%{?opengl}
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
-%endif
 %endif
 
 %if 0%{?el6}
@@ -55,7 +52,8 @@
 #(so it can be installed if desired):
 %define no_sound 0
 %define requires_sound %{nil}
-%if 0%{?opengl}
+#opengl is supported from 6.3 onwards:
+%if %(egrep -q 'release 7|release 6.3|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
 %if 0%{?static_video_libs}
@@ -86,13 +84,6 @@
 %define static_x264 1
 %define static_vpx 1
 %endif
-%endif
-
-%if %is_suse
-%define requires_python_gtk , python-gtk, xorg-x11-server, xorg-x11-server-extra, libpng12-0, dbus-1-python
-%define requires_xorg , xorg-x11-server-utils, xf86-video-dummy, xf86-input-void, xorg-x11-xauth
-%define requires_extra %{nil}
-%define requires_sound %{nil}
 %endif
 
 %if 0%{?no_webp}
