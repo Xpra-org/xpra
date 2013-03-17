@@ -31,7 +31,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
     glTexParameteri, \
     glTexImage2D, \
-    glMultiTexCoord2i, \
+    glMultiTexCoord2i, glColor3f, \
     glVertex2i, glEnd
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
@@ -58,17 +58,17 @@ class GLPixmapBacking(PixmapBacking):
         self.yuv_shader = None
         self.pixel_format = None
         self.size = 0, 0
+        self.texture_size = 0, 0
         self.gl_setup = False
         self.paint_screen = False
         self._video_use_swscale = False
 
     def init(self, w, h):
-        #re-init gl context with new dimensions:
-        self.gl_setup = False
-        self.size = w, h
-        # Re-create textures and shader
-        self.pixel_format = None
-        self.remove_shader()
+        #re-init gl projection with new dimensions
+        #(see gl_init)
+        if self.size!=(w, h):
+            self.gl_setup = False
+            self.size = w, h
 
     def gl_init(self):
         drawable = self.gl_begin()
@@ -179,11 +179,12 @@ class GLPixmapBacking(PixmapBacking):
 
 
     def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
-        window_width, window_height = self.size
+        assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
 
-        if self.pixel_format is None or self.pixel_format!=pixel_format:
+        if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.pixel_format = pixel_format
+            self.texture_size = (width, height)
             divs = get_subsampling_divs(pixel_format)
             debug("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
             # Create textures of the same size as the window's
@@ -199,7 +200,7 @@ class GLPixmapBacking(PixmapBacking):
                     mag_filter = GL_LINEAR
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, window_width/div_w, window_height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0)
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width/div_w, height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0)
 
             debug("Assigning fragment program")
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -213,12 +214,6 @@ class GLPixmapBacking(PixmapBacking):
                 if err:
                     #FIXME: maybe we should do something else here?
                     log.error(err)
-
-        # Clamp width and height to the actual texture size
-        if x + width > window_width:
-            width = window_width - x
-        if y + height > window_height:
-            height = window_height - y
 
         divs = get_subsampling_divs(pixel_format)
         U_width = 0
@@ -250,10 +245,46 @@ class GLPixmapBacking(PixmapBacking):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
+        tw, th = self.texture_size
+        debug("render_image texture_size=%s, size=%s", self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
+            ax = min(tw, x)
+            ay = min(th, y)
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 (div_w, div_h) = divs[index]
-                glMultiTexCoord2i(texture, x/div_w, y/div_h)
-            glVertex2i(x, y)
+                glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
+            glVertex2i(ax, ay)
         glEnd()
+
+        if rx+rw<=tw and ry+rh<=th:
+            #texture was big enough to paint it all
+            return
+        #let's figure out what needs painting in white
+        #until we get it from the server
+        def white_paint(x, y, w, h):
+            #print("white_paint(%s, %s, %s, %s)", x, y, w, h)
+            glDisable(GL_TEXTURE_RECTANGLE_ARB)
+            glColor3f(1.0, 1.0, 1.0)
+            glBegin(GL_QUADS)
+            glVertex2i(x, y)
+            glVertex2i(x+w, y)
+            glVertex2i(x+w, y+h)
+            glVertex2i(x, y+h)
+            glEnd()
+            glEnable(GL_TEXTURE_RECTANGLE_ARB)
+
+        if rx+rw<=tw:
+            #X axis is ok, just Y-axis:
+            assert ry+rh>th
+            white_paint(rx, th, rx+rw, ry+rh)
+        elif ry+rh<=th:
+            #Y axis is ok, just X-axis:
+            assert rx+rw>tw
+            white_paint(tw, ry, rx+rw, ry+rh)
+        else:
+            assert ry+rh>th and rx+rw>tw
+            #both axis overflowed
+            #draw common area just once:
+            white_paint(tw, ry, rx+rw, th)
+            white_paint(rx, th, rx+rw, ry+rh)
