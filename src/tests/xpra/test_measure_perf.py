@@ -210,6 +210,8 @@ XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
                                  "webp" : XPRA_QUALITY_OPTIONS,
                                  "x264" : XPRA_QUALITY_OPTIONS+[-1],
                                  }
+XPRA_OPENGL_OPTIONS = {"x264" : [True, False],
+                       "vpx" : [True, False] }
 
 password_filename = "./test-password.txt"
 try:
@@ -467,7 +469,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
     errors = 0
     results = []
     count = 0
-    for name, tech_name, server_version, client_version, encoding, compression, encryption, ssh, (down,up,latency), test_command, client_cmd in tests:
+    for name, tech_name, server_version, client_version, encoding, opengl, compression, encryption, ssh, (down,up,latency), test_command, client_cmd in tests:
         try:
             print("**************************************************************")
             count += 1
@@ -513,7 +515,7 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
 
                     #run the client test
                     result = [name, tech_name, server_version, client_version, " ".join(sys.argv[1:]), SVN_VERSION]
-                    result += [encoding, get_command_name(test_command)]
+                    result += [encoding, opengl, get_command_name(test_command)]
                     result += [MEASURE_TIME, time.time(), CPU_INFO, PLATFORM, KERNEL_VERSION, XORG_VERSION, OPENGL_INFO, WINDOW_MANAGER]
                     result += ["%sx%s" % gdk.get_default_root_window().get_size()]
                     result += [compression, encryption, ssh, down, up, latency]
@@ -679,45 +681,55 @@ def test_xpra():
         for down,up,latency in shaping_options:
             for x11_test_command in X11_TEST_COMMANDS:
                 for encoding in XPRA_TEST_ENCODINGS:
-                    quality_options = XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
-                    for quality in quality_options:
-                        comp_options = XPRA_COMPRESSION_OPTIONS
-                        for compression in comp_options:
-                            cmd = trickle_command(down, up, latency)
-                            cmd += [XPRA_BIN, "attach"]
-                            if connect_option=="ssh":
-                                cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
-                            elif connect_option=="tcp":
-                                cmd.append("tcp:%s:%s" % (IP, PORT))
-                            else:
-                                cmd.append(":%s" % (DISPLAY_NO))
-                            cmd.append("--readonly")
-                            cmd.append("--password-file=%s" % password_filename)
-                            if compression is not None:
-                                cmd += ["-z", str(compression)]
-                            if XPRA_VERSION_NO>=[0, 3]:
-                                cmd.append("--enable-pings")
-                                cmd.append("--no-clipboard")
-                            if XPRA_VERSION_NO>=[0, 5]:
-                                cmd.append("--no-bell")
-                                cmd.append("--no-cursors")
-                                cmd.append("--no-notifications")
-                            if XPRA_VERSION_NO>=[0, 8] and encryption:
-                                cmd.append("--encryption=%s" % encryption)
-                            if encoding in ("jpeg", "webp"):
-                                if XPRA_VERSION_NO>=[0, 7]:
-                                    cmd.append("--quality=%s" % quality)
+                    if XPRA_VERSION_NO>=[0, 9]:
+                        opengl_options = XPRA_OPENGL_OPTIONS.get(encoding, [False])
+                    else:
+                        opengl_options = [False]
+                    for opengl in opengl_options:
+                        quality_options = XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
+                        for quality in quality_options:
+                            comp_options = XPRA_COMPRESSION_OPTIONS
+                            for compression in comp_options:
+                                cmd = trickle_command(down, up, latency)
+                                cmd += [XPRA_BIN, "attach"]
+                                if connect_option=="ssh":
+                                    cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
+                                elif connect_option=="tcp":
+                                    cmd.append("tcp:%s:%s" % (IP, PORT))
                                 else:
-                                    cmd.append("--jpeg-quality=%s" % quality)
-                                name = "%s-%s" % (encoding, quality)
-                            else:
-                                name = encoding
-                            if encoding!="mmap":
-                                cmd.append("--no-mmap")
-                                cmd.append("--encoding=%s" % encoding)
-                            command_name = get_command_name(x11_test_command)
-                            test_name = "%s (%s - %s - %s - %s - via %s)" % (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
-                            tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, encoding, compression, encryption, connect_option, (down,up,latency), x11_test_command, cmd))
+                                    cmd.append(":%s" % (DISPLAY_NO))
+                                cmd.append("--readonly")
+                                cmd.append("--password-file=%s" % password_filename)
+                                if compression is not None:
+                                    cmd += ["-z", str(compression)]
+                                if XPRA_VERSION_NO>=[0, 3]:
+                                    cmd.append("--enable-pings")
+                                    cmd.append("--no-clipboard")
+                                if XPRA_VERSION_NO>=[0, 5]:
+                                    cmd.append("--no-bell")
+                                    cmd.append("--no-cursors")
+                                    cmd.append("--no-notifications")
+                                if XPRA_VERSION_NO>=[0, 8] and encryption:
+                                    cmd.append("--encryption=%s" % encryption)
+                                if encoding in ("jpeg", "webp"):
+                                    if XPRA_VERSION_NO>=[0, 7]:
+                                        cmd.append("--quality=%s" % quality)
+                                    else:
+                                        cmd.append("--jpeg-quality=%s" % quality)
+                                    name = "%s-%s" % (encoding, quality)
+                                else:
+                                    name = encoding
+                                if encoding!="mmap":
+                                    cmd.append("--no-mmap")
+                                    cmd.append("--encoding=%s" % encoding)
+                                if XPRA_VERSION_NO>=[0, 9]:
+                                    cmd.append("--opengl=%s" % opengl)
+                                command_name = get_command_name(x11_test_command)
+                                test_name = "%s (%s - %s - %s - %s - via %s)" % \
+                                    (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
+                                tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, \
+                                              encoding, opengl, compression, encryption, connect_option, \
+                                              (down,up,latency), x11_test_command, cmd))
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
@@ -852,8 +864,11 @@ def test_vnc():
                             else:
                                 zlibtxt = "zlib=%s" % zlib
                             command_name = get_command_name(x11_test_command)
-                            test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
-                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, encoding, compression, None, False, (down,up,latency), x11_test_command, cmd))
+                            test_name = "vnc (%s - %s - %s - compression=%s - %s - %s)" % \
+                                        (command_name, encoding, zlibtxt, compression, jpegtxt, trickle_str(down, up, latency))
+                            tests.append((test_name, "vnc", XVNC_VERSION, VNCVIEWER_VERSION, \
+                                          encoding, False, compression, None, False, \
+                                          (down,up,latency), x11_test_command, cmd))
     return with_server(XVNC_SERVER_START_COMMAND, XVNC_SERVER_STOP_COMMANDS, tests, get_vnc_stats)
 
 
@@ -872,7 +887,7 @@ def main():
     print("RESULTS:")
     print("")
     headers = ["Test Name", "Remoting Tech", "Server Version", "Client Version", "Custom Params", "SVN Version",
-               "Encoding", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
+               "Encoding", "OpenGL", "Test Command", "Sample Duration (s)", "Sample Time (epoch)",
                "CPU info", "Platform", "Kernel Version", "Xorg version", "OpenGL", "Client Window Manager", "Screen Size",
                "Compression", "Encryption", "Connect via", "download limit (KB)", "upload limit (KB)", "latency (ms)",
                "packets in/s", "packets in: bytes/s", "packets out/s", "packets out: bytes/s"]
