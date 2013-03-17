@@ -45,23 +45,21 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,xserver-xorg-input-void
 Recommends:
 # audio-related:
-#        ,gstreamer0.10-plugins-base
+        ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
-#        ,gstreamer0.10-plugins-good
+        ,gstreamer0.10-plugins-good
 #                  ^^ flac ^^
-         ,gstreamer0.10-plugins-ugly
+        ,gstreamer0.10-plugins-ugly
 #                  ^^ mp3 ^^
-#        ,gstreamer0.10-plugins-bad
-#                  ^^ aac ^^
         ,python-gst0.10
 # for opengl support:
-#        ,python-gtkglext1
+        ,python-gtkglext1
+        ,python-opengl
+# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
+        ,python-numeric
+        ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
-# not strictly needed, but gets rid of ugly warnings in PyOpenGL:
-#        ,python-numeric
-#        ,python-numpy
-#        ,python-opengl
         ,openssh-client
         ,ssh-askpass
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
