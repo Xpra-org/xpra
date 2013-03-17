@@ -213,6 +213,23 @@ XPRA_ENCODING_QUALITY_OPTIONS = {"jpeg" : XPRA_QUALITY_OPTIONS,
 XPRA_OPENGL_OPTIONS = {"x264" : [True, False],
                        "vpx" : [True, False] }
 
+
+XPRA_SPEAKER_OPTIONS = [None]
+XPRA_MICROPHONE_OPTIONS = [None]
+TEST_SOUND = False
+if TEST_SOUND:
+    from xpra.sound.gstreamer_util import CODEC_ORDER, has_codec
+    if XPRA_VERSION_NO>=[0, 9]:
+        #0.9 onwards supports all codecs defined:
+        XPRA_SPEAKER_OPTIONS = [x for x in CODEC_ORDER if has_codec(x)]
+    elif XPRA_VERSION_NO==[0, 8]:
+        #only mp3 works in 0.8:
+        XPRA_SPEAKER_OPTIONS = ["mp3"]
+    else:
+        #none before that
+        XPRA_SPEAKER_OPTIONS = [None]
+
+
 password_filename = "./test-password.txt"
 try:
     import uuid
@@ -688,48 +705,60 @@ def test_xpra():
                     for opengl in opengl_options:
                         quality_options = XPRA_ENCODING_QUALITY_OPTIONS.get(encoding, [-1])
                         for quality in quality_options:
-                            comp_options = XPRA_COMPRESSION_OPTIONS
-                            for compression in comp_options:
-                                cmd = trickle_command(down, up, latency)
-                                cmd += [XPRA_BIN, "attach"]
-                                if connect_option=="ssh":
-                                    cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
-                                elif connect_option=="tcp":
-                                    cmd.append("tcp:%s:%s" % (IP, PORT))
-                                else:
-                                    cmd.append(":%s" % (DISPLAY_NO))
-                                cmd.append("--readonly")
-                                cmd.append("--password-file=%s" % password_filename)
-                                if compression is not None:
-                                    cmd += ["-z", str(compression)]
-                                if XPRA_VERSION_NO>=[0, 3]:
-                                    cmd.append("--enable-pings")
-                                    cmd.append("--no-clipboard")
-                                if XPRA_VERSION_NO>=[0, 5]:
-                                    cmd.append("--no-bell")
-                                    cmd.append("--no-cursors")
-                                    cmd.append("--no-notifications")
-                                if XPRA_VERSION_NO>=[0, 8] and encryption:
-                                    cmd.append("--encryption=%s" % encryption)
-                                if encoding in ("jpeg", "webp"):
-                                    if XPRA_VERSION_NO>=[0, 7]:
-                                        cmd.append("--quality=%s" % quality)
-                                    else:
-                                        cmd.append("--jpeg-quality=%s" % quality)
-                                    name = "%s-%s" % (encoding, quality)
-                                else:
-                                    name = encoding
-                                if encoding!="mmap":
-                                    cmd.append("--no-mmap")
-                                    cmd.append("--encoding=%s" % encoding)
-                                if XPRA_VERSION_NO>=[0, 9]:
-                                    cmd.append("--opengl=%s" % opengl)
-                                command_name = get_command_name(x11_test_command)
-                                test_name = "%s (%s - %s - %s - %s - via %s)" % \
-                                    (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
-                                tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, \
-                                              encoding, opengl, compression, encryption, connect_option, \
-                                              (down,up,latency), x11_test_command, cmd))
+                            for speaker in XPRA_SPEAKER_OPTIONS:
+                                for mic in XPRA_MICROPHONE_OPTIONS:
+                                    comp_options = XPRA_COMPRESSION_OPTIONS
+                                    for compression in comp_options:
+                                        cmd = trickle_command(down, up, latency)
+                                        cmd += [XPRA_BIN, "attach"]
+                                        if connect_option=="ssh":
+                                            cmd.append("ssh:%s:%s" % (IP, DISPLAY_NO))
+                                        elif connect_option=="tcp":
+                                            cmd.append("tcp:%s:%s" % (IP, PORT))
+                                        else:
+                                            cmd.append(":%s" % (DISPLAY_NO))
+                                        cmd.append("--readonly")
+                                        cmd.append("--password-file=%s" % password_filename)
+                                        if compression is not None:
+                                            cmd += ["-z", str(compression)]
+                                        if XPRA_VERSION_NO>=[0, 3]:
+                                            cmd.append("--enable-pings")
+                                            cmd.append("--no-clipboard")
+                                        if XPRA_VERSION_NO>=[0, 5]:
+                                            cmd.append("--no-bell")
+                                            cmd.append("--no-cursors")
+                                            cmd.append("--no-notifications")
+                                        if XPRA_VERSION_NO>=[0, 8] and encryption:
+                                            cmd.append("--encryption=%s" % encryption)
+                                        if encoding in ("jpeg", "webp"):
+                                            if XPRA_VERSION_NO>=[0, 7]:
+                                                cmd.append("--quality=%s" % quality)
+                                            else:
+                                                cmd.append("--jpeg-quality=%s" % quality)
+                                            name = "%s-%s" % (encoding, quality)
+                                        else:
+                                            name = encoding
+                                        if speaker is None:
+                                            if XPRA_VERSION_NO>=[0, 8]:
+                                                cmd.append("--no-speaker")
+                                        else:
+                                            cmd.append("--speaker-codec=%s" % speaker)
+                                        if mic is None:
+                                            if XPRA_VERSION_NO>=[0, 8]:
+                                                cmd.append("--no-microphone")
+                                        else:
+                                            cmd.append("--microphone-codec=%s" % mic)
+                                        if encoding!="mmap":
+                                            cmd.append("--no-mmap")
+                                            cmd.append("--encoding=%s" % encoding)
+                                        if XPRA_VERSION_NO>=[0, 9]:
+                                            cmd.append("--opengl=%s" % opengl)
+                                        command_name = get_command_name(x11_test_command)
+                                        test_name = "%s (%s - %s - %s - %s - via %s)" % \
+                                            (name, command_name, compression, encryption, trickle_str(down, up, latency), connect_option)
+                                        tests.append((test_name, "xpra", XPRA_VERSION, XPRA_VERSION, \
+                                                      encoding, opengl, compression, encryption, connect_option, \
+                                                      (down,up,latency), x11_test_command, cmd))
     return with_server(get_xpra_start_server_command(), XPRA_SERVER_STOP_COMMANDS, tests, xpra_get_stats)
 
 
