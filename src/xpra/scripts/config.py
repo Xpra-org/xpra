@@ -210,10 +210,11 @@ def read_xpra_conf(conf_dir):
         Reads an "xpra.conf" file from the given directory,
         returns a dict with values as strings and arrays of strings.
     """
+    cdir = os.path.expanduser(conf_dir)
     d = {}
-    if not os.path.exists(conf_dir) or not os.path.isdir(conf_dir):
+    if not os.path.exists(cdir) or not os.path.isdir(cdir):
         return  d
-    conf_file = os.path.join(conf_dir, 'xpra.conf')
+    conf_file = os.path.join(cdir, 'xpra.conf')
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         return  d
     return read_config(conf_file)
@@ -233,11 +234,8 @@ def read_xpra_defaults():
         conf_dir = sys.prefix + '/etc/xpra/'
     defaults = read_xpra_conf(conf_dir)
     #now load the per-user config over it:
-    if sys.platform.startswith("win"):
-        conf_dir = os.path.join(os.environ.get("APPDATA"), "Xpra")
-    else:
-        conf_dir = os.path.expanduser("~/.xpra")
-    user_defaults = read_xpra_conf(conf_dir)
+    from xpra.platform import get_default_conf_dir
+    user_defaults = read_xpra_conf(get_default_conf_dir())
     for k,v in user_defaults.items():
         defaults[k] = v
     return defaults
