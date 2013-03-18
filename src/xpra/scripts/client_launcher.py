@@ -198,9 +198,6 @@ class ApplicationWindow:
 		vbox.show_all()
 		self.window.vbox = vbox
 		self.window.add(vbox)
-		self.mode_changed()
-		self.encoding_changed()
-		self.validate()
 
 	def validate(self, *args):
 		self.update_options_from_gui()
@@ -301,6 +298,7 @@ class ApplicationWindow:
 			if self.config.socket_dir:
 				remote_xpra.append("--socket-dir=%s" % self.config.socket_dir)
 			params["remote_xpra"] = remote_xpra
+			params["proxy_command"] = ["_proxy"]
 			if self.config.port and self.config.port>0:
 				params["display"] = ":%s" % self.config.port
 				params["display_as_args"] = [params["display"]]
@@ -351,6 +349,7 @@ class ApplicationWindow:
 		try:
 			conn = connect_to(params, self.set_info_text, ssh_fail_cb=self.ssh_failed)
 		except Exception, e:
+			log.error("failed to connect", exc_info=True)
 			self.set_sensitive(True)
 			self.set_info_color(True)
 			self.set_info_text(str(e))
@@ -455,6 +454,10 @@ def main():
 			#file says we should connect,
 			#do that only (not showing UI unless something goes wrong):
 			gobject.idle_add(app.do_connect)
+		else:
+			gobject.idle_add(app.mode_changed)
+			gobject.idle_add(app.encoding_changed)
+			gobject.idle_add(app.validate)
 		if not app.config.autoconnect or app.config.debug:
 			app.reset_errors()
 			app.show()
