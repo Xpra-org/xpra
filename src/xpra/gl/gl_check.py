@@ -218,7 +218,7 @@ def main():
     def log_error(msg):
         log.error("ERROR: %s", msg)
     gl_check_error = log_error
-    check_support(os.environ.get("XPRA_OPENGL", "0")=="1")
+    check_support(True)
     if sys.platform.startswith("win"):
         print("\nPress Enter to close")
         sys.stdin.readline()
