@@ -319,7 +319,7 @@ class ClipboardProxy(gtk.Invisible):
         # Either call selection_data.set() or don't, and then return.
         # In practice, send a call across the wire, then block in a recursive
         # main loop.
-        debug("do_selection_get(%s, %s, %s)", selection_data, info, time)
+        debug("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection_data.selection)
         assert self._selection == str(selection_data.selection)
         target = str(selection_data.target)
         result = self.emit("get-clipboard-from-remote", self._selection, target)
