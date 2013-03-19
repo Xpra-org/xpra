@@ -87,12 +87,13 @@ void clean_encoder(struct vpx_context *ctx)
 
 struct vpx_context *init_decoder(int width, int height, int use_swscale)
 {
+	int flags = 0;
+	int err = 0;
+	vpx_codec_iface_t *codec_iface = NULL;
 	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
 	if (ctx==NULL)
 		return NULL;
-	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx();
-	int              flags = 0;
-	int err = 0;
+	codec_iface = vpx_codec_vp8_dx();
 	memset(ctx, 0, sizeof(struct vpx_context));
 	err = vpx_codec_dec_init(&ctx->codec, codec_iface, NULL, flags);
 	if (err) {
