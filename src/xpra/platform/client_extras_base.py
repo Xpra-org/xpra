@@ -680,6 +680,7 @@ class ClientExtrasBase(object):
                 pass
             if q!=self.client.min_quality:
                 log.debug("setting minimum picture quality to %s", q)
+                self.client.min_quality = q
                 self.client.send_min_quality(q)
         for q in sorted(quality_options):
             qi = CheckMenuItem("%s%%" % q)
@@ -712,35 +713,97 @@ class ClientExtrasBase(object):
     def make_speedsubmenu(self):
         speed_submenu = gtk.Menu()
         self.popup_menu_workaround(speed_submenu)
-        speed_options = {"Auto"         : 0,
-                         "Lowest Latency"  : 100,
-                         "Low Latency"     : 70,
-                         "Low Bandwidth"   : 30,
-                         "Lowest Bandwidth": 1}
-        option_to_text = {}
-        for k,v in speed_options.items():
-            option_to_text[v] = k
-        def set_speed(item):
-            item = ensure_item_selected(speed_submenu, item)
-            s = -1
-            try:
-                s = speed_options.get(item.get_label())
-            except:
-                pass
-            if s!=self.client.speed:
-                log.debug("setting encoding speed to %s", s)
-                self.client.send_speed(s)
-        for s in sorted(speed_options.values()):
-            if s<self.client.min_speed:
-                continue
-            t = option_to_text.get(s)
-            qi = CheckMenuItem(t)
-            qi.set_draw_as_radio(True)
-            qi.set_active(s==self.client.min_speed)
-            qi.connect('activate', set_speed)
-            speed_submenu.append(qi)
+        fstitle = gtk.MenuItem("Fixed Speed:")
+        fstitle.set_sensitive(False)
+        speed_submenu.append(fstitle)
+        speed_options_common = {
+                "Low Latency"              : 70,
+                "Low Bandwidth"            : 30
+                }
+        self.min_speed_options = speed_options_common.copy()
+        self.min_speed_options["None"] = 0
+        self.speed_options = speed_options_common.copy()
+        self.speed_options["Auto"] = 0
+        self.speed_options["Lowest Latency"] = 100
+        self.speed_options["Lowest Bandwidth"] = 1
+        def populate_speed_menu(speed_options, current_speed, set_cb):
+            option_to_text = {}
+            for k,v in speed_options.items():
+                option_to_text[v] = k
+            found_match = False
+            items = {}
+            for s in sorted(speed_options.values()):
+                t = option_to_text.get(s)
+                qi = CheckMenuItem(t)
+                qi.set_draw_as_radio(True)
+                candidate_match = s>=current_speed
+                qi.set_active(not found_match and candidate_match)
+                found_match |= candidate_match
+                qi.connect('activate', set_cb)
+                if s>0:
+                    set_tooltip_text(qi, "%s%%" % s)
+                speed_submenu.append(qi)
+                items[s] = qi
+            return items
+        self.speed_menu_items = populate_speed_menu(self.speed_options, max(0, self.client.speed), set_cb=self.set_speed)
+        speed_submenu.append(gtk.SeparatorMenuItem())
+        mstitle = gtk.MenuItem("Minimum Speed:")
+        mstitle.set_sensitive(False)
+        speed_submenu.append(mstitle)
+        self.min_speed_menu_items = populate_speed_menu(self.min_speed_options, max(0, self.client.min_speed), set_cb=self.set_min_speed)
         speed_submenu.show_all()
         return speed_submenu
+
+    def set_min_speed(self, item):
+        if not item.get_active():
+            return
+        #user selected a new min-speed from the menu:
+        s = -1
+        try:
+            s = self.min_speed_options.get(item.get_label())
+        except:
+            pass
+        if s!=self.client.min_speed:
+            log("setting encoding min-speed to %s", s)
+            self.client.min_speed = s
+            self.client.send_min_speed()
+            self.client.speed = 0
+            self.client.send_speed()
+            #deselect other min-speed items:
+            for x in self.min_speed_menu_items.values():
+                if x!=item:
+                    x.set_active(False)
+            #min-speed requires auto-mode:
+            for x in self.speed_menu_items.values():
+                if x.get_label()=="Auto":
+                    if not x.get_active():
+                        x.activate()
+                else:
+                    x.set_active(False)
+
+    def set_speed(self, item):
+        if not item.get_active():
+            return
+        #user select a new speed from the menu:
+        s = -1
+        try:
+            s = self.speed_options.get(item.get_label())
+        except:
+            pass
+        if s!=self.client.speed:
+            log("setting encoding speed to %s", s)
+            self.client.min_speed = 0
+            self.client.send_min_speed()
+            self.client.speed = s
+            self.client.send_speed()
+            #deselect other speed items:
+            for x in self.speed_menu_items.values():
+                if x!=item:
+                    x.set_active(False)
+            #min-speed is only relevant in auto-mode:
+            if s!=0:
+                for x in self.min_speed_menu_items.values():
+                    x.set_active(False)
 
     def set_speedmenu(self, *args):
         if self.speed:
