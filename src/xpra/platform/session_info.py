@@ -414,9 +414,10 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
         self.bool_icon(self.server_opengl_icon, self.client.opengl_enabled)
-        glinfo = ""
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
+        else:
+            glinfo = self.client.opengl_props.get("info", "")
         self.server_opengl_label.set_text(glinfo)
         
         scaps = self.client.server_capabilities

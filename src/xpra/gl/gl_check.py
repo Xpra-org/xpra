@@ -65,14 +65,20 @@ def check_GL_support(gldrawable, glcontext, force_enable=False):
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
         else:
             log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
-        extensions = glGetString(GL_EXTENSIONS).split(" ")
+        try:
+            extensions = glGetString(GL_EXTENSIONS).split(" ")
+        except:
+            gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
         log("OpenGL extensions found: %s", ", ".join(extensions))
         props["extensions"] = extensions
 
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
         for d,s in {"vendor":GL_VENDOR, "renderer":GL_RENDERER,
                     "shading language version":GL_SHADING_LANGUAGE_VERSION}.items():
-            v = glGetString(s)
+            try:
+                v = glGetString(s)
+            except:
+                gl_check_error("OpenGL property '%s' is missing" % d)
             log("%s: %s", d, v)
             props[d] = v
 

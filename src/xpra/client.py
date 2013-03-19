@@ -294,21 +294,28 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
-        #the GL backend only works with gtk2:
-        if enable_opengl is not False and not is_gtk3():
+        if enable_opengl is False:
+            self.opengl_props["info"] = "disabled by configuration"
+            return
+        if is_gtk3():
+            self.opengl_props["info"] = "GTK3 does not support OpenGL"
+            return
+        self.opengl_props["info"] = ""
+        try:
             try:
-                try:
-                    from xpra import gl     #@UnusedImport
-                    from xpra.gl.gl_check import check_support
-                    self.opengl_props = check_support(enable_opengl is True)
+                from xpra import gl     #@UnusedImport
+                from xpra.gl.gl_check import check_support
+                self.opengl_props = check_support(enable_opengl is True)
 
-                    from xpra.gl.gl_client_window import GLClientWindow
-                    self.GLClientWindowClass = GLClientWindow
-                    self.opengl_enabled = True
-                except ImportError, e:
-                    log.info("OpenGL support not enabled: %s", e)
-            except Exception, e:
-                log.error("Error loading OpenGL support: %s", e, exc_info=True)
+                from xpra.gl.gl_client_window import GLClientWindow
+                self.GLClientWindowClass = GLClientWindow
+                self.opengl_enabled = True
+            except ImportError, e:
+                log.info("OpenGL support not enabled: %s", e)
+                self.opengl_props["info"] = str(e)
+        except Exception, e:
+            log.error("Error loading OpenGL support: %s", e, exc_info=True)
+            self.opengl_props["info"] = str(e)
 
     def init_packet_handlers(self):
         XpraClientBase.init_packet_handlers(self)
