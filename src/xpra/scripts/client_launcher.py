@@ -12,6 +12,7 @@ This is a simple GUI for starting the xpra client.
 
 import sys
 import shlex
+import signal
 
 try:
 	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
@@ -30,7 +31,7 @@ gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
 from xpra.gtk_util import set_tooltip_text, add_close_accel, scaled_image, set_prgname
 from xpra.scripts.about import about
-from xpra.scripts.main import connect_to
+from xpra.scripts.main import connect_to, SIGNAMES
 from xpra.platform import get_icon, init as platform_init
 from xpra.client import XpraClient
 from wimpiggy.log import Logger
@@ -56,6 +57,7 @@ class ApplicationWindow:
 
 	def	__init__(self):
 		# Default connection options
+		self.client = None
 		self.config = make_defaults_struct()
 
 	def create_window(self):
@@ -348,31 +350,32 @@ class ApplicationWindow:
 		gobject.idle_add(self.window.hide)
 
 		def start_XpraClient():
-			app = XpraClient(conn, self.config)
+			self.client = XpraClient(conn, self.config)
 			if self.config.password:
 				#pass the password to the class directly:
-				app.password = self.config.password
+				self.client.password = self.config.password
 			#override exit code:
-			warn_and_quit_save = app.warn_and_quit
+			warn_and_quit_save = self.client.warn_and_quit
 			def warn_and_quit_override(exit_code, warning):
-				app.cleanup()
+				self.client.cleanup()
 				password_warning = warning.find("invalid password")>=0
 				if password_warning:
 					self.password_warning()
 				err = exit_code!=0 or password_warning
+				log("warn_and_quit_override(%s, %s)", exit_code, warning)
 				self.set_info_color(err)
 				self.set_info_text(warning)
 				if err:
 					def ignore_further_quit_events(*args):
 						pass
-					app.warn_and_quit = ignore_further_quit_events
+					self.client.warn_and_quit = ignore_further_quit_events
 					self.set_sensitive(True)
 					gobject.idle_add(self.window.show)
 				else:
-					app.warn_and_quit = warn_and_quit_save
+					self.client.warn_and_quit = warn_and_quit_save
 					self.destroy()
 					gtk.main_quit()
-			app.warn_and_quit = warn_and_quit_override
+			self.client.warn_and_quit = warn_and_quit_override
 		gobject.idle_add(start_XpraClient)
 
 	def password_ok(self, *args):
@@ -449,6 +452,14 @@ def main():
 	platform_init()
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
+	def app_signal(signum, frame):
+		log("\ngot signal %s" % SIGNAMES.get(signum, signum))
+		app.show()
+		app.client.cleanup()
+		gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+		gobject.timeout_add(1000, app.set_info_color, True)
+	signal.signal(signal.SIGINT, app_signal)
+	signal.signal(signal.SIGTERM, app_signal)
 	if len(sys.argv) == 2:
 		app.update_options_from_file(sys.argv[1])
 	app.create_window()

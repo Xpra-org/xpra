@@ -27,6 +27,8 @@ from xpra.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
 from wimpiggy.gobject_compat import import_gobject
 
+SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
+
 
 def nox():
     if "DISPLAY" in os.environ:
@@ -608,7 +610,6 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
 
 def set_signal_handlers(app):
     gobject = import_gobject()
-    SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
     def deadly_signal(signum, frame):
         print("got deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
         app.cleanup()
