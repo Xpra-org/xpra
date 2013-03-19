@@ -61,6 +61,8 @@ struct vpx_context *init_encoder(int width, int height)
 	cfg.g_w = width;
 	cfg.g_h = height;
 	ctx = malloc(sizeof(struct vpx_context));
+	if (ctx==NULL):
+		return NULL;
 	memset(ctx, 0, sizeof(struct vpx_context));
 	if (vpx_codec_enc_init(&ctx->codec, codec_iface, &cfg, 0)) {
 		codec_error(&ctx->codec, "vpx_codec_enc_init");
@@ -86,6 +88,8 @@ void clean_encoder(struct vpx_context *ctx)
 struct vpx_context *init_decoder(int width, int height, int use_swscale)
 {
 	struct vpx_context *ctx = malloc(sizeof(struct vpx_context));
+	if (ctx==NULL):
+		return NULL;
 	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_dx();
 	int              flags = 0;
 	int err = 0;
@@ -116,6 +120,8 @@ void clean_decoder(struct vpx_context *ctx)
 vpx_image_t* csc_image_rgb2yuv(struct vpx_context *ctx, const uint8_t *in, int stride)
 {
 	vpx_image_t *image = malloc(sizeof(vpx_image_t));
+	if (image==NULL):
+		return NULL;
 	if (!vpx_img_alloc(image, VPX_IMG_FMT_I420, ctx->width, ctx->height, 1)) {
 		printf("Failed to allocate image %dx%d\n", ctx->width, ctx->height);
 		return NULL;

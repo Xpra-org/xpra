@@ -341,6 +341,8 @@ struct x264lib_ctx *init_encoder(int width, int height,
         char *i420_profile, char *i422_profile, char *i444_profile)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
+	if (ctx==NULL):
+		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	configure_encoder(ctx, width, height, \
 					initial_quality, initial_speed, \
@@ -452,6 +454,8 @@ x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, in
 		return NULL;
 
 	pic_in = malloc(sizeof(x264_picture_t));
+	if (ctx==NULL):
+		return NULL;
 	x264_picture_alloc(pic_in, ctx->colour_sampling, ctx->width, ctx->height);
 
 	/* Colorspace conversion (RGB -> I4??) */
