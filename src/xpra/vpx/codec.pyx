@@ -109,7 +109,9 @@ cdef class Decoder(xcoder):
             i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
         if i!=0:
             return i, None
-        return  i, (<char *>dout)[:outsize], outstride
+        outstr = (<char *>dout)[:outsize]
+        xmemfree(dout)
+        return  i, outstr, outstride
 
 
 cdef class Encoder(xcoder):

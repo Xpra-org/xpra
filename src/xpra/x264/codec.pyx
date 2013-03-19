@@ -39,8 +39,8 @@ ctypedef unsigned char uint8_t
 ctypedef void x264lib_ctx
 ctypedef void x264_picture_t
 cdef extern from "x264lib.h":
-    void* xmemalign(size_t size)
-    void xmemfree(void* ptr)
+    void* xmemalign(size_t size) nogil
+    void xmemfree(void* ptr) nogil
 
     x264lib_ctx* init_encoder(int width, int height,
                               int initial_quality, int initial_speed,
@@ -159,18 +159,23 @@ cdef class Decoder(xcoder):
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         padded_buf = <unsigned char *> xmemalign(buf_len+32)
         if padded_buf==NULL:
-            return 100, None
+            return 100, "", 0
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 32)
         set_decoder_csc_format(self.context, int(options.get("csc_pixel_format", -1)))
+        dout = NULL
         with nogil:
             i = decompress_image(self.context, padded_buf, buf_len, &yuvplanes, &yuvstrides)
+            xmemfree(padded_buf)
             if i==0:
                 i = csc_image_yuv2rgb(self.context, yuvplanes, yuvstrides, &dout, &outsize, &outstride)
-        xmemfree(padded_buf)
         if i!=0:
-            return i, None
-        return  i, (<char *>dout)[:outsize], outstride
+            if dout!=NULL:
+                xmemfree(dout)
+            return i, "", 0
+        outstr = (<char *>dout)[:outsize]
+        xmemfree(dout)
+        return  i, outstr, outstride
 
 
 cdef class Encoder(xcoder):
