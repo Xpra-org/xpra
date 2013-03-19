@@ -99,12 +99,6 @@ class ApplicationWindow:
 		self.mode_combo.append_text("TCP")
 		self.mode_combo.append_text("TCP + AES")
 		self.mode_combo.append_text("SSH")
-		if self.config.mode == "tcp":
-			self.mode_combo.set_active(0)
-		elif self.config.mode == "tcp + aes":
-			self.mode_combo.set_active(1)
-		else:
-			self.mode_combo.set_active(2)
 		self.mode_combo.connect("changed", self.mode_changed)
 		hbox.pack_start(self.mode_combo)
 		vbox.pack_start(hbox)
@@ -117,7 +111,6 @@ class ApplicationWindow:
 		self.encoding_combo.get_model().clear()
 		for option in ENCODINGS:
 			self.encoding_combo.append_text(option)
-		self.encoding_combo.set_active(ENCODINGS.index(self.config.encoding))
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
 
@@ -140,16 +133,13 @@ class ApplicationWindow:
 		hbox.set_spacing(5)
 		self.username_entry = gtk.Entry(max=128)
 		self.username_entry.set_width_chars(16)
-		self.username_entry.set_text(self.config.username)
 		self.username_entry.connect("changed", self.validate)
 		self.username_label = gtk.Label("@")
 		self.host_entry = gtk.Entry(max=128)
 		self.host_entry.set_width_chars(24)
-		self.host_entry.set_text(self.config.host)
 		self.host_entry.connect("changed", self.validate)
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
-		self.port_entry.set_text(str(self.config.port))
 		self.port_entry.connect("changed", self.validate)
 		hbox.pack_start(self.username_entry)
 		hbox.pack_start(self.username_label)
@@ -200,16 +190,16 @@ class ApplicationWindow:
 		self.window.add(vbox)
 
 	def validate(self, *args):
-		self.update_options_from_gui()
 		ssh = self.mode_combo.get_active_text()=="SSH"
 		errs = []
-		host = self.config.host
+		host = self.host_entry.get_text()
 		errs.append((self.host_entry, not bool(host), "specify the host"))
-		if ssh and not self.config.port:
+		port = self.port_entry.get_text()
+		if ssh and not port:
 			port = 0		#port optional with ssh
 		else:
 			try:
-				port = int(self.config.port)
+				port = int(port)
 			except:
 				port = -1
 		errs.append((self.port_entry, port<0 or port>=2**16, "invalid port number"))
@@ -426,6 +416,19 @@ class ApplicationWindow:
 			self.config.mode = "ssh"
 		self.config.password = self.password_entry.get_text()
 
+	def update_gui_from_config(self):
+		#mode:
+		if self.config.mode == "tcp":
+			self.mode_combo.set_active(0)
+		elif self.config.mode == "tcp + aes":
+			self.mode_combo.set_active(1)
+		else:
+			self.mode_combo.set_active(2)
+		self.encoding_combo.set_active(ENCODINGS.index(self.config.encoding))
+		self.username_entry.set_text(self.config.username)
+		self.host_entry.set_text(self.config.host)
+		self.port_entry.set_text(str(self.config.port))
+
 	def destroy(self, *args):
 		self.window.destroy()
 		self.window = None
@@ -450,14 +453,11 @@ def main():
 		app.update_options_from_file(sys.argv[1])
 	app.create_window()
 	try:
+		app.update_gui_from_config()
 		if app.config.autoconnect:
 			#file says we should connect,
 			#do that only (not showing UI unless something goes wrong):
 			gobject.idle_add(app.do_connect)
-		else:
-			gobject.idle_add(app.mode_changed)
-			gobject.idle_add(app.encoding_changed)
-			gobject.idle_add(app.validate)
 		if not app.config.autoconnect or app.config.debug:
 			app.reset_errors()
 			app.show()
