@@ -445,11 +445,13 @@ class ApplicationWindow:
 
 
 def main():
+	from xpra.win32 import set_log_filename
+	set_log_filename("Xpra-Launcher.log")
+	platform_init()
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.addHandler(logging.StreamHandler(sys.stdout))
 	logging.root.setLevel(logging.INFO)
-	platform_init()
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
 	def app_signal(signum, frame):

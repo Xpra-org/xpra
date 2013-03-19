@@ -10,7 +10,7 @@ import pango
 import gobject
 
 from xpra.deque import maxdeque
-from xpra.platform import get_icon
+from xpra.platform import get_icon, init
 
 
 modifier_names = {
@@ -118,6 +118,7 @@ def main():
 		from xpra.win32 import set_redirect_output, set_log_filename
 		set_redirect_output(True)
 		set_log_filename("Keyboard_Test.log")
+	init()
 	set_prgname("Keyboard Test Tool")
 	set_application_name("Keyboard Test Tool")
 	KeyboardStateInfoWindow()

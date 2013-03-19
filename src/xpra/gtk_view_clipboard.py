@@ -11,7 +11,7 @@ import re
 
 from xpra.deque import maxdeque
 from xpra.gtk_util import TableBuilder, label
-from xpra.platform import get_icon
+from xpra.platform import get_icon, init
 
 
 class ClipboardInstance(object):
@@ -230,6 +230,7 @@ def main():
 		from xpra.win32 import set_redirect_output, set_log_filename
 		set_redirect_output(True)
 		set_log_filename("Clipboard_Test.log")
+	init()
 	ClipboardStateInfoWindow()
 	gtk.main()
 
