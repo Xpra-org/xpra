@@ -460,7 +460,8 @@ def main():
 		gobject.timeout_add(1000, app.set_info_color, True)
 	signal.signal(signal.SIGINT, app_signal)
 	signal.signal(signal.SIGTERM, app_signal)
-	if len(sys.argv) == 2:
+	has_file = len(sys.argv) == 2
+	if has_file:
 		app.update_options_from_file(sys.argv[1])
 	app.create_window()
 	try:
@@ -469,8 +470,9 @@ def main():
 			#file says we should connect,
 			#do that only (not showing UI unless something goes wrong):
 			gobject.idle_add(app.do_connect)
-		if not app.config.autoconnect or app.config.debug:
+		if not has_file:
 			app.reset_errors()
+		if not app.config.autoconnect or app.config.debug:
 			app.show()
 		app.run()
 	except KeyboardInterrupt:
