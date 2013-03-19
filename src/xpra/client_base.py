@@ -129,6 +129,7 @@ class XpraClientBase(gobject.GObject):
             iterations = 1000
             capabilities["cipher.key_stretch_iterations"] = iterations
             self._protocol.set_cipher_in(self.encryption, iv, self.get_password(), key_salt, iterations)
+            log("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = ENCODINGS
@@ -143,6 +144,7 @@ class XpraClientBase(gobject.GObject):
             capabilities["encoding.speed"] = self.speed
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
+        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["platform"] = sys.platform
         capabilities["platform.release"] = python_platform.release()
         capabilities["platform.machine"] = python_platform.machine()

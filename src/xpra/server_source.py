@@ -480,6 +480,7 @@ class ServerSource(object):
             if k.startswith("encoding."):
                 k = k[len("encoding."):]
                 self.encoding_options[k] = v
+        log("encoding options: %s", self.encoding_options)
         #encodings:
         self.encodings = capabilities.get("encodings", [])
         self.set_encoding(capabilities.get("encoding", None), None)
@@ -501,10 +502,11 @@ class ServerSource(object):
         if s>0:
             self.default_encoding_options["speed"] = s
         ms = self.default_min_speed
-        if "min-speed" in capabilities:
+        if "min-speed" in self.encoding_options:
             ms = self.encoding_options["min-speed"]
         if ms>0:
             self.default_encoding_options["min-speed"] = ms
+        log("default encoding options: %s", self.default_encoding_options)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         elog = log
