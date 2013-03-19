@@ -17,6 +17,7 @@ debug = log.debug
 if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":
     debug = log.info
 
+from xpra.gl.gl_check import get_DISPLAY_MODE
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking, fire_paint_callbacks
@@ -45,7 +46,7 @@ class GLPixmapBacking(PixmapBacking):
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
         PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
-        display_mode = gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
+        display_mode = get_DISPLAY_MODE()
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         except gtk.gdkgl.NoMatches:

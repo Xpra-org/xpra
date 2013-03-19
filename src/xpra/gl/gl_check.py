@@ -16,8 +16,13 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 #(other platforms should fix their packages instead)
 SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win")
 
-BLACKLIST = {"vendor" : ["nouveau"]}
+BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
+
+def get_DISPLAY_MODE():
+    import gtk.gdkgl
+    #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE
+    return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -156,13 +161,13 @@ def check_support(force_enable=False):
 
     props = {}
     from gtk import gdk
-    import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
+    import gtk.gdkgl, gtk.gtkgl
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
     log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
     props["pygdkglext_version"] = gtk.gdkgl.pygdkglext_version
     log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
     props["gdkgl_version"] = gtk.gdkgl.query_version()
-    display_mode = (gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE)
+    display_mode = get_DISPLAY_MODE()
     try:
         glconfig = gtk.gdkgl.Config(mode=display_mode)
     except gtk.gdkgl.NoMatches:
