@@ -158,8 +158,8 @@ class ClientExtras(ClientExtrasBase):
     def handle_key_event(self, send_key_action_cb, event, wid, pressed):
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
-            So we set the keycode to -1 to tell the server to ignore the actual keypress
-            Having the "modifiers" set ought to be enough.
+            So we just ignore those and rely on the list of "modifiers" passed
+            with each keypress to let the server set them for us when needed.
         """
         modifiers = self.mask_to_names(event.state)
         keyname = gdk.keyval_name(event.keyval)
