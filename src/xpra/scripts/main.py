@@ -281,6 +281,7 @@ def main(script_file, cmdline):
 
     group = OptionGroup(parser, "Advanced Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
+    parser.add_option_group(group)
     group.add_option("--password-file", action="store",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode)")
@@ -297,10 +298,6 @@ def main(script_file, cmdline):
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=debug_default, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (or \"all\")")
-
-    group = OptionGroup(parser, "Advanced Options",
-                "Please refer to the man page for details.")
-    parser.add_option_group(group)
     group.add_option("--ssh", action="store",
                       dest="ssh", default=defaults.ssh, metavar="CMD",
                       help="How to run ssh (default: '%default')")
