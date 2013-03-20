@@ -31,6 +31,7 @@ class Win32Tray:
 		if self.tray_widget:
 			self.tray_widget.close()
 			self.tray_widget = None
+		self.stop_win32_session_events(self.getHWND())
 		log("Win32Tray.close() ended")
 
 	def set_tooltip(self, name):
@@ -46,14 +47,27 @@ class Win32Tray:
 			self.tray_widget.set_blinking(on)
 
 
+	def stop_win32_session_events(self, app_hwnd):
+		if app_hwnd is None:
+			log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
+			return
+		try:
+			import win32ts										#@UnresolvedImport
+			win32ts.WTSUnRegisterSessionNotification(app_hwnd)
+		except:
+			log.error("stop_win32_session_events", exc_info=True)
+
 	#****************************************************************
 	# Events detection (screensaver / login / logout)
 	def detect_win32_session_events(self, app_hwnd):
 		"""
 		Use pywin32 to receive session notification events.
 		"""
-		log.debug("detect_win32_session_events(%s)" % app_hwnd)
+		if app_hwnd is None:
+			log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
+			return
 		try:
+			log.debug("detect_win32_session_events(%s)", app_hwnd)
 			import win32ts, win32con, win32api, win32gui		#@UnresolvedImport
 			WM_TRAYICON = win32con.WM_USER + 20
 			NIN_BALLOONSHOW = win32con.WM_USER + 2
