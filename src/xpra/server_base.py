@@ -718,6 +718,31 @@ class ServerBase(object):
             if t not in info_threads:
                 info["thread[%s]" % i] = t.name
                 i += 1
+        if os.name=="posix":
+            #add meminfo:
+            try:
+                import resource
+                for k, constant in {"server"   : "RUSAGE_SELF",
+                                 "children" : "RUSAGE_CHILDREN",
+                                 "total"    : "RUSAGE_BOTH"}.items():
+                    try:
+                        v = getattr(resource, constant)
+                    except (NameError, AttributeError):
+                        continue
+                    stats = resource.getrusage(v)
+                    prefix = "memory.%s." % k
+                    for var in ("utime", "stime", "maxrss",
+                                "ixrss", "idrss", "isrss",
+                                "minflt", "majflt", "nswap",
+                                "inblock", "oublock",
+                                "msgsnd", "msgrcv",
+                                "nsignals", "nvcsw", "nivcsw"):
+                        value = getattr(stats, "ru_%s" % var)
+                        if type(value)==float:
+                            value = int(value)
+                        info[prefix+var] = value
+            except:
+                log.error("error getting memory usage info", exc_info=True)
         log("get_info took %s", time.time()-start)
         return info
 
