@@ -332,7 +332,10 @@ def get_defaults():
                     "password"          : "",
                     "password-file"     : "",
                     "clipboard-filter-file" : "",
-                    "pulseaudio_command": "",
+                    "pulseaudio-command": "pulseaudio --start --daemonize=false --system=false "
+                                            +" --exit-idle-time=-1 -n --load=module-suspend-on-idle "
+                                            +" --load=module-null-sink --load=module-native-protocol-unix "
+                                            +" --log-level=2 --log-target=stderr",
                     "encryption"        : "",
                     "mode"              : "tcp",
                     "ssh"               : DEFAULT_SSH_CMD,
