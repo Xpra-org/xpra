@@ -957,6 +957,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.microphone_enabled = False
         if live:
             self.sound_source.cleanup()
+            self.sound_source = None
             self.emit("microphone-changed")
         log("XpraClient.stop_sending_sound(%s) done", live)
 
@@ -981,6 +982,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.speaker_enabled = False
         if live:
             self.sound_sink.cleanup()
+            self.sound_sink = None
             self.emit("speaker-changed")
         log("XpraClient.stop_receiving_sound(%s) done", live)
 
