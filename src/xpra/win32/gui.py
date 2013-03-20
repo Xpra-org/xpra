@@ -35,14 +35,17 @@ class ClientExtras(ClientExtrasBase):
         self.setup_menu(True)
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
         self.emulate_altgr = False
+        self.force_quit = False
         self.last_key_event_sent = None
 
     def cleanup(self):
-        log("cleanup() tray=%s", self.tray)
+        log("ClientExtras.cleanup() tray=%s", self.tray)
         ClientExtrasBase.cleanup(self)
         if self.tray:
+            log("ClientExtras.cleanup() calling tray.close=%s", self.tray.close)
             self.tray.close()
             self.tray = None
+        log("ClientExtras.cleanup() ended")
 
     def setup_exit_handler(self, enable=1):
         try:
@@ -64,8 +67,12 @@ class ClientExtras(ClientExtrasBase):
                   }
         if event in events:
             log.info("exiting on event %s", events.get(event))
-            self.setup_exit_handler(enable=0)       #disable our handler
-            self.quit()
+            if self.force_quit:
+                self.setup_exit_handler(enable=0)
+                os._exit(event)
+            else:
+                self.force_quit = True
+                self.quit()
             return 1
         return 0
 
@@ -113,9 +120,12 @@ class ClientExtras(ClientExtrasBase):
         if not tray_icon_filename or not os.path.exists(tray_icon_filename):
             log.error("invalid tray icon filename: '%s'" % tray_icon_filename)
 
+        def tray_exit(*args):
+            log("tray_exit() calling quit")
+            self.quit()
         try:
             from xpra.win32.win32_tray import Win32Tray
-            self.tray = Win32Tray(self.get_tray_tooltip(), self.activate_menu, self.quit, tray_icon_filename)
+            self.tray = Win32Tray(self.get_tray_tooltip(), self.activate_menu, tray_exit, tray_icon_filename)
         except Exception, e:
             log.error("failed to load native Windows NotifyIcon: %s", e)
 
