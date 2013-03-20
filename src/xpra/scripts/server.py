@@ -511,23 +511,26 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                 return False # Only call once
             gobject.timeout_add(0, check_once)
 
-    if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
-        pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
-        procs.append(pa_proc)
-        log.info("pulseaudio server started with pid %s", pa_proc.pid)
-        def check_pa_start():
-            if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
-                log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
-            return False
-        gobject.timeout_add(1000*2, check_pa_start)
-        def cleanup_pa():
-            if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
-                log.info("stopping pulseaudio with pid %s", pa_proc.pid)
-                try:
-                    pa_proc.terminate()
-                except:
-                    pass
-        _cleanups.append(cleanup_pa)
+        log("upgrading=%s, shadowing=%s, pulseaudio=%s, pulseaudio_command=%s",
+                 upgrading, shadowing, opts.pulseaudio, opts.pulseaudio_command)
+        if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
+            pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
+            procs.append(pa_proc)
+            log.info("pulseaudio server started with pid %s", pa_proc.pid)
+            def check_pa_start():
+                if pa_proc.poll() is not None or pa_proc.pid in child_reaper._dead_pids:
+                    log.warn("Warning: pulseaudio has terminated. Either fix the pulseaudio command line or use --no-pulseaudio to avoid this warning.")
+                return False
+            gobject.timeout_add(1000*2, check_pa_start)
+            def cleanup_pa():
+                log("cleanup_pa() process.poll()=%s, pid=%s, dead_pids=%s", pa_proc.poll(), pa_proc.pid, child_reaper._dead_pids)
+                if pa_proc.poll() is None and pa_proc.pid not in child_reaper._dead_pids:
+                    log.info("stopping pulseaudio with pid %s", pa_proc.pid)
+                    try:
+                        pa_proc.terminate()
+                    except:
+                        log.warn("error trying to stop pulseaudio", exc_info=True)
+            _cleanups.append(cleanup_pa)
     if opts.exit_with_children:
         assert opts.start_child
     if opts.start_child:
