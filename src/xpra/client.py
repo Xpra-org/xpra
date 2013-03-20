@@ -350,26 +350,32 @@ class XpraClient(XpraClientBase, gobject.GObject):
     def run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
+        log("XpraClient.run() main loop ended, returning exit_code=%s", self.exit_code)
         return  self.exit_code
 
     def quit(self, exit_code=0):
+        log("XpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
+        if gtk.main_level()>0:
+            log("XpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
+            gobject.timeout_add(200, gtk_main_quit_really)
         self.cleanup()
-        gobject.timeout_add(50, gtk_main_quit_really)
 
     def cleanup(self):
-        log("cleanup() client_extras=%s", self._client_extras)
+        log("XpraClient.cleanup() client_extras=%s", self._client_extras)
         if self._client_extras:
             self._client_extras.cleanup()
         if self.sound_sink:
-            self.stop_receiving_sound()
+            self.stop_receiving_sound(False)
         if self.sound_source:
-            self.stop_sending_sound()
+            self.stop_sending_sound(False)
         XpraClientBase.cleanup(self)
         self.clean_mmap()
+        log("XpraClient.cleanup() done")
 
     def clean_mmap(self):
+        log("XpraClient.clean_mmap() mmap_file=%s", self.mmap_file)
         if self.mmap_file and os.path.exists(self.mmap_file):
             os.unlink(self.mmap_file)
             self.mmap_file = None
@@ -942,14 +948,17 @@ class XpraClient(XpraClientBase, gobject.GObject):
             log.error("error setting up sound: %s", e)
             return False
 
-    def stop_sending_sound(self):
+    def stop_sending_sound(self, live=True):
         """ stop the sound source and emit client signal """
+        log("XpraClient.stop_sending_sound(%s)", live)
         if self.sound_source is None:
             log.warn("stop_sending_sound: sound not started!")
             return
         self.microphone_enabled = False
-        self.sound_source.stop()
-        self.emit("microphone-changed")
+        if live:
+            self.sound_source.cleanup()
+            self.emit("microphone-changed")
+        log("XpraClient.stop_sending_sound(%s) done", live)
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
@@ -962,15 +971,18 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.send("sound-control", "start")
             self.emit("speaker-changed")
 
-    def stop_receiving_sound(self):
+    def stop_receiving_sound(self, live=True):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
+        log("XpraClient.stop_receiving_sound(%s)", live)
         self.send("sound-control", "stop")
         if self.sound_sink is None:
             log("stop_receiving_sound: sound not started!")
             return
         self.speaker_enabled = False
-        self.sound_sink.stop()
-        self.emit("speaker-changed")
+        if live:
+            self.sound_sink.cleanup()
+            self.emit("speaker-changed")
+        log("XpraClient.stop_receiving_sound(%s) done", live)
 
 
     def start_sound_sink(self, codec):
