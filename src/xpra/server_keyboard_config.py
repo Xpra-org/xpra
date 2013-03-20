@@ -48,7 +48,7 @@ class KeyboardConfig(object):
         self.keycodes_for_modifier_keynames = {}
         self.modifier_client_keycodes = {}
         self.compute_modifier_map()
-        self.make_modifiers_match = True
+        self.modifiers_filter = None
         self.is_native_keymap = True
 
     def get_hash(self):
@@ -117,7 +117,8 @@ class KeyboardConfig(object):
         except:
             log.error("error setting new keymap", exc_info=True)
         self.is_native_keymap = self.xkbmap_print!="" or self.xkbmap_query!=""
-        self.make_modifiers_match = (client_platform and not client_platform.startswith("win")) or self.is_native_keymap
+        if (client_platform and client_platform.startswith("win")) and not self.is_native_keymap:
+            self.modifiers_filter = ("lock", "num")
         try:
             #first clear all existing modifiers:
             clean_keyboard_state()
@@ -185,9 +186,6 @@ class KeyboardConfig(object):
         if not self.keynames_for_mod:
             debug("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
-        if not self.make_modifiers_match:
-            debug("make_keymask_match: ignored - current mask=%s", get_current_mask())
-            return
         if ignored_modifier_keynames is None:
             ignored_modifier_keynames = self.xkbmap_mod_pointermissing
 
@@ -200,9 +198,13 @@ class KeyboardConfig(object):
                     return True
             return False
 
+        def filter_modifiers(mods):
+            if self.modifiers_filter is None:
+                return mods
+            return [x for x in mods if x in self.modifiers_filter]
 
-        current = set(get_current_mask())
-        wanted = set(modifier_list)
+        current = set(filter_modifiers(get_current_mask()))
+        wanted = set(filter_modifiers(modifier_list))
         if current==wanted:
             return
         debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
