@@ -222,6 +222,7 @@ class XpraClientBase(gobject.GObject):
 
 
     def cleanup(self):
+        log("XpraClientBase.cleanup() protocol=%s", self._protocol)
         if self._protocol:
             self._protocol.close()
             self._protocol = None

@@ -70,14 +70,19 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         return self.bitrate
 
     def start(self):
+        debug("SoundPipeline.start()")
         self.state = "active"
         self.pipeline.set_state(gst.STATE_PLAYING)
+        debug("SoundPipeline.start() done")
 
     def stop(self):
+        debug("SoundPipeline.stop()")
         self.state = "stopped"
         self.pipeline.set_state(gst.STATE_NULL)
+        debug("SoundPipeline.stop() done")
 
     def cleanup(self):
+        debug("SoundPipeline.cleanup()")
         self.stop()
         self.bus.remove_signal_watch()
         if self.bus_message_handler_id:
@@ -87,6 +92,7 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
         self.codec = None
         self.bitrate = -1
         self.state = None
+        debug("SoundPipeline.cleanup() done")
 
     def on_message(self, bus, message):
         #debug("on_message(%s, %s)", bus, message)

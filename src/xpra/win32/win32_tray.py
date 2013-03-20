@@ -27,10 +27,11 @@ class Win32Tray:
 		return	self.tray_widget.hwnd
 
 	def close(self):
-		log("close() tray_widget=%s", self.tray_widget)
+		log("Win32Tray.close() tray_widget=%s", self.tray_widget)
 		if self.tray_widget:
 			self.tray_widget.close()
 			self.tray_widget = None
+		log("Win32Tray.close() ended")
 
 	def set_tooltip(self, name):
 		if self.tray_widget:

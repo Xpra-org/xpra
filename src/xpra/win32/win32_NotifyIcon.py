@@ -81,17 +81,20 @@ class win32NotifyIcon:
 			self.command_callback(self.hwnd, cid)
 
 	def OnDestroy(self, hwnd, msg, wparam, lparam):
-		log.debug("OnDestroy(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
+		log.debug("OnDestroy(%s,%s,%s,%s) closed=%s, exit_callback=%s",
+				hwnd, msg, wparam, lparam, self.closed, self.exit_callback)
 		if self.closed:
 			return
 		self.closed = True
 		try:
 			nid = (self.hwnd, 0)
+			log.debug("OnDestroy(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
 			Shell_NotifyIcon(NIM_DELETE, nid)
+			log.debug("OnDestroy(..) calling exit_callback=%s", self.exit_callback)
 			if self.exit_callback:
 				self.exit_callback()
-		except Exception, e:
-			log.error("OnDestroy error: %s", e)
+		except:
+			log.error("OnDestroy(..)", exc_info=True)
 
 	def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
 		log.debug("OnTaskbarNotify(%s,%s,%s,%s)", hwnd, msg, wparam, lparam)
@@ -100,6 +103,7 @@ class win32NotifyIcon:
 		return 1
 
 	def close(self):
+		log.debug("win32NotifyIcon.close() exit_callback=%s", self.exit_callback)
 		self.exit_callback = None
 		self.OnDestroy(0, None, None, None)
 

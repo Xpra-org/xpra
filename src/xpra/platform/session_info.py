@@ -673,5 +673,7 @@ class SessionInfo(gtk.Window):
             log.warn("unknown chooser response: %d" % response)
 
     def destroy(self, *args):
+        log("SessionInfo.destroy(%s) is_closed=%s", args, self.is_closed)
         self.is_closed = True
         gtk.Window.destroy(self)
+        log("SessionInfo.destroy(%s) done", args)

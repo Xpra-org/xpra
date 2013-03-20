@@ -142,13 +142,16 @@ class ClientExtrasBase(object):
                 log.error("failed to set window icon %s: %s, continuing", window_icon, e)
 
     def quit(self, *args):
+        log("ClientExtrasBase.quit(%s) calling %s(0)", args, self.client.quit)
         self.client.quit(0)
 
     def cleanup(self):
+        log("ClientExtrasBase.cleanup() session_info_window=%s, gtk.main_level()=%s", self.session_info_window, gtk.main_level())
         close_about()
         if self.session_info_window:
             self.session_info_window.destroy()
             self.session_info_window = None
+        log("ClientExtrasBase.cleanup() done")
 
     def supports_server(self):
         return XPRA_LOCAL_SERVERS_SUPPORTED
