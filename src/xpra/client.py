@@ -305,7 +305,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
             try:
                 from xpra import gl     #@UnusedImport
                 from xpra.gl.gl_check import check_support
-                self.opengl_props = check_support(enable_opengl is True)
+                w, h = get_root_size()
+                min_texture_size = max(w, h)
+                self.opengl_props = check_support(min_texture_size, force_enable=(enable_opengl is True))
 
                 from xpra.gl.gl_client_window import GLClientWindow
                 self.GLClientWindowClass = GLClientWindow

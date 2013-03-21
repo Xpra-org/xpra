@@ -34,18 +34,24 @@ if sys.version > '3':
 
 
 def check_functions(*functions):
+    missing = []
+    available = []
     for x in functions:
         try:
             name = x.__name__
         except:
             name = str(x)
         if not bool(x):
-            gl_check_error("required function %s is not available" % name)
+            missing.append(name)
         else:
-            log("Function %s is available" % name)
+            available.append(name)
+    if len(missing)>0:
+        gl_check_error("some required OpenGL functions are not available: %s" % (", ".join(missing)))
+    else:
+        log("All the required OpenGL functions are available: %s " % (", ".join(available)))
 
 #sanity checks: OpenGL version and fragment program support:
-def check_GL_support(gldrawable, glcontext, force_enable=False):
+def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=False):
     if not gldrawable.gl_begin(glcontext):
         raise ImportError("gl_begin failed on %s" % gldrawable)
     props = {}
@@ -55,7 +61,7 @@ def check_GL_support(gldrawable, glcontext, force_enable=False):
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
-        from OpenGL.GL import glGetString
+        from OpenGL.GL import glGetString, glGetInteger
         gl_major = int(glGetString(GL_VERSION)[0])
         gl_minor = int(glGetString(GL_VERSION)[2])
         props["opengl"] = gl_major, gl_minor
@@ -138,6 +144,12 @@ def check_GL_support(gldrawable, glcontext, force_enable=False):
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
+        from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB
+        texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB)
+        if min_texture_size>texture_size:
+            gl_check_error("The texture size is too small: %s" % texture_size)
+        else:
+            log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s", texture_size)
         return props
     finally:
         if SILENCE_FORMAT_HANDLER_LOGGER:
@@ -147,7 +159,7 @@ def check_GL_support(gldrawable, glcontext, force_enable=False):
                 pass
         gldrawable.gl_end()
 
-def check_support(force_enable=False):
+def check_support(min_texture_size=0, force_enable=False):
     #tricks to get py2exe to include what we need / load it from its unusual path:
     opengl_icon = os.path.join(os.getcwd(), "icons", "opengl.png")
     if sys.platform.startswith("win"):
@@ -212,7 +224,7 @@ def check_support(force_enable=False):
             gldrawable = glext.set_gl_capability(glconfig)
             glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
 
-        gl_props = check_GL_support(gldrawable, glcontext, force_enable)
+        gl_props = check_GL_support(gldrawable, glcontext, min_texture_size, force_enable)
     finally:
         if w:
             w.destroy()
