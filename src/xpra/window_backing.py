@@ -77,6 +77,7 @@ class Backing(object):
         self._video_use_swscale = True
         self._video_decoder = None
         self._video_decoder_lock = Lock()
+        self.draw_needs_refresh = True
 
     def close(self):
         log("%s.close() video_decoder=%s", type(self), self._video_decoder)

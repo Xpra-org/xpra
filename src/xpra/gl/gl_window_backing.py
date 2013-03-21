@@ -63,6 +63,7 @@ class GLPixmapBacking(PixmapBacking):
         self.gl_setup = False
         self.paint_screen = False
         self._video_use_swscale = False
+        self.draw_needs_refresh = False
 
     def init(self, w, h):
         #re-init gl projection with new dimensions
@@ -141,7 +142,9 @@ class GLPixmapBacking(PixmapBacking):
             finally:
                 self.gl_end(drawable)
 
+
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        debug("_do_paint_rgb24: %sx%s at %sx%s", width, height, x, y)
         gc = self.glarea.window.new_gc()
         self.glarea.window.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
 
