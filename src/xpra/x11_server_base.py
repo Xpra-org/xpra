@@ -258,6 +258,7 @@ class X11ServerBase(ServerBase):
                         continue
                     values[parts[0]] = parts[1]
                 values["Xft.dpi"] = self.dpi
+                values["gnome.Xft/DPI"] = self.dpi*1024
                 log("server_settings: resource-manager values=%s", values)
                 #convert the dict back into a resource string:
                 value = ''
