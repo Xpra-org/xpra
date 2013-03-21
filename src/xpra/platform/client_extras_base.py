@@ -23,6 +23,8 @@ log = Logger()
 
 #compression is fine with default value (3), no need to clutter the UI
 SHOW_COMPRESSION_MENU = False
+#sound start/stop is broken on win32:
+STARTSTOP_SOUND_MENU = (not sys.platform.startswith("win")) or os.environ.get("XPRA_SHOW_SOUND_MENU", "0")=="1"
 
 #really old gtk versions aren't worth bothering about:
 LOAD_ICONS = is_gtk3() or (hasattr(gtk, "image_new_from_pixbuf") and hasattr(gdk, "pixbuf_new_from_file"))
@@ -1043,9 +1045,9 @@ class ClientExtrasBase(object):
             menu.append(self.make_speedmenuitem())
         else:
             self.speed = None
-        if self.client.speaker_allowed:
+        if self.client.speaker_allowed and STARTSTOP_SOUND_MENU:
             menu.append(self.make_speakermenuitem())
-        if self.client.microphone_allowed:
+        if self.client.microphone_allowed and STARTSTOP_SOUND_MENU:
             menu.append(self.make_microphonemenuitem())
         if SHOW_COMPRESSION_MENU:
             menu.append(self.make_compressionmenu())
