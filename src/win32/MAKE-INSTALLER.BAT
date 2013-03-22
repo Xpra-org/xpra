@@ -115,6 +115,7 @@ COPY /B /Y /V "%GSTREAMER%\bin\libgstinterfaces*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgstnet*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgstreamer*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgstapp*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libgstriff*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libgsttag*.dll" dist\
 
 COPY /B /Y /V "%GSTREAMER%\bin\liba52*.dll" dist\
@@ -125,7 +126,7 @@ COPY /B /Y /V "%GSTREAMER%\bin\libmad*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libmp3lame*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libogg*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\liborc*.dll" dist\
-COPY /B /Y /V "%GSTREAMER%\bin\libtheora*.dll" dist\
+COPY /B /Y /V "%GSTREAMER%\bin\libspeex*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libvorbis*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\libwav*.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\z*.dll" dist\
@@ -139,9 +140,14 @@ COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstdirectsound*.dll" dist\gstre
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstflac.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstlame.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstmad.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstogg.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstmpegaudioparse.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstspeex.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstvolume.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstvorbis.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstwavpack.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstwaveenc.dll" dist\gstreamer-0.10\
+COPY /B /Y /V "%GSTREAMER%\lib\gstreamer-0.10\libgstwavparse.dll" dist\gstreamer-0.10\
 COPY /B /Y /V "%PYGSTDLL%\libgstpython-v2.7.dll" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\gst-launch.exe" dist\
 COPY /B /Y /V "%GSTREAMER%\bin\gst-inspect.exe" dist\
