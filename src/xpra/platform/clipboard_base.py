@@ -33,7 +33,7 @@ MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
 
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"], filter_res=None):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"], filter_res=None, claim_ownership=False):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
@@ -44,6 +44,7 @@ class ClipboardProtocolHelperBase(object):
                     self.filter_res.append(re.compile(x))
                 except:
                     log.error("invalid regular expression '%s' in clipboard filter")
+        self._claim_ownership = claim_ownership
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self.init_packet_handlers()
@@ -61,11 +62,12 @@ class ClipboardProtocolHelperBase(object):
     def init_proxies(self, clipboards):
         self._clipboard_proxies = {}
         for clipboard in clipboards:
-            proxy = ClipboardProxy(clipboard)
+            proxy = ClipboardProxy(clipboard, self._claim_ownership)
             proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
+        debug("ClipboardProtocolHelperBase.init_proxies : %s", self._clipboard_proxies)
 
     def local_to_remote(self, selection):
         return  selection
@@ -120,7 +122,21 @@ class ClipboardProtocolHelperBase(object):
                     "PIXEL", "COLORMAP"):
             debug("skipping clipboard data of type: %s, format=%s, len(data)=%s", dtype, dformat, len(data))
             return None, None
+        if target=="TARGETS" and dtype=="ATOM":
+            #targets is special cased here
+            #because we get the values in wire format already (not atoms)
+            #thanks to the request_targets() function (required on win32)
+            return "atoms", self._filter_targets(data)
         return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
+
+    def _filter_targets(self, targets):
+        f = list(targets)
+        discard_targets = ("SAVE_TARGETS", "COMPOUND_TEXT")
+        for x in discard_targets:
+            if x in f:
+                f.remove(x)
+        debug("_filter_targets(%s)=%s", targets, f)
+        return f
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
@@ -251,12 +267,17 @@ class ClipboardProxy(gtk.Invisible):
         "send-clipboard-token": n_arg_signal(1),
         }
 
-    def __init__(self, selection):
+    def __init__(self, selection, claim_ownership):
         gtk.Invisible.__init__(self)
         self.add_events(PROPERTY_CHANGE_MASK)
         self._selection = selection
+        self._claim_ownership = claim_ownership
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False
+        self._clipboard.connect("owner-change", self.do_owner_changed)
+
+    def do_owner_changed(self, *args):
+        debug("do_owner_changed(%s)", args)
 
     def do_selection_request_event(self, event):
         debug("do_selection_request_event(%s)", event)
@@ -327,8 +348,13 @@ class ClipboardProxy(gtk.Invisible):
             data = result["data"]
             dformat = result["format"]
             dtype = result["type"]
-            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)", selection_data, info, time, dtype, dformat, type(data), len(data or ""))
+            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s), claim_ownership=%s",
+                  selection_data, info, time, dtype, dformat, type(data), len(data or ""), self._claim_ownership)
             selection_data.set(dtype, dformat, data)
+            if self._claim_ownership:
+                #workaround used in TranslatedClipboard to claim clipboard ownership
+                self.emit("send-clipboard-token", self._selection)
+                debug("do_selection_get: claiming %s ownership",  self._selection)
         else:
             debug("remote selection fetch timed out or empty")
 
@@ -364,16 +390,22 @@ class ClipboardProxy(gtk.Invisible):
                      + "*I* thought *they* had it... weird.")
             cb(None, None, None)
             return
-        def unpack(clipboard, selection_data, data):
-            debug("unpack: %s, %s", type(data), len(data or ""))
-            if selection_data is None:
-                cb(None, None, None)
-            else:
-                debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
-                            type(selection_data.data), len(selection_data.data or ""))
-                cb(str(selection_data.type),
-                   selection_data.format,
-                   selection_data.data)
-        self._clipboard.request_contents(target, unpack)
+        if target=="TARGETS":
+            def got_targets(c, targets, *args):
+                debug("got_targets(%s, %s, %s)", c, targets, args)
+                cb("ATOM", 32, targets)
+            self._clipboard.request_targets(got_targets)
+        else:
+            def unpack(clipboard, selection_data, data):
+                debug("unpack: %s, %s", type(data), len(data or ""))
+                if selection_data is None:
+                    cb(None, None, None)
+                else:
+                    debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
+                                type(selection_data.data), len(selection_data.data or ""))
+                    cb(str(selection_data.type),
+                       selection_data.format,
+                       selection_data.data)
+            self._clipboard.request_contents(target, unpack)
 
 gobject.type_register(ClipboardProxy)

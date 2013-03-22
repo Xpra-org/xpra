@@ -33,12 +33,7 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
             atom_names = [str(atom) for atom in atoms]
             debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atom_names=%s", target, datatype, dataformat, type(data), len(data), atom_names)
             if target=="TARGETS":
-                otargets = list(atom_names)
-                discard_targets = ("SAVE_TARGETS", "COMPOUND_TEXT")
-                for x in discard_targets:
-                    if x in atom_names:
-                        atom_names.remove(x)
-                debug("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) filtered targets(%s)=%s", target, datatype, dataformat, type(data), len(data), otargets, atom_names)
+                atom_names = self._filter_targets(atom_names)
             return "atoms", atom_names
         return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data)
 

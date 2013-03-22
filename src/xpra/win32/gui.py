@@ -24,10 +24,8 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
         ClientExtrasBase.__init__(self, client, opts, conn)
         try:
-            from xpra.platform.merged_clipboard import MergedClipboardProtocolHelper
             from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
-            assert TranslatedClipboardProtocolHelper is not None
-            self.setup_clipboard_helper(MergedClipboardProtocolHelper)
+            self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
         except ImportError, e:
             log.error("GDK translated or merged clipboard failed to load: %s - using default fallback", e)
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
