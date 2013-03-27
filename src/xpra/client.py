@@ -732,7 +732,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
 
     def redraw_all_windows(self):
         for w in self._id_to_window.values():
-            w.full_redraw()
+            if not w.is_tray():
+                w.full_redraw()
 
     def send_ping(self):
         now_ms = int(1000*time.time())
