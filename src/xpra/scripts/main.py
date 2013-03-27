@@ -477,6 +477,8 @@ def parse_display_name(error_cb, opts, display_name):
         desc["type"] = "tcp"
         desc["local"] = False
         parts = display_name.split(separator)
+        if len(parts)!=3:
+            error_cb("invalid tcp connection string, use tcp/HOST/PORT or tcp:host:port")
         port = int(parts[-1])
         if port<=0 or port>=65536:
             error_cb("invalid port number: %s" % port)
