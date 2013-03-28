@@ -351,12 +351,12 @@ class ClipboardProxy(gtk.Invisible):
             debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s), claim_ownership=%s",
                   selection_data, info, time, dtype, dformat, type(data), len(data or ""), self._claim_ownership)
             selection_data.set(dtype, dformat, data)
-            if self._claim_ownership:
-                #workaround used in TranslatedClipboard to claim clipboard ownership
-                self.emit("send-clipboard-token", self._selection)
-                debug("do_selection_get: claiming %s ownership",  self._selection)
         else:
             debug("remote selection fetch timed out or empty")
+        if self._claim_ownership:
+            #workaround used in TranslatedClipboard to claim clipboard ownership
+            self.emit("send-clipboard-token", self._selection)
+            debug("do_selection_get: claiming %s ownership",  self._selection)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
