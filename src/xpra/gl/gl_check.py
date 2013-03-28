@@ -144,8 +144,8 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             glBindProgramARB, glProgramStringARB
         check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
-        from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB
-        texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB)
+        from OpenGL.GL import GL_MAX_RECTANGLE_TEXTURE_SIZE
+        texture_size = glGetInteger(GL_MAX_RECTANGLE_TEXTURE_SIZE)
         if min_texture_size>texture_size:
             gl_check_error("The texture size is too small: %s" % texture_size)
         else:
