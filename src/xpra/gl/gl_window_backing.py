@@ -22,9 +22,9 @@ from xpra.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
-    GL_TEXTURE_COORD_ARRAY, GL_UNPACK_ROW_LENGTH, \
+    GL_TEXTURE_COORD_ARRAY, GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
-    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR, \
+    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB8, GL_RGB, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
@@ -33,7 +33,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     glTexParameteri, \
     glTexImage2D, \
     glMultiTexCoord2i, glColor3f, \
-    glVertex2i, glEnd
+    glTexCoord2i, glVertex2i, glEnd
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
@@ -88,7 +88,7 @@ class GLPixmapBacking(PixmapBacking):
             glEnableClientState(GL_TEXTURE_COORD_ARRAY)
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
-                self.textures = glGenTextures(3)
+                self.textures = glGenTextures(4)
                 debug("textures for wid=%s of size %s : %s", self.wid, self.size, self.textures)
             self.gl_setup = True
         return drawable
@@ -144,9 +144,41 @@ class GLPixmapBacking(PixmapBacking):
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        debug("_do_paint_rgb24: %sx%s at %sx%s", width, height, x, y)
-        gc = self.glarea.window.new_gc()
-        self.glarea.window.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
+        drawable = self.gl_init()
+        # Set GL state for RGB24 painting: 
+        #    no fragment program
+        #    only tex unit #0 active
+        glDisable(GL_FRAGMENT_PROGRAM_ARB);
+        for texture in (GL_TEXTURE1, GL_TEXTURE2):
+            glActiveTexture(texture)
+            glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glActiveTexture(GL_TEXTURE0);
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        
+        # Upload data as temporary RGB texture
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[3])
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+
+        # Draw textured RGB quad at the right coordinates
+        glBegin(GL_QUADS)
+        glTexCoord2i(0, 0)
+        glVertex2i(x, y)
+        glTexCoord2i(0, height)
+        glVertex2i(x, y+height)
+        glTexCoord2i(width, height)
+        glVertex2i(x+width, y+height)
+        glTexCoord2i(width, 0)
+        glVertex2i(x+width, y)
+        glEnd()
+        
+        # Reset state
+        glEnable(GL_FRAGMENT_PROGRAM_ARB)
+        self.gl_end(drawable)
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         debug("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
