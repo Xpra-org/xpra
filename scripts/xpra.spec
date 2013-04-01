@@ -143,8 +143,24 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
-- TODO
+* Mon Apr 01 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
+- fix focus problems with old Xvfb display servers
+- fix RPM SELinux labelling of static codec builds (CentOS)
+- fix CentOS 5.x compatibility
+- fix Python 2.4 and 2.5 compatibility (many)
+- OpenGL client rendering
+- support for many more audio codecs: flac, opus, wavpack, wav, speex
+- support starting remote sessions with "xpra start"
+- support for Xdummy with CentOS 6.4 onwards
+- add --log-file command line option
+- add clipboard regex string filtering
+- add clipboard transfer in progress animation via system tray
+- detect broken/slow connections and temporarily grey out windows
+- reduce regular packet header sizes using numeric lookup tables
+- allow more options in xpra config and launcher files
+- safer test for windows to ignore (window IDs starts at 1 again)
+- expose more version and statistical data via xpra info
+- upgrade to rencode 1.0.2
 
 * Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
 - fix server deadlock on dead connections
