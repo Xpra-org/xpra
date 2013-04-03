@@ -11,7 +11,7 @@ from wimpiggy.gdk.gdk_atoms import (
                 gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
                 )
 
-from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, debug
+from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, CLIPBOARDS, debug
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
@@ -19,7 +19,7 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
         to and from a form suitable for transport over the wire.
     """
 
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD", "PRIMARY", "SECONDARY"], filter_res=None):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
         ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, clipboards, filter_res)
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):

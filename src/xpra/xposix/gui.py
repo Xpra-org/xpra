@@ -28,12 +28,19 @@ class ClientExtras(ClientExtrasBase):
     def __init__(self, client, opts, conn):
         ClientExtrasBase.__init__(self, client, opts, conn)
         if not is_gtk3():       #currently broken with gtk3
-            try:
-                from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-                self.setup_clipboard_helper(GDKClipboardProtocolHelper)
-            except ImportError, e:
-                log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
-                self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+            if os.environ.get("XPRA_TRANSLATED_CLIPBOARD", "0")=="1":
+                try:
+                    from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
+                    self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
+                except:
+                    pass
+            if self.clipboard_helper is None:
+                try:
+                    from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+                    self.setup_clipboard_helper(GDKClipboardProtocolHelper)
+                except ImportError, e:
+                    log.error("GDK Clipboard failed to load: %s - using 'Default Clipboard' fallback", e)
+                    self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu(True)
         self.setup_tray(opts.no_tray, opts.delay_tray, opts.tray_icon)
         self.setup_xprops()

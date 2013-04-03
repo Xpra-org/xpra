@@ -31,9 +31,12 @@ else:
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
+CLIPBOARDS = os.environ.get("XPRA_CLIPBOARDS", "CLIPBOARD,PRIMARY,SECONDARY").split(",")
+CLIPBOARDS = [x.strip() for x in CLIPBOARDS]
+
 
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=["CLIPBOARD"], filter_res=None, claim_ownership=False):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None, claim_ownership=False):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
