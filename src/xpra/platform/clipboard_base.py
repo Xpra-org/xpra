@@ -32,7 +32,7 @@ else:
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
 CLIPBOARDS = os.environ.get("XPRA_CLIPBOARDS", "CLIPBOARD,PRIMARY,SECONDARY").split(",")
-CLIPBOARDS = [x.strip() for x in CLIPBOARDS]
+CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
 
 
 class ClipboardProtocolHelperBase(object):
@@ -70,7 +70,7 @@ class ClipboardProtocolHelperBase(object):
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
-        debug("ClipboardProtocolHelperBase.init_proxies : %s", self._clipboard_proxies)
+        debug("%s.init_proxies : %s", type(self), self._clipboard_proxies)
 
     def local_to_remote(self, selection):
         return  selection
@@ -87,9 +87,12 @@ class ClipboardProtocolHelperBase(object):
     def _process_clipboard_token(self, packet):
         selection = packet[1]
         name = self.remote_to_local(selection)
-        debug("process clipboard token selection=%s, local clipboard name=%s", selection, name)
-        if name in self._clipboard_proxies:
-            self._clipboard_proxies[name].got_token()
+        proxy = self._clipboard_proxies.get(name)
+        debug("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
+        if proxy:
+            proxy.got_token()
+        else:
+            debug("ignoring token for clipboard proxy name '%s' (no proxy)", name)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
         request_id = self._clipboard_request_counter
@@ -278,6 +281,9 @@ class ClipboardProxy(gtk.Invisible):
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False
         self._clipboard.connect("owner-change", self.do_owner_changed)
+
+    def __str__(self):
+        return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
         debug("do_owner_changed(%s)", args)
