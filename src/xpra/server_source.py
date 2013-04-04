@@ -936,6 +936,7 @@ class ServerSource(object):
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*time.time())
+        log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send("ping", now_ms)
         timeout = 60
         def check_echo_timeout(*args):
