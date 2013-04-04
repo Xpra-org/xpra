@@ -36,7 +36,7 @@ CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
 
 
 class ClipboardProtocolHelperBase(object):
-    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None, claim_ownership=False):
+    def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
         self.send = send_packet_cb
         self.progress_cb = progress_cb
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
@@ -47,7 +47,6 @@ class ClipboardProtocolHelperBase(object):
                     self.filter_res.append(re.compile(x))
                 except:
                     log.error("invalid regular expression '%s' in clipboard filter")
-        self._claim_ownership = claim_ownership
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self.init_packet_handlers()
@@ -65,7 +64,7 @@ class ClipboardProtocolHelperBase(object):
     def init_proxies(self, clipboards):
         self._clipboard_proxies = {}
         for clipboard in clipboards:
-            proxy = ClipboardProxy(clipboard, self._claim_ownership)
+            proxy = ClipboardProxy(clipboard)
             proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
@@ -273,13 +272,13 @@ class ClipboardProxy(gtk.Invisible):
         "send-clipboard-token": n_arg_signal(1),
         }
 
-    def __init__(self, selection, claim_ownership):
+    def __init__(self, selection):
         gtk.Invisible.__init__(self)
         self.add_events(PROPERTY_CHANGE_MASK)
         self._selection = selection
-        self._claim_ownership = claim_ownership
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False
+        self._send_on_owner_change = True
         self._clipboard.connect("owner-change", self.do_owner_changed)
 
     def __str__(self):
@@ -287,6 +286,9 @@ class ClipboardProxy(gtk.Invisible):
 
     def do_owner_changed(self, *args):
         debug("do_owner_changed(%s)", args)
+        if self._send_on_owner_change:
+            self._have_token = False
+            self.emit("send-clipboard-token", self._selection)
 
     def do_selection_request_event(self, event):
         debug("do_selection_request_event(%s)", event)
@@ -357,15 +359,11 @@ class ClipboardProxy(gtk.Invisible):
             data = result["data"]
             dformat = result["format"]
             dtype = result["type"]
-            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s), claim_ownership=%s",
-                  selection_data, info, time, dtype, dformat, type(data), len(data or ""), self._claim_ownership)
+            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
+                  selection_data, info, time, dtype, dformat, type(data), len(data or ""))
             selection_data.set(dtype, dformat, data)
         else:
             debug("remote selection fetch timed out or empty")
-        if self._claim_ownership:
-            #workaround used in TranslatedClipboard to claim clipboard ownership
-            self.emit("send-clipboard-token", self._selection)
-            debug("do_selection_get: claiming %s ownership",  self._selection)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
@@ -382,6 +380,7 @@ class ClipboardProxy(gtk.Invisible):
         # We got the anti-token.
         debug("got token, selection=%s", self._selection)
         self._have_token = True
+        self._send_on_owner_change = False
         if not self.selection_owner_set(self._selection):
             # I don't know how this can actually fail, given that we pass
             # CurrentTime, but just in case:
@@ -389,6 +388,9 @@ class ClipboardProxy(gtk.Invisible):
                      % (self._selection,)
                      + "will not be able to pass local apps "
                      + "contents of remote clipboard")
+        def reenable_send(*args):
+            self._send_on_owner_change = True
+        gobject.idle_add(reenable_send)
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
