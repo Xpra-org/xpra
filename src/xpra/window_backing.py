@@ -368,8 +368,8 @@ class PixmapBacking(Backing):
             the actual paint code is in _do_paint_rgb24 (which is overriden in gl_window_backing)
         """
         try:
-            self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
-            fire_paint_callbacks(callbacks, True)
+            success = self._do_paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+            fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
             raise
         except:
@@ -379,6 +379,7 @@ class PixmapBacking(Backing):
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        return True
 
     def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):
         assert "webp" in ENCODINGS

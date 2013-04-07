@@ -146,7 +146,10 @@ class GLPixmapBacking(PixmapBacking):
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
         drawable = self.gl_init()
-        # Set GL state for RGB24 painting: 
+        if not drawable:
+            debug("OpenGL cannot paint rgb24, drawable is not set")
+            return False
+        # Set GL state for RGB24 painting:
         #    no fragment program
         #    only tex unit #0 active
         glDisable(GL_FRAGMENT_PROGRAM_ARB);
@@ -155,7 +158,7 @@ class GLPixmapBacking(PixmapBacking):
             glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glActiveTexture(GL_TEXTURE0);
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
-        
+
         # Upload data as temporary RGB texture
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[3])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
@@ -175,10 +178,11 @@ class GLPixmapBacking(PixmapBacking):
         glTexCoord2i(width, 0)
         glVertex2i(x+width, y)
         glEnd()
-        
+
         # Reset state
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         self.gl_end(drawable)
+        return True
 
     def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
         debug("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
@@ -198,7 +202,7 @@ class GLPixmapBacking(PixmapBacking):
         #this function runs in the UI thread, no video_decoder lock held
         drawable = self.gl_init()
         if not drawable:
-            debug("cannot paint, drawable is not set")
+            debug("OpenGL cannot paint yuv, drawable is not set")
             fire_paint_callbacks(callbacks, False)
             return
         try:
