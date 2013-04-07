@@ -164,7 +164,7 @@ class SystemTray(gobject.GObject):
             elif opcode==SYSTEM_TRAY_CANCEL_MESSAGE:
                 mid = event.data[2]
                 log.info("tray cancel message for mid=%s - not handled yet!", mid)
-        elif opcode=="_NET_SYSTEM_TRAY_MESSAGE_DATA":
+        elif event.message_type=="_NET_SYSTEM_TRAY_MESSAGE_DATA":
             assert event.format==8
             log.info("tray message data - not handled yet!")
         else:
