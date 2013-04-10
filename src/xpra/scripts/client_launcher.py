@@ -445,8 +445,9 @@ class ApplicationWindow:
 
 
 def main():
-	from xpra.win32 import set_log_filename
-	set_log_filename("Xpra-Launcher.log")
+	if sys.platform.startswith("win"):
+		from xpra.win32 import set_log_filename
+		set_log_filename("Xpra-Launcher.log")
 	platform_init()
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
