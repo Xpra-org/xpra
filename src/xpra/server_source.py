@@ -945,7 +945,6 @@ class ServerSource(object):
         gobject.timeout_add(timeout*1000, check_echo_timeout)
 
     def process_ping(self, time_to_echo):
-        self.last_ping_echoed_time = time_to_echo
         #send back the load average:
         try:
             (fl1, fl2, fl3) = os.getloadavg()
@@ -964,6 +963,7 @@ class ServerSource(object):
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
+        self.last_ping_echoed_time = echoedtime
         client_ping_latency = time.time()-echoedtime/1000.0
         self.statistics.client_ping_latency.append((time.time(), client_ping_latency))
         self.client_load = l1, l2, l3
