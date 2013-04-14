@@ -173,12 +173,23 @@ def create_unix_domain_socket(sockpath, mmap_group):
 def create_tcp_socket(parser, spec):
     if ":" not in spec:
         parser.error("TCP port must be specified as [HOST]:PORT")
-    (host, port) = spec.split(":", 1)
+    (host, port) = spec.rsplit(":", 1)
     if host == "":
         host = "127.0.0.1"
-    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        iport = int(port)
+    except:
+        raise Exception("invalid port number: %s" % port)
+    if host.find(":")<0:
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sockaddr = (host, iport)
+    else:
+        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
+        res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
+        listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sockaddr = res[0][-1]
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    listener.bind((host, int(port)))
+    listener.bind(sockaddr)
     return listener
 
 def close_all_fds(exceptions=[]):
@@ -313,7 +324,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
                         pass
                 _cleanups.append(cleanup_tcp_socket)
             except Exception, e:
-                log.error("cannot start - failed to create tcp socket at %s: %s" % (bind_to, e))
+                log.error("cannot start - failed to create tcp socket at %s : %s" % (bind_to, e))
                 return  1
         for tcp_s in set(opts.bind_tcp):
             setup_tcp_socket(tcp_s)
