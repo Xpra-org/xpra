@@ -1196,6 +1196,9 @@ class ServerBase(object):
         assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
         if packet_type.startswith("clipboard-"):
             ss = self._server_sources.get(proto)
+            if not ss:
+                #protocol has been dropped!
+                return
             assert self._clipboard_client==ss, \
                     "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
             assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
