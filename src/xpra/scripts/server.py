@@ -51,21 +51,29 @@ def deadly_signal(signum, frame):
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
 # thus before we even know the pid of the child).  So be careful:
 class ChildReaper(object):
-    def __init__(self, quit_cb, children_pids):
+    def __init__(self, quit_cb, children_pids={}):
         self._quit = quit_cb
         self._children_pids = children_pids
         self._dead_pids = set()
+        self._logger = None
 
     def check(self):
-        if (self._children_pids
-            and self._children_pids.issubset(self._dead_pids)):
-            self._quit()
+        if self._children_pids:
+            pids = set(self._children_pids.keys())
+            if pids.issubset(self._dead_pids):
+                self._quit()
 
     def sigchld(self, signum, frame):
         self.reap()
 
     def add_dead_pid(self, pid):
         if pid not in self._dead_pids:
+            cmd = self._children_pids.get(pid)
+            if cmd:
+                if not self._logger:
+                    from wimpiggy.log import Logger
+                    self._logger = Logger()
+                self._logger.info("child '%s' with pid %s has terminated", cmd, pid)
             self._dead_pids.add(pid)
             self.check()
 
@@ -476,7 +484,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return 1
         app = XpraServer(clobber, sockets, opts)
 
-    children_pids = set()
+    children_pids = {}
     def reaper_quit():
         if opts.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
@@ -544,7 +552,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             if child_cmd:
                 try:
                     proc = subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True)
-                    children_pids.add(proc.pid)
+                    children_pids[proc.pid] = child_cmd
                     procs.append(proc)
                 except OSError, e:
                     sys.stderr.write("Error spawning child '%s': %s\n"
