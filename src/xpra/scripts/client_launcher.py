@@ -429,6 +429,7 @@ class ApplicationWindow:
 			self.mode_combo.set_active(2)
 		self.encoding_combo.set_active(ENCODINGS.index(self.config.encoding))
 		self.username_entry.set_text(self.config.username)
+		self.password_entry.set_text(self.config.password)
 		self.host_entry.set_text(self.config.host)
 		self.port_entry.set_text(str(self.config.port))
 
