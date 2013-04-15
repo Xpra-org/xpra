@@ -906,10 +906,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
         #if self.server_sound_receive and self.microphone_allowed:
         #    self.start_sending_sound()
 
-        #ui may want to know this is now set:
-        self.emit("clipboard-toggled")
         self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
+        #ui may want to know this is now set:
+        self.emit("clipboard-toggled")
         if self.server_supports_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.send_clipboard_enabled_status)

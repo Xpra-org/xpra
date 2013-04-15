@@ -198,13 +198,15 @@ class ClientExtrasBase(object):
                 self.set_tooltip("Xpra")
                 self.set_blinking(False)
         self.clipboard_helper = helperClass(clipboard_send, clipboard_progress)
-        def clipboard_toggled(*args):
-            log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)
-            if self.client.clipboard_enabled and self.client.server_supports_clipboard:
-                self.clipboard_helper.send_all_tokens()
-            else:
-                pass    #FIXME: todo!
-        self.client.connect("clipboard-toggled", clipboard_toggled)
+        def register_clipboard_toggled(*args):
+            def clipboard_toggled(*args):
+                log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)
+                if self.client.clipboard_enabled and self.client.server_supports_clipboard:
+                    self.clipboard_helper.send_all_tokens()
+                else:
+                    pass    #FIXME: todo!
+            self.client.connect("clipboard-toggled", clipboard_toggled)
+        self.client.connect("handshake-complete", register_clipboard_toggled)
 
     def can_notify(self):
         return  False
