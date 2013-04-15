@@ -131,14 +131,12 @@ class GLPixmapBacking(PixmapBacking):
         drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
-        debug("gl_expose_event(%s, %s)", glarea, event)
-        area = event.area
-        x, y, w, h = area.x, area.y, area.width, area.height
         drawable = self.gl_init()
         debug("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
         if drawable:
+            area = event.area
             try:
-                self.render_image(x, y, w, h)
+                self.render_image(area.x, area.y, area.width, area.height)
             finally:
                 self.gl_end(drawable)
 
@@ -273,10 +271,23 @@ class GLPixmapBacking(PixmapBacking):
                 if height/div_h != U_height:
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d)", height/div_h, U_height)
 
+    def white_paint(self, x, y, w, h):
+        debug("GL white_paint(%s, %s, %s, %s)", x, y, w, h)
+        glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glColor3f(1.0, 1.0, 1.0)
+        glBegin(GL_QUADS)
+        glVertex2i(x, y)
+        glVertex2i(x+w, y)
+        glVertex2i(x+w, y+h)
+        glVertex2i(x, y+h)
+        glEnd()
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+
     def render_image(self, rx, ry, rw, rh):
         debug("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
+            #self.white_paint(rx, ry, rw, rh)
             return
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -302,29 +313,17 @@ class GLPixmapBacking(PixmapBacking):
             return
         #let's figure out what needs painting in white
         #until we get it from the server
-        def white_paint(x, y, w, h):
-            #print("white_paint(%s, %s, %s, %s)", x, y, w, h)
-            glDisable(GL_TEXTURE_RECTANGLE_ARB)
-            glColor3f(1.0, 1.0, 1.0)
-            glBegin(GL_QUADS)
-            glVertex2i(x, y)
-            glVertex2i(x+w, y)
-            glVertex2i(x+w, y+h)
-            glVertex2i(x, y+h)
-            glEnd()
-            glEnable(GL_TEXTURE_RECTANGLE_ARB)
-
         if rx+rw<=tw:
             #X axis is ok, just Y-axis:
             assert ry+rh>th
-            white_paint(rx, th, rx+rw, ry+rh)
+            self.white_paint(rx, th, rx+rw, ry+rh)
         elif ry+rh<=th:
             #Y axis is ok, just X-axis:
             assert rx+rw>tw
-            white_paint(tw, ry, rx+rw, ry+rh)
+            self.white_paint(tw, ry, rx+rw, ry+rh)
         else:
             assert ry+rh>th and rx+rw>tw
             #both axis overflowed
             #draw common area just once:
-            white_paint(tw, ry, rx+rw, th)
-            white_paint(rx, th, rx+rw, ry+rh)
+            self.white_paint(tw, ry, rx+rw, th)
+            self.white_paint(rx, th, rx+rw, ry+rh)
