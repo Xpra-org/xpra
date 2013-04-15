@@ -294,6 +294,12 @@ class XpraClient(XpraClientBase, gobject.GObject):
         self.opengl_enabled = False
         self.GLClientWindowClass = None
         self.opengl_props = {}
+        from xpra.scripts.config import OpenGL_safety_check
+        check = OpenGL_safety_check()
+        if check:
+            self.opengl_props["info"] = check
+            log.warn("OpenGL: %s", check)
+            return
         if enable_opengl is False:
             self.opengl_props["info"] = "disabled by configuration"
             return

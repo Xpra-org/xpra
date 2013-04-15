@@ -84,6 +84,36 @@ try:
 except:
     pass
 
+def OpenGL_safety_check():
+    if not sys.platform.startswith("win"):
+        #on other platforms, we can probe OpenGL later safely
+        return True
+    #try to detect VirtualBox:
+    #based on the code found here:
+    #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
+    #because it causes hard VM crashes when we probe the GL driver!
+    try:
+        from ctypes import cdll
+        if cdll.LoadLibrary("VBoxHook.dll"):
+            return "disabled because VBoxHook.dll is present"
+    except:
+        pass
+    try:
+        try:
+            f = None
+            f = open("\\\\.\\VBoxMiniRdrDN", "r")
+        finally:
+            if f:
+                f.close()
+                return "disabled because VirtualBox is present"
+    except Exception, e:
+        import errno
+        if e.args[0]==errno.EACCES:
+            return "disabled because VirtualBox is present"
+    return None
+OPENGL_DEFAULT = None
+if OpenGL_safety_check() is not None:
+    OPENGL_DEFAULT = False
 
 
 
@@ -373,7 +403,7 @@ def get_defaults():
                     "windows"           : True,
                     "autoconnect"       : False,
                     "exit-with-children": False,
-                    "opengl"            : None,
+                    "opengl"            : OPENGL_DEFAULT,
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "key-shortcut"      : ["Meta+Shift+F4:quit"],
