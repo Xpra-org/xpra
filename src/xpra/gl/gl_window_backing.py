@@ -24,7 +24,7 @@ from xpra.window_backing import PixmapBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
     GL_TEXTURE_COORD_ARRAY, GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
-    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB8, GL_RGB, GL_LINEAR, \
+    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
