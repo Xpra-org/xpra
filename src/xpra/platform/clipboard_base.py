@@ -285,7 +285,7 @@ class ClipboardProxy(gtk.Invisible):
         return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
-        debug("do_owner_changed(%s)", args)
+        debug("do_owner_changed(%s) send_on_owner_change=%s", args, self._send_on_owner_change)
         if self._send_on_owner_change:
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)
