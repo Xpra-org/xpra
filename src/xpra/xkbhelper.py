@@ -103,7 +103,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                 used_settings[setting] = value
         if len(args)==1:
             log.warn("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
-        log.info("setting keymap: %s", used_settings)
+        log.info("setting keymap: %s", ", ".join(["%s=%s" % (k,v) for k,v in used_settings.items()]))
         exec_keymap_command(args)
         #try to set the options:
         if "options" in settings:
