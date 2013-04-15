@@ -447,12 +447,6 @@ class ServerBase(object):
             return
         if not self.sanity_checks(proto, capabilities):
             return
-
-        screenshot_req = capabilities.get("screenshot_request", False)
-        info_req = capabilities.get("info_request", False)
-        if not screenshot_req and not info_req:
-            log.info("Handshake complete; enabling connection")
-
         remote_version = capabilities.get("version")
         if not is_compatible_with(remote_version):
             proto.close()
@@ -499,6 +493,11 @@ class ServerBase(object):
                 return
             if not self._verify_password(proto, client_hash, password):
                 return
+
+        screenshot_req = capabilities.get("screenshot_request", False)
+        info_req = capabilities.get("info_request", False)
+        if not screenshot_req and not info_req:
+            log.info("Handshake complete; enabling connection")
 
         if screenshot_req:
             #this is a screenshot request, handle it and disconnect
