@@ -278,8 +278,10 @@ class ApplicationWindow:
 	def do_connect(self):
 		try:
 			self.connect_builtin()
-		except:
+		except Exception, e:
 			self.set_sensitive(True)
+			self.set_info_color(True)
+			self.set_info_text(str(e))
 			log.error("cannot connect:", exc_info=True)
 
 	def connect_builtin(self):
