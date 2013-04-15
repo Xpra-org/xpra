@@ -766,7 +766,7 @@ class WindowSource(object):
         if w==0 or h==0:
             return
         if not window.is_managed():
-            warn("the window %s is not composited!?", window)
+            debug("the window %s is not composited!?", window)
             return
         # It's important to acknowledge changes *before* we extract them,
         # to avoid a race condition.
