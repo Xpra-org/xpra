@@ -253,11 +253,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         super(BaseWindowModel, self).__init__()
         self.client_window = client_window
         self._managed = False
+        self._managed_handlers = []
         self._setup_done = False
         self._geometry = None
         self._damage_forward_handle = None
         self._internal_set_property("client-window", client_window)
         self._composite = CompositeHelper(self.client_window, False)
+
+    def managed_connect(self, detailed_signal, handler, *args):
+        """ connects a signal handler and makes sure we will clean it up on unmanage() """
+        handler_id = self.connect(detailed_signal, handler, *args)
+        self._managed_handlers.append(handler_id)
+        return handler_id
+
+    def managed_disconnect(self):
+        for handler_id in self._managed_handlers:
+            self.disconnect(handler_id)
 
     def call_setup(self):
         log("call_setup() adding event receiver")
@@ -310,7 +321,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         return self._managed
 
     def _forward_contents_changed(self, obj, event):
-        self.emit("client-contents-changed", event)
+        if self._managed:
+            self.emit("client-contents-changed", event)
 
     def do_get_property_client_contents(self, name):
         return self._composite.get_property("contents")
@@ -345,6 +357,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._managed = False
         log("do_unmanaged(%s) damage_forward_handle=%s, composite=%s", wm_exiting, self._damage_forward_handle, self._composite)
         remove_event_receiver(self.client_window, self)
+        gobject.idle_add(self.managed_disconnect)
         if self._composite:
             if self._damage_forward_handle:
                 self._composite.disconnect(self._damage_forward_handle)
@@ -1231,12 +1244,10 @@ class WindowView(gtk.Widget):
 
         self._image_window = None
         self.model = model
-        self._redraw_handle = self.model.connect("client-contents-changed",
-                                                  self._client_contents_changed)
-        self._election_handle = self.model.connect("ownership-election",
-                                                    self._vote_for_pedro)
-        self._unmanaged_handle = self.model.connect("unmanaged",
-                                                    self._unmanaged)
+        mc = self.model.managed_connect
+        self._redraw_handle = mc("client-contents-changed", self._client_contents_changed)
+        self._election_handle = mc("ownership-election", self._vote_for_pedro)
+        self._unmanaged_handle = mc("unmanaged", self._unmanaged)
 
         # Standard GTK double-buffering is useless for us, because it's on our
         # "official" window, and we don't draw to that.

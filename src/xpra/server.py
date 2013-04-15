@@ -291,8 +291,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_window_common(self, window):
         wid = X11ServerBase._add_new_window_common(self, window)
-        window.connect("client-contents-changed", self._contents_changed)
-        window.connect("unmanaged", self._lost_window)
+        window.managed_connect("client-contents-changed", self._contents_changed)
+        window.managed_connect("unmanaged", self._lost_window)
         return wid
 
     _window_export_properties = ("title", "size-hints")
