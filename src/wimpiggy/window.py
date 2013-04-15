@@ -278,6 +278,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = None
             raise Unmanageable(e)
         #compositing is now enabled, from now on we need to call setup_failed to clean things up
+        self._managed = True
         try:
             trap.call_synced(self.setup)
         except XError, e:
@@ -286,7 +287,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             except Exception, ex:
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
-        self._managed = True
         self._setup_done = True
         log("call_setup() ended")
 
