@@ -433,7 +433,14 @@ class ApplicationWindow:
 		self.username_entry.set_text(self.config.username)
 		self.password_entry.set_text(self.config.password)
 		self.host_entry.set_text(self.config.host)
-		self.port_entry.set_text(str(self.config.port))
+		port = ""
+		try:
+			iport = int(self.config.port)
+			if iport>0:
+				port = str(iport)
+		except:
+			pass
+		self.port_entry.set_text(port)
 
 	def destroy(self, *args):
 		self.window.destroy()
