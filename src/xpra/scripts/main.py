@@ -561,8 +561,10 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             e = child.poll()
             if e is not None:
                 error_message = "cannot %s using %s: the SSH process has terminated with exit code=%s" % (action, display_desc["full_ssh"], e)
-                debug_cb(error_message)
-                ssh_fail_cb(error_message)
+                if debug_cb:
+                    debug_cb(error_message)
+                if ssh_fail_cb:
+                    ssh_fail_cb(error_message)
                 raise IOError(error_message)
         def stop_tunnel():
             if os.name=="posix":
