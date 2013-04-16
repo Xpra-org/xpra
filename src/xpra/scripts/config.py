@@ -95,7 +95,7 @@ def OpenGL_safety_check():
     try:
         from ctypes import cdll
         if cdll.LoadLibrary("VBoxHook.dll"):
-            return "disabled because VBoxHook.dll is present"
+            return "VirtualBox is present (VBoxHook.dll)"
     except:
         pass
     try:
@@ -105,11 +105,11 @@ def OpenGL_safety_check():
         finally:
             if f:
                 f.close()
-                return "disabled because VirtualBox is present"
+                return "VirtualBox is present (VBoxMiniRdrDN)"
     except Exception, e:
         import errno
         if e.args[0]==errno.EACCES:
-            return "disabled because VirtualBox is present"
+            return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
 OPENGL_DEFAULT = None
 if OpenGL_safety_check() is not None:
