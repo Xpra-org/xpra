@@ -1150,7 +1150,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
             auto_refresh_delay = self.auto_refresh_delay    #we do it
         ClientWindowClass = ClientWindow
         if not self.mmap_enabled and self.opengl_enabled and self.encoding in ("x264", "vpx"):
-            ClientWindowClass = self.GLClientWindowClass
+            #only enable GL for normal windows:
+            window_types = metadata.get("window-type")
+            if "_NET_WM_WINDOW_TYPE_NORMAL" in window_types:
+                ClientWindowClass = self.GLClientWindowClass
         pid = metadata.get("pid", -1)
         group_leader = None
         #set group leader (but avoid ugly "not implemented" warning on win32):
