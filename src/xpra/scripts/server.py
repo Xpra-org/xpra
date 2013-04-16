@@ -461,15 +461,6 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if xvfb_pid is not None:
             save_pid(xvfb_pid)
 
-    def kill_xvfb():
-        # Close our display(s) first, so the server dying won't kill us.
-        log.info("killing xvfb with pid %s" % xvfb_pid)
-        for display in gtk.gdk.display_manager_get().list_displays():
-            display.close()
-        os.kill(xvfb_pid, signal.SIGTERM)
-    if xvfb_pid is not None and not opts.use_display and not shadowing:
-        _cleanups.append(kill_xvfb)
-
     if shadowing:
         if sys.platform.startswith("win"):
             from xpra.win32.shadow_server import XpraWin32ShadowServer
@@ -494,6 +485,18 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
         app = XpraServer(clobber, sockets, opts)
+
+    #we got this far so the sockets have initialized and
+    #the server should be able to manage the display
+    #from now on, if we exit without upgrading we will also kill the Xvfb
+    def kill_xvfb():
+        # Close our display(s) first, so the server dying won't kill us.
+        log.info("killing xvfb with pid %s" % xvfb_pid)
+        for display in gtk.gdk.display_manager_get().list_displays():
+            display.close()
+        os.kill(xvfb_pid, signal.SIGTERM)
+    if xvfb_pid is not None and not opts.use_display and not shadowing:
+        _cleanups.append(kill_xvfb)
 
     children_pids = {}
     def reaper_quit():
