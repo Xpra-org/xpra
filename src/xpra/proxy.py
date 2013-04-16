@@ -45,7 +45,7 @@ class XpraProxy(object):
                 written = untilConcludes(to_conn.write, buf)
                 buf = buf[written:]
 
-    def quit(self):
+    def quit(self, *args):
         log("closing proxy connections")
         self._closed = True
         try:
