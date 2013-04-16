@@ -556,6 +556,13 @@ class ServerBase(object):
         if ss.clipboard_enabled and self._clipboard_helper is not None and \
             (self._clipboard_client is None or self._clipboard_client.is_closed()):
             self._clipboard_client = ss
+            #deal with buggy win32 clipboards:
+            greedy = capabilities.get("clipboard.greedy")
+            if greedy is None:
+                #old clients without the flag: take a guess based on platform:
+                client_platform = capabilities.get("platform")
+                greedy = client_platform is not None and client_platform.startswith("win")
+            self._clipboard_helper.set_greedy_client(greedy)
         #so only activate this feature afterwards:
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)

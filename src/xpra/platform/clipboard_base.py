@@ -52,6 +52,10 @@ class ClipboardProtocolHelperBase(object):
         self.init_packet_handlers()
         self.init_proxies(clipboards)
 
+    def set_greedy_client(self, greedy):
+        for proxy in self._clipboard_proxies.values():
+            proxy.set_greedy_client(greedy)
+
     def init_packet_handlers(self):
         self._packet_handlers = {
             "clipboard-token":              self._process_clipboard_token,
@@ -278,15 +282,22 @@ class ClipboardProxy(gtk.Invisible):
         self._selection = selection
         self._clipboard = gtk.Clipboard(selection=selection)
         self._have_token = False
-        self._send_on_owner_change = True
+        #clients that need a new token for every owner-change: (ie: win32)
+        self._greedy_client = False
+        #semaphore to block the sending of the token when we change the owner ourselves:
+        self._block_owner_change = False
         self._clipboard.connect("owner-change", self.do_owner_changed)
+
+    def set_greedy_client(self, greedy):
+        debug("%s.set_greedy_client(%s)", self, greedy)
+        self._greedy_client = greedy
 
     def __str__(self):
         return  "ClipboardProxy(%s)" % self._selection
 
     def do_owner_changed(self, *args):
-        debug("do_owner_changed(%s) send_on_owner_change=%s", args, self._send_on_owner_change)
-        if self._send_on_owner_change:
+        debug("do_owner_changed(%s) greedy_client=%s, block_owner_change=%s", args, self._greedy_client, self._block_owner_change)
+        if self._greedy_client and not self._block_owner_change:
             self._have_token = False
             self.emit("send-clipboard-token", self._selection)
 
@@ -368,9 +379,9 @@ class ClipboardProxy(gtk.Invisible):
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
         debug("do_selection_clear_event(%s) selection=%s", event, self._selection)
-        #if send_on_owner_change is set, do_owner_changed will fire the token
+        #if greedy_client is set, do_owner_changed will fire the token
         #so don't bother sending it now (same if we don't have it)
-        send = (not self._send_on_owner_change or self._have_token)
+        send = ((not self._greedy_client or self._block_owner_change) or not self._have_token)
         self._have_token = False
 
         # Emit a signal -> send a note to the other side saying "hey its
@@ -384,7 +395,8 @@ class ClipboardProxy(gtk.Invisible):
         # We got the anti-token.
         debug("got token, selection=%s", self._selection)
         self._have_token = True
-        self._send_on_owner_change = False
+        if self._greedy_client:
+            self._block_owner_change = True
         if not self.selection_owner_set(self._selection):
             # I don't know how this can actually fail, given that we pass
             # CurrentTime, but just in case:
@@ -392,9 +404,12 @@ class ClipboardProxy(gtk.Invisible):
                      % (self._selection,)
                      + "will not be able to pass local apps "
                      + "contents of remote clipboard")
-        def reenable_send(*args):
-            self._send_on_owner_change = True
-        gobject.idle_add(reenable_send)
+        if self._block_owner_change:
+            #re-enable the flag via idle_add so events like do_owner_changed
+            #get a chance to run first.
+            def remove_block(*args):
+                self._block_owner_change = False
+            gobject.idle_add(remove_block)
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
