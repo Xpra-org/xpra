@@ -87,7 +87,7 @@ except:
 def OpenGL_safety_check():
     if not sys.platform.startswith("win"):
         #on other platforms, we can probe OpenGL later safely
-        return True
+        return None
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
