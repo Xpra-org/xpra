@@ -368,12 +368,16 @@ class ClipboardProxy(gtk.Invisible):
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
         debug("do_selection_clear_event(%s) selection=%s", event, self._selection)
+        #if send_on_owner_change is set, do_owner_changed will fire the token
+        #so don't bother sending it now (same if we don't have it)
+        send = (not self._send_on_owner_change or self._have_token)
         self._have_token = False
 
         # Emit a signal -> send a note to the other side saying "hey its
         # ours now"
         # Send off the anti-token.
-        self.emit("send-clipboard-token", self._selection)
+        if send:
+            self.emit("send-clipboard-token", self._selection)
         gtk.Invisible.do_selection_clear_event(self, event)
 
     def got_token(self):
