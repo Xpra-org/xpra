@@ -95,6 +95,7 @@ def nn(x):
     return x
 
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
+PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 
 
 class XpraClient(XpraClientBase, gobject.GObject):
@@ -748,11 +749,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
     def send_ping(self):
         now_ms = int(1000*time.time())
         self.send("ping", now_ms)
-        timeout = 60
         def check_echo_timeout(*args):
             if self.last_ping_echoed_time<now_ms:
-                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % timeout)
-        gobject.timeout_add(timeout*1000, check_echo_timeout)
+                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
+        gobject.timeout_add(PING_TIMEOUT*1000, check_echo_timeout)
         wait = 2.0
         if len(self.server_ping_latency)>0:
             l = [x for _,x in list(self.server_ping_latency)]
