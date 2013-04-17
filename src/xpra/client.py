@@ -736,39 +736,41 @@ class XpraClient(XpraClientBase, gobject.GObject):
     def check_server_echo(self, ping_sent_time):
         last = self._server_ok
         self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
-        if last!=self._server_ok:
-            #changed, so redraw the windows
-            self.redraw_all_windows()
-            if not self._server_ok:
-                #server has just timed out: redraw regularly until the server is ok:
-                def timer_redraw():
-                    if self.server_ok():
-                        #it's ok now, things are already redrawn
-                        return False
-                    self.redraw_all_windows()
-                    return True
-                gobject.timeout_add(100, timer_redraw)
+        if last!=self._server_ok and not self._server_ok:
+            log.info("check_server_echo: server is not responding, redrawing spinners over the windows")
+            def timer_redraw():
+                self.redraw_spinners()
+                if self.server_ok():
+                    log.info("check_server_echo: server is OK again, stopping redraw")
+                    return False
+                return True
+            self.redraw_spinners()
+            gobject.timeout_add(100, timer_redraw)
         return False
 
-    def redraw_all_windows(self):
+    def redraw_spinners(self):
+        #draws spinner on top of the window, or not (plain repaint)
+        #depending on whether the server is ok or not
         for w in self._id_to_window.values():
             if not w.is_tray():
-                w.full_redraw()
+                w.spinner(self.server_ok())
+
+    def check_echo_timeout(self, ping_time):
+        log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
+        if self.last_ping_echoed_time<ping_time:
+            self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self):
-        now_ms = int(1000*time.time())
+        now_ms = int(1000.0*time.time())
         self.send("ping", now_ms)
-        def check_echo_timeout(*args):
-            if self.last_ping_echoed_time<now_ms:
-                self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
-        gobject.timeout_add(PING_TIMEOUT*1000, check_echo_timeout)
+        gobject.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
         wait = 2.0
         if len(self.server_ping_latency)>0:
             l = [x for _,x in list(self.server_ping_latency)]
             avg = sum(l) / len(l)
             wait = 1.0+avg*2.0
-            log("average server latency=%s, using max wait=%s", avg, wait)
-        gobject.timeout_add(int(wait*1000), self.check_server_echo, now_ms)
+            log("average server latency=%.1f, using max wait %.2fs", 1000.0*avg, wait)
+        gobject.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         return True
 
     def _process_ping_echo(self, packet):

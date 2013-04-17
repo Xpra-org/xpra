@@ -7,7 +7,7 @@
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.client_window import ClientWindow
+from xpra.client_window import ClientWindow, queue_draw, gdk_window
 from xpra.gl.gl_window_backing import GLPixmapBacking, debug
 
 
@@ -23,6 +23,19 @@ class GLClientWindow(ClientWindow):
 
     def is_GL(self):
         return True
+
+    def spinner(self, ok):
+        if not self._backing.paint_screen or not self._backing.glarea:
+            return
+        w, h = self.get_size()
+        if ok:
+            self._backing.render_image(0, 0, w, h)
+            queue_draw(self._backing.glarea, 0, 0, w, h)
+        else:
+            import gtk.gdk
+            window = gdk_window(self._backing.glarea)
+            context = window.cairo_create()
+            self.paint_spinner(context, gtk.gdk.Rectangle(0, 0, w, h))
 
     def do_expose_event(self, event):
         debug("GL do_expose_event(%s)", event)

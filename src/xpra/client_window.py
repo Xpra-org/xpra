@@ -75,21 +75,21 @@ else:
     def is_mapped(win):
         return win.window is not None and win.window.is_visible()
     if gtk.gtk_version>=(2,14):
-        def gdk_window(gtkwindow):
-            return gtkwindow.get_window()
+        def gdk_window(widget):
+            return widget.get_window()
     else:
-        def gdk_window(gtkwindow):
-            return gtkwindow.window
-    def get_window_geometry(gtkwindow):
-        gdkwindow = gdk_window(gtkwindow)
+        def gdk_window(widget):
+            return widget.window
+    def get_window_geometry(widget):
+        gdkwindow = gdk_window(widget)
         x, y = gdkwindow.get_origin()
         _, _, w, h, _ = gdkwindow.get_geometry()
         return (x, y, w, h)
     def set_geometry_hints(gtkwindow, hints):
         gtkwindow.set_geometry_hints(None, **hints)
 
-    def queue_draw(gtkwindow, x, y, width, height):
-        window = gdk_window(gtkwindow)
+    def queue_draw(widget, x, y, width, height):
+        window = gdk_window(widget)
         if window:
             window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
         else:
@@ -306,10 +306,6 @@ class ClientWindow(gtk.Window):
         from xpra.window_backing import new_backing
         self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
 
-    def full_redraw(self):
-        w, h = self.get_size()
-        queue_draw(self, 0, 0, w, h)
-
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
 
@@ -469,25 +465,37 @@ class ClientWindow(gtk.Window):
         context.clip()
         self._backing.cairo_draw(context)
         if not self._client.server_ok():
-            #add grey semi-opaque layer on top:
-            context.set_operator(cairo.OPERATOR_OVER)
-            context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
-            context.rectangle(event.area)
-            context.fill()
-            #add spinner:
-            w, h = self.get_size()
-            dim = min(w/3.0, h/3.0, 100.0)
-            context.set_line_width(dim/10.0)
-            context.set_line_cap(cairo.LINE_CAP_ROUND)
-            context.translate(w/2, h/2)
-            from xpra.gtk_spinner import cv
-            count = int(time.time()*5.0)
-            for i in range(8):      #8 lines
-                context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
-                context.move_to(0.0, -dim/4.0)
-                context.line_to(0.0, -dim)
-                context.rotate(math.pi/4)
-                context.stroke()
+            self.paint_spinner(context, event.area)
+
+    def paint_spinner(self, context, area):
+        log("paint_spinner(%s, %s)", context, area)
+        #add grey semi-opaque layer on top:
+        context.set_operator(cairo.OPERATOR_OVER)
+        context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
+        context.rectangle(area)
+        #w, h = self._size
+        #context.rectangle(gdk.Rectangle(0, 0, w, h))
+        context.fill()
+        #add spinner:
+        w, h = self.get_size()
+        dim = min(w/3.0, h/3.0, 100.0)
+        context.set_line_width(dim/10.0)
+        context.set_line_cap(cairo.LINE_CAP_ROUND)
+        context.translate(w/2, h/2)
+        from xpra.gtk_spinner import cv
+        count = int(time.time()*5.0)
+        for i in range(8):      #8 lines
+            context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
+            context.move_to(0.0, -dim/4.0)
+            context.line_to(0.0, -dim)
+            context.rotate(math.pi/4)
+            context.stroke()
+
+    def spinner(self, ok):
+        #with normal windows, we just queue a draw request
+        #and let the expose event paint the spinner
+        w, h = self.get_size()
+        queue_draw(self, 0, 0, w, h)
 
 
     def do_map_event(self, event):
