@@ -55,7 +55,8 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._children_pids = children_pids
         self._dead_pids = set()
-        self._logger = None
+        from wimpiggy.log import Logger
+        self._logger = Logger()
 
     def check(self):
         if self._children_pids:
@@ -70,9 +71,6 @@ class ChildReaper(object):
         if pid not in self._dead_pids:
             cmd = self._children_pids.get(pid)
             if cmd:
-                if not self._logger:
-                    from wimpiggy.log import Logger
-                    self._logger = Logger()
                 self._logger.info("child '%s' with pid %s has terminated", cmd, pid)
             self._dead_pids.add(pid)
             self.check()
