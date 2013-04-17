@@ -476,6 +476,8 @@ def main():
 	has_file = len(sys.argv) == 2
 	if has_file:
 		app.update_options_from_file(sys.argv[1])
+	if app.config.debug:
+		logging.root.setLevel(logging.DEBUG)
 	app.create_window()
 	try:
 		app.update_gui_from_config()
