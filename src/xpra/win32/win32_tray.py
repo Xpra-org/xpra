@@ -64,6 +64,9 @@ class Win32Tray:
 		Use pywin32 to receive session notification events.
 		"""
 		if app_hwnd is None:
+			if self.tray_widget is None:
+				#probably closing down, don't warn
+				return
 			log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
 			return
 		try:
