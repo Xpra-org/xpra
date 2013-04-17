@@ -29,11 +29,10 @@ class ClientExtras(ClientExtrasBase):
         except ImportError, e:
             log.error("GDK translated or merged clipboard failed to load: %s - using default fallback", e)
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
-        self.setup_exit_handler(True)
         self.setup_menu(True)
+        self.setup_console_event_listener()
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
         self.emulate_altgr = False
-        self.force_quit = False
         self.last_key_event_sent = None
 
     def cleanup(self):
@@ -43,9 +42,10 @@ class ClientExtras(ClientExtrasBase):
             log("ClientExtras.cleanup() calling tray.close=%s", self.tray.close)
             self.tray.close()
             self.tray = None
+        self.setup_console_event_listener(False)
         log("ClientExtras.cleanup() ended")
 
-    def setup_exit_handler(self, enable=1):
+    def setup_console_event_listener(self, enable=1):
         try:
             import win32api     #@UnresolvedImport
             result = win32api.SetConsoleCtrlHandler(self.handle_console_event, enable)
@@ -64,14 +64,7 @@ class ClientExtras(ClientExtrasBase):
                   win32con.CTRL_CLOSE_EVENT     : "CLOSE"
                   }
         if event in events:
-            log.info("exiting on event %s", events.get(event))
-            if self.force_quit:
-                self.setup_exit_handler(enable=0)
-                os._exit(event)
-            else:
-                self.force_quit = True
-                self.quit()
-            return 1
+            log.info("received win32 console event %s", events.get(event))
         return 0
 
     def can_notify(self):
