@@ -461,7 +461,6 @@ def main():
 	platform_init()
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
-	logging.root.addHandler(logging.StreamHandler(sys.stdout))
 	logging.root.setLevel(logging.INFO)
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
