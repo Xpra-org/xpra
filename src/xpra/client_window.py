@@ -492,10 +492,18 @@ class ClientWindow(gtk.Window):
             context.stroke()
 
     def spinner(self, ok):
+        if not self.can_have_spinner():
+            return
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
         queue_draw(self, 0, 0, w, h)
+
+    def can_have_spinner(self):
+        window_types = self._metadata.get("window-type")
+        return ("_NET_WM_WINDOW_TYPE_NORMAL" in window_types) or \
+               ("_NET_WM_WINDOW_TYPE_DIALOG" in window_types) or \
+               ("_NET_WM_WINDOW_TYPE_SPLASH" in window_types)
 
 
     def do_map_event(self, event):

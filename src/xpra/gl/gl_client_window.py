@@ -25,7 +25,7 @@ class GLClientWindow(ClientWindow):
         return True
 
     def spinner(self, ok):
-        if not self._backing.paint_screen or not self._backing.glarea:
+        if not self._backing.paint_screen or not self._backing.glarea or not self.can_have_spinner():
             return
         w, h = self.get_size()
         if ok:
