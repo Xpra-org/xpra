@@ -379,9 +379,9 @@ class XpraClient(XpraClientBase, gobject.GObject):
         if self._client_extras:
             self._client_extras.cleanup()
         if self.sound_sink:
-            self.stop_receiving_sound(False)
+            self.stop_receiving_sound()
         if self.sound_source:
-            self.stop_sending_sound(False)
+            self.stop_sending_sound()
         XpraClientBase.cleanup(self)
         self.clean_mmap()
         #the protocol has been closed, it is now safe to close all the windows:
@@ -972,18 +972,17 @@ class XpraClient(XpraClientBase, gobject.GObject):
             log.error("error setting up sound: %s", e)
             return False
 
-    def stop_sending_sound(self, live=True):
+    def stop_sending_sound(self):
         """ stop the sound source and emit client signal """
-        log("XpraClient.stop_sending_sound(%s)", live)
+        log("XpraClient.stop_sending_sound()")
         if self.sound_source is None:
             log.warn("stop_sending_sound: sound not started!")
             return
         self.microphone_enabled = False
-        if live:
-            self.sound_source.cleanup()
-            self.sound_source = None
-            self.emit("microphone-changed")
-        log("XpraClient.stop_sending_sound(%s) done", live)
+        self.sound_source.cleanup()
+        self.sound_source = None
+        self.emit("microphone-changed")
+        log("XpraClient.stop_sending_sound() done")
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
@@ -996,19 +995,18 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.send("sound-control", "start")
             self.emit("speaker-changed")
 
-    def stop_receiving_sound(self, live=True):
+    def stop_receiving_sound(self):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
-        log("XpraClient.stop_receiving_sound(%s)", live)
+        log("XpraClient.stop_receiving_sound()")
         self.send("sound-control", "stop")
         if self.sound_sink is None:
             log("stop_receiving_sound: sound not started!")
             return
         self.speaker_enabled = False
-        if live:
-            self.sound_sink.cleanup()
-            self.sound_sink = None
-            self.emit("speaker-changed")
-        log("XpraClient.stop_receiving_sound(%s) done", live)
+        self.sound_sink.cleanup()
+        self.sound_sink = None
+        self.emit("speaker-changed")
+        log("XpraClient.stop_receiving_sound() done")
 
 
     def start_sound_sink(self, codec):
