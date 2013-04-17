@@ -384,6 +384,15 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.stop_sending_sound(False)
         XpraClientBase.cleanup(self)
         self.clean_mmap()
+        #the protocol has been closed, it is now safe to close all the windows:
+        #(cleaner and needed when we run embedded in the client launcher)
+        for w in self._id_to_window.values():
+            try:
+                w.destroy()
+            except:
+                pass
+        self._id_to_window = {}
+        self._window_to_id = {}
         log("XpraClient.cleanup() done")
 
     def clean_mmap(self):
