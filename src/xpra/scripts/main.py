@@ -691,6 +691,8 @@ def run_remote_server(parser, opts, args):
     if opts.start_child:
         for c in opts.start_child:
             proxy_args.append("--start-child=%s" % c)
+    if opts.exit_with_children:
+        proxy_args.append("--exit-with-children")
     params["display_as_args"] = proxy_args
     #and use _proxy_start subcommand:
     params["proxy_command"] = ["_proxy_start"]
@@ -710,6 +712,8 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
         if opts.start_child and len(opts.start_child)>0:
             for x in opts.start_child:
                 cmd.append("--start-child=%s" % x)
+        if opts.exit_with_children:
+            cmd.append("--exit-with-children")
         def setsid():
             os.setsid()
         Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, preexec_fn=setsid)
