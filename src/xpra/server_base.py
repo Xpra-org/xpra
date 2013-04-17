@@ -749,7 +749,7 @@ class ServerBase(object):
                         info[prefix+var] = value
             except:
                 log.error("error getting memory usage info", exc_info=True)
-        log("get_info took %s", time.time()-start)
+        log("get_info took %.1fms", 1000.0*(time.time()-start))
         return info
 
     def clipboard_progress(self, local_requests, remote_requests):
