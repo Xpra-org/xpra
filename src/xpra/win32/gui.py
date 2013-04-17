@@ -33,6 +33,7 @@ class ClientExtras(ClientExtrasBase):
         self.setup_console_event_listener()
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
         self.emulate_altgr = False
+        self.num_lock_modifier = None
         self.last_key_event_sent = None
 
     def cleanup(self):
@@ -44,6 +45,11 @@ class ClientExtras(ClientExtrasBase):
             self.tray = None
         self.setup_console_event_listener(False)
         log("ClientExtras.cleanup() ended")
+
+    def set_modifier_mappings(self, mappings):
+        ClientExtrasBase.set_modifier_mappings(self, mappings)
+        self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
+        log("set_modifier_mappings found 'Num_Lock' modifier value: %s", self.num_lock_modifier)
 
     def setup_console_event_listener(self, enable=1):
         try:
@@ -133,6 +139,17 @@ class ClientExtras(ClientExtrasBase):
         log("mask_to_names(%s)=%s, emulate_altgr=%s", mask, names, self.emulate_altgr)
         if self.emulate_altgr:
             self.AltGr_modifiers(names)
+        if self.num_lock_modifier:
+            try:
+                import win32api         #@UnresolvedImport
+                import win32con         #@UnresolvedImport
+                numlock = win32api.GetKeyState(win32con.VK_NUMLOCK)
+                if numlock and self.num_lock_modifier not in names:
+                    names.append(self.num_lock_modifier)
+                elif not numlock and self.num_lock_modifier in names:
+                    names.remove(self.num_lock_modifier)
+            except:
+                pass
         return names
 
     def AltGr_modifiers(self, modifiers, pressed=True):
@@ -161,8 +178,6 @@ class ClientExtras(ClientExtrasBase):
         #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
         is_modifier = hasattr(event, "is_modifier") and event.is_modifier
         if keyval==2**24-1 and keyname=="VoidSymbol":
-            return
-        if keyname=="XNum_Lock":
             return
         #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
         #self.modifier_keys = {}             #{"Control_L" : "control", ...}
