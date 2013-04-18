@@ -9,6 +9,7 @@ SET PYTHON=C:\Python27
 SET PYTHON_EXE=%PYTHON%\python.exe
 SET INNOSETUP="C:\Program Files\Inno Setup 5\ISCC.exe"
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
+SET SVNVERSION_EXE=svnversion
 
 SET PYGTK=%PYTHON%\Lib\site-packages\gtk-2.0
 SET GTK=%PYGTK%\runtime
@@ -38,8 +39,16 @@ set WORKING_DIRECTORY=%cd%
 IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 SET PYTHONPATH=.;%PYTHONPATH%
+SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print __version__"') DO set VERSION=%%i
 ECHO Building Xpra Version %VERSION%
+SET SVNVERSION=ERROR
+FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n') DO set SVNVERSION=%%i
+ECHO Found svnversion=%SVNVERSION%
+SET REVISION=
+FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
+SET FULL_VERSION=%VERSION%-r%REVISION%
+ECHO Full version=%FULL_VERSION%
 
 SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PYTHONPATH%;%PYGST%;%PYGSTDLL%;
 
@@ -178,11 +187,11 @@ if %errorlevel% NEQ 0 (
 
 ECHO ***************************************************************
 ECHO ****** Finished - running the new installer
-MOVE /Y Output\Xpra_Setup.exe Xpra_Setup_%VERSION%.exe
+MOVE /Y Output\Xpra_Setup.exe Xpra_Setup_%FULL_VERSION%.exe
 RMDIR Output
-dir Xpra_Setup_%VERSION%.exe
+dir Xpra_Setup_%FULL_VERSION%.exe
 
-Xpra_Setup_%VERSION%.exe %ARGS%
+Xpra_Setup_%FULL_VERSION%.exe %ARGS%
 GOTO END
 
 :ERROR
