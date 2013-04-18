@@ -12,9 +12,6 @@ import os as _os
 import sys as _sys
 import inspect
 
-from wimpiggy.log import Logger
-log = Logger()
-
 
 _init_done = False
 def init():
@@ -75,17 +72,20 @@ def get_icon_dir():
     return adir     #better than nothing :(
 
 def get_icon_filename(name):
+    def err(*msg):
+        """ log an error message and return None """
+        from wimpiggy.log import Logger
+        log = Logger()
+        log.error(*msg)
+        return None
     idir = get_icon_dir()
     if not idir:
-        log.error("cannot find icons directory!")
-        return    None
+        return err("cannot find icons directory!")
     filename = os.path.join(idir, name)
     if not os.path.exists(filename):
-        log.error("icon file %s does not exist", filename)
-        return    None
+        return err("icon file %s does not exist", filename)
     if not os.path.isfile(filename):
-        log.error("%s is not a file!", filename)
-        return    None
+        return err("%s is not a file!", filename)
     return filename
 
 def get_icon(name):
