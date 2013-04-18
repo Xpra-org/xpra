@@ -143,11 +143,13 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Apr 01 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
+* Thu Apr 18 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
 - fix focus problems with old Xvfb display servers
 - fix RPM SELinux labelling of static codec builds (CentOS)
 - fix CentOS 5.x compatibility
 - fix Python 2.4 and 2.5 compatibility (many)
+- fix failed server upgrades killing the virtual display
+- IPv6 server support
 - OpenGL client rendering
 - support for many more audio codecs: flac, opus, wavpack, wav, speex
 - support starting remote sessions with "xpra start"

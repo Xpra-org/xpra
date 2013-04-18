@@ -1,9 +1,12 @@
-v0.9.0 (2013-04-01)
+v0.9.0 (2013-04-18)
 ======================
 	-- fix focus problems with old Xvfb display servers
 	-- fix RPM SELinux labelling of static codec builds (CentOS)
 	-- fix CentOS 5.x compatibility
 	-- fix Python 2.4 and 2.5 compatibility (many)
+	-- fix clipboard with MS Windows clients
+	-- fix failed server upgrades killing the virtual display
+	-- IPv6 server support
 	-- OpenGL client rendering
 	-- support for many more audio codecs: flac, opus, wavpack, wav, speex
 	-- support starting remote sessions with "xpra start"
@@ -15,9 +18,10 @@ v0.9.0 (2013-04-01)
 	-- reduce regular packet header sizes using numeric lookup tables
 	-- allow more options in xpra config and launcher files
 	-- MS Windows and OSX builds trim the amount of GStreamer plugins shipped
-	-- MS Windows, OSX and static codec builds (Ubuntu Lucid, Debian Squeeze) now use libav 9.3 or newer
-	-- MS Windows builds updated to numpy 1.7
-	-- OSX library updates, fix sound packaging
+	-- MS Windows, OSX and static codec builds (Ubuntu Lucid, Debian Squeeze) updated to libav 9.4
+	-- MS Windows and OSX builds updated to use Python 2.7.4
+	-- MS Windows library updates (pyasn1, numpy, webp)
+	-- OSX library updates (mpfr, x264, pyasn1, numpy, webp), fixed sound packaging
 	-- safer test for windows to ignore (window IDs starts at 1 again)
 	-- expose more version and statistical data via xpra info
 	-- upgrade to rencode 1.0.2
