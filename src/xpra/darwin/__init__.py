@@ -14,8 +14,6 @@ DEFAULT_SSH_CMD = "ssh"
 GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 
 import os.path
-from wimpiggy.log import Logger
-log = Logger()
 
 
 def add_client_options(parser):
@@ -50,6 +48,8 @@ def get_resources_dir():
                 rsc = rsc[:i+len(RESOURCES)]
             return rsc
     except Exception, e:
+        from wimpiggy.log import Logger
+        log = Logger()
         log.error("error looking up bundle path: %s", e)
     from xpra.platform import default_get_app_dir
     return default_get_app_dir()
