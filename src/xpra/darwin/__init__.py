@@ -38,21 +38,35 @@ def do_init():
 
 
 def get_resources_dir():
+    rsc = None
     try:
         import gtkosx_application        #@UnresolvedImport
-        rsc = gtkosx_application.gtkosx_application_get_resource_path()
-        if rsc:
-            RESOURCES = "/Resources/"
-            i = rsc.rfind(RESOURCES)
-            if i>0:
-                rsc = rsc[:i+len(RESOURCES)]
-            return rsc
-    except Exception, e:
-        from wimpiggy.log import Logger
-        log = Logger()
-        log.error("error looking up bundle path: %s", e)
-    from xpra.platform import default_get_app_dir
-    return default_get_app_dir()
+        try:
+            rsc = gtkosx_application.gtkosx_application_get_resource_path()
+            if rsc:
+                RESOURCES = "/Resources/"
+                i = rsc.rfind(RESOURCES)
+                if i>0:
+                    rsc = rsc[:i+len(RESOURCES)]
+        except:
+            #maybe we're not running from an app bundle?
+            pass
+    except:
+        print("ERROR: gtkosx_application module is missing - trying to continue anyway")
+    if not rsc:
+        from xpra.platform import default_get_app_dir
+        rsc = default_get_app_dir()
+    if rsc:
+        #when we run from a jhbuild installation,
+        #~/gtk/inst/bin/xpra is the binary
+        #so rsc=~/gtk/inst/bin
+        #and we want to find ~/gtk/inst/share with get_icon_dir()
+        #so let's try to look for that
+        #(there is no /bin/ in the regular application bundle path)
+        head, tail = os.path.split(rsc)
+        if tail=="bin":
+            return head
+    return rsc
 
 def get_app_dir():
     rsc = get_resources_dir()
