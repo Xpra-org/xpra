@@ -370,9 +370,14 @@ class XpraClient(XpraClientBase, gobject.GObject):
         if self.exit_code is None:
             self.exit_code = exit_code
         if gtk.main_level()>0:
-            log("XpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
-            gobject.timeout_add(200, gtk_main_quit_really)
+            #if for some reason cleanup() hangs, maybe this will fire...
+            gobject.timeout_add(4*1000, gtk_main_quit_really)
+            #try harder!:
+            gobject.timeout_add(5*1000, os._exit, 1)
         self.cleanup()
+        if gtk.main_level()>0:
+            log("XpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
+            gobject.timeout_add(500, gtk_main_quit_really)
 
     def cleanup(self):
         log("XpraClient.cleanup() client_extras=%s", self._client_extras)
