@@ -34,6 +34,14 @@ MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 CLIPBOARDS = os.environ.get("XPRA_CLIPBOARDS", "CLIPBOARD,PRIMARY,SECONDARY").split(",")
 CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
 
+_discard_target_strs_ = ("^SAVE_TARGETS$",
+        "^COMPOUND_TEXT$",
+        "^NeXT ",
+        "^com\.apple\."
+        "^CorePasteboardFlavorType "
+        "^dyn\.")
+DISCARD_TARGETS = [re.compile(x) for x in _discard_target_strs_]
+
 
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, clipboards=CLIPBOARDS, filter_res=None):
@@ -49,12 +57,17 @@ class ClipboardProtocolHelperBase(object):
                     log.error("invalid regular expression '%s' in clipboard filter")
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
+        self._want_targets = False
         self.init_packet_handlers()
         self.init_proxies(clipboards)
 
     def set_greedy_client(self, greedy):
         for proxy in self._clipboard_proxies.values():
             proxy.set_greedy_client(greedy)
+
+    def set_want_targets_client(self, want_targets):
+        debug("set_want_targets_client(%s)", want_targets)
+        self._want_targets = want_targets
 
     def init_packet_handlers(self):
         self._packet_handlers = {
@@ -65,10 +78,13 @@ class ClipboardProtocolHelperBase(object):
             "clipboard-pending-requests":   self._process_clipboard_pending_requests,
             }
 
+    def make_proxy(self, clipboard):
+        return ClipboardProxy(clipboard)
+
     def init_proxies(self, clipboards):
         self._clipboard_proxies = {}
         for clipboard in clipboards:
-            proxy = ClipboardProxy(clipboard)
+            proxy = self.make_proxy(clipboard)
             proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
             proxy.connect("get-clipboard-from-remote", self._get_clipboard_from_remote_handler)
             proxy.show()
@@ -76,24 +92,27 @@ class ClipboardProtocolHelperBase(object):
         debug("%s.init_proxies : %s", type(self), self._clipboard_proxies)
 
     def local_to_remote(self, selection):
+        #overriden in some subclasses (see: translated_clipboard)
         return  selection
     def remote_to_local(self, selection):
+        #overriden in some subclasses (see: translated_clipboard)
         return  selection
 
     # Used by the client during startup:
     def send_all_tokens(self):
-        for selection in self._clipboard_proxies:
-            name = self.local_to_remote(selection)
-            debug("send_all_tokens selection=%s, exported as=%s", selection, name)
-            self.send("clipboard-token", name)
+        for selection, proxy in self._clipboard_proxies.items():
+            self._send_clipboard_token_handler(proxy, selection)
 
     def _process_clipboard_token(self, packet):
         selection = packet[1]
+        targets = None
+        if len(packet)>=3:
+            targets = packet[2]
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         debug("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         if proxy:
-            proxy.got_token()
+            proxy.got_token(targets)
         else:
             debug("ignoring token for clipboard proxy name '%s' (no proxy)", name)
 
@@ -123,7 +142,15 @@ class ClipboardProtocolHelperBase(object):
 
     def _send_clipboard_token_handler(self, proxy, selection):
         debug("send clipboard token: %s", selection)
-        self.send("clipboard-token", self.local_to_remote(selection))
+        rsel = self.local_to_remote(selection)
+        if self._want_targets:
+            #send the token with the target once we get them:
+            def got_targets(dtype, dformat, targets):
+                debug("sending clipboard token for %s with targets=%s", selection, targets)
+                self.send("clipboard-token", rsel, targets)
+            proxy.get_contents("TARGETS", got_targets)
+            return
+        self.send("clipboard-token", rsel)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         # Some types just cannot be marshalled:
@@ -139,11 +166,15 @@ class ClipboardProtocolHelperBase(object):
         return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
 
     def _filter_targets(self, targets):
+        remove = []
+        for target in targets:
+            for x in DISCARD_TARGETS:
+                if x.match(target):
+                    remove.append(target)
+                    break
         f = list(targets)
-        discard_targets = ("SAVE_TARGETS", "COMPOUND_TEXT")
-        for x in discard_targets:
-            if x in f:
-                f.remove(x)
+        for t in remove:
+            f.remove(t)
         debug("_filter_targets(%s)=%s", targets, f)
         return f
 
@@ -391,9 +422,9 @@ class ClipboardProxy(gtk.Invisible):
             self.emit("send-clipboard-token", self._selection)
         gtk.Invisible.do_selection_clear_event(self, event)
 
-    def got_token(self):
+    def got_token(self, targets):
         # We got the anti-token.
-        debug("got token, selection=%s", self._selection)
+        debug("got token, selection=%s, targets=%s", self._selection, targets)
         self._have_token = True
         if self._greedy_client:
             self._block_owner_change = True

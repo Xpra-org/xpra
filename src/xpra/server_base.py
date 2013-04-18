@@ -561,8 +561,11 @@ class ServerBase(object):
             if greedy is None:
                 #old clients without the flag: take a guess based on platform:
                 client_platform = capabilities.get("platform")
-                greedy = client_platform is not None and client_platform.startswith("win")
+                greedy = client_platform is not None and \
+                    (client_platform.startswith("win") or client_platform.startswith("darwin"))
             self._clipboard_helper.set_greedy_client(greedy)
+            want_targets = capabilities.get("clipboard.want_targets", False)
+            self._clipboard_helper.set_want_targets_client(want_targets)
         #so only activate this feature afterwards:
         self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
         key_repeat = capabilities.get("key_repeat", None)

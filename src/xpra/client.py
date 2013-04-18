@@ -672,7 +672,10 @@ class XpraClient(XpraClientBase, gobject.GObject):
         capabilities["dpi"] = self.dpi
         capabilities["clipboard"] = self.client_supports_clipboard
         capabilities["clipboard.notifications"] = self.client_supports_clipboard
-        capabilities["clipboard.greedy"] = sys.platform.startswith("win")       #buggy win32 clipboards..
+        #buggy osx clipboards:
+        capabilities["clipboard.want_targets"] = sys.platform.startswith("darwin")
+        #buggy osx and win32 clipboards:
+        capabilities["clipboard.greedy"] = sys.platform.startswith("win") or sys.platform.startswith("darwin")
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell

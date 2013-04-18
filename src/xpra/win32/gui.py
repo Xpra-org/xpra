@@ -27,7 +27,7 @@ class ClientExtras(ClientExtrasBase):
             from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
             self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
         except ImportError, e:
-            log.error("GDK translated or merged clipboard failed to load: %s - using default fallback", e)
+            log.error("GDK translated clipboard failed to load: %s - using default fallback", e)
             self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
         self.setup_menu(True)
         self.setup_console_event_listener()
