@@ -136,7 +136,6 @@ class ClientExtras(ClientExtrasBase):
 
     def mask_to_names(self, mask):
         names = ClientExtrasBase.mask_to_names(self, mask)
-        log("mask_to_names(%s)=%s, emulate_altgr=%s", mask, names, self.emulate_altgr)
         if self.emulate_altgr:
             self.AltGr_modifiers(names)
         if self.num_lock_modifier:
@@ -144,21 +143,27 @@ class ClientExtras(ClientExtrasBase):
                 import win32api         #@UnresolvedImport
                 import win32con         #@UnresolvedImport
                 numlock = win32api.GetKeyState(win32con.VK_NUMLOCK)
+                log("mask_to_names(%s) GetKeyState(VK_NUMLOCK)=%s", mask, numlock)
                 if numlock and self.num_lock_modifier not in names:
                     names.append(self.num_lock_modifier)
                 elif not numlock and self.num_lock_modifier in names:
                     names.remove(self.num_lock_modifier)
             except:
                 pass
+        log("mask_to_names(%s)=%s", mask, names)
         return names
 
     def AltGr_modifiers(self, modifiers, pressed=True):
+        add = []
         clear = ["mod1", "mod2", "control"]
         if pressed:
-            if "mod5" not in modifiers:
-                modifiers.append("mod5")
+            add.append("mod5")
         else:
             clear.append("mod5")
+        log("AltGr_modifiers(%s, %s) add=%s, clear=%s", modifiers, pressed, add, clear)
+        for x in add:
+            if x not in modifiers:
+                modifiers.append(x)
         for x in clear:
             if x in modifiers:
                 modifiers.remove(x)
