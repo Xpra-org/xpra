@@ -163,5 +163,5 @@ class NestedMainLoop(object):
             gobject.source_remove(soft)
             gobject.source_remove(hard)
         log("%s: done=%s, soft=%s, hard=%s, result=%s",
-            self._done, self._soft_timed_out, self._hard_timed_out, self._result)
+            hex(id(self)), self._done, self._soft_timed_out, self._hard_timed_out, self._result)
         return self._result
