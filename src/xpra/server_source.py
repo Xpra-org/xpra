@@ -321,6 +321,9 @@ class ServerSource(object):
         self.calculate_thread = make_daemon_thread(self.calculate_delay_thread, "calculate_delay")
         self.calculate_thread.start()
 
+    def __str__(self):
+        return  "ServerSource(%s)" % self.protocol
+
     def is_closed(self):
         return self.close_event.isSet()
 
