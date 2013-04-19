@@ -570,49 +570,56 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
         regions = []
+        OR_regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):
             window = self._id_to_window.get(wid)
             log("screenshot: window(%s)=%s", wid, window)
-            if window is None:
+            if window is None or window.is_tray():
                 continue
             pixmap = window.get_property("client-contents")
             log("screenshot: pixmap(%s)=%s", window, pixmap)
             if pixmap is None:
                 continue
-            x, y = window.get_property("geometry")[:2]
+            if window.is_OR():
+                x, y = window.get_property("geometry")[:2]
+            else:
+                x, y = self._desktop_manager.window_geometry(window)[:2]
             log("screenshot: position(%s)=%s,%s", window, x, y)
             w, h = pixmap.get_size()
             log("screenshot: size(%s)=%sx%s", pixmap, w, h)
             item = (wid, x, y, w, h, pixmap)
-            if self._has_focus==wid:
+            if window.is_OR():
+                OR_regions.append(item)
+            elif self._has_focus==wid:
                 #window with focus first (drawn last)
                 regions.insert(0, item)
             else:
                 regions.append(item)
-        log("screenshot: found regions=%s", regions)
-        if len(regions)==0:
-            packet = ["screenshot", 0, 0, "png", -1, ""]
-        else:
-            minx = min([x for (_,x,_,_,_,_) in regions])
-            miny = min([y for (_,_,y,_,_,_) in regions])
-            maxx = max([(x+w) for (_,x,_,w,_,_) in regions])
-            maxy = max([(y+h) for (_,_,y,_,h,_) in regions])
-            width = maxx-minx
-            height = maxy-miny
-            log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
-            import Image
-            image = Image.new("RGBA", (width, height))
-            for wid, x, y, w, h, pixmap in reversed(regions):
-                _, _, wid, _, _, w, h, _, raw_data, rowstride, _, _ = get_rgb_rawdata(0, 0, wid, pixmap, 0, 0, w, h, "rgb24", -1, None, logger=log.debug)
-                window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
-                tx = x-minx
-                ty = y-miny
-                image.paste(window_image, (tx, ty))
-            buf = StringIO()
-            image.save(buf, "png")
-            data = buf.getvalue()
-            buf.close()
-            packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
+        all_regions = OR_regions+regions
+        if len(all_regions)==0:
+            log("screenshot: no regions found, returning empty 0x0 image!")
+            return ["screenshot", 0, 0, "png", -1, ""]
+        log("screenshot: found regions=%s, OR_regions=%s", regions, OR_regions)
+        minx = min([x for (_,x,_,_,_,_) in all_regions])
+        miny = min([y for (_,_,y,_,_,_) in all_regions])
+        maxx = max([(x+w) for (_,x,_,w,_,_) in all_regions])
+        maxy = max([(y+h) for (_,_,y,_,h,_) in all_regions])
+        width = maxx-minx
+        height = maxy-miny
+        log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
+        import Image
+        image = Image.new("RGBA", (width, height))
+        for wid, x, y, w, h, pixmap in reversed(all_regions):
+            _, _, wid, _, _, w, h, _, raw_data, rowstride, _, _ = get_rgb_rawdata(0, 0, wid, pixmap, 0, 0, w, h, "rgb24", -1, None, logger=log.debug)
+            window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
+            tx = x-minx
+            ty = y-miny
+            image.paste(window_image, (tx, ty))
+        buf = StringIO()
+        image.save(buf, "png")
+        data = buf.getvalue()
+        buf.close()
+        packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
         log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
 
