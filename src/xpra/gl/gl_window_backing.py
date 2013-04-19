@@ -53,6 +53,8 @@ class GLPixmapBacking(PixmapBacking):
             display_mode &= ~gtk.gdkgl.MODE_DOUBLE
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
         self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
+        #restoring missed masks:
+        self.glarea.set_events(self.glarea.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
         self.glarea.show()
         self.glarea.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
