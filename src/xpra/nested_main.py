@@ -107,8 +107,11 @@ class NestedMainLoop(object):
             log("NestedMainLoop: no more nested loops")
             #no more nested loops
             return False
+        assert gtk.main_level()>1
         top = cls._stack[-1]
-        #another one is done, we need to pop this soft-timed out one to get to it:
+        #if another loop is done,
+        #we need to pop the ones above it that have timedout,
+        #starting with "top", so we can get to it:
         done_pending = bool([o for o in cls._stack if o!=top and o._done])
         log("NestedMainLoop: top loop=%s, done=%s, soft timeout=%s, hard timeout=%s, done_pending=%s",
             hex(id(top)), top._done, top._hard_timed_out, top._soft_timed_out, done_pending)
@@ -117,7 +120,8 @@ class NestedMainLoop(object):
             log("exiting nested main loop %s, leaving level %s",
                 hex(id(top)), gtk.main_level())
             gtk.main_quit()
-            return True     #check stack again
+            return True     #check new top of stack again
+        #not done / timedout yet:
         return False
 
     def _wakeup(self):
