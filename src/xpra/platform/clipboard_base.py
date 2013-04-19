@@ -7,6 +7,7 @@
 import os
 import struct
 import re
+import binascii
 
 from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
@@ -133,12 +134,13 @@ class ClipboardProtocolHelperBase(object):
         return result
 
     def _clipboard_got_contents(self, request_id, dtype, dformat, data):
-        debug("got clipboard contents(%s)=%s (type=%s, format=%s)", request_id, len(data or []), dtype, dformat)
-        if request_id in self._clipboard_outstanding_requests:
-            loop = self._clipboard_outstanding_requests[request_id]
-            loop.done({"type": dtype, "format": dformat, "data": data})
-        else:
+        loop = self._clipboard_outstanding_requests.get(request_id)
+        debug("got clipboard contents for id=%s len=%s, loop=%s (type=%s, format=%s)",
+              request_id, len(data or []), loop, dtype, dformat)
+        if loop is None:
             debug("got unexpected response to clipboard request %s", request_id)
+            return
+        loop.done({"type": dtype, "format": dformat, "data": data})
 
     def _send_clipboard_token_handler(self, proxy, selection):
         debug("send clipboard token: %s", selection)
@@ -231,37 +233,38 @@ class ClipboardProtocolHelperBase(object):
             raise Exception("unhanled encoding: %s" % encoding)
 
     def _process_clipboard_request(self, packet):
+        def no_contents():
+            self.send("clipboard-contents-none", request_id, selection)
         request_id, selection, target = packet[1:4]
         name = self.remote_to_local(selection)
         debug("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
-        if name in self._clipboard_proxies:
-            proxy = self._clipboard_proxies[name]
-            def got_contents(dtype, dformat, data):
-                debug("got_contents(%s, %s, %s:%s) str(data)=%s..",
-                      dtype, dformat, type(data), len(data or ""), str(data)[:200])
-                def no_contents():
-                    self.send("clipboard-contents-none", request_id, selection)
-                if dtype is None or data is None:
+        proxy = self._clipboard_proxies.get(name)
+        if proxy is None:
+            #err, we were asked about a clipboard we don't handle..
+            no_contents()
+            return
+        def got_contents(dtype, dformat, data):
+            debug("got_contents(%s, %s, %s:%s) data=0x%s..",
+                  dtype, dformat, type(data), len(data or ""), binascii.hexlify(str(data)[:200]))
+            if dtype is None or data is None:
+                no_contents()
+                return
+            munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+            wire_encoding, wire_data = munged
+            debug("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
+            if wire_encoding is None:
+                no_contents()
+                return
+            if len(wire_data)>256:
+                wire_data = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_data)
+                if len(wire_data)>self.max_clipboard_packet_size:
+                    log.warn("even compressed, clipboard contents are too big and have not been sent:"
+                             " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
                     no_contents()
                     return
-                munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                wire_encoding, wire_data = munged
-                debug("clipboard raw -> wire: %r -> %r", (dtype, dformat, data), munged)
-                if wire_encoding is None:
-                    no_contents()
-                    return
-                if len(wire_data)>256:
-                    wire_data = zlib_compress("clipboard: %s / %s" % (dtype, dformat), wire_data)
-                    if len(wire_data)>self.max_clipboard_packet_size:
-                        log.warn("even compressed, clipboard contents are too big and have not been sent:"
-                                 " %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
-                        no_contents()
-                        return
-                self.send("clipboard-contents", request_id, selection,
-                           dtype, dformat, wire_encoding, wire_data)
-            proxy.get_contents(target, got_contents)
-        else:
-            self.send("clipboard-contents-none", request_id, selection)
+            self.send("clipboard-contents", request_id, selection,
+                       dtype, dformat, wire_encoding, wire_data)
+        proxy.get_contents(target, got_contents)
 
     def _process_clipboard_contents(self, packet):
         request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:8]
@@ -397,15 +400,15 @@ class ClipboardProxy(gtk.Invisible):
         assert self._selection == str(selection_data.selection)
         target = str(selection_data.target)
         result = self.emit("get-clipboard-from-remote", self._selection, target)
-        if result is not None and result["type"] is not None:
-            data = result["data"]
-            dformat = result["format"]
-            dtype = result["type"]
-            debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
-                  selection_data, info, time, dtype, dformat, type(data), len(data or ""))
-            selection_data.set(dtype, dformat, data)
-        else:
+        if result is None or result["type"] is None:
             debug("remote selection fetch timed out or empty")
+            return
+        data = result["data"]
+        dformat = result["format"]
+        dtype = result["type"]
+        debug("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
+              selection_data, info, time, dtype, dformat, type(data), len(data or ""))
+        selection_data.set(dtype, dformat, data)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
@@ -452,21 +455,20 @@ class ClipboardProxy(gtk.Invisible):
             cb(None, None, None)
             return
         if target=="TARGETS":
+            #handle TARGETS using "request_targets"
             def got_targets(c, targets, *args):
                 debug("got_targets(%s, %s, %s)", c, targets, args)
                 cb("ATOM", 32, targets)
             self._clipboard.request_targets(got_targets)
-        else:
-            def unpack(clipboard, selection_data, data):
-                debug("unpack: %s, %s", type(data), len(data or ""))
-                if selection_data is None:
-                    cb(None, None, None)
-                else:
-                    debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
-                                type(selection_data.data), len(selection_data.data or ""))
-                    cb(str(selection_data.type),
-                       selection_data.format,
-                       selection_data.data)
-            self._clipboard.request_contents(target, unpack)
+            return
+        def unpack(clipboard, selection_data, user_data):
+            debug("unpack: %s", type(selection_data))
+            if selection_data is None:
+                cb(None, None, None)
+                return
+            debug("unpack(..) type=%s, format=%s, data=%s:%s", selection_data.type, selection_data.format,
+                        type(selection_data.data), len(selection_data.data or ""))
+            cb(str(selection_data.type), selection_data.format, selection_data.data)
+        self._clipboard.request_contents(target, unpack)
 
 gobject.type_register(ClipboardProxy)
