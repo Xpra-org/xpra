@@ -565,18 +565,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def make_screenshot_packet(self):
-        trap.call_synced(self.do_make_screenshot_packet)
+        return trap.call_synced(self.do_make_screenshot_packet)
 
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
         regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):
-            window = self._id_to_window[wid]
+            window = self._id_to_window.get(wid)
+            log("screenshot: window(%s)=%s", wid, window)
+            if window is None:
+                continue
             pixmap = window.get_property("client-contents")
+            log("screenshot: pixmap(%s)=%s", window, pixmap)
             if pixmap is None:
                 continue
-            (x, y, _, _) = self._desktop_manager.window_geometry(window)
+            x, y = window.get_property("geometry")[:2]
+            log("screenshot: position(%s)=%s,%s", window, x, y)
             w, h = pixmap.get_size()
+            log("screenshot: size(%s)=%sx%s", pixmap, w, h)
             item = (wid, x, y, w, h, pixmap)
             if self._has_focus==wid:
                 #window with focus first (drawn last)
@@ -607,6 +613,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             data = buf.getvalue()
             buf.close()
             packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
+        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
 
 

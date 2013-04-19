@@ -79,6 +79,8 @@ class Compressed(object):
         self.data = data
     def __len__(self):
         return len(self.data)
+    def __str__(self):
+        return  "Compressed(%s: %s bytes)" % (self.datatype, len(self.data))
 
 class ZLibCompressed(object):
     def __init__(self, datatype, data, level):
@@ -87,6 +89,9 @@ class ZLibCompressed(object):
         self.level = level
     def __len__(self):
         return len(self.data)
+    def __str__(self):
+        return  "ZLibCompressed(%s: %s bytes)" % (self.datatype, len(self.data))
+
 
 def zlib_compress(datatype, data, level=5):
     cdata = zcompress(data, level)

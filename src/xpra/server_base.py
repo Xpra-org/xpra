@@ -508,11 +508,14 @@ class ServerBase(object):
             #this is a screenshot request, handle it and disconnect
             try:
                 packet = self.make_screenshot_packet()
+                if not packet:
+                    self.send_disconnect(proto, "screenshot failed")
+                    return
                 proto.send_now(packet)
                 gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
-            except:
+            except Exception, e:
                 log.error("failed to capture screenshot", exc_info=True)
-                self.send_disconnect(proto, "screenshot failed")
+                self.send_disconnect(proto, "screenshot failed: %s" % e)
             return
         if info_req:
             log.info("processing info request from %s", proto._conn)
