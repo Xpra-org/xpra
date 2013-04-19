@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Parti.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
 # Parti is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -97,17 +98,21 @@ def _dump_recursion_info():
 class NestedMainLoop(object):
     _stack = []
 
+    def __str(self):
+        return  "NestedMainLoop(%s)" % hex(id(self))
+
     @classmethod
     def _quit_while_top_done(cls):
-        if (cls._stack
-            and (cls._stack[-1]._done
-                 or cls._stack[-1]._hard_timed_out
-                 or (cls._stack[-1]._soft_timed_out
-                     and bool([o for o in cls._stack if o._done])))):
-            gtk.main_quit()
-            return True
-        else:
+        if len(cls._stack)==0:
+            #no more nested loops
             return False
+        top = cls._stack[-1]
+        if (top._done or top._hard_timed_out or \
+            top._soft_timed_out and bool([o for o in cls._stack if o._done])):
+            #^another one is done, we need to pop this soft-timed out one to get to it
+            gtk.main_quit()
+            return True     #check stack again
+        return False
 
     def _wakeup(self):
         gobject.timeout_add(0, self._quit_while_top_done)
