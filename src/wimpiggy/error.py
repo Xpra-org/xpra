@@ -50,32 +50,25 @@ class XError(Exception):
         return "XError: %s" % str(self.msg)
 
 
-xerror_to_name = {}
-def init_xerror_to_name():
-    global xerror_to_name
-    try:
-        from wimpiggy.lowlevel import const     #@UnresolvedImport
-        for name,code in const.items():
-            if name=="Success" or name.startswith("Bad"):
-                    xerror_to_name[code] = name
-            log("XErrorToName(..) initialized error names: %s", xerror_to_name)
-    except Exception, e:
-        log.error("XErrorToName: %s", e, exc_info=True)
-init_xerror_to_name()
-
+xerror_to_name = None
 def XErrorToName(xerror):
     global xerror_to_name
     if type(xerror)!=int:
         return xerror
-    if xerror in xerror_to_name:
-        return xerror_to_name.get(xerror)
     try:
-        from wimpiggy.lowlevel import get_error_text     #@UnresolvedImport
+        from wimpiggy.lowlevel import const, get_error_text     #@UnresolvedImport
+        if xerror_to_name is None:
+            xerror_to_name = {}
+            for name,code in const.items():
+                if name=="Success" or name.startswith("Bad"):
+                    xerror_to_name[code] = name
+            log("XErrorToName(..) initialized error names: %s", xerror_to_name)
+        if xerror in xerror_to_name:
+            return xerror_to_name.get(xerror)
         return get_error_text(xerror)
     except Exception, e:
         log.error("XErrorToName: %s", e, exc_info=True)
     return xerror
-
 
 # gdk has its own depth tracking stuff, but we have to duplicate it here to
 # minimize calls to XSync.
