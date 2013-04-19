@@ -410,14 +410,15 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             return False
         if xvfb.poll() is None:
             return False
-        log.error("\n")
-        log.error("Xvfb command has terminated! xpra cannot continue\n")
-        log.error("\n")
+        log.error("")
+        log.error("Xvfb command has terminated! xpra cannot continue")
+        log.error("")
         if instance_exists:
-            log.error("There is an X11 server already running on display %s:\n" % display_name)
-            log.error("You may want to use:\n")
-            log.error("  'xpra upgrade' if an instance of xpra is still connected to it\n")
-            log.error("  'xpra --use-display start' to connect xpra to an existing X11 server only\n")
+            log.error("There is an X11 server already running on display %s:" % display_name)
+            log.error("You may want to use:")
+            log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
+            log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
+            log.error("")
         return True
 
     if xvfb_error():
@@ -500,7 +501,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     def reaper_quit():
         if opts.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            app.quit(False)
+            gobject.idle_add(app.quit, False)
 
     procs = []
     if os.name=="posix":

@@ -207,6 +207,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def cleanup(self, *args):
         if self._tray:
             self._tray.cleanup()
+            self._tray = None
         X11ServerBase.cleanup(self)
 
     def load_existing_windows(self, system_tray):

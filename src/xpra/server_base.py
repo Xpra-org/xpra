@@ -278,9 +278,12 @@ class ServerBase(object):
         log.info("\ngot signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
-        gobject.timeout_add(0, self.quit, False, priority=gobject.PRIORITY_HIGH)
+        self.cleanup()
+        gobject.timeout_add(500, self.quit, False, priority=gobject.PRIORITY_HIGH)
+        gobject.timeout_add(5000, os._exit, 1, priority=gobject.PRIORITY_HIGH)
 
     def quit(self, upgrading):
+        log("quit(%s)", upgrading)
         self._upgrading = upgrading
         log.info("xpra is terminating.")
         sys.stdout.flush()
@@ -304,9 +307,11 @@ class ServerBase(object):
                 self.notifications_forwarder.release()
             except Exception, e:
                 log.error("failed to release dbus notification forwarder: %s", e)
+            self.notifications_forwarder = None
         log("cleanup will disconnect: %s", self._potential_protocols)
         for proto in self._potential_protocols:
             self.disconnect_client(proto, "shutting down")
+        self._potential_protocols = []
 
     def add_listen_socket(self, sock):
         sock.listen(5)
