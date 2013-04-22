@@ -501,7 +501,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     def reaper_quit():
         if opts.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            gobject.idle_add(app.quit, False)
+            gobject.idle_add(app.clean_quit)
 
     procs = []
     if os.name=="posix":

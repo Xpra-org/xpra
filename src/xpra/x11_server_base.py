@@ -297,6 +297,8 @@ class X11ServerBase(ServerBase):
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         ss.make_keymask_match(modifiers)
         window = self._id_to_window.get(wid)
         if not window:
@@ -305,9 +307,12 @@ class X11ServerBase(ServerBase):
         trap.swallow_synced(self._move_pointer, pointer)
 
     def _process_button_action(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._process_mouse_common(proto, wid, pointer, modifiers)
-        self._server_sources.get(proto).user_event()
+        ss.user_event()
         display = gtk.gdk.display_get_default()
         try:
             trap.call_synced(xtest_fake_button, display, button, pressed)

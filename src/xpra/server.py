@@ -544,6 +544,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         ss = self._server_sources.get(proto)
+        if ss is None:
+            return      #gone already!
         ss.make_keymask_match(modifiers)
         window = self._id_to_window.get(wid)
         if not window:

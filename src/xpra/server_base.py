@@ -278,6 +278,9 @@ class ServerBase(object):
         log.info("\ngot signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
+        self.clean_quit()
+
+    def clean_quit(self):
         self.cleanup()
         gobject.timeout_add(500, self.quit, False, priority=gobject.PRIORITY_HIGH)
         gobject.timeout_add(5000, os._exit, 1, priority=gobject.PRIORITY_HIGH)
@@ -345,7 +348,7 @@ class ServerBase(object):
                 self.send_disconnect(p, "server shutdown")
             except:
                 pass
-        gobject.timeout_add(1000, self.quit, False)
+        gobject.timeout_add(1000, self.clean_quit)
 
     def send_disconnect(self, proto, reason):
         if proto._closed:
@@ -671,9 +674,12 @@ class ServerBase(object):
         client_uuids, wids = packet[1:3]
         sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         log("info-request: sources=%s, wids=%s", sources, wids)
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         try:
             info = self.do_get_info(proto, sources, wids)
-            self._server_sources.get(proto).send_info_response(info)
+            ss.send_info_response(info)
         except Exception, e:
             log.error("error during info request: %s", e, exc_info=True)
 
@@ -850,10 +856,13 @@ class ServerBase(object):
 
     def _process_desktop_size(self, proto, packet):
         width, height = packet[1:3]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
         if len(packet)>=4:
-            self._server_sources.get(proto).set_screen_sizes(packet[3])
+            ss.set_screen_sizes(packet[3])
             self.calculate_workarea()
 
     def calculate_workarea(self):
@@ -886,6 +895,9 @@ class ServerBase(object):
 
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         if len(packet)>=3:
             #client specified which windows this is for:
             in_wids = packet[2]
@@ -900,7 +912,7 @@ class ServerBase(object):
             #apply to all windows:
             wids = None
             wid_windows = self._id_to_window
-        self._server_sources.get(proto).set_encoding(encoding, wids)
+        ss.set_encoding(encoding, wids)
         self.refresh_windows(proto, wid_windows)
 
 
@@ -910,16 +922,21 @@ class ServerBase(object):
         return True
 
     def _process_ping_echo(self, proto, packet):
-        self._server_sources.get(proto).process_ping_echo(packet)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping_echo(packet)
 
     def _process_ping(self, proto, packet):
         time_to_echo = packet[1]
-        self._server_sources.get(proto).process_ping(time_to_echo)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping(time_to_echo)
 
     def _process_screenshot(self, proto, packet):
         packet = self.make_screenshot_packet()
-        if packet:
-            self._server_sources.get(proto).send(*packet)
+        ss = self._server_sources.get(proto)
+        if packet and ss:
+            ss.send(*packet)
 
     def make_screenshot_packet(self):
         return  None
@@ -927,28 +944,40 @@ class ServerBase(object):
 
     def _process_set_notify(self, proto, packet):
         assert self.notifications_forwarder is not None, "cannot toggle notifications: the feature is disabled"
-        self._server_sources.get(proto).send_notifications = bool(packet[1])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_notifications = bool(packet[1])
 
     def _process_set_cursors(self, proto, packet):
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        self._server_sources.get(proto).send_cursors = bool(packet[1])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_cursors = bool(packet[1])
 
     def _process_set_bell(self, proto, packet):
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        self._server_sources.get(proto).send_bell = bool(packet[1])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_bell = bool(packet[1])
 
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
         log("client has requested compression level=%s", level)
         proto.set_compression_level(level)
         #echo it back to the client:
-        self._server_sources.get(proto).set_deflate(level)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_deflate(level)
 
     def _process_sound_control(self, proto, packet):
-        self._server_sources.get(proto).sound_control(*packet[1:])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.sound_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet):
-        self._server_sources.get(proto).sound_data(*packet[1:])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.sound_data(*packet[1:])
 
     def _process_clipboard_enabled_status(self, proto, packet):
         clipboard_enabled = packet[1]
@@ -976,9 +1005,10 @@ class ServerBase(object):
 
     def _set_client_properties(self, proto, wid, new_client_properties):
         ss = self._server_sources.get(proto)
-        client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
-        log("set_client_properties updating %s with %s", client_properties, new_client_properties)
-        client_properties.update(new_client_properties)
+        if ss:
+            client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
+            log("set_client_properties updating %s with %s", client_properties, new_client_properties)
+            client_properties.update(new_client_properties)
 
 
     def _process_focus(self, proto, packet):
@@ -988,17 +1018,20 @@ class ServerBase(object):
         else:
             modifiers = None
         ss = self._server_sources.get(proto)
-        self._focus(ss, wid, modifiers)
+        if ss:
+            self._focus(ss, wid, modifiers)
 
     def _process_layout(self, proto, packet):
         layout, variant = packet[1:3]
         ss = self._server_sources.get(proto)
-        if ss.set_layout(layout, variant):
+        if ss and ss.set_layout(layout, variant):
             self.set_keymap(ss, force=True)
 
     def _process_keymap(self, proto, packet):
         props = packet[1]
         ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         if ss.assign_keymap_options(props):
             self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
@@ -1007,6 +1040,8 @@ class ServerBase(object):
     def _process_key_action(self, proto, packet):
         wid, keyname, pressed, modifiers, keyval, _, client_keycode = packet[1:8]
         ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         keycode = ss.get_keycode(client_keycode, keyname, modifiers)
         log("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
@@ -1082,6 +1117,8 @@ class ServerBase(object):
     def _process_key_repeat(self, proto, packet):
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         ss = self._server_sources.get(proto)
+        if ss is None:
+            return
         keycode = ss.get_keycode(client_keycode, keyname, modifiers)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         ss.make_keymask_match(modifiers)
@@ -1124,7 +1161,9 @@ class ServerBase(object):
         packet_sequence = packet[1]
         if len(packet)>=6:
             wid, width, height, decode_time = packet[2:6]
-            self._server_sources.get(proto).client_ack_damage(packet_sequence, wid, width, height, decode_time)
+            ss = self._server_sources.get(proto)
+            if ss:
+                ss.client_ack_damage(packet_sequence, wid, width, height, decode_time)
 
 
     def _damage(self, window, x, y, width, height, options=None):
@@ -1165,26 +1204,34 @@ class ServerBase(object):
     def _process_quality(self, proto, packet):
         quality = packet[1]
         log("Setting quality to ", quality)
-        self._server_sources.get(proto).set_quality(quality)
-        self.refresh_windows(proto, self._id_to_window)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_quality(quality)
+            self.refresh_windows(proto, self._id_to_window)
 
     def _process_min_quality(self, proto, packet):
         min_quality = packet[1]
         log("Setting min quality to ", min_quality)
-        self._server_sources.get(proto).set_min_quality(min_quality)
-        self.refresh_windows(proto, self._id_to_window)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_min_quality(min_quality)
+            self.refresh_windows(proto, self._id_to_window)
 
     def _process_speed(self, proto, packet):
         speed = packet[1]
         log("Setting speed to ", speed)
-        self._server_sources.get(proto).set_speed(speed)
-        self.refresh_windows(proto, self._id_to_window)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_speed(speed)
+            self.refresh_windows(proto, self._id_to_window)
 
     def _process_min_speed(self, proto, packet):
         min_speed = packet[1]
         log("Setting min speed to ", min_speed)
-        self._server_sources.get(proto).set_min_speed(min_speed)
-        self.refresh_windows(proto, self._id_to_window)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_min_speed(min_speed)
+            self.refresh_windows(proto, self._id_to_window)
 
 
     def _process_map_window(self, proto, packet):
