@@ -625,7 +625,7 @@ class ServerSource(object):
             cache["tray"] = window.is_tray()
             try:
                 from wimpiggy.lowlevel import get_xwindow       #@UnresolvedImport
-                cache["xid"] = get_xwindow(window.client_window)
+                cache["xid"] = hex(get_xwindow(window.client_window))
             except:
                 pass
         props = self.do_make_metadata(window, propname)
