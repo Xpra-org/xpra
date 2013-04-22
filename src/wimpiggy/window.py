@@ -803,7 +803,9 @@ class WindowModel(BaseWindowModel):
         allocated_w, allocated_h = window_size_cb()
         log("_do_update_client_geometry: %sx%s", allocated_w, allocated_h)
         hints = self.get_property("size-hints")
+        log("_do_update_client_geometry: hints=%s", hints)
         self._sanitize_size_hints(hints)
+        log("_do_update_client_geometry: sanitized hints=%s", hints)
         size = calc_constrained_size(allocated_w, allocated_h, hints)
         log("_do_update_client_geometry: size=%s", size)
         w, h, wvis, hvis = size
