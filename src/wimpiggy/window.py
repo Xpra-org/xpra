@@ -788,6 +788,16 @@ class WindowModel(BaseWindowModel):
                 if (w is None or h is None) or w>=(2**32-1) or h>(2**32-1):
                     log.warn("clearing invalid size hint value for %s: %s", attr, v)
                     setattr(size_hints, attr, (-1,-1))
+        #if max-size is smaller than min-size (bogus), clamp it..
+        mins = size_hints.min_size
+        maxs = size_hints.max_size
+        if mins is not None and maxs is not None:
+            minw,minh = mins
+            maxw,maxh = maxs
+            if maxw<minw or maxh<minh:
+                size_hints.max_size = max(minw, maxw), max(minh, maxh)
+                log.warn("invalid max_size=%s for min_size=%s has now been clamped to: %s",
+                         maxs, mins, size_hints.max_size)
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")
