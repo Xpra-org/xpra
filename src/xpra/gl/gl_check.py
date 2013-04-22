@@ -18,12 +18,19 @@ SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win")
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
+#needed on win32?
+DEFAULT_DOUBLE_BUFFERED=0
+if sys.platform.startswith("win"):
+    DEFAULT_DOUBLE_BUFFERED=1
+DOUBLE_BUFFERED = os.environ.get("XPRA_OPENGL_DOUBLE_BUFFERED", str(DEFAULT_DOUBLE_BUFFERED))=="1"
+
 
 def get_DISPLAY_MODE():
     import gtk.gdkgl
     #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE
-    return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
-    #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE
+    if DOUBLE_BUFFERED:
+        return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
+    return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -193,7 +200,8 @@ def check_support(min_texture_size=0, force_enable=False):
     except gtk.gdkgl.NoMatches:
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    friendly_mode_names = {gtk.gdkgl.MODE_RGB : "RGB", gtk.gdkgl.MODE_DEPTH:"DEPTH",
+    friendly_mode_names = {gtk.gdkgl.MODE_RGB : "RGB",
+                           gtk.gdkgl.MODE_DEPTH:"DEPTH",
                            gtk.gdkgl.MODE_DOUBLE : "DOUBLE",
                            gtk.gdkgl.MODE_SINGLE : "SINGLE"}
     friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
