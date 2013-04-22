@@ -95,6 +95,17 @@ class WMSizeHints(object):
         else:
             self.win_gravity = -1
 
+    def __str__(self):
+        return "WMSizeHints(%s)" % {"max_size"  : self.max_size,
+                                    "min_size"  : self.min_size,
+                                    "base_size" : self.base_size,
+                                    "resize_inc": self.resize_inc,
+                                    "min_aspect": self.min_aspect,
+                                    "max_aspect": self.max_aspect,
+                                    "min_aspect_ratio"  : self.min_aspect_ratio,
+                                    "max_aspect_ratio"  : self.max_aspect_ratio,
+                                    "win_gravity"       : self.win_gravity}
+
 class WMHints(object):
     def __init__(self, disp, data):
         data = _force_length("WM_HINTS", data, 9 * 4)
@@ -118,6 +129,11 @@ class WMHints(object):
         else:
             self.input = None
 
+    def __str__(self):
+        return "WMHints(%s)" % {"group_leader"  : self.group_leader,
+                                "start_iconic"  : self.start_iconic,
+                                "input"         : self.input}
+
 class NetWMStrut(object):
     def __init__(self, disp, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
@@ -132,6 +148,14 @@ class NetWMStrut(object):
          self.top_start_x, self.top_end_x,
          self.bottom_start_x, self.bottom_stop_x,
          ) = struct.unpack("=" + "I" * 12, data)
+
+    def __str__(self):
+        return "NetWMStrut(%s)" % str(self.left, self.right, self.top, self.bottom,
+                                     self.left_start_y, self.left_end_y,
+                                     self.right_start_y, self.right_end_y,
+                                     self.top_start_x, self.top_end_x,
+                                     self.bottom_start_x, self.bottom_stop_x)
+
 
 def _read_image(disp, stream):
     try:
