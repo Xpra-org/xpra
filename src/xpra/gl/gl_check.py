@@ -23,6 +23,7 @@ def get_DISPLAY_MODE():
     import gtk.gdkgl
     #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DEPTH | gtk.gdkgl.MODE_DOUBLE
     return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_DOUBLE
+    #return  gtk.gdkgl.MODE_RGB | gtk.gdkgl.MODE_SINGLE
 
 #by default, we raise an ImportError as soon as we find something missing:
 def raise_error(msg):
@@ -83,9 +84,10 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
                     "shading language version":GL_SHADING_LANGUAGE_VERSION}.items():
             try:
                 v = glGetString(s)
+                log("%s: %s", d, v)
             except:
                 gl_check_error("OpenGL property '%s' is missing" % d)
-            log("%s: %s", d, v)
+                v = ""
             props[d] = v
 
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
@@ -192,7 +194,8 @@ def check_support(min_texture_size=0, force_enable=False):
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)
     friendly_mode_names = {gtk.gdkgl.MODE_RGB : "RGB", gtk.gdkgl.MODE_DEPTH:"DEPTH",
-                           gtk.gdkgl.MODE_DOUBLE : "DOUBLE"}
+                           gtk.gdkgl.MODE_DOUBLE : "DOUBLE",
+                           gtk.gdkgl.MODE_SINGLE : "SINGLE"}
     friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
     log("using display mode: %s", friendly_modes)
     props["display_mode"] = friendly_modes
