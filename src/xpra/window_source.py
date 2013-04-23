@@ -759,7 +759,22 @@ class WindowSource(object):
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         """
-            Called by 'damage' or 'send_delayed_regions' to process a damage region,
+            Called by 'damage' or 'send_delayed_regions' to process a damage region.
+            (here we may still generate more than one damage region processing
+             to deal with video encoders and odd window sizes)
+        """
+        self.do_process_damage_region(damage_time, window, x, y, w, h, coding, options)
+        if coding in ("vpx", "x264"):
+            if w%2==1:
+                lossless = self.find_common_lossless_encoder(coding, 1*h)
+                self.do_process_damage_region(damage_time, window, x+w-1, y, x+w-1, h, lossless, options)
+            if h%2==1:
+                lossless = self.find_common_lossless_encoder(coding, w*1)
+                self.do_process_damage_region(damage_time, window, x, y+h-1, x+w, y+h-1, lossless, options)
+
+    def do_process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
+        """
+            Actual damage region processing:
             we extract the rgb data from the pixmap and place it on the damage queue.
             This runs in the UI thread.
         """
