@@ -532,11 +532,15 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     if dtype == "ssh":
         cmd = display_desc["full_ssh"]
         if sys.platform.startswith("win"):
-            password = display_desc.get("password")
-            if password:
-                cmd += ["-pw", password]
-            cmd.append("-ssh")
-            cmd.append("-agent")
+            #use putty plink.exe syntax
+            #unless it looks like we're using a cygwin ssh exe:
+            ssh_cmd = display_desc.get("ssh", "").lower()
+            if not (ssh_cmd.endswith("ssh") or ssh_cmd.endswith("ssh.exe")):
+                password = display_desc.get("password")
+                if password:
+                    cmd += ["-pw", password]
+                cmd.append("-ssh")
+                cmd.append("-agent")
         cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
         try:
             kwargs = {}
