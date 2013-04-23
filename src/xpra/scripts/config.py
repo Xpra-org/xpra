@@ -114,9 +114,9 @@ def OpenGL_safety_check():
         if e.args[0]==errno.EACCES:
             return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
-OPENGL_DEFAULT = None
-if OpenGL_safety_check() is not None:
-    OPENGL_DEFAULT = False
+OPENGL_DEFAULT = False
+#if OpenGL_safety_check() is not None:
+#    OPENGL_DEFAULT = False
 
 
 
