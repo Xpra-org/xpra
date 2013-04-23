@@ -157,3 +157,6 @@ echo
 echo "*******************************************************************************"
 echo "copying application image to Desktop"
 rsync -rplogt "${IMAGE_DIR}" ~/Desktop/
+echo "Done"
+echo "*******************************************************************************"
+echo
