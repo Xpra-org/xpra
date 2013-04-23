@@ -576,7 +576,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for wid in reversed(sorted(self._id_to_window.keys())):
             window = self._id_to_window.get(wid)
             log("screenshot: window(%s)=%s", wid, window)
-            if window is None or window.is_tray():
+            if window is None or window.is_tray() or not window.is_managed():
                 continue
             pixmap = window.get_property("client-contents")
             log("screenshot: pixmap(%s)=%s", window, pixmap)
