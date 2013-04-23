@@ -1171,7 +1171,7 @@ class XpraClient(XpraClientBase, gobject.GObject):
         ClientWindowClass = ClientWindow
         if not self.mmap_enabled and self.opengl_enabled and self.encoding in ("x264", "vpx"):
             #only enable GL for normal windows:
-            window_types = metadata.get("window-type")
+            window_types = metadata.get("window-type", ())
             if "_NET_WM_WINDOW_TYPE_NORMAL" in window_types:
                 ClientWindowClass = self.GLClientWindowClass
         pid = metadata.get("pid", -1)
