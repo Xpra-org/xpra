@@ -242,6 +242,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                                    gobject.PARAM_READABLE),
         }
     __gsignals__ = {
+        "geometry": no_arg_signal,
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
@@ -422,6 +423,15 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         if ch is None:
             raise Unmanageable("failed to get damage handle")
 
+    def composite_configure_event(self, composite_window, event):
+        BaseWindowModel.composite_configure_event(self, composite_window, event)
+        log("OverrideRedirectWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
+        try:
+            self._geometry = trap.call_unsynced(geometry_with_border, self.client_window)
+            self.emit("geometry")
+        except XError:
+            log.error("failed to update geometry!", exc_info=True)
+
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
 
@@ -550,7 +560,6 @@ class WindowModel(BaseWindowModel):
     __gsignals__ = {
         # X11 bell event:
         "bell": one_arg_signal,
-        "geometry": no_arg_signal,
 
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),

@@ -343,6 +343,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 raw_window.set_data(WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 window.connect("notify::geometry", self._or_window_geometry_changed)
+                window.connect("geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
         except Unmanageable, e:
             if window:
@@ -354,7 +355,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
-    def _or_window_geometry_changed(self, window, pspec):
+    def _or_window_geometry_changed(self, window, pspec=None):
         (x, y, w, h) = window.get_property("geometry")
         log("or_window_geometry_changed: %s (window=%s)", window.get_property("geometry"), window)
         wid = self._window_to_id[window]
