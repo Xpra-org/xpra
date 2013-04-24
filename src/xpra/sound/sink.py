@@ -140,6 +140,7 @@ class SoundSink(SoundPipeline):
             r = self.src.emit("push-buffer", buf)
             if r!=gst.FLOW_OK:
                 log.error("push-buffer error: %s", r)
+                self.emit('error', "push-buffer error: %s" % r)
 
     def need_data(self, src_arg, needed):
         debug("need_data: %s bytes in %s", needed, src_arg)

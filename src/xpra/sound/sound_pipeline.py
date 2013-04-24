@@ -24,6 +24,7 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
     __gsignals__ = {
         "state-changed": one_arg_signal,
         "bitrate-changed": one_arg_signal,
+        "error": one_arg_signal,
         }
 
     def __init__(self, codec):

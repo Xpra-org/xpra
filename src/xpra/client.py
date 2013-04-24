@@ -1023,12 +1023,17 @@ class XpraClient(XpraClientBase, gobject.GObject):
             self.emit("speaker-changed")
         def sound_sink_bitrate_changed(*args):
             self.emit("speaker-changed")
+        def sound_sink_error(*args):
+            log.warn("stopping sound because of error")
+            self.stop_receiving_sound()
+            self.emit("speaker-changed")
         try:
             log("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
             self.sound_sink = SoundSink(codec=codec)
             self.sound_sink.connect("state-changed", sound_sink_state_changed)
             self.sound_sink.connect("bitrate-changed", sound_sink_bitrate_changed)
+            self.sound_sink.connect("error", sound_sink_error)
             self.sound_sink.start()
             log("%s sound sink started", codec)
             return True
