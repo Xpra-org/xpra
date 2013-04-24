@@ -143,14 +143,15 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Thu Apr 18 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
+* Thu Apr 25 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
 - fix focus problems with old Xvfb display servers
 - fix RPM SELinux labelling of static codec builds (CentOS)
 - fix CentOS 5.x compatibility
 - fix Python 2.4 and 2.5 compatibility (many)
 - fix failed server upgrades killing the virtual display
+- fix screenshot command with "OR" windows
+- fix support "OR" windows that move and resize
 - IPv6 server support
-- OpenGL client rendering
 - support for many more audio codecs: flac, opus, wavpack, wav, speex
 - support starting remote sessions with "xpra start"
 - support for Xdummy with CentOS 6.4 onwards
@@ -162,6 +163,7 @@ So basically it's screen for remote X apps.
 - allow more options in xpra config and launcher files
 - safer test for windows to ignore (window IDs starts at 1 again)
 - expose more version and statistical data via xpra info
+- improved OpenGL client rendering (still disabled by default)
 - upgrade to rencode 1.0.2
 
 * Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
