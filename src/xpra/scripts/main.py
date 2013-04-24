@@ -656,7 +656,7 @@ def run_client(parser, opts, extra_args, mode):
     else:
         from xpra.client import XpraClient
         app = XpraClient(conn, opts)
-    do_run_client(app, conn.target, mode)
+    return do_run_client(app, conn.target, mode)
 
 def do_run_client(app, target, mode):
     def got_gibberish_msg(obj, data):
