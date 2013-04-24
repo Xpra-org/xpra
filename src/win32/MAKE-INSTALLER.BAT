@@ -47,6 +47,7 @@ FOR /F "delims=" %%i IN ('%SVNVERSION_EXE% -n') DO set SVNVERSION=%%i
 ECHO Found svnversion=%SVNVERSION%
 SET REVISION=
 FOR /F "tokens=2 delims=:" %%G IN ("%SVNVERSION%") DO set REVISION=%%G
+IF [%REVISION%]==[] set REVISION=%SVNVERSION%
 SET FULL_VERSION=%VERSION%-r%REVISION%
 ECHO Full version=%FULL_VERSION%
 
