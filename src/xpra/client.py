@@ -233,8 +233,8 @@ class XpraClient(XpraClientBase, gobject.GObject):
                 q -= 10
             elif bw < self.max_bandwidth:
                 q += 5
-            q = max(10, min(95 ,q))
-            self.send_min_quality(q)
+            self.min_quality = max(10, min(95 ,q))
+            self.send_min_quality()
             return True
         if (self.max_bandwidth):
             self.last_input_bytecount = 0

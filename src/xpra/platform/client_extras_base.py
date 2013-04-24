@@ -672,7 +672,7 @@ class ClientExtrasBase(object):
             if q!=self.client.min_quality:
                 log.debug("setting minimum picture quality to %s", q)
                 self.client.min_quality = q
-                self.client.send_min_quality(q)
+                self.client.send_min_quality()
         for q in sorted(quality_options):
             qi = CheckMenuItem("%s%%" % q)
             qi.set_draw_as_radio(True)
