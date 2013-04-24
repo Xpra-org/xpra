@@ -34,7 +34,7 @@ CODECS = {
             SPEEX   : ("speexenc",      "oggmux",   "speexdec",     "oggdemux"),
             WAVPACK : ("wavpackenc",    None,       "wavpackdec",   "wavpackparse"),
             }
-CODEC_ORDER = [MP3, OPUS, FLAC, WAVPACK, WAV, SPEEX]
+CODEC_ORDER = [MP3, OPUS, WAVPACK, WAV, FLAC, SPEEX]
 
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
