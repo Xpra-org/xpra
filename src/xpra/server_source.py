@@ -1010,14 +1010,15 @@ class ServerSource(object):
         if not self.can_send_window(window):
             return
         send_props = list(properties)
-        if self.raw_window_icons and "icon" in properties:
+        send_raw_icon = self.raw_window_icons and "icon" in properties
+        if send_raw_icon:
             send_props.remove("icon")
         metadata = {}
         for propname in send_props:
             metadata.update(self._make_metadata(wid, window, propname))
         log("new_window(%s, %s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, properties, client_properties, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
-        if self.raw_window_icons and "icon" in properties:
+        if send_raw_icon:
             self.send_window_icon(wid, window)
 
     def send_window_icon(self, wid, window):
