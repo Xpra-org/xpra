@@ -69,9 +69,16 @@ else:
 
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str) and len(obj) > limit:
-        return repr(obj[:limit]) + "..."
+        try:
+            s = repr(obj[:limit])
+            if len(obj)>limit:
+                s += "..."
+            return s
+        except:
+            return binascii.hexlify(obj[:limit])
     else:
         return repr(obj)
+
 
 class Compressed(object):
     def __init__(self, datatype, data):
@@ -486,7 +493,7 @@ class Protocol(object):
                     if read_buffer[0] not in ("P", ord("P")):
                         err = "invalid packet header byte: '%s', not an xpra client?" % hex(ord(read_buffer[0]))
                         if len(read_buffer)>1:
-                            err += " read buffer=0x%s" % binascii.hexlify(read_buffer[:40])
+                            err += " read buffer=0x%s" % repr_ellipsized(read_buffer)
                             if len(read_buffer)>40:
                                 err += "..."
                         return self._call_connection_lost(err)
@@ -496,7 +503,7 @@ class Protocol(object):
                     try:
                         _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
                     except Exception, e:
-                        raise Exception("failed to parse packet header: 0x%s" % binascii.hexlify(read_buffer[:8]), e)
+                        raise Exception("failed to parse packet header: 0x%s" % repr_ellipsized(read_buffer[:8]), e)
                     read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
                     if protocol_flags & Protocol.FLAGS_CIPHER:
@@ -513,10 +520,10 @@ class Protocol(object):
                     #this packet is seemingly too big, but check again from the main UI thread
                     #this gives 'set_max_packet_size' a chance to run from "hello"
                     def check_packet_size(size_to_check, packet_header):
-                        log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, binascii.hexlify(packet_header), self.max_packet_size)
+                        log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
                         if size_to_check>self.max_packet_size:
                             return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
-                                                              (size_to_check, self.max_packet_size, binascii.hexlify(packet_header)))
+                                                              (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
                     gobject.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
