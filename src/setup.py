@@ -669,7 +669,44 @@ if server_ENABLED:
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
     if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
-        from make_constants_pxi import make_constants_pxi
+        def make_constants_pxi(constants_path, pxi_path):
+            constants = []
+            for line in open(constants_path):
+                data = line.split("#", 1)[0].strip()
+                # data can be empty ''...
+                if not data:
+                    continue
+                # or a pair like 'cFoo "Foo"'...
+                elif len(data.split()) == 2:
+                    (pyname, cname) = data.split()
+                    constants.append((pyname, cname))
+                # or just a simple token 'Foo'
+                else:
+                    constants.append(data)
+            out = open(pxi_path, "w")
+            out.write("cdef extern from *:\n")
+            ### Apparently you can't use | on enum's?!
+            # out.write("    enum MagicNumbers:\n")
+            # for const in constants:
+            #     if isinstance(const, tuple):
+            #         out.write('        %s %s\n' % const)
+            #     else:
+            #         out.write('        %s\n' % (const,))
+            for const in constants:
+                if isinstance(const, tuple):
+                    out.write('    unsigned int %s %s\n' % const)
+                else:
+                    out.write('    unsigned int %s\n' % (const,))
+
+            out.write("const = {\n")
+            for const in constants:
+                if isinstance(const, tuple):
+                    pyname = const[0]
+                else:
+                    pyname = const
+                out.write('    "%s": %s,\n' % (pyname, pyname))
+            out.write("}\n")
+
         print("(re)generating %s" % pxi_file)
         make_constants_pxi(constants_file, pxi_file)
     BINDINGS_LIBS = PYGTK_PACKAGES + X11_PACKAGES
