@@ -27,7 +27,7 @@ finally:
 assert data, "x264test.rgb not found!"
 
 def main():
-    from xpra.x264.codec import Encoder     #@UnresolvedImport
+    from xpra.codecs.x264.codec import Encoder     #@UnresolvedImport
     encoder = Encoder()
     print("encoder.init_context(%s,%s,{})" % (w, h))
     encoder.init_context(w, h, {})
@@ -41,7 +41,7 @@ def main():
         i = encoder.clean()
         print("encoder.clean()=%s" % i)
 
-    from xpra.x264.codec import Decoder     #@UnresolvedImport
+    from xpra.codecs.x264.codec import Decoder     #@UnresolvedImport
     decoder = Decoder()
     print("decoder.init_context(%s,%s,{})" % (w, h))
     decoder.init_context(w, h, {})

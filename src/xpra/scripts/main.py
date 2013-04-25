@@ -23,7 +23,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            add_client_options,
                            get_default_socket_dir,
                            init as platform_init)
-from xpra.bytestreams import TwoFileConnection, SocketConnection
+from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
 from wimpiggy.gobject_compat import import_gobject
 
@@ -63,7 +63,7 @@ def main(script_file, cmdline):
     supports_server = XPRA_LOCAL_SERVERS_SUPPORTED
     if supports_server:
         try:
-            from xpra.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
+            from xpra.x11.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
         except:
             supports_server = False
 
@@ -649,16 +649,16 @@ def run_client(parser, opts, extra_args, mode):
         parser.error("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     if mode=="screenshot":
-        from xpra.client_base import ScreenshotXpraClient
+        from xpra.client.client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(conn, opts, screenshot_filename)
     elif mode=="info":
-        from xpra.client_base import InfoXpraClient
+        from xpra.client.client_base import InfoXpraClient
         app = InfoXpraClient(conn, opts)
     elif mode=="version":
-        from xpra.client_base import VersionXpraClient
+        from xpra.client.client_base import VersionXpraClient
         app = VersionXpraClient(conn, opts)
     else:
-        from xpra.client import XpraClient
+        from xpra.client.client import XpraClient
         app = XpraClient(conn, opts)
     return do_run_client(app, conn.target, mode)
 
@@ -705,12 +705,12 @@ def run_remote_server(parser, opts, args):
     #and use _proxy_start subcommand:
     params["proxy_command"] = ["_proxy_start"]
     conn = connect_or_fail(params)
-    from xpra.client import XpraClient
+    from xpra.client.client import XpraClient
     app = XpraClient(conn, opts)
     do_run_client(app, params["display_name"], "attach")
 
 def run_proxy(parser, opts, script_file, args, start_server=False):
-    from xpra.proxy import XpraProxy
+    from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if start_server:
         assert len(args)==1
@@ -741,7 +741,7 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
 
 def run_stop(parser, opts, extra_args):
     assert "gtk" not in sys.modules
-    from xpra.client_base import StopXpraClient
+    from xpra.client.client_base import StopXpraClient
 
     def show_final_state(display):
         sockdir = DotXpra(opts.socket_dir)

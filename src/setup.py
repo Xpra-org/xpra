@@ -67,6 +67,14 @@ server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
+client_ENABLED = True
+
+
+
+x11_ENABLED = not sys.platform.startswith("win")
+
+
+
 sound_ENABLED = True
 
 
@@ -101,7 +109,8 @@ PIC_ENABLED = True
 
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
+SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard",
+            "server", "client", "x11",
             "sound", "cyxor", "cymaths", "opengl",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -164,7 +173,7 @@ setup_options["description"] = "Xpra: 'screen for X' utility"
 
 wimpiggy_desc = "A library for writing window managers, using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
-setup_options["long_description"] = """This package contains several sub-projects:
+setup_options["long_description"] = """This package contains two sub-projects:
   wimpiggy:
     %s
   xpra:
@@ -174,6 +183,7 @@ data_files = []
 setup_options["data_files"] = data_files
 packages = ["wimpiggy",
           "xpra", "xpra.scripts", "xpra.platform",
+          "xpra.gtk_common", "xpra.net", "xpra.codecs", "xpra.codecs.xor",
           "xpra.stats",
           ]
 setup_options["packages"] = packages
@@ -347,9 +357,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     #always include all platform code in this case:
     packages += ["xpra.xposix", "xpra.win32", "xpra.darwin"]
     #ensure we remove the files we generate:
-    CLEAN_FILES = ["xpra/wait_for_x_server.c",
-                   "xpra/vpx/codec.c",
-                   "xpra/x264/codec.c",
+    CLEAN_FILES = ["xpra/x11/wait_for_x_server.c",
+                   "xpra/codecs/vpx/codec.c",
+                   "xpra/codecs/x264/codec.c",
                    "xpra/rencode/rencode.c",
                    "etc/xpra/xpra.conf",
                    "wimpiggy/lowlevel/constants.pxi",
@@ -504,14 +514,14 @@ if sys.platform.startswith("win"):
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
-                    {'script': 'xpra/gtk_view_keyboard.py',             'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/gtk_view_clipboard.py',            'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
+                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
+                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
                     {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     setup_options["console"] = [
                     {'script': 'win32/xpra_cmd.py',                     'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
-                    {'script': 'xpra/gl/gl_check.py',                   'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",},
+                    {'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",},
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
                     {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
@@ -609,7 +619,7 @@ if sys.platform.startswith("win"):
         webm_DLL = "C:\\libwebp-windows-x86\\bin\\libwebp.dll"
         data_files.append(('', [webm_DLL]))
         #and its license:
-        data_files.append(('webm', ["xpra/webm/LICENSE"]))
+        data_files.append(('webm', ["xpra/codecs/webm/LICENSE"]))
 
 
 #*******************************************************************************
@@ -625,7 +635,7 @@ else:
                     ("share/icons", ["xpra.png"])
                   ]
     if webp_ENABLED:
-        data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
+        data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
     if sys.platform.startswith("darwin"):
         #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
@@ -650,13 +660,16 @@ else:
             etc_prefix = '/etc/xpra'
         else:
             etc_prefix = sys.prefix + '/etc/xpra'
-        etc_files = ["etc/xpra/xorg.conf"]
-        #figure out the version of the Xorg server:
-        xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
-        if not use_Xdummy_wrapper and "scripts/xpra_Xdummy" in scripts:
-            #if we're not using the wrapper, don't install it
-            scripts.remove("scripts/xpra_Xdummy")
-        etc_files.append(xorg_conf)
+        
+        etc_files = []
+        if server_ENABLED and x11_ENABLED:
+            etc_files = ["etc/xpra/xorg.conf"]
+            #figure out the version of the Xorg server:
+            xorg_conf, use_Xdummy_wrapper = get_xorg_conf_and_script()
+            if not use_Xdummy_wrapper and "scripts/xpra_Xdummy" in scripts:
+                #if we're not using the wrapper, don't install it
+                scripts.remove("scripts/xpra_Xdummy")
+            etc_files.append(xorg_conf)
         data_files.append((etc_prefix, etc_files))
     setup_options["scripts"] = scripts
 
@@ -664,7 +677,20 @@ else:
 
 #*******************************************************************************
 if server_ENABLED:
+    packages.append("xpra.server")
+elif sys.platform.startswith("win"):
+    #with py2exe, we have to remove the default packages and let it figure it out...
+    #(otherwise, we can't remove specific files from those packages)
+    packages.remove("xpra")
+    packages.remove("xpra.server")
+    packages.remove("xpra.scripts")
+    py2exe_excludes.append("xpra.server")
+
+
+
+if x11_ENABLED:
     packages.append("wimpiggy.lowlevel")
+    packages.append("xpra.x11")
     base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
@@ -714,25 +740,30 @@ if server_ENABLED:
                 ["wimpiggy/lowlevel/bindings.pyx"],
                 **pkgconfig(*BINDINGS_LIBS)
                 ))
-    cython_add(Extension("xpra.wait_for_x_server",
-                ["xpra/wait_for_x_server.pyx"],
+    cython_add(Extension("xpra.x11.wait_for_x_server",
+                ["xpra/x11/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ))
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    packages.remove("wimpiggy")
     packages.remove("xpra")
-    packages.remove("xpra.scripts")
     packages.remove("xpra.platform")
-    py2exe_excludes += ["xpra.server", "xpra.x11_server_base", "xpra.shadow_server",
-                        "xpra.xkbhelper", "xpra.wait_for_x_server",
-                        "xpra.dbus_notifications_forwarder",
-                        "wimpiggy.lowlevel",  "wimpiggy.tray""wimpiggy.selection",
+    py2exe_excludes += ["xpra.x11",
+                        "wimpiggy.lowlevel",  "wimpiggy.tray", "wimpiggy.selection",
                         "wimpiggy.prop", "wimpiggy.composite",
                         "wimpiggy.keys", "wimpiggy.wm",
                         "wimpiggy.window", "wimpiggy.world_window",
                         "wimpiggy.xsettings_prop"]
+
+
+
+if client_ENABLED:
+    packages.append("xpra.client")
+    packages.append("xpra.client.gtk2")
+    packages.append("xpra.client.gtk3")
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.client")
 
 
 
@@ -749,13 +780,14 @@ elif sys.platform.startswith("win"):
 
 if sound_ENABLED:
     packages.append("xpra.sound")
+elif sys.platform.startswith("win"):
+    py2exe_excludes.append("xpra.sound")
 
 
 
 if cyxor_ENABLED:
-    packages.append("xpra.xor")
-    cython_add(Extension("xpra.xor.cyxor",
-                ["xpra/xor/cyxor.pyx"]))
+    cython_add(Extension("xpra.codecs.xor.cyxor",
+                ["xpra/codecs/xor/cyxor.pyx"]))
 
 
 
@@ -766,53 +798,53 @@ if cymaths_ENABLED:
 
 
 if x264_ENABLED:
-    packages.append("xpra.x264")
-    cython_add(Extension("xpra.x264.codec",
-                ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
+    packages.append("xpra.codecs.x264")
+    cython_add(Extension("xpra.codecs.x264.codec",
+                ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.x264")
+    py2exe_excludes.append("xpra.codecs.x264")
 
 
 
 if vpx_ENABLED:
-    packages.append("xpra.vpx")
-    cython_add(Extension("xpra.vpx.codec",
-                ["xpra/vpx/codec.pyx", "xpra/vpx/vpxlib.c"],
+    packages.append("xpra.codecs.vpx")
+    cython_add(Extension("xpra.codecs.vpx.codec",
+                ["xpra/codecs/vpx/codec.pyx", "xpra/codecs/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.vpx")
+    py2exe_excludes.append("xpra.codecs.vpx")
 
 
 
 if rencode_ENABLED:
-    packages.append("xpra.rencode")
+    packages.append("xpra.net.rencode")
     extra_compile_args = []
     if not sys.platform.startswith("win"):
         extra_compile_args.append("-O3")
     else:
         extra_compile_args.append("/Ox")
-    cython_add(Extension("xpra.rencode._rencode",
-                ["xpra/rencode/rencode.pyx"],
+    cython_add(Extension("xpra.net.rencode._rencode",
+                ["xpra/net/rencode/rencode.pyx"],
                 extra_compile_args=extra_compile_args))
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.rencode")
+    py2exe_excludes.append("xpra.net.rencode")
 
 
 
 if webp_ENABLED:
-    packages.append("xpra.webm")
+    packages.append("xpra.codecs.webm")
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.webm")
+    py2exe_excludes.append("xpra.codecs.webm")
 
 
 
 if opengl_ENABLED:
-    packages.append("xpra.gl")
+    packages.append("xpra.client.gl")
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.gl")
+    py2exe_excludes.append("xpra.client.gl")
 
 
 

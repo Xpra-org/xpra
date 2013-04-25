@@ -425,7 +425,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return  1
 
     if not sys.platform.startswith("win"):
-        from xpra.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+        from xpra.x11.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
         # Whether we spawned our server or not, it is now running -- or at least
         # starting.  First wait for it to start up:
         try:
@@ -475,7 +475,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         try:
             from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
             # This import is delayed because the module depends on gtk:
-            from xpra.server import XpraServer
+            from xpra.x11.server import XpraServer
         except ImportError, e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1

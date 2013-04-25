@@ -20,7 +20,7 @@ def gl_backing_test(gl_client_window_class=None, w=200, h=100):
     window.show()
     def update_backing(*args):
         log.info("update_backing(%s)", args)
-        from xpra.codec_constants import YUV444P
+        from xpra.codecs.codec_constants import YUV444P
         import random
         y = chr(int(random.random()*256.0))
         u = chr(int(random.random()*256.0))
@@ -44,7 +44,7 @@ def main():
     logging.basicConfig(format="%(message)s")
     logging.root.setLevel(logging.DEBUG)
 
-    from xpra.gl.gl_client_window import GLClientWindow
+    from xpra.client.gl.gl_client_window import GLClientWindow
     gl_backing_test(gl_client_window_class=GLClientWindow)
     gtk.main()
 

@@ -22,8 +22,8 @@ from wimpiggy.util import n_arg_signal
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.nested_main import NestedMainLoop
-from xpra.protocol import zlib_compress
+from xpra.gtk_common.nested_main import NestedMainLoop
+from xpra.net.protocol import zlib_compress
 
 if os.environ.get("XPRA_CLIPBOARD_DEBUG", "0")=="1":
     debug = log.info

@@ -29,11 +29,11 @@ import pango
 from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
-from xpra.gtk_util import set_tooltip_text, add_close_accel, scaled_image, set_prgname
+from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, set_prgname
 from xpra.scripts.about import about
 from xpra.scripts.main import connect_to, SIGNAMES
 from xpra.platform import get_icon, init as platform_init
-from xpra.client import XpraClient
+from xpra.client.client import XpraClient
 from wimpiggy.log import Logger
 log = Logger()
 

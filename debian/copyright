@@ -9,7 +9,7 @@ Copyright: 2008-2010 Nathaniel Smith <njs@pobox.com>
            2009-2012 Antoine Martin <antoine@devloop.org.uk>
 License: GPL-2+
 
-Files: xpra/gl_colorspace_conversions.py
+Files: xpra/client/gl_colorspace_conversions.py
 Copyright: 2007 Michael Dominic K. <mdk@mdk.am>
 License: MIT-X11
  Permission is hereby granted, free of charge, to any person obtaining a

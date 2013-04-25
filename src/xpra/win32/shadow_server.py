@@ -9,8 +9,8 @@ import win32con         #@UnresolvedImport
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.server_base import ServerBase
-from xpra.shadow_server_base import ShadowServerBase
+from xpra.server.server_base import ServerBase
+from xpra.server.shadow_server_base import ShadowServerBase
 
 BUTTON_EVENTS = {
                  #(button,up-or-down)  : win-event-name

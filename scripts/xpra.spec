@@ -696,7 +696,7 @@ cd xpra-all-%{version}
 %endif
 %if 0%{?limited_csc}
 %patch6 -p1
-(echo "xpra/x264/x264lib.c" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/x264/x264lib.c" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_strict}
 %patch7 -p1
@@ -704,7 +704,7 @@ cd xpra-all-%{version}
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
-(echo "xpra/x264/x264lib.c" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/x264/x264lib.c" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_pulseaudio}
 %patch9 -p1
@@ -729,7 +729,7 @@ rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/darwin
 %if 0%{?opengl}
 #included by default
 %else
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gl
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
 %endif
 
 %if 0%{?generic}
@@ -737,20 +737,20 @@ rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gl
 # unless they're statically linked and enabled (static_vpx / static_x264):
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/gdk/gdk_atoms.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/wimpiggy/bindings.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/wait_for_x_server.so
-rm -rf ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/rencode
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/xor/cyxor.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/wait_for_x_server.so
+rm -rf ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/xor/cyxor.so
 %if 0%{?static_x264}
 echo "Note: static x264 included in generic rpm"
 %else
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/x264
 %endif
 %if 0%{?static_vpx}
 echo "Note: static vpx included in generic rpm"
 %else
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/vpx
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
 %endif
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/webm
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
 
 %else
 #not a generic RPM
@@ -759,11 +759,11 @@ mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 %endif
 #exclude list for non-generic RPMs:
 %if 0%{?no_video}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/x264
 %endif
 %if 0%{?no_webp}
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/webm
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
 %endif
 %if 0%{?no_sound}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/sound
@@ -791,8 +791,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 %if 0%{?static_video_libs}
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/x264/codec.so
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/vpx/codec.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/x264/codec.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/codec.so
 %endif
 
 %config

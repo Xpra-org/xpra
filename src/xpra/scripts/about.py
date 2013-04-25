@@ -19,7 +19,7 @@ import webbrowser
 
 from xpra.scripts.config import get_build_info
 from xpra import __version__
-from xpra.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel
 from wimpiggy.log import Logger
 log = Logger()
 

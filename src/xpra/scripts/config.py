@@ -43,9 +43,9 @@ else:
 #we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
 if "rgb24" in ENCODINGS:
     try:
-        from xpra import vpx            #@UnusedImport
+        from xpra.codecs import vpx            #@UnusedImport
         try:
-            from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
+            from xpra.codecs.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
             ENCODINGS.insert(0, "vpx")
         except Exception, e:
             warn("cannot load vpx codec: %s" % e)
@@ -54,9 +54,9 @@ if "rgb24" in ENCODINGS:
         #xpra was probably built with --without-vpx
         pass
     try:
-        from xpra import x264           #@UnusedImport
+        from xpra.codecs import x264           #@UnusedImport
         try:
-            from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
+            from xpra.codecs.x264 import codec     #@UnusedImport @UnresolvedImport
             ENCODINGS.insert(0, "x264")
         except Exception, e:
             warn("cannot load x264 codec: %s" % e)
@@ -66,8 +66,8 @@ if "rgb24" in ENCODINGS:
         pass
     try:
         bytearray()
-        from xpra.webm.decode import DecodeRGB      #@UnusedImport
-        from xpra.webm.encode import EncodeRGB      #@UnusedImport
+        from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
+        from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
         ENCODINGS.append("webp")
     except NameError, e:
         #we need bytearray to use the bindings

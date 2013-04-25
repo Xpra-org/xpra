@@ -57,10 +57,10 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 ECHO ****** Clearing build directory (you can ignore any errors here)
 RMDIR /S /Q %BUILD_DIR% dist Output
 DEL /Q Xpra_Setup*.exe
-DEL /Q xpra\x264\codec.pyd
-DEL /Q xpra\x264\codec.c
-DEL /Q xpra\vpx\codec.pyd
-DEL /Q xpra\vpx\codec.c
+DEL /Q xpra\codecs\x264\codec.pyd
+DEL /Q xpra\codecs\x264\codec.c
+DEL /Q xpra\codecs\vpx\codec.pyd
+DEL /Q xpra\codecs\vpx\codec.c
 DEL /Q xpra\rencode\rencode.pyd
 DEL /Q xpra\rencode\rencode.c
 DEL /Q wimpiggy\gdk\gdk_atoms.pyd

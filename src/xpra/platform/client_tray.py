@@ -9,7 +9,7 @@ gtk = import_gtk()
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.window_backing import make_new_backing, PixmapBacking
+from xpra.client.window_backing import make_new_backing, PixmapBacking
 
 ORIENTATION = {}
 if not is_gtk3():

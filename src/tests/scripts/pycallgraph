@@ -23,7 +23,7 @@ damage = ['xpra.server_source.*', 'xpra.window_source.*',
           'xpra.batch_delay_calculator.*',
           'xpra.pixbuf_to_rgb.*',
           'xpra.deque.*', 'xpra.maths.*',
-          'xpra.x264.*', 'xpra.vpx.*', 'xpra.webm.*',
+          'xpra.codecs.x264.*', 'xpra.codecs.vpx.*', 'xpra.codecs.webm.*',
           'xpra.xor.*']
 mouse = ['xpra.server_base.XpraServer._process_pointer_position',
          'xpra.server_base.XpraServer._process_button_action',
@@ -73,7 +73,7 @@ clipboard = ['xpra.platform.clipboard_base.*',
 sound = ['xpra.sound.*',
          'xpra.server_source.ServerSource.stop_sending_sound',
          'gst.*', 'pygst.*']
-gl = ['xpra.gl_client_window.*', 'xpra.gl_colorspace_conversions.*', 'xpra.gl_window_backing.*']
+gl = ['xpra.client.gl.gl_client_window.*', 'xpra.client.gl.gl_colorspace_conversions.*', 'xpra.client.gl.gl_window_backing.*']
 
 logging = [
        'logging.*',
