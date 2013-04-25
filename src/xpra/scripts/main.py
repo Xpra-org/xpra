@@ -30,6 +30,9 @@ from wimpiggy.gobject_compat import import_gobject
 SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
 
+def warn(msg):
+    sys.stderr.write(msg+"\n")
+
 def nox():
     if "DISPLAY" in os.environ:
         del os.environ["DISPLAY"]
@@ -42,7 +45,7 @@ def nox():
 def main(script_file, cmdline):
     platform_init()
     if os.name=="posix" and os.getuid()==0:
-        print("\nWarning: running as root")
+        warn("\nWarning: running as root")
     try:
         import glib
         glib.set_prgname("Xpra")
@@ -553,11 +556,10 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
-                kwargs["stderr"] = PIPE
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
-            child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
+            child = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
         except OSError, e:
             raise Exception("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
@@ -725,7 +727,7 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
         start = time.time()
         while dotxpra.server_state(display_name, 1)!=DotXpra.LIVE:
             if time.time()-start>5:
-                print("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
+                warn("server failed to start after %.1f seconds - sorry!" % (time.time()-start))
                 return
             time.sleep(0.10)
     server_conn = connect_or_fail(pick_display(parser, opts, args))

@@ -11,6 +11,9 @@ import os
 import platform as python_platform
 assert python_platform
 
+def warn(msg):
+    sys.stderr.write(msg+"\n")
+
 from wimpiggy.util import AdHocStruct
 from wimpiggy.gobject_compat import import_gobject, is_gtk3
 gobject = import_gobject()
@@ -45,7 +48,7 @@ if "rgb24" in ENCODINGS:
             from xpra.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
             ENCODINGS.insert(0, "vpx")
         except Exception, e:
-            print("cannot load vpx codec: %s" % e)
+            warn("cannot load vpx codec: %s" % e)
     except ImportError, e:
         #the vpx module does not exist
         #xpra was probably built with --without-vpx
@@ -56,7 +59,7 @@ if "rgb24" in ENCODINGS:
             from xpra.x264 import codec     #@UnusedImport @UnresolvedImport
             ENCODINGS.insert(0, "x264")
         except Exception, e:
-            print("cannot load x264 codec: %s" % e)
+            warn("cannot load x264 codec: %s" % e)
     except ImportError, e:
         #the x264 module does not exist
         #xpra was probably built with --without-x264
@@ -74,7 +77,7 @@ if "rgb24" in ENCODINGS:
         #xpra was probably built with --without-webp
         pass
     except Exception, e:
-        print("cannot load webp: %s" % e)
+        warn("cannot load webp: %s" % e)
 
 ENCRYPTION_CIPHERS = []
 try:
@@ -142,7 +145,7 @@ def get_codecs(is_speaker, is_server):
         else:
             return can_decode()
     except Exception, e:
-        print("failed to get list of codecs: %s" % e)
+        warn("failed to get list of codecs: %s" % e)
         return []
 
 def show_codec_help(is_server, speaker_codecs, microphone_codecs):
@@ -152,7 +155,7 @@ def show_codec_help(is_server, speaker_codecs, microphone_codecs):
     if hs:
         print("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
     elif len(invalid_sc):
-        print("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        warn("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
         for x in invalid_sc:
             speaker_codecs.remove(x)
     elif len(speaker_codecs)==0:
@@ -164,7 +167,7 @@ def show_codec_help(is_server, speaker_codecs, microphone_codecs):
     if hm:
         print("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
     elif len(invalid_mc):
-        print("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
+        warn("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
         for x in invalid_mc:
             microphone_codecs.remove(x)
     elif len(microphone_codecs)==0:
@@ -184,7 +187,7 @@ def get_build_info():
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
     except Exception, e:
-        print("Error: could not find the build information: %s", e)
+        warn("Error: could not find the build information: %s", e)
     return info
 
 
@@ -447,7 +450,7 @@ def parse_bool(k, v):
         #keep default - which may be None!
         return None
     else:
-        print("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+        warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
 
 def parse_number(numtype, k, v, auto=-1):
     if type(v)==str:
@@ -457,7 +460,7 @@ def parse_number(numtype, k, v, auto=-1):
     try:
         return numtype(v)
     except Exception, e:
-        print("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
+        warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 
 def validate_config(d={}, discard=NO_FILE_OPTIONS):
@@ -470,15 +473,15 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS):
     nd = {}
     for k, v in d.items():
         if k in discard:
-            print("Warning: option '%s' is not allowed in configuration files" % k)
+            warn("Warning: option '%s' is not allowed in configuration files" % k)
             continue
         vt = OPTION_TYPES.get(k)
         if vt is None:
-            print("Warning: invalid option: '%s'" % k)
+            warn("Warning: invalid option: '%s'" % k)
             continue
         if vt==str:
             if type(v)!=str:
-                print("invalid value for '%s': %s (string required)" % (k, type(v)))
+                warn("invalid value for '%s': %s (string required)" % (k, type(v)))
                 continue
         elif vt==int:
             v = parse_number(int, k, v)
@@ -500,15 +503,15 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS):
                 #ok so far..
                 pass
             else:
-                print("Warning: invalid value for '%s': %s (a string or list of strings is required)" % (k, type(v)))
+                warn("Warning: invalid value for '%s': %s (a string or list of strings is required)" % (k, type(v)))
                 continue
         else:
-            print("Error: unknown option type for '%s': %s" % (k, vt))
+            warn("Error: unknown option type for '%s': %s" % (k, vt))
         validation = OPTIONS_VALIDATION.get(k)
         if validation and v is not None:
             msg = validation(v)
             if msg:
-                print("Warning: invalid value for '%s': %s, %s" % (k, v, msg))
+                warn("Warning: invalid value for '%s': %s, %s" % (k, v, msg))
                 continue
         nd[k] = v
     return nd
