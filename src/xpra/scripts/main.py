@@ -559,7 +559,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
-            child = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, **kwargs)
+            child = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=sys.stderr, **kwargs)
         except OSError, e:
             raise Exception("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
