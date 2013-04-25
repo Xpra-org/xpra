@@ -41,9 +41,29 @@ from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
+from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+
+# Texture number assignment
+#  1 = Y plane
+#  2 = U plane
+#  3 = V plane
+#  4 = RGB updates
+#  5 = FBO texture (guaranteed up-to-date window contents) 
+TEX_Y = 0
+TEX_U = 1
+TEX_V = 2
+TEX_RGB = 3
+TEX_FBO = 4
 
 """
 This is the gtk2 + OpenGL version.
+The logic is as follows:
+
+We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
+This framebuffer object is updated with YUV painting and RGB painting. It is presented on screen by drawing a
+textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an expose event.
+The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date 
+window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
 """
 class GLPixmapBacking(PixmapBacking):
 
@@ -69,6 +89,7 @@ class GLPixmapBacking(PixmapBacking):
         self.paint_screen = False
         self._video_use_swscale = False
         self.draw_needs_refresh = False
+        self.offscreen_fbo = None
 
     def init(self, w, h):
         #re-init gl projection with new dimensions
@@ -84,37 +105,43 @@ class GLPixmapBacking(PixmapBacking):
         if not drawable:
             return  None
         if not self.gl_setup:
+            # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
             glMatrixMode(GL_MODELVIEW)
-            glEnableClientState(GL_VERTEX_ARRAY)
-            glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+            #TODO glEnableClientState(GL_VERTEX_ARRAY) 
+            #TODO glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+            
+            # Clear to white
+            glClearColor(1.0, 1.0, 1.0, 1.0)
+
+            # Default state is good for YUV painting:
+            #  - fragment program enabled
+            #  - render to offscreen FBO
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
-                self.textures = glGenTextures(4)
+                self.textures = glGenTextures(5)
                 debug("textures for wid=%s of size %s : %s", self.wid, self.size, self.textures)
-            glClearColor(1.0, 1.0, 1.0, 1.0)
+            if self.offscreen_fbo is None:
+                self.offscreen_fbo = glGenFramebuffers(1)
+
+            # Define empty FBO texture and set rendering to FBO
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)
+
+            glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glClear(GL_COLOR_BUFFER_BIT)
+
             self.gl_setup = True
         return drawable
 
     def close(self):
         PixmapBacking.close(self)
-        self.remove_shader()
         self.glarea = None
         self.glconfig = None
-
-    def remove_shader(self):
-        if self.yuv_shader:
-            drawable = self.gl_init()
-            if drawable:
-                try:
-                    glDisable(GL_FRAGMENT_PROGRAM_ARB)
-                    glDeleteProgramsARB(1, self.yuv_shader)
-                finally:
-                    drawable.gl_end()
-            self.yuv_shader = None
 
     def gl_begin(self):
         if self.glarea is None:
@@ -129,74 +156,7 @@ class GLPixmapBacking(PixmapBacking):
             return None
         return drawable
 
-    def present_backbuffer(self, drawable):
-        if drawable.is_double_buffered():
-            debug("SWAPPING BUFFERS NOW")
-            drawable.swap_buffers()
-            # Clear the new backbuffer to illustrate that its contents are undefined
-            glClear(GL_COLOR_BUFFER_BIT)
-        else:
-            glFlush()
-
-    def gl_expose_event(self, glarea, event):
-        drawable = self.gl_init()
-        debug("gl_expose_event(%s, %s) drawable=%s", glarea, event, drawable)
-        if drawable:
-            area = event.area
-            try:
-                # Expose event must redraw the whole image with up-to-date contents.
-                # We strive to maintain the backbuffer up-to-date with full frame YUV refreshes + partial RGB refreshes
-                # therefore at this point our backbuffer has to be presented on screen, but its contents must also
-                # be subsequently restored for further RGB partial updates or expose events
-                w, h = self.size
-
-                glDisable(GL_FRAGMENT_PROGRAM_ARB);
-                for texture in (GL_TEXTURE1, GL_TEXTURE2):
-                    glActiveTexture(texture)
-                    glDisable(GL_TEXTURE_RECTANGLE_ARB)
-                    glActiveTexture(GL_TEXTURE0);
-                    glEnable(GL_TEXTURE_RECTANGLE_ARB)
-                glReadBuffer(GL_BACK)
-
-                # Copy backbuffer data into RGB texture
-                glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[3])
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)
-
-                glCopyTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, 0, 0, w, h, 0)
-                self.present_backbuffer(drawable)
-
-                glDrawBuffer(GL_BACK)
-				# Draw textured RGB quad at the right coordinates
-                glBegin(GL_QUADS)
-                glTexCoord2i(0, h)
-                glVertex2i(0, 0)
-                glTexCoord2i(0, 0)
-                glVertex2i(0, h)
-                glTexCoord2i(w, 0)
-                glVertex2i(w, h)
-                glTexCoord2i(w, h)
-                glVertex2i(w, 0)
-                glEnd()
-                # Reset state
-                glEnable(GL_FRAGMENT_PROGRAM_ARB)
-            finally:
-                drawable.gl_end()
-
-
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
-        drawable = self.gl_init()
-        if not drawable:
-            debug("OpenGL cannot paint rgb24, drawable is not set")
-            return False
-
-        # Paint the partial RGB frame update to both the frontbuffer and backbuffer
-        # This enables us to avoid a swap, and therefore keep the backbuffer available with up-to-date content
-        # which will be used for the potential expose_event calls
-        glDrawBuffer(GL_FRONT_AND_BACK)
-
+    def set_rgb24_paint_state(self):
         # Set GL state for RGB24 painting:
         #    no fragment program
         #    only tex unit #0 active
@@ -207,16 +167,70 @@ class GLPixmapBacking(PixmapBacking):
         glActiveTexture(GL_TEXTURE0);
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
+    def unset_rgb24_paint_state(self):
+        # Reset state to our default
+        glEnable(GL_FRAGMENT_PROGRAM_ARB)
+        
+    def present_fbo(self):
+        drawable = self.gl_init()
+        debug("present_fbo() drawable=%s", drawable)
+        if not drawable:
+            return
+        # Change state to target screen instead of our FBO
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+        # Draw FBO texture on screen
+        self.set_rgb24_paint_state()
+
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        
+        w, h = self.size
+        glBegin(GL_QUADS)
+        glTexCoord2i(0, h)
+        glVertex2i(0, 0)
+        glTexCoord2i(0, 0)
+        glVertex2i(0, h)
+        glTexCoord2i(w, 0)
+        glVertex2i(w, h)
+        glTexCoord2i(w, h)
+        glVertex2i(w, 0)
+        glEnd()
+
+        # Show the backbuffer on screen
+        if drawable.is_double_buffered():
+            debug("SWAPPING BUFFERS NOW")
+            drawable.swap_buffers()
+            # Clear the new backbuffer to illustrate that its contents are undefined
+            glClear(GL_COLOR_BUFFER_BIT)
+        else:
+            glFlush()
+
+        self.unset_rgb24_paint_state()
+        glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+        drawable.gl_end()
+
+    def gl_expose_event(self, glarea, event):
+        debug("gl_expose_event(%s, %s)", glarea, event)
+        self.present_fbo()
+
+
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
+        drawable = self.gl_init()
+        if not drawable:
+            debug("OpenGL cannot paint rgb24, drawable is not set")
+            return False
+        
+        self.set_rgb24_paint_state()
 
         # Upload data as temporary RGB texture
-		
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[3])
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-
+        
         # Draw textured RGB quad at the right coordinates
         glBegin(GL_QUADS)
         glTexCoord2i(0, 0)
@@ -228,16 +242,11 @@ class GLPixmapBacking(PixmapBacking):
         glTexCoord2i(width, 0)
         glVertex2i(x+width, y)
         glEnd()
-
-        # Reset state
-        glEnable(GL_FRAGMENT_PROGRAM_ARB)
-        glFlush()
-        glDrawBuffer(GL_BACK)
-
-        # Absolutely do NOT SWAP BUFFERS
-        # The RGB data has been rendered on the front buffer directly, 
-        # and we keep it in the backbuffer for further RGB updates or expose events
-
+       
+        # Present update to screen
+        self.present_fbo()
+        # present_fbo has resetted state already
+        
         drawable.gl_end()
         return True
 
@@ -253,9 +262,9 @@ class GLPixmapBacking(PixmapBacking):
                       coding, err, len(img_data), w, h, options)
             gobject.idle_add(fire_paint_callbacks, callbacks, False)
             return
-        gobject.idle_add(self.do_gl_paint, x, y, w, h, data, rowstrides, pixel_format, callbacks)
+        gobject.idle_add(self.do_gl_yuv_paint, x, y, w, h, data, rowstrides, pixel_format, callbacks)
 
-    def do_gl_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
+    def do_gl_yuv_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         drawable = self.gl_init()
         if not drawable:
@@ -266,19 +275,16 @@ class GLPixmapBacking(PixmapBacking):
             try:
                 self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
                 if self.paint_screen:
-                    # Paint backbuffer
-                    self.render_image(x, y, x+w, y+h)
-                    # Present it
-                    self.present_backbuffer(drawable)
-                    # Re-paint the backbuffer so that future RGB updates maintain an up-to-date backbuffer
-                    self.render_image(x, y, x+w, y+h)
+                    # Update FBO texture
+                    self.render_yuv_update(x, y, x+w, y+h)
+                    # Present it on screen
+                    self.present_fbo()
                 fire_paint_callbacks(callbacks, True)
             except Exception, e:
                 log.error("OpenGL paint error: %s", e, exc_info=True)
                 fire_paint_callbacks(callbacks, False)
         finally:
             drawable.gl_end()
-
 
     def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
         assert x==0 and y==0
@@ -335,8 +341,8 @@ class GLPixmapBacking(PixmapBacking):
                 if height/div_h != U_height:
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d)", height/div_h, U_height)
 
-    def render_image(self, rx, ry, rw, rh):
-        debug("render_image %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
+    def render_yuv_update(self, rx, ry, rw, rh):
+        debug("render_yuv_update %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
             return
@@ -348,7 +354,7 @@ class GLPixmapBacking(PixmapBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
-        debug("render_image texture_size=%s, size=%s", self.texture_size, self.size)
+        debug("render_yuv_update texture_size=%s, size=%s", self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             ax = min(tw, x)
