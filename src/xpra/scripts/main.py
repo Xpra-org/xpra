@@ -537,7 +537,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         if sys.platform.startswith("win"):
             #use putty plink.exe syntax
             #unless it looks like we're using a cygwin ssh exe:
-            ssh_cmd = display_desc.get("ssh", "").lower()
+            ssh_cmd = display_desc.get("ssh", [""])[0].lower()
             if not (ssh_cmd.endswith("ssh") or ssh_cmd.endswith("ssh.exe")):
                 password = display_desc.get("password")
                 if password:
