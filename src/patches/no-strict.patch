@@ -1,10 +1,8 @@
-Description: Old versions of GCC will fail if strict is enabled.
- Author: Antoine Martin <antoine@devloop.org.uk>
- Forwarded: not-needed
- 
---- a/setup.py	(revision 2674)
+Index: setup.py
+===================================================================
+--- a/setup.py	(revision 3160)
 +++ b/setup.py	(working copy)
-@@ -92,7 +92,7 @@
+@@ -96,7 +96,7 @@
  
  
  

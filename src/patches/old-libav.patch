@@ -1,10 +1,8 @@
-Description: Build against old versions of libav.
- Author: Antoine Martin <antoine@devloop.org.uk>
- Forwarded: not-needed
- 
---- a/xpra/x264/x264lib.c	(revision 2661)
-+++ b/xpra/x264/x264lib.c	(working copy)
-@@ -402,11 +402,12 @@
+Index: xpra/codecs/x264/x264lib.c
+===================================================================
+--- a/xpra/codecs/x264/x264lib.c	(revision 3160)
++++ b/xpra/codecs/x264/x264lib.c	(working copy)
+@@ -404,11 +404,12 @@
  		fprintf(stderr, "could not open codec\n");
  		return 1;
  	}
@@ -18,7 +16,7 @@ Description: Build against old versions of libav.
  	return 0;
  }
  struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
-@@ -425,7 +426,7 @@
+@@ -427,7 +428,7 @@
  void do_clean_decoder(struct x264lib_ctx *ctx)
  {
  	if (ctx->frame) {

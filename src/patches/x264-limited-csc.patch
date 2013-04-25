@@ -1,7 +1,7 @@
 Index: xpra/x264/x264lib.c
 ===================================================================
---- a/xpra/x264/x264lib.c	(revision 1394)
-+++ b/xpra/x264/x264lib.c	(working copy)
+--- a/xpra/codecs/x264/x264lib.c	(revision 1394)
++++ b/xpra/codecs/x264/x264lib.c	(working copy)
 @@ -34,7 +34,7 @@
  #define MEMALIGN_ALIGNMENT 32
  //comment this out to turn off csc 422 and 444 colourspace modes

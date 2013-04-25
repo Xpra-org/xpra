@@ -1,17 +1,19 @@
-Description: Build x264 codec as a static library.
- Author: Arthur Huillet <ahuillet@serviware.com>
- Forwarded: not-needed
- 
---- a/setup.py
-+++ b/setup.py
-@@ -749,6 +749,10 @@
+Index: setup.py
+===================================================================
+--- a/setup.py	(revision 3160)
++++ b/setup.py	(working copy)
+@@ -798,10 +798,13 @@
  
  
  if x264_ENABLED:
-+    def pkgconfig(*args):
-+        return {'include_dirs': ["/usr/local/include"],
-+                'library_dirs': ["/usr/local/lib"],
-+                'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic", "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"] }
-     packages.append("xpra.x264")
-     cython_add(Extension("xpra.x264.codec",
-                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
++    x264static = {'include_dirs': ["/usr/local/include"],
++                  'library_dirs': ["/usr/local/lib"],
++                  'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic", "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"] }
+     packages.append("xpra.codecs.x264")
+     cython_add(Extension("xpra.codecs.x264.codec",
+                 ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
+-                **pkgconfig("x264", "libswscale", "libavcodec")
++                **x264static
+                 ), min_version=(0, 16))
+ elif sys.platform.startswith("win"):
+     py2exe_excludes.append("xpra.codecs.x264")
