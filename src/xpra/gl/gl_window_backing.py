@@ -21,24 +21,22 @@ from xpra.gl.gl_check import get_DISPLAY_MODE
 from xpra.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.window_backing import PixmapBacking, fire_paint_callbacks
-from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_VERTEX_ARRAY, \
-    GL_TEXTURE_COORD_ARRAY, GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
+from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
+    GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
-    GL_FRONT, GL_FRONT_AND_BACK, GL_BACK, \
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-    glEnableClientState, glGenTextures, glDisable, \
+    glGenTextures, glDisable, \
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
     glTexParameteri, \
     glTexImage2D, \
-    glMultiTexCoord2i, glColor3f, \
+    glMultiTexCoord2i, \
     glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor, glDrawBuffer, glReadBuffer, \
-    glCopyTexImage2D
+    glClear, glClearColor
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
-from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
+from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
