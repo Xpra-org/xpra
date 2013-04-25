@@ -1,3 +1,8 @@
+xpra (0.10.0-1) UNRELEASED; urgency=low
+  * TODO!
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 26 Mar 2013 01:23:42 +0100
+
 xpra (0.9.0-1) UNRELEASED; urgency=low
   * fix focus problems with old Xvfb display servers
   * fix Python 2.4 and 2.5 compatibility (many)
