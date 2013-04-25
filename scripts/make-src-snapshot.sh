@@ -37,7 +37,7 @@ find ${DIR} -name "*.pyc" -exec rm -fr {} \;
 
 RAW_SVN_VERSION=`svnversion`
 SVN_REVISION=`python -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`
-MODULE_DIRS="xpra wimpiggy parti"
+MODULE_DIRS="xpra wimpiggy"
 echo "adding svn revision ${SVN_REVISION} to __init__.py in ${MODULE_DIRS}"
 for module in ${MODULE_DIRS}; do
 	file="${DIR}/${module}/__init__.py"

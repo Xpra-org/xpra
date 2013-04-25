@@ -1,6 +1,6 @@
-# This file is part of Parti.
+# This file is part of Xpra.
 # Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
-# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 %define version 0.9.0
@@ -104,7 +104,7 @@ Requires: %{requires_python_gtk} %{requires_xorg} %{requires_extra} %{requires_v
 Group: Networking
 Packager: Antoine Martin <antoine@devloop.org.uk>
 URL: http://xpra.org/
-Source: parti-all-%{version}.tar.gz
+Source: xpra-all-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %if %{defined fedora}
 BuildRequires: python, setuptool
@@ -670,9 +670,9 @@ So basically it's screen for remote X apps.
 - first rpm spec file
 
 %prep
-rm -rf $RPM_BUILD_DIR/parti-all-%{version}
-zcat $RPM_SOURCE_DIR/parti-all-%{version}.tar.gz | tar -xvf -
-cd parti-all-%{version}
+rm -rf $RPM_BUILD_DIR/xpra-all-%{version}
+zcat $RPM_SOURCE_DIR/xpra-all-%{version}.tar.gz | tar -xvf -
+cd xpra-all-%{version}
 %if 0%{?no_server}
 %patch0 -p1
 (echo "xpra/xposix/__init__.py" > %{S:ignored_changed_files.txt})
@@ -712,14 +712,14 @@ cd parti-all-%{version}
 %endif
 
 %build
-cd parti-all-%{version}
+cd xpra-all-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build --without-parti
+CFLAGS=-O2 python setup.py build
 
 %install
 rm -rf $RPM_BUILD_ROOT
-cd parti-all-%{version}
-%{__python} setup.py install -O1 %{dummy} --without-parti --prefix /usr --skip-build --root %{buildroot}
+cd xpra-all-%{version}
+%{__python} setup.py install -O1 %{dummy} --prefix /usr --skip-build --root %{buildroot}
 
 #we should pass arguments to setup.py but rpm macros make this too difficult
 #so we delete after installation (ugly but this works)
@@ -780,7 +780,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/xpra
 %{python_sitelib}/wimpiggy
 %if %{include_egg}
-%{python_sitelib}/parti_all-*.egg-info
+%{python_sitelib}/xpra_all-*.egg-info
 %endif
 /usr/share/xpra
 /usr/share/wimpiggy

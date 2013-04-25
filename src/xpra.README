@@ -90,7 +90,7 @@ Okay, so how do I try xpra?
 ---------------------------
 
 Download the latest version from
-  http://partiwm.org/static/downloads/
+  http://xpra.org/
 
 Make sure you have the dependencies, at least:
   development packages for python-gtk, and all dependencies
@@ -115,8 +115,8 @@ And for MacPorts, apparently you should
 or whatever, please send it in.)
 
 Build it:
-  tar xvzf parti-all-<whatever>.tar.gz
-  cd parti-all-<whatever>
+  tar xvzf xpra-all-<whatever>.tar.gz
+  cd xpra-all-<whatever>
   ./setup.py install --home=install
   export PYTHONPATH=$PWD/install/lib/python:$PYTHONPATH
 Note 1: If running and displaying apps on two different machines, then

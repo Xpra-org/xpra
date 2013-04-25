@@ -9,14 +9,14 @@ RESTRICT_PYTHON_ABIS="2.4 2.5 3.*"
 SUPPORT_PYTHON_ABIS="1"
 inherit distutils eutils
 
-DESCRIPTION="X Persistent Remote Apps (xpra) and Partitioning WM (parti) based on wimpiggy"
+DESCRIPTION="X Persistent Remote Apps (xpra)"
 HOMEPAGE="http://xpra.org/"
 SRC_URI="http://xpra.org/src/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="amd64 x86 amd64-linux x86-linux"
-IUSE="+clipboard ffmpeg jpeg libnotify parti png sound +rencode server ssh x264 vpx webp opengl"
+IUSE="+clipboard ffmpeg jpeg libnotify png sound +rencode server ssh x264 vpx webp opengl"
 
 S="${WORKDIR}/${PF}"
 
@@ -35,13 +35,10 @@ COMMON_DEPEND="dev-python/pygtk:2
 		media-libs/gstreamer
 		media-libs/gst-plugins-base
 		dev-python/gst-python
-	)
-	!x11-wm/parti"
+	)"
 
 RDEPEND="${COMMON_DEPEND}
 	x11-apps/xmodmap
-	parti? ( dev-python/ipython
-		 dev-python/dbus-python )
 	libnotify? ( dev-python/dbus-python )
 	opengl? ( dev-python/pygtkglext )
 	jpeg? ( dev-python/imaging )
@@ -69,5 +66,5 @@ src_compile() {
 
 src_install() {
 	distutils_src_install
-	rm -vf "${ED}"usr/share/{parti,wimpiggy,xpra}/{README*,COPYING} || die
+	rm -vf "${ED}"usr/share/{wimpiggy,xpra}/{README*,COPYING} || die
 }

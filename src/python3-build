@@ -3,7 +3,7 @@
 set -e
 rm -rf build install py3
 mkdir py3
-cp -apr etc scripts man parti wimpiggy xpra add_build_info.py setup.py make_constants_pxi.py xpra.png *.desktop *README COPYING ./py3
+cp -apr etc scripts man wimpiggy xpra add_build_info.py setup.py make_constants_pxi.py xpra.png *.desktop *README COPYING ./py3
 pushd py3
 patch -p1 < ../patches/disable-posix-server.patch
 python3-2to3 --no-diffs -x all -f except -w -n .

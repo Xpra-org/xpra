@@ -22,18 +22,6 @@ Homepage: http://xpra.org/
 Vcs-Svn: http://xpra.org/svn/Xpra/
 Vcs-Browser: http://xpra.org/trac/browser/
 
-Package: parti
-Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}
-        ,python-wimpiggy (>=${source:Version})
-        ,python-gtk2
-        ,xvfb
-        ,ipython
-Description: tabbing/tiling window manager using GTK+
- Parti is a tabbing/tiling (one might say "partitioning") window manager.  Its
- goal is to bring this superior window management interface to modern,
- mainstream desktop environments.
-
 Package: xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}

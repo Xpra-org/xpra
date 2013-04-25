@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # coding=utf8
-# This file is part of Parti.
+# This file is part of Xpra.
 # The code was taken from here:
 # http://zetcode.com/gfx/pycairo/transparency/
 # And is apparently GPL v2
-# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject

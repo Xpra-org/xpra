@@ -24,50 +24,11 @@ set name=variant.opensolaris.zone value=global value=nonglobal
 
 dir  path=usr owner=root group=sys mode=755
 dir  path=usr/bin owner=root group=bin mode=755
-file path=usr/bin/parti owner=root group=bin mode=555
-file path=usr/bin/parti-repl owner=root group=bin mode=555
 file path=usr/bin/xpra owner=root group=bin mode=555
 file path=usr/bin/xpra_launcher owner=root group=bin mode=555
 dir  path=usr/lib owner=root group=bin mode=755
 dir  path=usr/lib/python2.6 owner=root group=bin mode=755
 dir  path=usr/lib/python2.6/site-packages owner=root group=bin mode=755
-dir  path=usr/lib/python2.6/site-packages/parti owner=root group=root mode=755
-file path=usr/lib/python2.6/site-packages/parti/__init__.py owner=root \
-    group=bin mode=644
-dir  path=usr/lib/python2.6/site-packages/parti/addons owner=root group=root \
-    mode=755
-file path=usr/lib/python2.6/site-packages/parti/addons/__init__.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/addons/ipython_embed.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/bus.py owner=root group=bin \
-    mode=644
-file path=usr/lib/python2.6/site-packages/parti/parti_main.py owner=root \
-    group=bin mode=644
-dir  path=usr/lib/python2.6/site-packages/parti/scripts owner=root group=root \
-    mode=755
-file path=usr/lib/python2.6/site-packages/parti/scripts/__init__.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/scripts/main.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/scripts/repl.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/test_bus.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/tray.py owner=root group=bin \
-    mode=644
-dir  path=usr/lib/python2.6/site-packages/parti/trays owner=root group=root \
-    mode=755
-file path=usr/lib/python2.6/site-packages/parti/trays/__init__.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/trays/compositetest.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/trays/simpletab.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti/world_organizer.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/parti_all-0.6.0-py2.6.egg-info \
-    owner=root group=bin mode=644
 dir  path=usr/lib/python2.6/site-packages/wimpiggy owner=root group=root mode=755
 file path=usr/lib/python2.6/site-packages/wimpiggy/__init__.py owner=root \
     group=bin mode=644
@@ -239,12 +200,8 @@ dir  path=usr/share/icons/xpra.png owner=root group=root mode=755
 file path=usr/share/icons/xpra.png/xpra.png owner=root group=bin mode=644
 dir  path=usr/share/man owner=root group=bin mode=755
 dir  path=usr/share/man/man1 owner=root group=bin mode=755
-file path=usr/share/man/man1/parti.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra_launcher.1 owner=root group=bin mode=644
-dir  path=usr/share/parti owner=root group=root mode=755
-file path=usr/share/parti/README owner=root group=bin mode=644
-file path=usr/share/parti/parti.README owner=root group=bin mode=644
 dir  path=usr/share/wimpiggy owner=root group=root mode=755
 file path=usr/share/wimpiggy/wimpiggy.README owner=root group=bin mode=644
 dir  path=usr/share/xpra owner=root group=root mode=755

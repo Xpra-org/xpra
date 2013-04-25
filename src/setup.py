@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# This file is part of Parti.
+# This file is part of Xpra.
 # Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
-# Parti is released under the terms of the GNU GPL v2, or, at your option, any
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 ##############################################################################
@@ -67,10 +67,6 @@ server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
 
 
 
-parti_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
-
-
-
 sound_ENABLED = True
 
 
@@ -106,7 +102,7 @@ PIC_ENABLED = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard", "server",
-            "sound", "cyxor", "cymaths", "opengl", "parti",
+            "sound", "cyxor", "cymaths", "opengl",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
@@ -158,7 +154,7 @@ if XPRA_LOCAL_SERVERS_SUPPORTED:
 # build options, these may get modified further down..
 #
 setup_options = {}
-setup_options["name"] = "parti-all"
+setup_options["name"] = "xpra-all"
 setup_options["author"] = "Antoine Martin"
 setup_options["author_email"] = "antoine@devloop.org.uk"
 setup_options["version"] = xpra.__version__
@@ -173,11 +169,6 @@ setup_options["long_description"] = """This package contains several sub-project
     %s
   xpra:
     %s""" % (wimpiggy_desc, xpra_desc)
-if parti_ENABLED:
-    parti_desc = "A tabbing/tiling window manager using GTK+"
-    setup_options["long_description"] = setup_options["long_description"]+ """
-  parti:
-    %s""" % parti_desc
 
 data_files = []
 setup_options["data_files"] = data_files
@@ -189,11 +180,6 @@ setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
 ext_modules = []
 cmdclass = {}
-
-if parti_ENABLED:
-    packages += ["parti", "parti.trays", "parti.addons", "parti.scripts"]
-    import parti
-    assert parti.__version__ == xpra.__version__
 
 
 
@@ -555,8 +541,6 @@ if sys.platform.startswith("win"):
                         "distutils", "setuptools", "doctest"]
     py2exe_excludes.append("xpra.darwin")
     py2exe_excludes.append("xpra.xposix")
-    if not parti_ENABLED:
-        py2exe_excludes.append("parti")
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
@@ -640,10 +624,6 @@ else:
                     ("share/applications", ["xpra_launcher.desktop"]),
                     ("share/icons", ["xpra.png"])
                   ]
-    if parti_ENABLED:
-        man_pages.append("man/parti.1")
-        data_files.append(("share/parti", ["README", "parti.README"]))
-        scripts += ["scripts/parti", "scripts/parti-repl"]
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/webm/LICENSE"]))
 
