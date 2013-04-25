@@ -29,9 +29,9 @@ class Win32Tray:
 	def close(self):
 		log("Win32Tray.close() tray_widget=%s", self.tray_widget)
 		if self.tray_widget:
+			self.stop_win32_session_events(self.getHWND())
 			self.tray_widget.close()
 			self.tray_widget = None
-		self.stop_win32_session_events(self.getHWND())
 		log("Win32Tray.close() ended")
 
 	def set_tooltip(self, name):
@@ -49,7 +49,7 @@ class Win32Tray:
 
 	def stop_win32_session_events(self, app_hwnd):
 		if app_hwnd is None:
-			log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
+			log.warn("stop_win32_session_events(%s) missing handle!", app_hwnd)
 			return
 		try:
 			import win32ts										#@UnresolvedImport
