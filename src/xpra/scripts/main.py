@@ -547,6 +547,7 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
         cmd += display_desc["remote_xpra"] + display_desc["proxy_command"] + display_desc["display_as_args"]
         try:
             kwargs = {}
+            kwargs["stderr"] = sys.stderr
             if os.name=="posix" and not sys.platform.startswith("darwin"):
                 def setsid():
                     #run in a new session
@@ -556,10 +557,11 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
+                kwargs["stderr"] = PIPE
             if debug_cb:
                 debug_cb("starting %s tunnel" % str(cmd[0]))
                 #debug_cb("starting ssh: %s with kwargs=%s" % (str(cmd), kwargs))
-            child = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=sys.stderr, **kwargs)
+            child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError, e:
             raise Exception("Error running ssh program '%s': %s" % (cmd, e))
         def abort_test(action):
