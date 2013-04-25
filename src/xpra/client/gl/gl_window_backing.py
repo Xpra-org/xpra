@@ -20,7 +20,7 @@ if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":
 from xpra.codecs.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
-from xpra.client.window_backing import PixmapBacking, fire_paint_callbacks
+from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
@@ -63,10 +63,10 @@ textured quad when requested, that is: after each YUV or RGB painting operation,
 The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date 
 window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
 """
-class GLPixmapBacking(PixmapBacking):
+class GLPixmapBacking(GTK2WindowBacking):
 
     def __init__(self, wid, w, h, mmap_enabled, mmap):
-        PixmapBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
+        GTK2WindowBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
         display_mode = get_DISPLAY_MODE()
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
@@ -137,7 +137,7 @@ class GLPixmapBacking(PixmapBacking):
         return drawable
 
     def close(self):
-        PixmapBacking.close(self)
+        GTK2WindowBacking.close(self)
         self.glarea = None
         self.glconfig = None
 

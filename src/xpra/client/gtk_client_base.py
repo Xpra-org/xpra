@@ -272,7 +272,7 @@ class GTKXpraClient(XpraClientBase, gobject.GObject):
         self.opengl_props["info"] = ""
         try:
             try:
-                from xpra import gl     #@UnusedImport
+                from xpra.client import gl     #@UnusedImport
                 from xpra.client.gl.gl_check import check_support
                 w, h = self.get_root_size()
                 min_texture_size = max(w, h)
@@ -622,7 +622,7 @@ class GTKXpraClient(XpraClientBase, gobject.GObject):
         if self._client_extras.supports_server():
             #we may be running inside another server!
             try:
-                from xpra.server_uuid import get_uuid
+                from xpra.server.server_uuid import get_uuid
                 capabilities["server_uuid"] = get_uuid() or ""
             except:
                 pass
