@@ -28,8 +28,8 @@ except:
 
 from xpra.deque import maxdeque
 from xpra.server.window_source import WindowSource, DamageBatchConfig
-from xpra.stats.base import add_list_stats, std_unit
-from xpra.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
+from xpra.simple_stats import add_list_stats, std_unit
+from xpra.server.stats.maths import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread

@@ -13,7 +13,7 @@ from math import sqrt
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.stats.maths import time_weighted_average, queue_inspect, logp
+from xpra.server.stats.maths import time_weighted_average, queue_inspect, logp
 
 
 MAX_DEBUG_MESSAGES = 1000

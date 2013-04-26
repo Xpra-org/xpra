@@ -184,7 +184,7 @@ setup_options["data_files"] = data_files
 packages = ["wimpiggy",
           "xpra", "xpra.scripts", "xpra.platform", "xpra.keyboard",
           "xpra.gtk_common", "xpra.net", "xpra.codecs", "xpra.codecs.xor",
-          "xpra.stats",
+          "xpra.server.stats",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
@@ -678,6 +678,7 @@ else:
 #*******************************************************************************
 if server_ENABLED:
     packages.append("xpra.server")
+    packages.append("xpra.server.stats")
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
@@ -685,6 +686,7 @@ elif sys.platform.startswith("win"):
         if x in packages:
             packages.remove(x)
     py2exe_excludes.append("xpra.server")
+    py2exe_excludes.append("xpra.server.stats")
 
 
 
@@ -797,8 +799,8 @@ if cyxor_ENABLED:
 
 
 if cymaths_ENABLED:
-    cython_add(Extension("xpra.stats.cymaths",
-                ["xpra/stats/cymaths.pyx"]))
+    cython_add(Extension("xpra.server.stats.cymaths",
+                ["xpra/server/stats/cymaths.pyx"]))
 
 
 

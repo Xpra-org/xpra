@@ -28,7 +28,6 @@ from xpra.scripts.server import deadly_signal
 from xpra.server.server_source import ServerSource
 from xpra.net.bytestreams import SocketConnection
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
-from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.os_util import get_hex_uuid
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
@@ -183,7 +182,11 @@ class ServerBase(object):
             except:
                 log.error("error reading clipboard filter file %s - clipboard disabled!", clipboard_filter_file, exc_info=True)
                 return
-        self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, clipboards, clipboard_filter_res)
+        try:
+            from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, clipboards, clipboard_filter_res)
+        except Exception, e:
+            log.error("failed to setup clipboard helper: %s" % e)
 
     def init_keyboard(self):
         ## These may get set by the client:

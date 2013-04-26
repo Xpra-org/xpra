@@ -8,17 +8,11 @@
 # see ServerSource, WindowSource and batch_delay_calculator
 # We load them from cymaths and fallback to pymaths
 
-from xpra.stats.base import (
-    to_std_unit, std_unit,                                          #@UnusedImport
-    std_unit_dec, absolute_to_diff_values,                          #@UnusedImport
-    values_to_scaled_values, values_to_diff_scaled_values,          #@UnusedImport
-    add_weighted_list_stats, find_invpow, add_list_stats)           #@UnusedImport
-
 has_cymaths = False
 try:
     import os
     if os.environ.get("XPRA_CYTHON_MATH", "1")=="1":
-        from xpra.stats.cymaths import (logp,                       #@UnresolvedImport @UnusedImport
+        from xpra.server.stats.cymaths import (logp,                       #@UnresolvedImport @UnusedImport
                               calculate_time_weighted_average,      #@UnresolvedImport @UnusedImport
                               time_weighted_average,                #@UnresolvedImport @UnusedImport
                               calculate_timesize_weighted_average,  #@UnresolvedImport @UnusedImport
@@ -29,7 +23,7 @@ except ImportError:
     pass
 
 if not has_cymaths:
-    from xpra.stats.pymaths import (logp,                           #@UnusedImport @Reimport
+    from xpra.server.stats.pymaths import (logp,                           #@UnusedImport @Reimport
                               calculate_time_weighted_average,      #@UnusedImport @Reimport
                               time_weighted_average,                #@UnusedImport @Reimport
                               calculate_timesize_weighted_average,  #@UnusedImport @Reimport

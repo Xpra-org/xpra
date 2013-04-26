@@ -25,7 +25,7 @@ from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
-from xpra.stats.base import std_unit
+from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name

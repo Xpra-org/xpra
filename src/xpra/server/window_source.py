@@ -59,8 +59,8 @@ from xpra.deque import maxdeque
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.scripts.config import ENCODINGS
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.stats.base import add_list_stats, add_weighted_list_stats
-from xpra.stats.maths import logp, \
+from xpra.simple_stats import add_list_stats, add_weighted_list_stats
+from xpra.server.stats.maths import logp, \
     calculate_time_weighted_average, calculate_timesize_weighted_average, \
     calculate_for_target, calculate_for_average
 from xpra.server.batch_delay_calculator import calculate_batch_delay, update_video_encoder

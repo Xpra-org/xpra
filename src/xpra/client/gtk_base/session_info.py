@@ -15,7 +15,7 @@ import platform
 
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
-from xpra.stats.base import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
+from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from wimpiggy.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder

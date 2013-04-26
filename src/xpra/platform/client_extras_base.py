@@ -574,7 +574,7 @@ class ClientExtrasBase(object):
     def make_clipboardmenuitem(self):
         try:
             if self.clipboard_helper:
-                from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
+                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
                 if isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
                     return self.make_translatedclipboard_optionsmenuitem()
         except:

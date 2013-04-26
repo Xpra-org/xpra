@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, debug
+from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, debug
 
 
 class TranslatedClipboardProtocolHelper(GDKClipboardProtocolHelper):

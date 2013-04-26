@@ -11,7 +11,7 @@ from wimpiggy.gdk.gdk_atoms import (
                 gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
                 )
 
-from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, CLIPBOARDS, debug
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, CLIPBOARDS, debug
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):

@@ -7,7 +7,7 @@ import gobject
 import sys
 import logging
 from xpra.platform import init
-from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
+from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
 
 SELECTION="CLIPBOARD"
 
