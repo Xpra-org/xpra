@@ -11,6 +11,7 @@ gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
+from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk3.client_window import ClientWindow
 from wimpiggy.log import Logger
 log = Logger()
@@ -24,6 +25,18 @@ class XpraClient(GTKXpraClient):
     def __init__(self, conn, opts):
         GTKXpraClient.__init__(self, conn, opts)
 
+    def make_hello(self, challenge_response=None):
+        capabilities = GTKXpraClient.make_hello(self, challenge_response)
+        capabilities["encoding.supports_delta"] = [x for x in ("rgb24",) if x in ENCODINGS]
+        return capabilities
+
+    def client_type(self):
+        return "Python/Gtk3"
+
+    def get_screen_sizes(self):
+        #where has this been moved to? - no docs to tell you :(
+        return []
+
     def get_root_size(self):
         return gdk.get_default_root_window().get_geometry()[2:]
 
@@ -35,6 +48,10 @@ class XpraClient(GTKXpraClient):
 
     def get_client_window_class(self, metadata):
         return ClientWindow
+
+    def init_opengl(self, enable_opengl):
+        self.opengl_enabled = False
+        self.opengl_props = {"info" : "GTK3 does not support OpenGL"}
 
 
 gobject.type_register(XpraClient)

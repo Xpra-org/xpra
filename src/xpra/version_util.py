@@ -46,14 +46,6 @@ def add_version_info(props):
     except:
         pass
 
-def add_gtk_version_info(props, gtk):
-    if hasattr(gtk, "pygtk_version"):
-        props["pygtk_version"] = gtk.pygtk_version
-    if hasattr(gtk, "gtk_version"):
-        props["gtk_version"] = gtk.gtk_version
-    elif hasattr(gtk, "_version"):
-        props["gtk_version"] = gtk._version
-
 def main():
     d = {}
     add_version_info(d)

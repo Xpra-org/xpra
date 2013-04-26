@@ -11,6 +11,7 @@ import gobject
 import gtk
 from gtk import gdk
 
+from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk2.client_window import ClientWindow
 from xpra.gtk_common.cursor_names import cursor_names
 from wimpiggy.log import Logger
@@ -29,6 +30,72 @@ class XpraClient(GTKXpraClient):
             self.GLClientWindowClass = GLClientWindow
         except:
             self.GLClientWindowClass = None
+
+    def client_type(self):
+        return "Python/Gtk2"
+
+    def make_hello(self, challenge_response=None):
+        capabilities = GTKXpraClient.make_hello(self, challenge_response)
+        capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24") if x in ENCODINGS]
+        return capabilities
+
+    def process_ui_capabilities(self, capabilities):
+        GTKXpraClient.process_ui_capabilities(self, capabilities)
+        if self.server_randr:
+            display = gdk.display_get_default()
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
+                screen.connect("size-changed", self._screen_size_changed)
+                i += 1
+
+    def _screen_size_changed(self, *args):
+        root_w, root_h = self.get_root_size()
+        log.debug("sending updated screen size to server: %sx%s", root_w, root_h)
+        self.send("desktop_size", root_w, root_h, self.get_screen_sizes())
+        #update the max packet size (may have gone up):
+        self.set_max_packet_size()
+
+    def get_screen_sizes(self):
+        display = gdk.display_get_default()
+        i=0
+        screen_sizes = []
+        while i<display.get_n_screens():
+            screen = display.get_screen(i)
+            j = 0
+            monitors = []
+            while j<screen.get_n_monitors():
+                geom = screen.get_monitor_geometry(j)
+                plug_name = ""
+                if hasattr(screen, "get_monitor_plug_name"):
+                    plug_name = screen.get_monitor_plug_name(j) or ""
+                wmm = -1
+                if hasattr(screen, "get_monitor_width_mm"):
+                    wmm = screen.get_monitor_width_mm(j)
+                hmm = -1
+                if hasattr(screen, "get_monitor_height_mm"):
+                    hmm = screen.get_monitor_height_mm(j)
+                monitor = plug_name, geom.x, geom.y, geom.width, geom.height, wmm, hmm
+                monitors.append(monitor)
+                j += 1
+            root = screen.get_root_window()
+            work_x, work_y = 0, 0
+            work_width, work_height = screen.get_width(), screen.get_height()
+            if not sys.platform.startswith("win"):
+                try:
+                    p = gtk.gdk.atom_intern('_NET_WORKAREA')
+                    work_x, work_y, work_width, work_height = root.property_get(p)[2][:4]
+                except:
+                    pass
+            item = (screen.make_display_name(), screen.get_width(), screen.get_height(),
+                        screen.get_width_mm(), screen.get_height_mm(),
+                        monitors,
+                        work_x, work_y, work_width, work_height)
+            screen_sizes.append(item)
+            i += 1
+        log("get_screen_sizes()=%s", screen_sizes)
+        return screen_sizes
+
 
     def get_root_size(self):
         return gdk.get_default_root_window().get_size()
@@ -69,6 +136,43 @@ class XpraClient(GTKXpraClient):
             #trays don't have a gdk window
             if gdkwin:
                 gdkwin.set_cursor(cursor)
+
+
+    def init_opengl(self, enable_opengl):
+        #enable_opengl can be True, False or None (auto-detect)
+        self.opengl_enabled = False
+        self.GLClientWindowClass = None
+        self.opengl_props = {}
+        from xpra.scripts.config import OpenGL_safety_check
+        check = OpenGL_safety_check()
+        if check:
+            if enable_opengl is True:
+                log.warn("OpenGL enabled despite: %s", check)
+            else:
+                self.opengl_props["info"] = "disabled: %s" % check
+                log.warn("OpenGL disabled: %s", check)
+                return
+        if enable_opengl is False:
+            self.opengl_props["info"] = "disabled by configuration"
+            return
+        self.opengl_props["info"] = ""
+        try:
+            try:
+                from xpra.client import gl     #@UnusedImport
+                from xpra.client.gl.gl_check import check_support
+                w, h = self.get_root_size()
+                min_texture_size = max(w, h)
+                self.opengl_props = check_support(min_texture_size, force_enable=(enable_opengl is True))
+
+                from xpra.client.gl.gl_client_window import GLClientWindow
+                self.GLClientWindowClass = GLClientWindow
+                self.opengl_enabled = True
+            except ImportError, e:
+                log.info("OpenGL support not enabled: %s", e)
+                self.opengl_props["info"] = str(e)
+        except Exception, e:
+            log.error("Error loading OpenGL support: %s", e, exc_info=True)
+            self.opengl_props["info"] = str(e)
 
     def group_leader_for_pid(self, pid, wid):
         if sys.platform.startswith("win") or pid<=0:

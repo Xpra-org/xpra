@@ -16,6 +16,14 @@ from wimpiggy.log import Logger
 log = Logger()
 
 
+def add_gtk_version_info(props, gtk):
+    if hasattr(gtk, "pygtk_version"):
+        props["pygtk_version"] = gtk.pygtk_version
+    if hasattr(gtk, "gtk_version"):
+        props["gtk_version"] = gtk.gtk_version
+    elif hasattr(gtk, "_version"):
+        props["gtk_version"] = gtk._version
+
 def set_prgname(name):
     try:
         import glib
