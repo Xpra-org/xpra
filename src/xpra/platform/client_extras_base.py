@@ -922,7 +922,7 @@ class ClientExtrasBase(object):
             for v in variants:
                 self.layout_submenu.append(kbitem("%s - %s" % (layout, v), layout, v))
         else:
-            from xpra.platform.keyboard_layouts import X11_LAYOUTS
+            from xpra.keyboard.layouts import X11_LAYOUTS
             #show all options to choose from:
             sorted_keys = list(X11_LAYOUTS.keys())
             sorted_keys.sort(key=keysort)
