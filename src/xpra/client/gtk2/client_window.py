@@ -56,7 +56,7 @@ class ClientWindow(ClientWindowBase):
                   }
 
     def init_window(self):
-        if self.override_redirect:
+        if self._override_redirect:
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
@@ -76,7 +76,7 @@ class ClientWindow(ClientWindowBase):
         _, _, w, h, _ = gdkwindow.get_geometry()
         return (x, y, w, h)
 
-    def set_geometry_hints(self, hints):
+    def apply_geometry_hints(self, hints):
         self.set_geometry_hints(None, **hints)
 
     def queue_draw(self, x, y, width, height):

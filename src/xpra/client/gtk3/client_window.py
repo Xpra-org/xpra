@@ -30,7 +30,7 @@ class ClientWindow(ClientWindowBase):
     NAME_TO_HINT = { }
     SCROLL_MAP = {}
 
-    def init_window(self, wintype):
+    def init_window(self):
         #TODO: no idea how to do this with gtk3
         #maybe not even possible..
         gtk.Window.__init__(self)
@@ -43,7 +43,7 @@ class ClientWindow(ClientWindowBase):
         w, h = self.get_size()
         return (x, y, w, h)
 
-    def set_geometry_hints(self, hints):
+    def apply_geometry_hints(self, hints):
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = gdk.WindowHints
         name_to_hint = {"maximum-size"  : wh.MAX_SIZE,

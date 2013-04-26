@@ -71,7 +71,8 @@ else:
 
 class ClientWindowBase(gtk.Window):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        self.init_window(override_redirect)
+        self._override_redirect = override_redirect
+        self.init_window()
         self._client = client
         self.group_leader = group_leader
         self._id = wid
@@ -80,7 +81,6 @@ class ClientWindowBase(gtk.Window):
         self._backing = None
         self.new_backing(w, h)
         self._metadata = {}
-        self._override_redirect = override_redirect
         self._client_properties = client_properties
         self._auto_refresh_delay = auto_refresh_delay
         self._refresh_timer = None
@@ -220,7 +220,7 @@ class ClientWindowBase(gtk.Window):
                     v1, v2 = v
                     hints[h] = float(v1)/float(v2)
             try:
-                self.set_geometry_hints(hints)
+                self.apply_geometry_hints(hints)
             except:
                 log.error("with hints=%s", hints, exc_info=True)
             #TODO:
@@ -254,7 +254,7 @@ class ClientWindowBase(gtk.Window):
                 self.set_transient_for(window)
 
         #apply window-type hint if window is not mapped yet:
-        if "window-type" in self._metadata and not self.is_mapped(self):
+        if "window-type" in self._metadata and not self.is_mapped():
             window_types = self._metadata.get("window-type")
             log("window types=%s", window_types)
             for window_type in window_types:
@@ -300,7 +300,7 @@ class ClientWindowBase(gtk.Window):
             if DRAW_DEBUG:
                 log.info("after_draw_refresh(%s) options=%s", success, options)
             if success and self._backing and self._backing.draw_needs_refresh:
-                self.queue_draw(self, x, y, width, height)
+                self.queue_draw(x, y, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
             if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
                 gobject.source_remove(self._refresh_timer)
@@ -365,7 +365,7 @@ class ClientWindowBase(gtk.Window):
         if self.group_leader:
             self.window.set_group(self.group_leader)
         if not self._override_redirect:
-            x, y, w, h = self.get_window_geometry(self)
+            x, y, w, h = self.get_window_geometry()
             if not self._been_mapped:
                 workspace = self.set_workspace()
             else:
@@ -390,7 +390,7 @@ class ClientWindowBase(gtk.Window):
             self.process_configure_event()
 
     def process_configure_event(self):
-        x, y, w, h = self.get_window_geometry(self)
+        x, y, w, h = self.get_window_geometry()
         w = max(1, w)
         h = max(1, h)
         ox, oy = self._pos
