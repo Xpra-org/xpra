@@ -16,3 +16,13 @@ def add_codec_version_info(capabilities):
         capabilities["encoding.x264.version"] = x264_codec.get_version()
     except:
         pass
+    try:
+        from xpra.codecs.webm import __VERSION__
+        capabilities["encoding.webp.version"] = __VERSION__
+    except:
+        pass
+    try:
+        import Image
+        capabilities["encoding.PIL.version"] = Image.VERSION
+    except:
+        pass
