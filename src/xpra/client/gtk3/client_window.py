@@ -11,7 +11,7 @@ gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
-from xpra.client.client_window_base import ClientWindowBase
+from xpra.client.client_window_base import ClientWindowBase, DRAW_DEBUG
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -85,6 +85,12 @@ class ClientWindow(ClientWindowBase):
 
     def queue_draw(self, x, y, width, height):
         self.queue_draw_area(x, y, width, height)
+
+    def do_draw(self, context):
+        if DRAW_DEBUG:
+            log.info("do_draw(%s)", context)
+        if self.get_mapped() and self._backing:
+            self._backing.cairo_draw(context)
 
 
 gobject.type_register(ClientWindow)

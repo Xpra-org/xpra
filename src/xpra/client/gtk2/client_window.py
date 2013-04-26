@@ -9,7 +9,7 @@ import gobject
 import gtk
 from gtk import gdk
 
-from xpra.client.client_window_base import ClientWindowBase
+from xpra.client.client_window_base import ClientWindowBase, DRAW_DEBUG
 from wimpiggy.log import Logger
 log = Logger()
 
@@ -55,6 +55,12 @@ class ClientWindow(ClientWindowBase):
                   gdk.SCROLL_RIGHT: 7,
                   }
 
+    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+        log.info("ClientWindow(..)")
+        ClientWindowBase.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        log.info("ClientWindow(..) done")
+
+
     def init_window(self):
         if self._override_redirect:
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
@@ -85,6 +91,18 @@ class ClientWindow(ClientWindowBase):
             window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
         else:
             log.warn("ignoring draw received for a window which is not realized yet!")
+
+    def do_expose_event(self, event):
+        if DRAW_DEBUG:
+            log.info("do_expose_event(%s) area=%s", event, event.area)
+        if not (self.flags() & gtk.MAPPED) or self._backing is None:
+            return
+        context = self.window.cairo_create()
+        context.rectangle(event.area)
+        context.clip()
+        self._backing.cairo_draw(context)
+        if not self._client.server_ok():
+            self.paint_spinner(context, event.area)
 
 
 gobject.type_register(ClientWindow)
