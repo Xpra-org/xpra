@@ -55,12 +55,6 @@ class ClientWindow(ClientWindowBase):
                   gdk.SCROLL_RIGHT: 7,
                   }
 
-    def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        log.info("ClientWindow(..)")
-        ClientWindowBase.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
-        log.info("ClientWindow(..) done")
-
-
     def init_window(self):
         if self._override_redirect:
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
