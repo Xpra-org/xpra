@@ -5,8 +5,8 @@
 
 import gobject
 
-from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.platform.clipboard_base import ClipboardProtocolHelperBase, ClipboardProxy, debug
+from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, ClipboardProxy, debug
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):

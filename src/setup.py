@@ -762,6 +762,7 @@ elif sys.platform.startswith("win"):
 
 if client_ENABLED:
     packages.append("xpra.client")
+    packages.append("xpra.client.gtk_base")
     packages.append("xpra.client.gtk2")
     packages.append("xpra.client.gtk3")
 elif sys.platform.startswith("win"):
@@ -771,12 +772,14 @@ elif sys.platform.startswith("win"):
 
 if clipboard_ENABLED:
     packages.append("wimpiggy.gdk")
+    packages.append("xpra.clipboard")
     cython_add(Extension("wimpiggy.gdk.gdk_atoms",
                 ["wimpiggy/gdk/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
 elif sys.platform.startswith("win"):
     py2exe_excludes.append("wimpiggy.gdk")
+    py2exe_excludes.append("xpra.clipboard")
 
 
 

@@ -7,7 +7,6 @@ import os.path
 import gtk.gdk
 
 from xpra.platform.client_extras_base import ClientExtrasBase, CheckMenuItem
-from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.platform import get_icon_dir
 from xpra.gtk_common.keymap import get_gtk_keymap
 from wimpiggy.log import Logger
@@ -66,7 +65,7 @@ class ClientExtras(ClientExtrasBase):
             self.setup_clipboard_helper(OSXClipboardProtocolHelper)
         except ImportError, e:
             log.error("OSX clipboard failed to load: %s - using default fallback", e)
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+            self.clipboard_fallback()
 
     def locate_icon_filename(self, opts_tray_icon):
         # ensure icon_filename points to a valid file (or None)

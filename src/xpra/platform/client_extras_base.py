@@ -16,7 +16,6 @@ from xpra.scripts.config import ENCODINGS
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.keyboard.mask import mask_to_names
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.platform.client_tray import ClientTray
 from xpra.gtk_common.gtk_util import set_tooltip_text
 from xpra.scripts.about import about, close_about
 from wimpiggy.log import Logger
@@ -165,6 +164,7 @@ class ClientExtrasBase(object):
         return True
 
     def make_system_tray(self, client, wid, w, h):
+        from xpra.client.gtk_base.client_tray import ClientTray
         return ClientTray(client, wid, w, h)
 
     def supports_clipboard(self):
@@ -175,6 +175,13 @@ class ClientExtrasBase(object):
             self.clipboard_helper.process_clipboard_packet(packet)
         else:
             log.warn("received a clipboard packet but clipboard is not supported!")
+
+    def clipboard_fallback(self):
+        try:
+            from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
+            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+        except ImportError, e:
+            log.error("clipboard fallback failed to load: %s - no clipboard available", e)
 
     def setup_clipboard_helper(self, helperClass):
         def clipboard_send(*parts):
@@ -272,7 +279,7 @@ class ClientExtrasBase(object):
     def session_info(self, *args):
         if self.session_info_window is None or self.session_info_window.is_closed:
             #we import here to avoid an import loop
-            from xpra.platform.session_info import SessionInfo
+            from xpra.client.gtk_base.session_info import SessionInfo
             pixbuf = self.get_pixbuf("statistics.png")
             if not pixbuf and self.tray_icon:
                 pixbuf = self.get_pixbuf(self.tray_icon)
@@ -523,7 +530,7 @@ class ClientExtrasBase(object):
                             "Clipboard" : "CLIPBOARD",
                             "Primary"   : "PRIMARY",
                             "Secondary" : "SECONDARY"}
-            from xpra.platform.translated_clipboard import TranslatedClipboardProtocolHelper
+            from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
             for label, remote_clipboard in LABEL_TO_NAME.items():
                 clipboard_item = CheckMenuItem(label)
                 def remote_clipboard_changed(item):

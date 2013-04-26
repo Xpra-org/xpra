@@ -9,7 +9,6 @@
 import os.path
 
 from xpra.platform.client_extras_base import ClientExtrasBase
-from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.platform import get_icon_dir
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.keyboard.layouts import WIN32_LAYOUTS
@@ -28,7 +27,7 @@ class ClientExtras(ClientExtrasBase):
             self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
         except ImportError, e:
             log.error("GDK translated clipboard failed to load: %s - using default fallback", e)
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
+            self.clipboard_fallback()
         self.setup_menu(True)
         self.setup_console_event_listener()
         self.setup_tray(opts.no_tray, opts.notifications, opts.tray_icon)
