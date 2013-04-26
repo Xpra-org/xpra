@@ -27,7 +27,7 @@ def do_init():
     from wimpiggy.util import gtk_main_quit_really
     def quit_launcher(*args):
         gtk_main_quit_really()
-    from xpra.darwin.gui import get_OSXApplication, setup_menubar, osx_ready
+    from gui import get_OSXApplication, setup_menubar, osx_ready
     from xpra.platform import get_icon
     setup_menubar(quit_launcher)
     osxapp = get_OSXApplication()

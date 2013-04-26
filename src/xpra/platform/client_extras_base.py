@@ -17,7 +17,7 @@ from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
 from xpra.keyboard.mask import mask_to_names
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import set_tooltip_text
-from xpra.scripts.about import about, close_about
+from xpra.client.gtk_base.about import about, close_about
 from wimpiggy.log import Logger
 log = Logger()
 

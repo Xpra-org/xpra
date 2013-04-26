@@ -29,8 +29,9 @@ import pango
 from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
-from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image, set_prgname
-from xpra.scripts.about import about
+from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
+from xpra.os_util import set_prgname
+from xpra.client.gtk_base.about import about
 from xpra.scripts.main import connect_to, SIGNAMES
 from xpra.platform import get_icon, init as platform_init
 from xpra.client.client import XpraClient
@@ -456,7 +457,7 @@ class ApplicationWindow:
 
 def main():
 	if sys.platform.startswith("win"):
-		from xpra.win32 import set_log_filename
+		from xpra.platform.win32 import set_log_filename
 		set_log_filename("Xpra-Launcher.log")
 	platform_init()
 	import logging
