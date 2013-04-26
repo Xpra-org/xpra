@@ -35,7 +35,6 @@ try:
 except:
     from io import StringIO         #@UnresolvedImport @Reimport
 import time
-import ctypes
 from threading import Lock
 from math import sqrt
 
@@ -384,9 +383,6 @@ class WindowSource(object):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
-        if self._mmap and self._mmap_size>0:
-            self._mmap_data_start = ctypes.c_uint.from_buffer(self._mmap, 0)
-            self._mmap_data_end = ctypes.c_uint.from_buffer(self._mmap, 4)
 
         # video codecs:
         self._video_encoder = None
@@ -1096,8 +1092,10 @@ class WindowSource(object):
             self._video_encoder_lock.release()
 
     def mmap_send(self, coding, data):
+        from xpra.net.mmap_pipe import mmap_write
         start = time.time()
-        mmap_data = self._mmap_send(data)
+        mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
+        self.global_statistics.mmap_free_size = mmap_free_size
         elapsed = time.time()-start+0.000000001 #make sure never zero!
         debug("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
         if mmap_data is not None:
@@ -1105,73 +1103,3 @@ class WindowSource(object):
             coding = "mmap"
             data = mmap_data
         return coding, data
-
-    def _mmap_send(self, data):
-        """
-            Sends 'data' to the client via the mmap shared memory region,
-            called by 'make_data_packet' from the non-UI thread 'data_to_packet'.
-        """
-        #This is best explained using diagrams:
-        #mmap_area=[&S&E-------------data-------------]
-        #The first pair of 4 bytes are occupied by:
-        #S=data_start index is only updated by the client and tells us where it has read up to
-        #E=data_end index is only updated here and marks where we have written up to (matches current seek)
-        # '-' denotes unused/available space
-        # '+' is for data we have written
-        # '*' is for data we have just written in this call
-        # E and S show the location pointed to by data_start/data_end
-        start = max(8, self._mmap_data_start.value)
-        end = max(8, self._mmap_data_end.value)
-        if end<start:
-            #we have wrapped around but the client hasn't yet:
-            #[++++++++E--------------------S+++++]
-            #so there is one chunk available (from E to S):
-            available = start-end
-            chunk = available
-        else:
-            #we have not wrapped around yet, or the client has wrapped around too:
-            #[------------S++++++++++++E---------]
-            #so there are two chunks available (from E to the end, from the start to S):
-            chunk = self._mmap_size-end
-            available = chunk+(start-8)
-        l = len(data)
-        #update global mmap stats:
-        self.global_statistics.mmap_free_size = available-l
-        if l>=available:
-            warn("mmap area full: we need more than %s but only %s left! ouch!", l, available)
-            return None
-        if l<chunk:
-            """ data fits in the first chunk """
-            #ie: initially:
-            #[----------------------------------]
-            #[*********E------------------------]
-            #or if data already existed:
-            #[+++++++++E------------------------]
-            #[+++++++++**********E--------------]
-            self._mmap.seek(end)
-            self._mmap.write(data)
-            data = [(end, l)]
-            self._mmap_data_end.value = end+l
-        else:
-            """ data does not fit in first chunk alone """
-            if available>=(self._mmap_size/2) and available>=(l*3) and l<(start-8):
-                """ still plenty of free space, don't wrap around: just start again """
-                #[------------------S+++++++++E------]
-                #[*******E----------S+++++++++-------]
-                self._mmap.seek(8)
-                self._mmap.write(data)
-                data = [(8, l)]
-                self._mmap_data_end.value = 8+l
-            else:
-                """ split in 2 chunks: wrap around the end of the mmap buffer """
-                #[------------------S+++++++++E------]
-                #[******E-----------S+++++++++*******]
-                self._mmap.seek(end)
-                self._mmap.write(data[:chunk])
-                self._mmap.seek(8)
-                self._mmap.write(data[chunk:])
-                l2 = l-chunk
-                data = [(end, chunk), (8, l2)]
-                self._mmap_data_end.value = 8+l2
-        debug("sending damage with mmap: %s", data)
-        return data

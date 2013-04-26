@@ -10,7 +10,6 @@ gdk = import_gdk()
 gobject = import_gobject()
 
 import os
-import ctypes
 import cairo
 import zlib
 
@@ -20,6 +19,7 @@ log = Logger()
 from threading import Lock
 from xpra.scripts.config import ENCODINGS
 from xpra.codecs.xor import xor_str
+from xpra.net.mmap_pipe import mmap_read
 
 try:
     from xpra.codecs.x264.codec import Decoder as x264_Decoder     #@UnresolvedImport
@@ -214,22 +214,8 @@ class WindowBacking(object):
         #and would complicate the code (add a callback to free mmap area)
         """ see _mmap_send() in server.py for details """
         assert self.mmap_enabled
-        data_start = ctypes.c_uint.from_buffer(self.mmap, 0)
-        if len(img_data)==1:
-            #construct an array directly from the mmap zone:
-            offset, length = img_data[0]
-            arraytype = ctypes.c_char * length
-            data = arraytype.from_buffer(self.mmap, offset)
-            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
-            data_start.value = offset+length
-        else:
-            #re-construct the buffer from discontiguous chunks:
-            data = ""
-            for offset, length in img_data:
-                self.mmap.seek(offset)
-                data += self.mmap.read(length)
-                data_start.value = offset+length
-            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+        data = mmap_read(self.mmap, img_data)
+        self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
         return  False
 
 

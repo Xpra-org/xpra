@@ -270,7 +270,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             self.mmap = mmap.mmap(fd, length=self.mmap_size)
             #write the 16 byte token one byte at a time - no endianness
             self.mmap_token = get_int_uuid()
-            log.debug("mmap_token=%s", self.mmap_token)
+            log("mmap_token=%s", self.mmap_token)
             v = self.mmap_token
             for i in range(0,16):
                 poke = ctypes.c_ubyte.from_buffer(self.mmap, 512+i)

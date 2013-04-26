@@ -533,8 +533,11 @@ class ServerSource(object):
             mmap_file = capabilities.get("mmap_file")
             mmap_token = capabilities.get("mmap_token")
             log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
-            if self.supports_mmap and mmap_file and os.path.exists(mmap_file):
-                self.init_mmap(mmap_file, mmap_token)
+            if mmap_file and os.path.exists(mmap_file):
+                if not self.supports_mmap:
+                    log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_file)
+                else:
+                    self.init_mmap(mmap_file, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
