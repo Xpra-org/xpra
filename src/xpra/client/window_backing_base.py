@@ -60,16 +60,18 @@ Generic superclass for Backing code,
 see CairoBacking and PixmapBacking for actual implementations
 """
 class WindowBacking(object):
-    def __init__(self, wid, mmap_enabled, mmap):
+    def __init__(self, wid):
         self.wid = wid
-        self.mmap_enabled = mmap_enabled
-        self.mmap = mmap
         self._backing = None
         self._last_pixmap_data = None
         self._video_use_swscale = True
         self._video_decoder = None
         self._video_decoder_lock = Lock()
         self.draw_needs_refresh = True
+
+    def enable_mmap(self, mmap_area):
+        self.mmap = mmap_area
+        self.mmap_enabled = True
 
     def close(self):
         log("%s.close() video_decoder=%s", type(self), self._video_decoder)

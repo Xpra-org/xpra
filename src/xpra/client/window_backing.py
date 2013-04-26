@@ -43,7 +43,9 @@ def make_new_backing(backing_class, wid, w, h, backing, mmap_enabled, mmap):
         if lock:
             lock.acquire()
         if backing is None:
-            backing = backing_class(wid, w, h, mmap_enabled, mmap)
+            backing = backing_class(wid, w, h)
+            if mmap_enabled:
+                backing.enable_mmap(mmap)
         backing.init(w, h)
     finally:
         if lock:

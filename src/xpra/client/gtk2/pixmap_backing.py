@@ -17,8 +17,8 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
-    def __init__(self, wid, w, h, mmap_enabled, mmap):
-        GTK2WindowBacking.__init__(self, wid, w, h, mmap_enabled, mmap)
+    def __init__(self, wid, w, h):
+        GTK2WindowBacking.__init__(self, wid, w, h)
 
     def init(self, w, h):
         old_backing = self._backing

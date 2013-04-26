@@ -26,8 +26,8 @@ Instead we have to use PIL to convert via a PNG!
 This is a complete waste of CPU! Please complain to pycairo.
 """
 class CairoBacking(WindowBacking):
-    def __init__(self, wid, w, h, mmap_enabled, mmap):
-        WindowBacking.__init__(self, wid, mmap_enabled, mmap)
+    def __init__(self, wid, w, h):
+        WindowBacking.__init__(self, wid)
 
     def init(self, w, h):
         old_backing = self._backing

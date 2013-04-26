@@ -24,8 +24,8 @@ Superclass for PixmapBacking and GLBacking
 """
 class GTK2WindowBacking(WindowBacking):
 
-    def __init__(self, wid, w, h, mmap_enabled, mmap):
-        WindowBacking.__init__(self, wid, mmap_enabled, mmap)
+    def __init__(self, wid, w, h):
+        WindowBacking.__init__(self, wid)
 
     def init(self, w, h):
         raise Exception("override me!")
