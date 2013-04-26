@@ -11,7 +11,7 @@ from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 
 
-class XpraX11ShadowServer(ShadowServerBase, X11ServerBase):
+class ShadowServer(ShadowServerBase, X11ServerBase):
 
     def __init__(self, sockets, opts):
         ShadowServerBase.__init__(self)

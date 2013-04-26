@@ -98,11 +98,11 @@ def get_icon(name):
 
 
 if _os.name == "nt":
-    from xpra.win32 import *
+    from win32 import *
 elif _sys.platform.startswith("darwin"):
-    from xpra.darwin import *
+    from darwin import *
 elif _os.name == "posix":
-    from xpra.xposix import *
+    from xposix import *
 else:
     raise OSError("Unknown OS %s" % (_os.name))
 

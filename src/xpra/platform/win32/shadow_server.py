@@ -24,7 +24,7 @@ BUTTON_EVENTS = {
                  (5, True)  : (win32con.MOUSEEVENTF_WHEEL,      -win32con.WHEEL_DELTA),
                  }
 
-class XpraWin32ShadowServer(ShadowServerBase, ServerBase):
+class ShadowServer(ShadowServerBase, ServerBase):
 
     def __init__(self, sockets, opts):
         ShadowServerBase.__init__(self)

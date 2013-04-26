@@ -355,7 +355,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     def pkgconfig(*packages_options, **ekw):
         return {}
     #always include all platform code in this case:
-    packages += ["xpra.xposix", "xpra.win32", "xpra.darwin"]
+    packages += ["xpra.platform.xposix", "xpra.platform.win32", "xpra.platform.darwin"]
     #ensure we remove the files we generate:
     CLEAN_FILES = ["xpra/x11/wait_for_x_server.c",
                    "xpra/codecs/vpx/codec.c",
@@ -510,7 +510,7 @@ if sys.platform.startswith("win"):
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
-    packages.append("xpra.win32")
+    packages.append("xpra.platform.win32")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
                     {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
@@ -549,8 +549,8 @@ if sys.platform.startswith("win"):
                         "ssl", "_ssl",
                         "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
                         "distutils", "setuptools", "doctest"]
-    py2exe_excludes.append("xpra.darwin")
-    py2exe_excludes.append("xpra.xposix")
+    py2exe_excludes.append("xpra.platform.darwin")
+    py2exe_excludes.append("xpra.platform.xposix")
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
@@ -640,9 +640,9 @@ else:
     if sys.platform.startswith("darwin"):
         #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
-        packages.append("xpra.darwin")
+        packages.append("xpra.platform.darwin")
     else:
-        packages.append("xpra.xposix")
+        packages.append("xpra.platform.xposix")
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' below step if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")

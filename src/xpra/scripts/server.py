@@ -461,12 +461,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             save_pid(xvfb_pid)
 
     if shadowing:
-        if sys.platform.startswith("win"):
-            from xpra.win32.shadow_server import XpraWin32ShadowServer
-            app = XpraWin32ShadowServer(sockets, opts)
-        else:
-            from xpra.shadow_server import XpraX11ShadowServer
-            app = XpraX11ShadowServer(sockets, opts)
+        from xpra.platform.shadow_server import ShadowServer
+        app = ShadowServer(sockets, opts)
     else:
         #check for an existing window manager:
         from wimpiggy.wm import wm_check
