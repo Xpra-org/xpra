@@ -7,7 +7,7 @@
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.client.client_window import ClientWindow, queue_draw, gdk_window
+from xpra.client.gtk2.client_window import ClientWindow
 from xpra.client.gl.gl_window_backing import GLPixmapBacking, debug
 
 
@@ -30,10 +30,10 @@ class GLClientWindow(ClientWindow):
         w, h = self.get_size()
         if ok:
             self._backing.render_image(0, 0, w, h)
-            queue_draw(self._backing.glarea, 0, 0, w, h)
+            self.queue_draw(self._backing.glarea, 0, 0, w, h)
         else:
             import gtk.gdk
-            window = gdk_window(self._backing.glarea)
+            window = self.gdk_window(self._backing.glarea)
             context = window.cairo_create()
             self.paint_spinner(context, gtk.gdk.Rectangle(0, 0, w, h))
 
