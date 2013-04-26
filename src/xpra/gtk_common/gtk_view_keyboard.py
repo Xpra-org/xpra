@@ -113,7 +113,7 @@ class KeyboardStateInfoWindow:
 
 
 def main():
-	from xpra.gtk_common.gtk_util import set_application_name, set_prgname
+	from xpra.os_util import set_application_name, set_prgname
 	if sys.platform.startswith("win"):
 		from xpra.win32 import set_redirect_output, set_log_filename
 		set_redirect_output(True)

@@ -30,8 +30,9 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.platform.uuid_wrapper import get_hex_uuid
-from xpra.version_util import is_compatible_with, add_version_info, add_gtk_version_info
-from xpra.gtk_common.gtk_util import set_application_name
+from xpra.version_util import is_compatible_with, add_version_info
+from xpra.gtk_common.gtk_util import add_gtk_version_info
+from xpra.os_util import set_application_name
 
 MAX_CONCURRENT_CONNECTIONS = 20
 

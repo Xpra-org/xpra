@@ -10,9 +10,9 @@ import os.path
 
 from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
-from xpra.platform.keyboard_layouts import WIN32_LAYOUTS
 from xpra.platform import get_icon_dir
-from xpra.gtk_common.keys import get_gtk_keymap
+from xpra.gtk_common.keymap import get_gtk_keymap
+from xpra.keyboard.layouts import WIN32_LAYOUTS
 from wimpiggy.log import Logger
 log = Logger()
 

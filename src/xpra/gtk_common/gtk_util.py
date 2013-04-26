@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os.path
 
 from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
@@ -24,27 +23,6 @@ def add_gtk_version_info(props, gtk):
     elif hasattr(gtk, "_version"):
         props["gtk_version"] = gtk._version
 
-def set_prgname(name):
-    try:
-        import glib
-        glib.set_prgname(name)
-    except:
-        pass
-
-NAME_SET = False
-def set_application_name(name):
-    global NAME_SET
-    if NAME_SET:
-        return
-    NAME_SET = True
-    if sys.version_info[:2]<(2,5):
-        log.warn("Python %s is too old!", sys.version_info)
-        return
-    try:
-        import glib
-        glib.set_application_name(name or "Xpra")
-    except ImportError, e:
-        log.warn("glib is missing, cannot set the application name, please install glib's python bindings: %s", e)
 
 def scaled_image(pixbuf, icon_size):
     return    gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size, icon_size, gdk.INTERP_BILINEAR))

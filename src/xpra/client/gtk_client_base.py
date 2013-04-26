@@ -17,6 +17,7 @@ from wimpiggy.util import (gtk_main_quit_really,
 from wimpiggy.log import Logger
 log = Logger()
 
+from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 
@@ -101,6 +102,7 @@ class GTKXpraClient(UIXpraClient):
 
     def make_hello(self, challenge_response=None):
         capabilities = UIXpraClient.make_hello(self, challenge_response)
+        capabilities["named_cursors"] = len(cursor_names)>0
         add_gtk_version_info(capabilities, gtk)
         return capabilities
 

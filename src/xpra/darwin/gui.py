@@ -9,7 +9,7 @@ import gtk.gdk
 from xpra.platform.client_extras_base import ClientExtrasBase, CheckMenuItem
 from xpra.platform.clipboard_base import DefaultClipboardProtocolHelper
 from xpra.platform import get_icon_dir
-from xpra.gtk_common.keys import get_gtk_keymap
+from xpra.gtk_common.keymap import get_gtk_keymap
 from wimpiggy.log import Logger
 log = Logger()
 

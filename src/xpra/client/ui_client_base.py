@@ -25,14 +25,13 @@ log = Logger()
 
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT
-from xpra.gtk_common.keys import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_IGNORE_KEYNAMES
-from xpra.gtk_common.cursor_names import cursor_names
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.gui import ClientExtras
 from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
 from xpra.stats.base import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.gtk_common.gtk_util import set_application_name
+from xpra.os_util import set_application_name
 
 
 def nn(x):
@@ -314,6 +313,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         #so generate a map from one to the other:
         modifier_names = {}
         meanings = self.xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
+        DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
         for pub_name,mod_name in meanings.items():
             if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
                 continue
@@ -544,7 +544,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         capabilities["encoding_client_options"] = True
         capabilities["rgb24zlib"] = True
         capabilities["encoding.rgb24zlib"] = True
-        capabilities["named_cursors"] = len(cursor_names)>0
+        capabilities["named_cursors"] = False
         capabilities["share"] = self.client_supports_sharing
         capabilities["auto_refresh_delay"] = int(self.auto_refresh_delay*1000)
         capabilities["windows"] = self.windows_enabled

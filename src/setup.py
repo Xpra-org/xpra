@@ -182,7 +182,7 @@ setup_options["long_description"] = """This package contains two sub-projects:
 data_files = []
 setup_options["data_files"] = data_files
 packages = ["wimpiggy",
-          "xpra", "xpra.scripts", "xpra.platform",
+          "xpra", "xpra.scripts", "xpra.platform", "xpra.keyboard",
           "xpra.gtk_common", "xpra.net", "xpra.codecs", "xpra.codecs.xor",
           "xpra.stats",
           ]
@@ -681,9 +681,9 @@ if server_ENABLED:
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    packages.remove("xpra")
-    packages.remove("xpra.server")
-    packages.remove("xpra.scripts")
+    for x in ("xpra", "xpra.scripts", "xpra.server"):
+        if x in packages:
+            packages.remove(x)
     py2exe_excludes.append("xpra.server")
 
 
@@ -747,7 +747,9 @@ if x11_ENABLED:
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    packages.remove("xpra")
+    for x in ("xpra", "xpra.scripts"):
+        if x in packages:
+            packages.remove(x)
     packages.remove("xpra.platform")
     py2exe_excludes += ["xpra.x11",
                         "wimpiggy.lowlevel",  "wimpiggy.tray", "wimpiggy.selection",

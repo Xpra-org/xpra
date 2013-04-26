@@ -12,7 +12,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from wimpiggy.keys import grok_modifier_map
-from xpra.gtk_common.keys import mask_to_names, DEFAULT_MODIFIER_NUISANCE, ALL_X11_MODIFIERS
+from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
@@ -25,6 +25,17 @@ if XPRA_KEYBOARD_DEBUG:
     debug = log.info
 else:
     debug = log.debug
+
+ALL_X11_MODIFIERS = {
+                    "shift"     : 0,
+                    "lock"      : 1,
+                    "control"   : 2,
+                    "mod1"      : 3,
+                    "mod2"      : 4,
+                    "mod3"      : 5,
+                    "mod4"      : 6,
+                    "mod5"      : 7
+                    }
 
 
 class KeyboardConfig(object):

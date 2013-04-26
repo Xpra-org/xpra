@@ -14,7 +14,8 @@ gobject = import_gobject()
 
 from xpra.scripts.config import ENCODINGS
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
-from xpra.gtk_common.keys import get_gtk_keymap, mask_to_names
+from xpra.keyboard.mask import mask_to_names
+from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.platform.client_tray import ClientTray
 from xpra.gtk_common.gtk_util import set_tooltip_text
 from xpra.scripts.about import about, close_about
