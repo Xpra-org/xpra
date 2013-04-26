@@ -11,7 +11,6 @@ from math import sqrt
 import os
 import time
 import gobject
-import ctypes
 try:
     from queue import Queue         #@UnresolvedImport @UnusedImport (python3)
 except:
@@ -399,7 +398,10 @@ class ServerSource(object):
             window_source.cleanup()
         self.window_sources = {}
         self.window_metdata_cache = {}
-        self.close_mmap()
+        if self.mmap:
+            self.mmap.close()
+            self.mmap = None
+            self.mmap_size = 0
         self.stop_sending_sound()
         if self.protocol:
             self.protocol.close()
@@ -530,14 +532,17 @@ class ServerSource(object):
         #mmap:
         if self.send_windows:
             #we don't need mmap if not sending pixels
-            mmap_file = capabilities.get("mmap_file")
+            mmap_filename = capabilities.get("mmap_file")
             mmap_token = capabilities.get("mmap_token")
-            log("client supplied mmap_file=%s, mmap supported=%s", mmap_file, self.supports_mmap)
-            if mmap_file and os.path.exists(mmap_file):
+            log("client supplied mmap_file=%s, mmap supported=%s", mmap_filename, self.supports_mmap)
+            if mmap_filename:
                 if not self.supports_mmap:
-                    log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_file)
+                    log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
+                elif not os.path.exists(mmap_filename):
+                    log.warn("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
                 else:
-                    self.init_mmap(mmap_file, mmap_token)
+                    from xpra.net.mmap_pipe import init_server_mmap
+                    self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token)
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
@@ -546,7 +551,7 @@ class ServerSource(object):
         log.info(msg)
         if self.send_windows:
             if self.mmap_size>0:
-                log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_file)
+                log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
             else:
                 log.info("using %s as primary encoding", self.encoding)
         else:
@@ -1246,36 +1251,3 @@ class ServerSource(object):
             except Exception, e:
                 log.error("error processing damage data: %s", e, exc_info=True)
             NOYIELD or time.sleep(0)
-
-#
-# Management of mmap area:
-#
-    def init_mmap(self, mmap_file, mmap_token):
-        import mmap
-        try:
-            f = open(mmap_file, "r+b")
-            self.mmap_size = os.path.getsize(mmap_file)
-            self.mmap = mmap.mmap(f.fileno(), self.mmap_size)
-            if mmap_token:
-                #verify the token:
-                v = 0
-                for i in range(0,16):
-                    v = v<<8
-                    peek = ctypes.c_ubyte.from_buffer(self.mmap, 512+15-i)
-                    v += peek.value
-                log("mmap_token=%s, verification=%s", mmap_token, v)
-                if v!=mmap_token:
-                    log.error("WARNING: mmap token verification failed, not using mmap area!")
-                    self.close_mmap()
-            if self.mmap:
-                log("using client supplied mmap file=%s, size=%s", mmap_file, self.mmap_size)
-                self.statistics.mmap_size = self.mmap_size
-        except Exception, e:
-            log.error("cannot use mmap file '%s': %s", mmap_file, e)
-            self.close_mmap()
-
-    def close_mmap(self):
-        if self.mmap:
-            self.mmap.close()
-            self.mmap = None
-        self.mmap_size = 0

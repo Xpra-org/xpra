@@ -18,7 +18,7 @@ from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencod
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.platform import get_machine_id
-from xpra.platform.uuid_wrapper import get_hex_uuid
+from xpra.os_util import get_hex_uuid
 
 def nn(x):
     if x is None:

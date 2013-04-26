@@ -123,7 +123,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         self.mmap_enabled = False
         self.mmap = None
         self.mmap_token = None
-        self.mmap_file = None
+        self.mmap_filename = None
         self.mmap_size = 0
 
         #features:
@@ -241,55 +241,18 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
 
     def init_mmap(self, mmap_group, socket_filename):
         log("init_mmap(%s, %s)", mmap_group, socket_filename)
-        try:
-            from xpra.platform.uuid_wrapper import get_int_uuid
-            import mmap
-            import tempfile
-            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
-            mmap_dir = os.getenv("TMPDIR", "/tmp")
-            if not os.path.exists(mmap_dir):
-                raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-            #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
-            #that the file is readable and writable only by the creating user ID
-            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
-            #keep a reference to it so it does not disappear!
-            self._mmap_temp_file = temp
-            self.mmap_file = temp.name
-            fd = temp.file.fileno()
-            #set the group permissions and gid if the mmap-group option is specified
-            if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
-                s = os.stat(socket_filename)
-                os.fchown(fd, -1, s.st_gid)
-                os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-            self.mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
-            log("using mmap file %s, fd=%s, size=%s", self.mmap_file, fd, self.mmap_size)
-            SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
-            os.lseek(fd, self.mmap_size-1, SEEK_SET)
-            assert os.write(fd, '\x00')
-            os.lseek(fd, 0, SEEK_SET)
-            self.mmap = mmap.mmap(fd, length=self.mmap_size)
-            #write the 16 byte token one byte at a time - no endianness
-            self.mmap_token = get_int_uuid()
-            log("mmap_token=%s", self.mmap_token)
-            v = self.mmap_token
-            for i in range(0,16):
-                poke = ctypes.c_ubyte.from_buffer(self.mmap, 512+i)
-                poke.value = v % 256
-                v = v>>8
-            assert v==0
-        except Exception, e:
-            log.error("failed to setup mmap: %s", e)
-            self.supports_mmap = False
-            self.clean_mmap()
-            self.mmap = None
-            self.mmap_file = None
-            self.mmap_size = 0
+        from xpra.os_util import get_int_uuid
+        from xpra.net.mmap_pipe import init_client_mmap
+        self.mmap_token = get_int_uuid()
+        self.mmap_enabled, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
+            init_client_mmap(self.mmap_token, mmap_group, socket_filename)
 
     def clean_mmap(self):
-        log("XpraClient.clean_mmap() mmap_file=%s", self.mmap_file)
-        if self.mmap_file and os.path.exists(self.mmap_file):
-            os.unlink(self.mmap_file)
-            self.mmap_file = None
+        log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
+        if self.mmap_filename and os.path.exists(self.mmap_filename):
+            os.unlink(self.mmap_filename)
+            self.mmap_filename = None
+            self.mmap_enabled = False
 
 
     def init_opengl(self, enable_opengl):
@@ -516,8 +479,8 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             delay_ms,interval_ms = key_repeat
             capabilities["key_repeat"] = (delay_ms,interval_ms)
         capabilities["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
-        if self.mmap_file:
-            capabilities["mmap_file"] = self.mmap_file
+        if self.mmap_enabled:
+            capabilities["mmap_file"] = self.mmap_filename
             capabilities["mmap_token"] = self.mmap_token
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
@@ -726,7 +689,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = capabilities.get("clipboard", False)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
-        self.mmap_enabled = self.supports_mmap and self.mmap_file and capabilities.get("mmap_enabled")
+        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and capabilities.get("mmap_enabled")
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
         self.change_quality = capabilities.get("change-quality", False)
         self.change_min_quality = capabilities.get("change-min-quality", False)
@@ -734,7 +697,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         self.change_min_speed = capabilities.get("change-min-speed", False)
         self.xsettings_tuple = capabilities.get("xsettings-tuple", False)
         if self.mmap_enabled:
-            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_file)
+            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_filename)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
         self.server_start_time = capabilities.get("start_time", -1)

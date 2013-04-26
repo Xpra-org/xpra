@@ -29,7 +29,7 @@ from xpra.server.server_source import ServerSource
 from xpra.net.bytestreams import SocketConnection
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.platform.uuid_wrapper import get_hex_uuid
+from xpra.os_util import get_hex_uuid
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.os_util import set_application_name
@@ -131,7 +131,7 @@ class ServerBase(object):
         self.notifications_forwarder = None
         if notifications and os.name=="posix":
             try:
-                from xpra.dbus_notifications_forwarder import register
+                from xpra.x11.dbus_notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
                 if self.notifications_forwarder:
                     log.info("using notification forwarder: %s", self.notifications_forwarder)
