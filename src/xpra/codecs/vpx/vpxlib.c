@@ -28,9 +28,14 @@
 #include "vpx/vp8dx.h"
 #include "vpxlib.h"
 #include "vpx/vpx_image.h"
+#include "vpx/vpx_codec.h"
 #define fourcc    0x30385056
 #define IVF_FILE_HDR_SZ  (32)
 #include <libswscale/swscale.h>
+
+int get_vpx_abi_version() {
+	return	VPX_CODEC_ABI_VERSION;
+}
 
 struct vpx_context {
 	vpx_codec_ctx_t codec;

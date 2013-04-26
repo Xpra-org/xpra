@@ -42,6 +42,8 @@ cdef extern from "x264lib.h":
     void* xmemalign(size_t size) nogil
     void xmemfree(void* ptr) nogil
 
+    int get_x264_build_no()
+
     x264lib_ctx* init_encoder(int width, int height,
                               int initial_quality, int initial_speed,
                               int supports_csc_option,
@@ -63,6 +65,10 @@ cdef extern from "x264lib.h":
     int csc_image_yuv2rgb(x264lib_ctx *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
     void set_encoding_speed(x264lib_ctx *context, int pct)
     void set_encoding_quality(x264lib_ctx *context, int pct)
+
+
+def get_version():
+    return get_x264_build_no()
 
 
 """ common superclass for Decoder and Encoder """

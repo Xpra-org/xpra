@@ -31,6 +31,7 @@ from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencod
 from xpra.platform.gdk_clipboard import GDKClipboardProtocolHelper
 from xpra.os_util import get_hex_uuid
 from xpra.version_util import is_compatible_with, add_version_info
+from xpra.codecs.version_info import add_codec_version_info
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.os_util import set_application_name
 
@@ -652,6 +653,7 @@ class ServerBase(object):
         capabilities["server_type"] = "base"
         add_version_info(capabilities)
         add_gtk_version_info(capabilities, gtk)
+        add_codec_version_info(capabilities)
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -692,6 +694,7 @@ class ServerBase(object):
         info = {}
         add_version_info(info)
         add_gtk_version_info(info, gtk)
+        add_codec_version_info(info)
         info["server_type"] = "gtk-x11"
         info["hostname"] = socket.gethostname()
         info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()

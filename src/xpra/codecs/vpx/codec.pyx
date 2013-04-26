@@ -19,6 +19,8 @@ cdef extern from "vpxlib.h":
     void* xmemalign(size_t size)
     void xmemfree(void* ptr)
 
+    int get_vpx_abi_version()
+
     vpx_codec_ctx_t* init_encoder(int width, int height)
     void clean_encoder(vpx_codec_ctx_t *context)
     vpx_image_t* csc_image_rgb2yuv(vpx_codec_ctx_t *ctx, uint8_t *input, int stride)
@@ -28,6 +30,11 @@ cdef extern from "vpxlib.h":
     vpx_codec_ctx_t* init_decoder(int width, int height, int use_swscale)
     void clean_decoder(vpx_codec_ctx_t *context)
     int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
+
+
+def get_version():
+    return get_vpx_abi_version()
+
 
 """ common superclass for Decoder and Encoder """
 cdef class xcoder:
@@ -53,7 +60,6 @@ cdef class xcoder:
 
     def get_height(self):
         return self.height
-
 
 cdef class Decoder(xcoder):
 

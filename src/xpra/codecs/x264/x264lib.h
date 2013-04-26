@@ -15,6 +15,9 @@
 #define inline __inline
 #include <x264.h>
 
+/** Expose the X264_BUILD value */
+int get_x264_build_no();
+
 /** Opaque structure - "context". You must have a context to encode images of a given size */
 struct x264lib_ctx;
 

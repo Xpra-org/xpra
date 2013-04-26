@@ -13,6 +13,9 @@
 #endif
 #include "vpx/vpx_image.h"
 
+/** Expose the VPX_CODEC_ABI_VERSION value */
+int get_vpx_abi_version();
+
 /** Opaque structure - "context". You must have a context to encode images of a given size */
 struct vpx_context;
 

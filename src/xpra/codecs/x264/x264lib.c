@@ -42,6 +42,10 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
+int get_x264_build_no() {
+	return X264_BUILD;
+}
+
 struct x264lib_ctx {
 	// Both
 	int width;
