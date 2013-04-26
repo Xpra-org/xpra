@@ -13,7 +13,7 @@ import time
 import datetime
 import platform
 
-from xpra.platform.graph import make_graph_pixmap
+from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.stats.base import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import HAS_SOUND, ENCODINGS

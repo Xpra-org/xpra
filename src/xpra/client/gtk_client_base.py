@@ -37,7 +37,6 @@ from xpra.version_util import add_gtk_version_info
 from xpra.stats.base import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.client.client_window import ClientWindow, DRAW_DEBUG
 from xpra.gtk_common.gtk_util import set_application_name
 
 
@@ -46,6 +45,7 @@ def nn(x):
         return  ""
     return x
 
+DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 
@@ -1123,8 +1123,7 @@ class GTKXpraClient(XpraClientBase, gobject.GObject):
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<=0 or h<=0:
             log.error("window dimensions are wrong: %sx%s", w, h)
-            w = 10
-            h = 5
+            w, h = 1, 1
         client_properties = {}
         if len(packet)>=8:
             client_properties = packet[7]
@@ -1132,30 +1131,10 @@ class GTKXpraClient(XpraClientBase, gobject.GObject):
             auto_refresh_delay = 0                          #server takes care of it
         else:
             auto_refresh_delay = self.auto_refresh_delay    #we do it
-        ClientWindowClass = ClientWindow
-        if not self.mmap_enabled and self.opengl_enabled and self.encoding in ("x264", "vpx"):
-            #only enable GL for normal windows:
-            window_types = metadata.get("window-type", ())
-            if "_NET_WM_WINDOW_TYPE_NORMAL" in window_types:
-                ClientWindowClass = self.GLClientWindowClass
+
         pid = metadata.get("pid", -1)
-        group_leader = None
-        #set group leader (but avoid ugly "not implemented" warning on win32):
-        if pid>0 and not is_gtk3() and not sys.platform.startswith("win"):
-            group_leader = self._pid_to_group_leader.get(pid)
-            if not group_leader:
-                if is_gtk3():
-                    #does not work yet - the new gtk documentation is just terrible
-                    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
-                    INPUT_ONLY = gtk.WindowWindowClass.INPUT_ONLY
-                else:
-                    WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
-                    INPUT_ONLY = gdk.INPUT_ONLY
-                title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
-                group_leader = gdk.Window(None, 1, 1, WINDOW_TOPLEVEL, 0, INPUT_ONLY, title)
-                self._pid_to_group_leader[pid] = group_leader
-                log("new hidden group leader window %s for pid=%s", group_leader, pid)
-            self._group_leader_wids.setdefault(group_leader, []).append(wid)
+        group_leader = self.group_leader_for_pid(pid, wid)
+        ClientWindowClass = self.get_client_window_class(metadata)
         window = ClientWindowClass(self, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid

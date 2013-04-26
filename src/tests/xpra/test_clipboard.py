@@ -43,7 +43,7 @@ def main():
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.setLevel(logging.DEBUG)
 
-	from xpra.gtk_util import set_application_name, set_prgname
+	from xpra.gtk_common.gtk_util import set_application_name, set_prgname
 	set_prgname("Primary Clipboard Test Tool")
 	set_application_name("Primary Clipboard Test Tool")
 	if sys.platform.startswith("win"):

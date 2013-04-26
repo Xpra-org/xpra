@@ -38,10 +38,13 @@ DEFAULT_TIMEOUT = 20*1000
 
 
 class XpraClientBase(gobject.GObject):
-    """Base class for Xpra clients.
+    """ Base class for Xpra clients.
         Provides the glue code for:
         * sending packets via Protocol
         * handling packets received via _process_packet
+        For an actual implementation, look at:
+        * xpra.client.gtk2.client
+        * xpra.client.gtk3.client
     """
 
     __gsignals__ = {

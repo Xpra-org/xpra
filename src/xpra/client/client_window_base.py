@@ -5,134 +5,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pygtk3 vs pygtk2 (sigh)
 from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
-if is_gtk3():
-    def init_window(win, wintype):
-        #TODO: no idea how to do this with gtk3
-        #maybe not even possible..
-        gtk.Window.__init__(win)
-    def is_mapped(win):
-        return win.get_mapped()
-    def get_window_geometry(gtkwindow):
-        x, y = gtkwindow.get_position()
-        w, h = gtkwindow.get_size()
-        return (x, y, w, h)
-    def set_geometry_hints(window, hints):
-        """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
-        wh = gdk.WindowHints
-        name_to_hint = {"maximum-size"  : wh.MAX_SIZE,
-                        "max_width"     : wh.MAX_SIZE,
-                        "max_height"    : wh.MAX_SIZE,
-                        "minimum-size"  : wh.MIN_SIZE,
-                        "min_width"     : wh.MIN_SIZE,
-                        "min_height"    : wh.MIN_SIZE,
-                        "base-size"     : wh.BASE_SIZE,
-                        "base_width"    : wh.BASE_SIZE,
-                        "base_height"   : wh.BASE_SIZE,
-                        "increment"     : wh.RESIZE_INC,
-                        "width_inc"     : wh.RESIZE_INC,
-                        "height_inc"    : wh.RESIZE_INC,
-                        "min_aspect_ratio"  : wh.ASPECT,
-                        "max_aspect_ratio"  : wh.ASPECT,
-                        }
-        #these fields can be copied directly to the gdk.Geometry as ints:
-        INT_FIELDS= ["min_width",    "min_height",
-                        "max_width",    "max_height",
-                        "base_width",   "base_height",
-                        "width_inc",    "height_inc"]
-        ASPECT_FIELDS = {
-                        "min_aspect_ratio"  : "min_aspect",
-                        "max_aspect_ratio"  : "max_aspect",
-                         }
-        geom = gdk.Geometry()
-        mask = 0
-        for k,v in hints.items():
-            if k in INT_FIELDS:
-                setattr(geom, k, int(v))
-                mask |= int(name_to_hint.get(k, 0))
-            elif k in ASPECT_FIELDS:
-                field = ASPECT_FIELDS.get(k)
-                setattr(geom, field, float(v))
-                mask |= int(name_to_hint.get(k, 0))
-        hints = gdk.WindowHints(mask)
-        window.set_geometry_hints(None, geom, hints)
-
-    def queue_draw(window, x, y, width, height):
-        window.queue_draw_area(x, y, width, height)
-    WINDOW_POPUP = gtk.WindowType.POPUP
-    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
-    WINDOW_EVENT_MASK = 0
-    OR_TYPE_HINTS = []
-    NAME_TO_HINT = { }
-    SCROLL_MAP = {}
-else:
-    def init_window(gtkwindow, wintype):
-        gtk.Window.__init__(gtkwindow, wintype)
-    def is_mapped(win):
-        return win.window is not None and win.window.is_visible()
-    if gtk.gtk_version>=(2,14):
-        def gdk_window(widget):
-            return widget.get_window()
-    else:
-        def gdk_window(widget):
-            return widget.window
-    def get_window_geometry(widget):
-        gdkwindow = gdk_window(widget)
-        x, y = gdkwindow.get_origin()
-        _, _, w, h, _ = gdkwindow.get_geometry()
-        return (x, y, w, h)
-    def set_geometry_hints(gtkwindow, hints):
-        gtkwindow.set_geometry_hints(None, **hints)
-
-    def queue_draw(widget, x, y, width, height):
-        window = gdk_window(widget)
-        if window:
-            window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
-        else:
-            log.warn("ignoring draw received for a window which is not realized yet!")
-
-    WINDOW_POPUP = gtk.WINDOW_POPUP
-    WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
-    WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
-            | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
-            | gdk.PROPERTY_CHANGE_MASK
-
-    OR_TYPE_HINTS = [gdk.WINDOW_TYPE_HINT_DIALOG,
-                gdk.WINDOW_TYPE_HINT_MENU, gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                #gdk.WINDOW_TYPE_HINT_SPLASHSCREEN, gdk.WINDOW_TYPE_HINT_UTILITY,
-                #gdk.WINDOW_TYPE_HINT_DOCK, gdk.WINDOW_TYPE_HINT_DESKTOP,
-                gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU, gdk.WINDOW_TYPE_HINT_POPUP_MENU,
-                gdk.WINDOW_TYPE_HINT_TOOLTIP,
-                #gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                gdk.WINDOW_TYPE_HINT_COMBO,gdk.WINDOW_TYPE_HINT_DND]
-    NAME_TO_HINT = {
-                "_NET_WM_WINDOW_TYPE_NORMAL"    : gdk.WINDOW_TYPE_HINT_NORMAL,
-                "_NET_WM_WINDOW_TYPE_DIALOG"    : gdk.WINDOW_TYPE_HINT_DIALOG,
-                "_NET_WM_WINDOW_TYPE_MENU"      : gdk.WINDOW_TYPE_HINT_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLBAR"   : gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                "_NET_WM_WINDOW_TYPE_SPLASH"    : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
-                "_NET_WM_WINDOW_TYPE_UTILITY"   : gdk.WINDOW_TYPE_HINT_UTILITY,
-                "_NET_WM_WINDOW_TYPE_DOCK"      : gdk.WINDOW_TYPE_HINT_DOCK,
-                "_NET_WM_WINDOW_TYPE_DESKTOP"   : gdk.WINDOW_TYPE_HINT_DESKTOP,
-                "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
-                "_NET_WM_WINDOW_TYPE_POPUP_MENU": gdk.WINDOW_TYPE_HINT_POPUP_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLTIP"   : gdk.WINDOW_TYPE_HINT_TOOLTIP,
-                "_NET_WM_WINDOW_TYPE_NOTIFICATION" : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                "_NET_WM_WINDOW_TYPE_COMBO"     : gdk.WINDOW_TYPE_HINT_COMBO,
-                "_NET_WM_WINDOW_TYPE_DND"       : gdk.WINDOW_TYPE_HINT_DND
-                }
-    # Map scroll directions back to mouse buttons.  Mapping is taken from
-    # gdk/x11/gdkevents-x11.c.
-    SCROLL_MAP = {gdk.SCROLL_UP: 4,
-                  gdk.SCROLL_DOWN: 5,
-                  gdk.SCROLL_LEFT: 6,
-                  gdk.SCROLL_RIGHT: 7,
-                  }
-
 
 import os
 import cairo
@@ -193,12 +69,9 @@ else:
 
 
 
-class ClientWindow(gtk.Window):
+class ClientWindowBase(gtk.Window):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        if override_redirect:
-            init_window(self, WINDOW_POPUP)
-        else:
-            init_window(self, WINDOW_TOPLEVEL)
+        self.init_window(override_redirect)
         self._client = client
         self.group_leader = group_leader
         self._id = wid
@@ -231,13 +104,13 @@ class ClientWindow(gtk.Window):
                     self.set_screen(screen)
 
         self.set_app_paintable(True)
-        self.add_events(WINDOW_EVENT_MASK)
+        self.add_events(self.WINDOW_EVENT_MASK)
         self.move(x, y)
         self.set_default_size(w, h)
         if override_redirect:
             transient_for = self.get_transient_for()
             type_hint = self.get_type_hint()
-            if transient_for is not None and transient_for.window is not None and type_hint in OR_TYPE_HINTS:
+            if transient_for is not None and transient_for.window is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
         if CAN_SET_WORKSPACE:
@@ -260,14 +133,14 @@ class ClientWindow(gtk.Window):
         try:
             from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
             from wimpiggy.error import trap
-            root = gdk_window(self).get_screen().get_root_window()
+            root = self.gdk_window().get_screen().get_root_window()
             ndesktops = xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
             log("set_workspace() ndesktops=%s", ndesktops)
             if ndesktops is None or ndesktops<=1:
                 return  -1
             workspace = max(0, min(ndesktops-1, workspace))
             event_mask = const["SubstructureNotifyMask"] | const["SubstructureRedirectMask"]
-            trap.call_synced(sendClientMessage, root, gdk_window(self), False, event_mask, "_NET_WM_DESKTOP",
+            trap.call_synced(sendClientMessage, root, self.gdk_window(), False, event_mask, "_NET_WM_DESKTOP",
                       workspace, const["CurrentTime"],
                       0, 0, 0)
             return workspace
@@ -285,12 +158,12 @@ class ClientWindow(gtk.Window):
         return False
 
     def get_current_workspace(self):
-        window = gdk_window(self)
+        window = self.gdk_window()
         root = window.get_screen().get_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
     def get_window_workspace(self):
-        return self.do_get_workspace(gdk_window(self), "_NET_WM_DESKTOP")
+        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
 
     def do_get_workspace(self, target, prop):
         if sys.platform.startswith("win"):
@@ -347,7 +220,7 @@ class ClientWindow(gtk.Window):
                     v1, v2 = v
                     hints[h] = float(v1)/float(v2)
             try:
-                set_geometry_hints(self, hints)
+                self.set_geometry_hints(hints)
             except:
                 log.error("with hints=%s", hints, exc_info=True)
             #TODO:
@@ -381,11 +254,11 @@ class ClientWindow(gtk.Window):
                 self.set_transient_for(window)
 
         #apply window-type hint if window is not mapped yet:
-        if "window-type" in self._metadata and not is_mapped(self):
+        if "window-type" in self._metadata and not self.is_mapped(self):
             window_types = self._metadata.get("window-type")
             log("window types=%s", window_types)
             for window_type in window_types:
-                hint = NAME_TO_HINT.get(window_type)
+                hint = self.NAME_TO_HINT.get(window_type)
                 if hint:
                     log("setting window type to %s - %s", window_type, hint)
                     self.set_type_hint(hint)
@@ -427,7 +300,7 @@ class ClientWindow(gtk.Window):
             if DRAW_DEBUG:
                 log.info("after_draw_refresh(%s) options=%s", success, options)
             if success and self._backing and self._backing.draw_needs_refresh:
-                queue_draw(self, x, y, width, height)
+                self.queue_draw(self, x, y, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
             if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
                 gobject.source_remove(self._refresh_timer)
@@ -447,26 +320,6 @@ class ClientWindow(gtk.Window):
         callbacks.append(after_draw_refresh)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
-    """ gtk3 """
-    def do_draw(self, context):
-        if DRAW_DEBUG:
-            log.info("do_draw(%s)", context)
-        if self.get_mapped() and self._backing:
-            self._backing.cairo_draw(context)
-
-    """ gtk2 """
-    def do_expose_event(self, event):
-        if DRAW_DEBUG:
-            log.info("do_expose_event(%s) area=%s", event, event.area)
-        if not (self.flags() & gtk.MAPPED) or self._backing is None:
-            return
-        context = self.window.cairo_create()
-        context.rectangle(event.area)
-        context.clip()
-        self._backing.cairo_draw(context)
-        if not self._client.server_ok():
-            self.paint_spinner(context, event.area)
-
     def paint_spinner(self, context, area):
         log("paint_spinner(%s, %s)", context, area)
         #add grey semi-opaque layer on top:
@@ -482,7 +335,7 @@ class ClientWindow(gtk.Window):
         context.set_line_width(dim/10.0)
         context.set_line_cap(cairo.LINE_CAP_ROUND)
         context.translate(w/2, h/2)
-        from xpra.gtk_spinner import cv
+        from xpra.gtk_common.gtk_spinner import cv
         count = int(time.time()*5.0)
         for i in range(8):      #8 lines
             context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
@@ -497,7 +350,7 @@ class ClientWindow(gtk.Window):
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
-        queue_draw(self, 0, 0, w, h)
+        self.queue_draw(self, 0, 0, w, h)
 
     def can_have_spinner(self):
         window_types = self._metadata.get("window-type")
@@ -512,7 +365,7 @@ class ClientWindow(gtk.Window):
         if self.group_leader:
             self.window.set_group(self.group_leader)
         if not self._override_redirect:
-            x, y, w, h = get_window_geometry(self)
+            x, y, w, h = self.get_window_geometry(self)
             if not self._been_mapped:
                 workspace = self.set_workspace()
             else:
@@ -537,7 +390,7 @@ class ClientWindow(gtk.Window):
             self.process_configure_event()
 
     def process_configure_event(self):
-        x, y, w, h = get_window_geometry(self)
+        x, y, w, h = self.get_window_geometry(self)
         w = max(1, w)
         h = max(1, h)
         ox, oy = self._pos
@@ -650,8 +503,8 @@ class ClientWindow(gtk.Window):
     def do_scroll_event(self, event):
         if self._client.readonly:
             return
-        self._button_action(SCROLL_MAP[event.direction], event, True)
-        self._button_action(SCROLL_MAP[event.direction], event, False)
+        self._button_action(self.SCROLL_MAP[event.direction], event, True)
+        self._button_action(self.SCROLL_MAP[event.direction], event, False)
 
     def _focus_change(self, *args):
         log("_focus_change(%s)", args)
@@ -659,4 +512,4 @@ class ClientWindow(gtk.Window):
             self._client.update_focus(self._id, self.get_property("has-toplevel-focus"))
 
 
-gobject.type_register(ClientWindow)
+gobject.type_register(ClientWindowBase)

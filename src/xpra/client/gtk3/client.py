@@ -11,11 +11,15 @@ gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
+from xpra.client.gtk3.client_window import ClientWindow
 from wimpiggy.log import Logger
 log = Logger()
 
 
 class XpraClient(GTKXpraClient):
+
+    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+    INPUT_ONLY = gtk.WindowWindowClass.INPUT_ONLY
 
     def __init__(self, conn, opts):
         GTKXpraClient.__init__(self, conn, opts)
@@ -25,6 +29,12 @@ class XpraClient(GTKXpraClient):
 
     def set_windows_cursor(self, gtkwindows, new_cursor):
         pass
+
+    def group_leader_for_pid(self, pid, wid):
+        return None
+
+    def get_client_window_class(self, metadata):
+        return ClientWindow
 
 
 gobject.type_register(XpraClient)

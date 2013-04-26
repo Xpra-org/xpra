@@ -92,7 +92,7 @@ def get_icon(name):
     filename = get_icon_filename(name)
     if not filename:
         return    None
-    from xpra.gtk_util import get_icon_from_file
+    from xpra.gtk_common.gtk_util import get_icon_from_file
     return get_icon_from_file(filename)
 
 
