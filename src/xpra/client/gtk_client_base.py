@@ -22,9 +22,10 @@ from xpra.client.ui_client_base import UIXpraClient
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 
 
-class GTKXpraClient(UIXpraClient):
+class GTKXpraClient(UIXpraClient, gobject.GObject):
 
     def __init__(self, conn, opts):
+        gobject.GObject.__init__(self)
         UIXpraClient.__init__(self, conn, opts)
 
     def init_keyboard(self, keyboard_sync, key_shortcuts):
@@ -47,6 +48,16 @@ class GTKXpraClient(UIXpraClient):
     def client_type(self):
         #overriden in subclasses!
         return "Gtk"
+
+
+    def timeout_add(self, *args):
+        return gobject.timeout_add(*args)
+
+    def idle_add(self, *args):
+        return gobject.idle_add(*args)
+
+    def source_remove(self, *args):
+        return gobject.source_remove(*args)
 
 
     def run(self):

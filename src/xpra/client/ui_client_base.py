@@ -5,9 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.gobject_compat import import_gobject
-gobject = import_gobject()
-
 import sys
 import os
 import time
@@ -48,7 +45,7 @@ PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, gobject.GObject):
+class UIXpraClient(XpraClientBase):
     __gsignals__ = {
         "clipboard-toggled"         : no_arg_signal,
         "keyboard-sync-toggled"     : no_arg_signal,
@@ -57,7 +54,6 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         }
 
     def __init__(self, conn, opts):
-        gobject.GObject.__init__(self)
         XpraClientBase.__init__(self, opts)
         self.start_time = time.time()
         self._window_to_id = {}
@@ -178,11 +174,22 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             return True
         if (self.max_bandwidth):
             self.last_input_bytecount = 0
-            gobject.timeout_add(2000, compute_receive_bandwidth, 2000)
+            self.timeout_add(2000, compute_receive_bandwidth, 2000)
         if opts.pings:
-            gobject.timeout_add(1000, self.send_ping)
+            self.timeout_add(1000, self.send_ping)
         else:
-            gobject.timeout_add(10*1000, self.send_ping)
+            self.timeout_add(10*1000, self.send_ping)
+
+
+    def timeout_add(self, *args):
+        raise Exception("override me!")
+
+    def idle_add(self, *args):
+        raise Exception("override me!")
+
+    def source_remove(self, *args):
+        raise Exception("override me!")
+
 
 
     def run(self):
@@ -371,8 +378,9 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             key = keycode
         if not depressed and key in self.keys_pressed:
             """ stop the timer and clear this keycode: """
-            log.debug("key repeat: clearing timer for %s / %s", name, keycode)
-            gobject.source_remove(self.keys_pressed[key])
+            timer = self.keys_pressed[key]
+            log("key repeat: clearing timer %s for %s / %s", timer, name, keycode)
+            self.source_remove(timer)
             del self.keys_pressed[key]
         elif depressed and key not in self.keys_pressed:
             """ we must ping the server regularly for as long as the key is still pressed: """
@@ -401,16 +409,16 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
                 log.debug("start_key_repeat for %s / %s", name, keycode)
                 if key in self.keys_pressed:
                     send_key_repeat()
-                    self.keys_pressed[key] = gobject.timeout_add(interval, continue_key_repeat)
+                    self.keys_pressed[key] = self.timeout_add(interval, continue_key_repeat)
                 else:
                     del self.keys_pressed[key]
                 return  False   #never run this timer again
             log.debug("key repeat: starting timer for %s / %s with delay %s and interval %s", name, keycode, delay, interval)
-            self.keys_pressed[key] = gobject.timeout_add(delay, start_key_repeat)
+            self.keys_pressed[key] = self.timeout_add(delay, start_key_repeat)
 
     def clear_repeat(self):
         for timer in self.keys_pressed.values():
-            gobject.source_remove(timer)
+            self.source_remove(timer)
         self.keys_pressed = {}
 
 
@@ -574,7 +582,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
                     return False
                 return True
             self.redraw_spinners()
-            gobject.timeout_add(100, timer_redraw)
+            self.timeout_add(100, timer_redraw)
         return False
 
     def redraw_spinners(self):
@@ -592,14 +600,14 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
     def send_ping(self):
         now_ms = int(1000.0*time.time())
         self.send("ping", now_ms)
-        gobject.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
+        self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
         wait = 2.0
         if len(self.server_ping_latency)>0:
             l = [x for _,x in list(self.server_ping_latency)]
             avg = sum(l) / len(l)
             wait = 1.0+avg*2.0
             log("average server latency=%.1f, using max wait %.2fs", 1000.0*avg, wait)
-        gobject.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+        self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         return True
 
     def _process_ping_echo(self, packet):
@@ -716,7 +724,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             log.debug("server is using %s encoding" % e)
             self.encoding = e
         #process the rest from the UI thread:
-        gobject.idle_add(self.process_ui_capabilities, capabilities)
+        self.idle_add(self.process_ui_capabilities, capabilities)
 
     def process_ui_capabilities(self, capabilities):
         #figure out the maximum actual desktop size and use it to
@@ -1009,7 +1017,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
                     #clear the mmap area via idle_add so any pending draw requests
                     #will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, -1)
-            gobject.idle_add(draw_cleanup)
+            self.idle_add(draw_cleanup)
             return
         options = {}
         if len(packet)>10:
@@ -1036,7 +1044,7 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
             raise
         except:
             log.error("draw error", exc_info=True)
-            gobject.idle_add(record_decode_time, False)
+            self.idle_add(record_decode_time, False)
             raise
 
     def _process_cursor(self, packet):
@@ -1187,8 +1195,6 @@ class UIXpraClient(XpraClientBase, gobject.GObject):
         self.check_server_echo(0)
         if type(packet_type) in (unicode, str) and packet_type.startswith("clipboard-"):
             if self.clipboard_enabled:
-                gobject.idle_add(self._client_extras.process_clipboard_packet, packet)
+                self.idle_add(self._client_extras.process_clipboard_packet, packet)
         else:
             XpraClientBase.process_packet(self, proto, packet)
-
-gobject.type_register(UIXpraClient)
