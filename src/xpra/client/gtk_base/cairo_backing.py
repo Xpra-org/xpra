@@ -13,7 +13,7 @@ import cairo
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.client.window_backing_base import WindowBacking, fire_paint_callbacks, DRAW_DEBUG
+from xpra.client.gtk_base.window_backing_base import WindowBacking, fire_paint_callbacks, DRAW_DEBUG
 
 """
 An area we draw onto with cairo

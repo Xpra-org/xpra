@@ -23,7 +23,7 @@ if USE_FAKE_BACKING:
     from xpra.client.fake_window_backing import FakeBacking
     BACKING_CLASS = FakeBacking
 elif is_gtk3() or USE_CAIRO:
-    from xpra.client.cairo_backing import CairoBacking
+    from xpra.client.gtk_base.cairo_backing import CairoBacking
     BACKING_CLASS = CairoBacking
 else:
     from xpra.client.gtk2.pixmap_backing import PixmapBacking

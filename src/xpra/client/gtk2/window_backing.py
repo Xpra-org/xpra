@@ -12,7 +12,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.scripts.config import ENCODINGS
-from xpra.client.window_backing_base import WindowBacking, has_PIL, fire_paint_callbacks
+from xpra.client.gtk_base.window_backing_base import WindowBacking, has_PIL, fire_paint_callbacks
 
 use_PIL = has_PIL and os.environ.get("XPRA_USE_PIL", "1")=="1"
 

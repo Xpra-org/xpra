@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from xpra.client.gtk_client_base import GTKXpraClient
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 import gobject
 import gtk
 from gtk import gdk
