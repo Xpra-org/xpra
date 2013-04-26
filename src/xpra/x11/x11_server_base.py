@@ -28,7 +28,7 @@ from wimpiggy.log import Logger
 log = Logger()
 
 from xpra.x11.xkbhelper import clean_keyboard_state
-from xpra.xposix.xsettings import XSettingsManager
+from xpra.x11.xsettings import XSettingsManager
 
 MAX_CONCURRENT_CONNECTIONS = 20
 

@@ -261,8 +261,8 @@ class ClientExtras(ClientExtrasBase):
         def setup_xprop_xsettings(client):
             log.debug("setup_xprop_xsettings(%s)", client)
             try:
-                from xpra.xposix.xsettings import XSettingsWatcher
-                from xpra.xposix.xroot_props import XRootPropWatcher
+                from xpra.x11.xsettings import XSettingsWatcher
+                from xpra.x11.xroot_props import XRootPropWatcher
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
                 self._handle_xsettings_changed()
