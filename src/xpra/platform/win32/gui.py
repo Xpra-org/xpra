@@ -120,7 +120,7 @@ class ClientExtras(ClientExtrasBase):
             log("tray_exit() calling quit")
             self.quit()
         try:
-            from xpra.win32.win32_tray import Win32Tray
+            from xpra.platform.win32.win32_tray import Win32Tray
             self.tray = Win32Tray(self.get_tray_tooltip(), self.activate_menu, tray_exit, tray_icon_filename)
         except Exception, e:
             log.error("failed to load native Windows NotifyIcon: %s", e)
@@ -128,7 +128,7 @@ class ClientExtras(ClientExtrasBase):
         #cant do balloon without a tray:
         if self.tray and notifications:
             try:
-                from xpra.win32.win32_balloon import notify
+                from xpra.platform.win32.win32_balloon import notify
                 self.notify = notify
             except Exception, e:
                 log.error("failed to load native win32 balloon: %s", e)

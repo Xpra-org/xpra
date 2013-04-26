@@ -10,7 +10,7 @@
 from wimpiggy.log import Logger
 log = Logger()
 
-from xpra.win32.win32_NotifyIcon import win32NotifyIcon
+from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
 
 
 class Win32Tray:

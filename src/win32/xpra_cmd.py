@@ -5,7 +5,7 @@
 # instead of "Xpra.exe"
 
 import sys
-from xpra.win32 import set_redirect_output
+from xpra.platform.win32 import set_redirect_output
 set_redirect_output(False)
 
 from xpra.scripts.main import main
