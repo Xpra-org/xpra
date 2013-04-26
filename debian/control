@@ -36,7 +36,7 @@ Recommends:
         ,gstreamer0.10-plugins-base
 #                 ^^ vorbis ^^
         ,gstreamer0.10-plugins-good
-#                  ^^ flac ^^
+#                  ^^ wavpack, wav, flac, speex ^^
         ,gstreamer0.10-plugins-ugly
 #                  ^^ mp3 ^^
         ,python-gst0.10
