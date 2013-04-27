@@ -19,7 +19,7 @@ from xpra.x11.gtk_x11.error import trap
 import xpra.x11.gtk_x11.selection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.util import no_arg_signal, one_arg_signal
+from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
 from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
 from xpra.x11.lowlevel import (

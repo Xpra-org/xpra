@@ -11,7 +11,7 @@ import atexit
 import errno
 import gobject
 import gtk.gdk
-from wimpiggy.util import one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal
 
 # Skip contents of this file when looking for tests
 __test__ = False

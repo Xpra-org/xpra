@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
-from xpra.gobject_compat import import_gobject3, import_gtk3, import_gdk3
+from xpra.gtk_common.gobject_compat import import_gobject3, import_gtk3, import_gdk3
 gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()

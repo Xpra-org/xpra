@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import gobject
-from xpra.util import one_arg_signal, AutoPropGObjectMixin
+from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.lowlevel import (
            xcomposite_redirect_window,      #@UnresolvedImport

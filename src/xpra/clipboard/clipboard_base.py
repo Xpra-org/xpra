@@ -9,7 +9,7 @@ import struct
 import re
 import binascii
 
-from xpra.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -21,7 +21,7 @@ else:
 from xpra.log import Logger
 log = Logger()
 
-from xpra.util import n_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.protocol import zlib_compress
 

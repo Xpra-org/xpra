@@ -24,7 +24,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            init as platform_init)
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
-from xpra.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject
 
 SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 

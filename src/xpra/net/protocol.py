@@ -8,7 +8,7 @@
 
 # but it works on win32, for whatever that's worth.
 
-from xpra.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 import sys

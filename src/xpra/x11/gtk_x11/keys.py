@@ -6,7 +6,7 @@
 
 import gobject
 import gtk
-from xpra.util import one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.lowlevel import (
                 get_display_for,            #@UnresolvedImport

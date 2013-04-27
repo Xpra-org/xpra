@@ -18,7 +18,7 @@ except ImportError:
 from xpra.log import Logger
 log = Logger()
 
-from xpra.util import no_arg_signal
+from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE

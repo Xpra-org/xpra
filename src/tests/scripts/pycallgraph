@@ -61,7 +61,7 @@ bell = ['xpra.x11.gtk_x11.window.WindowModel.do_xpra_xkb_event',
 misc = ['xpra.dotxpra.*', 'xpra.wait_for_server.*',
         'xpra.scripts.*', 'subprocess.*',
         'xpra.log*',
-        'xpra.gobject_compat.*',
+        'xpra.gtk_common.gobject_compat.*',
         'xpra.x11.gtk_x11.tray.*',
         'xpra.version_util.*', 'xpra.build_info.*']
 
@@ -124,7 +124,7 @@ one_offs = ['xpra.<module>',
             'xpra.x11.gtk_x11.wm.Wm.__init__'
             'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window'
             'xpra.x11.gtk_x11.wm.Wm.enableCursors',
-            'xpra.util.*.n_arg_signal',
+            'xpra.gtk_common.*.n_arg_signal',
             'xpra.x11.gtk_x11.*.<module>',
             'xpra.x11.gtk_x11.error._ErrorManager.__init__',
             #client bits:

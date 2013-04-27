@@ -19,8 +19,8 @@ try:
 except:
     from io import StringIO         #@UnresolvedImport @Reimport
 
-from xpra.util import (AdHocStruct,
-                           one_arg_signal)
+from xpra.util import AdHocStruct
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.wm import Wm
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.lowlevel import (is_override_redirect,        #@UnresolvedImport

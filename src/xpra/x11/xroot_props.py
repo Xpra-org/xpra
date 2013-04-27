@@ -6,7 +6,7 @@
 
 import gtk
 import gobject
-from xpra.util import n_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.x11.lowlevel import add_event_receiver    #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_get
 

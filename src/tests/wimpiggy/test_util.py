@@ -7,7 +7,7 @@
 
 from wimpiggy.test import *
 import gobject
-import xpra.gtk_common
+from xpra.gtk_common import AutoPropGObjectMixin
 
 class NonNoneListAccumulatorTestClass(gobject.GObject):
     __gsignals__ = {

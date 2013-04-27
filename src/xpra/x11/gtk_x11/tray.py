@@ -6,7 +6,7 @@
 import gtk
 import gobject
 
-from xpra.util import one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.error import trap
 

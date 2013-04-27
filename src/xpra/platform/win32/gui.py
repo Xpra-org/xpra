@@ -15,7 +15,7 @@ from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.log import Logger
 log = Logger()
 
-from xpra.gobject_compat import import_gdk
+from xpra.gtk_common.gobject_compat import import_gdk
 gdk = import_gdk()
 
 

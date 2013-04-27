@@ -10,7 +10,7 @@ import gobject
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
-from xpra.util import n_arg_signal
+from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.log import Logger
 log = Logger()
 

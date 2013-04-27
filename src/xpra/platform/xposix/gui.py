@@ -9,7 +9,7 @@
 
 import sys
 import os
-from xpra.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 _display = gdk.get_display()

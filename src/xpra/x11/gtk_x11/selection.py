@@ -12,7 +12,7 @@ import gobject
 import gtk
 from struct import pack, unpack
 
-from xpra.util import no_arg_signal, one_arg_signal
+from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.error import XError
 from xpra.x11.lowlevel import (
                 get_xatom,                  #@UnresolvedImport

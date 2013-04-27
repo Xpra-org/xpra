@@ -61,7 +61,7 @@
 # timeout. If the user ever stops pasting madly for a few seconds, though,
 # then everything should have a chance to return to equilibrium...
 
-from xpra.gobject_compat import import_gobject, import_gtk
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
 gobject = import_gobject()
 gtk = import_gtk()
 

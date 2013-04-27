@@ -7,7 +7,7 @@
 import os
 import sys
 import socket
-from xpra.gobject_compat import import_gobject, import_glib
+from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 
 from xpra.log import Logger

@@ -8,7 +8,7 @@ import os
 import gobject
 
 from xpra.sound.gstreamer_util import gst
-from xpra.util import AutoPropGObjectMixin, one_arg_signal
+from xpra.gtk_common.gobject_util import AutoPropGObjectMixin, one_arg_signal
 from xpra.log import Logger
 log = Logger()
 

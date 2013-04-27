@@ -19,7 +19,7 @@ try:
 except:
 	import thread					#@Reimport
 
-from xpra.gobject_compat import import_gtk, import_gdk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()

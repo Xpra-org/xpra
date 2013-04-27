@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
 gtk = import_gtk()
 
 from xpra.log import Logger

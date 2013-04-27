@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from xpra.gobject_compat import import_gobject
+from xpra.gtk_common.gobject_compat import import_gobject
 gobject = import_gobject()
 import os
 

@@ -15,7 +15,7 @@ def warn(msg):
     sys.stderr.write(msg+"\n")
 
 from xpra.util import AdHocStruct
-from xpra.gobject_compat import import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
 gobject = import_gobject()
 try:
     import Image

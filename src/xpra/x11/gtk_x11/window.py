@@ -44,7 +44,7 @@ from xpra.x11.lowlevel import (
 from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
-from xpra.util import (AutoPropGObjectMixin,
+from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal, no_arg_signal,
                            non_none_list_accumulator)
 from xpra.x11.gtk_x11.error import trap, XError
