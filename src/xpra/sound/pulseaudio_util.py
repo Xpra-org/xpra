@@ -9,7 +9,7 @@ import os.path
 
 from xpra.scripts.exec_util import safe_exec
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

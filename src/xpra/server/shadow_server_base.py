@@ -8,7 +8,7 @@ import gtk.gdk
 import gobject
 import socket
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.net.protocol import Compressed
@@ -54,7 +54,7 @@ class RootWindowModel(object):
         elif prop=="client-machine":
             return socket.gethostname()
         elif prop=="size-hints":
-            from wimpiggy.util import AutoPropGObjectMixin
+            from xpra.util import AutoPropGObjectMixin
             size = self.window.get_size()
             size_hints = AutoPropGObjectMixin()
             size_hints.max_size = size

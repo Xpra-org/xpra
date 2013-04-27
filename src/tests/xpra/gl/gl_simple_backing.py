@@ -10,7 +10,7 @@ import gtk.gtkgl
 import gtk.gdkgl
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, GL_RGB, \

@@ -276,15 +276,7 @@ Displays a summary of command line usage.
 .TP
 \fB\-d\fP \fIFILTER1,FILTER2,...\fP, \fB\-\-debug\fP=\fIFILTER1,FILTER2,...\fP
 Enable debug logging.  The special value \fBall\fP enables all
-debugging; alternatively, debugging logs for particular subsystems can be
-enabled by specifying one or more filters (separated by commas).  In
-general, check the source to determine filter names \(em but they will
-look something like \fBxpra.protocol.raw\fP or \fBwimpiggy\fP
-(wimpiggy is the name of one of xpra's underlying libraries).  A
-filter like \fBxpra.protocol.raw\fP is more specific than one like
-\fBxpra.protocol\fP. Additionally, logging can be disabled for a
-specific subsystem by prefixing a minus sign to its name, like so:
-\fB\-\-debug\fP=\fIall,-wimpiggy\fP.
+debugging.
 .TP
 \fB\-\-no\-mmap\fP
 Disables memory mapped pixel data transfer.

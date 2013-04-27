@@ -1,12 +1,256 @@
-Xpra project README
-====================
+FAQ for xpra
+============
 
-Hi, welcome to Xpra.
+What is xpra?
+-------------
 
-There are two projects here:
+Xpra is 'screen for X' -- it allows you to run X programs, usually on
+a remote host, direct their display to your local machine, and then to
+disconnect from these programs and reconnect from the same or another
+machine, without losing any state.
 
-wimpiggy: A library for writing window managers.
 
-xpra: "X Persistent Remote Applications" -- think 'screen for X'.
+Wait, isn't that what VNC does?
+-------------------------------
 
-See the <project>.README for more details about each.
+VNC is another system for using apps remotely.  The main difference
+between xpra and VNC is that xpra is "rootless" -- i.e., programs you
+run under it show up on your desktop as regular programs, managed by
+your regular window manager, instead of being trapped inside a box.
+It gives you "remote applications", not a "remote desktop".  (Hence
+the name -- "X Persistent Remote Applications".)
+
+Another difference is that VNC is far more portable -- you can get
+both 'servers' and 'viewers' for essentially any operating system.
+For xpra, you can only run X programs against the 'server', and the
+current codebase also assumes some Unix-isms (e.g., unix domain
+sockets).  The xpra viewer is more portable (in principle) -- the
+existing one should be able to work anywhere that GTK+ does, and it's
+only a few hundred lines of code in any case, so is easy to replace.
+
+Basically, if you want a remote desktop, use VNC; if you just want to
+run a few programs remotely, use xpra.
+
+
+What about NX?
+--------------
+
+NX is the name for a protocol, rootless X server, mass of management
+scripts, etc., produced by NoMachine Inc.  There's some very nice tech
+in NX, and in principle it can do everything that xpra does and more.
+In practice, they offer either a super-slick, complete thin client
+solution with some questionable (IMO) engineering decisions and a
+proprietary license, or, a minimally-documented code dump of GPLed
+software with a build system straight from the 1980s, an included fork
+of the old X.org monolithic (!) tree, and if you somehow get it built
+then it has all sorts of weird quirks to work around.  Xpra, by
+comparison, is <1000 source lines of code for the core, was written in
+a weekend, and just works.
+
+NX seems aimed at large enterprise thin client deployments, and I just
+want a way to run data visualization jobs that won't die when my
+wireless does -- xpra is great for the latter.
+
+
+And what about xmove?
+---------------------
+
+xmove is a tool designed to do exactly the same thing as xpra.  The
+main differences are that xmove uses a very different implementation
+strategy (it implements a "pseudo" X server, while xpra takes
+advantage of the standard X.org server), and that xmove has been
+unmaintained since ~1997.
+
+I have not personally used xmove, and X clients tend to be very
+conservative -- it's entirely possible that all modern X apps will
+still work just fine against a 10+ year old server like xmove.
+However, X *has* changed since then; for example, xmove does not
+support the Render extension, which is essentially required if you
+want anti-aliased fonts.  Between the somewhat cumbersome design and
+the lack of existing maintainers, this will almost certainly never get
+fixed; nor will any other flaws that xmove may have.  (For instance,
+xpra looks easier to set up without writing custom shell scripts.)
+
+The other major issue with xmove's design is its sensitivity to
+latency.  Usually, if you're using a tool like xmove or xpra, it's
+because you want to run an app on a remote computer.  Usually you
+don't have a local ethernet connection to that remote computer, but
+rather something with a much higher ping time.  Standard X forwarding
+becomes notoriously slow and unusable in such situations -- and xmove
+uses the same mechanisms as standard X.  Xpra, on the other hand, uses
+a protocol with no round trips, and applications forwarded by xpra
+should remain snappy and responsive over connections that make X or
+xmove crawl away to die.
+
+Still, like I said, I haven't actually used xmove, and would be
+interested to hear from those who do.
+
+
+Okay, so how do I try xpra?
+---------------------------
+
+Download the latest version from
+  http://xpra.org/
+
+Make sure you have the dependencies, at least:
+  development packages for python-gtk, and all dependencies
+  Xvfb
+  cython (version 0.14 at least, 0.16 to support video encoding
+  check with 'cython --version')
+On Debian-based OSes, I think it's:
+  # aptitude install libx11-dev libxtst-dev libxcomposite-dev \
+    libxdamage-dev python-gobject-dev python-gtk2-dev xvfb cython
+  To support video encoding, you also need:
+    libx264-dev libswscale-dev libavcodec-dev libvpx-dev
+And a mailing list report suggests the following for Fedora:
+  # yum install xorg-x11-server-Xvfb Cython libX11-devel \
+    libXtst-devel libXcomposite-devel libXdamage-devel pygobject2-devel \
+    pygtk2-devel gtk2-devel python-imaging python-imaging-devel
+And for MacPorts, apparently you should
+  - Install: python26 py26-cython py26-gtk py26-gobject py26-nose
+    xorg-libXdamage xorg-libXcomposite xorg-libXtst xorg-libXfixes
+    python_select
+  - And then: Use python_select to make sure python26 is selected.
+(If you work out a similar line for another OS, like Gentoo or FreeBSD
+or whatever, please send it in.)
+
+Build it:
+  tar xvzf xpra-all-<whatever>.tar.gz
+  cd xpra-all-<whatever>
+  ./setup.py install --home=install
+  export PYTHONPATH=$PWD/install/lib/python:$PYTHONPATH
+Note 1: If running and displaying apps on two different machines, then
+  you'll need to do this on both of them, obviously.
+Note 2: If you're on a 64-bit Redhat-ish distro (one with multilib
+  support), then you may need to replace 'lib' with 'lib64' above.
+
+On the machine where you will run the apps (usually, a remote machine):
+  install/bin/xpra start :13
+
+On the machine where you want the apps to display (usually, your local machine):
+  install/bin/xpra attach ssh:<remote box>:13
+or if displaying on the same machine for testing, then just:
+  install/bin/xpra attach :13
+(But make sure that you haven't set DISPLAY= in the terminal where you
+run 'xpra attach', because then xpra will try to display your apps
+inside itself!)
+
+Then on the machine where you ran 'xpra start' (usually, the remote
+machine), start some apps:
+  export DISPLAY=:13
+  emacs
+
+
+So how does it work?
+--------------------
+
+Very well, thank you.
+
+Oh, you mean... right.
+
+Okay.  So you may have heard about these fancy newfangled "compositing
+window managers".  Here's how they work.  Normally, when you run an
+app under X, the app is responsible for drawing stuff into the windows
+it owns, and then the X server combines those windows on the screen to
+produce the final desktop view that you interact with.  Compositing
+managers change this.  If you are running a compositing manager, then
+each app still decides what goes in each of its own windows, but the X
+server stops putting those windows on the screen.  Instead, the job of
+reading those images for each window and creating a display on the
+screen falls to the compositing manager.
+
+Xpra works by connecting to an ordinary X server as a compositing
+manager -- but instead of combining the window images to present on
+the screen, it takes the window images and stuffs them into a network
+connection to the xpra client, which then displays them onto the
+*remote* screen.  It also acts as a window manager for the X server it
+is running against, but it doesn't actually have any window manager
+policy built into it.  Instead, it takes all the window management
+requests from the applications, sends them over the wire to the
+client, who then issues those same requests on the real display, waits
+to see what answer your real window manager gives, and then forwards
+that answer back to the xpra server.
+
+(So note that there are actually *two* X servers here -- one on your
+remote host that your apps actually run against, and then the local
+one that you're sitting at, where the apps end up being displayed.)
+
+Now, unless you're debugging xpra's guts, you never want to actually
+see the X server that xpra is connected to, especially since it's
+generally on some far away host that doesn't have a monitor, and if it
+did the screen would just be black anyway (because we don't composite
+properly, y'see).  So 'xpra start' will silently spawn 'Xvfb', which
+is a special X server with all its video drivers ripped out, and then
+connect to it, so now that you've finished reading this section you
+can forget all about it again and just use xpra and be happy.
+
+Maybe a picture with boxes in will help:
+
+ +-----+     +--------+                                                  
+ |     |     |  your  |     +---------+                                  
+ | you | <-> |   X    | <-> |'xpra    |                                  
+ |     |     | server |     |  attach'|                                  
+ +-----+     +--------+     +---------+                                  
+                                 ^                                       
+                                 |                                       
+                              INTERNET!                                  
+                                 |                                       
+                                 v                                       
+                            +---------+                                  
+                            |'xpra    |     +------+     +-------------+
+                            |   start'| <-> |      | <-> | firefox     |
+                            +---------+     | Xvfb |     | or whatever |
+                                            |      |     +-------------+
+                                            +------+                     
+
+
+No, actually, I really did mean how *well* does it work?
+--------------------------------------------------------
+
+Oh.  Sorry.  Heh.
+
+As a first release, some lower priority features aren't included -- it
+doesn't support window icons, transient hints, shaped windows, cursor
+changing, input grabs, clipboard sharing, etc.  These are all
+straightforward to add, however, and in practice xpra seems to already
+be very usable without them.
+
+I don't know yet how well it handles different bandwidth/latency
+networks -- if you run xpra over a modem or something, let me know how
+it goes for you.  In principle, it should be dramatically less
+latency-sensitive than raw X, and might use more or less bandwidth
+depending on task, but in practice I haven't verified this.
+
+There are two main issues that are worth special warnings:
+
+First, I'm not sure yet how well the network protocol does at adapting
+to the characteristics of your network -- i.e., scaling down how much
+data it sends to avoid overloading the network and retain
+responsiveness.  In particular, if your TCP stack or your SSH client
+do aggressive buffering, then this may screw up xpar's ability to
+correctly adapt.  If this happens, you might see applications "stall
+out", i.e. stop responding.  If you wait a few seconds, the buffers
+should drain and things should return to normal.  Let me know if you
+see this happening frequently, though; if so we may need to add
+countermeasures.
+
+Secondly, the X keyboard model makes it hard to get keypresses right.
+If you have similar keymaps on both X servers, then you should be
+fine.  More complicated setups will probably not work -- e.g., if
+xpra's Xvfb is running with an English keymap, and you try to type and
+accented character that does not exist in that keymap, then it won't
+work.  This is a hard problem, in general, but improvements should be
+possible.  If you run into this, again, send an email -- extra points
+if it contains a patch :-).
+
+
+What's this 'parti' thing, and what does it have to do with xpra?
+-----------------------------------------------------------------
+
+Parti is a window manager that I'm working on.  So I wrote a bunch of
+WM code.  Then I realized that with a few tweaks, I could have xpra,
+and that would be awesome.  So I ripped out parti's WM backend code
+into a separate library, and now both parti and xpra use that library
+('wimpiggy').  Xpra is quite functional now, but Parti and wimpiggy
+are still under heavy development, so for now I'm still keeping
+everything together in one tree, to avoid version skew issues.

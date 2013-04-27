@@ -6,15 +6,15 @@
 import os
 import re
 
-from wimpiggy.error import trap
-from wimpiggy.lowlevel import (set_xmodmap,                 #@UnresolvedImport
+from xpra.x11.gtk_x11.error import trap
+from xpra.x11.lowlevel import (set_xmodmap,                 #@UnresolvedImport
                               parse_keysym,                 #@UnresolvedImport
                               parse_modifier,               #@UnresolvedImport
                               get_minmax_keycodes,          #@UnresolvedImport
                               ungrab_all_keys,              #@UnresolvedImport
                               unpress_all_keys,             #@UnresolvedImport
                               get_keycode_mappings)         #@UnresolvedImport
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="1"

@@ -19,7 +19,7 @@ import win32con
 
 import sys, os
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 class win32NotifyIcon:

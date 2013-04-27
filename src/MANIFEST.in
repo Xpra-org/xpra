@@ -1,5 +1,5 @@
 include COPYING NEWS *README
-include wimpiggy/lowlevel/constants.pxi
+include xpra/x11/lowlevel/constants.pxi
 include xpra/x264/*.h
 include xpra/vpx/*.h
 include *.desktop

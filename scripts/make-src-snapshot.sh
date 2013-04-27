@@ -24,10 +24,10 @@ rm -f "${DIR}/xpra/x11/wait_for_x_server.c"
 rm -f "${DIR}/xpra/codecs/vpx/codec.c"
 rm -f "${DIR}/xpra/codecs/x264/codec.c"
 rm -f "${DIR}/xpra/codecs/vpx/codec.c"
-rm -f "${DIR}/wimpiggy/lowlevel/bindings.c"
-rm -f "${DIR}/wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.dep"
-rm -f "${DIR}/wimpiggy/lowlevel/constants.pxi"
-rm -f "${DIR}/wimpiggy/gdk/gdk_atoms.c"
+rm -f "${DIR}/xpra/x11/lowlevel/bindings.c"
+rm -f "${DIR}/xpra/x11/lowlevel/xpra.x11.lowlevel.bindings.dep"
+rm -f "${DIR}/xpra/x11/lowlevel/constants.pxi"
+rm -f "${DIR}/xpra/gtk_common/gdk_atoms.c"
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 find ${DIR} -name "__pycache__" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
@@ -35,7 +35,7 @@ find ${DIR} -name "*.pyc" -exec rm -fr {} \;
 
 RAW_SVN_VERSION=`svnversion`
 SVN_REVISION=`python -c "x=\"$RAW_SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`
-MODULE_DIRS="xpra wimpiggy"
+MODULE_DIRS="xpra"
 echo "adding svn revision ${SVN_REVISION} to __init__.py in ${MODULE_DIRS}"
 for module in ${MODULE_DIRS}; do
 	file="${DIR}/${module}/__init__.py"

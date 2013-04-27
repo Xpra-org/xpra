@@ -62,7 +62,6 @@ xpra_src = "../src/"
 data_files += [
                 ("share/man/man1", [xpra_src+"man/xpra.1", xpra_src+"man/xpra_launcher.1"]),
                 ("share/xpra", [xpra_src+"xpra.README", xpra_src+"COPYING"]),
-                ("share/wimpiggy", [xpra_src+"wimpiggy.README"]),
                 ("share/xpra/icons", glob.glob(xpra_src+"icons/*")),
                 ("share/applications", [xpra_src+"xpra_launcher.desktop"]),
                 ("share/icons", [xpra_src+"xpra.png"])

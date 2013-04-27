@@ -11,12 +11,12 @@ This code deals with:
 and
 * converting those structures back into XSETTINGS format
 
-It is used by wimpiggy.prop
+It is used by xpra.x11.gtk_x11.prop
 """
 
 import sys
 import struct
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 #debug = log.info

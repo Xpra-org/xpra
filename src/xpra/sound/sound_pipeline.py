@@ -8,8 +8,8 @@ import os
 import gobject
 
 from xpra.sound.gstreamer_util import gst
-from wimpiggy.util import AutoPropGObjectMixin, one_arg_signal
-from wimpiggy.log import Logger
+from xpra.util import AutoPropGObjectMixin, one_arg_signal
+from xpra.log import Logger
 log = Logger()
 
 DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"

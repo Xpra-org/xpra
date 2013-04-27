@@ -9,7 +9,7 @@ import subprocess
 import os.path
 import time
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 HOME = os.path.expanduser("~/")
 

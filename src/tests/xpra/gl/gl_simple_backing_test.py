@@ -8,7 +8,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk        #@UnusedImport
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from tests.xpra.gl.gl_simple_client_window import GLSimpleClientWindow

@@ -29,7 +29,7 @@ mouse = ['xpra.server_base.XpraServer._process_pointer_position',
          'xpra.server_base.XpraServer._process_button_action',
          'xpra.server_base.XpraServer._process_mouse_common']
 keyboard = ['xpra.gtk_common.keys.*', 'xpra.keyboard.*',
-	   'xpra.x11.xkbhelper.*', 'wimpiggy.keys.*',
+	   'xpra.x11.xkbhelper.*', 'xpra.x11.gtk_x11.keys.*',
        'xpra.server_source.KeyboardConfig.*',
        'xpra.server_source.ServerSource.make_keymask_match',
        'xpra.server_source.ServerSource._keys_changed',
@@ -53,23 +53,23 @@ cursor = [
           'xpra.*._process_cursor',
           'xpra.*.set_windows_cursor',
           ]
-bell = ['wimpiggy.window.WindowModel.do_wimpiggy_xkb_event',
-        'wimpiggy.wm.Wm.bell_event',
-        'wimpiggy.wm.Wm.do_bell_event',
+bell = ['xpra.x11.gtk_x11.window.WindowModel.do_xpra_xkb_event',
+        'xpra.x11.gtk_x11.wm.Wm.bell_event',
+        'xpra.x11.gtk_x11.wm.Wm.do_bell_event',
         'xpra.server.XpraServer._bell_signaled',
         'xpra.server_source.ServerSource.bell']
 misc = ['xpra.dotxpra.*', 'xpra.wait_for_server.*',
         'xpra.scripts.*', 'subprocess.*',
-        'wimpiggy.log*',
-        'wimpiggy.gobject_compat.*',
-        'wimpiggy.tray.*',
+        'xpra.log*',
+        'xpra.gobject_compat.*',
+        'xpra.x11.gtk_x11.tray.*',
         'xpra.version_util.*', 'xpra.build_info.*']
 
-xsettings = ['xpra.xposix.xroot_props.*', 'xpra.xposix.xsettings.*', 'wimpiggy.xsettings_prop.*']
+xsettings = ['xpra.xposix.xroot_props.*', 'xpra.xposix.xsettings.*', 'xpra.x11.xsettings_prop.*']
 clipboard = ['xpra.platform.clipboard_base.*',
-             'xpra.platform.gdk_clipboard.*', 'wimpiggy.gdk.*',
+             'xpra.platform.gdk_clipboard.*', 'xpra.gtk_common.gdk.*',
              'xpra.nested_main.*',
-             'wimpiggy.selection.*',
+             'xpra.x11.gtk_x11.selection.*',
              'xpra.*.ClientExtras.setup_clipboard_helper']
 sound = ['xpra.sound.*',
          'xpra.server_source.ServerSource.stop_sending_sound',
@@ -78,7 +78,7 @@ gl = ['xpra.client.gl.gl_client_window.*', 'xpra.client.gl.gl_colorspace_convers
 
 logging = [
        'logging.*',
-       'wimpiggy.log.*']
+       'xpra.log.*']
 
 std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
@@ -118,15 +118,15 @@ one_offs = ['xpra.<module>',
             'threading.Thread.setDaemon', 'threading.Thread.set_daemon', 'threading.Thread._set_daemon',
             'threading.Thread.__init__',
             'threading.Condition.*', 'threading.Event.*',
-            'wimpiggy.util.gtk_main_quit_forever',
-            'wimpiggy.util.gtk_main_quit_really',
-            'wimpiggy.util.gtk_main_quit_on_fatal_exceptions_enable',
-            'wimpiggy.wm.Wm.__init__'
-            'wimpiggy.wm.Wm.__setup_ewmh_window'
-            'wimpiggy.wm.Wm.enableCursors',
-            'wimpiggy.*.n_arg_signal',
-            'wimpiggy.*.<module>',
-            'wimpiggy.error._ErrorManager.__init__',
+            'xpra.util.gtk_main_quit_forever',
+            'xpra.gtk_common.quit.gtk_main_quit_really',
+            'xpra.gtk_common.quit.gtk_main_quit_on_fatal_exceptions_enable',
+            'xpra.x11.gtk_x11.wm.Wm.__init__'
+            'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window'
+            'xpra.x11.gtk_x11.wm.Wm.enableCursors',
+            'xpra.util.*.n_arg_signal',
+            'xpra.x11.gtk_x11.*.<module>',
+            'xpra.x11.gtk_x11.error._ErrorManager.__init__',
             #client bits:
             'xpra.client_base.<module>',
             'xpra.client_base.ScreenshotXpraClient',

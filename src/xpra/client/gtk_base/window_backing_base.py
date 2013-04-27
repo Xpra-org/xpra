@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from wimpiggy.gobject_compat import import_gdk, import_gobject
+from xpra.gobject_compat import import_gdk, import_gobject
 gdk = import_gdk()
 gobject = import_gobject()
 
@@ -13,7 +13,7 @@ import os
 import cairo
 import zlib
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from threading import Lock

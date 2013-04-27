@@ -74,7 +74,7 @@ def get_icon_dir():
 def get_icon_filename(name):
     def err(*msg):
         """ log an error message and return None """
-        from wimpiggy.log import Logger
+        from xpra.log import Logger
         log = Logger()
         log.error(*msg)
         return None

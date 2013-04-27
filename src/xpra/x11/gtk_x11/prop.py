@@ -17,7 +17,7 @@ except:
     from io import StringIO         #@Reimport
 import gtk.gdk
 import cairo
-from wimpiggy.lowlevel import (
+from xpra.x11.lowlevel import (
                 XGetWindowProperty,         #@UnresolvedImport
                 XChangeProperty,            #@UnresolvedImport
                 NoSuchProperty,             #@UnresolvedImport
@@ -28,9 +28,9 @@ from wimpiggy.lowlevel import (
                 const,                      #@UnresolvedImport
                 premultiply_argb_in_place   #@UnresolvedImport
                )
-from wimpiggy.xsettings_prop import set_settings, get_settings
-from wimpiggy.error import trap, XError
-from wimpiggy.log import Logger
+from xpra.x11.xsettings_prop import set_settings, get_settings
+from xpra.x11.gtk_x11.error import trap, XError
+from xpra.log import Logger
 log = Logger()
 
 import sys
@@ -362,7 +362,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     except:
         if not ignore_errors:
             log.warn("Error parsing property %s (type %s); this may be a"
-                     + " misbehaving application, or bug in Wimpiggy\n"
+                     + " misbehaving application, or bug in Xpra\n"
                      + "  Data: %r[...?]",
                      key, etype, data[:160])
             traceback.print_exc()

@@ -6,7 +6,7 @@
 
 import threading
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 from xpra.net.bytestreams import untilConcludes
 

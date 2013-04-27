@@ -66,5 +66,5 @@ src_compile() {
 
 src_install() {
 	distutils_src_install
-	rm -vf "${ED}"usr/share/{wimpiggy,xpra}/{README*,COPYING} || die
+	rm -vf "${ED}"usr/share/{xpra}/{README*,COPYING} || die
 }

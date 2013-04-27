@@ -16,7 +16,7 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from wimpiggy.gobject_compat import import_gdk
+    from xpra.gobject_compat import import_gdk
     gdk = import_gdk()
     try:
         keymap = gdk.keymap_get_default()

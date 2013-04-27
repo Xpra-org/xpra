@@ -6,13 +6,13 @@
 # later version. See the file COPYING for details.
 
 
-from wimpiggy.gobject_compat import import_gobject3, import_gtk3, import_gdk3
+from xpra.gobject_compat import import_gobject3, import_gtk3, import_gdk3
 gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
 from xpra.client.gtk_base.client_window_base import ClientWindowBase, DRAW_DEBUG
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

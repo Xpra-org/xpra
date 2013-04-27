@@ -6,7 +6,7 @@
 
 import win32api         #@UnresolvedImport
 import win32con         #@UnresolvedImport
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.server.server_base import ServerBase

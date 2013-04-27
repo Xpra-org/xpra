@@ -11,7 +11,7 @@
 import sys
 import os.path
 
-from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+from xpra.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
@@ -20,7 +20,7 @@ import webbrowser
 from xpra.scripts.config import get_build_info
 from xpra import __version__
 from xpra.gtk_common.gtk_util import add_close_accel
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

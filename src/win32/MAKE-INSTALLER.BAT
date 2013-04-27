@@ -63,8 +63,8 @@ DEL /Q xpra\codecs\vpx\codec.pyd
 DEL /Q xpra\codecs\vpx\codec.c
 DEL /Q xpra\rencode\rencode.pyd
 DEL /Q xpra\rencode\rencode.c
-DEL /Q wimpiggy\gdk\gdk_atoms.pyd
-DEL /Q wimpiggy\gdk\gdk_atoms.c
+DEL /Q xpra\gtk_common\gdk_atoms.pyd
+DEL /Q xpra\gtk_common\gdk_atoms.c
 DEL /Q xpraz\xor\cyxor.pyd
 DEL /Q xpra\xor\cyxor.c
 DEL /Q xpra\stats\cymaths.pyd

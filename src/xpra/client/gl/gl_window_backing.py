@@ -11,7 +11,7 @@ assert gtk.gdkgl is not None and gtk.gtkgl is not None
 import gobject
 import os
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 debug = log.debug
 if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":

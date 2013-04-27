@@ -8,7 +8,7 @@
 import gtk.gdk
 import time
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options, logger=None):

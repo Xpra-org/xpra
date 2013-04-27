@@ -6,11 +6,11 @@
 import gtk
 import gobject
 
-from wimpiggy.prop import prop_set
-from wimpiggy.util import one_arg_signal
-from wimpiggy.error import trap
+from xpra.util import one_arg_signal
+from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.error import trap
 
-from wimpiggy.lowlevel import (
+from xpra.x11.lowlevel import (
                const,                                       #@UnresolvedImport
                add_event_receiver,                          #@UnresolvedImport
                remove_event_receiver,                       #@UnresolvedImport
@@ -24,7 +24,7 @@ from wimpiggy.lowlevel import (
                reparent,                                    #@UnresolvedImport
                )
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 XEMBED_VERSION = 0
@@ -78,8 +78,8 @@ def set_tray_orientation(tray_window, orientation):
 
 class SystemTray(gobject.GObject):
     __gsignals__ = {
-        "wimpiggy-unmap-event": one_arg_signal,
-        "wimpiggy-client-message-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
+        "xpra-client-message-event": one_arg_signal,
         }
 
     def __init__(self):
@@ -147,7 +147,7 @@ class SystemTray(gobject.GObject):
         add_event_receiver(self.tray_window, self)
         log("setup tray: done")
 
-    def do_wimpiggy_client_message_event(self, event):
+    def do_xpra_client_message_event(self, event):
         if event.message_type=="_NET_SYSTEM_TRAY_OPCODE" and event.window==self.tray_window and event.format==32:
             opcode = event.data[1]
             SYSTEM_TRAY_REQUEST_DOCK = 0
@@ -168,7 +168,7 @@ class SystemTray(gobject.GObject):
             assert event.format==8
             log.info("tray message data - not handled yet!")
         else:
-            log.info("do_wimpiggy_client_message_event(%s)", event)
+            log.info("do_xpra_client_message_event(%s)", event)
 
     def dock_tray(self, xid):
         root = gtk.gdk.get_default_root_window()
@@ -212,9 +212,9 @@ class SystemTray(gobject.GObject):
         embedded_window.resize(w, h)
         log("system tray moved to %sx%s and resized to %sx%s", x, y, w, h)
 
-    def do_wimpiggy_unmap_event(self, event):
+    def do_xpra_unmap_event(self, event):
         tray_window = self.tray_windows.get(event.window)
-        log("SystemTray.do_wimpiggy_unmap_event(%s) container window=%s", event, tray_window)
+        log("SystemTray.do_xpra_unmap_event(%s) container window=%s", event, tray_window)
         if tray_window:
             tray_window.destroy()
             del self.tray_windows[event.window]

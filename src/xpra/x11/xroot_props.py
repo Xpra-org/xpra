@@ -6,17 +6,17 @@
 
 import gtk
 import gobject
-from wimpiggy.util import n_arg_signal
-from wimpiggy.lowlevel import add_event_receiver    #@UnresolvedImport
-from wimpiggy.prop import prop_get
+from xpra.util import n_arg_signal
+from xpra.x11.lowlevel import add_event_receiver    #@UnresolvedImport
+from xpra.x11.gtk_x11.prop import prop_get
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 class XRootPropWatcher(gobject.GObject):
     __gsignals__ = {
         "root-prop-changed": n_arg_signal(2),
-        "wimpiggy-property-notify-event": n_arg_signal(1),
+        "xpra-property-notify-event": n_arg_signal(1),
         }
 
     def __init__(self, props):
@@ -25,7 +25,7 @@ class XRootPropWatcher(gobject.GObject):
         self._root = gtk.gdk.get_default_root_window()
         add_event_receiver(self._root, self)
 
-    def do_wimpiggy_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event):
         if event.atom in self._props:
             self._notify(event.atom)
 

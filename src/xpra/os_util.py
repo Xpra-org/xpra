@@ -21,7 +21,7 @@ def set_application_name(name):
     if NAME_SET:
         return
     NAME_SET = True
-    from wimpiggy.log import Logger
+    from xpra.log import Logger
     log = Logger()
     if sys.version_info[:2]<(2,5):
         log.warn("Python %s is too old!", sys.version_info)

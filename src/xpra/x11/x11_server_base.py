@@ -10,7 +10,7 @@ import gtk.gdk
 import gobject
 
 from xpra.server.server_base import ServerBase
-from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
+from xpra.x11.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                xtest_fake_button,           #@UnresolvedImport
                                set_key_repeat_rate,         #@UnresolvedImport
                                unpress_all_keys,            #@UnresolvedImport
@@ -20,11 +20,11 @@ from wimpiggy.lowlevel import (xtest_fake_key,              #@UnresolvedImport
                                get_xatom,                   #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                )
-from wimpiggy.prop import prop_set
+from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.error import XError, trap
 from xpra.server.server_uuid import save_uuid, get_uuid
-from wimpiggy.error import XError, trap
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -34,11 +34,11 @@ MAX_CONCURRENT_CONNECTIONS = 20
 
 
 def window_name(window):
-    from wimpiggy.prop import prop_get
+    from xpra.x11.gtk_x11.prop import prop_get
     return prop_get(window, "_NET_WM_NAME", "utf8", True) or "unknown"
 
 def window_info(window):
-    from wimpiggy.prop import prop_get
+    from xpra.x11.gtk_x11.prop import prop_get
     net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
     return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
 

@@ -10,7 +10,7 @@ import gtk
 from gtk import gdk
 
 from xpra.client.gtk_base.client_window_base import ClientWindowBase, DRAW_DEBUG
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

@@ -9,9 +9,9 @@ import logging
 # This module is used by non-GUI programs and thus must not import gtk.
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:
-#   -- You initialize it with a prefix (like "wimpiggy.window"), but can pass
+#   -- You initialize it with a prefix (like "xpra.window"), but can pass
 #      a type= kwarg to any of the loggin methods to further specialize the
-#      logging target (like "damage" to get "wimpiggy.window.damage").
+#      logging target (like "damage" to get "xpra.window.damage").
 #   -- You can pass exc_info=True to any method, and sys.exc_info() will be
 #      substituted.
 #   -- __call__ is an alias for debug

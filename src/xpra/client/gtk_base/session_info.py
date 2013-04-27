@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+from xpra.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
@@ -17,7 +17,7 @@ from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
-from wimpiggy.log import Logger
+from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder
 log = Logger()
 

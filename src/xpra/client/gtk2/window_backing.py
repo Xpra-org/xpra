@@ -8,7 +8,7 @@ from gtk import gdk
 import gobject
 import os
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.scripts.config import ENCODINGS

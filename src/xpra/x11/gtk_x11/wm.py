@@ -15,14 +15,14 @@ if sys.version_info < (2, 6):
 else:
     ImmutableSet = frozenset
 
-from wimpiggy.error import trap
-import wimpiggy.selection
-from wimpiggy.world_window import WorldWindow
-from wimpiggy.prop import prop_set, prop_get
-from wimpiggy.util import no_arg_signal, one_arg_signal
+from xpra.x11.gtk_x11.error import trap
+import xpra.x11.gtk_x11.selection
+from xpra.x11.gtk_x11.world_window import WorldWindow
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.util import no_arg_signal, one_arg_signal
 
-from wimpiggy.window import WindowModel, Unmanageable
-from wimpiggy.lowlevel import (
+from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
+from xpra.x11.lowlevel import (
                const,                                       #@UnresolvedImport
                printFocus,                                  #@UnresolvedImport
                add_event_receiver,                          #@UnresolvedImport
@@ -38,7 +38,7 @@ from wimpiggy.lowlevel import (
                selectCursorChange,                          #@UnresolvedImport
                )
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 
@@ -185,10 +185,10 @@ class Wm(gobject.GObject):
         # Mostly intended for internal use:
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
-        "wimpiggy-focus-in-event": one_arg_signal,
-        "wimpiggy-focus-out-event": one_arg_signal,
-        "wimpiggy-client-message-event": one_arg_signal,
-        "wimpiggy-xkb-event": one_arg_signal,
+        "xpra-focus-in-event": one_arg_signal,
+        "xpra-focus-out-event": one_arg_signal,
+        "xpra-client-message-event": one_arg_signal,
+        "xpra-xkb-event": one_arg_signal,
         }
 
     def __init__(self, name, replace_other_wm, display=None):
@@ -208,8 +208,8 @@ class Wm(gobject.GObject):
         self._windows_in_order = []
 
         # Become the Official Window Manager of this year's display:
-        self._wm_selection = wimpiggy.selection.ManagerSelection(self._display, "WM_S0")
-        self._cm_wm_selection = wimpiggy.selection.ManagerSelection(self._display, "_NET_WM_CM_S0")
+        self._wm_selection = xpra.x11.gtk_x11.selection.ManagerSelection(self._display, "WM_S0")
+        self._cm_wm_selection = xpra.x11.gtk_x11.selection.ManagerSelection(self._display, "_NET_WM_CM_S0")
         self._wm_selection.connect("selection-lost", self._lost_wm_selection)
         self._cm_wm_selection.connect("selection-lost", self._lost_wm_selection)
         # May throw AlreadyOwned:
@@ -271,10 +271,10 @@ class Wm(gobject.GObject):
         log("enableCursors(%s)" % on)
         selectCursorChange(self._root, on)
 
-    def do_wimpiggy_xkb_event(self, event):
-        log("wm.do_wimpiggy_xkb_event(%r)" % event)
+    def do_xpra_xkb_event(self, event):
+        log("wm.do_xpra_xkb_event(%r)" % event)
         if event.type!="bell":
-            log.error("wm.do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            log.error("wm.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
         self.do_bell_event(event)
 
@@ -338,7 +338,7 @@ class Wm(gobject.GObject):
         trap.swallow_synced(self.root_set, "_NET_CLIENT_LIST_STACKING",
                      ["window"], self._windows_in_order)
 
-    def do_wimpiggy_client_message_event(self, event):
+    def do_xpra_client_message_event(self, event):
         # FIXME
         # Need to listen for:
         #   _NET_CLOSE_WINDOW
@@ -350,7 +350,7 @@ class Wm(gobject.GObject):
         #   _NET_RESTACK_WINDOW
         #   _NET_WM_DESKTOP
         #   _NET_WM_STATE
-        log("do_wimpiggy_client_message_event(%s)", event)
+        log("do_xpra_client_message_event(%s)", event)
 
     def _lost_wm_selection(self, selection):
         log.info("Lost WM selection %s, exiting", selection)
@@ -381,7 +381,7 @@ class Wm(gobject.GObject):
                      event.width, event.height,
                      event.value_mask)
 
-    def do_wimpiggy_focus_in_event(self, event):
+    def do_xpra_focus_in_event(self, event):
         # The purpose of this function is to detect when the focus mode has
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
@@ -389,7 +389,7 @@ class Wm(gobject.GObject):
         if event.detail in (const["NotifyPointerRoot"], const["NotifyDetailNone"]):
             self._world_window.reset_x_focus()
 
-    def do_wimpiggy_focus_out_event(self, event):
+    def do_xpra_focus_out_event(self, event):
         printFocus(self._display)
 
     def do_desktop_list_changed(self, desktops):

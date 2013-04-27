@@ -6,9 +6,9 @@
 
 import gobject
 import gtk
-from wimpiggy.util import one_arg_signal
-from wimpiggy.error import trap
-from wimpiggy.lowlevel import (
+from xpra.util import one_arg_signal
+from xpra.x11.gtk_x11.error import trap
+from xpra.x11.lowlevel import (
                 get_display_for,            #@UnresolvedImport
                 get_modifier_map,           #@UnresolvedImport
                 grab_key, ungrab_all_keys,  #@UnresolvedImport
@@ -16,7 +16,7 @@ from wimpiggy.lowlevel import (
                 remove_event_receiver       #@UnresolvedImport
                 )
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 class HotkeyManager(gobject.GObject):
@@ -24,7 +24,7 @@ class HotkeyManager(gobject.GObject):
         "hotkey": (gobject.SIGNAL_RUN_LAST | gobject.SIGNAL_DETAILED,
                    gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
 
-        "wimpiggy-key-press-event": one_arg_signal,
+        "xpra-key-press-event": one_arg_signal,
         }
 
     def __init__(self, window):
@@ -84,7 +84,7 @@ class HotkeyManager(gobject.GObject):
                                        self.keymap, self.modifier_map)
                 self.normalized_hotkeys[unparsed] = target
 
-    def do_wimpiggy_key_press_event(self, event):
+    def do_xpra_key_press_event(self, event):
         log("got hotkey event, maybe")
         unparsed = unparse_key(event.state, event.hardware_keycode,
                                self.keymap, self.modifier_map)

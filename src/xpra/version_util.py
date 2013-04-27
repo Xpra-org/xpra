@@ -6,7 +6,7 @@
 from xpra import __version__ as local_version
 import sys
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 def version_as_numbers(version):

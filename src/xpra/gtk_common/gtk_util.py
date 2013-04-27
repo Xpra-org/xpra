@@ -6,12 +6,12 @@
 
 import os.path
 
-from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+from xpra.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

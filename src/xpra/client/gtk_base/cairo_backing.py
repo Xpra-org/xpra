@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from wimpiggy.gobject_compat import import_gdk, import_gobject
+from xpra.gobject_compat import import_gdk, import_gobject
 gdk = import_gdk()
 gobject = import_gobject()
 import cairo
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gtk_base.window_backing_base import WindowBacking, fire_paint_callbacks, DRAW_DEBUG

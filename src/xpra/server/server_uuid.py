@@ -6,7 +6,7 @@
 
 import gtk.gdk
 
-from wimpiggy.prop import prop_set, prop_get
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
 
 
 def save_uuid(uuid):

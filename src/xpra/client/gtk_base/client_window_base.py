@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -17,20 +17,20 @@ import sys
 import time
 import math
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 
 try:
-    from wimpiggy.prop import prop_get
-    has_wimpiggy_prop = True
+    from xpra.x11.gtk_x11.prop import prop_get
+    HAS_X11_PROP = True
 except ImportError, e:
-    has_wimpiggy_prop = False
+    HAS_X11_PROP = False
 
 def xget_u32_property(target, name):
     try:
-        if not has_wimpiggy_prop:
+        if not HAS_X11_PROP:
             if is_gtk3():
                 name_atom = gdk.Atom.intern(name, False)
                 type_atom = gdk.Atom.intern("CARDINAL", False)
@@ -50,7 +50,7 @@ def xget_u32_property(target, name):
     return None
 
 CAN_SET_WORKSPACE = False
-if not sys.platform.startswith("win") and has_wimpiggy_prop:
+if not sys.platform.startswith("win") and HAS_X11_PROP:
     try:
         #TODO: in theory this is not a proper check, meh - that will do
         root = gtk.gdk.get_default_root_window()
@@ -131,8 +131,8 @@ class ClientWindowBase(gtk.Window):
         if workspace<0 or workspace==self.get_current_workspace():
             return -1
         try:
-            from wimpiggy.lowlevel import sendClientMessage, const  #@UnresolvedImport
-            from wimpiggy.error import trap
+            from xpra.x11.lowlevel import sendClientMessage, const  #@UnresolvedImport
+            from xpra.x11.gtk_x11.error import trap
             root = self.gdk_window().get_screen().get_root_window()
             ndesktops = xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
             log("set_workspace() ndesktops=%s", ndesktops)

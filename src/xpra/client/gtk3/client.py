@@ -6,14 +6,14 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
-from wimpiggy.gobject_compat import import_gobject3, import_gtk3, import_gdk3
+from xpra.gobject_compat import import_gobject3, import_gtk3, import_gdk3
 gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
 from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk3.client_window import ClientWindow
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

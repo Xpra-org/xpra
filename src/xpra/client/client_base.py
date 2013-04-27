@@ -7,13 +7,13 @@
 import os
 import sys
 import socket
-from wimpiggy.gobject_compat import import_gobject, import_glib
+from xpra.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 
-from wimpiggy.util import n_arg_signal
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
+from xpra.util import n_arg_signal
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info

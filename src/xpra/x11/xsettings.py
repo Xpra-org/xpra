@@ -6,17 +6,17 @@
 
 import gobject
 import gtk
-from wimpiggy.error import *
-from wimpiggy.util import no_arg_signal, one_arg_signal
-from wimpiggy.selection import ManagerSelection
-from wimpiggy.prop import prop_set, prop_get
-from wimpiggy.lowlevel import (
+from xpra.x11.gtk_x11.error import *
+from xpra.util import no_arg_signal, one_arg_signal
+from xpra.x11.gtk_x11.selection import ManagerSelection
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.lowlevel import (
                 myGetSelectionOwner,            #@UnresolvedImport
                 const, get_pywindow,            #@UnresolvedImport
                 add_event_receiver,             #@UnresolvedImport
                 get_xatom                       #@UnresolvedImport
                 )
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 #the X11 atom name for the XSETTINGS property:
@@ -50,8 +50,8 @@ class XSettingsWatcher(gobject.GObject):
     __gsignals__ = {
         "xsettings-changed": no_arg_signal,
 
-        "wimpiggy-property-notify-event": one_arg_signal,
-        "wimpiggy-client-message-event": one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
+        "xpra-client-message-event": one_arg_signal,
         }
     def __init__(self, screen_number=0):
         gobject.GObject.__init__(self)
@@ -77,7 +77,7 @@ class XSettingsWatcher(gobject.GObject):
         if owner is not None:
             add_event_receiver(owner, self)
 
-    def do_wimpiggy_client_message_event(self, event):
+    def do_xpra_client_message_event(self, event):
         if (event.window is self._root
             and event.message_type == "MANAGER"
             and event.data[1] == get_xatom(self._selection)):
@@ -85,7 +85,7 @@ class XSettingsWatcher(gobject.GObject):
             self._add_watch()
             self.emit("xsettings-changed")
 
-    def do_wimpiggy_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event):
         if event.atom == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")

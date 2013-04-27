@@ -12,9 +12,9 @@ import gobject
 import gtk
 from struct import pack, unpack
 
-from wimpiggy.util import no_arg_signal, one_arg_signal
-from wimpiggy.error import XError
-from wimpiggy.lowlevel import (
+from xpra.util import no_arg_signal, one_arg_signal
+from xpra.x11.gtk_x11.error import XError
+from xpra.x11.lowlevel import (
                 get_xatom,                  #@UnresolvedImport
                 get_pywindow,               #@UnresolvedImport
                 sendClientMessage,          #@UnresolvedImport
@@ -22,9 +22,9 @@ from wimpiggy.lowlevel import (
                 add_event_receiver,         #@UnresolvedImport
                 remove_event_receiver       #@UnresolvedImport
                 )
-from wimpiggy.error import trap
+from xpra.x11.gtk_x11.error import trap
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 class AlreadyOwned(Exception):
@@ -34,7 +34,7 @@ class ManagerSelection(gobject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
 
-        "wimpiggy-destroy-event": one_arg_signal,
+        "xpra-destroy-event": one_arg_signal,
         }
 
     def __str__(self):
@@ -119,7 +119,7 @@ class ManagerSelection(gobject.GObject):
         window = get_pywindow(self.clipboard, self._xwindow)
         window.set_title("Xpra-ManagerSelection")
 
-    def do_wimpiggy_destroy_event(self, event):
+    def do_xpra_destroy_event(self, event):
         remove_event_receiver(event.window, self)
         gtk.main_quit()
 

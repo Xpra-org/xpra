@@ -9,7 +9,7 @@ import struct
 import re
 import binascii
 
-from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
@@ -18,10 +18,10 @@ if is_gtk3():
 else:
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
 
-from wimpiggy.util import n_arg_signal
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
+from xpra.util import n_arg_signal
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.protocol import zlib_compress
 
@@ -373,9 +373,9 @@ class ClipboardProxy(gtk.Invisible):
             pass
         elif target == "MULTIPLE":
             try:
-                from wimpiggy.prop import prop_get
+                from xpra.x11.gtk_x11.prop import prop_get
             except ImportError:
-                debug("MULTIPLE for property '%s' not handled due to missing wimpiggy bindings", event.property)
+                debug("MULTIPLE for property '%s' not handled due to missing xpra.x11.gtk_x11 bindings", event.property)
                 gtk.Invisible.do_selection_request_event(self, event)
                 return
             atoms = prop_get(event.window, event.property, ["multiple-conversion"])

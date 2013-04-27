@@ -6,7 +6,7 @@
 
 import struct
 
-from wimpiggy.gdk.gdk_atoms import (
+from xpra.gtk_common.gdk_atoms import (
                 gdk_atom_objects_from_gdk_atom_array,   #@UnresolvedImport
                 gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
                 )

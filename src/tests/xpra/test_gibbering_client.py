@@ -7,7 +7,7 @@
 import gobject
 
 from xpra.bencode import bencode
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.client_base import GLibXpraClient

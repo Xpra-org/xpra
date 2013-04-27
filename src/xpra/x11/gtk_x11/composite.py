@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 import gobject
-from wimpiggy.util import one_arg_signal, AutoPropGObjectMixin
-from wimpiggy.error import trap
-from wimpiggy.lowlevel import (
+from xpra.util import one_arg_signal, AutoPropGObjectMixin
+from xpra.x11.gtk_x11.error import trap
+from xpra.x11.lowlevel import (
            xcomposite_redirect_window,      #@UnresolvedImport
            xcomposite_unredirect_window,    #@UnresolvedImport
            xcomposite_name_window_pixmap,   #@UnresolvedImport
@@ -21,7 +21,7 @@ from wimpiggy.lowlevel import (
            get_xwindow                      #@UnresolvedImport
            )
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 
@@ -29,10 +29,10 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     __gsignals__ = {
         "contents-changed": one_arg_signal,
 
-        "wimpiggy-damage-event": one_arg_signal,
-        "wimpiggy-unmap-event": one_arg_signal,
-        "wimpiggy-configure-event": one_arg_signal,
-        "wimpiggy-reparent-event": one_arg_signal,
+        "xpra-damage-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
+        "xpra-reparent-event": one_arg_signal,
         }
 
     __gproperties__ = {
@@ -163,17 +163,17 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         else:
             return handle.pixmap
 
-    def do_wimpiggy_unmap_event(self, *args):
+    def do_xpra_unmap_event(self, *args):
         self.invalidate_pixmap()
 
-    def do_wimpiggy_configure_event(self, event):
+    def do_xpra_configure_event(self, event):
         self._border_width = event.border_width
         self.invalidate_pixmap()
 
-    def do_wimpiggy_reparent_event(self, *args):
+    def do_xpra_reparent_event(self, *args):
         self.invalidate_pixmap()
 
-    def do_wimpiggy_damage_event(self, event):
+    def do_xpra_damage_event(self, event):
         event.x += self._border_width
         event.y += self._border_width
         self.emit("contents-changed", event)

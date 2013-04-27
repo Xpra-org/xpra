@@ -29,62 +29,6 @@ file path=usr/bin/xpra_launcher owner=root group=bin mode=555
 dir  path=usr/lib owner=root group=bin mode=755
 dir  path=usr/lib/python2.6 owner=root group=bin mode=755
 dir  path=usr/lib/python2.6/site-packages owner=root group=bin mode=755
-dir  path=usr/lib/python2.6/site-packages/wimpiggy owner=root group=root mode=755
-file path=usr/lib/python2.6/site-packages/wimpiggy/__init__.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/composite.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/error.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/gobject_compat.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/keys.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/log.py owner=root group=bin \
-    mode=644
-dir  path=usr/lib/python2.6/site-packages/wimpiggy/lowlevel owner=root \
-    group=root mode=755
-file path=usr/lib/python2.6/site-packages/wimpiggy/lowlevel/__init__.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/lowlevel/bindings.so \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/gdk/gdk_atoms.so \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/prop.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/pseudoclient.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/selection.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_error.py owner=root \
-    group=bin mode=644
-file \
-    path=usr/lib/python2.6/site-packages/wimpiggy/test_get_modifier_mappings.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_keys.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_lowlevel.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_prop.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_selection.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_test.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_util.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/test_x11keycodes_down.py \
-    owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/util.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/window.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/wm.py owner=root group=bin \
-    mode=644
-file path=usr/lib/python2.6/site-packages/wimpiggy/world_window.py owner=root \
-    group=bin mode=644
 dir  path=usr/lib/python2.6/site-packages/xpra owner=root group=root mode=755
 file path=usr/lib/python2.6/site-packages/xpra/__init__.py owner=root \
     group=bin mode=644
@@ -162,17 +106,17 @@ file path=usr/lib/python2.6/site-packages/xpra/version_util.py owner=root \
     group=bin mode=644
 file path=usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so owner=root \
     group=bin mode=644
-dir  path=usr/lib/python2.6/site-packages/xpra/win32 owner=root group=root \
+dir  path=usr/lib/python2.6/site-packages/xpra/platform/win32 owner=root group=root \
     mode=755
-file path=usr/lib/python2.6/site-packages/xpra/win32/__init__.py owner=root \
+file path=usr/lib/python2.6/site-packages/xpra/platform/win32/__init__.py owner=root \
     group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/win32/gui.py owner=root \
+file path=usr/lib/python2.6/site-packages/xpra/platform/win32/gui.py owner=root \
     group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/win32/win32_NotifyIcon.py \
+file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_NotifyIcon.py \
     owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/win32/win32_balloon.py \
+file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_balloon.py \
     owner=root group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/win32/win32_tray.py owner=root \
+file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_tray.py owner=root \
     group=bin mode=644
 file path=usr/lib/python2.6/site-packages/xpra/window_backing.py owner=root \
     group=bin mode=644
@@ -202,8 +146,6 @@ dir  path=usr/share/man owner=root group=bin mode=755
 dir  path=usr/share/man/man1 owner=root group=bin mode=755
 file path=usr/share/man/man1/xpra.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra_launcher.1 owner=root group=bin mode=644
-dir  path=usr/share/wimpiggy owner=root group=root mode=755
-file path=usr/share/wimpiggy/wimpiggy.README owner=root group=bin mode=644
 dir  path=usr/share/xpra owner=root group=root mode=755
 file path=usr/share/xpra/COPYING owner=root group=bin mode=644
 file path=usr/share/xpra/xpra.README owner=root group=bin mode=644

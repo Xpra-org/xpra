@@ -38,7 +38,7 @@ XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 
 import gtk.gdk
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 class XError(Exception):
@@ -56,7 +56,7 @@ def XErrorToName(xerror):
     if type(xerror)!=int:
         return xerror
     try:
-        from wimpiggy.lowlevel import const, get_error_text     #@UnresolvedImport
+        from xpra.x11.lowlevel import const, get_error_text     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
             for name,code in const.items():

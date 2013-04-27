@@ -55,7 +55,7 @@ class ChildReaper(object):
         self._quit = quit_cb
         self._children_pids = children_pids
         self._dead_pids = set()
-        from wimpiggy.log import Logger
+        from xpra.log import Logger
         self._logger = Logger()
 
     def check(self):
@@ -87,14 +87,14 @@ class ChildReaper(object):
 
 def save_pid(pid):
     import gtk
-    import wimpiggy.prop
-    wimpiggy.prop.prop_set(gtk.gdk.get_default_root_window(),
+    from xpra.x11.gtk_x11.prop import prop_set
+    prop_set(gtk.gdk.get_default_root_window(),
                            "_XPRA_SERVER_PID", "u32", pid)
 
 def get_pid():
     import gtk
-    import wimpiggy.prop
-    return wimpiggy.prop.prop_get(gtk.gdk.get_default_root_window(),
+    from xpra.x11.gtk_x11.prop import prop_get
+    return prop_get(gtk.gdk.get_default_root_window(),
                                   "_XPRA_SERVER_PID", "u32")
 
 def sh_quotemeta(s):
@@ -302,7 +302,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     scriptfile.write(xpra_runner_shell_script(xpra_file, starting_dir, opts.socket_dir))
     scriptfile.close()
 
-    from wimpiggy.log import Logger
+    from xpra.log import Logger
     log = Logger()
 
     # Initialize the sockets before the display,
@@ -465,11 +465,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         app = ShadowServer(sockets, opts)
     else:
         #check for an existing window manager:
-        from wimpiggy.wm import wm_check
+        from xpra.x11.gtk_x11.wm import wm_check
         if not wm_check(display):
             return 1
         try:
-            from wimpiggy.lowlevel import displayHasXComposite     #@UnresolvedImport
+            from xpra.x11.lowlevel import displayHasXComposite     #@UnresolvedImport
             # This import is delayed because the module depends on gtk:
             from xpra.x11.server import XpraServer
         except ImportError, e:

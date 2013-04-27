@@ -26,7 +26,6 @@ Package: xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,libwebp2
-        ,python-wimpiggy (=${binary:Version})
         ,python-gtk2
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
@@ -82,32 +81,5 @@ Description: tool to detach/reattach running X programs
 # Unlike VNC, these applications are "rootless".  They appear as individual
 # windows inside your window manager rather than being contained within a single
 # window.
-# .
-# This package provides debugging symbols
-
-Package: python-wimpiggy
-Section: python
-Architecture: any
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-gtk2
-Provides: wimpiggy
-Conflicts: wimpiggy
-Description: library for writing window managers, using GTK+
- A helper library for writing window managers.
- .
- As the author says, wimpiggy is "a library to make writing fancypants,
- EWMH-compliant, compositing window managers just as easy as writing an app in
- PyGTK+."
-
-#Package: python-wimpiggy-dbg
-#Section: debug
-#Priority: extra
-#Architecture: any
-#Depends: python-wimpiggy (= ${binary:Version}), ${misc:Depends}
-#Description: python-wimpiggy -- debugging symbols
-# A helper library for writing window managers.
-# .
-# As the author says, wimpiggy is "a library to make writing fancypants,
-# EWMH-compliant, compositing window managers just as easy as writing an app in
-# PyGTK+."
 # .
 # This package provides debugging symbols

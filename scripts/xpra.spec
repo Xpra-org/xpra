@@ -726,8 +726,8 @@ cd xpra-all-%{version}
 
 #we should pass arguments to setup.py but rpm macros make this too difficult
 #so we delete after installation (ugly but this works)
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/win32
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/darwin
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/win32
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/platform/darwin
 
 %if 0%{?opengl}
 #included by default
@@ -739,7 +739,7 @@ rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
 # remove anything relying on dynamic libraries (not suitable for a generic RPM)
 # unless they're statically linked and enabled (static_vpx / static_x264):
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/gdk/gdk_atoms.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/wimpiggy/bindings.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/lowlevel/bindings.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/wait_for_x_server.so
 rm -rf ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/xor/cyxor.so
@@ -781,12 +781,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_bindir}/xpra*
 %{python_sitelib}/xpra
-%{python_sitelib}/wimpiggy
 %if %{include_egg}
 %{python_sitelib}/xpra_all-*.egg-info
 %endif
 /usr/share/xpra
-/usr/share/wimpiggy
 /usr/share/man/man1/xpra*
 /usr/share/applications/xpra_launcher.desktop
 /usr/share/icons/xpra.png

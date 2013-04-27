@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 cursor_names = {}
-from wimpiggy.gobject_compat import import_gdk, is_gtk3
+from xpra.gobject_compat import import_gdk, is_gtk3
 gdk = import_gdk()
 #we could also directly lookup the attribute name
 #on the gtk.gdk class, but this could cause problems

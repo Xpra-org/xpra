@@ -8,16 +8,16 @@
 
 import gtk.gdk
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
-from wimpiggy.keys import grok_modifier_map
+from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
-from wimpiggy.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
+from xpra.x11.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
 
 import os
 XPRA_KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")!="0"

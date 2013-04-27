@@ -8,7 +8,7 @@ import gtk
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 BUS_NAME="org.freedesktop.Notifications"

@@ -7,7 +7,7 @@
 import sys
 import os
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"

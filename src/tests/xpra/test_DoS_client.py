@@ -6,7 +6,7 @@
 
 import sys
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from wimpiggy.util import AdHocStruct

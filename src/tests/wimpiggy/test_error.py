@@ -6,7 +6,7 @@
 #@PydevCodeAnalysisIgnore
 
 from wimpiggy.test import *
-from wimpiggy.error import trap, XError
+from xpra.x11.gtk_x11.error import trap, XError
 # Need a way to generate X errors...
 import wimpiggy.lowlevel
 

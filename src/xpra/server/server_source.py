@@ -18,7 +18,7 @@ except:
 from collections import deque
 from threading import Event
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 try:
@@ -632,7 +632,7 @@ class ServerSource(object):
             cache["override-redirect"] = window.is_OR()
             cache["tray"] = window.is_tray()
             try:
-                from wimpiggy.lowlevel import get_xwindow       #@UnresolvedImport
+                from xpra.x11.lowlevel import get_xwindow       #@UnresolvedImport
                 cache["xid"] = hex(get_xwindow(window.client_window))
             except:
                 pass

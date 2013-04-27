@@ -5,7 +5,7 @@
 
 import subprocess
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 def safe_exec(cmd, stdin=None, log_errors=True):

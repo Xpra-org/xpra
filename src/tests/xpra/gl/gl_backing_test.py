@@ -9,7 +9,7 @@ pygtk.require('2.0')
 import gtk
 import gobject
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from tests.xpra.fake_client import FakeClient

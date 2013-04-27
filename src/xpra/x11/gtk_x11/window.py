@@ -22,7 +22,7 @@ import cairo
 import math
 import os
 from socket import gethostname
-from wimpiggy.lowlevel import (
+from xpra.x11.lowlevel import (
                const,                                       #@UnresolvedImport
                add_event_receiver,                          #@UnresolvedImport
                remove_event_receiver,                       #@UnresolvedImport
@@ -41,17 +41,17 @@ from wimpiggy.lowlevel import (
                substructureRedirect,                        #@UnresolvedImport
                get_xwindow,                                 #@UnresolvedImport
                )
-from wimpiggy.lowlevel.send_wm import (
+from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
-from wimpiggy.util import (AutoPropGObjectMixin,
+from xpra.util import (AutoPropGObjectMixin,
                            one_arg_signal, no_arg_signal,
                            non_none_list_accumulator)
-from wimpiggy.error import trap, XError
-from wimpiggy.prop import prop_get, prop_set
-from wimpiggy.composite import CompositeHelper
+from xpra.x11.gtk_x11.error import trap, XError
+from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.gtk_x11.composite import CompositeHelper
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 if gtk.pygtk_version<(2,17):
@@ -246,7 +246,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
-        "wimpiggy-configure-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
         }
 
     def __init__(self, client_window):
@@ -308,7 +308,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def setup(self):
         h = self._composite.connect("contents-changed", self._forward_contents_changed)
-        self._composite.connect("wimpiggy-configure-event", self.composite_configure_event)
+        self._composite.connect("xpra-configure-event", self.composite_configure_event)
         self._damage_forward_handle = h
 
     def prop_get(self, key, ptype, ignore_errors=False, raise_xerrors=False):
@@ -334,15 +334,15 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self):
         self._composite.acknowledge_changes()
 
-    def do_wimpiggy_configure_event(self, event):
+    def do_xpra_configure_event(self, event):
         self._geometry = (event.x, event.y, event.width, event.height,
                           event.border_width)
-        log.info("WindowModel.do_wimpiggy_configure_event(%s)", event)
+        log.info("WindowModel.do_xpra_configure_event(%s)", event)
 
     def composite_configure_event(self, composite_window, event):
         log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
         if self._composite:
-            self._composite.do_wimpiggy_configure_event(event)
+            self._composite.do_xpra_configure_event(event)
 
     def do_get_property_geometry(self, pspec):
         (x, y, w, h, b) = self._geometry
@@ -399,7 +399,7 @@ gobject.type_register(BaseWindowModel)
 # superclass sooner or later.  When someone cares, presumably.
 class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = {
-        "wimpiggy-unmap-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
         }
 
     def __init__(self, client_window):
@@ -435,7 +435,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
 
-    def do_wimpiggy_unmap_event(self, event):
+    def do_xpra_unmap_event(self, event):
         self.unmanage()
 
     def get_dimensions(self):
@@ -567,10 +567,10 @@ class WindowModel(BaseWindowModel):
 
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
-        "wimpiggy-property-notify-event": one_arg_signal,
-        "wimpiggy-unmap-event": one_arg_signal,
-        "wimpiggy-destroy-event": one_arg_signal,
-        "wimpiggy-xkb-event": one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
+        "xpra-unmap-event": one_arg_signal,
+        "xpra-destroy-event": one_arg_signal,
+        "xpra-xkb-event": one_arg_signal,
         }
 
     def __init__(self, parking_window, client_window):
@@ -660,10 +660,10 @@ class WindowModel(BaseWindowModel):
     def get_dimensions(self):
         return  self.get_property("actual-size")
 
-    def do_wimpiggy_xkb_event(self, event):
-        log("WindowModel.do_wimpiggy_xkb_event(%r)" % event)
+    def do_xpra_xkb_event(self, event):
+        log("WindowModel.do_xpra_xkb_event(%r)" % event)
         if event.type!="bell":
-            log.error("WindowModel.do_wimpiggy_xkb_event(%r) unknown event type: %s" % (event, event.type))
+            log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
         event.window_model = self
         self.emit("bell", event)
@@ -678,7 +678,7 @@ class WindowModel(BaseWindowModel):
         # request.
         pass
 
-    def do_wimpiggy_unmap_event(self, event):
+    def do_xpra_unmap_event(self, event):
         if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
@@ -698,7 +698,7 @@ class WindowModel(BaseWindowModel):
         if event.send_event or event.serial != self.startup_unmap_serial:
             self.unmanage()
 
-    def do_wimpiggy_destroy_event(self, event):
+    def do_xpra_destroy_event(self, event):
         if event.delivered_to is self.corral_window or self.corral_window is None:
             return
         assert event.window is self.client_window
@@ -765,8 +765,8 @@ class WindowModel(BaseWindowModel):
             self.corral_window.show_unraised()
         trap.swallow_synced(sendConfigureNotify, self.client_window)
 
-    def do_wimpiggy_configure_event(self, event):
-        WindowModel.do_wimpiggy_configure_event(self, event)
+    def do_xpra_configure_event(self, event):
+        WindowModel.do_xpra_configure_event(self, event)
         self.notify("geometry")
 
     def maybe_recalculate_geometry_for(self, maybe_owner):
@@ -906,7 +906,7 @@ class WindowModel(BaseWindowModel):
     # Property reading
     ################################
 
-    def do_wimpiggy_property_notify_event(self, event):
+    def do_xpra_property_notify_event(self, event):
         if event.delivered_to is self.corral_window:
             return
         assert event.window is self.client_window

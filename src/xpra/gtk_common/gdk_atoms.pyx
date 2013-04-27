@@ -12,8 +12,8 @@ import gobject
 import gtk
 import gtk.gdk
 
-from wimpiggy.log import Logger
-log = Logger("wimpiggy.lowlevel")
+from xpra.log import Logger
+log = Logger()
 
 ###################################
 # Headers, python magic

@@ -17,11 +17,12 @@ import gobject
 import gtk
 import gtk.gdk
 
-from wimpiggy.util import dump_exc, AdHocStruct, gtk_main_quit_really
-from wimpiggy.error import trap, XError
+from xpra.util import dump_exc, AdHocStruct
+from xpra.gtk_common.quit import gtk_main_quit_really
+from xpra.x11.gtk_x11.error import trap, XError
 
-from wimpiggy.log import Logger
-log = Logger("wimpiggy.lowlevel")
+from xpra.log import Logger
+log = Logger("xpra.x11.lowlevel")
 
 XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
 XPRA_X11_LOG = XPRA_X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0"
@@ -1980,7 +1981,7 @@ def configureAndNotify(pywindow, x, y, width, height, fields=None):
 #       PropertyNotify
 #       Unmap
 #       Destroy
-# Our hooks in any case use the "wimpiggy-route-events-to" GObject user data
+# Our hooks in any case use the "xpra-route-events-to" GObject user data
 # field of the gtk.gdk.Window's involved.  For the SubstructureRedirect
 # events, we use this field of either the window that is making the request,
 # or, if its field is unset, to the window that actually has
@@ -1989,7 +1990,7 @@ def configureAndNotify(pywindow, x, y, width, height, fields=None):
 #
 # So basically, to use this code:
 #   -- Import this module to install the global event filters
-#   -- Call win.set_data("wimpiggy-route-events-to", obj) on random windows.
+#   -- Call win.set_data("xpra-route-events-to", obj) on random windows.
 #   -- Call addXSelectInput or its convenience wrappers, substructureRedirect
 #      and selectFocusChange.
 #   -- Receive interesting signals on 'obj'.
@@ -2042,7 +2043,7 @@ def selectFocusChange(pywindow):
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
 
-_ev_receiver_key = "wimpiggy-route-events-to"
+_ev_receiver_key = "xpra-route-events-to"
 def add_event_receiver(window, receiver, max_receivers=3):
     receivers = window.get_data(_ev_receiver_key)
     if receivers is None:
@@ -2088,19 +2089,19 @@ def init_x11_events():
     _x_event_signals = {
         MapRequest          : (None, "child-map-request-event"),
         ConfigureRequest    : (None, "child-configure-request-event"),
-        FocusIn             : ("wimpiggy-focus-in-event", None),
-        FocusOut            : ("wimpiggy-focus-out-event", None),
-        ClientMessage       : ("wimpiggy-client-message-event", None),
-        MapNotify           : ("wimpiggy-map-event", "wimpiggy-child-map-event"),
-        UnmapNotify         : ("wimpiggy-unmap-event", "wimpiggy-child-unmap-event"),
-        DestroyNotify       : ("wimpiggy-destroy-event", None),
-        ConfigureNotify     : ("wimpiggy-configure-event", None),
-        ReparentNotify      : ("wimpiggy-reparent-event", None),
-        PropertyNotify      : ("wimpiggy-property-notify-event", None),
-        KeyPress            : ("wimpiggy-key-press-event", None),
-        CursorNotify        : ("wimpiggy-cursor-event", None),
-        XKBNotify           : ("wimpiggy-xkb-event", None),
-        "XDamageNotify"     : ("wimpiggy-damage-event", None),
+        FocusIn             : ("xpra-focus-in-event", None),
+        FocusOut            : ("xpra-focus-out-event", None),
+        ClientMessage       : ("xpra-client-message-event", None),
+        MapNotify           : ("xpra-map-event", "xpra-child-map-event"),
+        UnmapNotify         : ("xpra-unmap-event", "xpra-child-unmap-event"),
+        DestroyNotify       : ("xpra-destroy-event", None),
+        ConfigureNotify     : ("xpra-configure-event", None),
+        ReparentNotify      : ("xpra-reparent-event", None),
+        PropertyNotify      : ("xpra-property-notify-event", None),
+        KeyPress            : ("xpra-key-press-event", None),
+        CursorNotify        : ("xpra-cursor-event", None),
+        XKBNotify           : ("xpra-xkb-event", None),
+        "XDamageNotify"     : ("xpra-damage-event", None),
         }
     event_type_names = {
         KeyPress            : "KeyPress",

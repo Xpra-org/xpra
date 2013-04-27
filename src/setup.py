@@ -19,12 +19,9 @@ import subprocess, sys, traceback
 import os.path
 import stat
 
-import wimpiggy
-import xpra
-assert wimpiggy.__version__ == xpra.__version__
-
 print(" ".join(sys.argv))
 
+import xpra
 from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED, XPRA_SHADOW_SUPPORTED
 #*******************************************************************************
 #NOTE: these variables are defined here to make it easier
@@ -171,17 +168,11 @@ setup_options["url"] = "http://xpra.org/"
 setup_options["download_url"] = "http://xpra.org/src/"
 setup_options["description"] = "Xpra: 'screen for X' utility"
 
-wimpiggy_desc = "A library for writing window managers, using GTK+"
 xpra_desc = "'screen for X' -- a tool to detach/reattach running X programs"
-setup_options["long_description"] = """This package contains two sub-projects:
-  wimpiggy:
-    %s
-  xpra:
-    %s""" % (wimpiggy_desc, xpra_desc)
-
+setup_options["long_description"] = xpra_desc
 data_files = []
 setup_options["data_files"] = data_files
-packages = ["wimpiggy",
+packages = [
           "xpra", "xpra.scripts", "xpra.platform", "xpra.keyboard",
           "xpra.gtk_common", "xpra.net", "xpra.codecs", "xpra.codecs.xor",
           "xpra.server.stats",
@@ -191,6 +182,12 @@ py2exe_excludes = []       #only used on win32
 ext_modules = []
 cmdclass = {}
 
+
+def remove_packages(*pkgs):
+    global packages
+    for x in pkgs:
+        if x in packages:
+            packages.remove(x)
 
 
 #*******************************************************************************
@@ -360,10 +357,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     CLEAN_FILES = ["xpra/x11/wait_for_x_server.c",
                    "xpra/codecs/vpx/codec.c",
                    "xpra/codecs/x264/codec.c",
-                   "xpra/rencode/rencode.c",
+                   "xpra/net/rencode/rencode.c",
                    "etc/xpra/xpra.conf",
-                   "wimpiggy/lowlevel/constants.pxi",
-                   "wimpiggy/lowlevel/bindings.c"]
+                   "xpra/x11/lowlevel/constants.pxi",
+                   "xpra/x11/lowlevel/bindings.c"]
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
@@ -599,7 +596,7 @@ if sys.platform.startswith("win"):
                                 }
     data_files += [
                    ('', ['COPYING']),
-                   ('', ['xpra.README']),
+                   ('', ['README']),
                    ('', ['win32/website.url']),
                    ('', ['etc/xpra/client-only/xpra.conf']),
                    ('icons', glob.glob('win32\\*.ico')),
@@ -628,8 +625,7 @@ else:
     man_pages = ["man/xpra.1", "man/xpra_launcher.1"]
     data_files += [
                     ("share/man/man1", man_pages),
-                    ("share/xpra", ["xpra.README", "COPYING"]),
-                    ("share/wimpiggy", ["wimpiggy.README"]),
+                    ("share/xpra", ["README", "COPYING"]),
                     ("share/xpra/icons", glob.glob("icons/*")),
                     ("share/applications", ["xpra_launcher.desktop"]),
                     ("share/icons", ["xpra.png"])
@@ -644,7 +640,7 @@ else:
     else:
         packages.append("xpra.platform.xposix")
         #always include the wrapper in case we need it later:
-        #(we remove it during the 'install' below step if it isn't actually needed)
+        #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")
 
     #gentoo does weird things, calls --no-compile with build *and* install
@@ -682,18 +678,17 @@ if server_ENABLED:
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    for x in ("xpra", "xpra.scripts", "xpra.server"):
-        if x in packages:
-            packages.remove(x)
+    remove_packages("xpra", "xpra.scripts", "xpra.server")
     py2exe_excludes.append("xpra.server")
     py2exe_excludes.append("xpra.server.stats")
 
 
 
 if x11_ENABLED:
-    packages.append("wimpiggy.lowlevel")
     packages.append("xpra.x11")
-    base = os.path.join(os.getcwd(), "wimpiggy", "lowlevel", "constants")
+    packages.append("xpra.x11.gtk_x11")
+    packages.append("xpra.x11.lowlevel")
+    base = os.path.join(os.getcwd(), "xpra", "x11", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
     if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
@@ -738,8 +733,8 @@ if x11_ENABLED:
         print("(re)generating %s" % pxi_file)
         make_constants_pxi(constants_file, pxi_file)
     BINDINGS_LIBS = PYGTK_PACKAGES + X11_PACKAGES
-    cython_add(Extension("wimpiggy.lowlevel.bindings",
-                ["wimpiggy/lowlevel/bindings.pyx"],
+    cython_add(Extension("xpra.x11.lowlevel.bindings",
+                ["xpra/x11/lowlevel/bindings.pyx"],
                 **pkgconfig(*BINDINGS_LIBS)
                 ))
     cython_add(Extension("xpra.x11.wait_for_x_server",
@@ -749,16 +744,8 @@ if x11_ENABLED:
 elif sys.platform.startswith("win"):
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    for x in ("xpra", "xpra.scripts"):
-        if x in packages:
-            packages.remove(x)
-    packages.remove("xpra.platform")
-    py2exe_excludes += ["xpra.x11",
-                        "wimpiggy.lowlevel",  "wimpiggy.tray", "wimpiggy.selection",
-                        "wimpiggy.prop", "wimpiggy.composite",
-                        "wimpiggy.keys", "wimpiggy.wm",
-                        "wimpiggy.window", "wimpiggy.world_window",
-                        "wimpiggy.xsettings_prop"]
+    remove_packages("xpra", "xpra.scripts")
+    py2exe_excludes.append("xpra.x11")
 
 
 
@@ -768,19 +755,19 @@ if client_ENABLED:
     packages.append("xpra.client.gtk2")
     packages.append("xpra.client.gtk3")
 elif sys.platform.startswith("win"):
+    remove_packages("xpra.client")
     py2exe_excludes.append("xpra.client")
 
 
 
 if clipboard_ENABLED:
-    packages.append("wimpiggy.gdk")
     packages.append("xpra.clipboard")
-    cython_add(Extension("wimpiggy.gdk.gdk_atoms",
-                ["wimpiggy/gdk/gdk_atoms.pyx"],
+    cython_add(Extension("xpra.gtk_common.gdk_atoms",
+                ["xpra/gtk_common/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
 elif sys.platform.startswith("win"):
-    py2exe_excludes.append("wimpiggy.gdk")
+    py2exe_excludes.append("xpra.x11.gdk")
     py2exe_excludes.append("xpra.clipboard")
 
 

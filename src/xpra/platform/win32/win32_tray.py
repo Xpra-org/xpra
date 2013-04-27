@@ -7,7 +7,7 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon

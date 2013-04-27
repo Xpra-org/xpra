@@ -8,7 +8,7 @@
 
 # but it works on win32, for whatever that's worth.
 
-from wimpiggy.gobject_compat import import_gobject
+from xpra.gobject_compat import import_gobject
 gobject = import_gobject()
 gobject.threads_init()
 import sys
@@ -36,7 +36,7 @@ except:
     from Queue import Queue     #@Reimport
 from threading import Lock
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.daemon_thread import make_daemon_thread

@@ -24,7 +24,7 @@ def get_machine_id():
 
 
 def do_init():
-    from wimpiggy.util import gtk_main_quit_really
+    from xpra.gtk_common.quit import gtk_main_quit_really
     def quit_launcher(*args):
         gtk_main_quit_really()
     from gui import get_OSXApplication, setup_menubar, osx_ready

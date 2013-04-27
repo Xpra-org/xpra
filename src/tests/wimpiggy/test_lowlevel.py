@@ -8,7 +8,7 @@
 from wimpiggy.test import *
 import wimpiggy.lowlevel as l
 import gtk
-from wimpiggy.error import trap, XError
+from xpra.x11.gtk_x11.error import trap, XError
 
 class TestLowlevel(TestWithSession):
     def root(self, disp=None):

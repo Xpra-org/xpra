@@ -19,14 +19,14 @@ try:
 except:
 	import thread					#@Reimport
 
-from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject
+from xpra.gobject_compat import import_gtk, import_gdk, import_gobject
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
 import pango
 
 
-from wimpiggy.util import gtk_main_quit_on_fatal_exceptions_enable
+from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
@@ -35,7 +35,7 @@ from xpra.client.gtk_base.about import about
 from xpra.scripts.main import connect_to, SIGNAMES
 from xpra.platform import get_icon, init as platform_init
 from xpra.client.client import XpraClient
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

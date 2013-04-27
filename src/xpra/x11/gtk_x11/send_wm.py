@@ -4,8 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.lowlevel.bindings import sendClientMessage, const    #@UnresolvedImport
-from wimpiggy.log import Logger
+from xpra.x11.lowlevel.bindings import sendClientMessage, const    #@UnresolvedImport
+from xpra.log import Logger
 log = Logger()
 
 def int32(x):

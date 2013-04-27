@@ -14,8 +14,8 @@ assert python_platform
 def warn(msg):
     sys.stderr.write(msg+"\n")
 
-from wimpiggy.util import AdHocStruct
-from wimpiggy.gobject_compat import import_gobject, is_gtk3
+from xpra.util import AdHocStruct
+from xpra.gobject_compat import import_gobject, is_gtk3
 gobject = import_gobject()
 try:
     import Image

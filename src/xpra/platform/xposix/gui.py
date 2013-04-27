@@ -9,7 +9,7 @@
 
 import sys
 import os
-from wimpiggy.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 _display = gdk.get_display()
@@ -19,7 +19,7 @@ from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.gtk_common.gtk_util import set_tooltip_text
 from xpra.platform import get_icon_dir
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 
@@ -249,7 +249,7 @@ class ClientExtras(ClientExtrasBase):
     def setup_x11_bell(self):
         self.has_x11_bell = False
         try:
-            from wimpiggy.lowlevel.bindings import device_bell
+            from xpra.x11.lowlevel.bindings import device_bell
             self.has_x11_bell = device_bell is not None
         except ImportError, e:
             log.error("cannot import x11 bell bindings (will use gtk fallback) : %s", e)
@@ -292,8 +292,8 @@ class ClientExtras(ClientExtrasBase):
     def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if self.has_x11_bell:
             try:
-                from wimpiggy.error import trap, XError
-                from wimpiggy.lowlevel.bindings import device_bell      #@UnresolvedImport
+                from xpra.x11.gtk_x11.error import trap, XError
+                from xpra.x11.lowlevel.bindings import device_bell      #@UnresolvedImport
                 trap.call_synced(device_bell, window, device, bell_class, bell_id, percent, bell_name)
                 return
             except XError, e:
@@ -371,7 +371,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_keymap_modifiers(self):
         try:
-            from wimpiggy.lowlevel import get_modifier_mappings         #@UnresolvedImport
+            from xpra.x11.lowlevel import get_modifier_mappings         #@UnresolvedImport
             mod_mappings = get_modifier_mappings()
             if mod_mappings:
                 #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
@@ -409,7 +409,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_x11_keymap(self):
         try:
-            from wimpiggy.lowlevel import get_keycode_mappings      #@UnresolvedImport
+            from xpra.x11.lowlevel import get_keycode_mappings      #@UnresolvedImport
             return get_keycode_mappings(gtk.gdk.get_default_root_window())
         except Exception, e:
             log.error("failed to use raw x11 keymap: %s", e)
@@ -427,7 +427,7 @@ class ClientExtras(ClientExtrasBase):
 
     def get_keyboard_repeat(self):
         try:
-            from wimpiggy.lowlevel import get_key_repeat_rate   #@UnresolvedImport
+            from xpra.x11.lowlevel import get_key_repeat_rate   #@UnresolvedImport
             delay, interval = get_key_repeat_rate()
             return delay,interval
         except Exception, e:
@@ -436,7 +436,7 @@ class ClientExtras(ClientExtrasBase):
 
     def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
         try:
-            from wimpiggy.keys import grok_modifier_map
+            from xpra.x11.gtk_x11.keys import grok_modifier_map
             return grok_modifier_map(display_source, xkbmap_mod_meanings)
         except ImportError:
             return ClientExtrasBase.grok_modifier_map(self, display_source, xkbmap_mod_meanings)

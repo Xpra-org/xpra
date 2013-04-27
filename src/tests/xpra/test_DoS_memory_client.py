@@ -6,7 +6,7 @@
 
 import gobject
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.client_base import XpraClientBase, GLibXpraClient

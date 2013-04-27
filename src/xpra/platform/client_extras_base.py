@@ -7,7 +7,7 @@
 
 import sys
 import os.path
-from wimpiggy.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+from xpra.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
@@ -18,7 +18,7 @@ from xpra.keyboard.mask import mask_to_names
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import set_tooltip_text
 from xpra.client.gtk_base.about import about, close_about
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 #compression is fine with default value (3), no need to clutter the UI

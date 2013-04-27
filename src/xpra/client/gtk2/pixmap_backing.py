@@ -7,7 +7,7 @@
 from gtk import gdk
 import cairo
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking

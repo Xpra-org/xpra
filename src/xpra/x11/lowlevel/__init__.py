@@ -5,4 +5,4 @@
 # later version. See the file COPYING for details.
 
 #We must import "*" or things will fail in mysterious ways!
-from wimpiggy.lowlevel.bindings import *
+from xpra.x11.lowlevel.bindings import *

@@ -6,17 +6,17 @@
 # later version. See the file COPYING for details.
 
 import os
-from wimpiggy.gobject_compat import import_gobject, import_gtk, import_gdk
+from xpra.gobject_compat import import_gobject, import_gtk, import_gdk
 gobject = import_gobject()
 gtk = import_gtk()
 gdk = import_gdk()
 
-from wimpiggy.util import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable)
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
+from xpra.gtk_common.quit import (gtk_main_quit_really,
+                           gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.gtk_common.gtk_util import add_gtk_version_info

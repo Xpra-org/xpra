@@ -6,15 +6,15 @@
 
 import gtk
 import gobject
-import wimpiggy.window
-from wimpiggy.error import trap
-from wimpiggy.lowlevel import const                         #@UnresolvedImport
-from wimpiggy.lowlevel.send_wm import send_wm_take_focus    #@UnresolvedImport
-from wimpiggy.prop import prop_set
-from wimpiggy.log import Logger
+import xpra.x11.gtk_x11.window
+from xpra.x11.gtk_x11.error import trap
+from xpra.x11.lowlevel import const                         #@UnresolvedImport
+from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
+from xpra.x11.gtk_x11.prop import prop_set
+from xpra.log import Logger
 log = Logger()
 
-# This file defines Wimpiggy's top-level widget.  It is a magic window that
+# This file defines Xpra's top-level widget.  It is a magic window that
 # always and exactly covers the entire screen (possibly crossing multiple
 # screens, in the Xinerama case); it also mediates between the GTK+ and X
 # focus models.
@@ -164,7 +164,7 @@ class WorldWindow(gtk.Window):
     def reset_x_focus(self):
         focus = self.get_focus()
         log("widget with focus: %s", focus)
-        if isinstance(focus, wimpiggy.window.WindowView):
+        if isinstance(focus, xpra.x11.gtk_x11.window.WindowView):
             # FIXME: ugly:
             focus.model.give_client_focus()
             trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "window", focus.model.get_property("client-window"))

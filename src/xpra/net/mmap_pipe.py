@@ -5,7 +5,7 @@
 
 import os
 import ctypes
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 debug = log.debug
 warn = log.warn

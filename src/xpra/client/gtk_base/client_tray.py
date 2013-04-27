@@ -3,10 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from wimpiggy.gobject_compat import import_gtk, is_gtk3
+from xpra.gobject_compat import import_gtk, is_gtk3
 gtk = import_gtk()
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.client.window_backing import make_new_backing, PixmapBacking

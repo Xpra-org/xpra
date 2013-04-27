@@ -5,7 +5,6 @@ echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
 PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages`
 rm -fr "${PYTHON_PACKAGES}/xpra"
-rm -fr "${PYTHON_PACKAGES}/wimpiggy"
 rm -fr image/* dist/*
 
 echo

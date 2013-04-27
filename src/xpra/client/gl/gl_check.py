@@ -7,7 +7,7 @@
 
 import sys, os
 import logging
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]

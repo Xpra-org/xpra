@@ -10,7 +10,7 @@ import gobject
 
 from math import sqrt
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 from xpra.server.stats.maths import time_weighted_average, queue_inspect, logp

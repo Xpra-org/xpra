@@ -5,5 +5,3 @@
 # later version. See the file COPYING for details.
 
 __version__ = "0.10.0"
-import wimpiggy
-assert wimpiggy.__version__ == __version__

@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 
 #pygtk3 vs pygtk2 (sigh)
-from wimpiggy.gobject_compat import import_gobject
+from xpra.gobject_compat import import_gobject
 gobject = import_gobject()
 import os
 
 from xpra.client.window_backing_base import DRAW_DEBUG, fire_paint_callbacks
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 

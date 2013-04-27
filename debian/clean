@@ -1,7 +1,7 @@
 xpra/x11/xpra.wait_for_x_server.c
-wimpiggy/lowlevel/wimpiggy.lowlevel.bindings.c
-wimpiggy/lowlevel/constants.pxi
-wimpiggy/gdk/gdk_atoms.c
+xpra/x11/lowlevel/bindings.c
+xpra/x11/lowlevel/constants.pxi
+xpra/gtk_x11/gdk_atoms.c
 xpra/codecs/x264/codec.c
 xpra/codecs/vpx/codec.c
 xpra/codecs/xor/cyxor.c

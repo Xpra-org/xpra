@@ -25,7 +25,7 @@ from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            init as platform_init)
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
-from wimpiggy.gobject_compat import import_gobject
+from xpra.gobject_compat import import_gobject
 
 SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
@@ -527,7 +527,7 @@ def connect_or_fail(display_desc):
 def ssh_connect_failed(message):
     #by the time ssh fails, we may have entered the gtk main loop
     #(and more than once thanks to the clipboard code..)
-    from wimpiggy.util import gtk_main_quit_really
+    from xpra.gtk_common.quit import gtk_main_quit_really
     gtk_main_quit_really()
 
 def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
@@ -675,7 +675,7 @@ def do_run_client(app, target, mode):
             sys.stdout.flush()
     app.connect("received-gibberish", got_gibberish_msg)
     def handshake_complete(*args):
-        from wimpiggy.log import Logger
+        from xpra.log import Logger
         log = Logger()
         if mode=="detach":
             log.info("handshake-complete: detaching")

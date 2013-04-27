@@ -249,9 +249,13 @@
 #define _USE_MATH_DEFINES
 #endif
 #include <math.h>
-#define __PYX_HAVE__xpra__x11__wait_for_x_server
-#define __PYX_HAVE_API__xpra__x11__wait_for_x_server
-#include "X11/Xlib.h"
+#define __PYX_HAVE__xpra__gtk_common__gdk_atoms
+#define __PYX_HAVE_API__xpra__gtk_common__gdk_atoms
+#include "pygobject.h"
+#include "pygtk/pygtk.h"
+#include "gdk/gdk.h"
+#include "gtk-2.0/gdk/gdktypes.h"
+#include "pygtk-2.0/pygtk/pygtk.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -328,7 +332,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "wait_for_x_server.pyx",
+  "gdk_atoms.pyx",
 };
 
 /*--- Type declarations ---*/
@@ -388,21 +392,9 @@ static const char *__pyx_f[] = {
 
 static PyObject *__Pyx_GetName(PyObject *dict, PyObject *name); /*proto*/
 
-static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
-    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found); /*proto*/
-
-static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name); /*proto*/
-
-static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[], \
-    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args, \
-    const char* function_name); /*proto*/
-
-static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb); /*proto*/
-static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb); /*proto*/
-
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause); /*proto*/
-
 static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level); /*proto*/
+
+static CYTHON_INLINE void __Pyx_RaiseImportError(PyObject *name);
 
 static CYTHON_INLINE unsigned char __Pyx_PyInt_AsUnsignedChar(PyObject *);
 
@@ -458,313 +450,416 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t); /*proto*/
 
 
-/* Module declarations from 'xpra.x11.wait_for_x_server' */
-#define __Pyx_MODULE_NAME "xpra.x11.wait_for_x_server"
-int __pyx_module_is_main_xpra__x11__wait_for_x_server = 0;
+/* Module declarations from 'xpra.gtk_common.gdk_atoms' */
+#define __Pyx_MODULE_NAME "xpra.gtk_common.gdk_atoms"
+int __pyx_module_is_main_xpra__gtk_common__gdk_atoms = 0;
 
-/* Implementation of 'xpra.x11.wait_for_x_server' */
-static PyObject *__pyx_builtin_RuntimeError;
-static PyObject *__pyx_pf_4xpra_3x11_17wait_for_x_server_wait_for_x_server(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_display_name, PyObject *__pyx_v_timeout); /* proto */
-static char __pyx_k_1[] = "could not connect to X server on display '%s' after %s seconds";
-static char __pyx_k_4[] = "/home/antoine/projects/Xpra/trunk/src/xpra/x11/wait_for_x_server.pyx";
-static char __pyx_k_5[] = "xpra.x11.wait_for_x_server";
-static char __pyx_k__d[] = "d";
-static char __pyx_k__time[] = "time";
-static char __pyx_k__sleep[] = "sleep";
-static char __pyx_k__start[] = "start";
-static char __pyx_k__timeout[] = "timeout";
+/* Implementation of 'xpra.gtk_common.gdk_atoms' */
+static PyObject *__pyx_builtin_xrange;
+static PyObject *__pyx_pf_4xpra_10gtk_common_9gdk_atoms_gdk_atom_objects_from_gdk_atom_array(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_atom_string); /* proto */
+static PyObject *__pyx_pf_4xpra_10gtk_common_9gdk_atoms_2gdk_atom_array_from_gdk_atom_objects(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_gdk_atom_objects); /* proto */
+static char __pyx_k_1[] = "gtk.gdk";
+static char __pyx_k_2[] = "xpra.log";
+static char __pyx_k_5[] = "gdk_atom_objects_from_gdk_atom_array";
+static char __pyx_k_6[] = "/home/antoine/projects/Xpra/trunk/src/xpra/gtk_common/gdk_atoms.pyx";
+static char __pyx_k_7[] = "xpra.gtk_common.gdk_atoms";
+static char __pyx_k_10[] = "gdk_atom_array_from_gdk_atom_objects";
+static char __pyx_k__i[] = "i";
+static char __pyx_k__gtk[] = "gtk";
+static char __pyx_k__log[] = "log";
+static char __pyx_k__array[] = "array";
+static char __pyx_k__range[] = "range";
+static char __pyx_k__Logger[] = "Logger";
+static char __pyx_k__xrange[] = "xrange";
+static char __pyx_k__gobject[] = "gobject";
+static char __pyx_k__objects[] = "objects";
 static char __pyx_k____main__[] = "__main__";
 static char __pyx_k____test__[] = "__test__";
-static char __pyx_k__first_time[] = "first_time";
-static char __pyx_k__RuntimeError[] = "RuntimeError";
-static char __pyx_k__display_name[] = "display_name";
-static char __pyx_k__wait_for_x_server[] = "wait_for_x_server";
-static PyObject *__pyx_kp_s_1;
-static PyObject *__pyx_kp_s_4;
+static char __pyx_k__gdk_atom[] = "gdk_atom";
+static char __pyx_k__array_len[] = "array_len";
+static char __pyx_k__atom_array[] = "atom_array";
+static char __pyx_k__c_gdk_atom[] = "c_gdk_atom";
+static char __pyx_k__atom_object[] = "atom_object";
+static char __pyx_k__atom_string[] = "atom_string";
+static char __pyx_k__gdk_atom_value[] = "gdk_atom_value";
+static char __pyx_k__array_len_bytes[] = "array_len_bytes";
+static char __pyx_k__gdk_atom_objects[] = "gdk_atom_objects";
+static PyObject *__pyx_n_s_1;
+static PyObject *__pyx_n_s_10;
+static PyObject *__pyx_n_s_2;
 static PyObject *__pyx_n_s_5;
-static PyObject *__pyx_n_s__RuntimeError;
+static PyObject *__pyx_kp_s_6;
+static PyObject *__pyx_n_s_7;
+static PyObject *__pyx_n_s__Logger;
 static PyObject *__pyx_n_s____main__;
 static PyObject *__pyx_n_s____test__;
-static PyObject *__pyx_n_s__d;
-static PyObject *__pyx_n_s__display_name;
-static PyObject *__pyx_n_s__first_time;
-static PyObject *__pyx_n_s__sleep;
-static PyObject *__pyx_n_s__start;
-static PyObject *__pyx_n_s__time;
-static PyObject *__pyx_n_s__timeout;
-static PyObject *__pyx_n_s__wait_for_x_server;
-static PyObject *__pyx_k_tuple_2;
-static PyObject *__pyx_k_codeobj_3;
+static PyObject *__pyx_n_s__array;
+static PyObject *__pyx_n_s__array_len;
+static PyObject *__pyx_n_s__array_len_bytes;
+static PyObject *__pyx_n_s__atom_array;
+static PyObject *__pyx_n_s__atom_object;
+static PyObject *__pyx_n_s__atom_string;
+static PyObject *__pyx_n_s__c_gdk_atom;
+static PyObject *__pyx_n_s__gdk_atom;
+static PyObject *__pyx_n_s__gdk_atom_objects;
+static PyObject *__pyx_n_s__gdk_atom_value;
+static PyObject *__pyx_n_s__gobject;
+static PyObject *__pyx_n_s__gtk;
+static PyObject *__pyx_n_s__i;
+static PyObject *__pyx_n_s__log;
+static PyObject *__pyx_n_s__objects;
+static PyObject *__pyx_n_s__range;
+static PyObject *__pyx_n_s__xrange;
+static PyObject *__pyx_k_tuple_3;
+static PyObject *__pyx_k_tuple_8;
+static PyObject *__pyx_k_codeobj_4;
+static PyObject *__pyx_k_codeobj_9;
 
 /* Python wrapper */
-static PyObject *__pyx_pw_4xpra_3x11_17wait_for_x_server_1wait_for_x_server(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_4xpra_3x11_17wait_for_x_server_1wait_for_x_server = {__Pyx_NAMESTR("wait_for_x_server"), (PyCFunction)__pyx_pw_4xpra_3x11_17wait_for_x_server_1wait_for_x_server, METH_VARARGS|METH_KEYWORDS, __Pyx_DOCSTR(0)};
-static PyObject *__pyx_pw_4xpra_3x11_17wait_for_x_server_1wait_for_x_server(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  PyObject *__pyx_v_display_name = 0;
-  PyObject *__pyx_v_timeout = 0;
+static PyObject *__pyx_pw_4xpra_10gtk_common_9gdk_atoms_1gdk_atom_objects_from_gdk_atom_array(PyObject *__pyx_self, PyObject *__pyx_v_atom_string); /*proto*/
+static PyMethodDef __pyx_mdef_4xpra_10gtk_common_9gdk_atoms_1gdk_atom_objects_from_gdk_atom_array = {__Pyx_NAMESTR("gdk_atom_objects_from_gdk_atom_array"), (PyCFunction)__pyx_pw_4xpra_10gtk_common_9gdk_atoms_1gdk_atom_objects_from_gdk_atom_array, METH_O, __Pyx_DOCSTR(0)};
+static PyObject *__pyx_pw_4xpra_10gtk_common_9gdk_atoms_1gdk_atom_objects_from_gdk_atom_array(PyObject *__pyx_self, PyObject *__pyx_v_atom_string) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("wait_for_x_server (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s__display_name,&__pyx_n_s__timeout,0};
-    PyObject* values[2] = {0,0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s__display_name)) != 0)) kw_args--;
-        else goto __pyx_L5_argtuple_error;
-        case  1:
-        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s__timeout)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("wait_for_x_server", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "wait_for_x_server") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-      }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-    }
-    __pyx_v_display_name = values[0];
-    __pyx_v_timeout = values[1];
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("wait_for_x_server", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("xpra.x11.wait_for_x_server.wait_for_x_server", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_4xpra_3x11_17wait_for_x_server_wait_for_x_server(__pyx_self, __pyx_v_display_name, __pyx_v_timeout);
+  __Pyx_RefNannySetupContext("gdk_atom_objects_from_gdk_atom_array (wrapper)", 0);
+  __pyx_r = __pyx_pf_4xpra_10gtk_common_9gdk_atoms_gdk_atom_objects_from_gdk_atom_array(__pyx_self, ((PyObject *)__pyx_v_atom_string));
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "xpra/x11/wait_for_x_server.pyx":21
+/* "xpra/gtk_common/gdk_atoms.pyx":58
  * 
- * # timeout is in seconds
- * def wait_for_x_server(display_name, timeout):             # <<<<<<<<<<<<<<
- *     cdef Display * d
- *     start = time.time()
+ * 
+ * def gdk_atom_objects_from_gdk_atom_array(atom_string):             # <<<<<<<<<<<<<<
+ *     # gdk_property_get auto-converts ATOM and ATOM_PAIR properties from a
+ *     # string of marshalled X atoms to an array of GDK atoms. GDK atoms and X
  */
 
-static PyObject *__pyx_pf_4xpra_3x11_17wait_for_x_server_wait_for_x_server(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_display_name, PyObject *__pyx_v_timeout) {
-  Display *__pyx_v_d;
-  PyObject *__pyx_v_start = NULL;
-  int __pyx_v_first_time;
+static PyObject *__pyx_pf_4xpra_10gtk_common_9gdk_atoms_gdk_atom_objects_from_gdk_atom_array(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_atom_string) {
+  GdkAtom *__pyx_v_array;
+  Py_ssize_t __pyx_v_array_len_bytes;
+  CYTHON_UNUSED long __pyx_v_gdk_atom_value;
+  size_t __pyx_v_array_len;
+  PyObject *__pyx_v_objects = NULL;
+  size_t __pyx_v_i;
+  PyObject *__pyx_v_gdk_atom = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  int __pyx_t_3;
-  int __pyx_t_4;
+  int __pyx_t_1;
+  size_t __pyx_t_2;
+  PyObject *__pyx_t_3 = NULL;
+  size_t __pyx_t_4;
   int __pyx_t_5;
-  PyObject *__pyx_t_6 = NULL;
-  char *__pyx_t_7;
+  int __pyx_t_6;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("wait_for_x_server", 0);
+  __Pyx_RefNannySetupContext("gdk_atom_objects_from_gdk_atom_array", 0);
 
-  /* "xpra/x11/wait_for_x_server.pyx":23
- * def wait_for_x_server(display_name, timeout):
- *     cdef Display * d
- *     start = time.time()             # <<<<<<<<<<<<<<
- *     first_time = True
- *     while first_time or (time.time() - start) < timeout:
+  /* "xpra/gtk_common/gdk_atoms.pyx":66
+ *     # be able to take an array of GDK atom objects (integers) and figure out
+ *     # what they mean.
+ *     cdef GdkAtom * array = <GdkAtom*> NULL             # <<<<<<<<<<<<<<
+ *     cdef Py_ssize_t array_len_bytes = 0
+ *     cdef long gdk_atom_value = 0
  */
-  __pyx_t_1 = __Pyx_GetName(__pyx_m, __pyx_n_s__time); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyObject_GetAttr(__pyx_t_1, __pyx_n_s__time); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyObject_Call(__pyx_t_2, ((PyObject *)__pyx_empty_tuple), NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_v_start = __pyx_t_1;
-  __pyx_t_1 = 0;
+  __pyx_v_array = ((GdkAtom *)NULL);
 
-  /* "xpra/x11/wait_for_x_server.pyx":24
- *     cdef Display * d
- *     start = time.time()
- *     first_time = True             # <<<<<<<<<<<<<<
- *     while first_time or (time.time() - start) < timeout:
- *         if not first_time:
+  /* "xpra/gtk_common/gdk_atoms.pyx":67
+ *     # what they mean.
+ *     cdef GdkAtom * array = <GdkAtom*> NULL
+ *     cdef Py_ssize_t array_len_bytes = 0             # <<<<<<<<<<<<<<
+ *     cdef long gdk_atom_value = 0
+ *     # const_void_pp is a typedef for "const void**"
  */
-  __pyx_v_first_time = 1;
+  __pyx_v_array_len_bytes = 0;
 
-  /* "xpra/x11/wait_for_x_server.pyx":25
- *     start = time.time()
- *     first_time = True
- *     while first_time or (time.time() - start) < timeout:             # <<<<<<<<<<<<<<
- *         if not first_time:
- *             time.sleep(0.2)
+  /* "xpra/gtk_common/gdk_atoms.pyx":68
+ *     cdef GdkAtom * array = <GdkAtom*> NULL
+ *     cdef Py_ssize_t array_len_bytes = 0
+ *     cdef long gdk_atom_value = 0             # <<<<<<<<<<<<<<
+ *     # const_void_pp is a typedef for "const void**"
+ *     # (only defined to avoid a compile warning on the following line)
  */
-  while (1) {
-    __pyx_t_3 = __pyx_v_first_time;
-    if (!__pyx_t_3) {
-      __pyx_t_1 = __Pyx_GetName(__pyx_m, __pyx_n_s__time); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_2 = PyObject_GetAttr(__pyx_t_1, __pyx_n_s__time); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = PyObject_Call(__pyx_t_2, ((PyObject *)__pyx_empty_tuple), NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_t_2 = PyNumber_Subtract(__pyx_t_1, __pyx_v_start); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = PyObject_RichCompare(__pyx_t_2, __pyx_v_timeout, Py_LT); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_5 = __pyx_t_4;
-    } else {
-      __pyx_t_5 = __pyx_t_3;
-    }
-    if (!__pyx_t_5) break;
+  __pyx_v_gdk_atom_value = 0;
 
-    /* "xpra/x11/wait_for_x_server.pyx":26
- *     first_time = True
- *     while first_time or (time.time() - start) < timeout:
- *         if not first_time:             # <<<<<<<<<<<<<<
- *             time.sleep(0.2)
- *         first_time = False
+  /* "xpra/gtk_common/gdk_atoms.pyx":71
+ *     # const_void_pp is a typedef for "const void**"
+ *     # (only defined to avoid a compile warning on the following line)
+ *     PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)             # <<<<<<<<<<<<<<
+ *     array_len = array_len_bytes / sizeof(GdkAtom)
+ *     objects = []
  */
-    __pyx_t_5 = (!__pyx_v_first_time);
+  __pyx_t_1 = PyObject_AsReadBuffer(__pyx_v_atom_string, ((const void**)(&__pyx_v_array)), (&__pyx_v_array_len_bytes)); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":72
+ *     # (only defined to avoid a compile warning on the following line)
+ *     PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)
+ *     array_len = array_len_bytes / sizeof(GdkAtom)             # <<<<<<<<<<<<<<
+ *     objects = []
+ *     for i in xrange(array_len):
+ */
+  __pyx_t_2 = (sizeof(GdkAtom));
+  if (unlikely(__pyx_t_2 == 0)) {
+    PyErr_Format(PyExc_ZeroDivisionError, "integer division or modulo by zero");
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_v_array_len = (__pyx_v_array_len_bytes / __pyx_t_2);
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":73
+ *     PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)
+ *     array_len = array_len_bytes / sizeof(GdkAtom)
+ *     objects = []             # <<<<<<<<<<<<<<
+ *     for i in xrange(array_len):
+ *         if array[i]==GDK_NONE:
+ */
+  __pyx_t_3 = PyList_New(0); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_v_objects = ((PyObject*)__pyx_t_3);
+  __pyx_t_3 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":74
+ *     array_len = array_len_bytes / sizeof(GdkAtom)
+ *     objects = []
+ *     for i in xrange(array_len):             # <<<<<<<<<<<<<<
+ *         if array[i]==GDK_NONE:
+ *             continue
+ */
+  __pyx_t_2 = __pyx_v_array_len;
+  for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_2; __pyx_t_4+=1) {
+    __pyx_v_i = __pyx_t_4;
+
+    /* "xpra/gtk_common/gdk_atoms.pyx":75
+ *     objects = []
+ *     for i in xrange(array_len):
+ *         if array[i]==GDK_NONE:             # <<<<<<<<<<<<<<
+ *             continue
+ *         gdk_atom = PyGdkAtom_New(array[i])
+ */
+    __pyx_t_5 = ((__pyx_v_array[__pyx_v_i]) == GDK_NONE);
     if (__pyx_t_5) {
 
-      /* "xpra/x11/wait_for_x_server.pyx":27
- *     while first_time or (time.time() - start) < timeout:
- *         if not first_time:
- *             time.sleep(0.2)             # <<<<<<<<<<<<<<
- *         first_time = False
- *         d = XOpenDisplay(PyString_AsString(display_name))
+      /* "xpra/gtk_common/gdk_atoms.pyx":76
+ *     for i in xrange(array_len):
+ *         if array[i]==GDK_NONE:
+ *             continue             # <<<<<<<<<<<<<<
+ *         gdk_atom = PyGdkAtom_New(array[i])
+ *         objects.append(gdk_atom)
  */
-      __pyx_t_1 = __Pyx_GetName(__pyx_m, __pyx_n_s__time); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_2 = PyObject_GetAttr(__pyx_t_1, __pyx_n_s__sleep); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = PyFloat_FromDouble(0.2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_6 = PyTuple_New(1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_6);
-      PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_1);
-      __Pyx_GIVEREF(__pyx_t_1);
-      __pyx_t_1 = 0;
-      __pyx_t_1 = PyObject_Call(__pyx_t_2, ((PyObject *)__pyx_t_6), NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __Pyx_DECREF(((PyObject *)__pyx_t_6)); __pyx_t_6 = 0;
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      goto __pyx_L3_continue;
       goto __pyx_L5;
     }
     __pyx_L5:;
 
-    /* "xpra/x11/wait_for_x_server.pyx":28
- *         if not first_time:
- *             time.sleep(0.2)
- *         first_time = False             # <<<<<<<<<<<<<<
- *         d = XOpenDisplay(PyString_AsString(display_name))
- *         if d is not NULL:
+    /* "xpra/gtk_common/gdk_atoms.pyx":77
+ *         if array[i]==GDK_NONE:
+ *             continue
+ *         gdk_atom = PyGdkAtom_New(array[i])             # <<<<<<<<<<<<<<
+ *         objects.append(gdk_atom)
+ *     return objects
  */
-    __pyx_v_first_time = 0;
+    __pyx_t_3 = PyGdkAtom_New((__pyx_v_array[__pyx_v_i])); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_XDECREF(__pyx_v_gdk_atom);
+    __pyx_v_gdk_atom = __pyx_t_3;
+    __pyx_t_3 = 0;
 
-    /* "xpra/x11/wait_for_x_server.pyx":29
- *             time.sleep(0.2)
- *         first_time = False
- *         d = XOpenDisplay(PyString_AsString(display_name))             # <<<<<<<<<<<<<<
- *         if d is not NULL:
- *             XCloseDisplay(d)
+    /* "xpra/gtk_common/gdk_atoms.pyx":78
+ *             continue
+ *         gdk_atom = PyGdkAtom_New(array[i])
+ *         objects.append(gdk_atom)             # <<<<<<<<<<<<<<
+ *     return objects
+ * 
  */
-    __pyx_t_7 = PyString_AsString(__pyx_v_display_name); if (unlikely(__pyx_t_7 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __pyx_v_d = XOpenDisplay(__pyx_t_7);
-
-    /* "xpra/x11/wait_for_x_server.pyx":30
- *         first_time = False
- *         d = XOpenDisplay(PyString_AsString(display_name))
- *         if d is not NULL:             # <<<<<<<<<<<<<<
- *             XCloseDisplay(d)
- *             return
- */
-    __pyx_t_5 = (__pyx_v_d != NULL);
-    if (__pyx_t_5) {
-
-      /* "xpra/x11/wait_for_x_server.pyx":31
- *         d = XOpenDisplay(PyString_AsString(display_name))
- *         if d is not NULL:
- *             XCloseDisplay(d)             # <<<<<<<<<<<<<<
- *             return
- *     raise RuntimeError("could not connect to X server on display '%s' after %s seconds" % (display_name, timeout))
- */
-      XCloseDisplay(__pyx_v_d);
-
-      /* "xpra/x11/wait_for_x_server.pyx":32
- *         if d is not NULL:
- *             XCloseDisplay(d)
- *             return             # <<<<<<<<<<<<<<
- *     raise RuntimeError("could not connect to X server on display '%s' after %s seconds" % (display_name, timeout))
- */
-      __Pyx_XDECREF(__pyx_r);
-      __pyx_r = Py_None; __Pyx_INCREF(Py_None);
-      goto __pyx_L0;
-      goto __pyx_L6;
-    }
-    __pyx_L6:;
+    __pyx_t_6 = PyList_Append(__pyx_v_objects, __pyx_v_gdk_atom); if (unlikely(__pyx_t_6 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_L3_continue:;
   }
 
-  /* "xpra/x11/wait_for_x_server.pyx":33
- *             XCloseDisplay(d)
- *             return
- *     raise RuntimeError("could not connect to X server on display '%s' after %s seconds" % (display_name, timeout))             # <<<<<<<<<<<<<<
+  /* "xpra/gtk_common/gdk_atoms.pyx":79
+ *         gdk_atom = PyGdkAtom_New(array[i])
+ *         objects.append(gdk_atom)
+ *     return objects             # <<<<<<<<<<<<<<
+ * 
+ * def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):
  */
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(((PyObject *)__pyx_v_objects));
+  __pyx_r = ((PyObject *)__pyx_v_objects);
+  goto __pyx_L0;
+
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("xpra.gtk_common.gdk_atoms.gdk_atom_objects_from_gdk_atom_array", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_objects);
+  __Pyx_XDECREF(__pyx_v_gdk_atom);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4xpra_10gtk_common_9gdk_atoms_3gdk_atom_array_from_gdk_atom_objects(PyObject *__pyx_self, PyObject *__pyx_v_gdk_atom_objects); /*proto*/
+static PyMethodDef __pyx_mdef_4xpra_10gtk_common_9gdk_atoms_3gdk_atom_array_from_gdk_atom_objects = {__Pyx_NAMESTR("gdk_atom_array_from_gdk_atom_objects"), (PyCFunction)__pyx_pw_4xpra_10gtk_common_9gdk_atoms_3gdk_atom_array_from_gdk_atom_objects, METH_O, __Pyx_DOCSTR(0)};
+static PyObject *__pyx_pw_4xpra_10gtk_common_9gdk_atoms_3gdk_atom_array_from_gdk_atom_objects(PyObject *__pyx_self, PyObject *__pyx_v_gdk_atom_objects) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("gdk_atom_array_from_gdk_atom_objects (wrapper)", 0);
+  __pyx_r = __pyx_pf_4xpra_10gtk_common_9gdk_atoms_2gdk_atom_array_from_gdk_atom_objects(__pyx_self, ((PyObject *)__pyx_v_gdk_atom_objects));
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "xpra/gtk_common/gdk_atoms.pyx":81
+ *     return objects
+ * 
+ * def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):             # <<<<<<<<<<<<<<
+ *     cdef GdkAtom c_gdk_atom
+ *     cdef unsigned long gdk_atom_value
+ */
+
+static PyObject *__pyx_pf_4xpra_10gtk_common_9gdk_atoms_2gdk_atom_array_from_gdk_atom_objects(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_gdk_atom_objects) {
+  GdkAtom __pyx_v_c_gdk_atom;
+  unsigned long __pyx_v_gdk_atom_value;
+  PyObject *__pyx_v_atom_array = NULL;
+  PyObject *__pyx_v_atom_object = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  Py_ssize_t __pyx_t_2;
+  PyObject *(*__pyx_t_3)(PyObject *);
+  PyObject *__pyx_t_4 = NULL;
+  int __pyx_t_5;
+  int __pyx_t_6;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("gdk_atom_array_from_gdk_atom_objects", 0);
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":84
+ *     cdef GdkAtom c_gdk_atom
+ *     cdef unsigned long gdk_atom_value
+ *     atom_array = []             # <<<<<<<<<<<<<<
+ *     for atom_object in gdk_atom_objects:
+ *         c_gdk_atom = PyGdkAtom_Get(atom_object)
+ */
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_INCREF(__pyx_v_display_name);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_v_display_name);
-  __Pyx_GIVEREF(__pyx_v_display_name);
-  __Pyx_INCREF(__pyx_v_timeout);
-  PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_timeout);
-  __Pyx_GIVEREF(__pyx_v_timeout);
-  __pyx_t_6 = PyNumber_Remainder(((PyObject *)__pyx_kp_s_1), ((PyObject *)__pyx_t_1)); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(((PyObject *)__pyx_t_6));
-  __Pyx_DECREF(((PyObject *)__pyx_t_1)); __pyx_t_1 = 0;
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, ((PyObject *)__pyx_t_6));
-  __Pyx_GIVEREF(((PyObject *)__pyx_t_6));
-  __pyx_t_6 = 0;
-  __pyx_t_6 = PyObject_Call(__pyx_builtin_RuntimeError, ((PyObject *)__pyx_t_1), NULL); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(((PyObject *)__pyx_t_1)); __pyx_t_1 = 0;
-  __Pyx_Raise(__pyx_t_6, 0, 0, 0);
-  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_atom_array = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":85
+ *     cdef unsigned long gdk_atom_value
+ *     atom_array = []
+ *     for atom_object in gdk_atom_objects:             # <<<<<<<<<<<<<<
+ *         c_gdk_atom = PyGdkAtom_Get(atom_object)
+ *         if c_gdk_atom!=GDK_NONE:
+ */
+  if (PyList_CheckExact(__pyx_v_gdk_atom_objects) || PyTuple_CheckExact(__pyx_v_gdk_atom_objects)) {
+    __pyx_t_1 = __pyx_v_gdk_atom_objects; __Pyx_INCREF(__pyx_t_1); __pyx_t_2 = 0;
+    __pyx_t_3 = NULL;
+  } else {
+    __pyx_t_2 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_gdk_atom_objects); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_3 = Py_TYPE(__pyx_t_1)->tp_iternext;
+  }
+  for (;;) {
+    if (!__pyx_t_3 && PyList_CheckExact(__pyx_t_1)) {
+      if (__pyx_t_2 >= PyList_GET_SIZE(__pyx_t_1)) break;
+      #if CYTHON_COMPILING_IN_CPYTHON
+      __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_4); __pyx_t_2++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      #else
+      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      #endif
+    } else if (!__pyx_t_3 && PyTuple_CheckExact(__pyx_t_1)) {
+      if (__pyx_t_2 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+      #if CYTHON_COMPILING_IN_CPYTHON
+      __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_4); __pyx_t_2++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      #else
+      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      #endif
+    } else {
+      __pyx_t_4 = __pyx_t_3(__pyx_t_1);
+      if (unlikely(!__pyx_t_4)) {
+        if (PyErr_Occurred()) {
+          if (likely(PyErr_ExceptionMatches(PyExc_StopIteration))) PyErr_Clear();
+          else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_4);
+    }
+    __Pyx_XDECREF(__pyx_v_atom_object);
+    __pyx_v_atom_object = __pyx_t_4;
+    __pyx_t_4 = 0;
+
+    /* "xpra/gtk_common/gdk_atoms.pyx":86
+ *     atom_array = []
+ *     for atom_object in gdk_atom_objects:
+ *         c_gdk_atom = PyGdkAtom_Get(atom_object)             # <<<<<<<<<<<<<<
+ *         if c_gdk_atom!=GDK_NONE:
+ *             gdk_atom_value = <unsigned long> c_gdk_atom
+ */
+    __pyx_v_c_gdk_atom = PyGdkAtom_Get(__pyx_v_atom_object);
+
+    /* "xpra/gtk_common/gdk_atoms.pyx":87
+ *     for atom_object in gdk_atom_objects:
+ *         c_gdk_atom = PyGdkAtom_Get(atom_object)
+ *         if c_gdk_atom!=GDK_NONE:             # <<<<<<<<<<<<<<
+ *             gdk_atom_value = <unsigned long> c_gdk_atom
+ *             atom_array.append(gdk_atom_value)
+ */
+    __pyx_t_5 = (__pyx_v_c_gdk_atom != GDK_NONE);
+    if (__pyx_t_5) {
+
+      /* "xpra/gtk_common/gdk_atoms.pyx":88
+ *         c_gdk_atom = PyGdkAtom_Get(atom_object)
+ *         if c_gdk_atom!=GDK_NONE:
+ *             gdk_atom_value = <unsigned long> c_gdk_atom             # <<<<<<<<<<<<<<
+ *             atom_array.append(gdk_atom_value)
+ *     return atom_array
+ */
+      __pyx_v_gdk_atom_value = ((unsigned long)__pyx_v_c_gdk_atom);
+
+      /* "xpra/gtk_common/gdk_atoms.pyx":89
+ *         if c_gdk_atom!=GDK_NONE:
+ *             gdk_atom_value = <unsigned long> c_gdk_atom
+ *             atom_array.append(gdk_atom_value)             # <<<<<<<<<<<<<<
+ *     return atom_array
+ */
+      __pyx_t_4 = PyLong_FromUnsignedLong(__pyx_v_gdk_atom_value); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_6 = PyList_Append(__pyx_v_atom_array, __pyx_t_4); if (unlikely(__pyx_t_6 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      goto __pyx_L5;
+    }
+    __pyx_L5:;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":90
+ *             gdk_atom_value = <unsigned long> c_gdk_atom
+ *             atom_array.append(gdk_atom_value)
+ *     return atom_array             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(((PyObject *)__pyx_v_atom_array));
+  __pyx_r = ((PyObject *)__pyx_v_atom_array);
+  goto __pyx_L0;
 
   __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("xpra.x11.wait_for_x_server.wait_for_x_server", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_AddTraceback("xpra.gtk_common.gdk_atoms.gdk_atom_array_from_gdk_atom_objects", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_start);
+  __Pyx_XDECREF(__pyx_v_atom_array);
+  __Pyx_XDECREF(__pyx_v_atom_object);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -781,7 +876,7 @@ static struct PyModuleDef __pyx_moduledef = {
   #else
     PyModuleDef_HEAD_INIT,
   #endif
-    __Pyx_NAMESTR("wait_for_x_server"),
+    __Pyx_NAMESTR("gdk_atoms"),
     0, /* m_doc */
     -1, /* m_size */
     __pyx_methods /* m_methods */,
@@ -793,24 +888,40 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_kp_s_1, __pyx_k_1, sizeof(__pyx_k_1), 0, 0, 1, 0},
-  {&__pyx_kp_s_4, __pyx_k_4, sizeof(__pyx_k_4), 0, 0, 1, 0},
+  {&__pyx_n_s_1, __pyx_k_1, sizeof(__pyx_k_1), 0, 0, 1, 1},
+  {&__pyx_n_s_10, __pyx_k_10, sizeof(__pyx_k_10), 0, 0, 1, 1},
+  {&__pyx_n_s_2, __pyx_k_2, sizeof(__pyx_k_2), 0, 0, 1, 1},
   {&__pyx_n_s_5, __pyx_k_5, sizeof(__pyx_k_5), 0, 0, 1, 1},
-  {&__pyx_n_s__RuntimeError, __pyx_k__RuntimeError, sizeof(__pyx_k__RuntimeError), 0, 0, 1, 1},
+  {&__pyx_kp_s_6, __pyx_k_6, sizeof(__pyx_k_6), 0, 0, 1, 0},
+  {&__pyx_n_s_7, __pyx_k_7, sizeof(__pyx_k_7), 0, 0, 1, 1},
+  {&__pyx_n_s__Logger, __pyx_k__Logger, sizeof(__pyx_k__Logger), 0, 0, 1, 1},
   {&__pyx_n_s____main__, __pyx_k____main__, sizeof(__pyx_k____main__), 0, 0, 1, 1},
   {&__pyx_n_s____test__, __pyx_k____test__, sizeof(__pyx_k____test__), 0, 0, 1, 1},
-  {&__pyx_n_s__d, __pyx_k__d, sizeof(__pyx_k__d), 0, 0, 1, 1},
-  {&__pyx_n_s__display_name, __pyx_k__display_name, sizeof(__pyx_k__display_name), 0, 0, 1, 1},
-  {&__pyx_n_s__first_time, __pyx_k__first_time, sizeof(__pyx_k__first_time), 0, 0, 1, 1},
-  {&__pyx_n_s__sleep, __pyx_k__sleep, sizeof(__pyx_k__sleep), 0, 0, 1, 1},
-  {&__pyx_n_s__start, __pyx_k__start, sizeof(__pyx_k__start), 0, 0, 1, 1},
-  {&__pyx_n_s__time, __pyx_k__time, sizeof(__pyx_k__time), 0, 0, 1, 1},
-  {&__pyx_n_s__timeout, __pyx_k__timeout, sizeof(__pyx_k__timeout), 0, 0, 1, 1},
-  {&__pyx_n_s__wait_for_x_server, __pyx_k__wait_for_x_server, sizeof(__pyx_k__wait_for_x_server), 0, 0, 1, 1},
+  {&__pyx_n_s__array, __pyx_k__array, sizeof(__pyx_k__array), 0, 0, 1, 1},
+  {&__pyx_n_s__array_len, __pyx_k__array_len, sizeof(__pyx_k__array_len), 0, 0, 1, 1},
+  {&__pyx_n_s__array_len_bytes, __pyx_k__array_len_bytes, sizeof(__pyx_k__array_len_bytes), 0, 0, 1, 1},
+  {&__pyx_n_s__atom_array, __pyx_k__atom_array, sizeof(__pyx_k__atom_array), 0, 0, 1, 1},
+  {&__pyx_n_s__atom_object, __pyx_k__atom_object, sizeof(__pyx_k__atom_object), 0, 0, 1, 1},
+  {&__pyx_n_s__atom_string, __pyx_k__atom_string, sizeof(__pyx_k__atom_string), 0, 0, 1, 1},
+  {&__pyx_n_s__c_gdk_atom, __pyx_k__c_gdk_atom, sizeof(__pyx_k__c_gdk_atom), 0, 0, 1, 1},
+  {&__pyx_n_s__gdk_atom, __pyx_k__gdk_atom, sizeof(__pyx_k__gdk_atom), 0, 0, 1, 1},
+  {&__pyx_n_s__gdk_atom_objects, __pyx_k__gdk_atom_objects, sizeof(__pyx_k__gdk_atom_objects), 0, 0, 1, 1},
+  {&__pyx_n_s__gdk_atom_value, __pyx_k__gdk_atom_value, sizeof(__pyx_k__gdk_atom_value), 0, 0, 1, 1},
+  {&__pyx_n_s__gobject, __pyx_k__gobject, sizeof(__pyx_k__gobject), 0, 0, 1, 1},
+  {&__pyx_n_s__gtk, __pyx_k__gtk, sizeof(__pyx_k__gtk), 0, 0, 1, 1},
+  {&__pyx_n_s__i, __pyx_k__i, sizeof(__pyx_k__i), 0, 0, 1, 1},
+  {&__pyx_n_s__log, __pyx_k__log, sizeof(__pyx_k__log), 0, 0, 1, 1},
+  {&__pyx_n_s__objects, __pyx_k__objects, sizeof(__pyx_k__objects), 0, 0, 1, 1},
+  {&__pyx_n_s__range, __pyx_k__range, sizeof(__pyx_k__range), 0, 0, 1, 1},
+  {&__pyx_n_s__xrange, __pyx_k__xrange, sizeof(__pyx_k__xrange), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_RuntimeError = __Pyx_GetName(__pyx_b, __pyx_n_s__RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  #if PY_MAJOR_VERSION >= 3
+  __pyx_builtin_xrange = __Pyx_GetName(__pyx_b, __pyx_n_s__range); if (!__pyx_builtin_xrange) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  #else
+  __pyx_builtin_xrange = __Pyx_GetName(__pyx_b, __pyx_n_s__xrange); if (!__pyx_builtin_xrange) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  #endif
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -820,17 +931,29 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "xpra/x11/wait_for_x_server.pyx":21
+  /* "xpra/gtk_common/gdk_atoms.pyx":58
  * 
- * # timeout is in seconds
- * def wait_for_x_server(display_name, timeout):             # <<<<<<<<<<<<<<
- *     cdef Display * d
- *     start = time.time()
+ * 
+ * def gdk_atom_objects_from_gdk_atom_array(atom_string):             # <<<<<<<<<<<<<<
+ *     # gdk_property_get auto-converts ATOM and ATOM_PAIR properties from a
+ *     # string of marshalled X atoms to an array of GDK atoms. GDK atoms and X
  */
-  __pyx_k_tuple_2 = PyTuple_Pack(5, ((PyObject *)__pyx_n_s__display_name), ((PyObject *)__pyx_n_s__timeout), ((PyObject *)__pyx_n_s__d), ((PyObject *)__pyx_n_s__start), ((PyObject *)__pyx_n_s__first_time)); if (unlikely(!__pyx_k_tuple_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_k_tuple_2);
-  __Pyx_GIVEREF(((PyObject *)__pyx_k_tuple_2));
-  __pyx_k_codeobj_3 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_k_tuple_2, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_4, __pyx_n_s__wait_for_x_server, 21, __pyx_empty_bytes); if (unlikely(!__pyx_k_codeobj_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_k_tuple_3 = PyTuple_Pack(8, ((PyObject *)__pyx_n_s__atom_string), ((PyObject *)__pyx_n_s__array), ((PyObject *)__pyx_n_s__array_len_bytes), ((PyObject *)__pyx_n_s__gdk_atom_value), ((PyObject *)__pyx_n_s__array_len), ((PyObject *)__pyx_n_s__objects), ((PyObject *)__pyx_n_s__i), ((PyObject *)__pyx_n_s__gdk_atom)); if (unlikely(!__pyx_k_tuple_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_k_tuple_3);
+  __Pyx_GIVEREF(((PyObject *)__pyx_k_tuple_3));
+  __pyx_k_codeobj_4 = (PyObject*)__Pyx_PyCode_New(1, 0, 8, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_k_tuple_3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_6, __pyx_n_s_5, 58, __pyx_empty_bytes); if (unlikely(!__pyx_k_codeobj_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":81
+ *     return objects
+ * 
+ * def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):             # <<<<<<<<<<<<<<
+ *     cdef GdkAtom c_gdk_atom
+ *     cdef unsigned long gdk_atom_value
+ */
+  __pyx_k_tuple_8 = PyTuple_Pack(5, ((PyObject *)__pyx_n_s__gdk_atom_objects), ((PyObject *)__pyx_n_s__c_gdk_atom), ((PyObject *)__pyx_n_s__gdk_atom_value), ((PyObject *)__pyx_n_s__atom_array), ((PyObject *)__pyx_n_s__atom_object)); if (unlikely(!__pyx_k_tuple_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_k_tuple_8);
+  __Pyx_GIVEREF(((PyObject *)__pyx_k_tuple_8));
+  __pyx_k_codeobj_9 = (PyObject*)__Pyx_PyCode_New(1, 0, 5, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_k_tuple_8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_6, __pyx_n_s_10, 81, __pyx_empty_bytes); if (unlikely(!__pyx_k_codeobj_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -846,14 +969,15 @@ static int __Pyx_InitGlobals(void) {
 }
 
 #if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC initwait_for_x_server(void); /*proto*/
-PyMODINIT_FUNC initwait_for_x_server(void)
+PyMODINIT_FUNC initgdk_atoms(void); /*proto*/
+PyMODINIT_FUNC initgdk_atoms(void)
 #else
-PyMODINIT_FUNC PyInit_wait_for_x_server(void); /*proto*/
-PyMODINIT_FUNC PyInit_wait_for_x_server(void)
+PyMODINIT_FUNC PyInit_gdk_atoms(void); /*proto*/
+PyMODINIT_FUNC PyInit_gdk_atoms(void)
 #endif
 {
   PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannyDeclarations
   #if CYTHON_REFNANNY
   __Pyx_RefNanny = __Pyx_RefNannyImportAPI("refnanny");
@@ -864,7 +988,7 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
           Py_FatalError("failed to import 'refnanny' module");
   }
   #endif
-  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_wait_for_x_server(void)", 0);
+  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_gdk_atoms(void)", 0);
   if ( __Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -886,7 +1010,7 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
   #endif
   /*--- Module creation code ---*/
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4(__Pyx_NAMESTR("wait_for_x_server"), __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4(__Pyx_NAMESTR("gdk_atoms"), __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -894,8 +1018,8 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "xpra.x11.wait_for_x_server")) {
-      if (unlikely(PyDict_SetItemString(modules, "xpra.x11.wait_for_x_server", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "xpra.gtk_common.gdk_atoms")) {
+      if (unlikely(PyDict_SetItemString(modules, "xpra.gtk_common.gdk_atoms", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -906,7 +1030,7 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
   if (__Pyx_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   /*--- Initialize various global constants etc. ---*/
   if (unlikely(__Pyx_InitGlobals() < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (__pyx_module_is_main_xpra__x11__wait_for_x_server) {
+  if (__pyx_module_is_main_xpra__gtk_common__gdk_atoms) {
     if (__Pyx_SetAttrString(__pyx_m, "__name__", __pyx_n_s____main__) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   /*--- Builtin init code ---*/
@@ -922,34 +1046,128 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
   /*--- Function import code ---*/
   /*--- Execution code ---*/
 
-  /* "xpra/x11/wait_for_x_server.pyx":9
- * # see http://partiwm.org/ticket/34 for details
+  /* "xpra/gtk_common/gdk_atoms.pyx":11
+ * # and win32 does not have all the X11 stuff
  * 
- * import time             # <<<<<<<<<<<<<<
- * 
- * cdef extern from "Python.h":
+ * import gobject             # <<<<<<<<<<<<<<
+ * import gtk
+ * import gtk.gdk
  */
-  __pyx_t_1 = __Pyx_Import(((PyObject *)__pyx_n_s__time), 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_Import(((PyObject *)__pyx_n_s__gobject), 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__time, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__gobject, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "xpra/x11/wait_for_x_server.pyx":21
+  /* "xpra/gtk_common/gdk_atoms.pyx":12
  * 
- * # timeout is in seconds
- * def wait_for_x_server(display_name, timeout):             # <<<<<<<<<<<<<<
- *     cdef Display * d
- *     start = time.time()
+ * import gobject
+ * import gtk             # <<<<<<<<<<<<<<
+ * import gtk.gdk
+ * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_4xpra_3x11_17wait_for_x_server_1wait_for_x_server, NULL, __pyx_n_s_5); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_Import(((PyObject *)__pyx_n_s__gtk), 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__wait_for_x_server, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__gtk, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "xpra/x11/wait_for_x_server.pyx":1
+  /* "xpra/gtk_common/gdk_atoms.pyx":13
+ * import gobject
+ * import gtk
+ * import gtk.gdk             # <<<<<<<<<<<<<<
+ * 
+ * from xpra.log import Logger
+ */
+  __pyx_t_1 = __Pyx_Import(((PyObject *)__pyx_n_s_1), 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 13; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__gtk, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 13; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":15
+ * import gtk.gdk
+ * 
+ * from xpra.log import Logger             # <<<<<<<<<<<<<<
+ * log = Logger()
+ * 
+ */
+  __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_INCREF(((PyObject *)__pyx_n_s__Logger));
+  PyList_SET_ITEM(__pyx_t_1, 0, ((PyObject *)__pyx_n_s__Logger));
+  __Pyx_GIVEREF(((PyObject *)__pyx_n_s__Logger));
+  __pyx_t_2 = __Pyx_Import(((PyObject *)__pyx_n_s_2), ((PyObject *)__pyx_t_1), -1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(((PyObject *)__pyx_t_1)); __pyx_t_1 = 0;
+  __pyx_t_1 = PyObject_GetAttr(__pyx_t_2, __pyx_n_s__Logger);
+  if (__pyx_t_1 == NULL) {
+    if (PyErr_ExceptionMatches(PyExc_AttributeError)) __Pyx_RaiseImportError(__pyx_n_s__Logger);
+    if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__Logger, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":16
+ * 
+ * from xpra.log import Logger
+ * log = Logger()             # <<<<<<<<<<<<<<
+ * 
+ * ###################################
+ */
+  __pyx_t_2 = __Pyx_GetName(__pyx_m, __pyx_n_s__Logger); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyObject_Call(__pyx_t_2, ((PyObject *)__pyx_empty_tuple), NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s__log, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":24
+ * cdef extern from "pygobject.h":
+ *     void init_pygobject()
+ * init_pygobject()             # <<<<<<<<<<<<<<
+ * 
+ * cdef extern from "pygtk/pygtk.h":
+ */
+  init_pygobject();
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":28
+ * cdef extern from "pygtk/pygtk.h":
+ *     void init_pygtk()
+ * init_pygtk()             # <<<<<<<<<<<<<<
+ * # Now all the macros in those header files will work.
+ * 
+ */
+  init_pygtk();
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":58
+ * 
+ * 
+ * def gdk_atom_objects_from_gdk_atom_array(atom_string):             # <<<<<<<<<<<<<<
+ *     # gdk_property_get auto-converts ATOM and ATOM_PAIR properties from a
+ *     # string of marshalled X atoms to an array of GDK atoms. GDK atoms and X
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_4xpra_10gtk_common_9gdk_atoms_1gdk_atom_objects_from_gdk_atom_array, NULL, __pyx_n_s_7); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_5, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":81
+ *     return objects
+ * 
+ * def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):             # <<<<<<<<<<<<<<
+ *     cdef GdkAtom c_gdk_atom
+ *     cdef unsigned long gdk_atom_value
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_4xpra_10gtk_common_9gdk_atoms_3gdk_atom_array_from_gdk_atom_objects, NULL, __pyx_n_s_7); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_10, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "xpra/gtk_common/gdk_atoms.pyx":1
  * # This file is part of Xpra.             # <<<<<<<<<<<<<<
- * # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
- * # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+ * # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
+ * # Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(((PyObject *)__pyx_t_1));
@@ -958,11 +1176,12 @@ PyMODINIT_FUNC PyInit_wait_for_x_server(void)
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
   if (__pyx_m) {
-    __Pyx_AddTraceback("init xpra.x11.wait_for_x_server", __pyx_clineno, __pyx_lineno, __pyx_filename);
+    __Pyx_AddTraceback("init xpra.gtk_common.gdk_atoms", __pyx_clineno, __pyx_lineno, __pyx_filename);
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init xpra.x11.wait_for_x_server");
+    PyErr_SetString(PyExc_ImportError, "init xpra.gtk_common.gdk_atoms");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -1004,326 +1223,6 @@ static PyObject *__Pyx_GetName(PyObject *dict, PyObject *name) {
     }
     return result;
 }
-
-static void __Pyx_RaiseArgtupleInvalid(
-    const char* func_name,
-    int exact,
-    Py_ssize_t num_min,
-    Py_ssize_t num_max,
-    Py_ssize_t num_found)
-{
-    Py_ssize_t num_expected;
-    const char *more_or_less;
-    if (num_found < num_min) {
-        num_expected = num_min;
-        more_or_less = "at least";
-    } else {
-        num_expected = num_max;
-        more_or_less = "at most";
-    }
-    if (exact) {
-        more_or_less = "exactly";
-    }
-    PyErr_Format(PyExc_TypeError,
-                 "%s() takes %s %" CYTHON_FORMAT_SSIZE_T "d positional argument%s (%" CYTHON_FORMAT_SSIZE_T "d given)",
-                 func_name, more_or_less, num_expected,
-                 (num_expected == 1) ? "" : "s", num_found);
-}
-
-static void __Pyx_RaiseDoubleKeywordsError(
-    const char* func_name,
-    PyObject* kw_name)
-{
-    PyErr_Format(PyExc_TypeError,
-        #if PY_MAJOR_VERSION >= 3
-        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
-        #else
-        "%s() got multiple values for keyword argument '%s'", func_name,
-        PyString_AsString(kw_name));
-        #endif
-}
-
-static int __Pyx_ParseOptionalKeywords(
-    PyObject *kwds,
-    PyObject **argnames[],
-    PyObject *kwds2,
-    PyObject *values[],
-    Py_ssize_t num_pos_args,
-    const char* function_name)
-{
-    PyObject *key = 0, *value = 0;
-    Py_ssize_t pos = 0;
-    PyObject*** name;
-    PyObject*** first_kw_arg = argnames + num_pos_args;
-    while (PyDict_Next(kwds, &pos, &key, &value)) {
-        name = first_kw_arg;
-        while (*name && (**name != key)) name++;
-        if (*name) {
-            values[name-argnames] = value;
-            continue;
-        }
-        name = first_kw_arg;
-        #if PY_MAJOR_VERSION < 3
-        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
-            while (*name) {
-                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
-                        && _PyString_Eq(**name, key)) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    if ((**argname == key) || (
-                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
-                             && _PyString_Eq(**argname, key))) {
-                        goto arg_passed_twice;
-                    }
-                    argname++;
-                }
-            }
-        } else
-        #endif
-        if (likely(PyUnicode_Check(key))) {
-            while (*name) {
-                int cmp = (**name == key) ? 0 :
-                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
-                #endif
-                    PyUnicode_Compare(**name, key);
-                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                if (cmp == 0) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    int cmp = (**argname == key) ? 0 :
-                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
-                    #endif
-                        PyUnicode_Compare(**argname, key);
-                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                    if (cmp == 0) goto arg_passed_twice;
-                    argname++;
-                }
-            }
-        } else
-            goto invalid_keyword_type;
-        if (kwds2) {
-            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
-        } else {
-            goto invalid_keyword;
-        }
-    }
-    return 0;
-arg_passed_twice:
-    __Pyx_RaiseDoubleKeywordsError(function_name, key);
-    goto bad;
-invalid_keyword_type:
-    PyErr_Format(PyExc_TypeError,
-        "%s() keywords must be strings", function_name);
-    goto bad;
-invalid_keyword:
-    PyErr_Format(PyExc_TypeError,
-    #if PY_MAJOR_VERSION < 3
-        "%s() got an unexpected keyword argument '%s'",
-        function_name, PyString_AsString(key));
-    #else
-        "%s() got an unexpected keyword argument '%U'",
-        function_name, key);
-    #endif
-bad:
-    return -1;
-}
-
-static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb) {
-#if CYTHON_COMPILING_IN_CPYTHON
-    PyObject *tmp_type, *tmp_value, *tmp_tb;
-    PyThreadState *tstate = PyThreadState_GET();
-    tmp_type = tstate->curexc_type;
-    tmp_value = tstate->curexc_value;
-    tmp_tb = tstate->curexc_traceback;
-    tstate->curexc_type = type;
-    tstate->curexc_value = value;
-    tstate->curexc_traceback = tb;
-    Py_XDECREF(tmp_type);
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(tmp_tb);
-#else
-    PyErr_Restore(type, value, tb);
-#endif
-}
-static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb) {
-#if CYTHON_COMPILING_IN_CPYTHON
-    PyThreadState *tstate = PyThreadState_GET();
-    *type = tstate->curexc_type;
-    *value = tstate->curexc_value;
-    *tb = tstate->curexc_traceback;
-    tstate->curexc_type = 0;
-    tstate->curexc_value = 0;
-    tstate->curexc_traceback = 0;
-#else
-    PyErr_Fetch(type, value, tb);
-#endif
-}
-
-#if PY_MAJOR_VERSION < 3
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
-                        CYTHON_UNUSED PyObject *cause) {
-    Py_XINCREF(type);
-    if (!value || value == Py_None)
-        value = NULL;
-    else
-        Py_INCREF(value);
-    if (!tb || tb == Py_None)
-        tb = NULL;
-    else {
-        Py_INCREF(tb);
-        if (!PyTraceBack_Check(tb)) {
-            PyErr_SetString(PyExc_TypeError,
-                "raise: arg 3 must be a traceback or None");
-            goto raise_error;
-        }
-    }
-    #if PY_VERSION_HEX < 0x02050000
-    if (PyClass_Check(type)) {
-    #else
-    if (PyType_Check(type)) {
-    #endif
-#if CYTHON_COMPILING_IN_PYPY
-        if (!value) {
-            Py_INCREF(Py_None);
-            value = Py_None;
-        }
-#endif
-        PyErr_NormalizeException(&type, &value, &tb);
-    } else {
-        if (value) {
-            PyErr_SetString(PyExc_TypeError,
-                "instance exception may not have a separate value");
-            goto raise_error;
-        }
-        value = type;
-        #if PY_VERSION_HEX < 0x02050000
-            if (PyInstance_Check(type)) {
-                type = (PyObject*) ((PyInstanceObject*)type)->in_class;
-                Py_INCREF(type);
-            }
-            else {
-                type = 0;
-                PyErr_SetString(PyExc_TypeError,
-                    "raise: exception must be an old-style class or instance");
-                goto raise_error;
-            }
-        #else
-            type = (PyObject*) Py_TYPE(type);
-            Py_INCREF(type);
-            if (!PyType_IsSubtype((PyTypeObject *)type, (PyTypeObject *)PyExc_BaseException)) {
-                PyErr_SetString(PyExc_TypeError,
-                    "raise: exception class must be a subclass of BaseException");
-                goto raise_error;
-            }
-        #endif
-    }
-    __Pyx_ErrRestore(type, value, tb);
-    return;
-raise_error:
-    Py_XDECREF(value);
-    Py_XDECREF(type);
-    Py_XDECREF(tb);
-    return;
-}
-#else /* Python 3+ */
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
-    PyObject* owned_instance = NULL;
-    if (tb == Py_None) {
-        tb = 0;
-    } else if (tb && !PyTraceBack_Check(tb)) {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: arg 3 must be a traceback or None");
-        goto bad;
-    }
-    if (value == Py_None)
-        value = 0;
-    if (PyExceptionInstance_Check(type)) {
-        if (value) {
-            PyErr_SetString(PyExc_TypeError,
-                "instance exception may not have a separate value");
-            goto bad;
-        }
-        value = type;
-        type = (PyObject*) Py_TYPE(value);
-    } else if (PyExceptionClass_Check(type)) {
-        PyObject *args;
-        if (!value)
-            args = PyTuple_New(0);
-        else if (PyTuple_Check(value)) {
-            Py_INCREF(value);
-            args = value;
-        }
-        else
-            args = PyTuple_Pack(1, value);
-        if (!args)
-            goto bad;
-        owned_instance = PyEval_CallObject(type, args);
-        Py_DECREF(args);
-        if (!owned_instance)
-            goto bad;
-        value = owned_instance;
-        if (!PyExceptionInstance_Check(value)) {
-            PyErr_Format(PyExc_TypeError,
-                         "calling %R should have returned an instance of "
-                         "BaseException, not %R",
-                         type, Py_TYPE(value));
-            goto bad;
-        }
-    } else {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: exception class must be a subclass of BaseException");
-        goto bad;
-    }
-    if (cause && cause != Py_None) {
-        PyObject *fixed_cause;
-        if (PyExceptionClass_Check(cause)) {
-            fixed_cause = PyObject_CallObject(cause, NULL);
-            if (fixed_cause == NULL)
-                goto bad;
-        }
-        else if (PyExceptionInstance_Check(cause)) {
-            fixed_cause = cause;
-            Py_INCREF(fixed_cause);
-        }
-        else {
-            PyErr_SetString(PyExc_TypeError,
-                            "exception causes must derive from "
-                            "BaseException");
-            goto bad;
-        }
-        PyException_SetCause(value, fixed_cause);
-    }
-    PyErr_SetObject(type, value);
-    if (tb) {
-        PyThreadState *tstate = PyThreadState_GET();
-        PyObject* tmp_tb = tstate->curexc_traceback;
-        if (tb != tmp_tb) {
-            Py_INCREF(tb);
-            tstate->curexc_traceback = tb;
-            Py_XDECREF(tmp_tb);
-        }
-    }
-bad:
-    Py_XDECREF(owned_instance);
-    return;
-}
-#endif
 
 static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
     PyObject *empty_list = 0;
@@ -1405,6 +1304,15 @@ bad:
     Py_XDECREF(empty_list);
     Py_XDECREF(empty_dict);
     return module;
+}
+
+static CYTHON_INLINE void __Pyx_RaiseImportError(PyObject *name) {
+#if PY_MAJOR_VERSION < 3
+    PyErr_Format(PyExc_ImportError, "cannot import name %.230s",
+                 PyString_AsString(name));
+#else
+    PyErr_Format(PyExc_ImportError, "cannot import name %S", name);
+#endif
 }
 
 static CYTHON_INLINE unsigned char __Pyx_PyInt_AsUnsignedChar(PyObject* x) {

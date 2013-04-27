@@ -14,7 +14,7 @@ from gtk import gdk
 from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk2.client_window import ClientWindow
 from xpra.gtk_common.cursor_names import cursor_names
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 
@@ -110,7 +110,7 @@ class XpraClient(GTKXpraClient):
                     gdk_cursor = cursor_names.get(cursor_name.upper())
                     if gdk_cursor is not None:
                         try:
-                            from wimpiggy.error import trap
+                            from xpra.x11.gtk_x11.error import trap
                             log("setting new cursor: %s=%s", cursor_name, gdk_cursor)
                             cursor = trap.call_synced(gdk.Cursor, gdk_cursor)
                         except:

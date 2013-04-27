@@ -17,12 +17,12 @@ import socket
 import thread
 import signal
 
-from wimpiggy.util import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable)
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 import xpra
+from xpra.gtk_common.quit import (gtk_main_quit_really,
+                           gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, get_codecs
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_source import ServerSource

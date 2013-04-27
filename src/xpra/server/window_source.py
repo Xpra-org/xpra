@@ -38,7 +38,7 @@ import time
 from threading import Lock
 from math import sqrt
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"

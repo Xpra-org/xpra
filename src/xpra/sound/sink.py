@@ -10,8 +10,8 @@ import gobject
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
-from wimpiggy.util import one_arg_signal, no_arg_signal
-from wimpiggy.log import Logger
+from xpra.util import one_arg_signal, no_arg_signal
+from xpra.log import Logger
 log = Logger()
 
 SINKS = ["autoaudiosink"]

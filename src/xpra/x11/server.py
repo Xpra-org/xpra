@@ -19,11 +19,11 @@ try:
 except:
     from io import StringIO         #@UnresolvedImport @Reimport
 
-from wimpiggy.wm import Wm
-from wimpiggy.tray import get_tray_window, SystemTray
-from wimpiggy.util import (AdHocStruct,
+from xpra.util import (AdHocStruct,
                            one_arg_signal)
-from wimpiggy.lowlevel import (is_override_redirect,        #@UnresolvedImport
+from xpra.x11.gtk_x11.wm import Wm
+from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
+from xpra.x11.lowlevel import (is_override_redirect,        #@UnresolvedImport
                                is_mapped,                   #@UnresolvedImport
                                get_xwindow,                 #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
@@ -31,10 +31,10 @@ from wimpiggy.lowlevel import (is_override_redirect,        #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                )
-from wimpiggy.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
-from wimpiggy.error import trap
+from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
+from xpra.x11.gtk_x11.error import trap
 
-from wimpiggy.log import Logger
+from xpra.log import Logger
 log = Logger()
 
 import xpra
@@ -154,8 +154,8 @@ gobject.type_register(DesktopManager)
 
 class XpraServer(gobject.GObject, X11ServerBase):
     __gsignals__ = {
-        "wimpiggy-child-map-event": one_arg_signal,
-        "wimpiggy-cursor-event": one_arg_signal,
+        "xpra-child-map-event": one_arg_signal,
+        "xpra-cursor-event": one_arg_signal,
         }
 
     def __init__(self, clobber, sockets, opts):
@@ -285,8 +285,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
 
-    def do_wimpiggy_child_map_event(self, event):
-        log("do_wimpiggy_child_map_event(%s)", event)
+    def do_xpra_child_map_event(self, event):
+        log("do_xpra_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)
 
@@ -369,7 +369,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
 
-    def do_wimpiggy_cursor_event(self, event):
+    def do_xpra_cursor_event(self, event):
         if not self.cursors:
             return
         if self.last_cursor_serial==event.cursor_serial:
