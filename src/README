@@ -1,6 +1,10 @@
 FAQ for xpra
 ============
 
+This is the original README file, please refer to the website:
+http://xpra.org/
+For more up to date information.
+
 What is xpra?
 -------------
 
@@ -22,11 +26,10 @@ the name -- "X Persistent Remote Applications".)
 
 Another difference is that VNC is far more portable -- you can get
 both 'servers' and 'viewers' for essentially any operating system.
-For xpra, you can only run X programs against the 'server', and the
-current codebase also assumes some Unix-isms (e.g., unix domain
-sockets).  The xpra viewer is more portable (in principle) -- the
-existing one should be able to work anywhere that GTK+ does, and it's
-only a few hundred lines of code in any case, so is easy to replace.
+For xpra, you can only run X programs against the 'server'.
+The xpra viewer is more portable, the existing one should be able
+to work anywhere that GTK+ does. And there are Java and Android
+versions too. Writing new clients is relatively easy.
 
 Basically, if you want a remote desktop, use VNC; if you just want to
 run a few programs remotely, use xpra.
@@ -210,47 +213,11 @@ No, actually, I really did mean how *well* does it work?
 Oh.  Sorry.  Heh.
 
 As a first release, some lower priority features aren't included -- it
-doesn't support window icons, transient hints, shaped windows, cursor
-changing, input grabs, clipboard sharing, etc.  These are all
-straightforward to add, however, and in practice xpra seems to already
-be very usable without them.
+doesn't support transient hints, shaped windows, input grabs, etc.
+These are all straightforward to add, however, and in practice xpra
+seems to already be very usable without them.
 
-I don't know yet how well it handles different bandwidth/latency
-networks -- if you run xpra over a modem or something, let me know how
-it goes for you.  In principle, it should be dramatically less
-latency-sensitive than raw X, and might use more or less bandwidth
-depending on task, but in practice I haven't verified this.
+In principle, it should be dramatically less latency-sensitive than raw X,
+and might use more or less bandwidth depending on task.
 
-There are two main issues that are worth special warnings:
-
-First, I'm not sure yet how well the network protocol does at adapting
-to the characteristics of your network -- i.e., scaling down how much
-data it sends to avoid overloading the network and retain
-responsiveness.  In particular, if your TCP stack or your SSH client
-do aggressive buffering, then this may screw up xpar's ability to
-correctly adapt.  If this happens, you might see applications "stall
-out", i.e. stop responding.  If you wait a few seconds, the buffers
-should drain and things should return to normal.  Let me know if you
-see this happening frequently, though; if so we may need to add
-countermeasures.
-
-Secondly, the X keyboard model makes it hard to get keypresses right.
-If you have similar keymaps on both X servers, then you should be
-fine.  More complicated setups will probably not work -- e.g., if
-xpra's Xvfb is running with an English keymap, and you try to type and
-accented character that does not exist in that keymap, then it won't
-work.  This is a hard problem, in general, but improvements should be
-possible.  If you run into this, again, send an email -- extra points
-if it contains a patch :-).
-
-
-What's this 'parti' thing, and what does it have to do with xpra?
------------------------------------------------------------------
-
-Parti is a window manager that I'm working on.  So I wrote a bunch of
-WM code.  Then I realized that with a few tweaks, I could have xpra,
-and that would be awesome.  So I ripped out parti's WM backend code
-into a separate library, and now both parti and xpra use that library
-('wimpiggy').  Xpra is quite functional now, but Parti and wimpiggy
-are still under heavy development, so for now I'm still keeping
-everything together in one tree, to avoid version skew issues.
+Warning: the X keyboard model makes it hard to get keypresses right.
