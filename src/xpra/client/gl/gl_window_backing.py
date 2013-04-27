@@ -44,10 +44,17 @@ from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 try:
     from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
-except:
-    log.warning("GL_KHR_debug OpenGL extension not available. Debug output will be more limited.")
+except ImportError:
+    log.warning("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     GL_DEBUG_OUTPUT = None
-from ctypes import CFUNCTYPE, c_int,  c_char_p
+try:
+    from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
+except ImportError:
+    # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
+    glInitStringMarkerGREMEDY = None
+    glStringMarkerGREMEDY = None
+    pass
+from ctypes import c_char_p
 
 def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
     log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
@@ -108,6 +115,12 @@ class GLPixmapBacking(GTK2WindowBacking):
             self.gl_setup = False
             self.size = w, h
 
+    def gl_marker(self, msg):
+        if not bool(glStringMarkerGREMEDY):
+            return
+        c_string = c_char_p(msg)
+        glStringMarkerGREMEDY(0, c_string)
+        
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
@@ -121,6 +134,14 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
                 glDebugMessageCallback(gl_debug_callback, None)
                 glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
+            # Initialize string_marker GL debugging extension if available
+            if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() == True:
+                log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
+            else:
+                # General case - running without debugger, extension not available 
+                glStringMarkerGREMEDY = None
+            
+            self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))   
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
@@ -176,6 +197,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         # Set GL state for RGB24 painting:
         #    no fragment program
         #    only tex unit #0 active
+        self.gl_marker("Switching to RGB24 paint state")
         glDisable(GL_FRAGMENT_PROGRAM_ARB);
         for texture in (GL_TEXTURE1, GL_TEXTURE2):
             glActiveTexture(texture)
@@ -185,11 +207,13 @@ class GLPixmapBacking(GTK2WindowBacking):
 
     def unset_rgb24_paint_state(self):
         # Reset state to our default
+        self.gl_marker("Switching back to YUV paint state")
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         
     def present_fbo(self):
         drawable = self.gl_init()
         debug("present_fbo() drawable=%s", drawable)
+        self.gl_marker("Presenting FBO on screen")
         if not drawable:
             return
         # Change state to target screen instead of our FBO
@@ -239,6 +263,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         
         self.set_rgb24_paint_state()
 
+        self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d" % (x, y, width, height, rowstride, rowstride/3))
         # Upload data as temporary RGB texture
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
@@ -311,6 +336,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             self.texture_size = (width, height)
             divs = get_subsampling_divs(pixel_format)
             debug("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
+            self.gl_marker("Creating new YUV textures")
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -339,6 +365,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                     #FIXME: maybe we should do something else here?
                     log.error(err)
 
+        self.gl_marker("Updating YUV textures")
         divs = get_subsampling_divs(pixel_format)
         U_width = 0
         U_height = 0
@@ -362,6 +389,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
             #not ready to render yet
             return
+        self.gl_marker("Painting YUV update")
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
