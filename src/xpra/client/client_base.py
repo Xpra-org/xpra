@@ -13,12 +13,11 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
-from xpra.util import n_arg_signal
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
-from xpra.platform import get_machine_id
+from xpra.platform import get_machine_id, GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.os_util import get_hex_uuid
 
 def nn(x):
@@ -34,28 +33,24 @@ EXIT_PASSWORD_FILE_ERROR = 4
 EXIT_INCOMPATIBLE_VERSION = 5
 EXIT_ENCRYPTION = 6
 EXIT_FAILURE = 7
+EXIT_SSH_FAILURE = 8
+EXIT_PACKET_FAILURE = 9
 
 DEFAULT_TIMEOUT = 20*1000
 
 
-class XpraClientBase(gobject.GObject):
+class XpraClientBase(object):
     """ Base class for Xpra clients.
         Provides the glue code for:
         * sending packets via Protocol
         * handling packets received via _process_packet
         For an actual implementation, look at:
+        * GObjectXpraClient
         * xpra.client.gtk2.client
         * xpra.client.gtk3.client
     """
 
-    __gsignals__ = {
-        "handshake-complete": n_arg_signal(0),
-        "first-ui-received" : n_arg_signal(0),
-        "received-gibberish": n_arg_signal(1),
-        }
-
     def __init__(self, opts):
-        gobject.GObject.__init__(self)
         self.exit_code = None
         self.compression_level = opts.compression_level
         self.password = None
@@ -81,6 +76,21 @@ class XpraClientBase(gobject.GObject):
         self.make_uuid()
         self.init_packet_handlers()
         self.init_aliases()
+
+
+    def timeout_add(self, *args):
+        raise Exception("override me!")
+
+    def idle_add(self, *args):
+        raise Exception("override me!")
+
+    def source_remove(self, *args):
+        raise Exception("override me!")
+
+
+    def client_type(self):
+        #overriden in subclasses!
+        return "Python"
 
     def ready(self, conn):
         log.debug("ready(%s)", conn)
@@ -154,7 +164,7 @@ class XpraClientBase(gobject.GObject):
         capabilities["platform.release"] = python_platform.release()
         capabilities["platform.machine"] = python_platform.machine()
         capabilities["platform.processor"] = python_platform.processor()
-        capabilities["client_type"] = "Python/Gobject"
+        capabilities["client_type"] = self.client_type()
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
@@ -339,7 +349,16 @@ class XpraClientBase(gobject.GObject):
     def _process_gibberish(self, packet):
         (_, data) = packet
         log.info("Received uninterpretable nonsense: %s", repr(data))
-        self.emit("received-gibberish", data)
+        if str(data).find("assword")>0:
+            log.warn("Your ssh program appears to be asking for a password."
+                             + GOT_PASSWORD_PROMPT_SUGGESTION)
+            self.quit(EXIT_SSH_FAILURE)
+        elif str(data).find("login")>=0:
+            log.warn("Your ssh program appears to be asking for a username.\n"
+                             "Perhaps try using something like 'ssh:USER@host:display'?")
+            self.quit(EXIT_SSH_FAILURE)
+        else:
+            self.quit(EXIT_PACKET_FAILURE)
 
     def process_packet(self, proto, packet):
         packet_type = packet[0]
@@ -353,21 +372,33 @@ class XpraClientBase(gobject.GObject):
         if not handler:
             log.error("unknown packet type: %s", packet_type)
             return
-        gobject.idle_add(handler, packet)
-
-gobject.type_register(XpraClientBase)
+        self.idle_add(handler, packet)
 
 
-class GobjectXpraClient(XpraClientBase):
+
+class GObjectXpraClient(XpraClientBase, gobject.GObject):
     """
         Utility superclass for glib clients
     """
 
-    def __init__(self, conn, opts):
+    def __init__(self, opts):
+        gobject.GObject.__init__(self)
         XpraClientBase.__init__(self, opts)
-        self.ready(conn)
-        gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
-        self.send_hello()
+
+
+    def timeout_add(self, *args):
+        return gobject.timeout_add(*args)
+
+    def idle_add(self, *args):
+        return gobject.idle_add(*args)
+
+    def source_remove(self, *args):
+        return gobject.source_remove(*args)
+
+
+    def client_type(self):
+        #overriden in subclasses!
+        return "Python/GObject"
 
     def timeout(self, *args):
         log.warn("timeout!")
@@ -385,7 +416,7 @@ class GobjectXpraClient(XpraClientBase):
                   "lost-window"]:
             self._packet_handlers[t] = noop
 
-    def run(self):
+    def glib_init(self):
         try:
             glib = import_glib()
             try:
@@ -395,11 +426,22 @@ class GobjectXpraClient(XpraClientBase):
                 pass
         except ImportError:
             pass
+
+    def gobject_init(self):
         try:
             gobject.threads_init()
         except AttributeError:
             #old versions of gobject may not have this method
             pass
+
+    def connect_with_timeout(self, conn):
+        self.ready(conn)
+        gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
+        gobject.idle_add(self.send_hello)
+
+    def run(self):
+        self.glib_init()
+        self.gobject_init()
         self.gobject_mainloop = gobject.MainLoop()
         self.gobject_mainloop.run()
         return  self.exit_code
@@ -407,7 +449,6 @@ class GobjectXpraClient(XpraClientBase):
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
         capabilities["keyboard"] = False
-        capabilities["client_type"] = "Python/Gobject"
         return capabilities
 
     def quit(self, exit_code):
@@ -417,7 +458,7 @@ class GobjectXpraClient(XpraClientBase):
         gobject.timeout_add(50, self.gobject_mainloop.quit)
 
 
-class ScreenshotXpraClient(GobjectXpraClient):
+class ScreenshotXpraClient(GObjectXpraClient):
     """ This client does one thing only:
         it sends the hello packet with a screenshot request
         and exits when the resulting image is received (or timedout)
@@ -425,7 +466,8 @@ class ScreenshotXpraClient(GobjectXpraClient):
 
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
-        GobjectXpraClient.__init__(self, conn, opts)
+        GObjectXpraClient.__init__(self, opts)
+        self.connect_with_timeout(conn)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
@@ -442,19 +484,23 @@ class ScreenshotXpraClient(GobjectXpraClient):
         self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):
-        GobjectXpraClient.init_packet_handlers(self)
+        GObjectXpraClient.init_packet_handlers(self)
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
     def make_hello(self, challenge_response=None):
-        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
+        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
         capabilities["screenshot_request"] = True
         return capabilities
 
 
-class InfoXpraClient(GobjectXpraClient):
+class InfoXpraClient(GObjectXpraClient):
     """ This client does one thing only:
         it queries the server with an 'info' request
     """
+
+    def __init__(self, conn):
+        gobject.GObject.__init__(self)
+        self.connect_with_timeout(conn)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
@@ -469,16 +515,20 @@ class InfoXpraClient(GobjectXpraClient):
         self.quit(0)
 
     def make_hello(self, challenge_response=None):
-        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
+        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
         log.debug("make_hello(%s) adding info_request to %s", challenge_response, capabilities)
         capabilities["info_request"] = True
         return capabilities
 
 
-class VersionXpraClient(GobjectXpraClient):
+class VersionXpraClient(GObjectXpraClient):
     """ This client does one thing only:
         it queries the server for version information and prints it out
     """
+
+    def __init__(self, conn):
+        gobject.GObject.__init__(self)
+        self.connect_with_timeout(conn)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the version")
@@ -489,14 +539,18 @@ class VersionXpraClient(GobjectXpraClient):
         self.warn_and_quit(EXIT_OK, str(props.get("version")))
 
     def make_hello(self, challenge_response=None):
-        capabilities = GobjectXpraClient.make_hello(self, challenge_response)
+        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
         log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
         capabilities["version_request"] = True
         return capabilities
 
 
-class StopXpraClient(GobjectXpraClient):
+class StopXpraClient(GObjectXpraClient):
     """ stop a server """
+
+    def __init__(self, conn):
+        gobject.GObject.__init__(self)
+        self.connect_with_timeout(conn)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")

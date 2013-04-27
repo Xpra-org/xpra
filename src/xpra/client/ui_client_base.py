@@ -45,7 +45,12 @@ Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
 class UIXpraClient(XpraClientBase):
+    #NOTE: these signals aren't registered because this class
+    #does not extend GObject.
     __gsignals__ = {
+        "handshake-complete"        : no_arg_signal,
+        "first-ui-received"         : no_arg_signal,
+
         "clipboard-toggled"         : no_arg_signal,
         "keyboard-sync-toggled"     : no_arg_signal,
         "speaker-changed"           : no_arg_signal,        #bitrate or pipeline state has changed
@@ -180,17 +185,6 @@ class UIXpraClient(XpraClientBase):
             self.timeout_add(10*1000, self.send_ping)
 
 
-    def timeout_add(self, *args):
-        raise Exception("override me!")
-
-    def idle_add(self, *args):
-        raise Exception("override me!")
-
-    def source_remove(self, *args):
-        raise Exception("override me!")
-
-
-
     def run(self):
         raise Exception("override me!")
 
@@ -226,8 +220,6 @@ class UIXpraClient(XpraClientBase):
         self.keys_pressed = {}
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
 
-    def client_type(self):
-        raise Exception("override me!")
 
     def get_screen_sizes(self):
         raise Exception("override me!")
@@ -480,7 +472,6 @@ class UIXpraClient(XpraClientBase):
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         capabilities["screen_sizes"] = self.get_screen_sizes()
-        capabilities["client_type"] = self.client_type()
         key_repeat = self._client_extras.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat

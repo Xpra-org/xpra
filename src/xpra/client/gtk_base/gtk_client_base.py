@@ -18,14 +18,16 @@ log = Logger()
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.gtk_common.cursor_names import cursor_names
-from xpra.client.ui_client_base import UIXpraClient
 from xpra.gtk_common.gtk_util import add_gtk_version_info
+from xpra.client.ui_client_base import UIXpraClient
+from xpra.client.client_base import GObjectXpraClient
 
 
-class GTKXpraClient(UIXpraClient, gobject.GObject):
+class GTKXpraClient(UIXpraClient, GObjectXpraClient):
+    __gsignals__ = UIXpraClient.__gsignals__
 
     def __init__(self, conn, opts):
-        gobject.GObject.__init__(self)
+        GObjectXpraClient.__init__(self, opts)
         UIXpraClient.__init__(self, conn, opts)
 
     def init_keyboard(self, keyboard_sync, key_shortcuts):
@@ -45,22 +47,10 @@ class GTKXpraClient(UIXpraClient, gobject.GObject):
     def set_windows_cursor(self, gtkwindows, new_cursor):
         raise Exception("override me!")
 
-    def client_type(self):
-        #overriden in subclasses!
-        return "Gtk"
-
-
-    def timeout_add(self, *args):
-        return gobject.timeout_add(*args)
-
-    def idle_add(self, *args):
-        return gobject.idle_add(*args)
-
-    def source_remove(self, *args):
-        return gobject.source_remove(*args)
-
 
     def run(self):
+        self.glib_init()
+        self.gobject_init()
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
         log("XpraClient.run() main loop ended, returning exit_code=%s", self.exit_code)

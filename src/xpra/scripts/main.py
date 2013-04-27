@@ -19,7 +19,6 @@ import xpra
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            XPRA_SHADOW_SUPPORTED,
-                           GOT_PASSWORD_PROMPT_SUGGESTION,
                            add_client_options,
                            get_default_socket_dir,
                            init as platform_init)
@@ -664,16 +663,6 @@ def run_client(parser, opts, extra_args, mode):
     return do_run_client(app, conn.target, mode)
 
 def do_run_client(app, target, mode):
-    def got_gibberish_msg(obj, data):
-        if str(data).find("assword")>0:
-            sys.stdout.write("Your ssh program appears to be asking for a password.\n"
-                             + GOT_PASSWORD_PROMPT_SUGGESTION)
-            sys.stdout.flush()
-        if str(data).find("login")>=0:
-            sys.stdout.write("Your ssh program appears to be asking for a username.\n"
-                             "Perhaps try using something like 'ssh:USER@host:display'?\n")
-            sys.stdout.flush()
-    app.connect("received-gibberish", got_gibberish_msg)
     def handshake_complete(*args):
         from xpra.log import Logger
         log = Logger()
