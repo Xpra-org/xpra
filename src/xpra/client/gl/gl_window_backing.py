@@ -49,10 +49,13 @@ except ImportError:
     GL_DEBUG_OUTPUT = None
 try:
     from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
+    from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
 except ImportError:
     # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
     glInitStringMarkerGREMEDY = None
     glStringMarkerGREMEDY = None
+    glInitFrameTerminatorGREMEDY = None
+    glFrameTerminatorGREMEDY = None
     pass
 from ctypes import c_char_p
 
@@ -120,6 +123,13 @@ class GLPixmapBacking(GTK2WindowBacking):
             return
         c_string = c_char_p(msg)
         glStringMarkerGREMEDY(0, c_string)
+    
+    def gl_frame_terminator(self):
+        # Mark the end of the frame
+        # This makes the debug output more readable especially when doing single-buffered rendering
+        if not bool(glFrameTerminatorGREMEDY):
+            return
+        glFrameTerminatorGREMEDY()
         
     def gl_init(self):
         drawable = self.gl_begin()
@@ -140,6 +150,11 @@ class GLPixmapBacking(GTK2WindowBacking):
             else:
                 # General case - running without debugger, extension not available 
                 glStringMarkerGREMEDY = None
+            # Initialize frame_terminator GL debugging extension if available
+            if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() == True:
+                glFrameTerminatorGREMEDY = None
+                
+                
             
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))   
             # Initialize viewport and matrices for 2D rendering
@@ -244,7 +259,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             glClear(GL_COLOR_BUFFER_BIT)
         else:
             glFlush()
-
+        self.gl_frame_terminator()
+        
         self.unset_rgb24_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         drawable.gl_end()
