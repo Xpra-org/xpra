@@ -11,16 +11,12 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
-from xpra.gtk_common.gobject_util import no_arg_signal
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
     """
         Utility superclass for glib clients
     """
-    __gsignals__ = {
-        "handshake-complete"        : no_arg_signal
-        }
 
     def __init__(self, opts):
         gobject.GObject.__init__(self)
