@@ -242,6 +242,17 @@ class XpraClientBase(object):
             self._protocol.close()
             self._protocol = None
 
+    def glib_init(self):
+        try:
+            glib = import_glib()
+            try:
+                glib.threads_init()
+            except AttributeError:
+                #old versions of glib may not have this method
+                pass
+        except ImportError:
+            pass
+
     def run(self):
         raise Exception("override me!")
 
@@ -373,187 +384,3 @@ class XpraClientBase(object):
             log.error("unknown packet type: %s", packet_type)
             return
         self.idle_add(handler, packet)
-
-
-
-class GObjectXpraClient(XpraClientBase, gobject.GObject):
-    """
-        Utility superclass for glib clients
-    """
-
-    def __init__(self, opts):
-        gobject.GObject.__init__(self)
-        XpraClientBase.__init__(self, opts)
-
-
-    def timeout_add(self, *args):
-        return gobject.timeout_add(*args)
-
-    def idle_add(self, *args):
-        return gobject.idle_add(*args)
-
-    def source_remove(self, *args):
-        return gobject.source_remove(*args)
-
-
-    def client_type(self):
-        #overriden in subclasses!
-        return "Python/GObject"
-
-    def timeout(self, *args):
-        log.warn("timeout!")
-
-    def init_packet_handlers(self):
-        XpraClientBase.init_packet_handlers(self)
-        def noop(*args):
-            log("ignoring packet: %s", args)
-        #ignore the following packet types without error:
-        for t in ["new-window", "new-override-redirect",
-                  "draw", "cursor", "bell",
-                  "notify_show", "notify_close",
-                  "ping", "ping_echo",
-                  "window-metadata", "configure-override-redirect",
-                  "lost-window"]:
-            self._packet_handlers[t] = noop
-
-    def glib_init(self):
-        try:
-            glib = import_glib()
-            try:
-                glib.threads_init()
-            except AttributeError:
-                #old versions of glib may not have this method
-                pass
-        except ImportError:
-            pass
-
-    def gobject_init(self):
-        try:
-            gobject.threads_init()
-        except AttributeError:
-            #old versions of gobject may not have this method
-            pass
-
-    def connect_with_timeout(self, conn):
-        self.ready(conn)
-        gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
-        gobject.idle_add(self.send_hello)
-
-    def run(self):
-        self.glib_init()
-        self.gobject_init()
-        self.gobject_mainloop = gobject.MainLoop()
-        self.gobject_mainloop.run()
-        return  self.exit_code
-
-    def make_hello(self, challenge_response=None):
-        capabilities = XpraClientBase.make_hello(self, challenge_response)
-        capabilities["keyboard"] = False
-        return capabilities
-
-    def quit(self, exit_code):
-        if self.exit_code is None:
-            self.exit_code = exit_code
-        self.cleanup()
-        gobject.timeout_add(50, self.gobject_mainloop.quit)
-
-
-class ScreenshotXpraClient(GObjectXpraClient):
-    """ This client does one thing only:
-        it sends the hello packet with a screenshot request
-        and exits when the resulting image is received (or timedout)
-    """
-
-    def __init__(self, conn, opts, screenshot_filename):
-        self.screenshot_filename = screenshot_filename
-        GObjectXpraClient.__init__(self, opts)
-        self.connect_with_timeout(conn)
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
-
-    def _process_screenshot(self, packet):
-        (w, h, encoding, _, img_data) = packet[1:6]
-        assert encoding=="png"
-        if len(img_data)==0:
-            self.warn_and_quit(EXIT_OK, "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
-            return
-        f = open(self.screenshot_filename, 'wb')
-        f.write(img_data)
-        f.close()
-        self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
-
-    def init_packet_handlers(self):
-        GObjectXpraClient.init_packet_handlers(self)
-        self._ui_packet_handlers["screenshot"] = self._process_screenshot
-
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
-        capabilities["screenshot_request"] = True
-        return capabilities
-
-
-class InfoXpraClient(GObjectXpraClient):
-    """ This client does one thing only:
-        it queries the server with an 'info' request
-    """
-
-    def __init__(self, conn):
-        gobject.GObject.__init__(self)
-        self.connect_with_timeout(conn)
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
-
-    def _process_hello(self, packet):
-        log.debug("process_hello: %s", packet)
-        props = packet[1]
-        if props:
-            for k in sorted(props.keys()):
-                v = props.get(k)
-                log.info("%s=%s", k, v)
-        self.quit(0)
-
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
-        log.debug("make_hello(%s) adding info_request to %s", challenge_response, capabilities)
-        capabilities["info_request"] = True
-        return capabilities
-
-
-class VersionXpraClient(GObjectXpraClient):
-    """ This client does one thing only:
-        it queries the server for version information and prints it out
-    """
-
-    def __init__(self, conn):
-        gobject.GObject.__init__(self)
-        self.connect_with_timeout(conn)
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the version")
-
-    def _process_hello(self, packet):
-        log.debug("process_hello: %s", packet)
-        props = packet[1]
-        self.warn_and_quit(EXIT_OK, str(props.get("version")))
-
-    def make_hello(self, challenge_response=None):
-        capabilities = GObjectXpraClient.make_hello(self, challenge_response)
-        log.debug("make_hello(%s) adding version_request to %s", challenge_response, capabilities)
-        capabilities["version_request"] = True
-        return capabilities
-
-
-class StopXpraClient(GObjectXpraClient):
-    """ stop a server """
-
-    def __init__(self, conn):
-        gobject.GObject.__init__(self)
-        self.connect_with_timeout(conn)
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
-
-    def _process_hello(self, packet):
-        gobject.idle_add(self.send, "shutdown-server")

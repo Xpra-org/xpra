@@ -214,6 +214,12 @@ class UIXpraClient(XpraClientBase):
 
 
     def init_keyboard(self, keyboard_sync, key_shortcuts):
+        self.xkbmap_keycodes = []
+        self.xkbmap_x11_keycodes = {}
+        self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = {}, [], []
+        self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = "", "", []
+        self.xkbmap_print, self.xkbmap_query = "", ""
+
         self.keyboard_sync = keyboard_sync
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1

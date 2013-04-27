@@ -754,6 +754,7 @@ if client_ENABLED:
     packages.append("xpra.client.gtk_base")
     packages.append("xpra.client.gtk2")
     packages.append("xpra.client.gtk3")
+    packages.append("xpra.client.qt4")
 elif sys.platform.startswith("win"):
     remove_packages("xpra.client")
     py2exe_excludes.append("xpra.client")

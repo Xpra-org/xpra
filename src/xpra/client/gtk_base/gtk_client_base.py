@@ -53,11 +53,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.gobject_init()
         gtk_main_quit_on_fatal_exceptions_enable()
         gtk.main()
-        log("XpraClient.run() main loop ended, returning exit_code=%s", self.exit_code)
+        log("GTKXpraClient.run() main loop ended, returning exit_code=%s", self.exit_code)
         return  self.exit_code
 
     def quit(self, exit_code=0):
-        log("XpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
+        log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
         if gtk.main_level()>0:
@@ -67,7 +67,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             gobject.timeout_add(5*1000, os._exit, 1)
         self.cleanup()
         if gtk.main_level()>0:
-            log("XpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
+            log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)
 
 
@@ -117,5 +117,3 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         log("window_bell(..) gdkwindow=%s", gdkwindow)
         self._client_extras.system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
-
-gobject.type_register(GTKXpraClient)

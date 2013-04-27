@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 import signal
 import shlex
 
-import xpra
+from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra
 from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
                            XPRA_SHADOW_SUPPORTED,
@@ -85,7 +85,7 @@ def main(script_file, cmdline):
         command_options.append("(This xpra installation does not support starting local servers.)")
 
     hidden_options = {}
-    parser = OptionParser(version="xpra v%s" % xpra.__version__,
+    parser = OptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     defaults = make_defaults_struct()
     if supports_server or supports_shadow:
@@ -261,6 +261,10 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--session-name", action="store",
                       dest="session_name", default=defaults.session_name,
                       help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
+    group.add_option("--client-toolkit", action="store",
+                      dest="client_toolkit", default=defaults.client_toolkit,
+                      help="The type of client toolkit. Default: %s")
+
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
@@ -639,7 +643,7 @@ def run_client(parser, opts, extra_args, mode):
         extra_args = extra_args[1:]
 
     if mode in ("attach"):
-        sys.stdout.write("xpra client version %s\n" % xpra.__version__)
+        sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
         sys.stdout.flush()
 
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
@@ -649,17 +653,49 @@ def run_client(parser, opts, extra_args, mode):
         parser.error("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     if mode=="screenshot":
-        from xpra.client.client_base import ScreenshotXpraClient
+        from xpra.client.gobject_client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(conn, opts, screenshot_filename)
     elif mode=="info":
-        from xpra.client.client_base import InfoXpraClient
+        from xpra.client.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(conn, opts)
     elif mode=="version":
-        from xpra.client.client_base import VersionXpraClient
+        from xpra.client.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(conn, opts)
     else:
-        from xpra.client.client import XpraClient
-        app = XpraClient(conn, opts)
+        app = None
+        if opts.client_toolkit:
+            toolkits = {}
+            try:
+                import gtk.gdk                      #@UnusedImport
+                import xpra.client.gtk2             #@UnusedImport
+                toolkits["gtk2"] = "xpra.client.gtk2.client"
+            except:
+                pass
+            try:
+                from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
+                import xpra.client.gtk3             #@UnusedImport
+                toolkits["gtk3"] = "xpra.client.gtk3.client"
+            except:
+                pass
+            try:
+                from PyQt4 import QtCore, QtGui     #@UnusedImport
+                import xpra.client.qt4              #@UnusedImport
+                toolkits["qt4"] = "xpra.client.qt4.client"
+            except Exception, e:
+                print("failed to load qt client: %s", e)
+                pass
+            client_module = toolkits.get(opts.client_toolkit)
+            if client_module is None:
+                parser.error("invalid client toolkit: %s, try one of: %s" % (
+                            opts.client_toolkit, ", ".join(toolkits.keys())))
+            else:
+                toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
+                #print("toolkit_module(%s)=%s" % (client_module, toolkit_module))
+                if toolkit_module:
+                    app = toolkit_module.XpraClient(conn, opts)
+        if not app:
+            from xpra.client.client import XpraClient
+            app = XpraClient(conn, opts)
     return do_run_client(app, conn.target, mode)
 
 def do_run_client(app, target, mode):
@@ -671,7 +707,8 @@ def do_run_client(app, target, mode):
             app.quit(0)
         elif mode=="attach":
             log.info("Attached to %s (press Control-C to detach)\n" % target)
-    app.connect("handshake-complete", handshake_complete)
+    if hasattr(app, "connect"):
+        app.connect("handshake-complete", handshake_complete)
     set_signal_handlers(app)
     try:
         try:
@@ -731,7 +768,7 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
 
 def run_stop(parser, opts, extra_args):
     assert "gtk" not in sys.modules
-    from xpra.client.client_base import StopXpraClient
+    from xpra.client.gobject_client_base import StopXpraClient
 
     def show_final_state(display):
         sockdir = DotXpra(opts.socket_dir)
