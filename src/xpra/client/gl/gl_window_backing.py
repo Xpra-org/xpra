@@ -35,8 +35,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor, \
-    GLDEBUGPROC
+    glClear, glClearColor
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
@@ -50,6 +49,7 @@ except ImportError:
 try:
     from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
     from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
+    from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
 except ImportError:
     # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
     glInitStringMarkerGREMEDY = None
