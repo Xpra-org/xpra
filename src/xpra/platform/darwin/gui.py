@@ -7,7 +7,7 @@ import os.path
 import gtk.gdk
 
 from xpra.platform.client_extras_base import ClientExtrasBase, CheckMenuItem
-from xpra.platform import get_icon_dir
+from xpra.platform.paths import get_icon_dir
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.log import Logger
 log = Logger()

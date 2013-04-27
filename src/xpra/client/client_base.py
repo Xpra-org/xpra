@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import signal
 import os
 import sys
 import socket
@@ -17,8 +18,8 @@ from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencod
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
-from xpra.platform import get_machine_id, GOT_PASSWORD_PROMPT_SUGGESTION
-from xpra.os_util import get_hex_uuid
+from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
+from xpra.os_util import get_hex_uuid, get_machine_id
 
 def nn(x):
     if x is None:
@@ -37,6 +38,8 @@ EXIT_SSH_FAILURE = 8
 EXIT_PACKET_FAILURE = 9
 
 DEFAULT_TIMEOUT = 20*1000
+
+SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
 
 class XpraClientBase(object):
@@ -86,6 +89,23 @@ class XpraClientBase(object):
 
     def source_remove(self, *args):
         raise Exception("override me!")
+
+
+    def install_signal_handlers(self):
+        gobject = import_gobject()
+        def deadly_signal(signum, frame):
+            sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
+            sys.stderr.flush()
+            self.cleanup()
+            os._exit(128 + signum)
+        def app_signal(signum, frame):
+            sys.stderr.write("\ngot signal %s, exiting\n" % SIGNAMES.get(signum, signum))
+            sys.stderr.flush()
+            signal.signal(signal.SIGINT, deadly_signal)
+            signal.signal(signal.SIGTERM, deadly_signal)
+            gobject.timeout_add(0, self.quit, 128 + signum, priority=gobject.PRIORITY_HIGH)
+        signal.signal(signal.SIGINT, app_signal)
+        signal.signal(signal.SIGTERM, app_signal)
 
 
     def client_type(self):

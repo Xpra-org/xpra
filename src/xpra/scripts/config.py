@@ -15,69 +15,55 @@ def warn(msg):
     sys.stderr.write(msg+"\n")
 
 from xpra.util import AdHocStruct
-from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
-gobject = import_gobject()
 try:
     import Image
     assert Image
     _has_PIL = True
 except:
     _has_PIL = False
-ENCODINGS = []
-if is_gtk3():
-    """ with gtk3, we get png via cairo out of the box
-        but we need PIL for the others:
-    """
+
+#if you use gtk3, you *must* have PIL installed so we can handle rgb24...
+ENCODINGS = ["rgb24"]
+if _has_PIL:
     ENCODINGS.append("png")
-    if _has_PIL:
-        ENCODINGS.append("jpeg")
-        ENCODINGS.append("rgb24")
-else:
-    """ with gtk2, we get rgb24 via gdk pixbuf out of the box
-        but we need PIL for the others:
-    """
-    if _has_PIL:
-        ENCODINGS.append("png")
-        ENCODINGS.append("jpeg")
-    ENCODINGS.append("rgb24")
+    ENCODINGS.append("jpeg")
 #we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
-if "rgb24" in ENCODINGS:
+try:
+    from xpra.codecs import vpx            #@UnusedImport
     try:
-        from xpra.codecs import vpx            #@UnusedImport
-        try:
-            from xpra.codecs.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
-            ENCODINGS.insert(0, "vpx")
-        except Exception, e:
-            warn("cannot load vpx codec: %s" % e)
-    except ImportError, e:
-        #the vpx module does not exist
-        #xpra was probably built with --without-vpx
-        pass
-    try:
-        from xpra.codecs import x264           #@UnusedImport
-        try:
-            from xpra.codecs.x264 import codec     #@UnusedImport @UnresolvedImport
-            ENCODINGS.insert(0, "x264")
-        except Exception, e:
-            warn("cannot load x264 codec: %s" % e)
-    except ImportError, e:
-        #the x264 module does not exist
-        #xpra was probably built with --without-x264
-        pass
-    try:
-        bytearray()
-        from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
-        from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
-        ENCODINGS.append("webp")
-    except NameError, e:
-        #we need bytearray to use the bindings
-        pass
-    except ImportError, e:
-        #the webm module does not exist
-        #xpra was probably built with --without-webp
-        pass
+        from xpra.codecs.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
+        ENCODINGS.insert(0, "vpx")
     except Exception, e:
-        warn("cannot load webp: %s" % e)
+        warn("cannot load vpx codec: %s" % e)
+except ImportError, e:
+    #the vpx module does not exist
+    #xpra was probably built with --without-vpx
+    pass
+try:
+    from xpra.codecs import x264           #@UnusedImport
+    try:
+        from xpra.codecs.x264 import codec     #@UnusedImport @UnresolvedImport
+        ENCODINGS.insert(0, "x264")
+    except Exception, e:
+        warn("cannot load x264 codec: %s" % e)
+except ImportError, e:
+    #the x264 module does not exist
+    #xpra was probably built with --without-x264
+    pass
+try:
+    bytearray()
+    from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
+    from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
+    ENCODINGS.append("webp")
+except NameError, e:
+    #we need bytearray to use the bindings
+    pass
+except ImportError, e:
+    #the webm module does not exist
+    #xpra was probably built with --without-webp
+    pass
+except Exception, e:
+    warn("cannot load webp: %s" % e)
 
 ENCRYPTION_CIPHERS = []
 try:
@@ -270,7 +256,7 @@ def read_xpra_defaults():
         conf_dir = sys.prefix + '/etc/xpra/'
     defaults = read_xpra_conf(conf_dir)
     #now load the per-user config over it:
-    from xpra.platform import get_default_conf_dir
+    from xpra.platform.paths import get_default_conf_dir
     user_defaults = read_xpra_conf(get_default_conf_dir())
     for k,v in user_defaults.items():
         defaults[k] = v
@@ -350,7 +336,7 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform import DEFAULT_SSH_CMD
+    from xpra.platform.features import DEFAULT_SSH_CMD
     try:
         import getpass
         username = getpass.getuser()

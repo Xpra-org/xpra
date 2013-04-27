@@ -17,16 +17,12 @@ import shlex
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra
-from xpra.platform import (XPRA_LOCAL_SERVERS_SUPPORTED,
-                           XPRA_SHADOW_SUPPORTED,
-                           add_client_options,
-                           get_default_socket_dir,
-                           init as platform_init)
+from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
+from xpra.platform.options import add_client_options
+from xpra.platform.paths import get_default_socket_dir
+from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
-from xpra.gtk_common.gobject_compat import import_gobject
-
-SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
 
 def warn(msg):
@@ -58,8 +54,8 @@ def main(script_file, cmdline):
     ##
     ## NOTE NOTE NOTE
     #################################################################
-    supports_shadow = XPRA_SHADOW_SUPPORTED
-    supports_server = XPRA_LOCAL_SERVERS_SUPPORTED
+    supports_shadow = SHADOW_SUPPORTED
+    supports_server = LOCAL_SERVERS_SUPPORTED
     if supports_server:
         try:
             from xpra.x11.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
@@ -621,19 +617,6 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     else:
         assert False, "unsupported display type in connect: %s" % dtype
 
-def set_signal_handlers(app):
-    gobject = import_gobject()
-    def deadly_signal(signum, frame):
-        print("got deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
-        app.cleanup()
-        os._exit(128 + signum)
-    def app_signal(signum, frame):
-        print("\ngot signal %s, exiting" % SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, deadly_signal)
-        signal.signal(signal.SIGTERM, deadly_signal)
-        gobject.timeout_add(0, app.quit, 128 + signum, priority=gobject.PRIORITY_HIGH)
-    signal.signal(signal.SIGINT, app_signal)
-    signal.signal(signal.SIGTERM, app_signal)
 
 def run_client(parser, opts, extra_args, mode):
     if mode=="screenshot":
@@ -709,7 +692,6 @@ def do_run_client(app, target, mode):
             log.info("Attached to %s (press Control-C to detach)\n" % target)
     if hasattr(app, "connect"):
         app.connect("handshake-complete", handshake_complete)
-    set_signal_handlers(app)
     try:
         try:
             return app.run()

@@ -17,7 +17,7 @@ assert _display, "cannot open the display with GTK, is DISPLAY set?"
 
 from xpra.platform.client_extras_base import ClientExtrasBase
 from xpra.gtk_common.gtk_util import set_tooltip_text
-from xpra.platform import get_icon_dir
+from xpra.platform.paths import get_icon_dir
 
 from xpra.log import Logger
 log = Logger()

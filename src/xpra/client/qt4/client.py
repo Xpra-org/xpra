@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 from PyQt4 import QtCore, QtGui
 
@@ -12,6 +13,10 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.ui_client_base import UIXpraClient
+
+sys.modules['gtk']=None
+sys.modules['pygtk']=None
+sys.modules['gi']=None
 
 
 class XpraClient(UIXpraClient):
@@ -69,6 +74,7 @@ class XpraClient(UIXpraClient):
 
     def run(self):
         log.info("QtXpraClient.run()")
+        self.install_signal_handlers()
         self.glib_init()
         log.info("QtXpraClient.run() event_loop=%s", self.event_loop)
         #self.event_loop.exec_()

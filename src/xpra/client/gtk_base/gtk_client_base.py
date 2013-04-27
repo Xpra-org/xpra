@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk
 gobject = import_gobject()
@@ -20,7 +21,9 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.client.ui_client_base import UIXpraClient
-from xpra.client.client_base import GObjectXpraClient
+from xpra.client.gobject_client_base import GObjectXpraClient
+
+sys.modules['QtCore']=None
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -49,6 +52,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def run(self):
+        self.install_signal_handlers()
         self.glib_init()
         self.gobject_init()
         gtk_main_quit_on_fatal_exceptions_enable()

@@ -13,7 +13,7 @@ gdk = import_gdk()
 gobject = import_gobject()
 
 from xpra.scripts.config import ENCODINGS
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED
+from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
 from xpra.keyboard.mask import mask_to_names
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import set_tooltip_text
@@ -155,10 +155,10 @@ class ClientExtrasBase(object):
         log("ClientExtrasBase.cleanup() done")
 
     def supports_server(self):
-        return XPRA_LOCAL_SERVERS_SUPPORTED
+        return LOCAL_SERVERS_SUPPORTED
 
     def supports_mmap(self):
-        return XPRA_LOCAL_SERVERS_SUPPORTED
+        return LOCAL_SERVERS_SUPPORTED
 
     def supports_system_tray(self):
         return True

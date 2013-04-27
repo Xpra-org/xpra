@@ -22,7 +22,7 @@ import stat
 print(" ".join(sys.argv))
 
 import xpra
-from xpra.platform import XPRA_LOCAL_SERVERS_SUPPORTED, XPRA_SHADOW_SUPPORTED
+from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 #*******************************************************************************
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
@@ -56,11 +56,11 @@ Xdummy_ENABLED = None
 
 
 
-shadow_ENABLED = XPRA_SHADOW_SUPPORTED
+shadow_ENABLED = SHADOW_SUPPORTED
 
 
 
-server_ENABLED = XPRA_LOCAL_SERVERS_SUPPORTED
+server_ENABLED = LOCAL_SERVERS_SUPPORTED
 
 
 
@@ -152,7 +152,7 @@ switches_info = {}
 for x in SWITCHES:
     switches_info[x] = vars()["%s_ENABLED" % x]
 print("build switches: %s" % switches_info)
-if XPRA_LOCAL_SERVERS_SUPPORTED:
+if LOCAL_SERVERS_SUPPORTED:
     print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
 

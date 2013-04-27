@@ -70,6 +70,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         gobject.idle_add(self.send_hello)
 
     def run(self):
+        self.install_signal_handlers()
         self.glib_init()
         self.gobject_init()
         self.gobject_mainloop = gobject.MainLoop()

@@ -6,15 +6,8 @@
 
 # Platform-specific code for Win32.
 
-import os
+import os.path
 import sys
-
-XPRA_LOCAL_SERVERS_SUPPORTED = False
-XPRA_SHADOW_SUPPORTED = True
-os.environ["PLINK_PROTOCOL"] = "ssh"
-DEFAULT_SSH_CMD = "plink"
-GOT_PASSWORD_PROMPT_SUGGESTION = \
-   'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 
 LOG_FILENAME = "Xpra.log"
 REDIRECT_OUTPUT = True
@@ -25,47 +18,12 @@ def set_log_filename(filename):
     global LOG_FILENAME
     LOG_FILENAME = filename
 
-def add_client_options(parser):
-    from xpra.platform import add_notray_option
-    add_notray_option(parser, ", this will also disable notifications!")
-
-def get_machine_id():
-    return  u""
-
-def _get_data_dir():
-    if not getattr(sys, 'frozen', ''):
-        return  os.getcwd()
-    #on win32 we must send stdout to a logfile to prevent an alert box on exit shown by py2exe
-    #UAC in vista onwards will not allow us to write where the software is installed,
-    #so we place the log file (etc) in "~/Application Data"
-    appdata = os.environ.get("APPDATA")
-    if not os.path.exists(appdata):
-        os.mkdir(appdata)
-    data_dir = os.path.join(appdata, "Xpra")
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    return data_dir
-
-def get_icon_dir():
-    return os.path.join(get_app_dir(), "icons")
-
-def get_default_conf_dir():
-    return _get_data_dir()
-
-def get_default_socket_dir():
-    return _get_data_dir()
-
 def do_init():
     if not REDIRECT_OUTPUT:
         return
     global LOG_FILENAME
+    from paths import _get_data_dir
     d = _get_data_dir()
     log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
-
-def get_app_dir():
-    if getattr(sys, 'frozen', ''):
-        return os.path.dirname(sys.executable)
-    from xpra.platform import default_get_app_dir   #imported here to prevent import loop
-    return default_get_app_dir()

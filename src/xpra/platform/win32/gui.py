@@ -9,7 +9,7 @@
 import os.path
 
 from xpra.platform.client_extras_base import ClientExtrasBase
-from xpra.platform import get_icon_dir
+from xpra.platform.paths import get_icon_dir
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.keyboard.layouts import WIN32_LAYOUTS
 from xpra.log import Logger

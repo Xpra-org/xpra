@@ -20,7 +20,7 @@ class ServerSockInUse(Exception):
 
 class DotXpra(object):
     def __init__(self, sockdir=None, confdir=None):
-        from xpra.platform import get_default_socket_dir, get_default_conf_dir
+        from xpra.platform.paths import get_default_socket_dir, get_default_conf_dir
         self._confdir = os.path.expanduser(confdir or get_default_conf_dir())
         self._sockdir = os.path.expanduser(sockdir or get_default_socket_dir())
         if not os.path.exists(self._confdir):
