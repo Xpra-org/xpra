@@ -26,6 +26,7 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST, \
     GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_RGB, GL_LINEAR, \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_COLOR_BUFFER_BIT, \
+    GL_DONT_CARE, GL_TRUE,\
     glActiveTexture, glTexSubImage2D, \
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
     glGenTextures, glDisable, \
@@ -34,12 +35,23 @@ from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     glTexImage2D, \
     glMultiTexCoord2i, \
     glTexCoord2i, glVertex2i, glEnd, \
-    glClear, glClearColor
+    glClear, glClearColor, \
+    GLDEBUGPROC
 from OpenGL.GL.ARB.texture_rectangle import GL_TEXTURE_RECTANGLE_ARB
 from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
     glBindProgramARB, glProgramStringARB, GL_PROGRAM_ERROR_STRING_ARB, GL_PROGRAM_FORMAT_ASCII_ARB
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+try:
+    from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback
+except:
+    log.warning("GL_KHR_debug OpenGL extension not available. Debug output will be more limited.")
+    GL_DEBUG_OUTPUT = None
+from ctypes import CFUNCTYPE, c_int,  c_char_p
+
+def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
+    log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
+gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
 
 # Texture number assignment
 #  1 = Y plane
@@ -103,6 +115,12 @@ class GLPixmapBacking(GTK2WindowBacking):
         if not drawable:
             return  None
         if not self.gl_setup:
+            # Ask GL to send us all debug messages
+            if GL_DEBUG_OUTPUT is not None:
+                glEnable(GL_DEBUG_OUTPUT)
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
+                glDebugMessageCallback(gl_debug_callback, None)
+                glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, None, GL_TRUE)
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
