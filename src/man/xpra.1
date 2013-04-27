@@ -563,9 +563,10 @@ Disable sound input forwarding support. Application sound input will
 not be sent from the client(s) to the server.
 .TP
 \fB\-\-speaker\-codec\fP=\fICODEC\fP and \fB\-\-microphone\-codec\fP=\fICODEC\fP
-Specify the codec to use for sound output (speaker) or input (microphone).
-You may specify more than one to define the preferred order,
-use the special value 'help' to get a list of options.
+Specify the codec(s) to use for sound output (speaker) or input (microphone).
+This parameter can be specified multiple times and the order in which the codecs
+are specified defines the preferred codec order.
+Use the special value 'help' to get a list of options.
 When unspecified, all the available codecs are allowed and the first one is used.
 .TP
 \fB\-\-title\-suffix\fP=\fIVALUE\fP

@@ -179,19 +179,20 @@ def main(script_file, cmdline):
     group.add_option("--no-speaker", action="store_false",
                       dest="speaker", default=defaults.speaker,
                       help="Disable forwarding of sound output to the client(s)")
+    CODEC_HELP = """Specify the codec(s) to use for forwarding the %s sound output.
+This parameter can be specified multiple times and the order in which the codecs
+are specified defines the preferred codec order.
+Use the special value 'help' to get a list of options.
+When unspecified, all the available codecs are allowed and the first one is used."""
     group.add_option("--speaker-codec", action="append",
                       dest="speaker_codec", default=defaults.speaker_codec,
-                      help="The audio codec to use for forwarding the speaker sound output "
-                      "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
-                      "when unspecified all available codecs are allowed and the first one is used)")
+                      help=CODEC_HELP % "speaker")
     group.add_option("--no-microphone", action="store_false",
                       dest="microphone", default=defaults.microphone,
                       help="Disable forwarding of sound input to the server")
     group.add_option("--microphone-codec", action="append",
                       dest="microphone_codec", default=defaults.microphone_codec,
-                      help="The audio codec to use for forwaring the microphone sound input "
-                      "(you may specify more than one to define the preferred order, use 'help' to get a list of options, "
-                      "when unspecified all available codecs are allowed and the first one is used)")
+                      help=CODEC_HELP % "microphone")
 
     group = OptionGroup(parser, "Client Picture Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
