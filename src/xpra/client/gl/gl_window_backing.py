@@ -43,7 +43,7 @@ from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, \
 from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
 try:
-    from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback
+    from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
 except:
     log.warning("GL_KHR_debug OpenGL extension not available. Debug output will be more limited.")
     GL_DEBUG_OUTPUT = None
@@ -116,7 +116,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             return  None
         if not self.gl_setup:
             # Ask GL to send us all debug messages
-            if GL_DEBUG_OUTPUT is not None:
+            if GL_DEBUG_OUTPUT is not None and glInitDebugKHR() == True:
                 glEnable(GL_DEBUG_OUTPUT)
                 glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
                 glDebugMessageCallback(gl_debug_callback, None)
