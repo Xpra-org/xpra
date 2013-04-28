@@ -86,6 +86,76 @@ def title_box(label_str):
     return eb
 
 
+
+#utility method to ensure there is always only one CheckMenuItem
+#selected in a submenu:
+def ensure_item_selected(submenu, item):
+    if not isinstance(item, gtk.CheckMenuItem):
+        return
+    if item.get_active():
+        #deactivate all except this one
+        def deactivate(items, skip=None):
+            for x in items:
+                if x==skip:
+                    continue
+                if isinstance(x, gtk.MenuItem):
+                    submenu = x.get_submenu()
+                    if submenu:
+                        deactivate(submenu.get_children(), skip)
+                if isinstance(x, gtk.CheckMenuItem):
+                    if x!=item and x.get_active():
+                        x.set_active(False)
+        deactivate(submenu.get_children(), item)
+        return item
+    #ensure there is at least one other active item
+    def get_active_item(items):
+        for x in items:
+            if isinstance(x, gtk.MenuItem):
+                submenu = x.get_submenu()
+                if submenu:
+                    a = get_active_item(submenu.get_children())
+                    if a:
+                        return a
+            if isinstance(x, gtk.CheckMenuItem):
+                if x.get_active():
+                    return x
+        return None
+    active = get_active_item(submenu.get_children())
+    if active:
+        return  active
+    #if not then keep this one active:
+    item.set_active(True)
+    return item
+
+def set_checkeditems(submenu, is_match_func):
+    """ recursively descends a submenu and any of its sub menus
+        and set any "CheckMenuItem" to active if is_match_func(item) """
+    if submenu is None:
+        return
+    for x in submenu.get_children():
+        if isinstance(x, gtk.MenuItem):
+            set_checkeditems(x.get_submenu(), is_match_func)
+        if isinstance(x, gtk.CheckMenuItem):
+            a = x.get_active()
+            v = is_match_func(x)
+            if a!=v:
+                x.set_active(v)
+
+
+def CheckMenuItem(label, tooltip=None):
+    """ adds a get_label() method for older versions of gtk which do not have it
+        beware that this label is not mutable!
+    """
+    cmi = gtk.CheckMenuItem(label)
+    if not hasattr(cmi, "get_label"):
+        def get_label():
+            return  label
+        cmi.get_label = get_label
+    if tooltip:
+        set_tooltip_text(cmi, tooltip)
+    return cmi
+
+
 class TableBuilder(object):
 
     def __init__(self, rows=1, columns=2, homogeneous=False):

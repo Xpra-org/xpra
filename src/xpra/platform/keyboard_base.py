@@ -1,0 +1,62 @@
+# This file is part of Xpra.
+# Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
+from xpra.log import Logger
+log = Logger()
+
+
+class KeyboardBase(object):
+
+    def __init__(self):
+        self.modifier_mappings = {}
+        self.modifier_keys = {}
+        self.modifier_keycodes = {}
+        self.modifier_map = MODIFIER_MAP
+
+    def cleanup(self):
+        pass
+
+    def has_bell(self):
+        return False
+
+    def set_modifier_mappings(self, mappings):
+        log("set_modifier_mappings(%s)", mappings)
+        self.modifier_mappings = mappings
+        self.modifier_keys = {}
+        self.modifier_keycodes = {}
+        for modifier, keys in mappings.items():
+            for keycode,keyname in keys:
+                self.modifier_keys[keyname] = modifier
+                keycodes = self.modifier_keycodes.setdefault(keyname, [])
+                if keycode not in keycodes:
+                    keycodes.append(keycode)
+        log("modifier_keys=%s", self.modifier_keys)
+        log("modifier_keycodes=%s", self.modifier_keycodes)
+
+    def mask_to_names(self, mask):
+        return mask_to_names(mask, self.modifier_map)
+
+    def get_keymap_modifiers(self):
+        """
+            ask the server to manage numlock, and lock can be missing from mouse events
+            (or maybe this is virtualbox causing it?)
+        """
+        return  {}, [], ["lock"]
+
+    def get_layout_spec(self):
+        return "", "", []
+
+    def get_keyboard_repeat(self):
+        return None
+
+    def update_modifier_map(self, display_source, xkbmap_mod_meanings):
+        self.modifier_map = MODIFIER_MAP
+
+
+    def process_key_event(self, send_key_action_cb, key_event):
+        #default is to just send it as-is:
+        send_key_action_cb(key_event)

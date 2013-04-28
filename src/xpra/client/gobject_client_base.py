@@ -11,6 +11,8 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
+from xpra.net.protocol import set_scheduler
+set_scheduler(gobject)
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -79,6 +81,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         return capabilities
 
     def quit(self, exit_code):
+        log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()

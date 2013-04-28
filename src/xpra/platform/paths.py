@@ -82,6 +82,26 @@ def get_icon(name):
     return get_icon_from_file(filename)
 
 
+LICENSE_TEXT = None
+def get_license_text(self):
+    global LICENSE_TEXT
+    if LICENSE_TEXT:
+        return  LICENSE_TEXT
+    filename = os.path.join(get_resources_dir(), 'COPYING')
+    if os.path.exists(filename):
+        try:
+            if sys.version < '3':
+                license_file = open(filename, mode='rb')
+            else:
+                license_file = open(filename, mode='r', encoding='ascii')
+            LICENSE_TEXT = license_file.read()
+        finally:
+            license_file.close()
+    if not LICENSE_TEXT:
+        LICENSE_TEXT = "GPL version 2"
+    return LICENSE_TEXT
+
+
 if _os.name == "nt":
     from win32.paths import *               #@UnusedWildImport
 elif _sys.platform.startswith("darwin"):

@@ -62,6 +62,14 @@ class ClipboardProtocolHelperBase(object):
         self.init_packet_handlers()
         self.init_proxies(clipboards)
 
+    def cleanup(self):
+        def nosend(*args):
+            pass
+        self.send = nosend
+        for x in self._clipboard_proxies.values():
+            x.cleanup()
+        self._clipboard_proxies = {}
+
     def set_greedy_client(self, greedy):
         for proxy in self._clipboard_proxies.values():
             proxy.set_greedy_client(greedy)
@@ -321,6 +329,11 @@ class ClipboardProxy(gtk.Invisible):
         #semaphore to block the sending of the token when we change the owner ourselves:
         self._block_owner_change = False
         self._clipboard.connect("owner-change", self.do_owner_changed)
+
+    def cleanup(self):
+        if not self._have_token:
+            self._clipboard.store()
+        self.destroy()
 
     def set_greedy_client(self, greedy):
         debug("%s.set_greedy_client(%s)", self, greedy)

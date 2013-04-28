@@ -21,8 +21,8 @@ log = Logger()
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT
-from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.platform.gui import ClientExtras
+from xpra.client.keyboard_helper import KeyboardHelper
+from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED
 from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
@@ -136,10 +136,10 @@ class UIXpraClient(XpraClientBase):
         self.change_speed = False
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
-        self._client_extras = ClientExtras(self, opts, conn)
-        self.client_supports_notifications = opts.notifications and self._client_extras.can_notify()
-        self.client_supports_system_tray = opts.system_tray and self._client_extras.supports_system_tray()
-        self.client_supports_clipboard = opts.clipboard and self._client_extras.supports_clipboard() and not self.readonly
+
+        self.client_supports_notifications = opts.notifications
+        self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
+        self.client_supports_clipboard = opts.clipboard
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
@@ -148,19 +148,31 @@ class UIXpraClient(XpraClientBase):
         self.cursors_enabled = self.client_supports_cursors
         self.bell_enabled = self.client_supports_bell
 
-        self.supports_mmap = opts.mmap and ("rgb24" in ENCODINGS) and self._client_extras.supports_mmap()
+        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in ENCODINGS)
         if self.supports_mmap:
             self.init_mmap(opts.mmap_group, conn.filename)
 
-        self.init_packet_handlers()
-        self.ready(conn)
-
-        #keyboard:
-        self.init_keyboard(opts.keyboard_sync, opts.key_shortcut)
+        #initialize helpers:
+        self.keyboard_helper = None
+        if not self.readonly:
+            self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
+        self.clipboard_helper = None
+        self.clipboard_enabled = False
+        if self.client_supports_clipboard:
+            self.clipboard_helper = self.make_clipboard_helper()
+            self.clipboard_enabled = self.clipboard_helper is not None
+        self.tray = None
+        if not opts.no_tray:
+            self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
+        if self.client_supports_notifications:
+            self.notifier = self.make_notifier()
+            self.client_supports_notifications = self.notifier is not None
 
         #state:
         self._focused = None
 
+        self.init_packet_handlers()
+        self.ready(conn)
         self.send_hello()
 
         def compute_receive_bandwidth(delay):
@@ -192,9 +204,15 @@ class UIXpraClient(XpraClientBase):
         raise Exception("override me!")
 
     def cleanup(self):
-        log("XpraClient.cleanup() client_extras=%s", self._client_extras)
-        if self._client_extras:
-            self._client_extras.cleanup()
+        log("XpraClient.cleanup()")
+        if self.keyboard_helper:
+            self.keyboard_helper.cleanup()
+        if self.clipboard_helper:
+            self.clipboard_helper.cleanup()
+        if self.tray:
+            self.tray.cleanup()
+        if self.notifier:
+            self.notifier.cleanup()
         if self.sound_sink:
             self.stop_receiving_sound()
         if self.sound_source:
@@ -213,23 +231,25 @@ class UIXpraClient(XpraClientBase):
         log("XpraClient.cleanup() done")
 
 
-    def init_keyboard(self, keyboard_sync, key_shortcuts):
-        self.xkbmap_keycodes = []
-        self.xkbmap_x11_keycodes = {}
-        self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = {}, [], []
-        self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = "", "", []
-        self.xkbmap_print, self.xkbmap_query = "", ""
+    def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
+        return KeyboardHelper(self.send, keyboard_sync, key_shortcuts)
 
-        self.keyboard_sync = keyboard_sync
-        self.key_repeat_delay = -1
-        self.key_repeat_interval = -1
-        self.keys_pressed = {}
-        self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
+    def make_clipboard_helper(self):
+        raise Exception("override me!")
 
+    def make_tray(self, delay_tray, tray_icon):
+        return None
+
+    def make_notifier(self):
+        return None
+
+
+    def make_system_tray(self, wid, w, h):
+        raise Exception("override me!")
 
     def get_screen_sizes(self):
         raise Exception("override me!")
-        
+
     def get_root_size(self):
         raise Exception("override me!")
 
@@ -263,191 +283,38 @@ class UIXpraClient(XpraClientBase):
         self.opengl_enabled = False
         self.opengl_props = {"info" : "not supported"}
 
-    def parse_shortcuts(self, strs):
-        #TODO: maybe parse with re instead?
-        if len(strs)==0:
-            """ if none are defined, add this as default
-            it would be nicer to specify it via OptionParser in main
-            but then it would always have to be there with no way of removing it
-            whereas now it is enough to define one (any shortcut)
-            """
-            strs = ["meta+shift+F4:quit"]
-        log.debug("parse_shortcuts(%s)" % str(strs))
-        shortcuts = {}
-        #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
-        #but the user expects the name of the key to be used, ie: "alt" or "super"
-        #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
-        #so generate a map from one to the other:
-        modifier_names = {}
-        meanings = self.xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
-        DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
-        for pub_name,mod_name in meanings.items():
-            if mod_name in DEFAULT_MODIFIER_NUISANCE or pub_name in DEFAULT_MODIFIER_IGNORE_KEYNAMES:
-                continue
-            #just hope that xxx_L is mapped to the same modifier as xxx_R!
-            if pub_name.endswith("_L") or pub_name.endswith("_R"):
-                pub_name = pub_name[:-2]
-            elif pub_name=="ISO_Level3_Shift":
-                pub_name = "AltGr"
-            if pub_name not in modifier_names:
-                modifier_names[pub_name.lower()] = mod_name
-
-        for s in strs:
-            #example for s: Control+F8:some_action()
-            parts = s.split(":", 1)
-            if len(parts)!=2:
-                log.error("invalid shortcut: %s" % s)
-                continue
-            #example for action: "quit"
-            action = parts[1]
-            #example for keyspec: ["Alt", "F8"]
-            keyspec = parts[0].split("+")
-            modifiers = []
-            if len(keyspec)>1:
-                valid = True
-                #ie: ["Alt"]
-                for mod in keyspec[:len(keyspec)-1]:
-                    #ie: "alt_l" -> "mod1"
-                    imod = modifier_names.get(mod.lower())
-                    if not imod:
-                        log.error("invalid modifier: %s, valid modifiers are: %s", mod, modifier_names.keys())
-                        valid = False
-                        break
-                    modifiers.append(imod)
-                if not valid:
-                    continue
-            keyname = keyspec[len(keyspec)-1]
-            shortcuts[keyname] = (modifiers, action)
-        log.debug("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
-        return  shortcuts
-
-    def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
-        shortcut = self.key_shortcuts.get(key_name)
-        if not shortcut:
-            return  False
-        (req_mods, action) = shortcut
-        for rm in req_mods:
-            if rm not in modifiers:
-                #modifier is missing, bail out
-                return False
-        if not depressed:
-            """ when the key is released, just ignore it - do NOT send it to the server! """
-            return  True
-        try:
-            method = getattr(window, action)
-            log.info("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
-        except AttributeError, e:
-            log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
-            return  True
-        try:
-            method()
-        except KeyboardInterrupt:
-            raise
-        except Exception, e:
-            log.error("key_handled_as_shortcut(%s,%s,%s,%s) failed to execute shortcut=%s: %s", window, key_name, modifiers, depressed, shortcut, e)
-        return  True
-
-    def handle_key_action(self, event, window, pressed):
-        if self.readonly:
-            return
-        #NOTE: handle_key_event may fire send_key_action more than once (see win32 AltGr)
-        wid = self._window_to_id[window]
-        self._client_extras.handle_key_event(self.send_key_action, event, wid, pressed)
-
-    def send_key_action(self, wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier):
-        window = self._id_to_window[wid]
-        if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
-            return
-        log("send_key_action(%s, %s, %s, %s, %s, %s, %s, %s, %s)", wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
-        self.send("key-action", wid, nn(keyname), pressed, modifiers, nn(keyval), string, nn(keycode), group, is_modifier)
-        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(wid, pressed, keyname, keyval, keycode)
-
-    def _key_repeat(self, wid, depressed, name, keyval, keycode):
-        """ this method takes care of scheduling the sending of
-            "key-repeat" packets to the server so that it can
-            maintain a consistent keyboard state.
-        """
-        #we keep track of which keys are still pressed in a dict,
-        if keycode<0:
-            key = name
-        else:
-            key = keycode
-        if not depressed and key in self.keys_pressed:
-            """ stop the timer and clear this keycode: """
-            timer = self.keys_pressed[key]
-            log("key repeat: clearing timer %s for %s / %s", timer, name, keycode)
-            self.source_remove(timer)
-            del self.keys_pressed[key]
-        elif depressed and key not in self.keys_pressed:
-            """ we must ping the server regularly for as long as the key is still pressed: """
-            #TODO: we can have latency measurements (see ping).. use them?
-            LATENCY_JITTER = 100
-            MIN_DELAY = 5
-            delay = max(self.key_repeat_delay-LATENCY_JITTER, MIN_DELAY)
-            interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
-            log.debug("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", name, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
-            def send_key_repeat():
-                modifiers = self.get_current_modifiers()
-                self.send_now("key-repeat", wid, name, keyval, keycode, modifiers)
-            def continue_key_repeat(*args):
-                #if the key is still pressed (redundant check?)
-                #confirm it and continue, otherwise stop
-                log.debug("continue_key_repeat for %s / %s", name, keycode)
-                if key in self.keys_pressed:
-                    send_key_repeat()
-                    return  True
-                else:
-                    del self.keys_pressed[key]
-                    return  False
-            def start_key_repeat(*args):
-                #if the key is still pressed (redundant check?)
-                #confirm it and start repeat:
-                log.debug("start_key_repeat for %s / %s", name, keycode)
-                if key in self.keys_pressed:
-                    send_key_repeat()
-                    self.keys_pressed[key] = self.timeout_add(interval, continue_key_repeat)
-                else:
-                    del self.keys_pressed[key]
-                return  False   #never run this timer again
-            log.debug("key repeat: starting timer for %s / %s with delay %s and interval %s", name, keycode, delay, interval)
-            self.keys_pressed[key] = self.timeout_add(delay, start_key_repeat)
-
-    def clear_repeat(self):
-        for timer in self.keys_pressed.values():
-            self.source_remove(timer)
-        self.keys_pressed = {}
-
-
-    def query_xkbmap(self):
-        if self.readonly:
-            self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = "", "", []
-            self.xkbmap_print, self.xkbmap_query = "", ""
-        else:
-            self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_variants = self._client_extras.get_layout_spec()
-            self.xkbmap_print, self.xkbmap_query = self._client_extras.get_keymap_spec()
-        self.xkbmap_keycodes = self._client_extras.get_gtk_keymap()
-        self.xkbmap_x11_keycodes = self._client_extras.get_x11_keymap()
-        self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self._client_extras.get_keymap_modifiers()
-        log.debug("layout=%s, variant=%s", self.xkbmap_layout, self.xkbmap_variant)
-        log.debug("print=%s, query=%s", self.xkbmap_print, self.xkbmap_query)
-        log.debug("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
-        log.debug("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
-        log.debug("xkbmap_mod_meanings: %s", self.xkbmap_mod_meanings)
-
 
     def send_layout(self):
-        self.send("layout-changed", nn(self.xkbmap_layout), nn(self.xkbmap_variant))
+        self.send("layout-changed", nn(self.keyboard_helper.xkbmap_layout), nn(self.keyboard_helper.xkbmap_variant))
 
     def send_keymap(self):
         self.send("keymap-changed", self.get_keymap_properties())
 
     def get_keymap_properties(self):
-        props = {"modifiers" : self.get_current_modifiers()}
-        for x in ["xkbmap_print", "xkbmap_query", "xkbmap_mod_meanings",
-              "xkbmap_mod_managed", "xkbmap_mod_pointermissing", "xkbmap_keycodes", "xkbmap_x11_keycodes"]:
-            props[x] = nn(getattr(self, x))
+        props = self.keyboard_helper.get_keymap_properties()
+        props["modifiers"] = self.get_current_modifiers()
         return  props
+
+    def handle_key_action(self, event, window, pressed):
+        if self.readonly or self.keyboard_helper is None:
+            return
+        wid = self._window_to_id[window]
+        self.keyboard_helper.handle_key_action(event, window, wid, pressed)
+
+
+
+    def set_default_window_icon(self, window_icon):
+        if not window_icon:
+            window_icon = self.get_icon_filename("xpra.png")
+        if window_icon and os.path.exists(window_icon):
+            try:
+                self.do_set_window_icon(window_icon)
+            except Exception, e:
+                log.error("failed to set window icon %s: %s", window_icon, e)
+
+    def do_set_default_window_icon(self, window_icon):
+        raise Exception("override me!")
+
 
     def send_focus(self, wid):
         self.send("focus", wid, self.get_current_modifiers())
@@ -455,11 +322,13 @@ class UIXpraClient(XpraClientBase):
     def update_focus(self, wid, gotit):
         log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
         if gotit and self._focused is not wid:
-            self.clear_repeat()
+            if self.keyboard_helper:
+                self.keyboard_helper.clear_repeat()
             self.send_focus(wid)
             self._focused = wid
         if not gotit and self._focused is wid:
-            self.clear_repeat()
+            if self.keyboard_helper:
+                self.keyboard_helper.clear_repeat()
             self.send_focus(0)
             self._focused = None
 
@@ -472,23 +341,23 @@ class UIXpraClient(XpraClientBase):
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False
         else:
-            capabilities["xkbmap_layout"] = nn(self.xkbmap_layout)
-            capabilities["xkbmap_variant"] = nn(self.xkbmap_variant)
+            capabilities["xkbmap_layout"] = nn(self.keyboard_helper.xkbmap_layout)
+            capabilities["xkbmap_variant"] = nn(self.keyboard_helper.xkbmap_variant)
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         capabilities["screen_sizes"] = self.get_screen_sizes()
-        key_repeat = self._client_extras.get_keyboard_repeat()
+        key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
         if key_repeat:
             delay_ms,interval_ms = key_repeat
             capabilities["key_repeat"] = (delay_ms,interval_ms)
-        capabilities["keyboard_sync"] = self.keyboard_sync and (key_repeat is not None)
+        capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync and (key_repeat is not None)
         if self.mmap_enabled:
             capabilities["mmap_file"] = self.mmap_filename
             capabilities["mmap_token"] = self.mmap_token
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
-        if self._client_extras.supports_server():
+        if MMAP_SUPPORTED:
             #we may be running inside another server!
             try:
                 from xpra.server.server_uuid import get_uuid
@@ -742,7 +611,7 @@ class UIXpraClient(XpraClientBase):
                          % (avail_w, avail_h, root_w, root_h))
         modifier_keycodes = capabilities.get("modifier_keycodes")
         if modifier_keycodes:
-            self._client_extras.set_modifier_mappings(modifier_keycodes)
+            self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
         #sound:
         self.server_pulseaudio_id = capabilities.get("sound.pulseaudio.id")
@@ -767,6 +636,8 @@ class UIXpraClient(XpraClientBase):
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
+        if self.tray:
+            self.tray.ready()
 
 
     def start_sending_sound(self):
@@ -964,10 +835,11 @@ class UIXpraClient(XpraClientBase):
         self._process_new_common(packet, True)
 
     def _process_new_tray(self, packet):
+        assert SYSTEM_TRAY_SUPPORTED
         self._ui_event()
         wid, w, h = packet[1:4]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
-        tray = self._client_extras.make_system_tray(self, wid, w, h)
+        tray = self.make_system_tray(self, wid, w, h)
         log("process_new_tray(%s) tray=%s", packet, tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
@@ -1190,7 +1062,7 @@ class UIXpraClient(XpraClientBase):
         packet_type = packet[0]
         self.check_server_echo(0)
         if type(packet_type) in (unicode, str) and packet_type.startswith("clipboard-"):
-            if self.clipboard_enabled:
-                self.idle_add(self._client_extras.process_clipboard_packet, packet)
+            if self.clipboard_enabled and self.clipboard_helper:
+                self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
         else:
             XpraClientBase.process_packet(self, proto, packet)

@@ -8,9 +8,6 @@
 
 # but it works on win32, for whatever that's worth.
 
-from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
-gobject.threads_init()
 import sys
 from socket import error as socket_error
 from zlib import compress, decompress, decompressobj
@@ -99,10 +96,17 @@ class ZLibCompressed(object):
     def __str__(self):
         return  "ZLibCompressed(%s: %s bytes)" % (self.datatype, len(self.data))
 
-
 def zlib_compress(datatype, data, level=5):
     cdata = zcompress(data, level)
     return ZLibCompressed(datatype, cdata, level)
+
+
+#The 'scheduler' instance will generally be gobject
+#but we don't want to depend on it, so we inject it here:
+scheduler = None
+def set_scheduler(s):
+    global scheduler
+    scheduler = s
 
 
 class Protocol(object):
@@ -202,7 +206,7 @@ class Protocol(object):
                 self._read_thread.start()
                 self._read_parser_thread.start()
                 self._write_format_thread.start()
-        gobject.idle_add(do_start)
+        scheduler.idle_add(do_start)
 
     def send_now(self, packet):
         log("send_now(%s ...)", packet[0])
@@ -444,7 +448,7 @@ class Protocol(object):
 
     def _call_connection_lost(self, message="", exc_info=False):
         log("will call connection lost: %s", message)
-        gobject.idle_add(self._connection_lost, message, exc_info)
+        scheduler.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
         log.info("connection lost: %s", message, exc_info=exc_info)
@@ -478,7 +482,7 @@ class Protocol(object):
             buf = self._read_queue.get()
             if not buf:
                 log("read thread: empty marker, exiting")
-                gobject.idle_add(self.close)
+                scheduler.idle_add(self.close)
                 return
             if read_buffer:
                 read_buffer = read_buffer + buf
@@ -524,7 +528,7 @@ class Protocol(object):
                         if size_to_check>self.max_packet_size:
                             return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
-                    gobject.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
+                    scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
                     # incomplete packet, wait for the rest to arrive
@@ -590,7 +594,7 @@ class Protocol(object):
                         self._process_packet_cb(self, [Protocol.GIBBERISH, buf])
                         # Then hang up:
                         return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e))
-                    gobject.idle_add(gibberish, data)
+                    scheduler.idle_add(gibberish, data)
                     return
 
                 if self._closed:
@@ -631,7 +635,7 @@ class Protocol(object):
                     self.close()
                 else:
                     log("flush_then_close: still waiting for queue to flush")
-                    gobject.timeout_add(100, wait_for_queue, timeout-1)
+                    scheduler.timeout_add(100, wait_for_queue, timeout-1)
             else:
                 log("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
@@ -639,7 +643,7 @@ class Protocol(object):
                     self.close()
                 self._add_chunks_to_queue(chunks, proto_flags, start_send_cb=None, end_send_cb=close_cb)
                 self._write_lock.release()
-                gobject.timeout_add(5*1000, self.close)
+                scheduler.timeout_add(5*1000, self.close)
 
         def wait_for_write_lock(timeout=100):
             if not self._write_lock.acquire(False):
@@ -648,7 +652,7 @@ class Protocol(object):
                     self.close()
                 else:
                     log("flush_then_close: write lock is busy, will retry %s more times", timeout)
-                    gobject.timeout_add(10, wait_for_write_lock, timeout-1)
+                    scheduler.timeout_add(10, wait_for_write_lock, timeout-1)
             else:
                 log("flush_then_close: acquired the write lock")
                 #we have the write lock - we MUST free it!
@@ -664,7 +668,7 @@ class Protocol(object):
         if self._closed:
             return
         self._closed = True
-        gobject.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
+        scheduler.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         if self._conn:
             try:
                 self._conn.close()
@@ -676,7 +680,7 @@ class Protocol(object):
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_io_threads()
-        gobject.idle_add(self.clean)
+        scheduler.idle_add(self.clean)
 
     def clean(self):
         #clear all references to ensure we can get garbage collected quickly:

@@ -1,7 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2013 Antoine Martin <antoine@devloop.org.uk>
-# Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
+# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,9 +8,12 @@ from xpra.gtk_common.gobject_compat import import_gobject3, import_gtk3, import_
 gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
+from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
+from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
 
 from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk3.client_window import ClientWindow
+from xpra.client.gtk3.tray_menu import GTK3TrayMenu
 from xpra.log import Logger
 log = Logger()
 
@@ -32,6 +33,26 @@ class XpraClient(GTKXpraClient):
 
     def client_type(self):
         return "Python/Gtk3"
+
+
+    def do_set_default_window_icon(self, window_icon):
+        gtk.Window.set_default_icon_from_file(window_icon)
+
+
+    def do_get_pixbuf(self, icon_filename):
+        return Pixbuf.new_from_file(icon_filename)
+
+    def do_get_image(self, pixbuf, size=None):
+        if size>0:
+            pixbuf = pixbuf.scale_simple(size, size, InterpType.BILINEAR)
+        return  gtk.Image.new_from_pixbuf(pixbuf)
+
+
+    def make_tray_menu(self):
+        return GTK3TrayMenu(self)
+
+    def make_clipboard_helper(self):
+        return None
 
     def get_screen_sizes(self):
         #where has this been moved to? - no docs to tell you :(

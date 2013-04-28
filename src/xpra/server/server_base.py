@@ -27,12 +27,13 @@ from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, 
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_source import ServerSource
 from xpra.net.bytestreams import SocketConnection
-from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.os_util import get_hex_uuid
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.os_util import set_application_name
+from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode, set_scheduler
+set_scheduler(gobject)
 
 MAX_CONCURRENT_CONNECTIONS = 20
 

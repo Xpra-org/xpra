@@ -1,23 +1,19 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
-# Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import os.path
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject, is_gtk3
+import os
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
 gtk = import_gtk()
-gdk = import_gdk()
 gobject = import_gobject()
 
 from xpra.scripts.config import ENCODINGS
-from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
-from xpra.keyboard.mask import mask_to_names
-from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import set_tooltip_text
+from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems
 from xpra.client.gtk_base.about import about, close_about
+from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.log import Logger
 log = Logger()
 
@@ -25,347 +21,104 @@ log = Logger()
 SHOW_COMPRESSION_MENU = False
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
 
-#really old gtk versions aren't worth bothering about:
-LOAD_ICONS = is_gtk3() or (hasattr(gtk, "image_new_from_pixbuf") and hasattr(gdk, "pixbuf_new_from_file"))
 
-#utility method to ensure there is always only one CheckMenuItem
-#selected in a submenu:
-def ensure_item_selected(submenu, item):
-    if not isinstance(item, gtk.CheckMenuItem):
-        return
-    if item.get_active():
-        #deactivate all except this one
-        def deactivate(items, skip=None):
-            for x in items:
-                if x==skip:
-                    continue
-                if isinstance(x, gtk.MenuItem):
-                    submenu = x.get_submenu()
-                    if submenu:
-                        deactivate(submenu.get_children(), skip)
-                if isinstance(x, gtk.CheckMenuItem):
-                    if x!=item and x.get_active():
-                        x.set_active(False)
-        deactivate(submenu.get_children(), item)
-        return item
-    #ensure there is at least one other active item
-    def get_active_item(items):
-        for x in items:
-            if isinstance(x, gtk.MenuItem):
-                submenu = x.get_submenu()
-                if submenu:
-                    a = get_active_item(submenu.get_children())
-                    if a:
-                        return a
-            if isinstance(x, gtk.CheckMenuItem):
-                if x.get_active():
-                    return x
-        return None
-    active = get_active_item(submenu.get_children())
-    if active:
-        return  active
-    #if not then keep this one active:
-    item.set_active(True)
-    return item
+class GTKTrayMenuBase(object):
 
-def set_checkeditems(submenu, is_match_func):
-    """ recursively descends a submenu and any of its sub menus
-        and set any "CheckMenuItem" to active if is_match_func(item) """
-    if submenu is None:
-        return
-    for x in submenu.get_children():
-        if isinstance(x, gtk.MenuItem):
-            set_checkeditems(x.get_submenu(), is_match_func)
-        if isinstance(x, gtk.CheckMenuItem):
-            a = x.get_active()
-            v = is_match_func(x)
-            if a!=v:
-                x.set_active(v)
-
-
-def CheckMenuItem(label, tooltip=None):
-    """ adds a get_label() method for older versions of gtk which do not have it
-        beware that this label is not mutable!
-    """
-    cmi = gtk.CheckMenuItem(label)
-    if not hasattr(cmi, "get_label"):
-        def get_label():
-            return  label
-        cmi.get_label = get_label
-    if tooltip:
-        set_tooltip_text(cmi, tooltip)
-    return cmi
-
-class ClientExtrasBase(object):
-
-    def __init__(self, client, opts, conn):
+    def __init__(self, client):
         self.client = client
-        self.connection = conn
-        self.license_text = None
-        self.session_info_window = None
-        self.tray_icon = opts.tray_icon
-        self.session_name = opts.session_name
-        self.clipboard_helper = None
-        self.local_clipboard_requests = 0
-        self.remote_clipboard_requests = 0
-        #modifier bits:
-        self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
-        self.modifier_keys = {}             #{"Control_L" : "control", ...}
-        self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
-        self.set_window_icon(opts.window_icon)
-        self.update_modmap()
+        self.session_info = None
+        self.menu = None
 
-    def set_modifier_mappings(self, mappings):
-        log("set_modifier_mappings(%s)", mappings)
-        self.modifier_mappings = mappings
-        self.modifier_keys = {}
-        self.modifier_keycodes = {}
-        for modifier, keys in mappings.items():
-            for keycode,keyname in keys:
-                self.modifier_keys[keyname] = modifier
-                keycodes = self.modifier_keycodes.setdefault(keyname, [])
-                if keycode not in keycodes:
-                    keycodes.append(keycode)
-        log("modifier_keys=%s", self.modifier_keys)
-        log("modifier_keycodes=%s", self.modifier_keycodes)
+    def build(self):
+        if self.menu is None:
+            show_close = True #or sys.platform.startswith("win")
+            self.menu = self.setup_menu(show_close)
 
-    def set_window_icon(self, window_icon):
-        if not window_icon:
-            window_icon = self.get_icon_filename("xpra.png")
-        if window_icon and os.path.exists(window_icon):
-            try:
-                if is_gtk3():
-                    gtk.Window.set_default_icon_from_file(window_icon)
-                else:
-                    gtk.window_set_default_icon_from_file(window_icon)
-                log.debug("set default window icon to %s", window_icon)
-            except Exception, e:
-                log.error("failed to set window icon %s: %s, continuing", window_icon, e)
+    def show_session_info(self, *args):
+        if self.session_info and not self.session_info.is_closed:
+            self.session_info.raise_()
+        else:
+            pixbuf = self.client.get_pixbuf("statistics.png")
+            if not pixbuf:
+                pixbuf = self.client.get_pixbuf("xpra.png")
+            self.session_info = SessionInfo(self.client, self.client.session_name, pixbuf, self.client._protocol._conn, self.client.get_pixbuf)
+            self.session_info.show_all()
 
-    def quit(self, *args):
-        log("ClientExtrasBase.quit(%s) calling %s(0)", args, self.client.quit)
-        self.client.quit(0)
+    def get_image(self, *args):
+        return self.client.get_image(*args)
+
+    def setup_menu(self, show_close=True):
+        self.menu_shown = False
+        menu = gtk.Menu()
+        menu.set_title(self.client.session_name or "Xpra")
+        def set_menu_title(*args):
+            #set the real name when available:
+            self.menu.set_title(self.client.session_name)
+        self.client.connect("handshake-complete", set_menu_title)
+
+        menu.append(self.make_aboutmenuitem())
+        menu.append(self.make_sessioninfomenuitem())
+        menu.append(gtk.SeparatorMenuItem())
+        menu.append(self.make_bellmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_cursorsmenuitem())
+        menu.append(self.make_notificationsmenuitem())
+        if not self.client.readonly:
+            menu.append(self.make_clipboardmenuitem())
+        if self.client.windows_enabled and len(ENCODINGS)>1:
+            menu.append(self.make_encodingsmenuitem())
+        lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
+        if self.client.windows_enabled and len(lossy_encodings)>0:
+            menu.append(self.make_qualitymenuitem())
+        else:
+            self.quality = None
+        if self.client.windows_enabled and "x264" in ENCODINGS:
+            menu.append(self.make_speedmenuitem())
+        else:
+            self.speed = None
+        if self.client.speaker_allowed and STARTSTOP_SOUND_MENU:
+            menu.append(self.make_speakermenuitem())
+        if self.client.microphone_allowed and STARTSTOP_SOUND_MENU:
+            menu.append(self.make_microphonemenuitem())
+        if SHOW_COMPRESSION_MENU:
+            menu.append(self.make_compressionmenu())
+        if not self.client.readonly and self.client.keyboard_helper:
+            menu.append(self.make_layoutsmenuitem())
+        if self.client.windows_enabled and not self.client.readonly:
+            menu.append(self.make_keyboardsyncmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_refreshmenuitem())
+            menu.append(self.make_raisewindowsmenuitem())
+        #menu.append(item("Options", "configure", None, self.options))
+        menu.append(gtk.SeparatorMenuItem())
+        menu.append(self.make_disconnectmenuitem())
+        if show_close:
+            menu.append(self.make_closemenuitem())
+        self.popup_menu_workaround(menu)
+        menu.connect("deactivate", self.menu_deactivated)
+        menu.show_all()
+        return menu
 
     def cleanup(self):
-        log("ClientExtrasBase.cleanup() session_info_window=%s, gtk.main_level()=%s", self.session_info_window, gtk.main_level())
+        self.close_menu()
         close_about()
-        if self.session_info_window:
-            self.session_info_window.destroy()
-            self.session_info_window = None
-        log("ClientExtrasBase.cleanup() done")
 
-    def supports_server(self):
-        return LOCAL_SERVERS_SUPPORTED
+    def close_menu(self, *args):
+        if self.menu_shown:
+            self.menu.popdown()
+            self.menu_shown = False
 
-    def supports_mmap(self):
-        return LOCAL_SERVERS_SUPPORTED
+    def menu_deactivated(self, *args):
+        self.menu_shown = False
 
-    def supports_system_tray(self):
-        return True
+    def activate(self):
+        self.show_menu(1, 0)
 
-    def make_system_tray(self, client, wid, w, h):
-        from xpra.client.gtk_base.client_tray import ClientTray
-        return ClientTray(client, wid, w, h)
+    def popup(self, button, time):
+        self.show_menu(button, time)
 
-    def supports_clipboard(self):
-        return self.clipboard_helper is not None
-
-    def process_clipboard_packet(self, packet):
-        if self.clipboard_helper:
-            self.clipboard_helper.process_clipboard_packet(packet)
-        else:
-            log.warn("received a clipboard packet but clipboard is not supported!")
-
-    def clipboard_fallback(self):
-        try:
-            from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper)
-        except ImportError, e:
-            log.error("clipboard fallback failed to load: %s - no clipboard available", e)
-
-    def setup_clipboard_helper(self, helperClass):
-        def clipboard_send(*parts):
-            if self.client.clipboard_enabled:
-                self.client.send(*parts)
-            else:
-                log("clipboard is disabled, not sending clipboard packet")
-        def clipboard_progress(local_requests, remote_requests):
-            log("clipboard_progress(%s, %s)", local_requests, remote_requests)
-            if local_requests is not None:
-                self.local_clipboard_requests = local_requests
-            if remote_requests is not None:
-                self.remote_clipboard_requests = remote_requests
-            n = self.local_clipboard_requests+self.remote_clipboard_requests
-            if n>0:
-                self.set_icon("clipboard")
-                self.set_tooltip("%s clipboard requests in progress" % n)
-                self.set_blinking(True)
-            else:
-                self.set_icon("xpra")
-                self.set_tooltip("Xpra")
-                self.set_blinking(False)
-        self.clipboard_helper = helperClass(clipboard_send, clipboard_progress)
-        def register_clipboard_toggled(*args):
-            def clipboard_toggled(*args):
-                log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.client.clipboard_enabled, self.client.server_supports_clipboard)
-                if self.client.clipboard_enabled and self.client.server_supports_clipboard:
-                    self.clipboard_helper.send_all_tokens()
-                else:
-                    pass    #FIXME: todo!
-            self.client.connect("clipboard-toggled", clipboard_toggled)
-        self.client.connect("handshake-complete", register_clipboard_toggled)
-
-    def can_notify(self):
-        return  False
-
-    def show_notify(self, dbus_id, nid, app_name, replaces_id, app_icon, summary, body, expire_timeout):
-        pass
-
-    def close_notify(self, nid):
-        pass
-
-    def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        gdk.beep()
-
-    def get_layout_spec(self):
-        """ layout, variant, variants"""
-        return None,None,None
-
-    def mask_to_names(self, mask):
-        return mask_to_names(mask, self._modifier_map)
-
-    def handle_key_event(self, send_key_action_cb, event, wid, pressed):
-        modifiers = self.mask_to_names(event.state)
-        keyname = gdk.keyval_name(event.keyval)
-        keyval = event.keyval
-        keycode = event.hardware_keycode
-        group = event.group
-        string = event.string
-        #meant to be in PyGTK since 2.10, not used yet so just return False if we don't have it:
-        is_modifier = hasattr(event, "is_modifier") and event.is_modifier
-        send_key_action_cb(wid, keyname, pressed, modifiers, keyval, string, keycode, group, is_modifier)
-
-    def update_modmap(self, xkbmap_mod_meanings={}):
-        try:
-            self._modifier_map = self.grok_modifier_map(gdk.display_get_default(), xkbmap_mod_meanings)
-        except Exception, e:
-            log.error("update_modmap(%s): %s" % (xkbmap_mod_meanings, e))
-            self._modifier_map = {}
-        log("update_modmap(%s)=%s" % (xkbmap_mod_meanings, self._modifier_map))
-
-    def get_gtk_keymap(self):
-        return  get_gtk_keymap()
-
-    def get_x11_keymap(self):
-        return  {}
-
-    def get_keymap_modifiers(self):
-        return  {}, [], []
-
-    def get_keymap_spec(self):
-        """ xkbmap_print, xkbmap_query """
-        return None,None
-
-    def get_keyboard_repeat(self):
-        """ (delay_ms,interval_ms) or None"""
-        return None
-
-    def get_tray_tooltip(self):
-        if self.client.session_name:
-            return "%s\non %s" % (self.client.session_name, self.connection.target)
-        return self.connection.target
-
-
-    def session_info(self, *args):
-        if self.session_info_window is None or self.session_info_window.is_closed:
-            #we import here to avoid an import loop
-            from xpra.client.gtk_base.session_info import SessionInfo
-            pixbuf = self.get_pixbuf("statistics.png")
-            if not pixbuf and self.tray_icon:
-                pixbuf = self.get_pixbuf(self.tray_icon)
-            self.session_info_window = SessionInfo(self.client, self.session_name, pixbuf, self.connection, self.get_pixbuf)
-            self.session_info_window.show_all()
-        self.session_info_window.present()
-
-
-    def grok_modifier_map(self, display_source, xkbmap_mod_meanings):
-        modifier_map = {
-            "shift": 1 << 0,
-            "lock": 1 << 1,
-            "control": 1 << 2,
-            "mod1": 1 << 3,
-            "mod2": 1 << 4,
-            "mod3": 1 << 5,
-            "mod4": 1 << 6,
-            "mod5": 1 << 7,
-            }
-        return modifier_map
-
-
-    def get_data_dir(self):
-        return  os.path.dirname(sys.executable) or os.getcwd()
-
-    def get_icon_filename(self, icon_name):
-        dd = self.get_data_dir()
-        if dd is None:
-            return None
-        for icons_path in ("icons", "xpra/icons"):
-            filename = os.path.join(dd, icons_path, icon_name)
-            if os.path.exists(filename):
-                return  filename
-        log.error("get_icon_filename(%s) could not be found!", icon_name)
-        return  None
-
-    def get_license_text(self):
-        if self.license_text:
-            return  self.license_text
-        filename = os.path.join(self.get_data_dir(), 'COPYING')
-        if os.path.exists(filename):
-            try:
-                if sys.version < '3':
-                    license_file = open(filename, mode='rb')
-                else:
-                    license_file = open(filename, mode='r', encoding='ascii')
-                return license_file.read()
-            finally:
-                license_file.close()
-        if not self.license_text:
-            self.license_text = "GPL version 2"
-        return self.license_text
-
-    def get_pixbuf(self, icon_name):
-        try:
-            if not icon_name or not LOAD_ICONS:
-                return None
-            icon_filename = self.get_icon_filename(icon_name)
-            if icon_filename:
-                if is_gtk3():
-                    from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
-                    return Pixbuf.new_from_file(icon_filename)
-                else:
-                    return  gdk.pixbuf_new_from_file(icon_filename)
-        except:
-            log.error("get_image(%s)", icon_name, exc_info=True)
-        return  None
-
-    def get_image(self, icon_name, size=None):
-        try:
-            pixbuf = self.get_pixbuf(icon_name)
-            if not pixbuf:
-                return  None
-            if size:
-                if is_gtk3():
-                    from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
-                    interp = InterpType.BILINEAR
-                else:
-                    interp = gdk.INTERP_BILINEAR
-                pixbuf = pixbuf.scale_simple(size, size, interp)
-            if is_gtk3():
-                return  gtk.Image.new_from_pixbuf(pixbuf)
-            return  gtk.image_new_from_pixbuf(pixbuf)
-        except:
-            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return  None
+    def show_menu(self, button, time):
+        raise Exception("override me!")
 
 
     def handshake_menuitem(self, *args, **kwargs):
@@ -406,36 +159,15 @@ class ClientExtrasBase(object):
         return check_item
 
 
-    def close_menu(self, *args):
-        if self.menu_shown:
-            self.menu.popdown()
-            self.menu_shown = False
-
-    def menu_deactivated(self, *args):
-        self.menu_shown = False
-
-    def activate_menu(self, widget, *args):
-        self.show_menu(1, 0)
-
-    def popup_menu(self, widget, button, time, *args):
-        self.show_menu(button, time)
-
-    def show_menu(self, button, time):
-        self.close_menu()
-        if is_gtk3():
-            self.menu.popup(None, None, None, None, button, time)
-        else:
-            self.menu.popup(None, None, None, button, time, None)
-        self.menu_shown = True
 
     def make_aboutmenuitem(self):
         return  self.menuitem("About Xpra", "information.png", None, about)
 
     def make_sessioninfomenuitem(self):
         title = "Session Info"
-        if self.session_name and self.session_name!="Xpra session":
-            title = self.session_name
-        return  self.handshake_menuitem(title, "statistics.png", None, self.session_info)
+        if self.client.session_name and self.client.session_name!="Xpra session":
+            title = self.client.session_name
+        return  self.handshake_menuitem(title, "statistics.png", None, self.show_session_info)
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
@@ -543,13 +275,13 @@ class ClientExtrasBase(object):
                     send_tokens = False
                     if remote_clipboard is not None:
                         #clipboard is not disabled
-                        if self.clipboard_helper is None:
-                            self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
-                        self.clipboard_helper.remote_clipboard = remote_clipboard
+                        if self.client.clipboard_helper is None:
+                            self.client.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
+                        self.client.clipboard_helper.remote_clipboard = remote_clipboard
                         send_tokens = True
                         new_state = True
                     else:
-                        self.clipboard_helper = None
+                        self.client.clipboard_helper = None
                         send_tokens = False
                         new_state = False
                     log("remote_clipboard_changed(%s) label=%s, remote_clipboard=%s, old_state=%s, new_state=%s",
@@ -558,10 +290,10 @@ class ClientExtrasBase(object):
                         self.client.clipboard_enabled = new_state
                         self.client.emit("clipboard-toggled")
                         send_tokens = True
-                    if send_tokens and self.clipboard_helper:
-                        self.clipboard_helper.send_all_tokens()
-                active = isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper) \
-                            and self.clipboard_helper.remote_clipboard==remote_clipboard
+                    if send_tokens and self.client.clipboard_helper:
+                        self.client.clipboard_helper.send_all_tokens()
+                active = isinstance(self.client.clipboard_helper, TranslatedClipboardProtocolHelper) \
+                            and self.client.clipboard_helper.remote_clipboard==remote_clipboard
                 clipboard_item.set_active(active)
                 clipboard_item.set_sensitive(can_clipboard)
                 clipboard_item.set_draw_as_radio(True)
@@ -573,9 +305,9 @@ class ClientExtrasBase(object):
 
     def make_clipboardmenuitem(self):
         try:
-            if self.clipboard_helper:
+            if self.client.clipboard_helper:
                 from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-                if isinstance(self.clipboard_helper, TranslatedClipboardProtocolHelper):
+                if isinstance(self.client.clipboard_helper, TranslatedClipboardProtocolHelper):
                     return self.make_translatedclipboard_optionsmenuitem()
         except:
             log.error("make_clipboardmenuitem()", exc_info=True)
@@ -598,7 +330,7 @@ class ClientExtrasBase(object):
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
         self.keyboard_sync_menuitem.set_sensitive(False)
         def set_keyboard_sync_menuitem(*args):
-            self.keyboard_sync_menuitem.set_active(self.client.keyboard_sync)
+            self.keyboard_sync_menuitem.set_active(self.client.keyboard_helper.keyboard_sync)
             self.keyboard_sync_menuitem.set_sensitive(self.client.toggle_keyboard_sync)
             set_keyboard_sync_tooltip()
         self.client.connect("handshake-complete", set_keyboard_sync_menuitem)
@@ -922,7 +654,7 @@ class ClientExtrasBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout,variant,variants = self.get_layout_spec()
+        layout,variant,variants = self.client.keyboard_helper.keyboard.get_layout_spec()
         if layout and len(variants)>1:
             #just show all the variants to choose from this layout
             self.layout_submenu.append(kbitem("%s - Default" % layout, layout, None))
@@ -950,15 +682,16 @@ class ClientExtrasBase(object):
                 else:
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
+        keyboard_helper = self.client.keyboard_helper
         def set_selected_layout(*args):
-            if self.client.xkbmap_layout or self.client.xkbmap_print or self.client.xkbmap_query:
+            if keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query:
                 #we have detected a layout
                 #so no need to let the user override it
                 keyboard.hide()
                 return
             keyboard.set_sensitive(True)
-            layout = self.client.xkbmap_layout
-            variant = self.client.xkbmap_variant
+            layout = keyboard_helper.xkbmap_layout
+            variant = keyboard_helper.xkbmap_variant
             def is_match(checkitem):
                 return checkitem.keyboard_layout==layout and checkitem.keyboard_variant==variant
             set_checkeditems(self.layout_submenu, is_match)
@@ -1005,66 +738,18 @@ class ClientExtrasBase(object):
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
 
     def make_disconnectmenuitem(self):
-        return self.handshake_menuitem("Disconnect", "quit.png", None, self.quit)
+        def menu_quit(*args):
+            self.client.quit(0)
+        return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 
     def make_closemenuitem(self):
         return self.menuitem("Close Menu", "close.png", None, self.close_menu)
 
-    def setup_menu(self, show_close=False):
-        self.menu_shown = False
-        menu = gtk.Menu()
-        menu.set_title(self.client.session_name or "Xpra")
-        def set_menu_title(*args):
-            #set the real name when available:
-            self.menu.set_title(self.client.session_name)
-        self.client.connect("handshake-complete", set_menu_title)
-
-        menu.append(self.make_aboutmenuitem())
-        menu.append(self.make_sessioninfomenuitem())
-        menu.append(gtk.SeparatorMenuItem())
-        menu.append(self.make_bellmenuitem())
-        if self.client.windows_enabled:
-            menu.append(self.make_cursorsmenuitem())
-        menu.append(self.make_notificationsmenuitem())
-        if not self.client.readonly:
-            menu.append(self.make_clipboardmenuitem())
-        if self.client.windows_enabled and len(ENCODINGS)>1:
-            menu.append(self.make_encodingsmenuitem())
-        lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
-        if self.client.windows_enabled and len(lossy_encodings)>0:
-            menu.append(self.make_qualitymenuitem())
-        else:
-            self.quality = None
-        if self.client.windows_enabled and "x264" in ENCODINGS:
-            menu.append(self.make_speedmenuitem())
-        else:
-            self.speed = None
-        if self.client.speaker_allowed and STARTSTOP_SOUND_MENU:
-            menu.append(self.make_speakermenuitem())
-        if self.client.microphone_allowed and STARTSTOP_SOUND_MENU:
-            menu.append(self.make_microphonemenuitem())
-        if SHOW_COMPRESSION_MENU:
-            menu.append(self.make_compressionmenu())
-        if not self.client.readonly:
-            menu.append(self.make_layoutsmenuitem())
-        if self.client.windows_enabled and not self.client.readonly:
-            menu.append(self.make_keyboardsyncmenuitem())
-        if self.client.windows_enabled:
-            menu.append(self.make_refreshmenuitem())
-            menu.append(self.make_raisewindowsmenuitem())
-        #menu.append(item("Options", "configure", None, self.options))
-        menu.append(gtk.SeparatorMenuItem())
-        menu.append(self.make_disconnectmenuitem())
-        if show_close:
-            menu.append(self.make_closemenuitem())
-        self.popup_menu_workaround(menu)
-        menu.connect("deactivate", self.menu_deactivated)
-        menu.show_all()
-        self.menu = menu
 
     def popup_menu_workaround(self, menu):
-        #win32 overrides this to add the workaround
-        pass
+        #win32 workaround:
+        if sys.platform.startswith("win"):
+            self.add_popup_menu_workaround(menu)
 
     def add_popup_menu_workaround(self, menu):
         """ windows does not automatically close the popup menu when we click outside it
@@ -1092,4 +777,3 @@ class ClientExtrasBase(object):
         log.debug("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)
-

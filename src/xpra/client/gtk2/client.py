@@ -13,6 +13,7 @@ from gtk import gdk
 
 from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk2.client_window import ClientWindow
+from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.log import Logger
 log = Logger()
@@ -30,9 +31,98 @@ class XpraClient(GTKXpraClient):
             self.GLClientWindowClass = GLClientWindow
         except:
             self.GLClientWindowClass = None
+        self.local_clipboard_requests = 0
+        self.remote_clipboard_requests = 0
 
     def client_type(self):
         return "Python/Gtk2"
+
+
+    def do_set_default_window_icon(self, window_icon):
+        gtk.window_set_default_icon_from_file(window_icon)
+
+
+
+    def do_get_pixbuf(self, icon_filename):
+        if not hasattr(gdk, "pixbuf_new_from_file"):
+            return None
+        return  gdk.pixbuf_new_from_file(icon_filename)
+
+    def do_get_image(self, pixbuf, size=None):
+        if not hasattr(gtk, "image_new_from_pixbuf"):
+            return None
+        if size:
+            pixbuf = pixbuf.scale_simple(size, size, gdk.INTERP_BILINEAR)
+        return  gtk.image_new_from_pixbuf(pixbuf)
+
+
+    def make_tray_menu(self):
+        return GTK2TrayMenu(self)
+
+    def make_clipboard_helper(self):
+        from xpra.platform.features import CLIPBOARDS
+        if sys.platform.startswith("darwin"):
+            try:
+                from xpra.clipboard.osx_clipboard import OSXClipboardProtocolHelper
+                return self.setup_clipboard_helper(OSXClipboardProtocolHelper)
+            except ImportError, e:
+                log.error("OSX clipboard failed to load: %s", e)
+        if sys.platform.startswith("win"):
+            try:
+                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
+                return self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
+            except ImportError, e:
+                log.error("GDK translated clipboard failed to load: %s - using default fallback", e)
+        else:
+            try:
+                from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+                return self.setup_clipboard_helper(GDKClipboardProtocolHelper, clipboards=CLIPBOARDS)
+            except ImportError, e:
+                log.error("GDK clipboard failed to load: %s - using default fallback", e)
+        try:
+            from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
+            self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=CLIPBOARDS)
+        except ImportError, e:
+            log.error("clipboard fallback failed to load: %s - no clipboard available", e)
+        return None
+
+    def setup_clipboard_helper(self, helperClass, *args, **kwargs):
+        def clipboard_send(*parts):
+            if self.clipboard_enabled:
+                self.send(*parts)
+            else:
+                log("clipboard is disabled, not sending clipboard packet")
+        def clipboard_progress(local_requests, remote_requests):
+            log("clipboard_progress(%s, %s)", local_requests, remote_requests)
+            if local_requests is not None:
+                self.local_clipboard_requests = local_requests
+            if remote_requests is not None:
+                self.remote_clipboard_requests = remote_requests
+            n = self.local_clipboard_requests+self.remote_clipboard_requests
+            self.clipboard_notify(n)
+        return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
+        def register_clipboard_toggled(*args):
+            def clipboard_toggled(*args):
+                log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.clipboard_enabled, self.server_supports_clipboard)
+                if self.clipboard_enabled and self.server_supports_clipboard:
+                    self.clipboard_helper.send_all_tokens()
+                else:
+                    pass    #FIXME: todo!
+            self.connect("clipboard-toggled", clipboard_toggled)
+        self.connect("handshake-complete", register_clipboard_toggled)
+
+    def clipboard_notify(self, n):
+        if not self.tray:
+            return
+        if n>0:
+            self.tray.set_icon("clipboard")
+            self.tray.set_tooltip("%s clipboard requests in progress" % n)
+            self.tray.set_blinking(True)
+        else:
+            self.tray.set_icon("xpra")
+            self.tray.set_tooltip("Xpra")
+            self.tray.set_blinking(False)
+
 
     def make_hello(self, challenge_response=None):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)

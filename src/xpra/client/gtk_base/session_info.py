@@ -419,7 +419,7 @@ class SessionInfo(gtk.Window):
         else:
             glinfo = self.client.opengl_props.get("info", "")
         self.server_opengl_label.set_text(glinfo)
-        
+
         scaps = self.client.server_capabilities
         self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
         self.client_encodings_label.set_text(", ".join(ENCODINGS))

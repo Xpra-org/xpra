@@ -33,7 +33,7 @@ GPL2 = None
 def load_license():
 	global GPL2
 	if GPL2 is None:
-		from xpra.platform import get_resources_dir
+		from xpra.platform.paths import get_resources_dir
 		gpl2_file = os.path.join(get_resources_dir(), "COPYING")
 		if os.path.exists(gpl2_file):
 			try:
@@ -53,7 +53,7 @@ def about(on_close=None):
 		about_dialog.show()
 		about_dialog.present()
 		return
-	from xpra.platform import get_icon
+	from xpra.platform.paths import get_icon
 	xpra_icon = get_icon("xpra.png")
 	dialog = gtk.AboutDialog()
 	if not is_gtk3():

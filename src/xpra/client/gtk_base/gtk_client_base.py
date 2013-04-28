@@ -22,6 +22,11 @@ from xpra.gtk_common.cursor_names import cursor_names
 from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
+from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.platform.paths import get_icon_filename
+from xpra.platform.gui import make_native_tray, system_bell
+from xpra.client.gtk_base.client_tray import ClientTray
+
 
 sys.modules['QtCore']=None
 
@@ -32,17 +37,78 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def __init__(self, conn, opts):
         GObjectXpraClient.__init__(self, opts)
         UIXpraClient.__init__(self, conn, opts)
+        self.session_info = None
 
-    def init_keyboard(self, keyboard_sync, key_shortcuts):
-        self._keymap_changing = False
+
+    def get_pixbuf(self, icon_name):
+        log("get_pixbuf(%s)", icon_name)
         try:
-            self._keymap = gdk.keymap_get_default()
+            if not icon_name:
+                return None
+            icon_filename = get_icon_filename(icon_name)
+            log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
+            if icon_filename:
+                return self.do_get_pixbuf(icon_filename)
         except:
-            self._keymap = None
-        self._do_keys_changed()
-        if self._keymap:
-            self._keymap.connect("keys-changed", self._keys_changed)
-        UIXpraClient.init_keyboard(self, keyboard_sync, key_shortcuts)
+            log.error("get_image(%s)", icon_name, exc_info=True)
+        return  None
+
+    def do_get_pixbuf(self, icon_filename):
+        raise Exception("override me!")
+
+
+    def get_image(self, icon_name, size=None):
+        try:
+            pixbuf = self.get_pixbuf(icon_name)
+            log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+            if not pixbuf:
+                return  None
+            return self.do_get_image(pixbuf, size)
+        except:
+            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
+            return  None
+
+    def do_get_image(self, pixbuf, size=None):
+        raise Exception("override me!")
+
+
+    def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
+        return GTKKeyboardHelper(self.send, keyboard_sync, key_shortcuts, self.send_layout, self.send_keymap)
+
+    def make_tray(self, delay_tray, tray_icon):
+        self.menu_helper = self.make_tray_menu()
+        tray = make_native_tray(self.menu_helper, delay_tray, tray_icon)
+        if tray:
+            return tray
+        try:
+            from xpra.client.gtk_base.appindicator_tray import can_use_appindicator, AppindicatorTray
+            if can_use_appindicator():
+                return AppindicatorTray(self.menu_helper.menu, delay_tray, tray_icon)
+        except Exception, e:
+            log.warn("failed to load appindicator: %s" % e)
+        try:
+            from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
+            def popup(widget, button, time, *args):
+                self.menu_helper.popup(button, time)
+            def activate(*args):
+                self.menu_helper.activate()
+            gtk_tray = GTKStatusIconTray(popup, activate, delay_tray, tray_icon)
+            self.menu_helper.build()
+            return gtk_tray
+        except Exception, e:
+            log.warn("failed to load StatusIcon tray: %s" % e)
+
+
+    def make_notifier(self):
+        return None
+
+
+    def supports_system_tray(self):
+        #always True: we can always use gtk.StatusIcon as fallback
+        return True
+
+    def make_system_tray(self, client, wid, w, h):
+        return ClientTray(client, wid, w, h)
 
     def get_root_size(self):
         raise Exception("override me!")
@@ -75,34 +141,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             gobject.timeout_add(500, gtk_main_quit_really)
 
 
-    def _keys_changed(self, *args):
-        log.debug("keys_changed")
-        self._keymap = gdk.keymap_get_default()
-        if not self._keymap_changing:
-            self._keymap_changing = True
-            gobject.timeout_add(500, self._do_keys_changed, True)
-
-    def _do_keys_changed(self, sendkeymap=False):
-        self._keymap_changing = False
-        self.query_xkbmap()
-        try:
-            self._modifier_map = self._client_extras.grok_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
-        except:
-            self._modifier_map = {}
-        log.debug("do_keys_changed() modifier_map=%s" % self._modifier_map)
-        if sendkeymap and not self.readonly:
-            if self.xkbmap_layout:
-                self.send_layout()
-            self.send_keymap()
-
     def get_current_modifiers(self):
         modifiers_mask = gdk.get_default_root_window().get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
 
     def mask_to_names(self, mask):
-        if self._client_extras is None:
+        if self.keyboard_helper is None:
             return []
-        return self._client_extras.mask_to_names(mask)
+        return self.keyboard_helper.mask_to_names(mask)
 
 
     def make_hello(self, challenge_response=None):
@@ -119,5 +165,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if gdkwindow is None:
             gdkwindow = gdk.get_default_root_window()
         log("window_bell(..) gdkwindow=%s", gdkwindow)
-        self._client_extras.system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name)
-
+        if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+            #fallback to simple beep:
+            gdk.beep()

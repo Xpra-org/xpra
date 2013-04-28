@@ -6,6 +6,18 @@
 # later version. See the file COPYING for details.
 
 
+MODIFIER_MAP = {
+            "shift": 1 << 0,
+            "lock": 1 << 1,
+            "control": 1 << 2,
+            "mod1": 1 << 3,
+            "mod2": 1 << 4,
+            "mod3": 1 << 5,
+            "mod4": 1 << 6,
+            "mod5": 1 << 7,
+            }
+
+
 DEFAULT_MODIFIER_NAMES = ["shift", "control"]
 DEFAULT_MODIFIER_NUISANCE = ["lock", "num", "scroll"]
 DEFAULT_ALL_MODIFIER_NAMES = DEFAULT_MODIFIER_NAMES+DEFAULT_MODIFIER_NUISANCE+["mod1", "mod2", "mod3", "mod4", "mod5"]

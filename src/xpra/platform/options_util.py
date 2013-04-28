@@ -6,7 +6,7 @@
 def add_notray_option(parser, extra_text=""):
     parser.add_option("--no-tray", action="store_true",
                           dest="no_tray", default=False,
-                          help="Disables the system tray%s" % extra_text)
+                          help="Disables Xpra's own system tray applet%s" % extra_text)
 
 def add_delaytray_option(parser, extra_text=""):
     parser.add_option("--delay-tray", action="store_true",
