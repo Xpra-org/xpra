@@ -1,4 +1,5 @@
 # This file is part of Xpra.
+# Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -68,7 +69,7 @@ gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
 #  2 = U plane
 #  3 = V plane
 #  4 = RGB updates
-#  5 = FBO texture (guaranteed up-to-date window contents) 
+#  5 = FBO texture (guaranteed up-to-date window contents)
 TEX_Y = 0
 TEX_U = 1
 TEX_V = 2
@@ -82,7 +83,7 @@ The logic is as follows:
 We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
 This framebuffer object is updated with YUV painting and RGB painting. It is presented on screen by drawing a
 textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an expose event.
-The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date 
+The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date
 window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
 """
 class GLPixmapBacking(GTK2WindowBacking):
@@ -123,14 +124,14 @@ class GLPixmapBacking(GTK2WindowBacking):
             return
         c_string = c_char_p(msg)
         glStringMarkerGREMEDY(0, c_string)
-    
+
     def gl_frame_terminator(self):
         # Mark the end of the frame
         # This makes the debug output more readable especially when doing single-buffered rendering
         if not bool(glFrameTerminatorGREMEDY):
             return
         glFrameTerminatorGREMEDY()
-        
+
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
@@ -148,24 +149,24 @@ class GLPixmapBacking(GTK2WindowBacking):
             if glInitStringMarkerGREMEDY and glInitStringMarkerGREMEDY() == True:
                 log.info("Extension GL_GREMEDY_string_marker available. Will output detailed information about each frame.")
             else:
-                # General case - running without debugger, extension not available 
+                # General case - running without debugger, extension not available
                 glStringMarkerGREMEDY = None
             # Initialize frame_terminator GL debugging extension if available
             if glInitFrameTerminatorGREMEDY and glInitFrameTerminatorGREMEDY() == True:
                 glFrameTerminatorGREMEDY = None
-                
-                
-            
-            self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))   
+
+
+
+            self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
             glMatrixMode(GL_MODELVIEW)
-            #TODO glEnableClientState(GL_VERTEX_ARRAY) 
+            #TODO glEnableClientState(GL_VERTEX_ARRAY)
             #TODO glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-            
+
             # Clear to white
             glClearColor(1.0, 1.0, 1.0, 1.0)
 
@@ -224,7 +225,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         # Reset state to our default
         self.gl_marker("Switching back to YUV paint state")
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
-        
+
     def present_fbo(self):
         drawable = self.gl_init()
         debug("present_fbo() drawable=%s", drawable)
@@ -238,7 +239,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.set_rgb24_paint_state()
 
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        
+
         w, h = self.size
         glBegin(GL_QUADS)
         glTexCoord2i(0, h)
@@ -260,7 +261,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         else:
             glFlush()
         self.gl_frame_terminator()
-        
+
         self.unset_rgb24_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         drawable.gl_end()
@@ -276,7 +277,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         if not drawable:
             debug("OpenGL cannot paint rgb24, drawable is not set")
             return False
-        
+
         self.set_rgb24_paint_state()
 
         self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d" % (x, y, width, height, rowstride, rowstride/3))
@@ -287,7 +288,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-        
+
         # Draw textured RGB quad at the right coordinates
         glBegin(GL_QUADS)
         glTexCoord2i(0, 0)
@@ -299,11 +300,11 @@ class GLPixmapBacking(GTK2WindowBacking):
         glTexCoord2i(width, 0)
         glVertex2i(x+width, y)
         glEnd()
-       
+
         # Present update to screen
         self.present_fbo()
         # present_fbo has resetted state already
-        
+
         drawable.gl_end()
         return True
 
