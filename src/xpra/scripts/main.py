@@ -270,6 +270,8 @@ When unspecified, all the available codecs are allowed and the first one is used
     # let the platform specific code add its own options:
     # adds "--no-tray" for platforms that support it
     add_client_options(group)
+    hidden_options["no_tray"] =  False
+    hidden_options["delay_tray"] =  False
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
@@ -332,7 +334,8 @@ When unspecified, all the available codecs are allowed and the first one is used
     #ensure all the option fields are set even though
     #some options are not shown to the user:
     for k,v in hidden_options.items():
-        setattr(options, k, v)
+        if not hasattr(options, k):
+            setattr(options, k, v)
     try:
         int(options.dpi)
     except Exception, e:
@@ -679,19 +682,19 @@ def run_client(parser, opts, extra_args, mode):
         if not app:
             from xpra.client.client import XpraClient
             app = XpraClient(conn, opts)
+        def handshake_complete(*args):
+            from xpra.log import Logger
+            log = Logger()
+            if mode=="detach":
+                log.info("handshake-complete: detaching")
+                app.quit(0)
+            elif mode=="attach":
+                log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
+        if hasattr(app, "connect"):
+            app.connect("handshake-complete", handshake_complete)
     return do_run_client(app, conn.target, mode)
 
 def do_run_client(app, target, mode):
-    def handshake_complete(*args):
-        from xpra.log import Logger
-        log = Logger()
-        if mode=="detach":
-            log.info("handshake-complete: detaching")
-            app.quit(0)
-        elif mode=="attach":
-            log.info("Attached to %s (press Control-C to detach)\n" % target)
-    if hasattr(app, "connect"):
-        app.connect("handshake-complete", handshake_complete)
     try:
         try:
             return app.run()
