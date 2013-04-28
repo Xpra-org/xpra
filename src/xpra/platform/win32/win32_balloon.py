@@ -7,14 +7,12 @@
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
-#@PydevCodeAnalysisIgnore
 
-from win32api import *
 # Try and use XP features, so we get alpha-blending etc.
 try:
-	from winxpgui import *
+	from winxpgui import NIF_INFO, NIIF_INFO, NIM_MODIFY
 except ImportError:
-	from win32gui import *
+	from win32gui import NIF_INFO, NIIF_INFO, NIM_MODIFY
 import struct
 
 
