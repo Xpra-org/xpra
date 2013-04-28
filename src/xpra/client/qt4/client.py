@@ -13,11 +13,33 @@ log = Logger()
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.net.protocol import set_scheduler
 from xpra.client.qt4.scheduler import QtScheduler
+from xpra.client.qt4.client_window import ClientWindow
 set_scheduler(QtScheduler)
 
 sys.modules['gtk']=None
 sys.modules['pygtk']=None
 sys.modules['gi']=None
+
+
+from Queue import Queue
+class Invoker(QtCore.QObject):
+    def __init__(self):
+        super(Invoker, self).__init__()
+        self.queue = Queue()
+
+    def invoke(self, func, *args):
+        f = lambda: func(*args)
+        self.queue.put(f)
+        QtCore.QMetaObject.invokeMethod(self, "handler", QtCore.Qt.QueuedConnection)
+
+    @QtCore.pyqtSlot()
+    def handler(self):
+        f = self.queue.get()
+        f()
+invoker = Invoker()
+
+def invoke_in_main_thread(func, *args):
+    invoker.invoke(func,*args)
 
 
 class XpraClient(UIXpraClient):
@@ -35,8 +57,15 @@ class XpraClient(UIXpraClient):
         #overriden in subclasses!
         return "Python/Qt4"
 
+    def get_client_window_class(self, metadata):
+        return ClientWindow
+
+
     def connect(self, *args):
         log.warn("connect(%s) not implemented for Qt!", args)
+
+    def emit(self, *args):
+        log.warn("emit(%s) not implemented for Qt!", args)
 
 
     def supports_system_tray(self):
@@ -54,27 +83,30 @@ class XpraClient(UIXpraClient):
     def set_windows_cursor(self, gtkwindows, new_cursor):
         pass
 
+    def group_leader_for_pid(self, pid, wid):
+        return None
+
+
 
     def idle_add(self, fn, *args):
         log.info("idle_add(%s, %s)", fn, args)
-        def timer_callback(*targs):
-            log.info("timer_callback(%s) calling %s(%s)", targs, fn, args)
-            x = fn(*args)
-            if bool(x):
-                QtCore.QTimer.singleShot(0, timer_callback)
-        QtCore.QTimer.singleShot(0, timer_callback)
+        def cb():
+            fn(*args)
+        invoke_in_main_thread(cb)
 
     def timeout_add(self, delay, fn, *args):
-        timer = QtCore.QTimer()
-        self.timers.add(timer)
-        def timer_callback():
-            log.info("timer_callback() calling %s(%s)", fn, args)
-            x = fn(*args)
-            if not bool(x):
-                timer.stop()
-                self.timers.remove(timer)
-        timer.timeout.connect(timer_callback)
-        timer.start(delay)
+        def main_thread_cb():
+            timer = QtCore.QTimer()
+            self.timers.add(timer)
+            def timer_callback():
+                log.info("timer_callback() calling %s(%s)", fn, args)
+                x = fn(*args)
+                if not bool(x):
+                    timer.stop()
+                    self.timers.remove(timer)
+            timer.timeout.connect(timer_callback)
+            timer.start(delay)
+        invoke_in_main_thread(main_thread_cb)
 
     def source_remove(self, *args):
         raise Exception("override me!")

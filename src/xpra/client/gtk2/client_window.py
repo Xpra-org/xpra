@@ -9,7 +9,7 @@ import gobject
 import gtk
 from gtk import gdk
 
-from xpra.client.gtk_base.client_window_base import ClientWindowBase, DRAW_DEBUG
+from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRAW_DEBUG, HAS_X11_BINDINGS
 from xpra.log import Logger
 log = Logger()
 
@@ -17,7 +17,7 @@ log = Logger()
 """
 GTK2 version of the ClientWindow class
 """
-class ClientWindow(ClientWindowBase):
+class ClientWindow(GTKClientWindowBase):
 
     WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
             | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
@@ -32,20 +32,20 @@ class ClientWindow(ClientWindowBase):
                 #gdk.WINDOW_TYPE_HINT_NOTIFICATION,
                 gdk.WINDOW_TYPE_HINT_COMBO,gdk.WINDOW_TYPE_HINT_DND]
     NAME_TO_HINT = {
-                "_NET_WM_WINDOW_TYPE_NORMAL"    : gdk.WINDOW_TYPE_HINT_NORMAL,
-                "_NET_WM_WINDOW_TYPE_DIALOG"    : gdk.WINDOW_TYPE_HINT_DIALOG,
-                "_NET_WM_WINDOW_TYPE_MENU"      : gdk.WINDOW_TYPE_HINT_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLBAR"   : gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                "_NET_WM_WINDOW_TYPE_SPLASH"    : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
-                "_NET_WM_WINDOW_TYPE_UTILITY"   : gdk.WINDOW_TYPE_HINT_UTILITY,
-                "_NET_WM_WINDOW_TYPE_DOCK"      : gdk.WINDOW_TYPE_HINT_DOCK,
-                "_NET_WM_WINDOW_TYPE_DESKTOP"   : gdk.WINDOW_TYPE_HINT_DESKTOP,
+                "_NET_WM_WINDOW_TYPE_NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
+                "_NET_WM_WINDOW_TYPE_DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
+                "_NET_WM_WINDOW_TYPE_MENU"          : gdk.WINDOW_TYPE_HINT_MENU,
+                "_NET_WM_WINDOW_TYPE_TOOLBAR"       : gdk.WINDOW_TYPE_HINT_TOOLBAR,
+                "_NET_WM_WINDOW_TYPE_SPLASH"        : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
+                "_NET_WM_WINDOW_TYPE_UTILITY"       : gdk.WINDOW_TYPE_HINT_UTILITY,
+                "_NET_WM_WINDOW_TYPE_DOCK"          : gdk.WINDOW_TYPE_HINT_DOCK,
+                "_NET_WM_WINDOW_TYPE_DESKTOP"       : gdk.WINDOW_TYPE_HINT_DESKTOP,
                 "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
-                "_NET_WM_WINDOW_TYPE_POPUP_MENU": gdk.WINDOW_TYPE_HINT_POPUP_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLTIP"   : gdk.WINDOW_TYPE_HINT_TOOLTIP,
-                "_NET_WM_WINDOW_TYPE_NOTIFICATION" : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                "_NET_WM_WINDOW_TYPE_COMBO"     : gdk.WINDOW_TYPE_HINT_COMBO,
-                "_NET_WM_WINDOW_TYPE_DND"       : gdk.WINDOW_TYPE_HINT_DND
+                "_NET_WM_WINDOW_TYPE_POPUP_MENU"    : gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                "_NET_WM_WINDOW_TYPE_TOOLTIP"       : gdk.WINDOW_TYPE_HINT_TOOLTIP,
+                "_NET_WM_WINDOW_TYPE_NOTIFICATION"  : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
+                "_NET_WM_WINDOW_TYPE_COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
+                "_NET_WM_WINDOW_TYPE_DND"           : gdk.WINDOW_TYPE_HINT_DND
                 }
     # Map scroll directions back to mouse buttons.  Mapping is taken from
     # gdk/x11/gdkevents-x11.c.
@@ -55,11 +55,24 @@ class ClientWindow(ClientWindowBase):
                   gdk.SCROLL_RIGHT: 7,
                   }
 
-    def init_window(self):
+    def init_window(self, metadata):
         if self._override_redirect:
             gtk.Window.__init__(self, gtk.WINDOW_POPUP)
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
+        GTKClientWindowBase.init_window(self, metadata)
+
+    def xget_u32_property(self, target, name):
+        try:
+            if not HAS_X11_BINDINGS:
+                prop = target.property_get(name)
+                if not prop or len(prop)!=3 or len(prop[2])!=1:
+                    return  None
+                log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+                return prop[2][0]
+        except Exception, e:
+            log.error("xget_u32_property error on %s / %s: %s", target, name, e)
+        return GTKClientWindowBase.xget_u32_property(self, target, name)
 
     def is_mapped(self):
         return self.window is not None and self.window.is_visible()

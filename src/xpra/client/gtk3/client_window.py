@@ -11,7 +11,7 @@ gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
-from xpra.client.gtk_base.client_window_base import ClientWindowBase, DRAW_DEBUG
+from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRAW_DEBUG, HAS_X11_BINDINGS
 from xpra.log import Logger
 log = Logger()
 
@@ -19,7 +19,7 @@ log = Logger()
 """
 GTK3 version of the ClientWindow class
 """
-class ClientWindow(ClientWindowBase):
+class ClientWindow(GTKClientWindowBase):
 
     WINDOW_POPUP = gtk.WindowType.POPUP
     WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
@@ -34,6 +34,21 @@ class ClientWindow(ClientWindowBase):
         #TODO: no idea how to do this with gtk3
         #maybe not even possible..
         gtk.Window.__init__(self)
+        GTKClientWindowBase.init_window(self)
+
+    def xget_u32_property(self, target, name):
+        try:
+            if not HAS_X11_BINDINGS:
+                name_atom = gdk.Atom.intern(name, False)
+                type_atom = gdk.Atom.intern("CARDINAL", False)
+                prop = gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
+                if not prop or len(prop)!=3 or len(prop[2])!=1:
+                    return  None
+                log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+                return prop[2][0]
+        except Exception, e:
+            log.error("xget_u32_property error on %s / %s: %s", target, name, e)
+        return GTKClientWindowBase.xget_u32_property(self, target, name)
 
     def is_mapped(self):
         return self.get_mapped()
