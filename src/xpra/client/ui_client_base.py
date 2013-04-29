@@ -98,9 +98,9 @@ class UIXpraClient(XpraClientBase):
         self.info_request_pending = False
 
         #sound:
-        self.speaker_allowed = bool(opts.speaker)
+        self.speaker_allowed = bool(opts.speaker) and HAS_SOUND
         self.speaker_enabled = False
-        self.microphone_allowed = bool(opts.microphone)
+        self.microphone_allowed = bool(opts.microphone) and HAS_SOUND
         self.microphone_enabled = False
         self.speaker_codecs = opts.speaker_codec
         if len(self.speaker_codecs)==0 and self.speaker_allowed:
@@ -419,7 +419,9 @@ class UIXpraClient(XpraClientBase):
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
-                log.error("failed to setup sound: %s", e)
+                log.error("failed to setup sound: %s", e, exc_info=True)
+                self.speaker_allowed = False
+                self.microphone_allowed = False
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
