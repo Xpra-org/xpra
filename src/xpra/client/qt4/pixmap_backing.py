@@ -7,7 +7,8 @@
 from xpra.log import Logger
 log = Logger()
 
-from PyQt4.QtGui import QPixmap, QImage
+from PyQt4.QtGui import QPixmap, QImage, QPainter
+from PyQt4.QtCore import QRectF
 from xpra.client.qt4.scheduler import getQtScheduler
 from xpra.client.window_backing_base import WindowBackingBase
 
@@ -32,5 +33,8 @@ class QtPixmapBacking(WindowBackingBase):
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         image = QImage(img_data, width, height, rowstride, QImage.Format_RGB888)
-        log.info("do_paint_rgb24(..) image=%s", image)
+        pe = QPainter(self._backing)
+        rect = QRectF(x, y, width, height)
+        src = QRectF(0, 0, width, height)
+        pe.drawImage(rect, image, src)
         return True

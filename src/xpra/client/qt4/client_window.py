@@ -125,14 +125,9 @@ class ClientWindow(QWidget, ClientWindowBase):
 
     def paintEvent(self, event):
         debug("paintEvent(%s)", event)
-        QWidget.paintEvent(self, event)
         rect = event.rect()
         painter = QPainter(self)
-        painter.drawPixmap(rect, self._backing._backing)
-        pos = (rect.bottomLeft()+rect.bottomRight()) / 2
-        pos.setY(pos.y()-10)
-        painter.drawText(pos, "hello")
-        painter.end()
+        painter.drawPixmap(rect, self._backing._backing, rect)
 
     def winEvent(self, message, result):
         debug("winEvent(%s, %s)", message, result)
@@ -248,4 +243,5 @@ class ClientWindow(QWidget, ClientWindowBase):
                 buttons.append(button)
         gpos = event.globalPos()
         modifiers = self.parseModifiers(event.modifiers())
+        debug("_pointer_modifiers(%s)=(%s, %s, %s)", event, gpos, buttons, modifiers)
         return (gpos.x(), gpos.y()), buttons, modifiers
