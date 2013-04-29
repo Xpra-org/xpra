@@ -93,7 +93,6 @@ class GlobalPerformanceStatistics(object):
         self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
                                                         #(event_time, elapsed_time_in_seconds)
         self.client_load = None
-        self.last_ping_echoed_time = 0
         #these values are calculated from the values above (see update_averages)
         self.min_client_latency = self.DEFAULT_LATENCY
         self.avg_client_latency = self.DEFAULT_LATENCY
@@ -311,6 +310,7 @@ class ServerSource(object):
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = time.time()
+        self.last_ping_echoed_time = 0
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
         self.datapacket_thread = make_daemon_thread(self.data_to_packet, "encode")
