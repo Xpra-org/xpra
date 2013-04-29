@@ -55,6 +55,10 @@ class ClientWindow(QWidget, ClientWindowBase):
         QWidget.__init__(self, None)
         ClientWindowBase.init_window(self, metadata)
 
+    def new_backing(self, w, h):
+        self._backing = self.make_new_backing(QtPixmapBacking, w, h)
+
+
     def show_all(self):
         self.show()
 
@@ -102,10 +106,6 @@ class ClientWindow(QWidget, ClientWindowBase):
     def gdk_window(self):
         return  None
 
-
-    def new_backing(self, w, h):
-        self._backing = QtPixmapBacking(self._id, w, h)
-        self._backing.init(w, h)
 
     def get_window_geometry(self):
         qrect = self.geometry()

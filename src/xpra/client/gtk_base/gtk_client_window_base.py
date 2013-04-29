@@ -144,10 +144,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return  -1
 
 
-    def new_backing(self, w, h):
-        from xpra.client.window_backing import new_backing
-        self._backing = new_backing(self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
-
     def apply_transient_for(self, wid):
         if wid==-1:
             window = gtk.gdk.get_default_root_window()

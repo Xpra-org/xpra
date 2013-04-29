@@ -12,6 +12,8 @@ import sys
 from xpra.log import Logger
 log = Logger()
 
+#pretend to draw the windows, but don't actually do anything
+USE_FAKE_BACKING = os.environ.get("XPRA_USE_FAKE_BACKING", "0")=="1"
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 if sys.version < '3':
     import codecs
@@ -20,7 +22,6 @@ if sys.version < '3':
 else:
     def u(x):
         return x
-
 
 
 class ClientWindowBase(object):
@@ -53,6 +54,28 @@ class ClientWindowBase(object):
         self.new_backing(*self._size)
         self.update_metadata(metadata)
 
+
+    def make_new_backing(self, backing_class, w, h):
+        w = max(1, w)
+        h = max(1, h)
+        lock = None
+        if self._backing:
+            lock = self._backing._video_decoder_lock
+        try:
+            if lock:
+                lock.acquire()
+            if self._backing is None:
+                if USE_FAKE_BACKING:
+                    from xpra.client.fake_window_backing import FakeBacking
+                    backing_class = FakeBacking
+                backing = backing_class(self._id, w, h)
+                if self._client.mmap_enabled:
+                    backing.enable_mmap(self._client.mmap)
+            backing.init(w, h)
+        finally:
+            if lock:
+                lock.release()
+        return backing
 
     def new_backing(self, w, h):
         raise Exception("override me!")

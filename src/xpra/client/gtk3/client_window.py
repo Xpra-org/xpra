@@ -11,6 +11,7 @@ gobject = import_gobject3()
 gtk = import_gtk3()
 gdk = import_gdk3()
 
+from xpra.client.gtk_base.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRAW_DEBUG, HAS_X11_BINDINGS
 from xpra.log import Logger
 log = Logger()
@@ -35,6 +36,10 @@ class ClientWindow(GTKClientWindowBase):
         #maybe not even possible..
         gtk.Window.__init__(self)
         GTKClientWindowBase.init_window(self)
+
+    def new_backing(self, w, h):
+        self._backing = self.make_new_backing(CairoBacking, w, h)
+
 
     def xget_u32_property(self, target, name):
         try:
@@ -97,6 +102,7 @@ class ClientWindow(GTKClientWindowBase):
                 mask |= int(name_to_hint.get(k, 0))
         hints = gdk.WindowHints(mask)
         self.set_geometry_hints(None, geom, hints)
+
 
     def queue_draw(self, x, y, width, height):
         self.queue_draw_area(x, y, width, height)

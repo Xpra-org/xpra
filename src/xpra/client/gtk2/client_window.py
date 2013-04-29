@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import gobject
 import gtk
 from gtk import gdk
@@ -13,6 +14,14 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRA
 from xpra.log import Logger
 log = Logger()
 
+USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
+if USE_CAIRO:
+    from xpra.client.gtk_base.cairo_backing import CairoBacking
+    BACKING_CLASS = CairoBacking
+else:
+    from xpra.client.gtk2.pixmap_backing import PixmapBacking
+    BACKING_CLASS = PixmapBacking
+    
 
 """
 GTK2 version of the ClientWindow class
@@ -61,6 +70,9 @@ class ClientWindow(GTKClientWindowBase):
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         GTKClientWindowBase.init_window(self, metadata)
+
+    def new_backing(self, w, h):
+        self._backing = self.make_new_backing(BACKING_CLASS, w, h)
 
     def xget_u32_property(self, target, name):
         try:

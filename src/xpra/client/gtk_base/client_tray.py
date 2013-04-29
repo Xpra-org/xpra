@@ -9,7 +9,7 @@ gtk = import_gtk()
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client.window_backing import make_new_backing, PixmapBacking
+from xpra.client.gtk2.pixmap_backing import PixmapBacking
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -89,7 +89,9 @@ class ClientTray(object):
         self.reconfigure()
 
     def new_backing(self, w, h):
-        self._backing = make_new_backing(PixmapBacking, self._id, w, h, self._backing, self._client.supports_mmap, self._client.mmap)
+        if self._backing:
+            self._backing.close()
+        self._backing = PixmapBacking(self._id, w, h)
         self._size = w, h
 
     def size_changed(self, status_icon, size):
