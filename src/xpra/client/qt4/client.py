@@ -20,6 +20,7 @@ set_scheduler(getQtScheduler())
 sys.modules['gtk']=None
 sys.modules['pygtk']=None
 sys.modules['gi']=None
+sys.modules['gobject']=None
 
 
 class XpraClient(UIXpraClient):

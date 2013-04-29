@@ -10,7 +10,6 @@ import gobject
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_encoder_formatter, MP3, CODECS
-from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.log import Logger
 log = Logger()
 
@@ -41,14 +40,15 @@ AUDIORESAMPLE = False
 
 class SoundSource(SoundPipeline):
 
-    __gsignals__ = {
-        "new-buffer": n_arg_signal(2),
-        }
+    __generic_signals__ = [
+        "new-buffer"
+        ]
 
     def __init__(self, src_type=DEFAULT_SRC, src_options={}, codec=MP3, encoder_options={}):
         assert src_type in SOURCES
         encoder, fmt = get_encoder_formatter(codec)
         SoundPipeline.__init__(self, codec)
+        self.add_signals(self.__generic_signals__)
         self.src_type = src_type
         source_str = plugin_str(src_type, src_options)
         encoder_str = plugin_str(encoder, encoder_options)
@@ -97,8 +97,6 @@ class SoundSource(SoundPipeline):
         #            "offset_end": buf.offset_end}
         metadata = {}
         self.emit("new-buffer", buf.data, metadata)
-
-gobject.type_register(SoundSource)
 
 
 def main():

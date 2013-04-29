@@ -5,14 +5,13 @@
 # later version. See the file COPYING for details.
 
 import sys, os
-import gobject
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
-from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.log import Logger
 log = Logger()
+
 
 SINKS = ["autoaudiosink"]
 DEFAULT_SINK = SINKS[0]
@@ -48,15 +47,16 @@ def sink_has_device_attribute(sink):
 
 class SoundSink(SoundPipeline):
 
-    __gsignals__ = {
-        "underrun": one_arg_signal,
-        "eos": no_arg_signal
-        }
+    __generic_signals__ = [
+        "underrun",
+        "eos"
+        ]
 
     def __init__(self, sink_type=DEFAULT_SINK, options={}, codec=MP3, decoder_options={}):
         assert sink_type in SINKS, "invalid sink: %s" % sink_type
         decoder, parser = get_decoder_parser(codec)
         SoundPipeline.__init__(self, codec)
+        self.add_signals(self.__generic_signals__)
         self.sink_type = sink_type
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = []
@@ -149,11 +149,9 @@ class SoundSink(SoundPipeline):
         debug("on_enough_data(%s)", args)
 
 
-gobject.type_register(SoundSink)
-
-
 def main():
     import os.path
+    import gobject
     if len(sys.argv) not in (2, 3):
         print("usage: %s filename [codec]" % sys.argv[0])
         sys.exit(1)

@@ -5,10 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
-import gobject
 
+from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
-from xpra.gtk_common.gobject_util import AutoPropGObjectMixin, one_arg_signal
 from xpra.log import Logger
 log = Logger()
 
@@ -19,17 +18,17 @@ else:
     debug = log.debug
 
 
-class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
+class SoundPipeline(SignalObject):
 
-    __gsignals__ = {
-        "state-changed": one_arg_signal,
-        "bitrate-changed": one_arg_signal,
-        "error": one_arg_signal,
-        }
+    __generic_signals__ = [
+        "state-changed",
+        "bitrate-changed",
+        "error"
+        ]
 
     def __init__(self, codec):
-        super(gobject.GObject, self).__init__()
-        super(AutoPropGObjectMixin, self).__init__()
+        SignalObject.__init__(self)
+        self.add_signals(SoundPipeline.__generic_signals__)
         self.codec = codec
         self.codec_description = codec
         self.codec_mode = ""
@@ -84,6 +83,7 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
 
     def cleanup(self):
         debug("SoundPipeline.cleanup()")
+        SignalObject.cleanup(self)
         self.stop()
         self.bus.remove_signal_watch()
         if self.bus_message_handler_id:
@@ -153,6 +153,3 @@ class SoundPipeline(AutoPropGObjectMixin, gobject.GObject):
             log.info("pipeline warning: %s", w[1:])
         else:
             log.info("unhandled bus message type %s: %s / %s", t, message, message.structure)
-
-
-gobject.type_register(SoundPipeline)

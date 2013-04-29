@@ -60,9 +60,9 @@ def pactl_output(pactl_cmd):
 def get_x11_property(atom_name):
 	if sys.platform.startswith("win"):
 		return ""
-	from gtk import gdk
-	root = gdk.get_default_root_window()
 	try:
+		from gtk import gdk
+		root = gdk.get_default_root_window()
 		pulse_server_atom = gdk.atom_intern(atom_name)
 		p = root.property_get(pulse_server_atom)
 		if p is None:

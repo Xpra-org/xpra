@@ -92,7 +92,6 @@ class XpraClientBase(object):
 
 
     def install_signal_handlers(self):
-        gobject = import_gobject()
         def deadly_signal(signum, frame):
             sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
             sys.stderr.flush()
@@ -103,7 +102,7 @@ class XpraClientBase(object):
             sys.stderr.flush()
             signal.signal(signal.SIGINT, deadly_signal)
             signal.signal(signal.SIGTERM, deadly_signal)
-            gobject.timeout_add(0, self.quit, 128 + signum, priority=gobject.PRIORITY_HIGH)
+            self.timeout_add(0, self.quit, 128 + signum)
         signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
 
