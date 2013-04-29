@@ -20,7 +20,7 @@ log = Logger()
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
-from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT
+from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED
 from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
@@ -276,7 +276,6 @@ class UIXpraClient(XpraClientBase):
         if self.mmap_filename and os.path.exists(self.mmap_filename):
             os.unlink(self.mmap_filename)
             self.mmap_filename = None
-            self.mmap_enabled = False
 
 
     def init_opengl(self, enable_opengl):
@@ -565,6 +564,16 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_clipboard = capabilities.get("clipboard", False)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and capabilities.get("mmap_enabled")
+        if self.mmap_enabled:
+            mmap_token = capabilities.get("mmap_token")
+            if mmap_token:
+                from xpra.net.mmap_pipe import read_mmap_token
+                token = read_mmap_token(self.mmap)
+                if token!=mmap_token:
+                    log.warn("mmap token verification failed!")
+                    self.mmap_enabled = False
+                    self.quit(EXIT_MMAP_TOKEN_FAILURE)
+                    return
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
         self.change_quality = capabilities.get("change-quality", False)
         self.change_min_quality = capabilities.get("change-min-quality", False)

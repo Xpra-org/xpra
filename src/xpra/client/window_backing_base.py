@@ -63,6 +63,8 @@ class WindowBackingBase(object):
         self._video_decoder = None
         self._video_decoder_lock = Lock()
         self.draw_needs_refresh = True
+        self.mmap = None
+        self.mmap_enabled = False
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area

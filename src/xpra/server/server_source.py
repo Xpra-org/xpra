@@ -73,7 +73,8 @@ class GlobalPerformanceStatistics(object):
         # mmap state:
         self.mmap_size = 0
         self.mmap_bytes_sent = 0
-        self.mmap_free_size = 0                        #how much of the mmap space is left (may be negative if we failed to write the last chunk)
+        self.mmap_free_size = 0                         #how much of the mmap space is left (may be negative if we failed to write the last chunk)
+        self.mmap_client_token = None                   #the token we write that the client may check
         # queue statistics:
         self.damage_data_qsizes = maxdeque(NRECS)       #size of the damage_data_queue before we add a new record to it
                                                         #(event_time, size)
@@ -542,7 +543,11 @@ class ServerSource(object):
                     log.warn("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
                 else:
                     from xpra.net.mmap_pipe import init_server_mmap
-                    self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token)
+                    from xpra.os_util import get_int_uuid
+                    new_token = get_int_uuid()
+                    self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token)
+                    if self.mmap_size>0:
+                        self.mmap_client_token = new_token
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
@@ -861,6 +866,8 @@ class ServerSource(object):
                 log.error("failed to setup sound: %s", e)
         capabilities["encoding"] = self.encoding
         capabilities["mmap_enabled"] = self.mmap_size>0
+        if self.mmap_client_token:
+            capabilities["mmap_token"] = self.mmap_client_token
         if self.keyboard_config:
             capabilities["modifier_keycodes"] = self.keyboard_config.modifier_client_keycodes
         capabilities["auto_refresh_delay"] = self.auto_refresh_delay
