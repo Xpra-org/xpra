@@ -39,3 +39,10 @@ class QtScheduler(object):
     @staticmethod
     def source_remove(self, *args):
         raise Exception("override me!")
+
+qt_scheduler = None
+def getQtScheduler():
+    global qt_scheduler
+    if qt_scheduler is None:
+        qt_scheduler = QtScheduler()
+    return qt_scheduler

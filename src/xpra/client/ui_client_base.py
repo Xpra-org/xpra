@@ -295,11 +295,11 @@ class UIXpraClient(XpraClientBase):
         props["modifiers"] = self.get_current_modifiers()
         return  props
 
-    def handle_key_action(self, event, window, pressed):
+    def handle_key_action(self, window, key_event):
         if self.readonly or self.keyboard_helper is None:
             return
         wid = self._window_to_id[window]
-        self.keyboard_helper.handle_key_action(event, window, wid, pressed)
+        self.keyboard_helper.handle_key_action(window, wid, key_event)
 
 
 

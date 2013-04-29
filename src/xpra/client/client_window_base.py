@@ -103,24 +103,6 @@ class ClientWindowBase(object):
     def is_GL(self):
         return False
 
-    def get_current_workspace(self):
-        window = self.gdk_window()
-        root = window.get_screen().get_root_window()
-        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
-
-    def get_window_workspace(self):
-        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
-
-    def do_get_workspace(self, target, prop):
-        if sys.platform.startswith("win"):
-            return  -1              #windows does not have workspaces
-        value = self.xget_u32_property(target, prop)
-        if value is not None:
-            log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
-            return value
-        log("do_get_workspace() value not found!")
-        return  -1
-
 
     def update_metadata(self, metadata):
         self._metadata.update(metadata)
@@ -187,13 +169,17 @@ class ClientWindowBase(object):
         #apply window-type hint if window is not mapped yet:
         if "window-type" in self._metadata and not self.is_mapped():
             window_types = self._metadata.get("window-type")
-            log("window types=%s", window_types)
-            for window_type in window_types:
-                hint = self.NAME_TO_HINT.get(window_type)
-                if hint:
-                    log("setting window type to %s - %s", window_type, hint)
-                    self.set_type_hint(hint)
-                    break
+            self.set_window_type(window_types)
+
+    def set_window_type(self, window_types):
+        log("set_window_type(%s)", window_types)
+        hints = 0
+        for window_type in window_types:
+            hint = self.NAME_TO_HINT.get(window_type)
+            if hint:
+                hints |= hint
+        log("setting window type to %s - %s", window_type, hint)
+        self.set_type_hint(hint)
 
 
     def refresh_window(self, *args):
@@ -257,12 +243,6 @@ class ClientWindowBase(object):
 
     def void(self):
         pass
-
-    def do_key_press_event(self, event):
-        self._client.handle_key_action(event, self, True)
-
-    def do_key_release_event(self, event):
-        self._client.handle_key_action(event, self, False)
 
 
     def do_motion_notify_event(self, event):

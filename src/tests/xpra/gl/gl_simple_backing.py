@@ -28,7 +28,7 @@ Test version so we can try to make it work on win32..
 """
 class GLTestBacking(object):
 
-    def __init__(self, wid, w, h, mmap_enabled, mmap):
+    def __init__(self, wid, w, h):
         display_mode = (
             gtk.gdkgl.MODE_RGB |
             gtk.gdkgl.MODE_DEPTH |

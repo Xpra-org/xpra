@@ -143,22 +143,22 @@ class KeyboardHelper(object):
         return  True
 
 
-    def parse_key_event(self, wid, event, pressed):
-        raise Exception("override me!")
-        #return wid, keyname, pressed, modifiers, keyval, string, keycode, group
-
-    def handle_key_action(self, event, window, wid, pressed):
-        #NOTE: handle_key_event may fire send_key_action more than once (see win32 AltGr)
-        key_event = self.parse_key_event(wid, event, pressed)
-        keyname = key_event[1]
-        modifiers = key_event[3]
-        if self.key_handled_as_shortcut(window, keyname, modifiers, pressed):
+    def handle_key_action(self, window, wid, key_event):
+        """
+            Intercept key shortcuts and gives the Keyboard class
+            a chance to fire more than one send_key_action.
+            (win32 uses this for AltGr emulation)
+        """
+        if self.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
             return
-        self.keyboard.process_key_event(self.send_key_action, key_event)
+        self.keyboard.process_key_event(self.send_key_action, wid, key_event)
 
-    def send_key_action(self, key_event):
-        log("send_key_action(%s)", key_event)
-        self.send("key-action", *key_event)
+    def send_key_action(self, wid, key_event):
+        log("send_key_action(%s, %s)", wid, key_event)
+        packet = ["key-action", wid]
+        for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
+            packet.append(getattr(key_event, x))
+        self.send(*packet)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(key_event)
 

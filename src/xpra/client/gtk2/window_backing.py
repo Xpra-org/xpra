@@ -12,7 +12,8 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.scripts.config import ENCODINGS
-from xpra.client.gtk_base.window_backing_base import WindowBacking, has_PIL, fire_paint_callbacks
+from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.window_backing_base import has_PIL, fire_paint_callbacks
 
 use_PIL = has_PIL and os.environ.get("XPRA_USE_PIL", "1")=="1"
 
@@ -22,10 +23,10 @@ This is the gtk2 version.
 (works much better than gtk3!)
 Superclass for PixmapBacking and GLBacking
 """
-class GTK2WindowBacking(WindowBacking):
+class GTK2WindowBacking(GTKWindowBacking):
 
     def __init__(self, wid, w, h):
-        WindowBacking.__init__(self, wid)
+        GTKWindowBacking.__init__(self, wid)
 
     def init(self, w, h):
         raise Exception("override me!")
@@ -35,7 +36,7 @@ class GTK2WindowBacking(WindowBacking):
         """ can be called from any thread """
         assert coding in ENCODINGS
         if use_PIL:
-            return WindowBacking.paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks)
+            return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks)
         #gdk needs UI thread:
         gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False

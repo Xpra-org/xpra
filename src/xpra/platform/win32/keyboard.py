@@ -101,14 +101,13 @@ class Keyboard(KeyboardBase):
         return None
 
 
-    def process_key_event(self, send_key_action_cb, key_event):
+    def process_key_event(self, send_key_action_cb, wid, key_event):
         """ Caps_Lock and Num_Lock don't work properly: they get reported more than once,
             they are reported as not pressed when the key is down, etc
             So we just ignore those and rely on the list of "modifiers" passed
             with each keypress to let the server set them for us when needed.
         """
-        wid, keyname, pressed, modifiers, keyval = key_event[:5]
-        if keyval==2**24-1 and keyname=="VoidSymbol":
+        if key_event.keyval==2**24-1 and key_event.keyname=="VoidSymbol":
             return
         #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
         #self.modifier_keys = {}             #{"Control_L" : "control", ...}
@@ -116,12 +115,12 @@ class Keyboard(KeyboardBase):
         #self.modifier_keycodes = {"ISO_Level3_Shift": [108]}
         #we can only deal with 'Alt_R' and simulate AltGr (ISO_Level3_Shift)
         #if we have modifier_mappings
-        if keyname=="Alt_R" and len(self.modifier_mappings)>0:
+        if key_event.keyname=="Alt_R" and len(self.modifier_mappings)>0:
             keyname = "ISO_Level3_Shift"
             altgr_keycodes = self.modifier_keycodes.get(keyname, [])
             if len(altgr_keycodes)>0:
-                self.emulate_altgr = pressed
-                if pressed and self.last_key_event_sent:
+                self.emulate_altgr = key_event.pressed
+                if key_event.pressed and self.last_key_event_sent:
                     #check for spurious control and undo it
                     last_wid, last_keyname, last_pressed = self.last_key_event_sent[:3]
                     if last_wid==wid and last_keyname=="Control_L" and last_pressed==True:
@@ -129,6 +128,6 @@ class Keyboard(KeyboardBase):
                         undo = self.last_key_event_sent[:]
                         undo[2] = False
                         send_key_action_cb(*undo)
-                self.AltGr_modifiers(modifiers, not pressed)
+                self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
         self.last_key_event_sent = key_event
-        send_key_action_cb(*self.last_key_event_sent)
+        send_key_action_cb(wid, *self.last_key_event_sent)

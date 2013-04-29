@@ -57,6 +57,6 @@ class KeyboardBase(object):
         self.modifier_map = MODIFIER_MAP
 
 
-    def process_key_event(self, send_key_action_cb, key_event):
+    def process_key_event(self, send_key_action_cb, wid, key_event):
         #default is to just send it as-is:
-        send_key_action_cb(key_event)
+        send_key_action_cb(wid, key_event)

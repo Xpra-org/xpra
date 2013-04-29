@@ -4,13 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
-gdk = import_gdk()
-gobject = import_gobject()
-
 import os
-import cairo
 import zlib
 
 from xpra.log import Logger
@@ -56,12 +50,13 @@ def fire_paint_callbacks(callbacks, success):
             log.error("error calling %s(%s)", x, success, exc_info=True)
 
 """
-Generic superclass for Backing code,
-see CairoBacking and PixmapBacking for actual implementations
+Generic superclass for all Backing code,
+see CairoBacking and GTKWindowBacking for actual implementations
 """
-class WindowBacking(object):
-    def __init__(self, wid):
+class WindowBackingBase(object):
+    def __init__(self, wid, idle_add):
         self.wid = wid
+        self.idle_add = idle_add
         self._backing = None
         self._last_pixmap_data = None
         self._video_use_swscale = True
@@ -134,7 +129,7 @@ class WindowBacking(object):
         #PIL flattens the data to a continuous straightforward RGB format:
         rowstride = width*3
         img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        gobject.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+        self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
         return False
 
     def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -142,7 +137,7 @@ class WindowBacking(object):
         assert "webp" in ENCODINGS
         from xpra.codecs.webm.decode import DecodeRGB
         rgb24 = DecodeRGB(img_data)
-        gobject.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, width*3, options, callbacks)
+        self.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, width*3, options, callbacks)
         return  False
 
     def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
@@ -151,7 +146,7 @@ class WindowBacking(object):
         """
         assert "rgb24" in ENCODINGS
         rgb24_data = self.process_delta(raw_data, width, height, rowstride, options)
-        gobject.idle_add(self.do_paint_rgb24, rgb24_data, x, y, width, height, rowstride, options, callbacks)
+        self.idle_add(self.do_paint_rgb24, rgb24_data, x, y, width, height, rowstride, options, callbacks)
         return  False
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -207,7 +202,7 @@ class WindowBacking(object):
             raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s" % (
                       coding, err, len(img_data), width, height, options))
         #this will also take care of firing callbacks (from the UI thread):
-        gobject.idle_add(self.do_paint_rgb24, data, x, y, width, height, rowstride, options, callbacks)
+        self.idle_add(self.do_paint_rgb24, data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
@@ -226,7 +221,7 @@ class WindowBacking(object):
         if DRAW_DEBUG:
             log.info("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
         if coding == "mmap":
-            gobject.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
             if rowstride==0:
                 rowstride = width * 3
@@ -241,20 +236,3 @@ class WindowBacking(object):
             self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
         else:
             self.paint_image(coding, img_data, x, y, width, height, rowstride, options, callbacks)
-
-
-
-    def cairo_draw(self, context):
-        self.cairo_draw_from_drawable(context, self._backing)
-
-    def cairo_draw_from_drawable(self, context, drawable):
-        try:
-            context.set_source_pixmap(drawable, 0, 0)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            return True
-        except KeyboardInterrupt:
-            raise
-        except:
-            log.error("cairo_draw(%s)", context, exc_info=True)
-            return False

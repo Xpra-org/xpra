@@ -12,9 +12,10 @@ log = Logger()
 
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.net.protocol import set_scheduler
-from xpra.client.qt4.scheduler import QtScheduler
+from xpra.client.qt4.qt_keyboard_helper import QtKeyboardHelper
+from xpra.client.qt4.scheduler import getQtScheduler
 from xpra.client.qt4.client_window import ClientWindow
-set_scheduler(QtScheduler)
+set_scheduler(getQtScheduler())
 
 sys.modules['gtk']=None
 sys.modules['pygtk']=None
@@ -73,6 +74,9 @@ class XpraClient(UIXpraClient):
 
     def make_clipboard_helper(self):
         return None
+
+    def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
+        return QtKeyboardHelper(self.send, keyboard_sync, key_shortcuts, self.send_layout, self.send_keymap)
 
     def get_screen_sizes(self):
         return  [1280, 1024]

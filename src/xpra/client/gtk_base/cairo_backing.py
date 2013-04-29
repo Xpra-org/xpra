@@ -13,7 +13,9 @@ import cairo
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client.gtk_base.window_backing_base import WindowBacking, fire_paint_callbacks, DRAW_DEBUG
+from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.window_backing_base import fire_paint_callbacks, DRAW_DEBUG
+
 
 """
 An area we draw onto with cairo
@@ -25,9 +27,9 @@ but this is disabled in most cases, or does not accept our rowstride, so we cann
 Instead we have to use PIL to convert via a PNG!
 This is a complete waste of CPU! Please complain to pycairo.
 """
-class CairoBacking(WindowBacking):
+class CairoBacking(GTKWindowBacking):
     def __init__(self, wid, w, h):
-        WindowBacking.__init__(self, wid)
+        GTKWindowBacking.__init__(self, wid)
 
     def init(self, w, h):
         old_backing = self._backing
@@ -55,7 +57,7 @@ class CairoBacking(WindowBacking):
         cr.fill()
 
     def close(self):
-        WindowBacking.close(self)
+        GTKWindowBacking.close(self)
         self._backing.finish()
 
     def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):

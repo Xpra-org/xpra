@@ -7,6 +7,7 @@
 
 from xpra.client.client_window_base import ClientWindowBase
 
+from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
@@ -47,6 +48,11 @@ if sys.version < '3':
 else:
     def u(x):
         return x
+
+def nn(x):
+    if x is None:
+        return  ""
+    return x
 
 
 
@@ -118,6 +124,24 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                   workspace, const["CurrentTime"],
                   0, 0, 0)
         return workspace
+
+    def get_current_workspace(self):
+        window = self.gdk_window()
+        root = window.get_screen().get_root_window()
+        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
+
+    def get_window_workspace(self):
+        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
+
+    def do_get_workspace(self, target, prop):
+        if sys.platform.startswith("win"):
+            return  -1              #windows does not have workspaces
+        value = self.xget_u32_property(target, prop)
+        if value is not None:
+            log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
+            return value
+        log("do_get_workspace() value not found!")
+        return  -1
 
 
     def new_backing(self, w, h):
@@ -291,6 +315,25 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if event.state & mask:
                 buttons.append(button)
         return pointer, modifiers, buttons
+
+    def parse_key_event(self, event, pressed):
+        key_event = AdHocStruct()
+        key_event.modifiers = self._client.mask_to_names(event.state)
+        key_event.keyname = nn(gdk.keyval_name(event.keyval))
+        key_event.keyval = nn(event.keyval)
+        key_event.keycode = event.hardware_keycode
+        key_event.group = event.group
+        key_event.string = nn(event.string)
+        key_event.pressed = pressed
+        return key_event
+
+    def do_key_press_event(self, event):
+        key_event = self.parse_key_event(event, True)
+        self._client.handle_key_action(self, key_event)
+
+    def do_key_release_event(self, event):
+        key_event = self.parse_key_event(event, False)
+        self._client.handle_key_action(self, key_event)
 
 
     def _focus_change(self, *args):
