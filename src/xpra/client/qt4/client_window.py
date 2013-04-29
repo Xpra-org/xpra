@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from PyQt4.QtGui import QWidget
+from PyQt4.QtGui import QWidget, QPainter
 from PyQt4.QtCore import Qt
 
 from xpra.util import AdHocStruct
@@ -105,6 +105,7 @@ class ClientWindow(QWidget, ClientWindowBase):
 
     def new_backing(self, w, h):
         self._backing = QtPixmapBacking(self._id, w, h)
+        self._backing.init(w, h)
 
     def get_window_geometry(self):
         qrect = self.geometry()
@@ -121,6 +122,17 @@ class ClientWindow(QWidget, ClientWindowBase):
     def render(self, target, targetOffset, sourceRegion, renderFlags):
         debug("render(%s, %s, %s, %s)", target, targetOffset, sourceRegion, renderFlags)
         QWidget.render(target, targetOffset, sourceRegion, renderFlags)
+
+    def paintEvent(self, event):
+        debug("paintEvent(%s)", event)
+        QWidget.paintEvent(self, event)
+        rect = event.rect()
+        painter = QPainter(self)
+        painter.drawPixmap(rect, self._backing._backing)
+        pos = (rect.bottomLeft()+rect.bottomRight()) / 2
+        pos.setY(pos.y()-10)
+        painter.drawText(pos, "hello")
+        painter.end()
 
     def winEvent(self, message, result):
         debug("winEvent(%s, %s)", message, result)

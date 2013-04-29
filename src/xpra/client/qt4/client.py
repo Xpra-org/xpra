@@ -22,30 +22,12 @@ sys.modules['pygtk']=None
 sys.modules['gi']=None
 
 
-from Queue import Queue
-class Invoker(QtCore.QObject):
-    def __init__(self):
-        super(Invoker, self).__init__()
-        self.queue = Queue()
-
-    def invoke(self, func, *args):
-        f = lambda: func(*args)
-        self.queue.put(f)
-        QtCore.QMetaObject.invokeMethod(self, "handler", QtCore.Qt.QueuedConnection)
-
-    @QtCore.pyqtSlot()
-    def handler(self):
-        f = self.queue.get()
-        f()
-invoker = Invoker()
-
-def invoke_in_main_thread(func, *args):
-    invoker.invoke(func,*args)
-
-
 class XpraClient(UIXpraClient):
 
     def __init__(self, conn, opts):
+        s = getQtScheduler()
+        self.idle_add = s.idle_add
+        self.timeout_add = s.timeout_add
         self.QtInit()
         UIXpraClient.__init__(self, conn, opts)
 
@@ -90,27 +72,6 @@ class XpraClient(UIXpraClient):
     def group_leader_for_pid(self, pid, wid):
         return None
 
-
-
-    def idle_add(self, fn, *args):
-        log.info("idle_add(%s, %s)", fn, args)
-        def cb():
-            fn(*args)
-        invoke_in_main_thread(cb)
-
-    def timeout_add(self, delay, fn, *args):
-        def main_thread_cb():
-            timer = QtCore.QTimer()
-            self.timers.add(timer)
-            def timer_callback():
-                log.info("timer_callback() calling %s(%s)", fn, args)
-                x = fn(*args)
-                if not bool(x):
-                    timer.stop()
-                    self.timers.remove(timer)
-            timer.timeout.connect(timer_callback)
-            timer.start(delay)
-        invoke_in_main_thread(main_thread_cb)
 
     def source_remove(self, *args):
         raise Exception("override me!")

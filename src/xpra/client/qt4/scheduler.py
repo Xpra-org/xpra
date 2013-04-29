@@ -9,26 +9,47 @@ from xpra.log import Logger
 log = Logger()
 
 
+from Queue import Queue
+class Invoker(QtCore.QObject):
+    def __init__(self):
+        super(Invoker, self).__init__()
+        self.queue = Queue()
+
+    def invoke(self, func, *args):
+        f = lambda: func(*args)
+        self.queue.put(f)
+        QtCore.QMetaObject.invokeMethod(self, "handler", QtCore.Qt.QueuedConnection)
+
+    @QtCore.pyqtSlot()
+    def handler(self):
+        f = self.queue.get()
+        f()
+invoker = Invoker()
+
+def invoke_in_main_thread(func, *args):
+    invoker.invoke(func,*args)
+
+
 class QtScheduler(object):
 
     timers = set()
 
     @staticmethod
     def idle_add(fn, *args):
-        log.info("idle_add(%s, %s)", fn, args)
-        def timer_callback(*targs):
-            log.info("timer_callback(%s) calling %s(%s)", targs, fn, args)
-            x = fn(*args)
-            if bool(x):
-                QtCore.QTimer.singleShot(0, timer_callback)
-        QtCore.QTimer.singleShot(0, timer_callback)
+        log.info("idle_add(%s, %s)", fn, repr(args)[:100])
+        invoke_in_main_thread(fn, *args)
 
     @staticmethod
     def timeout_add(delay, fn, *args):
+        log.info("timeout_add(%s, %s, %s)", delay, fn, repr(args)[:100])
+        invoke_in_main_thread(QtScheduler.do_timeout_add, delay, fn, *args)
+
+    @staticmethod
+    def do_timeout_add(delay, fn, *args):
         timer = QtCore.QTimer()
         QtScheduler.timers.add(timer)
         def timer_callback():
-            log.info("timer_callback() calling %s(%s)", fn, args)
+            log.info("timer_callback() calling %s(%s)", fn, repr(args)[:100])
             x = fn(*args)
             if not bool(x):
                 timer.stop()
