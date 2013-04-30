@@ -14,7 +14,7 @@ try:
 except:
     device_bell = None
 
-def system_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
     global device_bell
     if device_bell is None:
         return False

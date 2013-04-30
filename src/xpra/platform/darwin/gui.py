@@ -36,7 +36,7 @@ def make_tray_menu(client):
 def make_native_tray(menu_helper, delay_tray, tray_icon):
     return OSXTray(menu_helper, tray_icon)
 
-def system_bell(self, *args):
+def system_bell(*args):
     if Snd is None:
         return False
     Snd.SysBeep(1)
