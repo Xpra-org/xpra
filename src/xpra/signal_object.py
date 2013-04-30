@@ -46,6 +46,9 @@ class SignalObject(object):
     def emit(self, signal, *args):
         assert signal in self._signals, "unknown signal: %s" % signal
         listeners = self._signal_listeners.get(signal)
+        if not listeners:
+            log("emit(%s, %s) no listeners", signal, args)
+            return
         for _, fn, fnargs in listeners:
             try:
                 allargs = [self]+list(fnargs)+list(args)
