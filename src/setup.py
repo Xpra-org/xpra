@@ -7,8 +7,6 @@
 # later version. See the file COPYING for details.
 
 ##############################################################################
-# WARNING: please try to keep line numbers unchanged when modifying this file
-#  a number of patches will break otherwise.
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
 # does the make-constants-pxi.py hack.)
 
@@ -23,6 +21,9 @@ print(" ".join(sys.argv))
 
 import xpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
+
+
+WIN32 = sys.platform.startswith("win")
 #*******************************************************************************
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
@@ -68,7 +69,23 @@ client_ENABLED = True
 
 
 
-x11_ENABLED = not sys.platform.startswith("win")
+x11_ENABLED = not WIN32
+
+
+
+gtk2_ENABLED = client_ENABLED
+
+
+
+gtk3_ENABLED = client_ENABLED
+
+
+
+qt4_ENABLED = client_ENABLED
+
+
+
+opengl_ENABLED = client_ENABLED
 
 
 
@@ -81,11 +98,6 @@ cyxor_ENABLED = True
 
 
 cymaths_ENABLED = True
-
-
-
-#currently does not work on MS Windows:
-opengl_ENABLED = True
 
 
 
@@ -108,6 +120,7 @@ PIC_ENABLED = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard",
             "server", "client", "x11",
+            "gtk2", "gtk3", "qt4",
             "sound", "cyxor", "cymaths", "opengl",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
 HELP = "-h" in sys.argv or "--help" in sys.argv
@@ -155,6 +168,24 @@ print("build switches: %s" % switches_info)
 if LOCAL_SERVERS_SUPPORTED:
     print("Xdummy build flag: %s" % Xdummy_ENABLED)
 
+#sanity check the flags:
+if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
+    print("Warning: clipboard can only be used with the server or one of the gtk clients!")
+    clipboard_ENABLED = False
+if opengl_ENABLED and not gtk2_ENABLED:
+    print("Warning: opengl can only be used with the gtk2 clients")
+    opengl_ENABLED = False
+if shadow_ENABLED and not server_ENABLED:
+    print("Warning: shadow requires server to be enabled!")
+    shadow_ENABLED = False
+if x11_ENABLED and WIN32:
+    print("Warning: enabling x11 on MS Windows is unlikely to work!")
+if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
+    print("Warning: client is enabled but none of the client toolkits are!?")
+if not client_ENABLED and not server_ENABLED:
+    print("Error: you must build at least the client or server!")
+    exit(1)
+
 
 #*******************************************************************************
 # build options, these may get modified further down..
@@ -173,12 +204,12 @@ setup_options["long_description"] = xpra_desc
 data_files = []
 setup_options["data_files"] = data_files
 packages = [
-          "xpra", "xpra.scripts", "xpra.platform", "xpra.keyboard",
-          "xpra.gtk_common", "xpra.net", "xpra.codecs", "xpra.codecs.xor",
-          "xpra.server.stats",
+          "xpra", "xpra.scripts", "xpra.keyboard",
+          "xpra.net", "xpra.codecs", "xpra.codecs.xor",
           ]
 setup_options["packages"] = packages
 py2exe_excludes = []       #only used on win32
+py2exe_includes = []       #only used on win32
 ext_modules = []
 cmdclass = {}
 
@@ -188,7 +219,11 @@ def remove_packages(*pkgs):
     for x in pkgs:
         if x in packages:
             packages.remove(x)
-
+def add_packages(*pkgs):
+    global packages
+    for x in pkgs:
+        if x not in packages:
+            packages.append(x)
 
 #*******************************************************************************
 # Utility methods for building with Cython
@@ -352,7 +387,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     def pkgconfig(*packages_options, **ekw):
         return {}
     #always include all platform code in this case:
-    packages += ["xpra.platform.xposix", "xpra.platform.win32", "xpra.platform.darwin"]
+    add_packages("xpra.platform.xposix", "xpra.platform.win32", "xpra.platform.darwin")
     #ensure we remove the files we generate:
     CLEAN_FILES = ["xpra/x11/wait_for_x_server.c",
                    "xpra/codecs/vpx/codec.c",
@@ -377,7 +412,7 @@ if "clean" not in sys.argv:
 
 
 #*******************************************************************************
-if sys.platform.startswith("win"):
+if WIN32:
     # The Microsoft C library DLLs:
     # Unfortunately, these files cannot be re-distributed legally :(
     # So here is the md5sum so you can find the right version:
@@ -507,13 +542,38 @@ if sys.platform.startswith("win"):
 
     import py2exe    #@UnresolvedImport
     assert py2exe is not None
-    packages.append("xpra.platform.win32")
+
+    def py2exe_exclude(*pkgs):
+        global py2exe_excludes
+        for x in pkgs:
+            if x not in py2exe_excludes:
+                py2exe_excludes.append(x)
+    def py2exe_include(*pkgs):
+        global py2exe_includes
+        for x in pkgs:
+            if x not in py2exe_includes:
+                py2exe_includes.append(x)
+
+    #with py2exe, we have to remove the default packages and let it figure it out the rest
+    #(otherwise, we can't remove specific files from those packages)
+    remove_packages("xpra", "xpra.scripts")
+    def toggle_packages(enabled, *package_names):
+        #on win32: we tell py2exe NOT to include them
+        global packages
+        if enabled:
+            add_packages(*package_names)
+        else:
+            remove_packages(*package_names)
+            py2exe_exclude(*package_names)
+    
+    add_packages("xpra.platform.win32")
+    py2exe_exclude("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
     setup_options["windows"] = [
-                    {'script': 'xpra/scripts/main.py',                  'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
-                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',  'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
-                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py', 'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
-                    {'script': 'xpra/scripts/client_launcher.py',       'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
+                    {'script': 'xpra/scripts/main.py',                      'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra",},
+                    {'script': 'xpra/gtk_common/gtk_view_keyboard.py',      'icon_resources': [(1, "win32/keyboard.ico")],  "dest_base": "GTK_Keyboard_Test",},
+                    {'script': 'xpra/gtk_common/gtk_view_clipboard.py',     'icon_resources': [(1, "win32/clipboard.ico")], "dest_base": "GTK_Clipboard_Test",},
+                    {'script': 'xpra/client/gtk_base/client_launcher.py',   'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
     setup_options["console"] = [
@@ -523,13 +583,13 @@ if sys.platform.startswith("win"):
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
                     {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
               ]
-    py2exe_includes = [ "cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
+    py2exe_include("cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
                         "PIL",
-                        "win32con", "win32gui", "win32process", "win32api"]
+                        "win32con", "win32gui", "win32process", "win32api")
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
-    py2exe_excludes += [
+    py2exe_exclude(
                         #Tcl/Tk
                         "Tkconstants", "Tkinter", "tcl",
                         #PIL bits that import TK:
@@ -545,26 +605,24 @@ if sys.platform.startswith("win"):
                         "urllib", "urllib2", "urlparse", "tty",
                         "ssl", "_ssl",
                         "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
-                        "distutils", "setuptools", "doctest"]
-    py2exe_excludes.append("xpra.platform.darwin")
-    py2exe_excludes.append("xpra.platform.xposix")
+                        "distutils", "setuptools", "doctest")
 
     if not cyxor_ENABLED or opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
-        py2exe_includes.append("numpy")
+        py2exe_include("numpy")
     else:
-        py2exe_excludes += ["numpy",
-                            "unittest", "difflib",  #avoid numpy warning (not an error)
-                            "pydoc"]
+        py2exe_exclude("numpy",
+                        "unittest", "difflib",  #avoid numpy warning (not an error)
+                        "pydoc")
 
     if sound_ENABLED:
-        py2exe_includes += ["pygst", "gst", "gst.extend"]
+        py2exe_include("pygst", "gst", "gst.extend")
     else:
-        py2exe_excludes += ["xpra.sound", "pygst", "gst"]
+        py2exe_exclude("pygst", "gst", "gst.extend")
 
     if opengl_ENABLED:
-        py2exe_includes += ["ctypes", "platform"]
-        py2exe_excludes += ["OpenGL", "OpenGL_accelerate"]
+        py2exe_include("ctypes", "platform")
+        py2exe_exclude("OpenGL", "OpenGL_accelerate")
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
@@ -633,15 +691,21 @@ else:
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
+    add_packages("xpra", "xpra.platform")
     if sys.platform.startswith("darwin"):
         #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
-        packages.append("xpra.platform.darwin")
+        add_packages("xpra.platform.darwin")
     else:
-        packages.append("xpra.platform.xposix")
+        add_packages("xpra.platform.xposix")
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' step below if it isn't actually needed)
         scripts.append("scripts/xpra_Xdummy")
+
+    def toggle_packages(enabled, *package_names):
+        global packages
+        if enabled:
+            add_packages(*package_names)
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
@@ -672,22 +736,17 @@ else:
 
 
 #*******************************************************************************
-if server_ENABLED:
-    packages.append("xpra.server")
-    packages.append("xpra.server.stats")
-elif sys.platform.startswith("win"):
+toggle_packages(server_ENABLED, "xpra.server", "xpra.server.stats")
+if WIN32 and not server_ENABLED:
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
-    remove_packages("xpra", "xpra.scripts", "xpra.server")
-    py2exe_excludes.append("xpra.server")
-    py2exe_excludes.append("xpra.server.stats")
+    remove_packages("xpra", "xpra.scripts")
+
+toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
-
+toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.lowlevel")
 if x11_ENABLED:
-    packages.append("xpra.x11")
-    packages.append("xpra.x11.gtk_x11")
-    packages.append("xpra.x11.lowlevel")
     base = os.path.join(os.getcwd(), "xpra", "x11", "lowlevel", "constants")
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
@@ -741,50 +800,33 @@ if x11_ENABLED:
                 ["xpra/x11/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
                 ))
-elif sys.platform.startswith("win"):
+elif WIN32:
     #with py2exe, we have to remove the default packages and let it figure it out...
     #(otherwise, we can't remove specific files from those packages)
     remove_packages("xpra", "xpra.scripts")
-    py2exe_excludes.append("xpra.x11")
 
 
 
-if client_ENABLED:
-    packages.append("xpra.client")
-    packages.append("xpra.client.gtk_base")
-    packages.append("xpra.client.gtk2")
-    packages.append("xpra.client.gtk3")
-    packages.append("xpra.client.qt4")
-elif sys.platform.startswith("win"):
-    remove_packages("xpra.client")
-    py2exe_excludes.append("xpra.client")
+toggle_packages(client_ENABLED, "xpra.client")
+toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
+toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
+toggle_packages(client_ENABLED and qt4_ENABLED, "xpra.client.qt4")
+toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
+toggle_packages(sound_ENABLED, "xpra.sound")
+toggle_packages(webp_ENABLED, "xpra.codecs.webm")
+toggle_packages(client_ENABLED and gtk2_ENABLED and opengl_ENABLED, "xpra.client.gl")
 
-
-
+toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
-    packages.append("xpra.clipboard")
     cython_add(Extension("xpra.gtk_common.gdk_atoms",
                 ["xpra/gtk_common/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES)
                 ))
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.x11.gdk")
-    py2exe_excludes.append("xpra.clipboard")
-
-
-
-if sound_ENABLED:
-    packages.append("xpra.sound")
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.sound")
-
-
 
 if cyxor_ENABLED:
     cython_add(Extension("xpra.codecs.xor.cyxor",
                 ["xpra/codecs/xor/cyxor.pyx"]))
-
-
 
 if cymaths_ENABLED:
     cython_add(Extension("xpra.server.stats.cymaths",
@@ -792,54 +834,34 @@ if cymaths_ENABLED:
 
 
 
+toggle_packages(x264_ENABLED, "xpra.codecs.x264")
 if x264_ENABLED:
-    packages.append("xpra.codecs.x264")
     cython_add(Extension("xpra.codecs.x264.codec",
                 ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.codecs.x264")
 
 
 
+toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    packages.append("xpra.codecs.vpx")
     cython_add(Extension("xpra.codecs.vpx.codec",
                 ["xpra/codecs/vpx/codec.pyx", "xpra/codecs/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.codecs.vpx")
 
 
 
+toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
-    packages.append("xpra.net.rencode")
     extra_compile_args = []
-    if not sys.platform.startswith("win"):
+    if not WIN32:
         extra_compile_args.append("-O3")
     else:
         extra_compile_args.append("/Ox")
     cython_add(Extension("xpra.net.rencode._rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 extra_compile_args=extra_compile_args))
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.net.rencode")
-
-
-
-if webp_ENABLED:
-    packages.append("xpra.codecs.webm")
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.codecs.webm")
-
-
-
-if opengl_ENABLED:
-    packages.append("xpra.client.gl")
-elif sys.platform.startswith("win"):
-    py2exe_excludes.append("xpra.client.gl")
 
 
 
