@@ -18,6 +18,7 @@ from threading import Event
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
+elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
 try:
     from StringIO import StringIO   #@UnusedImport
@@ -312,7 +313,7 @@ class ServerSource(object):
             if k.startswith("encoding."):
                 k = k[len("encoding."):]
                 self.encoding_options[k] = v
-        log("encoding options: %s", self.encoding_options)
+        elog("encoding options: %s", self.encoding_options)
         #encodings:
         self.encodings = capabilities.get("encodings", [])
         self.set_encoding(capabilities.get("encoding", None), None)
@@ -338,10 +339,9 @@ class ServerSource(object):
             ms = self.encoding_options["min-speed"]
         if ms>0:
             self.default_encoding_options["min-speed"] = ms
-        log("default encoding options: %s", self.default_encoding_options)
+        elog("default encoding options: %s", self.default_encoding_options)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
-        elog = debug_if_env("XPRA_ENCODING_DEBUG")
         elog("encoding_options: %s", self.encoding_options)
         #keyboard:
         try:
@@ -656,11 +656,11 @@ class ServerSource(object):
                          "Will use the first commonly supported encoding instead", encoding)
                 encoding = None
         else:
-            log("encoding not specified, will use the first match")
+            elog("encoding not specified, will use the first match")
         if not encoding:
             #not specified or not supported, find intersection of supported encodings:
             common = [e for e in self.encodings if e in ENCODINGS]
-            log("encodings supported by both ends: %s", common)
+            elog("encodings supported by both ends: %s", common)
             if not common:
                 raise Exception("cannot find compatible encoding between "
                                 "client (%s) and server (%s)" % (self.encodings, ENCODINGS))

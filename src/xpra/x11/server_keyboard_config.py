@@ -10,7 +10,7 @@ import gtk.gdk
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = debug_if_env("XPRA_KEYBOARD_DEBUG")
+debug = debug_if_env(log, "XPRA_KEYBOARD_DEBUG")
 
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names

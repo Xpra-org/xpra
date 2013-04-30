@@ -8,7 +8,7 @@ from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
 from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = debug_if_env("XPRA_SOUND_DEBUG")
+debug = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 
 class SoundPipeline(SignalObject):
