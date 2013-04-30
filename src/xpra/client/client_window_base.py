@@ -59,19 +59,20 @@ class ClientWindowBase(object):
         w = max(1, w)
         h = max(1, h)
         lock = None
-        if self._backing:
-            lock = self._backing._video_decoder_lock
+        backing = self._backing
+        if backing:
+            lock = backing._video_decoder_lock
         try:
             if lock:
                 lock.acquire()
-            if self._backing is None:
+            if backing is None:
                 if USE_FAKE_BACKING:
                     from xpra.client.fake_window_backing import FakeBacking
                     backing_class = FakeBacking
                 backing = backing_class(self._id, w, h)
                 if self._client.mmap_enabled:
                     backing.enable_mmap(self._client.mmap)
-            self._backing.init(w, h)
+            backing.init(w, h)
         finally:
             if lock:
                 lock.release()
