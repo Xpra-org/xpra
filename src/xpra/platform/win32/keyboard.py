@@ -129,4 +129,4 @@ class Keyboard(KeyboardBase):
                         send_key_action_cb(*undo)
                 self.AltGr_modifiers(key_event.modifiers, not key_event.pressed)
         self.last_key_event_sent = key_event
-        send_key_action_cb(wid, *self.last_key_event_sent)
+        send_key_action_cb(wid, key_event)
