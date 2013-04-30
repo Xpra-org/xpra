@@ -20,6 +20,9 @@ MODIFIERS = {Qt.AltModifier     : "mod1",
              }
 
 
+class QtKeyEvent(AdHocStruct):
+    pass
+
 """
 Qt4 version of the ClientWindow class
 """
@@ -161,7 +164,7 @@ class ClientWindow(QWidget, ClientWindowBase):
         self._client.handle_key_action(self, key_event)
 
     def parse_key_event(self, event, pressed):
-        key_event = AdHocStruct()
+        key_event = QtKeyEvent()
         key_event.modifiers = self.parseModifiers(event.modifiers())
         key_event.keyname = str(event.text())
         key_event.keyval = event.key()

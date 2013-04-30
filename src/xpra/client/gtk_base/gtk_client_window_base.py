@@ -55,6 +55,8 @@ def nn(x):
     return x
 
 
+class GTKKeyEvent(AdHocStruct):
+    pass
 
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def __init__(self, *args):
@@ -313,7 +315,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return pointer, modifiers, buttons
 
     def parse_key_event(self, event, pressed):
-        key_event = AdHocStruct()
+        key_event = GTKKeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
         key_event.keyname = nn(gdk.keyval_name(event.keyval))
         key_event.keyval = nn(event.keyval)
