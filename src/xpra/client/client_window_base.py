@@ -71,7 +71,7 @@ class ClientWindowBase(object):
                 backing = backing_class(self._id, w, h)
                 if self._client.mmap_enabled:
                     backing.enable_mmap(self._client.mmap)
-            backing.init(w, h)
+            self._backing.init(w, h)
         finally:
             if lock:
                 lock.release()
