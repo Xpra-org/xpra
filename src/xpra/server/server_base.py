@@ -25,7 +25,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, get_codecs
 from xpra.scripts.server import deadly_signal
-from xpra.server.server_source import ServerSource
+from xpra.server.source import ServerSource
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid
 from xpra.version_util import is_compatible_with, add_version_info

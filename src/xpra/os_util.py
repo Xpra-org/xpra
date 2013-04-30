@@ -4,8 +4,28 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import os
 import sys
+
+
+def platform_name(sys_platform, release):
+    PLATFORMS = {"win32"    : "Microsoft Windows",
+                 "cygwin"   : "Windows/Cygwin",
+                 "linux2"   : "Linux",
+                 "darwin"   : "Mac OSX",
+                 "freebsd.*": "FreeBSD",
+                 "os2"      : "OS/2",
+                 }
+    def rel(v):
+        if sys_platform=="win32" and release:
+            return "%s %s" % (v, release)
+        return v
+    for k,v in PLATFORMS.items():
+        regexp = re.compile(k)
+        if regexp.match(sys_platform):
+            return rel(v)
+    return rel(sys_platform)
 
 def set_prgname(name):
     try:
