@@ -206,10 +206,10 @@ def check_support(min_texture_size=0, force_enable=False):
     except gtk.gdkgl.NoMatches:
         display_mode &= ~gtk.gdkgl.MODE_DOUBLE
         glconfig = gtk.gdkgl.Config(mode=display_mode)
-    friendly_mode_names = {gtk.gdkgl.MODE_RGB : "RGB",
-                           gtk.gdkgl.MODE_DEPTH:"DEPTH",
-                           gtk.gdkgl.MODE_DOUBLE : "DOUBLE",
-                           gtk.gdkgl.MODE_SINGLE : "SINGLE"}
+    friendly_mode_names = {gtk.gdkgl.MODE_RGB       : "RGB",
+                           gtk.gdkgl.MODE_DEPTH     : "DEPTH",
+                           gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
+                           gtk.gdkgl.MODE_SINGLE    : "SINGLE"}
     friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
     log("using display mode: %s", friendly_modes)
     props["display_mode"] = friendly_modes

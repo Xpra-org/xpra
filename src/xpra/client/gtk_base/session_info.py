@@ -154,6 +154,8 @@ class SessionInfo(gtk.Window):
         opengl_box.add(self.server_opengl_icon)
         opengl_box.add(self.server_opengl_label)
         tb.new_row("Client OpenGL", opengl_box)
+        self.opengl_buffering = label()
+        tb.new_row("OpenGL Buffering", self.opengl_buffering)
         self.server_encodings_label = label()
         tb.new_row("Server Encodings", self.server_encodings_label)
         self.client_encodings_label = label()
@@ -414,11 +416,20 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
         self.bool_icon(self.server_opengl_icon, self.client.opengl_enabled)
+        buffering = "n/a"
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
+            display_mode = self.client.opengl_props.get("display_mode", [])
+            if "DOUBLE" in display_mode:
+                buffering = "double buffering"
+            elif "SINGLE" in display_mode:
+                buffering = "single buffering"
+            else:
+                buffering = "unknown"
         else:
             glinfo = self.client.opengl_props.get("info", "")
         self.server_opengl_label.set_text(glinfo)
+        self.opengl_buffering.set_text(buffering)
 
         scaps = self.client.server_capabilities
         self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
