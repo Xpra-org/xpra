@@ -8,7 +8,7 @@
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client.keyboard_helper import KeyboardHelper, nn
+from xpra.client.keyboard_helper import KeyboardHelper, nn, debug
 from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
 from xpra.gtk_common.keymap import get_gtk_keymap
 gdk = import_gdk()
@@ -31,7 +31,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self._keymap.connect("keys-changed", self._keys_changed)
 
     def _keys_changed(self, *args):
-        log.debug("keys_changed")
+        debug("keys_changed")
         self._keymap = gdk.keymap_get_default()
         if not self._keymap_changing:
             self._keymap_changing = True
@@ -44,7 +44,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             self.keyboard.update_modifier_map(gdk.display_get_default(), self.xkbmap_mod_meanings)
         except:
             pass
-        log.debug("do_keys_changed() modifier_map=%s" % self.keyboard.modifier_map)
+        debug("do_keys_changed() modifier_map=%s" % self.keyboard.modifier_map)
         if sendkeymap:
             if self.xkbmap_layout:
                 self.send_layout()
