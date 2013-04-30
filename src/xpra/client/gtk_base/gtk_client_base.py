@@ -41,16 +41,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def get_pixbuf(self, icon_name):
-        log("get_pixbuf(%s)", icon_name)
         try:
             if not icon_name:
+                log("get_pixbuf(%s)=None", icon_name)
                 return None
             icon_filename = get_icon_filename(icon_name)
             log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
             if icon_filename:
                 return self.do_get_pixbuf(icon_filename)
         except:
-            log.error("get_image(%s)", icon_name, exc_info=True)
+            log.error("get_pixbuf(%s)", icon_name, exc_info=True)
         return  None
 
     def do_get_pixbuf(self, icon_filename):
@@ -144,11 +144,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def get_current_modifiers(self):
         modifiers_mask = gdk.get_default_root_window().get_pointer()[-1]
         return self.mask_to_names(modifiers_mask)
-
-    def mask_to_names(self, mask):
-        if self.keyboard_helper is None:
-            return []
-        return self.keyboard_helper.mask_to_names(mask)
 
 
     def make_hello(self, challenge_response=None):

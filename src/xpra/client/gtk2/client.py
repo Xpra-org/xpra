@@ -6,12 +6,17 @@
 # later version. See the file COPYING for details.
 
 import sys
-from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 import gobject
+try:
+    #we *have to* do this as early as possible on win32..
+    gobject.threads_init()
+except:
+    pass
 import gtk
 from gtk import gdk
 
 from xpra.scripts.config import ENCODINGS
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.client_window import ClientWindow
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names

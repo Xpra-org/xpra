@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os
 import time
 import ctypes
@@ -22,7 +21,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
-from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED
+from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
 from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
@@ -300,6 +299,10 @@ class UIXpraClient(XpraClientBase):
         wid = self._window_to_id[window]
         self.keyboard_helper.handle_key_action(window, wid, key_event)
 
+    def mask_to_names(self, mask):
+        if self.keyboard_helper is None:
+            return []
+        return self.keyboard_helper.mask_to_names(mask)
 
 
     def set_default_window_icon(self, window_icon):
@@ -369,9 +372,9 @@ class UIXpraClient(XpraClientBase):
         capabilities["clipboard"] = self.client_supports_clipboard
         capabilities["clipboard.notifications"] = self.client_supports_clipboard
         #buggy osx clipboards:
-        capabilities["clipboard.want_targets"] = sys.platform.startswith("darwin")
+        capabilities["clipboard.want_targets"] = CLIPBOARD_WANT_TARGETS
         #buggy osx and win32 clipboards:
-        capabilities["clipboard.greedy"] = sys.platform.startswith("win") or sys.platform.startswith("darwin")
+        capabilities["clipboard.greedy"] = CLIPBOARD_GREEDY
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell

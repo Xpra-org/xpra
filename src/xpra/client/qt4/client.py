@@ -105,11 +105,6 @@ class XpraClient(UIXpraClient):
         #modifiers_mask = gdk.get_default_root_window().get_pointer()[-1]
         return []
 
-    def mask_to_names(self, mask):
-        if self._client_extras is None:
-            return []
-        return self._client_extras.mask_to_names(mask)
-
 
     def make_hello(self, challenge_response=None):
         capabilities = UIXpraClient.make_hello(self, challenge_response)
