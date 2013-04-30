@@ -519,13 +519,13 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:
                         cmd = test_command
-                        
+
                     print("starting test command: %s, settle time=%s" % (str(cmd), test_command_settle_time))
                     test_command_process = subprocess.Popen(test_command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=type(cmd)==str)
 
                     if PREVENT_SLEEP:
                         subprocess.Popen(PREVENT_SLEEP_COMMAND)
-                    
+
                     time.sleep(test_command_settle_time)
                     code = test_command_process.poll()
                     assert code is None, "test command %s failed to start: exit code is %s" % (test_command, code)

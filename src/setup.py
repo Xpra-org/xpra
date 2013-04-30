@@ -565,7 +565,7 @@ if WIN32:
         else:
             remove_packages(*package_names)
             py2exe_exclude(*package_names)
-    
+
     add_packages("xpra.platform.win32")
     py2exe_exclude("xpra.platform.darwin", "xpra.platform.xposix")
     #UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -720,7 +720,7 @@ else:
             etc_prefix = '/etc/xpra'
         else:
             etc_prefix = sys.prefix + '/etc/xpra'
-        
+
         etc_files = []
         if server_ENABLED and x11_ENABLED:
             etc_files = ["etc/xpra/xorg.conf"]

@@ -49,7 +49,7 @@ class ClientWindowBase(object):
         self._override_redirect_windows = []
 
         self.init_window(metadata)
-    
+
     def init_window(self, metadata):
         self.new_backing(*self._size)
         self.update_metadata(metadata)

@@ -21,7 +21,7 @@ if USE_CAIRO:
 else:
     from xpra.client.gtk2.pixmap_backing import PixmapBacking
     BACKING_CLASS = PixmapBacking
-    
+
 
 """
 GTK2 version of the ClientWindow class

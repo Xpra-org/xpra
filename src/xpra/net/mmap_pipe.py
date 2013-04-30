@@ -76,7 +76,6 @@ def read_mmap_token(mmap_area, index=512):
         peek = ctypes.c_ubyte.from_buffer(mmap_area, 512+MAX_TOKEN_BYTES-1-i)
         v += peek.value
     return v
-    
 
 
 def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
