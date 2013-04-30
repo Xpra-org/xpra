@@ -8,14 +8,6 @@ from xpra.log import Logger
 log = Logger()
 
 
-def make_tray_menu(client):
-    #let the toolkit classes use their own
-    return None
-
-def make_native_tray(*args):
-    #let the toolkit classes use their own
-    return None
-
 try:
     from xpra.x11.gtk_x11.error import trap, XError
     from xpra.x11.lowlevel.bindings import device_bell      #@UnresolvedImport

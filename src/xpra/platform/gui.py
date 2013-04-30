@@ -4,15 +4,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-### NOTE: this must be kept in sync with the version in
-###    xpra/platform/__init__.py
-import os as _os
-import sys as _sys
-if _os.name == "nt":
-    from win32.gui import *         #@UnusedWildImport
-elif _sys.platform.startswith("darwin"):
-    from darwin.gui import *        #@UnusedWildImport
-elif _os.name == "posix":
-    from xposix.gui import *        #@UnusedWildImport
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+#defaults:
+def make_tray_menu(client):
+    #let the toolkit classes use their own
+    return None
+def make_native_tray(*args):
+    #let the toolkit classes use their own
+    return None
+def system_bell(*args):
+    #let the toolkit classes use their own
+    return False
+
+from xpra.platform import platform_import
+platform_import(globals(), "gui", False,
+                "make_tray_menu",
+                "make_native_tray",
+                "system_bell")

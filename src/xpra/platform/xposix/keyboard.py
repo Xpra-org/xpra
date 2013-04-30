@@ -73,7 +73,7 @@ class Keyboard(KeyboardBase):
             return get_keycode_mappings(gdk.get_default_root_window())
         except Exception, e:
             log.error("failed to use raw x11 keymap: %s", e)
-        return  ""
+        return  {}
 
     def get_keymap_spec(self):
         xkbmap_print = self.exec_get_keyboard_data(["setxkbmap", "-print"])

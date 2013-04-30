@@ -4,14 +4,5 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os as _os
-import sys as _sys
-
-if _os.name == "nt":
-    from win32.features import *            #@UnusedWildImport
-elif _sys.platform.startswith("darwin"):
-    from darwin.features import *           #@UnusedWildImport
-elif _os.name == "posix":
-    from xposix.features import *           #@UnusedWildImport
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+#from xpra.platform import platform_import
+#platform_import(globals(), "tray", True,

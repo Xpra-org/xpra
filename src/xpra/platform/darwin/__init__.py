@@ -13,7 +13,8 @@ def do_init():
     from xpra.gtk_common.quit import gtk_main_quit_really
     def quit_launcher(*args):
         gtk_main_quit_really()
-    from gui import get_OSXApplication, setup_menubar, osx_ready
+    from gui import get_OSXApplication
+    from osx_menu import setup_menubar, osx_ready
     from xpra.platform.paths import get_icon
     setup_menubar(quit_launcher)
     osxapp = get_OSXApplication()

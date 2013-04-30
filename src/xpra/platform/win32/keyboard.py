@@ -7,7 +7,6 @@
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
-from xpra.keyboard.mask import mask_to_names
 from xpra.log import Logger
 log = Logger()
 
@@ -26,7 +25,7 @@ class Keyboard(KeyboardBase):
 
     def mask_to_names(self, mask):
         """ Patch NUMLOCK and AltGr """
-        names = mask_to_names(self, mask)
+        names = KeyboardBase.mask_to_names(self, mask)
         if self.emulate_altgr:
             self.AltGr_modifiers(names)
         if self.num_lock_modifier:

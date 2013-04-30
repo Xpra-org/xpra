@@ -7,12 +7,10 @@
 # Platform-specific code for Win32.
 import os
 
-MMAP_SUPPORTED = False
-LOCAL_SERVERS_SUPPORTED = False
 SHADOW_SUPPORTED = True
-SYSTEM_TRAY_SUPPORTED = False
 os.environ["PLINK_PROTOCOL"] = "ssh"
 DEFAULT_SSH_CMD = "plink"
 GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 CLIPBOARDS=["CLIPBOARD"]
+CLIPBOARD_GREEDY = True

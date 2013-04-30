@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import inspect
-import os as _os
-import sys as _sys
+import os
+import sys
 
 
 def valid_dir(path):
@@ -102,11 +102,10 @@ def get_license_text(self):
     return LICENSE_TEXT
 
 
-if _os.name == "nt":
-    from win32.paths import *               #@UnusedWildImport
-elif _sys.platform.startswith("darwin"):
-    from darwin.paths import *              #@UnusedWildImport
-elif _os.name == "posix":
-    from xposix.paths import *              #@UnusedWildImport
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+from xpra.platform import platform_import
+platform_import(globals(), "paths", True,
+                "get_app_dir",
+                "get_icon_dir")
+platform_import(globals(), "paths", False,
+                "get_default_conf_dir",
+                "get_default_socket_dir")

@@ -6,9 +6,13 @@
 
 #@PydevCodeAnalysisIgnore
 
-import os as _os
-import sys as _sys
-import inspect
+import os as os
+import sys as sys
+from xpra.log import Logger
+log = Logger()
+debug = log.debug
+if os.environ.get("XPRA_IMPORT_DEBUG", "0")=="1":
+    debug = log.info
 
 _init_done = False
 def init():
@@ -21,11 +25,32 @@ def do_init():
     pass
 
 
-if _os.name == "nt":
-    from win32 import *
-elif _sys.platform.startswith("darwin"):
-    from darwin import *
-elif _os.name == "posix":
-    from xposix import *
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+def platform_import(where, pm, required, *imports):
+    if os.name == "nt":
+        p = "win32"
+    elif sys.platform.startswith("darwin"):
+        p = "darwin"
+    elif os.name == "posix":
+        p = "xposix"
+    else:
+        raise OSError("Unknown OS %s" % (os.name))
+
+    module = "xpra.platform.%s" % p
+    if pm:
+        module += ".%s" % pm
+    debug("importing %s from %s (required=%s)" % (imports, module, required))
+    platform_module = __import__(module, {}, {}, imports)
+    assert platform_module
+    for x in imports:
+        found = hasattr(platform_module, x)
+        if not found:
+            if required:
+                raise Exception("could not find %s in %s" % (x, module))
+            else:
+                debug("%s=%s (unchanged)" % (x, where[x]))
+                continue
+        v = getattr(platform_module, x)
+        debug("%s=%s" % (x, str(v).replace("\n", "\\n")))
+        where[x] = v
+
+platform_import(globals(), None, True, "do_init")

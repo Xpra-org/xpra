@@ -47,6 +47,12 @@ class KeyboardBase(object):
         """
         return  {}, [], ["lock"]
 
+    def get_keymap_spec(self):
+        return "", ""
+
+    def get_x11_keymap(self):
+        return {}
+
     def get_layout_spec(self):
         return "", "", []
 

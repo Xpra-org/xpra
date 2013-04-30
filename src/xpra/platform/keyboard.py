@@ -4,14 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os as _os
-import sys as _sys
+#default:
+Keyboard = None
 
-if _os.name == "nt":
-    from win32.keyboard import Keyboard            #@UnusedImport
-elif _sys.platform.startswith("darwin"):
-    from darwin.keyboard import Keyboard           #@UnusedImport @Reimport
-elif _os.name == "posix":
-    from xposix.keyboard import Keyboard           #@UnusedImport @Reimport
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+from xpra.platform import platform_import
+platform_import(globals(), "keyboard", True,
+                "Keyboard")

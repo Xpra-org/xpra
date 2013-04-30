@@ -15,18 +15,6 @@ from xpra.gtk_common.gobject_compat import import_gdk
 gdk = import_gdk()
 
 
-def make_tray_menu(client):
-    #let the toolkit classes use their own
-    return None
-
-def make_native_tray(menu, delay_tray, tray_icon):
-    #FIXME: use win32 code here!
-    return None
-
-def system_bell(self, *args):
-    return False
-
-
 class ClientExtras(object):
     def __init__(self, client, opts, conn):
         self.setup_console_event_listener()

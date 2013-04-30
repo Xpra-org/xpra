@@ -4,14 +4,25 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os as _os
-import sys as _sys
+#defaults which may be overriden by platform_import:
+LOCAL_SERVERS_SUPPORTED = False
+SHADOW_SUPPORTED = False
+MMAP_SUPPORTED = False
+SYSTEM_TRAY_SUPPORTED = False
+DEFAULT_SSH_CMD = False
+GOT_PASSWORD_PROMPT_SUGGESTION = ""
+CLIPBOARDS = []
+CLIPBOARD_WANT_TARGETS = False
+CLIPBOARD_GREEDY = False
 
-if _os.name == "nt":
-    from win32.features import *            #@UnusedWildImport
-elif _sys.platform.startswith("darwin"):
-    from darwin.features import *           #@UnusedWildImport
-elif _os.name == "posix":
-    from xposix.features import *           #@UnusedWildImport
-else:
-    raise OSError("Unknown OS %s" % (_os.name))
+from xpra.platform import platform_import
+platform_import(globals(), "features", False,
+                "LOCAL_SERVERS_SUPPORTED",
+                "SHADOW_SUPPORTED",
+                "MMAP_SUPPORTED",
+                "SYSTEM_TRAY_SUPPORTED",
+                "DEFAULT_SSH_CMD",
+                "GOT_PASSWORD_PROMPT_SUGGESTION",
+                "CLIPBOARDS",
+                "CLIPBOARD_WANT_TARGETS",
+                "CLIPBOARD_GREEDY")
