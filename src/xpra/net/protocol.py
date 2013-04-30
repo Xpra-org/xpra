@@ -524,10 +524,12 @@ class Protocol(object):
                     #this packet is seemingly too big, but check again from the main UI thread
                     #this gives 'set_max_packet_size' a chance to run from "hello"
                     def check_packet_size(size_to_check, packet_header):
-                        log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
-                        if size_to_check>self.max_packet_size:
-                            return self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
+                        if not self._closed:
+                            log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
+                            if size_to_check>self.max_packet_size:
+                                self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
+                        return False
                     scheduler.timeout_add(1000, check_packet_size, payload_size, read_buffer[:32])
 
                 if bl<payload_size:
