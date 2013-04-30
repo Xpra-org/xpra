@@ -455,6 +455,12 @@ class Protocol(object):
         self.close()
         return False
 
+    def _gibberish(self, msg, data):
+        scheduler.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, data])
+        # Then hang up:
+        scheduler.timeout_add(1000, self._connection_lost, msg)
+
+
     def _read_parse_thread_loop(self):
         try:
             self.do_read_parse_thread_loop()
@@ -500,14 +506,16 @@ class Protocol(object):
                             err += " read buffer=0x%s" % repr_ellipsized(read_buffer)
                             if len(read_buffer)>40:
                                 err += "..."
-                        return self._call_connection_lost(err)
+                        self._gibberish(err, read_buffer[:8])
+                        return
                     if bl<8:
                         break   #packet still too small
                     #packet format: struct.pack('cBBBL', ...) - 8 bytes
                     try:
                         _, protocol_flags, compression_level, packet_index, data_size = unpack_header(read_buffer[:8])
                     except Exception, e:
-                        raise Exception("failed to parse packet header: 0x%s" % repr_ellipsized(read_buffer[:8]), e)
+                        self._gibberish("failed to parse packet header: 0x%s: %s" % (repr_ellipsized(read_buffer[:8]), e), read_buffer[:8])
+                        return
                     read_buffer = read_buffer[8:]
                     bl = len(read_buffer)
                     if protocol_flags & Protocol.FLAGS_CIPHER:
@@ -591,12 +599,8 @@ class Protocol(object):
                     log.error("value error reading packet: %s", e, exc_info=True)
                     if self._closed:
                         return
-                    def gibberish(buf):
-                        # Peek at the data we got, in case we can make sense of it:
-                        self._process_packet_cb(self, [Protocol.GIBBERISH, buf])
-                        # Then hang up:
-                        return self._connection_lost("gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e))
-                    scheduler.idle_add(gibberish, data)
+                    msg = "gibberish received: %s, packet index=%s, packet size=%s, buffer size=%s, error=%s" % (repr_ellipsized(data), packet_index, payload_size, bl, e)
+                    self._gibberish(msg, data)
                     return
 
                 if self._closed:

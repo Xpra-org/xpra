@@ -409,7 +409,7 @@ class ServerBase(object):
     def _process_gibberish(self, proto, packet):
         data = packet[1]
         log.info("Received uninterpretable nonsense: %s", repr(data))
-
+        self.disconnect_client(proto, "invalid packet format")
 
     def _send_password_challenge(self, proto, server_cipher):
         proto.salt = get_hex_uuid()
