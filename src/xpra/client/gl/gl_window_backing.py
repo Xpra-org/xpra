@@ -45,24 +45,24 @@ from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT
 try:
     from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
 except ImportError:
-    log.warning("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
+    log.warn("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     GL_DEBUG_OUTPUT = None
 try:
     from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
     from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
     from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
+    def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
+        log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
+    gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
 except ImportError:
     # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers
+    gl_debug_callback = None
     glInitStringMarkerGREMEDY = None
     glStringMarkerGREMEDY = None
     glInitFrameTerminatorGREMEDY = None
     glFrameTerminatorGREMEDY = None
-    pass
 from ctypes import c_char_p
 
-def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
-    log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
-gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
 
 # Texture number assignment
 #  1 = Y plane
@@ -140,7 +140,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             return  None
         if not self.gl_setup:
             # Ask GL to send us all debug messages
-            if GL_DEBUG_OUTPUT is not None and glInitDebugKHR() == True:
+            if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR() == True:
                 glEnable(GL_DEBUG_OUTPUT)
                 glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
                 glDebugMessageCallback(gl_debug_callback, None)
