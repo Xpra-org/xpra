@@ -2,7 +2,8 @@
 
 import random
 import time
-from xpra.maths import logp, values_to_diff_scaled_values, calculate_time_weighted_average, calculate_timesize_weighted_average, dec1
+from xpra.simple_stats import values_to_diff_scaled_values
+from xpra.server.stats.maths import logp, calculate_time_weighted_average, calculate_timesize_weighted_average
 
 def test_values_to_diff_scaled_values():
 	in_data = [1,2,4,10,50,51,62,73,81,85,89]
@@ -31,7 +32,7 @@ def test_calculate_timesize_weighted_average():
 	v = calculate_timesize_weighted_average(data)
 	end = time.time()
 	print("test_calculate_timesize_weighted_average(%s records)=%s" % (len(data), v))
-	print("elapsed time: %sms" % dec1(1000*(end-start)))
+	print("elapsed time: %.1fms" % (1000*(end-start)))
 
 def test_calculate_time_weighted_average():
 	#event_time, value
@@ -48,7 +49,7 @@ def test_calculate_time_weighted_average():
 	v = calculate_time_weighted_average(data)
 	end = time.time()
 	print("calculate_time_weighted_average(%s records)=%s" % (len(data), v))
-	print("elapsed time: %sms" % dec1(1000*(end-start)))
+	print("elapsed time: %.1fms" % (1000*(end-start)))
 
 def test_logp():
 	start = time.time()
@@ -57,7 +58,7 @@ def test_logp():
 		logp(x)
 	end = time.time()
 	print("logp:")
-	print("elapsed time: %sms" % dec1(1000*(end-start)))
+	print("elapsed time: %.1fms" % (1000*(end-start)))
 
 
 def main():

@@ -9,9 +9,10 @@ import gobject
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client_base import GLibXpraClient
+from xpra.client.gobject_client_base import CommandConnectClient
 
-class TestTimeoutClient(GLibXpraClient):
+
+class TestTimeoutClient(CommandConnectClient):
     """
         Use this test against a password protected server.
         The server should kick us within 10 seconds out as we aren't replying
@@ -19,7 +20,7 @@ class TestTimeoutClient(GLibXpraClient):
     """
 
     def __init__(self, conn, opts):
-        GLibXpraClient.__init__(self, conn, opts)
+        CommandConnectClient.__init__(self, conn, opts)
         def check_connection_timeout(*args):
             log.error("BUG: timeout did not fire: we are still connected!")
             self.quit()
@@ -33,8 +34,8 @@ class TestTimeoutClient(GLibXpraClient):
         self.quit()
 
     def quit(self, *args):
-        log.info("server correctly terminated the connection")
-        GLibXpraClient.quit(self, 0)
+        log.info("OK: server correctly terminated the connection")
+        CommandConnectClient.quit(self, 0)
 
 def main():
     import sys

@@ -5,11 +5,16 @@
 # later version. See the file COPYING for details.
 
 import sys
+import socket
+import logging
 
 from xpra.log import Logger
 log = Logger()
 
-from wimpiggy.util import AdHocStruct
+from xpra.dotxpra import DotXpra
+from xpra.net.bytestreams import SocketConnection
+from xpra.scripts.config import make_defaults_struct
+
 
 def test_DoS(client_class_constructor, args):
     """ utility method for running DoS tests
@@ -17,13 +22,9 @@ def test_DoS(client_class_constructor, args):
     """
 
     assert len(args)==2, "usage: test_DoS_client :DISPLAY"
-    import socket
-    from xpra.dotxpra import DotXpra
-    from xpra.bytestreams import SocketConnection
-    import logging
     logging.root.setLevel(logging.DEBUG)
     logging.root.addHandler(logging.StreamHandler(sys.stderr))
-    opts = AdHocStruct()
+    opts = make_defaults_struct()
     opts.password_file = ""
     opts.encoding = "rgb24"
     opts.jpegquality = 70

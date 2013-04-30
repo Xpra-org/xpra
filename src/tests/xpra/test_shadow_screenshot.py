@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.shadow_server import take_root_screenshot
+from xpra.server.shadow_server_base import take_root_screenshot
 
 def test_screenshot():
     print("grabbing screenshot")

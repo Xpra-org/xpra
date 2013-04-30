@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.bencode import bencode, bdecode
+from xpra.net.bencode import bencode, bdecode
 
 def test_decoding():
 

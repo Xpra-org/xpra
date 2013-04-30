@@ -9,15 +9,16 @@ import gobject
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client_base import GLibXpraClient
+from xpra.client.gobject_client_base import CommandConnectClient
 
-class TestIllegalCommandClient(GLibXpraClient):
+
+class TestIllegalCommandClient(CommandConnectClient):
     """
         Sending an illegal command should get us kicked out
     """
 
     def __init__(self, conn, opts):
-        GLibXpraClient.__init__(self, conn, opts)
+        CommandConnectClient.__init__(self, conn, opts)
         def check_kicked_out(*args):
             log.error("BUG: illegal command did not get us kicked out: we are still connected!")
             self.quit()
@@ -29,8 +30,8 @@ class TestIllegalCommandClient(GLibXpraClient):
             self.send("close-window", i)
 
     def quit(self, *args):
-        log.info("server correctly terminated the connection")
-        GLibXpraClient.quit(self)
+        log.info("OK: server correctly terminated the connection")
+        CommandConnectClient.quit(self)
 
 def main():
     import sys
