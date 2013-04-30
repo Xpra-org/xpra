@@ -128,22 +128,16 @@ DEFAULT_MODIFIER_MEANINGS = {
 def grok_modifier_map(display_source, meanings):
     """Return an dict mapping modifier names to corresponding X modifier
     bitmasks."""
-    modifier_map = {
-        "shift": 1 << 0,
-        "lock": 1 << 1,
-        "control": 1 << 2,
-        "mod1": 1 << 3,
-        "mod2": 1 << 4,
-        "mod3": 1 << 5,
-        "mod4": 1 << 6,
-        "mod5": 1 << 7,
-        "scroll": 0,
-        "num": 0,
-        "meta": 0,
-        "super": 0,
-        "hyper": 0,
-        "alt": 0,
-        }
+    from xpra.keyboard.mask import MODIFIER_MAP
+    modifier_map = MODIFIER_MAP.copy()
+    modifier_map.update({
+        "scroll":   0,
+        "num":      0,
+        "meta":     0,
+        "super":    0,
+        "hyper":    0,
+        "alt":      0,
+        })
     if not meanings:
         meanings = DEFAULT_MODIFIER_MEANINGS
 
