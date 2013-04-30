@@ -550,7 +550,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
         Some platforms can't tell us about modifier mappings
         So we try to find matches from the defaults below:
     """
-    from xpra.keys import DEFAULT_MODIFIER_MEANINGS
+    from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
     pref = DEFAULT_MODIFIER_MEANINGS
     #keycodes are: {keycode : (keyval, name, keycode, group, level)}
     matches = {}
