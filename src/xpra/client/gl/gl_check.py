@@ -129,6 +129,12 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             glMultiTexCoord2i, \
             glVertex2i, glEnd)
 
+        #check for framebuffer functions we need:
+        from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
+            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+        check_functions(GL_FRAMEBUFFER, \
+            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
+
         for ext in required_extensions:
             if ext not in extensions:
                 gl_check_error("OpenGL driver lacks support for extension: %s" % ext)
