@@ -7,7 +7,7 @@
 
 from xpra.client.client_window_base import ClientWindowBase
 
-from xpra.util import AdHocStruct
+from xpra.util import AdHocStruct, nn
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
@@ -20,8 +20,6 @@ import math
 
 from xpra.log import Logger
 log = Logger()
-
-DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
@@ -40,19 +38,6 @@ if os.name=="posix":
             pass
     except ImportError, e:
         pass
-
-if sys.version < '3':
-    import codecs
-    def u(x):
-        return codecs.unicode_escape_decode(x)[0]
-else:
-    def u(x):
-        return x
-
-def nn(x):
-    if x is None:
-        return  ""
-    return x
 
 
 class GTKKeyEvent(AdHocStruct):

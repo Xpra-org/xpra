@@ -4,18 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
 from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
-
-DEBUG_SOUND = os.environ.get("XPRA_SOUND_DEBUG", "0")=="1"
-if DEBUG_SOUND:
-    debug = log.info
-else:
-    debug = log.debug
+debug = debug_if_env("XPRA_SOUND_DEBUG")
 
 
 class SoundPipeline(SignalObject):

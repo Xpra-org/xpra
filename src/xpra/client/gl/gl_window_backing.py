@@ -10,13 +10,10 @@ assert gdk
 import gtk.gdkgl, gtk.gtkgl         #@UnresolvedImport
 assert gtk.gdkgl is not None and gtk.gtkgl is not None
 import gobject
-import os
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = log.debug
-if os.environ.get("XPRA_OPENGL_DEBUG", "0")=="1":
-    debug = log.info
+debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
 from xpra.codecs.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE

@@ -8,8 +8,9 @@
 
 import gtk.gdk
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env("XPRA_KEYBOARD_DEBUG")
 
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, mask_to_names
@@ -18,13 +19,6 @@ from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
 from xpra.x11.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
-
-import os
-XPRA_KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")!="0"
-if XPRA_KEYBOARD_DEBUG:
-    debug = log.info
-else:
-    debug = log.debug
 
 ALL_X11_MODIFIERS = {
                     "shift"     : 0,

@@ -16,7 +16,7 @@ except:
 from collections import deque
 from threading import Event
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
 
 try:
@@ -341,9 +341,7 @@ class ServerSource(object):
         log("default encoding options: %s", self.default_encoding_options)
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
-        elog = log
-        if os.environ.get("XPRA_ENCODING_DEBUG", "0")!="0":
-            elog = log.info
+        elog = debug_if_env("XPRA_ENCODING_DEBUG")
         elog("encoding_options: %s", self.encoding_options)
         #keyboard:
         try:

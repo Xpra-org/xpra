@@ -5,10 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-def nn(x):
-    if x is None:
-        return ""
-    return x
+from xpra.util import nn
+
 
 def get_gtk_keymap(ignore_keys=[None, "VoidSymbol"]):
     """

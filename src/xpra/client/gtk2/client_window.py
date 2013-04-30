@@ -10,7 +10,8 @@ import gobject
 import gtk
 from gtk import gdk
 
-from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRAW_DEBUG, HAS_X11_BINDINGS
+from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.client.client_window_base import DRAW_DEBUG
 from xpra.log import Logger
 log = Logger()
 

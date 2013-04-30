@@ -18,17 +18,14 @@ if is_gtk3():
 else:
     PROPERTY_CHANGE_MASK = gdk.PROPERTY_CHANGE_MASK
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_CLIPBOARD_DEBUG")
 
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.protocol import zlib_compress
 
-if os.environ.get("XPRA_CLIPBOARD_DEBUG", "0")=="1":
-    debug = log.info
-else:
-    debug = log.debug
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 

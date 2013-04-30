@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import logging
 # This module is used by non-GUI programs and thus must not import gtk.
@@ -44,3 +45,10 @@ class Logger(object):
     info = _method_maker(logging.INFO)
     warn = _method_maker(logging.WARNING)
     error = _method_maker(logging.ERROR)
+
+
+def debug_if_env(log, env_name):
+    if os.environ.get(env_name, "0")=="1":
+        return log.info
+    else:
+        return log.debug

@@ -27,16 +27,22 @@ from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name
-
-
-def nn(x):
-    if x is None:
-        return  ""
-    return x
+from xpra.util import nn
 
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
+
+#for using custom client window classes:
+CUSTOM_CLIENT_WINDOW_CLASS = os.environ.get("XPRA_CLIENT_WINDOW_CLASS")
+CLIENT_WINDOW_CLASS = None
+if CUSTOM_CLIENT_WINDOW_CLASS:
+    try:
+        module_name, class_name = CUSTOM_CLIENT_WINDOW_CLASS.rsplit(".", 1)
+        custom_module = __import__(module_name, globals(), locals(), class_name)
+        CLIENT_WINDOW_CLASS = getattr(custom_module, class_name)
+    except Exception, e:
+        log.error("failed to load custom window class: %s", e)
 
 
 """
@@ -841,6 +847,14 @@ class UIXpraClient(XpraClientBase):
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show_all()
+
+    def get_client_window_class(self, metadata):
+        if CLIENT_WINDOW_CLASS:
+            return CLIENT_WINDOW_CLASS
+        return self.do_get_client_window_class(self, metadata)
+
+    def do_get_client_window_class(self, metadata):
+        raise Exception("override me!")
 
     def _process_new_window(self, packet):
         self._process_new_common(packet, False)

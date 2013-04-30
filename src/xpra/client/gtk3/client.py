@@ -67,7 +67,7 @@ class XpraClient(GTKXpraClient):
     def group_leader_for_pid(self, pid, wid):
         return None
 
-    def get_client_window_class(self, metadata):
+    def do_get_client_window_class(self, metadata):
         return ClientWindow
 
     def init_opengl(self, enable_opengl):

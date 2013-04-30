@@ -41,7 +41,7 @@ class XpraClient(UIXpraClient):
         #overriden in subclasses!
         return "Python/Qt4"
 
-    def get_client_window_class(self, metadata):
+    def do_get_client_window_class(self, metadata):
         return ClientWindow
 
 

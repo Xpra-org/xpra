@@ -21,11 +21,6 @@ from xpra.codecs.version_info import add_codec_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.os_util import get_hex_uuid, get_machine_id
 
-def nn(x):
-    if x is None:
-        return  ""
-    return x
-
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
 EXIT_TIMEOUT = 2

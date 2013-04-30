@@ -5,27 +5,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_KEYBOARD_DEBUG")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.platform.keyboard import Keyboard
+from xpra.util import nn, nonl
 
-def nn(x):
-    if x is None:
-        return  ""
-    return x
-def nonl(x):
-    if x is None:
-        return None
-    return str(x).replace("\n", "\\n")
-
-KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="1"
-if KEYBOARD_DEBUG:
-    debug = log.info
-else:
-    debug = log.debug
 
 
 class KeyboardHelper(object):

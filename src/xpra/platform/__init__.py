@@ -8,11 +8,9 @@
 
 import os as os
 import sys as sys
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = log.debug
-if os.environ.get("XPRA_IMPORT_DEBUG", "0")=="1":
-    debug = log.info
+debug = debug_if_env(log, "XPRA_IMPORT_DEBUG")
 
 _init_done = False
 def init():
