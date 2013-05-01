@@ -12,8 +12,6 @@ from gtk import gdk
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.client_window_base import DRAW_DEBUG
-from xpra.log import Logger
-log = Logger()
 
 USE_CAIRO = os.environ.get("XPRA_USE_CAIRO_BACKING", "0")=="1"
 if USE_CAIRO:
@@ -81,10 +79,10 @@ class ClientWindow(GTKClientWindowBase):
                 prop = target.property_get(name)
                 if not prop or len(prop)!=3 or len(prop[2])!=1:
                     return  None
-                log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+                self.debug("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
                 return prop[2][0]
         except Exception, e:
-            log.error("xget_u32_property error on %s / %s: %s", target, name, e)
+            self.error("xget_u32_property error on %s / %s: %s", target, name, e)
         return GTKClientWindowBase.xget_u32_property(self, target, name)
 
     def is_mapped(self):
@@ -111,18 +109,19 @@ class ClientWindow(GTKClientWindowBase):
         if window:
             window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
         else:
-            log.warn("ignoring draw received for a window which is not realized yet!")
+            self.warn("ignoring draw received for a window which is not realized yet!")
 
     def do_expose_event(self, event):
         if DRAW_DEBUG:
-            log.info("do_expose_event(%s) area=%s", event, event.area)
+            #cannot use self
+            self.info("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
         if self._offset!=(0, 0, 0, 0):
-            log.info("do_expose_event paint offset: %s", self._offset)
+            self.info("do_expose_event paint offset: %s", self._offset)
             self.paint_offset(event, context)
             #clip to offset:
             oL, oT = self._offset[:2]
@@ -133,5 +132,8 @@ class ClientWindow(GTKClientWindowBase):
         self._backing.cairo_draw(context)
         if not self._client.server_ok():
             self.paint_spinner(context, event.area)
+
+    def paint_offset(self, event, context):
+        self.warn("paint_offset(%s, %s) not implemented in %s", event, context, type(self))
 
 gobject.type_register(ClientWindow)

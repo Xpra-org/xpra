@@ -18,8 +18,6 @@ import sys
 import time
 import math
 
-from xpra.log import Logger
-log = Logger()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
@@ -78,7 +76,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def xget_u32_property(self, target, name):
         v = prop_get(target, name, "u32", ignore_errors=True)
-        log("xget_u32_property(%s, %s)=%s", target, name, v)
+        self.debug("xget_u32_property(%s, %s)=%s", target, name, v)
         if type(v)==int:
             return  v
         return None
@@ -92,7 +90,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def property_changed(self, widget, event):
-        log("property_changed: %s", event.atom)
+        self.debug("property_changed: %s", event.atom)
         if event.atom=="_NET_WM_DESKTOP" and self._been_mapped and not self._override_redirect:
             #fake a configure event to send the new client_properties with
             #the updated workspace number:
@@ -102,7 +100,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         assert HAS_X11_BINDINGS
         root = self.gdk_window().get_screen().get_root_window()
         ndesktops = self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-        log("set_workspace() ndesktops=%s", ndesktops)
+        self.debug("set_workspace() ndesktops=%s", ndesktops)
         if ndesktops is None or ndesktops<=1:
             return  -1
         workspace = max(0, min(ndesktops-1, workspace))
@@ -125,9 +123,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return  -1              #windows does not have workspaces
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            log("do_get_workspace() found value=%s from %s / %s", value, target, prop)
+            self.debug("do_get_workspace() found value=%s from %s / %s", value, target, prop)
             return value
-        log("do_get_workspace() value not found!")
+        self.debug("do_get_workspace() value not found!")
         return  -1
 
 
@@ -136,7 +134,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             window = gtk.gdk.get_default_root_window()
         else:
             window = self._client._id_to_window.get(wid)
-        log("found transient-for: %s / %s", wid, window)
+        self.debug("found transient-for: %s / %s", wid, window)
         if window:
             self.set_transient_for(window)
 
@@ -161,7 +159,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def paint_spinner(self, context, area):
-        log("paint_spinner(%s, %s)", context, area)
+        self.debug("paint_spinner(%s, %s)", context, area)
         #add grey semi-opaque layer on top:
         context.set_operator(cairo.OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.8)
@@ -194,7 +192,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_map_event(self, event):
-        log("Got map event: %s", event)
+        self.debug("Got map event: %s", event)
         gtk.Window.do_map_event(self, event)
         if self.group_leader:
             self.window.set_group(self.group_leader)
@@ -210,7 +208,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     workspace = self.get_current_workspace()
             if workspace>=0:
                 self._client_properties["workspace"] = workspace
-            log("map-window for wid=%s with client props=%s", self._id, self._client_properties)
+            self.debug("map-window for wid=%s with client props=%s", self._id, self._client_properties)
             self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
@@ -218,7 +216,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.idle_add(self._focus_change)
 
     def do_configure_event(self, event):
-        log("Got configure event: %s", event)
+        self.debug("Got configure event: %s", event)
         gtk.Window.do_configure_event(self, event)
         if not self._override_redirect:
             self.process_configure_event()
@@ -240,7 +238,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                     workspace = self.get_current_workspace()
                 if workspace>=0:
                     self._client_properties["workspace"] = workspace
-            log("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
+            self.debug("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
             self._client.send("configure-window", self._id, x, y, w, h, self._client_properties)
         if dx!=0 or dy!=0:
             #window has moved
@@ -321,7 +319,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _focus_change(self, *args):
-        log("_focus_change(%s)", args)
+        self.debug("_focus_change(%s)", args)
         if self._been_mapped:
             self._client.update_focus(self._id, self.get_property("has-toplevel-focus"))
 

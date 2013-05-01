@@ -26,6 +26,10 @@ else:
 
 class ClientWindowBase(object):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+        self.info = log.info
+        self.debug = log.debug
+        self.warn = log.warn
+        self.error  = log.error
         #gobject-like scheduler:
         self.source_remove = client.source_remove
         self.idle_add = client.idle_add
@@ -109,13 +113,13 @@ class ClientWindowBase(object):
         if not self._can_set_workspace or self._been_mapped:
             return -1
         workspace = self._client_properties.get("workspace", -1)
-        log("set_workspace() workspace=%s", workspace)
+        self.debug("set_workspace() workspace=%s", workspace)
         if workspace<0 or workspace==self.get_current_workspace():
             return -1
         try:
             return self.do_set_workspace(workspace)
         except Exception, e:
-            log.error("failed to set workspace: %s", e)
+            self.error("failed to set workspace: %s", e)
             return -1
 
 
@@ -172,7 +176,7 @@ class ClientWindowBase(object):
             try:
                 self.apply_geometry_hints(hints)
             except:
-                log.error("with hints=%s", hints, exc_info=True)
+                self.error("with hints=%s", hints, exc_info=True)
             #TODO:
             #gravity = size_metadata.get("gravity")
 
@@ -197,18 +201,18 @@ class ClientWindowBase(object):
             self.set_window_type(window_types)
 
     def set_window_type(self, window_types):
-        log("set_window_type(%s)", window_types)
+        self.debug("set_window_type(%s)", window_types)
         hints = 0
         for window_type in window_types:
             hint = self.NAME_TO_HINT.get(window_type)
             if hint:
                 hints |= hint
-        log("setting window type to %s - %s", window_type, hint)
+        self.debug("setting window type to %s - %s", window_type, hint)
         self.set_type_hint(hint)
 
 
     def refresh_window(self, *args):
-        log("refresh_window(%s) wid=%s", args, self._id)
+        self.debug("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)
 
     def refresh_all_windows(self):
@@ -222,7 +226,7 @@ class ClientWindowBase(object):
         assert self._backing, "window %s has no backing!" % self._id
         def after_draw_refresh(success):
             if DRAW_DEBUG:
-                log.info("after_draw_refresh(%s) options=%s", success, options)
+                self.info("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
             if success and self._backing and self._backing.draw_needs_refresh:
                 ol, ot = self._offset[:2]
                 self.queue_draw(x+ol, y+ot, width, height)
