@@ -99,8 +99,9 @@ class ClientWindow(GTKClientWindowBase):
     def get_window_geometry(self):
         gdkwindow = self.gdk_window()
         x, y = gdkwindow.get_origin()
+        oL, oT, oR, oB, = self._offset
         _, _, w, h, _ = gdkwindow.get_geometry()
-        return (x, y, w, h)
+        return (x+oL, y+oT, w-oL-oR, h-oT-oB)
 
     def apply_geometry_hints(self, hints):
         self.set_geometry_hints(None, **hints)
@@ -120,9 +121,17 @@ class ClientWindow(GTKClientWindowBase):
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
+        if self._offset!=(0, 0, 0, 0):
+            log.info("do_expose_event paint offset: %s", self._offset)
+            self.paint_offset(event, context)
+            #clip to offset:
+            oL, oT = self._offset[:2]
+            w, h = self._size
+            context.rectangle(oL, oT, w, h)
+            context.clip()
+            context.translate(*self._offset[:2])
         self._backing.cairo_draw(context)
         if not self._client.server_ok():
             self.paint_spinner(context, event.area)
-
 
 gobject.type_register(ClientWindow)

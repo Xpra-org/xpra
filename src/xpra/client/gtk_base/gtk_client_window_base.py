@@ -259,6 +259,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
+        assert self._offset == (0, 0, 0, 0)
         w = max(1, w)
         h = max(1, h)
         self.window.move_resize(x, y, w, h)

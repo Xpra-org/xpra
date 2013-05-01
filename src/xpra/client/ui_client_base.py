@@ -851,7 +851,7 @@ class UIXpraClient(XpraClientBase):
     def get_client_window_class(self, metadata):
         if CLIENT_WINDOW_CLASS:
             return CLIENT_WINDOW_CLASS
-        return self.do_get_client_window_class(self, metadata)
+        return self.do_get_client_window_class(metadata)
 
     def do_get_client_window_class(self, metadata):
         raise Exception("override me!")

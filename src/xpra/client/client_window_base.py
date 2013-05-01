@@ -35,6 +35,7 @@ class ClientWindowBase(object):
         self._can_set_workspace = False
         self.group_leader = group_leader
         self._id = wid
+        self._offset = 0, 0, 0, 0
         self._pos = (x, y)
         self._size = (w, h)
         self._backing = None
@@ -223,7 +224,8 @@ class ClientWindowBase(object):
             if DRAW_DEBUG:
                 log.info("after_draw_refresh(%s) options=%s", success, options)
             if success and self._backing and self._backing.draw_needs_refresh:
-                self.queue_draw(x, y, width, height)
+                ol, ot = self._offset[:2]
+                self.queue_draw(x+ol, y+ot, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
             if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
                 self.source_remove(self._refresh_timer)
