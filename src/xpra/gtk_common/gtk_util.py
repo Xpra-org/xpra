@@ -46,6 +46,44 @@ def get_icon_from_file(filename):
     return pixbuf
 
 
+def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None, label_color=None):
+    button = gtk.Button(title)
+    settings = button.get_settings()
+    settings.set_property('gtk-button-images', True)
+    if icon:
+        button.set_image(scaled_image(icon, icon_size))
+    if tooltip:
+        set_tooltip_text(button, tooltip)
+    if min_size:
+        button.set_size_request(min_size, min_size)
+    if clicked_callback:
+        button.connect("clicked", clicked_callback)
+    if default:
+        button.set_flags(gtk.CAN_DEFAULT)
+    if label_color:
+        alignment = button.get_children()[0]
+        b_hbox = alignment.get_children()[0]
+        label = b_hbox.get_children()[1]
+        label.modify_fg(gtk.STATE_NORMAL, label_color)
+    return button
+
+def menuitem(title, image=None, tooltip=None, cb=None):
+    """ Utility method for easily creating an ImageMenuItem """
+    menu_item = gtk.ImageMenuItem(title)
+    if image:
+        menu_item.set_image(image)
+        #override gtk defaults: we *want* icons:
+        settings = menu_item.get_settings()
+        settings.set_property('gtk-menu-images', True)
+        if hasattr(menu_item, "set_always_show_image"):
+            menu_item.set_always_show_image(True)
+    if tooltip:
+        set_tooltip_text(menu_item, tooltip)
+    if cb:
+        menu_item.connect('activate', cb)
+    menu_item.show()
+    return menu_item
+
 def set_tooltip_text(widget, text):
     if hasattr(widget, "set_tooltip_text"):
         widget.set_tooltip_text(text)
