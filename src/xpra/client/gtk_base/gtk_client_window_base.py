@@ -42,10 +42,17 @@ class GTKKeyEvent(AdHocStruct):
     pass
 
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
-    def __init__(self, *args):
-        ClientWindowBase.__init__(self, *args)
 
-        self._can_set_workspace = CAN_SET_WORKSPACE
+    def init_window(self, metadata):
+        ClientWindowBase.init_window(self, metadata)
+        # tell KDE/oxygen not to intercept clicks
+        # see: https://bugs.kde.org/show_bug.cgi?id=274485
+        self.set_data("_kde_no_window_grab", 1)
+        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
+
+    def setup_window(self):
+        ClientWindowBase.setup_window(self)
+        #preserve screen:
         if not self._override_redirect:
             display = gtk.gdk.display_get_default()
             screen_num = self._client_properties.get("screen")
@@ -53,11 +60,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 screen = display.get_screen(screen_num)
                 if screen:
                     self.set_screen(screen)
-
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
-        self.move(*self._pos)
-        self.set_default_size(*self._size)
         if self._override_redirect:
             transient_for = self.get_transient_for()
             type_hint = self.get_type_hint()
@@ -67,12 +71,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
 
-    def init_window(self, metadata):
-        # tell KDE/oxygen not to intercept clicks
-        # see: https://bugs.kde.org/show_bug.cgi?id=274485
-        self.set_data("_kde_no_window_grab", 1)
-        self._can_set_workspace = HAS_X11_BINDINGS
-        ClientWindowBase.init_window(self, metadata)
+        self.move(*self._pos)
+        self.set_default_size(*self._size)
+
 
     def xget_u32_property(self, target, name):
         v = prop_get(target, name, "u32", ignore_errors=True)

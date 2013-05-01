@@ -14,10 +14,12 @@ Adds a red border around the window contents
 """
 class BorderClientWindow(ClientWindow):
 
-    def init_window(self, metadata):
-        ClientWindow.init_window(self, metadata)
+    def setup_window(self):
         if not self._override_redirect:
-            self._offset = 6, 6, 6, 6
+            u = 6
+            self._offset = u, u, u, u
+            self.adjust_for_offset()
+        ClientWindow.setup_window(self)
 
     def paint_offset(self, event, context):
         oL, oT, oR, oB = self._offset

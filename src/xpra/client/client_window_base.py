@@ -36,28 +36,36 @@ class ClientWindowBase(object):
         self.timeout_add = client.timeout_add
         self._client = client
         self._override_redirect = override_redirect
-        self._can_set_workspace = False
         self.group_leader = group_leader
         self._id = wid
-        self._offset = 0, 0, 0, 0
         self._pos = (x, y)
         self._size = (w, h)
-        self._backing = None
-        self._metadata = {}
         self._client_properties = client_properties
         self._auto_refresh_delay = auto_refresh_delay
+
+        self.init_window(metadata)
+        self.setup_window()
+
+    def adjust_for_offset(self):
+        oL, oT, oR, oB = self._offset
+        self._size = self._size[0]+oL+oR, self._size[1]+oT+oB
+        self._pos = max(0, self._pos[0]-oL), max(0, self._pos[1]-oT)
+
+    def init_window(self, metadata):
+        self._can_set_workspace = False
+        self._offset = 0, 0, 0, 0
+        self._backing = None
+        self._metadata = {}
         self._refresh_timer = None
         self._refresh_min_pixels = -1
         self._refresh_ignore_sequence = -1
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
         self._override_redirect_windows = []
-
-        self.init_window(metadata)
-
-    def init_window(self, metadata):
-        self.new_backing(*self._size)
         self.update_metadata(metadata)
+    
+    def setup_window(self):
+        self.new_backing(*self._size)
 
 
     def make_new_backing(self, backing_class, w, h):
