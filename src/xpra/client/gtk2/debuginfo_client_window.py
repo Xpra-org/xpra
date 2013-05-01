@@ -16,8 +16,7 @@ log = Logger()
 
 
 """
-A window which has a top bar above the window contents,
-where we can place widgets.
+Shows the latest logging message for this window in the top bar.
 """
 class DebugInfoClientWindow(TopBarClientWindow):
 

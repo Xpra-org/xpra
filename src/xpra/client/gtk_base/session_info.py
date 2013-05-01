@@ -18,7 +18,7 @@ from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from xpra.log import Logger
-from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder
+from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
 log = Logger()
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
@@ -308,7 +308,7 @@ class SessionInfo(gtk.Window):
         icon = self.get_pixbuf(icon_filename)
         def show_tab(*args):
             self.show_tab(contents)
-        button = self.imagebutton(title, icon, clicked_callback=show_tab)
+        button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
         button.set_relief(gtk.RELIEF_NONE)
         self.tab_button_box.add(button)
@@ -340,22 +340,6 @@ class SessionInfo(gtk.Window):
         if not icon_size:
             icon_size = self.get_icon_size()
         return gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size,gtk.gdk.INTERP_BILINEAR))
-
-    def imagebutton(self, title, icon, tooltip=None, clicked_callback=None, icon_size=32, default=False, min_size=None):
-        button = gtk.Button(title)
-        settings = button.get_settings()
-        settings.set_property('gtk-button-images', True)
-        if icon:
-            button.set_image(self.scaled_image(icon, icon_size))
-        if tooltip:
-            set_tooltip_text(button, tooltip)
-        if min_size:
-            button.set_size_request(min_size, min_size)
-        if clicked_callback:
-            button.connect("clicked", clicked_callback)
-        if default:
-            button.set_flags(gtk.CAN_DEFAULT)
-        return button
 
     def add_graph_button(self, tooltip, click_cb):
         button = gtk.EventBox()

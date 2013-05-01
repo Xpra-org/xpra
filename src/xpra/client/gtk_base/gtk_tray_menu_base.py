@@ -11,7 +11,7 @@ gtk = import_gtk()
 gobject = import_gobject()
 
 from xpra.scripts.config import ENCODINGS
-from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems
+from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.log import Logger
@@ -132,23 +132,10 @@ class GTKTrayMenuBase(object):
 
     def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
         """ Utility method for easily creating an ImageMenuItem """
-        menu_item = gtk.ImageMenuItem(title)
         image = None
         if icon_name:
             image = self.get_image(icon_name, 24)
-        if image:
-            menu_item.set_image(image)
-            #override gtk defaults: we *want* icons:
-            settings = menu_item.get_settings()
-            settings.set_property('gtk-menu-images', True)
-            if hasattr(menu_item, "set_always_show_image"):
-                menu_item.set_always_show_image(True)
-        if tooltip:
-            set_tooltip_text(menu_item, tooltip)
-        if cb:
-            menu_item.connect('activate', cb)
-        menu_item.show()
-        return menu_item
+        return menuitem(title, image, tooltip, cb)
 
     def checkitem(self, title, cb=None):
         """ Utility method for easily creating a CheckMenuItem """
