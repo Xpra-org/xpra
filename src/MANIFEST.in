@@ -1,7 +1,7 @@
 include COPYING NEWS *README
 include xpra/x11/lowlevel/constants.pxi
-include xpra/x264/*.h
-include xpra/vpx/*.h
+include xpra/codecs/x264/*.h
+include xpra/codecs/vpx/*.h
 include *.desktop
 include *.png
 recursive-include man *
