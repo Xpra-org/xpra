@@ -24,7 +24,7 @@
 #python and gtk bits:
 %define requires_python_gtk ,pygtk2, python-imaging, dbus-python
 #Vfb (Xvfb or Xdummy):
-%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth
+%define requires_xorg , xorg-x11-server-utils, xorg-x11-server-Xvfb, xorg-x11-xauth, libXfont
 #OpenGL bits:
 %define requires_opengl %{nil}
 #Anything extra (distro specific):
