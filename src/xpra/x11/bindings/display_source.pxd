@@ -3,5 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#We must import "*" or things will fail in mysterious ways!
-from xpra.x11.gtk_x11.gdk_bindings import *
+cdef extern from "X11/Xlib.h":
+    ctypedef struct Display:
+        pass
+
+cdef Display* get_display()
+cdef void set_display(Display *d)

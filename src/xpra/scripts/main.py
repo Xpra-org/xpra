@@ -58,7 +58,7 @@ def main(script_file, cmdline):
     supports_server = LOCAL_SERVERS_SUPPORTED
     if supports_server:
         try:
-            from xpra.x11.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
+            from xpra.x11.bindings.wait_for_x_server import wait_for_x_server    #@UnresolvedImport @UnusedImport
         except:
             supports_server = False
 

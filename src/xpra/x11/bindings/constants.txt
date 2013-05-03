@@ -3,20 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-## This file is processed by make-constants-pxi.py to create a .pxi
-## file for inclusion in parti.wrapped.pyx, like so:
-##   python make-constants-pxi.py parti/parti.wrapped.const.txt parti/parti.wrapped.const.pxi
-## ATM, this must be done by hand, because distutils is so annoying to
-## hack on.
+## This file is processed by setup.py to create a .pxi
 ##
 ## The resulting .pxi file will make all the constants available to
-## Pyrex code under their own names, and also create a python-exposed
+## Cython code under their own names, and also create a python-exposed
 ## dictionary through which the constants can be accessed like
 ## const["CurrentTime"].
-##
-## FIXME: Really this functionality should be in Pyrex; it seems like
-## half the work I ever do in Pyrex is to get constants defined in a C
-## header into something Python-accessible.
 
 # General-purpose X constants
 XNone "None"
@@ -201,4 +193,4 @@ Button2
 Button3
 
 # Bell / Keyboard:
-XkbDfltXIId
+#XkbDfltXIId

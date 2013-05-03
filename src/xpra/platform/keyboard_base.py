@@ -59,7 +59,7 @@ class KeyboardBase(object):
     def get_keyboard_repeat(self):
         return None
 
-    def update_modifier_map(self, display_source, xkbmap_mod_meanings):
+    def update_modifier_map(self, display, xkbmap_mod_meanings):
         self.modifier_map = MODIFIER_MAP
 
 

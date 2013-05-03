@@ -17,17 +17,20 @@ except:
     from io import StringIO         #@Reimport
 import gtk.gdk
 import cairo
-from xpra.x11.lowlevel import (
-                XGetWindowProperty,         #@UnresolvedImport
-                XChangeProperty,            #@UnresolvedImport
-                NoSuchProperty,             #@UnresolvedImport
-                PropertyError,              #@UnresolvedImport
+from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
+
+from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xatom, get_pyatom,      #@UnresolvedImport
                 get_xwindow, get_pywindow,  #@UnresolvedImport
                 get_xvisual,                #@UnresolvedImport
-                const,                      #@UnresolvedImport
-                premultiply_argb_in_place   #@UnresolvedImport
                )
+from xpra.x11.bindings.window_bindings import (
+                X11WindowBindings,          #@UnresolvedImport
+                NoSuchProperty,             #@UnresolvedImport
+                PropertyError,              #@UnresolvedImport
+                premultiply_argb_in_place)  #@UnresolvedImport
+X11Window = X11WindowBindings()
+
 from xpra.x11.xsettings_prop import set_settings, get_settings
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.log import Logger
@@ -305,7 +308,7 @@ def _prop_encode_list(disp, etype, value):
 
 
 def prop_set(target, key, etype, value):
-    trap.call_synced(XChangeProperty, target, key,
+    trap.call_synced(X11Window.XChangeProperty, get_xwindow(target), key,
                        _prop_encode(target, etype, value))
 
 def _prop_decode(disp, etype, data):
@@ -342,7 +345,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         scalar_type = etype
     (_, atom, _, _, _, _) = _prop_types[scalar_type]
     try:
-        data = trap.call_synced(XGetWindowProperty, target, key, atom)
+        data = trap.call_synced(X11Window.XGetWindowProperty, get_xwindow(target), key, atom)
     except NoSuchProperty:
         log.debug("Missing property %s (%s)", key, etype)
         return None

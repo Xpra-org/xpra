@@ -22,21 +22,16 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
 from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
-from xpra.x11.lowlevel import (
-               const,                                       #@UnresolvedImport
-               printFocus,                                  #@UnresolvedImport
+from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
-               substructureRedirect,                        #@UnresolvedImport
-               configureAndNotify,                          #@UnresolvedImport
-               myGetSelectionOwner,                         #@UnresolvedImport
                get_children,                                #@UnresolvedImport
                get_xwindow,                                 #@UnresolvedImport
-               is_override_redirect,                        #@UnresolvedImport
-               is_mapped,                                   #@UnresolvedImport
-               selectFocusChange,                           #@UnresolvedImport
-               selectBellNotification,                      #@UnresolvedImport
-               selectCursorChange,                          #@UnresolvedImport
                )
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+X11Keyboard = X11KeyboardBindings()
 
 from xpra.log import Logger
 log = Logger()
@@ -49,8 +44,8 @@ def wm_check(display):
         root = screen.get_root_window()
         wm_prop = "WM_S%s" % i
         cwm_prop = "_NEW_WM_CM_S%s" % i
-        wm_so = myGetSelectionOwner(display, wm_prop)
-        cwm_so = myGetSelectionOwner(display, cwm_prop)
+        wm_so = X11Window.XGetSelectionOwner(wm_prop)
+        cwm_so = X11Window.XGetSelectionOwner(cwm_prop)
         log("ewmh selection owner for %s: %s", wm_prop, wm_so)
         log("compositing window manager %s: %s", cwm_prop, cwm_so)
 
@@ -240,21 +235,21 @@ class Wm(gobject.GObject):
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
         add_event_receiver(self._root, self)
-        substructureRedirect(self._root)
+        X11Window.substructureRedirect(get_xwindow(self._root))
 
         for w in get_children(self._root):
             # Checking for FOREIGN here filters out anything that we've
             # created ourselves (like, say, the world window), and checking
             # for mapped filters out any withdrawn windows.
             if (w.get_window_type() == gtk.gdk.WINDOW_FOREIGN
-                and not is_override_redirect(w)
-                and is_mapped(w)):
+                and not X11Window.is_override_redirect(get_xwindow(w))
+                and X11Window.is_mapped(get_xwindow(w))):
                 log("Wm managing pre-existing child")
                 self._manage_client(w)
 
         # Also watch for focus change events on the root window
-        selectFocusChange(self._root)
-        selectBellNotification(self._root, True)
+        X11Window.selectFocusChange(get_xwindow(self._root))
+        X11Keyboard.selectBellNotification(True)
 
         # FIXME:
         # Need viewport abstraction for _NET_CURRENT_DESKTOP...
@@ -269,7 +264,7 @@ class Wm(gobject.GObject):
 
     def enableCursors(self, on):
         log("enableCursors(%s)" % on)
-        selectCursorChange(self._root, on)
+        X11Keyboard.selectCursorChange(on)
 
     def do_xpra_xkb_event(self, event):
         log("wm.do_xpra_xkb_event(%r)" % event)
@@ -376,8 +371,8 @@ class Wm(gobject.GObject):
         if event.window in self._windows:
             return
         log("Reconfigure on withdrawn window")
-        trap.swallow_synced(configureAndNotify,
-                     event.window, event.x, event.y,
+        trap.swallow_synced(X11Window.configureAndNotify,
+                     get_xwindow(event.window), event.x, event.y,
                      event.width, event.height,
                      event.value_mask)
 
@@ -390,7 +385,7 @@ class Wm(gobject.GObject):
             self._world_window.reset_x_focus()
 
     def do_xpra_focus_out_event(self, event):
-        printFocus(self._display)
+        X11Window.printFocus()
 
     def do_desktop_list_changed(self, desktops):
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))

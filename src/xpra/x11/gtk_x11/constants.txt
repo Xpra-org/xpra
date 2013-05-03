@@ -1,0 +1,74 @@
+# This file is part of Xpra.
+# Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+## This file is processed by setup.py to create a .pxi
+##
+## The resulting .pxi file will make all the constants available to
+## Pyrex code under their own names, and also create a python-exposed
+## dictionary through which the constants can be accessed like
+## const["CurrentTime"].
+
+# General-purpose X constants
+XNone "None"
+
+# Event types
+KeyPress
+KeyRelease
+ButtonPress
+ButtonRelease
+MotionNotify
+EnterNotify
+LeaveNotify
+FocusIn
+FocusOut
+KeymapNotify
+Expose
+GraphicsExpose
+NoExpose
+VisibilityNotify
+CreateNotify
+DestroyNotify
+UnmapNotify
+MapNotify
+MapRequest
+ReparentNotify
+ConfigureNotify
+ConfigureRequest
+GravityNotify
+ResizeRequest
+CirculateNotify
+CirculateRequest
+PropertyNotify
+SelectionClear
+SelectionRequest
+SelectionNotify
+ColormapNotify
+ClientMessage
+MappingNotify
+#GenericEvent (not available on all platforms)
+LASTEvent
+
+# Protocol error codes
+Success
+BadRequest
+BadValue
+BadWindow
+BadPixmap
+BadAtom
+BadCursor
+BadFont
+BadMatch
+BadDrawable
+BadAccess
+BadAlloc
+BadColor
+BadGC
+BadIDChoice
+BadName
+BadLength
+BadImplementation
+
+FirstExtensionError
+LastExtensionError

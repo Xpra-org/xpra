@@ -6,20 +6,17 @@
 
 import gobject
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
+from xpra.x11.gtk_x11.gdk_bindings import (
+            add_event_receiver,             #@UnresolvedImport
+            remove_event_receiver,          #@UnresolvedImport
+            get_xwindow,                    #@UnresolvedImport
+            get_parent,                     #@UnresolvedImport
+            xcomposite_name_window_pixmap)  #@UnresolvedImport
 from xpra.x11.gtk_x11.error import trap
-from xpra.x11.lowlevel import (
-           xcomposite_redirect_window,      #@UnresolvedImport
-           xcomposite_unredirect_window,    #@UnresolvedImport
-           xcomposite_name_window_pixmap,   #@UnresolvedImport
-           xdamage_start, xdamage_stop,     #@UnresolvedImport
-           xdamage_acknowledge,             #@UnresolvedImport
-           add_event_receiver,              #@UnresolvedImport
-           remove_event_receiver,           #@UnresolvedImport
-           get_parent,                      #@UnresolvedImport
-           addXSelectInput, const,          #@UnresolvedImport
-           geometry_with_border,            #@UnresolvedImport
-           get_xwindow                      #@UnresolvedImport
-           )
+
+from xpra.x11.bindings.core_bindings import const       #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
 
 from xpra.log import Logger
 log = Logger()
@@ -52,11 +49,13 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         self._damage_handle = None
 
     def setup(self):
+        xwin = get_xwindow(self._window)
         if not self._already_composited:
-            xcomposite_redirect_window(self._window)
-        _, _, _, _, self._border_width = geometry_with_border(self._window)
+            X11Window.XCompositeRedirectWindow(xwin)
+        _, _, _, _, self._border_width = X11Window.geometry_with_border(xwin)
         self.invalidate_pixmap()
-        self._damage_handle = xdamage_start(self._window)
+        self._damage_handle = X11Window.XDamageCreate(xwin)
+        log("CompositeHelper.setup() damage handle(%s)=%s", hex(xwin), hex(self._damage_handle))
         add_event_receiver(self._window, self)
 
     def destroy(self):
@@ -65,14 +64,15 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             return
         #clear the reference to the window early:
         win = self._window
+        xwin = get_xwindow(self._window)
         #Note: invalidate_pixmap()/_cleanup_listening() use self._window, but won't care if it's None
         self._window = None
         remove_event_receiver(win, self)
         self.invalidate_pixmap()
         if not self._already_composited:
-            trap.swallow_synced(xcomposite_unredirect_window, win)
+            trap.swallow_synced(X11Window.XCompositeUnredirectWindow, xwin)
         if self._damage_handle:
-            trap.swallow_synced(xdamage_stop, win, self._damage_handle)
+            trap.swallow_synced(X11Window.XDamageDestroy, self._damage_handle)
             self._damage_handle = None
         #note: this should be redundant since we cleared the
         #reference to self._window and shortcut out in do_get_property_contents_handle
@@ -82,7 +82,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     def acknowledge_changes(self):
         if self._damage_handle is not None and self._window is not None:
             #"Synchronously modifies the regions..." so unsynced?
-            if not trap.swallow_synced(xdamage_acknowledge, self._window, self._damage_handle):
+            if not trap.swallow_synced(X11Window.XDamageSubtract, self._damage_handle):
                 self.invalidate_pixmap()
 
     def invalidate_pixmap(self):
@@ -133,7 +133,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         # corral window selection masks, and those don't deserve
                         # clobbering.  They are our friends!  X is driving me
                         # slowly mad.
-                        addXSelectInput(win, const["StructureNotifyMask"])
+                        X11Window.addXSelectInput(get_xwindow(win), const["StructureNotifyMask"])
                         add_event_receiver(win, self, max_receivers=-1)
                         listening.append(win)
                         win = get_parent(win)

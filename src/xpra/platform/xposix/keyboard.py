@@ -10,6 +10,10 @@ from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
 log = Logger()
 
+try:
+    from xpra.x11.bindings import X11KeyboardBindings   #@UnresolvedImport
+except:
+    X11KeyboardBindings = None
 
 class Keyboard(KeyboardBase):
 
@@ -26,21 +30,19 @@ class Keyboard(KeyboardBase):
         return None
 
     def get_keymap_modifiers(self):
-        try:
-            from xpra.x11.lowlevel import get_modifier_mappings         #@UnresolvedImport
-            mod_mappings = get_modifier_mappings()
-            if mod_mappings:
-                #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
-                log.debug("modifier mappings=%s", mod_mappings)
-                meanings = {}
-                for modifier,keys in mod_mappings.items():
-                    for _,keyname in keys:
-                        meanings[keyname] = modifier
-                return  meanings, [], []
-        except ImportError, e:
-            log.error("failed to use native get_modifier_mappings: %s", e)
-        except Exception, e:
-            log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
+        if X11KeyboardBindings:
+            try:
+                mod_mappings = X11KeyboardBindings.get_modifier_mappings()
+                if mod_mappings:
+                    #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
+                    log.debug("modifier mappings=%s", mod_mappings)
+                    meanings = {}
+                    for modifier,keys in mod_mappings.items():
+                        for _,keyname in keys:
+                            meanings[keyname] = modifier
+                    return  meanings, [], []
+            except Exception, e:
+                log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
         return self.modifiers_fallback()
 
     def modifiers_fallback(self):
@@ -64,15 +66,11 @@ class Keyboard(KeyboardBase):
         return  meanings, [], []
 
     def get_x11_keymap(self):
-        try:
-            from xpra.gtk_common.gobject_compat import import_gdk
-            gdk = import_gdk()
-            _display = gdk.get_display()
-            assert _display, "cannot open the display with GTK, is DISPLAY set?"
-            from xpra.x11.lowlevel import get_keycode_mappings      #@UnresolvedImport
-            return get_keycode_mappings(gdk.get_default_root_window())
-        except Exception, e:
-            log.error("failed to use raw x11 keymap: %s", e)
+        if X11KeyboardBindings:
+            try:
+                return X11KeyboardBindings.get_keycode_mappings()
+            except Exception, e:
+                log.error("failed to use raw x11 keymap: %s", e)
         return  {}
 
     def get_keymap_spec(self):
@@ -86,17 +84,18 @@ class Keyboard(KeyboardBase):
         return xkbmap_print, xkbmap_query
 
     def get_keyboard_repeat(self):
-        try:
-            from xpra.x11.lowlevel import get_key_repeat_rate   #@UnresolvedImport
-            delay, interval = get_key_repeat_rate()
-            return delay,interval
-        except Exception, e:
-            log.error("failed to get keyboard repeat rate: %s", e)
+        if X11KeyboardBindings:
+            try:
+                delay, interval = X11KeyboardBindings.get_key_repeat_rate()
+                return delay,interval
+            except Exception, e:
+                log.error("failed to get keyboard repeat rate: %s", e)
         return None
 
-    def update_modifier_map(self, display_source, xkbmap_mod_meanings):
+    def update_modifier_map(self, display, xkbmap_mod_meanings):
         try:
             from xpra.x11.gtk_x11.keys import grok_modifier_map
-            self.modifier_map = grok_modifier_map(display_source, xkbmap_mod_meanings)
+            self.modifier_map = grok_modifier_map(display, xkbmap_mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP
+        log.debug("update_modifier_map(%s, %s) modifier_map=%s", display, xkbmap_mod_meanings, self.modifier_map)

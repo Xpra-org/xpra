@@ -257,9 +257,7 @@ def add_to_keywords(kw, key, *args):
         values.append(arg)
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
-if os.name=="posix":
-    PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
-X11_PACKAGES = ["xtst", "xfixes", "xcomposite", "xdamage", "xrandr"]
+
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
@@ -316,6 +314,7 @@ def pkgconfig(*packages_options, **ekw):
         add_to_keywords(kw, 'extra_compile_args', '-g')
     if debug_ENABLED:
         kw['pyrex_gdb'] = True
+    #add_to_keywords(kw, 'include_dirs', '.')
     print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
     return kw
 
@@ -387,15 +386,22 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     def pkgconfig(*packages_options, **ekw):
         return {}
     #always include all platform code in this case:
-    add_packages("xpra.platform.xposix", "xpra.platform.win32", "xpra.platform.darwin")
+    add_packages("xpra.platform.xposix",
+                 "xpra.platform.win32",
+                 "xpra.platform.darwin")
     #ensure we remove the files we generate:
-    CLEAN_FILES = ["xpra/x11/wait_for_x_server.c",
+    CLEAN_FILES = ["xpra/x11/bindings/constants.pxi",
+                   "xpra/x11/bindings/core_bindings.c",
+                   "xpra/x11/bindings/display_source.c",
+                   "xpra/x11/bindings/keyboard_bindings.c",
+                   "xpra/x11/bindings/randr_bindings.c",
+                   "xpra/x11/bindings/wait_for_x_server.c",
+                   "xpra/x11/gtk_x11/gdk_bindings.c",
+                   "xpra/x11/gtk_x11/gdk_display_source.c",
                    "xpra/codecs/vpx/codec.c",
                    "xpra/codecs/x264/codec.c",
                    "xpra/net/rencode/rencode.c",
-                   "etc/xpra/xpra.conf",
-                   "xpra/x11/lowlevel/constants.pxi",
-                   "xpra/x11/lowlevel/bindings.c"]
+                   "etc/xpra/xpra.conf"]
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
@@ -693,10 +699,11 @@ else:
 
     add_packages("xpra", "xpra.platform")
     if sys.platform.startswith("darwin"):
-        #change package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
-        PYGTK_PACKAGES = [x.replace("-x11", "") for x in PYGTK_PACKAGES]
+        #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
+        PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
     else:
+        PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
         #always include the wrapper in case we need it later:
         #(we remove it during the 'install' step below if it isn't actually needed)
@@ -745,60 +752,92 @@ if WIN32 and not server_ENABLED:
 toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common", "xpra.clipboard")
 
 
-toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.lowlevel")
+toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    base = os.path.join(os.getcwd(), "xpra", "x11", "lowlevel", "constants")
-    constants_file = "%s.txt" % base
-    pxi_file = "%s.pxi" % base
-    if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
-        def make_constants_pxi(constants_path, pxi_path):
-            constants = []
-            for line in open(constants_path):
-                data = line.split("#", 1)[0].strip()
-                # data can be empty ''...
-                if not data:
-                    continue
-                # or a pair like 'cFoo "Foo"'...
-                elif len(data.split()) == 2:
-                    (pyname, cname) = data.split()
-                    constants.append((pyname, cname))
-                # or just a simple token 'Foo'
-                else:
-                    constants.append(data)
-            out = open(pxi_path, "w")
-            out.write("cdef extern from *:\n")
-            ### Apparently you can't use | on enum's?!
-            # out.write("    enum MagicNumbers:\n")
-            # for const in constants:
-            #     if isinstance(const, tuple):
-            #         out.write('        %s %s\n' % const)
-            #     else:
-            #         out.write('        %s\n' % (const,))
-            for const in constants:
-                if isinstance(const, tuple):
-                    out.write('    unsigned int %s %s\n' % const)
-                else:
-                    out.write('    unsigned int %s\n' % (const,))
+    def make_constants_pxi(constants_path, pxi_path):
+        constants = []
+        for line in open(constants_path):
+            data = line.split("#", 1)[0].strip()
+            # data can be empty ''...
+            if not data:
+                continue
+            # or a pair like 'cFoo "Foo"'...
+            elif len(data.split()) == 2:
+                (pyname, cname) = data.split()
+                constants.append((pyname, cname))
+            # or just a simple token 'Foo'
+            else:
+                constants.append(data)
+        out = open(pxi_path, "w")
+        out.write("cdef extern from *:\n")
+        ### Apparently you can't use | on enum's?!
+        # out.write("    enum MagicNumbers:\n")
+        # for const in constants:
+        #     if isinstance(const, tuple):
+        #         out.write('        %s %s\n' % const)
+        #     else:
+        #         out.write('        %s\n' % (const,))
+        for const in constants:
+            if isinstance(const, tuple):
+                out.write('    unsigned int %s %s\n' % const)
+            else:
+                out.write('    unsigned int %s\n' % (const,))
 
-            out.write("const = {\n")
-            for const in constants:
-                if isinstance(const, tuple):
-                    pyname = const[0]
-                else:
-                    pyname = const
-                out.write('    "%s": %s,\n' % (pyname, pyname))
-            out.write("}\n")
+        out.write("const = {\n")
+        for const in constants:
+            if isinstance(const, tuple):
+                pyname = const[0]
+            else:
+                pyname = const
+            out.write('    "%s": %s,\n' % (pyname, pyname))
+        out.write("}\n")
 
-        print("(re)generating %s" % pxi_file)
-        make_constants_pxi(constants_file, pxi_file)
-    BINDINGS_LIBS = PYGTK_PACKAGES + X11_PACKAGES
-    cython_add(Extension("xpra.x11.lowlevel.bindings",
-                ["xpra/x11/lowlevel/bindings.pyx"],
-                **pkgconfig(*BINDINGS_LIBS)
-                ))
-    cython_add(Extension("xpra.x11.wait_for_x_server",
-                ["xpra/x11/wait_for_x_server.pyx"],
+    def make_constants(*paths):
+        base = os.path.join(os.getcwd(), *paths)
+        constants_file = "%s.txt" % base
+        pxi_file = "%s.pxi" % base
+        if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
+            print("(re)generating %s" % pxi_file)
+            make_constants_pxi(constants_file, pxi_file)
+
+    make_constants("xpra", "x11", "bindings", "constants")
+    make_constants("xpra", "x11", "gtk_x11", "constants")
+
+    cython_add(Extension("xpra.x11.bindings.wait_for_x_server",
+                ["xpra/x11/bindings/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
+                ))
+    cython_add(Extension("xpra.x11.bindings.display_source",
+                ["xpra/x11/bindings/display_source.pyx"],
+                **pkgconfig("x11")
+                ))
+    cython_add(Extension("xpra.x11.bindings.core_bindings",
+                ["xpra/x11/bindings/core_bindings.pyx"],
+                **pkgconfig("x11")
+                ))
+    cython_add(Extension("xpra.x11.bindings.randr_bindings",
+                ["xpra/x11/bindings/randr_bindings.pyx"],
+                **pkgconfig("x11", "xrandr")
+                ))
+    cython_add(Extension("xpra.x11.bindings.keyboard_bindings",
+                ["xpra/x11/bindings/keyboard_bindings.pyx"],
+                **pkgconfig("x11", "xtst", "xfixes")
+                ))
+
+    cython_add(Extension("xpra.x11.bindings.window_bindings",
+                ["xpra/x11/bindings/window_bindings.pyx"],
+                **pkgconfig("xtst", "xfixes", "xcomposite", "xdamage")
+                ))
+
+    #below uses gtk/gdk:
+    GDK_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xcomposite", "xdamage"]
+    cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
+                ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
+                **pkgconfig(*GDK_PACKAGES)
+                ))
+    cython_add(Extension("xpra.x11.gtk_x11.gdk_bindings",
+                ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
+                **pkgconfig(*GDK_PACKAGES)
                 ))
 elif WIN32:
     #with py2exe, we have to remove the default packages and let it figure it out...

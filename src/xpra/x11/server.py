@@ -23,14 +23,15 @@ from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.wm import Wm
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
-from xpra.x11.lowlevel import (is_override_redirect,        #@UnresolvedImport
-                               is_mapped,                   #@UnresolvedImport
-                               get_xwindow,                 #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (get_xwindow,                 #@UnresolvedImport
                                add_event_receiver,          #@UnresolvedImport
-                               get_cursor_image,            #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                init_x11_filter,             #@UnresolvedImport
                                )
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+X11Keyboard = X11KeyboardBindings()
 from xpra.x11.gtk_x11.window import OverrideRedirectWindowModel, SystemTrayWindowModel, Unmanageable
 from xpra.x11.gtk_x11.error import trap
 
@@ -190,7 +191,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.send_cursor_pending = False
         self.cursor_data = None
         def get_default_cursor():
-            self.default_cursor_data = get_cursor_image()
+            self.default_cursor_data = X11Keyboard.get_cursor_image()
             log("get_default_cursor=%s", self.default_cursor_data)
         trap.swallow_synced(get_default_cursor)
         self._wm.enableCursors(True)
@@ -212,13 +213,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def load_existing_windows(self, system_tray):
         # Tray handler:
+        self._tray = None
         if system_tray:
             try:
                 self._tray = SystemTray()
             except Exception, e:
                 log.error("cannot setup tray forwarding: %s", e, exc_info=True)
-        else:
-            self._tray = None
 
         ### Create our window managing data structures:
         self._desktop_manager = DesktopManager()
@@ -231,7 +231,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         root = gtk.gdk.get_default_root_window()
         for window in get_children(root):
-            if is_override_redirect(window) and is_mapped(window):
+            if X11Window.is_override_redirect(get_xwindow(window)) and X11Window.is_mapped(get_xwindow(window)):
                 self._add_new_or_window(window)
 
     def send_windows_and_cursors(self, ss):
@@ -382,7 +382,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def send_cursor(self):
         self.send_cursor_pending = False
-        self.cursor_data = get_cursor_image()
+        self.cursor_data = X11Keyboard.get_cursor_image()
         if self.cursor_data:
             pixels = self.cursor_data[7]
             if self.default_cursor_data and pixels==self.default_cursor_data[7]:

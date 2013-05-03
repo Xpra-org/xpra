@@ -10,12 +10,16 @@ from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.error import *
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
-from xpra.x11.lowlevel import (
-                myGetSelectionOwner,            #@UnresolvedImport
-                const, get_pywindow,            #@UnresolvedImport
-                add_event_receiver,             #@UnresolvedImport
-                get_xatom                       #@UnresolvedImport
-                )
+
+from xpra.x11.bindings.core_bindings import const       #@UnresolvedImport
+from xpra.x11.gtk_x11.gdk_bindings import (
+               add_event_receiver,          #@UnresolvedImport
+               get_pywindow,                #@UnresolvedImport
+               get_xatom,                   #@UnresolvedImport
+               get_xwindow)                 #@UnresolvedImport
+
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
 from xpra.log import Logger
 log = Logger()
 
@@ -63,7 +67,7 @@ class XSettingsWatcher(gobject.GObject):
         self._add_watch()
 
     def _owner(self):
-        owner_x = myGetSelectionOwner(self._clipboard, self._selection)
+        owner_x = X11WindowBindings.XGetSelectionOwner(get_xwindow(self._clipboard), self._selection)
         if owner_x == const["XNone"]:
             return None
         try:

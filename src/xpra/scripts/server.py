@@ -425,7 +425,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         return  1
 
     if not sys.platform.startswith("win"):
-        from xpra.x11.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
         # Whether we spawned our server or not, it is now running -- or at least
         # starting.  First wait for it to start up:
         try:
@@ -457,30 +457,34 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if xvfb_error(True):
             return  1
         xvfb_pid = xvfb.pid
-        if xvfb_pid is not None:
-            save_pid(xvfb_pid)
 
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer(sockets, opts)
     else:
+        from xpra.x11.gtk_x11 import gdk_display_source
+        assert gdk_display_source
+        
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
         if not wm_check(display):
             return 1
         try:
-            from xpra.x11.lowlevel import displayHasXComposite     #@UnresolvedImport
             # This import is delayed because the module depends on gtk:
             from xpra.x11.server import XpraServer
+            from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+            X11Window = X11WindowBindings()
         except ImportError, e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
-        root = gtk.gdk.get_default_root_window()
-        if not displayHasXComposite(root):
+        if not X11Window.displayHasXComposite():
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
         app = XpraServer(clobber, sockets, opts)
 
+
+    if xvfb_pid is not None:
+        save_pid(xvfb_pid)
     #we got this far so the sockets have initialized and
     #the server should be able to manage the display
     #from now on, if we exit without upgrading we will also kill the Xvfb
@@ -574,6 +578,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         e = app.run()
     except KeyboardInterrupt:
         e = 0
+    except Exception, e:
+        log.error("server error", exc_info=True)
+        e = 128
     if e>0:
         log.info("upgrading: not cleaning up Xvfb or socket")
         # Upgrading, so leave X server running

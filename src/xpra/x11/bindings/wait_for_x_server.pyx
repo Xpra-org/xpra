@@ -17,6 +17,7 @@ cdef extern from "X11/Xlib.h":
     Display * XOpenDisplay(char * name)
     int XCloseDisplay(Display * xdisplay)
 
+
 # timeout is in seconds
 def wait_for_x_server(display_name, timeout):
     cdef Display * d

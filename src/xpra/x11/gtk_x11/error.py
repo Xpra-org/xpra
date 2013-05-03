@@ -56,7 +56,7 @@ def XErrorToName(xerror):
     if type(xerror)!=int:
         return xerror
     try:
-        from xpra.x11.lowlevel import const, get_error_text     #@UnresolvedImport
+        from xpra.x11.bindings.core_bindings import const     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
             for name,code in const.items():
@@ -65,7 +65,8 @@ def XErrorToName(xerror):
             log("XErrorToName(..) initialized error names: %s", xerror_to_name)
         if xerror in xerror_to_name:
             return xerror_to_name.get(xerror)
-        return get_error_text(xerror)
+        from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
+        return X11CoreBindings().get_error_text(xerror)
     except Exception, e:
         log.error("XErrorToName: %s", e, exc_info=True)
     return xerror

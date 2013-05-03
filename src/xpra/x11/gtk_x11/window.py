@@ -22,23 +22,16 @@ import cairo
 import math
 import os
 from socket import gethostname
-from xpra.x11.lowlevel import (
-               const,                                       #@UnresolvedImport
+from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
+
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
+
+from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                remove_event_receiver,                       #@UnresolvedImport
                get_display_for,                             #@UnresolvedImport
-               geometry_with_border,                        #@UnresolvedImport
                calc_constrained_size,                       #@UnresolvedImport
-               is_mapped,                                   #@UnresolvedImport
-               unmap_with_serial,                           #@UnresolvedImport
-               XDeleteProperty,                             #@UnresolvedImport
-               XAddToSaveSet,                               #@UnresolvedImport
-               XRemoveFromSaveSet,                          #@UnresolvedImport
-               XSetInputFocus,                              #@UnresolvedImport
-               XKillClient,                                 #@UnresolvedImport
-               sendConfigureNotify,                         #@UnresolvedImport
-               configureAndNotify,                          #@UnresolvedImport
-               substructureRedirect,                        #@UnresolvedImport
                get_xwindow,                                 #@UnresolvedImport
                )
 from xpra.x11.gtk_x11.send_wm import (
@@ -250,7 +243,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         }
 
     def __init__(self, client_window):
-        log("new window %s - %s", hex(client_window.xid), get_xwindow(client_window))
+        log("new window %s - %s", hex(client_window.xid), hex(get_xwindow(client_window)))
         super(BaseWindowModel, self).__init__()
         self.client_window = client_window
         self._managed = False
@@ -272,20 +265,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self.disconnect(handler_id)
 
     def call_setup(self):
-        log("call_setup() adding event receiver")
+        log("call_setup()")
         try:
-            self._geometry = trap.call_unsynced(geometry_with_border, self.client_window)
+            self._geometry = trap.call_synced(X11Window.geometry_with_border, get_xwindow(self.client_window))
         except XError, e:
             raise Unmanageable(e)
+        log("call_setup() adding event receiver")
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
         # reparent, so I'm not sure doing this here in the superclass,
         # before we reparent, actually works... let's wait and see.
+        log("call_setup() composite setup")
         try:
             trap.call_synced(self._composite.setup)
         except XError, e:
             remove_event_receiver(self.client_window, self)
-            log("window %s does not support compositing: %s", get_xwindow(self.client_window), e)
+            log("window %s does not support compositing: %s", hex(get_xwindow(self.client_window)), e)
             trap.swallow_synced(self._composite.destroy)
             self._composite = None
             raise Unmanageable(e)
@@ -303,7 +298,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log("call_setup() ended")
 
     def setup_failed(self, e):
-        log("cannot manage %s: %s", get_xwindow(self.client_window), e)
+        log("cannot manage %s: %s", hex(get_xwindow(self.client_window)), e)
         self.do_unmanaged(False)
 
     def setup(self):
@@ -417,7 +412,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         # notice... but it might be unmapped already, and any event
         # already generated, and our request for that event is too late!
         # So double check now, *after* putting in our request:
-        if not is_mapped(self.client_window):
+        if not X11Window.is_mapped(get_xwindow(self.client_window)):
             raise Unmanageable("window already unmapped")
         ch = self._composite.get_property("contents-handle")
         if ch is None:
@@ -427,7 +422,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         BaseWindowModel.composite_configure_event(self, composite_window, event)
         log("OverrideRedirectWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
         try:
-            self._geometry = trap.call_unsynced(geometry_with_border, self.client_window)
+            self._geometry = trap.call_unsynced(X11Window.geometry_with_border, get_xwindow(self.client_window))
             self.emit("geometry")
         except XError:
             log.error("failed to update geometry!", exc_info=True)
@@ -607,7 +602,7 @@ class WindowModel(BaseWindowModel):
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
                                             title = "CorralWindow-0x%s" % self.client_window.xid)
         log("setup() corral_window=%s", self.corral_window)
-        substructureRedirect(self.corral_window)
+        X11Window.substructureRedirect(get_xwindow(self.corral_window))
         add_event_receiver(self.corral_window, self)
 
         # Start listening for important events.
@@ -620,9 +615,9 @@ class WindowModel(BaseWindowModel):
         # serial number of the request -- this way, when we get an
         # UnmapNotify later, we'll know that it's just from us unmapping
         # the window, not from the client withdrawing the window.
-        if is_mapped(self.client_window):
+        if X11Window.is_mapped(get_xwindow(self.client_window)):
             log("hiding inherited window")
-            self.startup_unmap_serial = unmap_with_serial(self.client_window)
+            self.startup_unmap_serial = X11Window.Unmap(get_xwindow(self.client_window))
 
         # Process properties
         self._read_initial_properties()
@@ -632,7 +627,7 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("iconic", False)
 
         log("setup() adding to save set")
-        XAddToSaveSet(self.client_window)
+        X11Window.XAddToSaveSet(get_xwindow(self.client_window))
         self.in_save_set = True
 
         log("setup() reparenting")
@@ -722,7 +717,7 @@ class WindowModel(BaseWindowModel):
         if self.corral_window:
             remove_event_receiver(self.corral_window, self)
             for prop in WindowModel.SCRUB_PROPERTIES:
-                trap.swallow_synced(XDeleteProperty, self.client_window, prop)
+                trap.swallow_synced(X11Window.XDeleteProperty, get_xwindow(self.client_window), prop)
             if self.client_reparented:
                 self.client_window.reparent(gtk.gdk.get_default_root_window(), 0, 0)
                 self.client_reparented = False
@@ -737,9 +732,9 @@ class WindowModel(BaseWindowModel):
             # section 10. Connection Close).  This causes "ghost windows", see
             # bug #27:
             if self.in_save_set:
-                trap.swallow_synced(XRemoveFromSaveSet, self.client_window)
+                trap.swallow_synced(X11Window.XRemoveFromSaveSet, get_xwindow(self.client_window))
                 self.in_save_set = False
-            trap.swallow_synced(sendConfigureNotify, self.client_window)
+            trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(self.client_window))
             if wm_exiting:
                 self.client_window.show_unraised()
         BaseWindowModel.do_unmanaged(self, wm_exiting)
@@ -763,7 +758,7 @@ class WindowModel(BaseWindowModel):
             winner.take_window(self, self.corral_window)
             self._update_client_geometry()
             self.corral_window.show_unraised()
-        trap.swallow_synced(sendConfigureNotify, self.client_window)
+        trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(self.client_window))
 
     def do_xpra_configure_event(self, event):
         WindowModel.do_xpra_configure_event(self, event)
@@ -831,7 +826,7 @@ class WindowModel(BaseWindowModel):
         x, y = window_position_cb(w, h)
         log("_do_update_client_geometry: position=%s", (x,y))
         self.corral_window.move_resize(x, y, w, h)
-        trap.swallow_synced(configureAndNotify, self.client_window, 0, 0, w, h)
+        trap.swallow_synced(X11Window.configureAndNotify, get_xwindow(self.client_window), 0, 0, w, h)
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
@@ -880,7 +875,7 @@ class WindowModel(BaseWindowModel):
         # Ignore the request, but as per ICCCM 4.1.5, send back a synthetic
         # ConfigureNotify telling the client that nothing has happened.
         log("do_child_configure_request_event(%s)", event)
-        trap.swallow_synced(sendConfigureNotify, event.window)
+        trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(event.window))
 
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
@@ -1222,7 +1217,7 @@ class WindowModel(BaseWindowModel):
         # the WM's XSetInputFocus.
         if bool(self._input_field):
             log("... using XSetInputFocus")
-            XSetInputFocus(self.client_window, now)
+            X11Window.XSetInputFocus(get_xwindow(self.client_window), now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
             log("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
@@ -1251,7 +1246,7 @@ class WindowModel(BaseWindowModel):
                     os.kill(pid, 9)
                 except OSError:
                     log.warn("failed to kill() client with pid %s", pid)
-        trap.swallow_synced(XKillClient, self.client_window)
+        trap.swallow_synced(X11Window.XKillClient, get_xwindow(self.client_window))
 
 gobject.type_register(WindowModel)
 

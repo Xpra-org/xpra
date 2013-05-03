@@ -18,7 +18,8 @@ from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
-from xpra.x11.lowlevel import xtest_fake_key, get_modifier_mappings     #@UnresolvedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+X11Keyboard = X11KeyboardBindings()
 
 ALL_X11_MODIFIERS = {
                     "shift"     : 0,
@@ -89,7 +90,7 @@ class KeyboardConfig(object):
     def compute_client_modifier_keycodes(self):
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         try:
-            server_mappings = get_modifier_mappings()
+            server_mappings = X11Keyboard.get_modifier_mappings()
             debug("get_modifier_mappings=%s", server_mappings)
             #update the mappings to use the keycodes the client knows about:
             reverse_trans = {}
@@ -218,7 +219,6 @@ class KeyboardConfig(object):
         if current==wanted:
             return
         debug("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
-        display = gtk.gdk.display_get_default()
 
         def change_mask(modifiers, press, info):
             for modifier in modifiers:
@@ -256,10 +256,10 @@ class KeyboardConfig(object):
                 debug("keynames(%s)=%s, keycodes=%s, nuisance=%s", modifier, keynames, keycodes, nuisance)
                 for keycode in keycodes:
                     if nuisance:
-                        xtest_fake_key(display, keycode, True)
-                        xtest_fake_key(display, keycode, False)
+                        X11Keyboard.xtest_fake_key(keycode, True)
+                        X11Keyboard.xtest_fake_key(keycode, False)
                     else:
-                        xtest_fake_key(display, keycode, press)
+                        X11Keyboard.xtest_fake_key(keycode, press)
                     new_mask = get_current_mask()
                     success = (modifier in new_mask)==press
                     debug("make_keymask_match(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
@@ -267,7 +267,7 @@ class KeyboardConfig(object):
                         break
                     elif not nuisance:
                         debug("%s %s with keycode %s did not work - trying to undo it!", info, modifier, keycode)
-                        xtest_fake_key(display, keycode, not press)
+                        X11Keyboard.xtest_fake_key(keycode, not press)
                         new_mask = get_current_mask()
                         #maybe doing the full keypress (down+up or u+down) worked:
                         if (modifier in new_mask)==press:

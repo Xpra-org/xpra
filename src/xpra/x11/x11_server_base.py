@@ -9,15 +9,15 @@
 import gtk.gdk
 import gobject
 
-from xpra.server.server_base import ServerBase
-from xpra.x11.lowlevel import (xtest_fake_key,              #@UnresolvedImport
-                               xtest_fake_button,           #@UnresolvedImport
-                               set_key_repeat_rate,         #@UnresolvedImport
-                               unpress_all_keys,            #@UnresolvedImport
-                               has_randr, get_screen_sizes, #@UnresolvedImport
-                               set_screen_size,             #@UnresolvedImport
-                               get_screen_size,             #@UnresolvedImport
-                               get_xatom,                   #@UnresolvedImport
+#ensure that we use gtk as display source:
+from xpra.x11.gtk_x11 import gdk_display_source
+assert gdk_display_source
+
+from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+RandR = RandRBindings()
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+X11Keyboard = X11KeyboardBindings()
+from xpra.x11.gtk_x11.gdk_bindings import (get_xatom,                   #@UnresolvedImport
                                get_children,                #@UnresolvedImport
                                )
 from xpra.x11.gtk_x11.prop import prop_set
@@ -27,6 +27,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.log import Logger
 log = Logger()
 
+from xpra.server.server_base import ServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.xsettings import XSettingsManager
 
@@ -66,8 +67,8 @@ class X11ServerBase(ServerBase):
 
     def x11_init(self, clobber):
         self.init_x11_atoms()
-        self.randr = has_randr()
-        if self.randr and len(get_screen_sizes())<=1:
+        self.randr = RandR.has_randr()
+        if self.randr and len(RandR.get_screen_sizes())<=1:
             #disable randr when we are dealing with a Xvfb
             #with only one resolution available
             #since we don't support adding them on the fly yet
@@ -119,14 +120,14 @@ class X11ServerBase(ServerBase):
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
             if self.key_repeat_delay>0 and self.key_repeat_interval>0:
-                set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
+                X11Keyboard.set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
                 log.info("setting key repeat rate from client: %sms delay / %sms interval", self.key_repeat_delay, self.key_repeat_interval)
         else:
             #dont do any jitter compensation:
             self.key_repeat_delay = -1
             self.key_repeat_interval = -1
             #but do set a default repeat rate:
-            set_key_repeat_rate(500, 30)
+            X11Keyboard.set_key_repeat_rate(500, 30)
 
 
     def make_hello(self):
@@ -166,16 +167,16 @@ class X11ServerBase(ServerBase):
         if len(self.keys_pressed)>0:
             log("clearing keys pressed: %s", self.keys_pressed)
             for keycode in self.keys_pressed.keys():
-                xtest_fake_key(gtk.gdk.display_get_default(), keycode, False)
+                X11Keyboard.xtest_fake_key(keycode, False)
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
-        unpress_all_keys(gtk.gdk.display_get_default())
+        X11Keyboard.unpress_all_keys()
 
 
     def get_max_screen_size(self):
         max_w, max_h = gtk.gdk.get_default_root_window().get_size()
-        sizes = get_screen_sizes()
+        sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
                 max_w = max(max_w, w)
@@ -184,6 +185,7 @@ class X11ServerBase(ServerBase):
 
 
     def set_best_screen_size(self):
+        #return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
         if not self.randr:
@@ -209,7 +211,7 @@ class X11ServerBase(ServerBase):
             return    root_w,root_h    #unlikely: perfect match already!
         #try to find the best screen size to resize to:
         new_size = None
-        for w,h in get_screen_sizes():
+        for w,h in RandR.get_screen_sizes():
             if w<desired_w or h<desired_h:
                 continue            #size is too small for client
             if new_size:
@@ -225,8 +227,11 @@ class X11ServerBase(ServerBase):
             log.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
             return  root_w, root_h
         try:
-            set_screen_size(w, h)
-            root_w, root_h = get_screen_size()
+            log.debug("calling RandR.set_screen_size(%s, %s)", w, h)
+            RandR.set_screen_size(w, h)
+            log.debug("calling RandR.get_screen_size()")
+            root_w, root_h = RandR.get_screen_size()
+            log.debug("RandR.get_screen_size()=%s,%s", root_w, root_h)
             if root_w!=w or root_h!=h:
                 log.error("odd, failed to set the new resolution, "
                           "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
@@ -287,7 +292,7 @@ class X11ServerBase(ServerBase):
 
 
     def fake_key(self, keycode, press):
-        trap.call_synced(xtest_fake_key, gtk.gdk.display_get_default(), keycode, press)
+        trap.call_synced(X11Keyboard.xtest_fake_key, keycode, press)
 
 
     def _move_pointer(self, pos):
@@ -313,9 +318,8 @@ class X11ServerBase(ServerBase):
         wid, button, pressed, pointer, modifiers = packet[1:6]
         self._process_mouse_common(proto, wid, pointer, modifiers)
         ss.user_event()
-        display = gtk.gdk.display_get_default()
         try:
-            trap.call_synced(xtest_fake_button, display, button, pressed)
+            trap.call_synced(X11Keyboard.xtest_fake_button, button, pressed)
         except XError:
             log.warn("Failed to pass on (un)press of mouse button %s"
                      + " (perhaps your Xvfb does not support mousewheels?)",

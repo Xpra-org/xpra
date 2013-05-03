@@ -6,16 +6,16 @@
 import os
 import re
 
+#ensure that we use gtk as display source:
+from xpra.x11.gtk_x11 import gdk_display_source
+assert gdk_display_source
+
 from xpra.x11.gtk_x11.error import trap
-from xpra.x11.lowlevel import (set_xmodmap,                 #@UnresolvedImport
-                              parse_keysym,                 #@UnresolvedImport
-                              parse_modifier,               #@UnresolvedImport
-                              get_minmax_keycodes,          #@UnresolvedImport
-                              ungrab_all_keys,              #@UnresolvedImport
-                              unpress_all_keys,             #@UnresolvedImport
-                              get_keycode_mappings)         #@UnresolvedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+X11Keyboard = X11KeyboardBindings()
 from xpra.log import Logger
 log = Logger()
+
 
 KEYBOARD_DEBUG = os.environ.get("XPRA_KEYBOARD_DEBUG", "0")=="1"
 if KEYBOARD_DEBUG:
@@ -51,13 +51,12 @@ def exec_keymap_command(args, stdin=None):
 
 
 def clean_keyboard_state():
-    import gtk.gdk
     try:
-        ungrab_all_keys(gtk.gdk.get_default_root_window())
+        X11Keyboard.ungrab_all_keys()
     except:
         log.error("error ungrabbing keys", exc_info=True)
     try:
-        unpress_all_keys(gtk.gdk.get_default_root_window())
+        X11Keyboard.unpress_all_keys()
     except:
         log.error("error unpressing keys", exc_info=True)
 
@@ -149,9 +148,8 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
 # keycodes
 
 def apply_xmodmap(instructions):
-    import gtk.gdk
     try:
-        unset = trap.call_synced(set_xmodmap, gtk.gdk.get_default_root_window(), instructions)
+        unset = trap.call_synced(X11Keyboard.set_xmodmap, instructions)
     except:
         log.error("apply_xmodmap", exc_info=True)
         unset = instructions
@@ -205,7 +203,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 log.warn("keymapping removed invalid keycode entry %s pointing to more than one modifier (%s): %s", keycode, mods, entries)
                 continue
             #now remove entries for keysyms we don't have:
-            f_entries = set([(keysym, index) for keysym, index in entries if parse_keysym(keysym) is not None])
+            f_entries = set([(keysym, index) for keysym, index in entries if X11Keyboard.parse_keysym(keysym) is not None])
             if len(f_entries)==0:
                 log("keymapping removed invalid keycode entry %s pointing to only unknown keysyms: %s", keycode, entries)
                 continue
@@ -227,14 +225,13 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     #now lookup the current keycodes (if we need to preserve them)
     preserve_keycode_entries = {}
     if preserve_server_keycodes:
-        import gtk.gdk
-        preserve_keycode_entries = get_keycode_mappings(gtk.gdk.get_default_root_window())
+        preserve_keycode_entries = X11Keyboard.get_keycode_mappings()
         debug("preserved mappings:")
         dump_dict(preserve_keycode_entries)
         debug("preserve_keycode_entries=%s", preserve_keycode_entries)
         preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries))
 
-    kcmin, kcmax = get_minmax_keycodes()
+    kcmin, kcmax = X11Keyboard.get_minmax_keycodes()
     for try_harder in (False, True):
         trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder)
         if len(missing_keycodes)==0:
@@ -469,7 +466,7 @@ def keymap_to_xmodmap(trans_keycodes):
             assert 0<=index and index<keysyms_per_keycode
             names[index] = name
             try:
-                keysym = parse_keysym(name)
+                keysym = X11Keyboard.parse_keysym(name)
             except:
                 keysym = None
             if keysym is None:
@@ -508,7 +505,7 @@ def set_modifiers(modifiers):
     """
     instructions = []
     for modifier, keynames in modifiers.items():
-        mod = parse_modifier(modifier)
+        mod = X11Keyboard.parse_modifier(modifier)
         if mod>=0:
             instructions.append(("add", mod, keynames))
         else:

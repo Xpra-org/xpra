@@ -10,7 +10,9 @@ log = Logger()
 
 try:
     from xpra.x11.gtk_x11.error import trap, XError
-    from xpra.x11.lowlevel.bindings import device_bell      #@UnresolvedImport
+    from xpra.x11.gtk_x11.gdk_bindings import get_xwindow   #@UnresolvedImport
+    from xpra.x11.bindings import X11KeyboardBindings   #@UnresolvedImport
+    device_bell = X11KeyboardBindings().device_bell      
 except:
     device_bell = None
 
@@ -19,7 +21,8 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
     if device_bell is None:
         return False
     try:
-        trap.call_synced(device_bell, window, device, bell_class, bell_id, percent, bell_name)
+        xwindow = get_xwindow(window)
+        trap.call_synced(device_bell, xwindow, device, bell_class, bell_id, percent, bell_name)
         return  True
     except XError, e:
         log.error("error using device_bell: %s, switching native X11 bell support off", e)

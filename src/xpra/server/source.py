@@ -36,6 +36,13 @@ from xpra.os_util import platform_name
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
+#easier than making a whole subclass just for get-xid..
+get_xwindow = None
+try:
+    from xpra.x11.gtk_x11.gdk_bindings import get_xwindow       #@UnresolvedImport
+except:
+    pass
+
 
 
 class ServerSource(object):
@@ -460,11 +467,8 @@ class ServerSource(object):
             #so populate them here
             cache["override-redirect"] = window.is_OR()
             cache["tray"] = window.is_tray()
-            try:
-                from xpra.x11.lowlevel import get_xwindow       #@UnresolvedImport
+            if get_xwindow:
                 cache["xid"] = hex(get_xwindow(window.client_window))
-            except:
-                pass
         props = self.do_make_metadata(window, propname)
         cache.update(props)
         return props

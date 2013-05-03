@@ -13,16 +13,18 @@ import gtk
 from struct import pack, unpack
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.x11.gtk_x11.error import XError
-from xpra.x11.lowlevel import (
+from xpra.x11.gtk_x11.error import trap, XError
+from xpra.x11.bindings.core_bindings import const   #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+X11Window = X11WindowBindings()
+
+from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xatom,                  #@UnresolvedImport
                 get_pywindow,               #@UnresolvedImport
-                sendClientMessage,          #@UnresolvedImport
-                myGetSelectionOwner, const, #@UnresolvedImport
+                get_xwindow,                #@UnresolvedImport
                 add_event_receiver,         #@UnresolvedImport
                 remove_event_receiver       #@UnresolvedImport
                 )
-from xpra.x11.gtk_x11.error import trap
 
 from xpra.log import Logger
 log = Logger()
@@ -47,7 +49,7 @@ class ManagerSelection(gobject.GObject):
         self._xwindow = None
 
     def _owner(self):
-        return myGetSelectionOwner(self.clipboard, self.atom)
+        return X11Window.XGetSelectionOwner(self.atom)
 
     def owned(self):
         "Returns True if someone owns the given selection."
@@ -92,10 +94,11 @@ class ManagerSelection(gobject.GObject):
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
-        self._xwindow = myGetSelectionOwner(self.clipboard, self.atom)
+        self._xwindow = X11Window.XGetSelectionOwner(self.atom)
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
-        sendClientMessage(root, root, False, const["StructureNotifyMask"],
+        xroot = get_xwindow(root)
+        X11Window.sendClientMessage(xroot, xroot, False, const["StructureNotifyMask"],
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow, 0, 0)
 
