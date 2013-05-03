@@ -120,7 +120,7 @@ class WindowBackingBase(object):
         """ can be called from any thread """
         assert coding in ENCODINGS, "encoding %s is not supported!" % coding
         assert has_PIL
-        buf = IOClass(img_data)
+        buf = BytesIOClass(img_data)
         img = Image.open(buf)
         assert img.mode=="RGB", "invalid image mode: %s" % img.mode
         raw_data = img.tostring("raw", "RGB")
