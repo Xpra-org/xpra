@@ -21,7 +21,6 @@ cdef Display* get_display():
     return display
 
 cdef void set_display(Display *d):
-    print("set_display()")
     global display
     if display!=NULL:
         raise Exception("display is already set!")
@@ -31,4 +30,5 @@ def get_display_name():
     return display_name
 
 def set_display_name(name):
+    global display_name
     display_name = name
