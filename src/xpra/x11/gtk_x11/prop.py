@@ -9,7 +9,6 @@
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
-import traceback
 import struct
 import gtk.gdk
 import cairo
@@ -349,13 +348,11 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     except XError:
         if raise_xerrors:
             raise
-        log.info("Missing window %s or wrong property type %s (%s)", target, key, etype)
-        traceback.print_exc()
+        log.info("Missing window %s or wrong property type %s (%s)", target, key, etype, exc_info=True)
         return None
     except PropertyError:
         if not ignore_errors:
-            log.info("Missing property or wrong property type %s (%s)", key, etype)
-            traceback.print_exc()
+            log.info("Missing property or wrong property type %s (%s)", key, etype, exc_info=True)
         return None
     try:
         return _prop_decode(target, etype, data)
@@ -364,6 +361,5 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
             log.warn("Error parsing property %s (type %s); this may be a"
                      + " misbehaving application, or bug in Xpra\n"
                      + "  Data: %r[...?]",
-                     key, etype, data[:160])
-            traceback.print_exc()
+                     key, etype, data[:160], exc_info=True)
         raise

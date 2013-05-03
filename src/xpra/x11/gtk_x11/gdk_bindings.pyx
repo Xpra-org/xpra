@@ -890,8 +890,6 @@ def _gw(display, xwin):
         raise XError(error)
     if win is None:
         debug("cannot get gdk window for %s, %s", display, xwin)
-        import traceback
-        traceback.print_stack()
         raise XError(BadWindow)
     return win
 
