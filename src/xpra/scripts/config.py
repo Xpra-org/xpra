@@ -249,7 +249,7 @@ def read_xpra_defaults():
     """
     #first, read the global defaults:
     if sys.platform.startswith("win"):
-        conf_dir = os.path.dirname(sys.executable)
+        conf_dir = os.path.dirname(os.path.abspath(sys.executable))
     elif sys.prefix == '/usr':
         conf_dir = '/etc/xpra'
     else:

@@ -33,6 +33,6 @@ def get_default_socket_dir():
 
 def get_app_dir():
     if getattr(sys, 'frozen', ''):
-        return os.path.dirname(sys.executable)
+        return os.path.dirname(os.path.abspath(sys.executable))
     from xpra.platform.paths import default_get_app_dir   #imported here to prevent import loop
     return default_get_app_dir()
