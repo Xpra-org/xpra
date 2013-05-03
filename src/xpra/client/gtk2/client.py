@@ -31,11 +31,7 @@ class XpraClient(GTKXpraClient):
 
     def __init__(self, conn, opts):
         GTKXpraClient.__init__(self, conn, opts)
-        try:
-            from xpra.client.gl.gl_client_window import GLClientWindow
-            self.GLClientWindowClass = GLClientWindow
-        except:
-            self.GLClientWindowClass = None
+        self.GLClientWindowClass = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
 
