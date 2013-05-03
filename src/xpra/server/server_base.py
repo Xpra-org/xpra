@@ -288,8 +288,14 @@ class ServerBase(object):
 
     def clean_quit(self):
         self.cleanup()
-        gobject.timeout_add(500, self.quit, False, priority=gobject.PRIORITY_HIGH)
-        gobject.timeout_add(5000, os._exit, 1, priority=gobject.PRIORITY_HIGH)
+        def quit_timer(*args):
+            log.debug("quit_timer()")
+            self.quit(False)
+        gobject.timeout_add(500, quit_timer, priority=gobject.PRIORITY_HIGH)
+        def force_quit(*args):
+            log.debug("force_quit()")
+            os._exit(1)
+        gobject.timeout_add(5000, force_quit, priority=gobject.PRIORITY_HIGH)
 
     def quit(self, upgrading):
         log("quit(%s)", upgrading)
