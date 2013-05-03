@@ -14,6 +14,7 @@ from threading import Lock
 from xpra.scripts.config import ENCODINGS
 from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
+from xpra.os_util import BytesIOClass
 
 try:
     from xpra.codecs.x264.codec import Decoder as x264_Decoder     #@UnresolvedImport
@@ -30,11 +31,6 @@ try:
     has_PIL = True
 except:
     pass
-#python3 making life difficult:
-try:
-    from io import BytesIO as IOClass          #@UnusedImport
-except:
-    from StringIO import StringIO as IOClass   #@Reimport
 
 #logging in the draw path is expensive:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
@@ -84,7 +80,7 @@ class WindowBackingBase(object):
     def jpegimage(self, img_data, width, height):
         """ can be called from any thread """
         assert has_PIL
-        buf = IOClass(img_data)
+        buf = BytesIOClass(img_data)
         return Image.open(buf)
 
     def rgb24image(self, img_data, width, height, rowstride):

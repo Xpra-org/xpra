@@ -14,11 +14,6 @@
 import gtk.gdk
 import gobject
 
-try:
-    from StringIO import StringIO   #@UnusedImport
-except:
-    from io import StringIO         #@UnresolvedImport @Reimport
-
 from xpra.util import AdHocStruct
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.wm import Wm
@@ -39,6 +34,7 @@ from xpra.log import Logger
 log = Logger()
 
 import xpra
+from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.net.protocol import zlib_compress, Compressed
@@ -618,7 +614,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             tx = x-minx
             ty = y-miny
             image.paste(window_image, (tx, ty))
-        buf = StringIO()
+        buf = StringIOClass()
         image.save(buf, "png")
         data = buf.getvalue()
         buf.close()

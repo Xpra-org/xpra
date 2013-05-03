@@ -20,18 +20,13 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
-try:
-    from StringIO import StringIO   #@UnusedImport
-except:
-    from io import StringIO         #@UnresolvedImport @Reimport
-
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_source import WindowSource, DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import HAS_SOUND, ENCODINGS
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import platform_name
+from xpra.os_util import platform_name, StringIOClass
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
@@ -550,7 +545,7 @@ class ServerSource(object):
                     h = MAX_SIZE
                 log("scaling window icon down to %sx%s", w, h)
                 img = img.resize((w,h), Image.ANTIALIAS)
-            output = StringIO()
+            output = StringIOClass()
             img.save(output, 'PNG')
             raw_data = output.getvalue()
             output.close()

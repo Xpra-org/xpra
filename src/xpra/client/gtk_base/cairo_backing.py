@@ -15,6 +15,7 @@ log = Logger()
 
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks, DRAW_DEBUG
+from xpra.os_util import BytesIOClass, data_to_buffer
 
 
 """
@@ -62,20 +63,7 @@ class CairoBacking(GTKWindowBacking):
 
     def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
-        try:
-            from io import BytesIO          #@Reimport
-            import sys
-            if sys.version>='3':
-                data = bytearray(img_data.encode("latin1"))
-            else:
-                try:
-                    data = bytearray(img_data)
-                except:
-                    data = str(img_data)
-            buf = BytesIO(data)
-        except ImportError:
-            from StringIO import StringIO   #@Reimport
-            buf = StringIO(img_data)
+        buf = data_to_buffer(img_data)
         surf = cairo.ImageSurface.create_from_png(buf)
         gc = cairo.Context(self._backing)
         gc.set_source_surface(surf)
@@ -85,12 +73,7 @@ class CairoBacking(GTKWindowBacking):
         return  False
 
     def paint_pil_image(self, pil_image, width, height, rowstride, options, callbacks):
-        try:
-            from io import BytesIO
-            buf = BytesIO()
-        except ImportError:
-            from StringIO import StringIO   #@Reimport
-            buf = StringIO()
+        buf = BytesIOClass()
         pil_image.save(buf, format="PNG")
         png_data = buf.getvalue()
         buf.close()

@@ -9,6 +9,27 @@ import os
 import sys
 
 
+#python3 making life difficult:
+try:
+    from io import BytesIO as BytesIOClass          #@UnusedImport
+except:
+    from StringIO import StringIO as BytesIOClass   #@Reimport @UnusedImport
+try:
+    from StringIO import StringIO as StringIOClass  #@UnusedImport
+except:
+    from io import StringIO as StringIOClass        #@Reimport @UnusedImport
+
+def data_to_buffer(in_data):
+    if sys.version>='3':
+        data = bytearray(in_data.encode("latin1"))
+    else:
+        try:
+            data = bytearray(in_data)
+        except:
+            #old python without bytearray:
+            data = str(in_data)
+    return BytesIOClass(data)
+
 def platform_name(sys_platform, release):
     PLATFORMS = {"win32"    : "Microsoft Windows",
                  "cygwin"   : "Windows/Cygwin",

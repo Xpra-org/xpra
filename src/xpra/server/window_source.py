@@ -30,10 +30,6 @@ NRECS = 100
 
 import gtk.gdk
 import gobject
-try:
-    from StringIO import StringIO   #@UnusedImport
-except:
-    from io import StringIO         #@UnresolvedImport @Reimport
 import time
 from threading import Lock
 
@@ -61,6 +57,7 @@ from xpra.simple_stats import add_list_stats
 from xpra.server.stats.maths import calculate_time_weighted_average
 from xpra.server.batch_delay_calculator import calculate_batch_delay, update_video_encoder
 from xpra.codecs.xor import xor_str        #@UnresolvedImport
+from xpra.os_util import StringIOClass
 
 #old gtk versions lack gtk.gdk.Region().get_rectangles()
 #so for those we just keep them in a list..
@@ -808,7 +805,7 @@ class WindowSource(object):
         assert coding in ENCODINGS
         import Image
         im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
-        buf = StringIO()
+        buf = StringIOClass()
         client_options = {}
         if coding=="jpeg":
             q = 80

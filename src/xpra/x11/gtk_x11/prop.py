@@ -11,10 +11,6 @@ conventions, and if you need more (un)marshalling smarts, add them here."""
 
 import traceback
 import struct
-try:
-    from StringIO import StringIO   #@UnresolvedImport @UnusedImport
-except:
-    from io import StringIO         #@Reimport
 import gtk.gdk
 import cairo
 from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
@@ -31,6 +27,7 @@ from xpra.x11.bindings.window_bindings import (
                 premultiply_argb_in_place)  #@UnresolvedImport
 X11Window = X11WindowBindings()
 
+from xpra.os_util import StringIOClass
 from xpra.x11.xsettings_prop import set_settings, get_settings
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.log import Logger
@@ -196,7 +193,7 @@ def _read_image(disp, stream):
 # a _NET_WM_ICON property.
 def NetWMIcons(disp, data):
     icons = []
-    stream = StringIO(data)
+    stream = StringIOClass(data)
     while True:
         size_image = _read_image(disp, stream)
         if size_image is None:
