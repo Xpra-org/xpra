@@ -4,9 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
-log = Logger()
-
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 

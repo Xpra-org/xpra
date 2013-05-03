@@ -17,9 +17,8 @@ from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 RandR = RandRBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.x11.gtk_x11.gdk_bindings import (get_xatom,                   #@UnresolvedImport
-                               get_children,                #@UnresolvedImport
-                               )
+from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
+X11Core = X11CoreBindings()
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.error import XError, trap
 from xpra.server.server_uuid import save_uuid, get_uuid
@@ -43,6 +42,8 @@ def window_info(window):
     net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
     return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
 
+
+from xpra.x11.gtk_x11.gdk_bindings import get_children #@UnresolvedImport
 def dump_windows():
     root = gtk.gdk.get_default_root_window()
     log("root window: %s" % root)
@@ -102,7 +103,7 @@ class X11ServerBase(ServerBase):
                           "_NET_WM_WINDOW_TYPE_DND",
                           "_NET_WM_WINDOW_TYPE_NORMAL"
                           ]:
-            get_xatom(atom_name)
+            X11Core.get_xatom(atom_name)
 
     def init_keyboard(self):
         ServerBase.init_keyboard(self)
