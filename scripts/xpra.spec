@@ -121,6 +121,9 @@ BuildRequires: libXcomposite-devel
 BuildRequires: libXdamage-devel
 BuildRequires: libXrandr-devel
 %endif
+BuildRequires: desktop-file-utils
+Requires(post): desktop-file-utils
+Requires(postun): desktop-file-utils
 
 ### Patches ###
 Patch0: disable-posix-server.patch
@@ -787,14 +790,33 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/xpra
 /usr/share/man/man1/xpra*
 /usr/share/applications/xpra_launcher.desktop
+/usr/share/applications/xpra.desktop
 /usr/share/icons/xpra.png
-/etc/xpra/*
+%dir %{_sysconfdir}/xpra
+%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
+%config(noreplace) %{_sysconfdir}/xpra/xpra.conf
+
 
 %post
 %if 0%{?static_video_libs}
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/x264/codec.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/codec.so
 %endif
+update-desktop-database &> /dev/null || :
+touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+
+
+%postun
+update-desktop-database &> /dev/null || :
+if [ $1 -eq 0 ] ; then
+    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
+    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+fi
+
+
+%posttrans
+/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+
 
 %config
 /etc/xpra/xpra.conf
