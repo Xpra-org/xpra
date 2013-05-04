@@ -11,14 +11,13 @@ from xpra.x11.gtk_x11.error import *
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 
-from xpra.x11.bindings.core_bindings import const       #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,          #@UnresolvedImport
                get_pywindow,                #@UnresolvedImport
                get_xatom,                   #@UnresolvedImport
                get_xwindow)                 #@UnresolvedImport
 
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.log import Logger
 log = Logger()

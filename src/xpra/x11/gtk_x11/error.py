@@ -56,7 +56,7 @@ def XErrorToName(xerror):
     if type(xerror)!=int:
         return xerror
     try:
-        from xpra.x11.bindings.core_bindings import const     #@UnresolvedImport
+        from xpra.x11.bindings.window_bindings import const     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
             for name,code in const.items():

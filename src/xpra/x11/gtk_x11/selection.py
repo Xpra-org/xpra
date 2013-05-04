@@ -14,8 +14,7 @@ from struct import pack, unpack
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.error import trap, XError
-from xpra.x11.bindings.core_bindings import const   #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (

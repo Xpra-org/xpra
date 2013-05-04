@@ -8,7 +8,7 @@ import gtk
 import gobject
 import xpra.x11.gtk_x11.window
 from xpra.x11.gtk_x11.error import trap
-from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import const         #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.log import Logger

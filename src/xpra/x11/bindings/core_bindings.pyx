@@ -72,7 +72,7 @@ cdef class X11CoreBindings:
         dn = get_display_name()
         self.display_name = dn
 
-    cdef get_xatom(self, str_or_int):
+    cdef xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         cdef char* string
@@ -80,6 +80,9 @@ cdef class X11CoreBindings:
             return <Atom> str_or_int
         string = str_or_int
         return XInternAtom(self.display, string, False)
+
+    def get_xatom(self, str_or_int):
+        return self.xatom(str_or_int)
 
     def get_error_text(self, code):
         if type(code)!=int:

@@ -22,13 +22,12 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
 from xpra.x11.gtk_x11.window import WindowModel, Unmanageable
-from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import (
                add_event_receiver,                          #@UnresolvedImport
                get_children,                                #@UnresolvedImport
                get_xwindow,                                 #@UnresolvedImport
                )
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()

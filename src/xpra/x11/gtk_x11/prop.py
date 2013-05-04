@@ -12,7 +12,6 @@ conventions, and if you need more (un)marshalling smarts, add them here."""
 import struct
 import gtk.gdk
 import cairo
-from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
 
 from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xatom, get_pyatom,      #@UnresolvedImport
@@ -20,6 +19,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xvisual,                #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import (
+                const,                      #@UnresolvedImport
                 X11WindowBindings,          #@UnresolvedImport
                 NoSuchProperty,             #@UnresolvedImport
                 PropertyError,              #@UnresolvedImport

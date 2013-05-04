@@ -4,10 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.bindings.core_bindings import const           #@UnresolvedImport
-
 from xpra.x11.gtk_x11.gdk_bindings import get_xwindow       #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger

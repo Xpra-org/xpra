@@ -11,6 +11,6 @@ cdef extern from "X11/Xlib.h":
 cdef class X11CoreBindings:
     cdef Display * display
     cdef char * display_name
-    cdef get_xatom(self, str_or_int)
+    cdef xatom(self, str_or_int)
 #    def get_error_text(self, code)
 #    def XSync(self, discard=False):
