@@ -36,15 +36,22 @@ def get_version():
     return get_vpx_abi_version()
 
 
-""" common superclass for Decoder and Encoder """
-cdef class xcoder:
+cdef class Decoder:
+
     cdef vpx_codec_ctx_t *context
     cdef int width
     cdef int height
 
-    def init(self, width, height):
+    def init_context(self, width, height, use_swscale, options):
         self.width = width
         self.height = height
+        self.context = init_decoder(width, height, use_swscale)
+
+    def get_width(self):
+        return self.width
+
+    def get_height(self):
+        return self.height
 
     def is_closed(self):
         return self.context==NULL
@@ -54,18 +61,6 @@ cdef class xcoder:
 
     def __dealloc__(self):
         self.clean()
-
-    def get_width(self):
-        return self.width
-
-    def get_height(self):
-        return self.height
-
-cdef class Decoder(xcoder):
-
-    def init_context(self, width, height, use_swscale, options):
-        self.init(width, height)
-        self.context = init_decoder(width, height, use_swscale)
 
     def clean(self):
         if self.context!=NULL:
@@ -118,47 +113,3 @@ cdef class Decoder(xcoder):
         outstr = (<char *>dout)[:outsize]
         xmemfree(dout)
         return  i, outstr, outstride
-
-
-cdef class Encoder(xcoder):
-    cdef int frames
-
-    def init_context(self, width, height, options):    #@DuplicatedSignature
-        self.init(width, height)
-        self.context = init_encoder(width, height)
-        self.frames = 0
-
-    def clean(self):                        #@DuplicatedSignature
-        if self.context!=NULL:
-            clean_encoder(self.context)
-            self.context = NULL
-
-    def compress_image(self, input, rowstride, options):
-        cdef vpx_image_t *pic_in = NULL
-        cdef uint8_t *pic_buf = NULL
-        cdef Py_ssize_t pic_buf_len = 0
-        assert self.context!=NULL
-        #colourspace conversion with gil held:
-        PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
-        pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
-        assert pic_in!=NULL, "colourspace conversion failed"
-        return self.do_compress_image(pic_in), {"frame" : self.frames}
-
-    cdef do_compress_image(self, vpx_image_t *pic_in):
-        #actual compression (no gil):
-        cdef int i
-        cdef uint8_t *cout
-        cdef int coutsz
-        with nogil:
-            i = compress_image(self.context, pic_in, &cout, &coutsz)
-        if i!=0:
-            return None
-        coutv = (<char *>cout)[:coutsz]
-        self.frames += 1
-        return  coutv
-
-    def set_encoding_speed(self, int pct):
-        return
-
-    def set_encoding_quality(self, int pct):
-        return

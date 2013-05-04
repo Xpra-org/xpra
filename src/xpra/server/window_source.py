@@ -828,10 +828,10 @@ class WindowSource(object):
     def make_video_encoder(self, coding):
         assert coding in ENCODINGS
         if coding=="x264":
-            from xpra.codecs.x264.codec import Encoder as x264Encoder   #@UnresolvedImport
+            from xpra.codecs.x264.encoder import Encoder as x264Encoder   #@UnresolvedImport
             return x264Encoder()
         elif coding=="vpx":
-            from xpra.codecs.vpx.codec import Encoder as vpxEncoder      #@UnresolvedImport
+            from xpra.codecs.vpx.encoder import Encoder as vpxEncoder     #@UnresolvedImport
             return vpxEncoder()
         else:
             raise Exception("invalid video encoder: %s" % coding)

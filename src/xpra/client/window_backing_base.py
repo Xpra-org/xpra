@@ -17,11 +17,11 @@ from xpra.net.mmap_pipe import mmap_read
 from xpra.os_util import BytesIOClass
 
 try:
-    from xpra.codecs.x264.codec import Decoder as x264_Decoder     #@UnresolvedImport
+    from xpra.codecs.x264.decoder import Decoder as x264_Decoder     #@UnresolvedImport
 except:
     pass
 try:
-    from xpra.codecs.vpx.codec import Decoder as vpx_Decoder       #@UnresolvedImport
+    from xpra.codecs.vpx.decoder import Decoder as vpx_Decoder       #@UnresolvedImport
 except:
     pass
 #have/use PIL?
