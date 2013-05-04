@@ -282,7 +282,8 @@ def pkgconfig(*packages_options, **ekw):
         if not valid_option:
             sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
         package_names.append(valid_option)
-    print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
+    if packages_options!=package_names:
+        print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
     flag_map = {'-I': 'include_dirs',
                 '-L': 'library_dirs',
                 '-l': 'libraries'}
