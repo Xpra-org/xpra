@@ -429,6 +429,8 @@ When unspecified, all the available codecs are allowed and the first one is used
 
 
 def parse_display_name(error_cb, opts, display_name):
+    if display_name.startswith("xpra://"):
+        display_name = display_name[len("xpra://"):]
     desc = {"display_name" : display_name}
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Xpra
+Comment=Connect to an Xpra session
+Exec=xpra attach %u
+Icon=xpra
+Terminal=false
+NoDisplay=true
+Type=Application
+StartupNotify=false
+Categories=Network;
+MimeType=x-scheme-handler/xpra;

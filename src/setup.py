@@ -692,8 +692,8 @@ else:
                     ("share/man/man1", man_pages),
                     ("share/xpra", ["README", "COPYING"]),
                     ("share/xpra/icons", glob.glob("icons/*")),
-                    ("share/applications", ["xpra_launcher.desktop"]),
-                    ("share/icons", ["xpra.png"])
+                    ("share/applications", ["xdg/xpra_launcher.desktop", "xdg/xpra.desktop"]),
+                    ("share/icons", ["xdg/xpra.png"])
                   ]
     if webp_ENABLED:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
