@@ -10,6 +10,7 @@ This is a simple GUI for starting the xpra client.
 
 """
 
+import os.path
 import sys
 import shlex
 import signal
@@ -32,8 +33,10 @@ from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, va
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
 from xpra.os_util import set_prgname
 from xpra.client.gtk_base.about import about
-from xpra.scripts.main import connect_to, SIGNAMES
-from xpra.platform import get_icon, init as platform_init
+from xpra.client.client_base import SIGNAMES
+from xpra.scripts.main import connect_to
+from xpra.platform import init as platform_init
+from xpra.platform.paths import get_icon_dir
 from xpra.client.client import XpraClient
 from xpra.log import Logger
 log = Logger()
@@ -68,7 +71,8 @@ class ApplicationWindow:
 		self.window.set_border_width(20)
 		self.window.set_title("Xpra Launcher")
 		self.window.modify_bg(gtk.STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
-		icon_pixbuf = get_icon("xpra.png")
+
+		icon_pixbuf = self.get_icon("xpra.png")
 		if icon_pixbuf:
 			self.window.set_icon(icon_pixbuf)
 		self.window.set_position(gtk.WIN_POS_CENTER)
@@ -180,7 +184,7 @@ class ApplicationWindow:
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked)
-		connect_icon = get_icon("retry.png")
+		connect_icon = self.get_icon("retry.png")
 		if connect_icon:
 			self.button.set_image(scaled_image(connect_icon, 24))
 		hbox.pack_start(self.button)
@@ -223,6 +227,12 @@ class ApplicationWindow:
 
 	def run(self):
 		gtk.main()
+
+	def get_icon(self, icon_name):
+		icon_filename = os.path.join(get_icon_dir(), icon_name)
+		if os.path.exists(icon_filename):
+			return gtk.gdk.pixbuf_new_from_file(icon_filename)
+		return None
 
 	def mode_changed(self, *args):
 		ssh = self.mode_combo.get_active_text()=="SSH"
