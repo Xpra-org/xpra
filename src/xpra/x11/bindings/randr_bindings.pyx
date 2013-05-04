@@ -13,7 +13,10 @@ log = Logger("xpra.x11.randr_bindings")
 
 
 ctypedef unsigned long CARD32
-include "constants.pxi"
+
+cdef extern from "X11/X.h":
+    unsigned long CurrentTime
+    unsigned long Success
 
 ######
 # Xlib primitives and constants

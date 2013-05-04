@@ -37,7 +37,6 @@ cdef extern from "Python.h":
 # Xlib primitives and constants
 ######
 
-include "constants.pxi"
 ctypedef unsigned long CARD32
 
 cdef extern from "X11/Xlib.h":
