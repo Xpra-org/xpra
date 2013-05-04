@@ -2,7 +2,7 @@ Index: xpra/codecs/x264/x264lib.c
 ===================================================================
 --- a/xpra/codecs/x264/x264lib.c	(revision 3160)
 +++ b/xpra/codecs/x264/x264lib.c	(working copy)
-@@ -404,11 +404,12 @@
+@@ -408,11 +408,12 @@
  		fprintf(stderr, "could not open codec\n");
  		return 1;
  	}
@@ -16,7 +16,7 @@ Index: xpra/codecs/x264/x264lib.c
  	return 0;
  }
  struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
-@@ -427,7 +428,7 @@
+@@ -431,7 +432,7 @@
  void do_clean_decoder(struct x264lib_ctx *ctx)
  {
  	if (ctx->frame) {

@@ -2,14 +2,14 @@ Description: For disabling shadow server support.
  Author: Antoine Martin <antoine@devloop.org.uk>
  Forwarded: not-needed
  
---- a/xpra/xposix/__init__.py
-+++ b/xpra/xposix/__init__.py
-@@ -14,7 +14,7 @@
+--- a/xpra/platform/xposix/features.py	(revision 3247)
++++ b/xpra/platform/xposix/features.py	(working copy)
+@@ -11,7 +11,7 @@
  
  
  
--XPRA_SHADOW_SUPPORTED = True
-+XPRA_SHADOW_SUPPORTED = False
+-SHADOW_SUPPORTED = True
++SHADOW_SUPPORTED = False
  
  
  

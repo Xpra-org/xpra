@@ -2,11 +2,9 @@ Description: For disabling the extra clipboard code (in Cython).
  Author: Antoine Martin <antoine@devloop.org.uk>
  Forwarded: not-needed
  
-Index: setup.py
-===================================================================
 --- a/setup.py
 +++ b/setup.py
-@@ -35,7 +35,7 @@
+@@ -33,7 +33,7 @@
  
  
  

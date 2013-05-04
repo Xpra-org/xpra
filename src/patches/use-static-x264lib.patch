@@ -2,18 +2,19 @@ Index: setup.py
 ===================================================================
 --- a/setup.py	(revision 3160)
 +++ b/setup.py	(working copy)
-@@ -798,10 +798,13 @@
+@@ -875,9 +875,14 @@
  
- 
+ toggle_packages(x264_ENABLED, "xpra.codecs.x264")
  if x264_ENABLED:
 +    x264static = {'include_dirs': ["/usr/local/include"],
 +                  'library_dirs': ["/usr/local/lib"],
-+                  'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic", "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"] }
-     packages.append("xpra.codecs.x264")
++                  'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
++                                      "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
++                  }
      cython_add(Extension("xpra.codecs.x264.codec",
                  ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
 -                **pkgconfig("x264", "libswscale", "libavcodec")
 +                **x264static
                  ), min_version=(0, 16))
- elif sys.platform.startswith("win"):
-     py2exe_excludes.append("xpra.codecs.x264")
+ 
+ 

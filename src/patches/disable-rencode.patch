@@ -4,7 +4,7 @@ Description: For disabling the rencode packet encoder (in Cython).
  
 --- a/setup.py
 +++ b/setup.py
-@@ -51,7 +51,7 @@
+@@ -49,7 +49,7 @@
  
  
  
