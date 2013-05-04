@@ -22,7 +22,7 @@ from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
-from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
+from xpra.scripts.config import OPTION_TYPES, ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
 
 
 def warn(msg):
@@ -339,6 +339,31 @@ When unspecified, all the available codecs are allowed and the first one is used
     for k,v in hidden_options.items():
         if not hasattr(options, k):
             setattr(options, k, v)
+
+    #special handling for URL mode:
+    #xpra attach xpra://mode:host:port/?param1=value1&param2=value2
+    if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://"):
+        url = args[1]
+        from urlparse import urlparse, parse_qs
+        up = urlparse(url)
+        address = up.netloc
+        qpos = url.find("?")
+        if qpos>0:
+            params_str = url[qpos+1:]
+            params = parse_qs(params_str, keep_blank_values=True)
+            for k,v in params.items():
+                t = OPTION_TYPES.get(k)
+                if t is None:
+                    print("invalid option: %s" % k)
+                    continue
+                if len(v)!=1 and t!=list:
+                    print("invalid number of values for option '%s': %s" % (k, len(v)))
+                    continue
+                if t!=list:
+                    v = v[0]
+                setattr(options, k, v)
+        args[1] = address
+
     try:
         int(options.dpi)
     except Exception, e:
@@ -429,8 +454,6 @@ When unspecified, all the available codecs are allowed and the first one is used
 
 
 def parse_display_name(error_cb, opts, display_name):
-    if display_name.startswith("xpra://"):
-        display_name = display_name[len("xpra://"):]
     desc = {"display_name" : display_name}
     if display_name.startswith("ssh:") or display_name.startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
