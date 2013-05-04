@@ -14,20 +14,10 @@ svn info > ./svn-info
 svnversion > ./svn-version
 popd
 cp -apr src ${DIR}
-rm -fr "${DIR}/dist"
-rm -fr "${DIR}/build"
-rm -fr "${DIR}/install"
-rm -fr "${DIR}/Output"
-rm -fr "${DIR}/clean.sh"
-rm -f "${DIR}/MANIFEST"
-rm -f "${DIR}/xpra/x11/wait_for_x_server.c"
-rm -f "${DIR}/xpra/codecs/vpx/codec.c"
-rm -f "${DIR}/xpra/codecs/x264/codec.c"
-rm -f "${DIR}/xpra/codecs/vpx/codec.c"
-rm -f "${DIR}/xpra/x11/lowlevel/bindings.c"
-rm -f "${DIR}/xpra/x11/lowlevel/xpra.x11.lowlevel.bindings.dep"
-rm -f "${DIR}/xpra/x11/lowlevel/constants.pxi"
-rm -f "${DIR}/xpra/gtk_common/gdk_atoms.c"
+pushd "${DIR}"
+rm -fr "dist" "build" "install" "MANIFEST"
+./setup.py clean
+popd
 find ${DIR} -name ".svn" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"
 find ${DIR} -name ".pyc" -exec rm -fr {} \;
 find ${DIR} -name "__pycache__" -exec rm -fr {} \; 2>&1 | grep -v "No such file or directory"

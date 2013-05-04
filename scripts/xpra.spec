@@ -738,10 +738,10 @@ rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/client/gl
 %if 0%{?generic}
 # remove anything relying on dynamic libraries (not suitable for a generic RPM)
 # unless they're statically linked and enabled (static_vpx / static_x264):
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/gdk/gdk_atoms.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/lowlevel/bindings.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/wait_for_x_server.so
-rm -rf ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atoms.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/xor/cyxor.so
 %if 0%{?static_x264}
 echo "Note: static x264 included in generic rpm"

@@ -104,7 +104,7 @@ file path=usr/lib/python2.6/site-packages/xpra/test_illegal_command.py \
     owner=root group=bin mode=644
 file path=usr/lib/python2.6/site-packages/xpra/version_util.py owner=root \
     group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/wait_for_x_server.so owner=root \
+file path=usr/lib/python2.6/site-packages/xpra/bindings/wait_for_x_server.so owner=root \
     group=bin mode=644
 dir  path=usr/lib/python2.6/site-packages/xpra/platform/win32 owner=root group=root \
     mode=755
@@ -117,8 +117,6 @@ file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_NotifyIcon.p
 file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_balloon.py \
     owner=root group=bin mode=644
 file path=usr/lib/python2.6/site-packages/xpra/platform/win32/win32_tray.py owner=root \
-    group=bin mode=644
-file path=usr/lib/python2.6/site-packages/xpra/window_backing.py owner=root \
     group=bin mode=644
 file path=usr/lib/python2.6/site-packages/xpra/xkbhelper.py owner=root \
     group=bin mode=644
