@@ -30,6 +30,7 @@ class BorderClientWindow(ClientWindow):
         self._offset = u, u, u, u
         self.adjust_for_offset()
         self.resize(*self._size)
+        self.queue_draw(0, 0, *self._size)
 
     def paint_offset(self, event, context):
         oL, oT, oR, oB = self._offset
