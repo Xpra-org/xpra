@@ -94,15 +94,17 @@ class XpraClient(GTKXpraClient):
                 return self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
             except ImportError, e:
                 log.error("GDK translated clipboard failed to load: %s - using default fallback", e)
-        else:
-            try:
-                from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-                return self.setup_clipboard_helper(GDKClipboardProtocolHelper, clipboards=CLIPBOARDS)
-            except ImportError, e:
-                log.error("GDK clipboard failed to load: %s - using default fallback", e)
+        clipboards = [x for x in CLIPBOARDS if x in self.server_clipboards]
+        log("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s",
+            self.server_clipboards, CLIPBOARDS, clipboards)
+        try:
+            from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
+            return self.setup_clipboard_helper(GDKClipboardProtocolHelper, clipboards=clipboards)
+        except ImportError, e:
+            log.error("GDK clipboard failed to load: %s - using default fallback", e)
         try:
             from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=CLIPBOARDS)
+            self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=clipboards)
         except ImportError, e:
             log.error("clipboard fallback failed to load: %s - no clipboard available", e)
         return None

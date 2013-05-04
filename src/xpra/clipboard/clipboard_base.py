@@ -29,8 +29,13 @@ from xpra.net.protocol import zlib_compress
 
 MAX_CLIPBOARD_PACKET_SIZE = 256*1024
 
-CLIPBOARDS = os.environ.get("XPRA_CLIPBOARDS", "CLIPBOARD,PRIMARY,SECONDARY").split(",")
-CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
+ALL_CLIPBOARDS = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
+CLIPBOARDS = ALL_CLIPBOARDS
+CLIPBOARDS_ENV = os.environ.get("XPRA_CLIPBOARDS")
+if CLIPBOARDS_ENV is not None:
+    CLIPBOARDS = CLIPBOARDS_ENV.split(",")
+    CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS]
+
 
 _discard_target_strs_ = ("^SAVE_TARGETS$",
         "^COMPOUND_TEXT$",

@@ -164,9 +164,10 @@ class ServerBase(object):
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
+        self._clipboards = []
         if not clipboard_enabled:
             return
-        clipboards = ["CLIPBOARD", "PRIMARY", "SECONDARY"]
+        from xpra.platform.features import CLIPBOARDS
         clipboard_filter_res = []
         if clipboard_filter_file:
             if not os.path.exists(clipboard_filter_file):
@@ -185,7 +186,8 @@ class ServerBase(object):
                 return
         try:
             from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, clipboards, clipboard_filter_res)
+            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, CLIPBOARDS, clipboard_filter_res)
+            self._clipboards = CLIPBOARDS
         except Exception, e:
             log.error("failed to setup clipboard helper: %s" % e)
 
@@ -634,6 +636,7 @@ class ServerBase(object):
         capabilities["platform"] = sys.platform
         capabilities["python_version"] = python_platform.python_version()
         capabilities["encodings"] = ENCODINGS
+        capabilities["clipboards"] = self._clipboards
         if self.session_name:
             capabilities["session_name"] = self.session_name
         capabilities["start_time"] = int(self.start_time)

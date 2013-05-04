@@ -196,10 +196,6 @@ class UIXpraClient(XpraClientBase):
         if not opts.no_tray:
             self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
 
-        if self.client_supports_clipboard:
-            self.clipboard_helper = self.make_clipboard_helper()
-            self.clipboard_enabled = self.clipboard_helper is not None
-
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
             self.client_supports_notifications = self.notifier is not None
@@ -601,7 +597,15 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_bell = capabilities.get("bell", True)          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = capabilities.get("clipboard", False)
+        try:
+            from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
+        except:
+            ALL_CLIPBOARDS = []
+        self.server_clipboards = capabilities.get("clipboards", ALL_CLIPBOARDS)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
+        if self.clipboard_enabled:
+            self.clipboard_helper = self.make_clipboard_helper()
+            self.clipboard_enabled = self.clipboard_helper is not None
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = capabilities.get("mmap_token")
