@@ -22,6 +22,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
 
     def __init__(self):
         gobject.GObject.__init__(self)
+        XpraClientBase.__init__(self)
 
     def init(self, opts):
         XpraClientBase.init(self, opts)
@@ -97,7 +98,8 @@ class CommandConnectClient(GObjectXpraClient):
     """
 
     def __init__(self, conn, opts):
-        GObjectXpraClient.__init__(self, opts)
+        GObjectXpraClient.__init__(self)
+        GObjectXpraClient.init(self, opts)
         self.connect_with_timeout(conn)
 
 
