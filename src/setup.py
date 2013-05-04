@@ -876,8 +876,12 @@ if cymaths_ENABLED:
 
 toggle_packages(x264_ENABLED, "xpra.codecs.x264")
 if x264_ENABLED:
-    cython_add(Extension("xpra.codecs.x264.codec",
-                ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
+    cython_add(Extension("xpra.codecs.x264.encoder",
+                ["xpra/codecs/x264/encoder.pyx", "xpra/codecs/x264/x264lib.c"],
+                **pkgconfig("x264", "libswscale", "libavcodec")
+                ), min_version=(0, 16))
+    cython_add(Extension("xpra.codecs.x264.decoder",
+                ["xpra/codecs/x264/decoder.pyx", "xpra/codecs/x264/x264lib.c"],
                 **pkgconfig("x264", "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 
@@ -885,8 +889,12 @@ if x264_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    cython_add(Extension("xpra.codecs.vpx.codec",
-                ["xpra/codecs/vpx/codec.pyx", "xpra/codecs/vpx/vpxlib.c"],
+    cython_add(Extension("xpra.codecs.vpx.encoder",
+                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
+                **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
+                ), min_version=(0, 16))
+    cython_add(Extension("xpra.codecs.vpx.decoder",
+                ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
                 **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
                 ), min_version=(0, 16))
 
