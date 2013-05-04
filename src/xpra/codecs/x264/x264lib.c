@@ -42,7 +42,7 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
-int get_x264_build_no() {
+int get_x264_build_no(void) {
 	return X264_BUILD;
 }
 

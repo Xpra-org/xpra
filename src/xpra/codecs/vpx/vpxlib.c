@@ -33,7 +33,7 @@
 #define IVF_FILE_HDR_SZ  (32)
 #include <libswscale/swscale.h>
 
-int get_vpx_abi_version() {
+int get_vpx_abi_version(void) {
 	return	VPX_CODEC_ABI_VERSION;
 }
 
