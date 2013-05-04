@@ -11,13 +11,13 @@ from xpra.util import dump_exc, AdHocStruct
 from xpra.log import Logger
 log = Logger("xpra.x11.randr_bindings")
 
+
+ctypedef unsigned long CARD32
+include "constants.pxi"
+
 ######
 # Xlib primitives and constants
 ######
-
-include "constants.pxi"
-ctypedef unsigned long CARD32
-
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
@@ -35,11 +35,9 @@ cdef extern from "X11/Xlib.h":
 
     Window XDefaultRootWindow(Display * display)
 
-
 ###################################
 # Randr
 ###################################
-
 cdef extern from "X11/extensions/randr.h":
     cdef unsigned int RR_Rotate_0
 
@@ -144,8 +142,7 @@ cdef class RandRBindings(X11CoreBindings):
                 return False
             return True
         finally:
-            pass
-            #XRRFreeScreenConfigInfo(config)
+            XRRFreeScreenConfigInfo(config)
     
     def get_screen_size(self):
         return self._get_screen_size()
