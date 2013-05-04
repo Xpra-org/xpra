@@ -49,18 +49,18 @@ class XpraClientBase(object):
         * xpra.client.gtk3.client
     """
 
-    def __init__(self, opts):
+    def __init__(self):
         self.exit_code = None
-        self.compression_level = opts.compression_level
+        self.compression_level = 0
         self.password = None
-        self.password_file = opts.password_file
+        self.password_file = None
         self.password_sent = False
-        self.encoding = opts.encoding
-        self.encryption = opts.encryption
-        self.quality = opts.quality
-        self.min_quality = opts.min_quality
-        self.speed = opts.speed
-        self.min_speed = opts.min_speed
+        self.encoding = ENCODINGS[0]
+        self.encryption = None
+        self.quality = -1
+        self.min_quality = 0
+        self.speed = 0
+        self.min_speed = -1
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -76,6 +76,15 @@ class XpraClientBase(object):
         self.init_packet_handlers()
         self.init_aliases()
 
+    def init(self, opts):
+        self.compression_level = opts.compression_level
+        self.password_file = opts.password_file
+        self.encoding = opts.encoding
+        self.encryption = opts.encryption
+        self.quality = opts.quality
+        self.min_quality = opts.min_quality
+        self.speed = opts.speed
+        self.min_speed = opts.min_speed
 
     def timeout_add(self, *args):
         raise Exception("override me!")
@@ -107,13 +116,12 @@ class XpraClientBase(object):
         #overriden in subclasses!
         return "Python"
 
-    def ready(self, conn):
-        log.debug("ready(%s)", conn)
+    def setup_connection(self, conn):
+        log.debug("setup_connection(%s)", conn)
         self._protocol = Protocol(conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.set_compression_level(self.compression_level)
-        self._protocol.start()
         self.have_more = self._protocol.source_has_more
 
     def init_packet_handlers(self):
@@ -230,7 +238,7 @@ class XpraClientBase(object):
         self.have_more()
 
     def have_more(self):
-        #this function is overridden in ready()
+        #this function is overridden in setup_protocol()
         p = self._protocol
         if p and p.source:
             p.source_has_more()
@@ -269,7 +277,7 @@ class XpraClientBase(object):
             pass
 
     def run(self):
-        raise Exception("override me!")
+        self._protocol.start()
 
     def quit(self, exit_code=0):
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)

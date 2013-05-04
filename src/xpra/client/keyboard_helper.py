@@ -128,7 +128,7 @@ class KeyboardHelper(object):
             return  True
         try:
             method = getattr(window, action)
-            log.info("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
+            debug("key_handled_as_shortcut(%s,%s,%s,%s) has been handled by shortcut=%s", window, key_name, modifiers, depressed, shortcut)
         except AttributeError, e:
             log.error("key dropped, invalid method name in shortcut %s: %s", action, e)
             return  True

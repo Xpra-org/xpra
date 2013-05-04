@@ -219,6 +219,9 @@ class ClientWindowBase(object):
         self.set_type_hint(hint)
 
 
+    def magic_key(self, *args):
+        self.info("magic_key(%s) not handled in %s", args, type(self))
+
     def refresh_window(self, *args):
         self.debug("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)

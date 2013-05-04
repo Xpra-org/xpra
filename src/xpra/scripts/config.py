@@ -286,6 +286,7 @@ OPTION_TYPES = {
                     "socket-dir"        : str,
                     "log-file"          : str,
                     "mode"              : str,
+                    "window-layout"     : str,
                     #int options:
                     "quality"           : int,
                     "min-quality"       : int,
@@ -366,6 +367,7 @@ def get_defaults():
                     "xvfb"              : "Xvfb +extension Composite -screen 0 3840x2560x24+32 -nolisten tcp -noreset -auth $XAUTHORITY",
                     "socket-dir"        : "",
                     "log-file"          : "$DISPLAY.log",
+                    "window-layout"     : "",
                     "quality"           : -1,
                     "min-quality"       : 50,
                     "speed"             : -1,
@@ -400,7 +402,7 @@ def get_defaults():
                     "opengl"            : OPENGL_DEFAULT,
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
-                    "key-shortcut"      : ["Meta+Shift+F4:quit"],
+                    "key-shortcut"      : ["Meta+Shift+F4:quit", "Meta+Shift+F8:magic_key"],
                     "bind-tcp"          : None,
                     "start-child"       : None,
                     }

@@ -17,9 +17,19 @@ class BorderClientWindow(ClientWindow):
     def setup_window(self):
         if not self._override_redirect:
             u = 6
+            self._offset_unit = u
             self._offset = u, u, u, u
             self.adjust_for_offset()
         ClientWindow.setup_window(self)
+
+    def magic_key(self, *args):
+        if self._offset==(0, 0, 0, 0):
+            u = self._offset_unit
+        else:
+            u = 0
+        self._offset = u, u, u, u
+        self.adjust_for_offset()
+        self.resize(*self._size)
 
     def paint_offset(self, event, context):
         oL, oT, oR, oB = self._offset

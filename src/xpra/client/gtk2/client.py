@@ -17,26 +17,46 @@ from gtk import gdk
 
 from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
-from xpra.client.gtk2.client_window import ClientWindow
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.log import Logger
 log = Logger()
 
+from xpra.client.gtk2.border_client_window import BorderClientWindow
+from xpra.client.gtk2.client_window import ClientWindow
+from xpra.client.gtk2.custom_client_window import CustomClientWindow
+WINDOW_LAYOUTS = {
+                  "border"  : BorderClientWindow,
+                  "default" : ClientWindow,
+                  "custom"  : CustomClientWindow,
+                  }
 
 class XpraClient(GTKXpraClient):
 
     WINDOW_TOPLEVEL = gdk.WINDOW_TOPLEVEL
     INPUT_ONLY = gdk.INPUT_ONLY
 
-    def __init__(self, conn, opts):
-        GTKXpraClient.__init__(self, conn, opts)
+    def __init__(self):
+        GTKXpraClient.__init__(self)
         self.GLClientWindowClass = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
 
+    def init(self, opts):
+        GTKXpraClient.init(self, opts)
+        if opts.window_layout:
+            assert opts.window_layout in WINDOW_LAYOUTS
+            self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
+        log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
+
     def client_type(self):
         return "Python/Gtk2"
+
+    def client_toolkit(self):
+        return "gtk2"
+
+    def get_supported_window_layouts(self):
+        return  WINDOW_LAYOUTS
 
 
     def do_set_default_window_icon(self, window_icon):
@@ -279,16 +299,15 @@ class XpraClient(GTKXpraClient):
         self._group_leader_wids.setdefault(group_leader, []).append(wid)
         return group_leader
 
-    def do_get_client_window_class(self, metadata):
+    def get_client_window_class(self, metadata):
         if self.GLClientWindowClass is None or not self.opengl_enabled:
-            return ClientWindow
+            return self.ClientWindowClass
         if self.mmap_enabled or self.encoding not in ("x264", "vpx"):
-            #plain gtk2
-            return ClientWindow
+            return self.ClientWindowClass
         #only enable GL for normal windows:
         window_types = metadata.get("window-type", ())
         if "_NET_WM_WINDOW_TYPE_NORMAL" not in window_types:
-            return ClientWindow
+            return self.ClientWindowClass
         return self.GLClientWindowClass
 
 

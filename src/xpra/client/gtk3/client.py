@@ -22,9 +22,7 @@ class XpraClient(GTKXpraClient):
 
     WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
     INPUT_ONLY = gtk.WindowWindowClass.INPUT_ONLY
-
-    def __init__(self, conn, opts):
-        GTKXpraClient.__init__(self, conn, opts)
+    ClientWindowClass = ClientWindow
 
     def make_hello(self, challenge_response=None):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)
@@ -33,6 +31,9 @@ class XpraClient(GTKXpraClient):
 
     def client_type(self):
         return "Python/Gtk3"
+
+    def client_toolkit(self):
+        return "gtk3"
 
 
     def do_set_default_window_icon(self, window_icon):
@@ -66,9 +67,6 @@ class XpraClient(GTKXpraClient):
 
     def group_leader_for_pid(self, pid, wid):
         return None
-
-    def do_get_client_window_class(self, metadata):
-        return ClientWindow
 
     def init_opengl(self, enable_opengl):
         self.opengl_enabled = False

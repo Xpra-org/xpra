@@ -20,10 +20,14 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         Utility superclass for glib clients
     """
 
-    def __init__(self, opts):
+    def __init__(self):
         gobject.GObject.__init__(self)
-        XpraClientBase.__init__(self, opts)
 
+    def init(self, opts):
+        XpraClientBase.init(self, opts)
+        self.install_signal_handlers()
+        self.glib_init()
+        self.gobject_init()
 
     def timeout_add(self, *args):
         return gobject.timeout_add(*args)
@@ -63,14 +67,12 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
             pass
 
     def connect_with_timeout(self, conn):
-        self.ready(conn)
+        self.setup_connection(conn)
         gobject.timeout_add(DEFAULT_TIMEOUT, self.timeout)
         gobject.idle_add(self.send_hello)
 
     def run(self):
-        self.install_signal_handlers()
-        self.glib_init()
-        self.gobject_init()
+        XpraClientBase.run(self)
         self.gobject_mainloop = gobject.MainLoop()
         self.gobject_mainloop.run()
         return  self.exit_code

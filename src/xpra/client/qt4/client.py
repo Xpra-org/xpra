@@ -25,12 +25,14 @@ sys.modules['gobject']=None
 
 class XpraClient(UIXpraClient):
 
-    def __init__(self, conn, opts):
+    ClientWindowClass = ClientWindow
+
+    def __init__(self):
         s = getQtScheduler()
         self.idle_add = s.idle_add
         self.timeout_add = s.timeout_add
         self.QtInit()
-        UIXpraClient.__init__(self, conn, opts)
+        UIXpraClient.__init__(self)
 
     def QtInit(self):
         self.app = QtGui.QApplication([])
@@ -41,8 +43,8 @@ class XpraClient(UIXpraClient):
         #overriden in subclasses!
         return "Python/Qt4"
 
-    def do_get_client_window_class(self, metadata):
-        return ClientWindow
+    def client_toolkit(self):
+        return "qt4"
 
 
     def connect(self, *args):

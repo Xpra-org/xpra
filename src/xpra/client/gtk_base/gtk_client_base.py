@@ -34,10 +34,35 @@ sys.modules['QtCore']=None
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     __gsignals__ = UIXpraClient.__gsignals__
 
-    def __init__(self, conn, opts):
-        GObjectXpraClient.__init__(self, opts)
-        UIXpraClient.__init__(self, conn, opts)
+    def __init__(self):
+        GObjectXpraClient.__init__(self)
+        UIXpraClient.__init__(self)
         self.session_info = None
+
+    def init(self, opts):
+        GObjectXpraClient.init(self, opts)
+        UIXpraClient.init(self, opts)
+
+    def run(self):
+        UIXpraClient.run(self)
+        gtk_main_quit_on_fatal_exceptions_enable()
+        gtk.main()
+        log("GTKXpraClient.run_main_loop() main loop ended, returning exit_code=%s", self.exit_code)
+        return  self.exit_code
+
+    def quit(self, exit_code=0):
+        log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
+        if self.exit_code is None:
+            self.exit_code = exit_code
+        if gtk.main_level()>0:
+            #if for some reason cleanup() hangs, maybe this will fire...
+            gobject.timeout_add(4*1000, gtk_main_quit_really)
+            #try harder!:
+            gobject.timeout_add(5*1000, os._exit, 1)
+        self.cleanup()
+        if gtk.main_level()>0:
+            log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
+            gobject.timeout_add(500, gtk_main_quit_really)
 
 
     def get_pixbuf(self, icon_name):
@@ -115,30 +140,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def set_windows_cursor(self, gtkwindows, new_cursor):
         raise Exception("override me!")
-
-
-    def run(self):
-        self.install_signal_handlers()
-        self.glib_init()
-        self.gobject_init()
-        gtk_main_quit_on_fatal_exceptions_enable()
-        gtk.main()
-        log("GTKXpraClient.run() main loop ended, returning exit_code=%s", self.exit_code)
-        return  self.exit_code
-
-    def quit(self, exit_code=0):
-        log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)
-        if self.exit_code is None:
-            self.exit_code = exit_code
-        if gtk.main_level()>0:
-            #if for some reason cleanup() hangs, maybe this will fire...
-            gobject.timeout_add(4*1000, gtk_main_quit_really)
-            #try harder!:
-            gobject.timeout_add(5*1000, os._exit, 1)
-        self.cleanup()
-        if gtk.main_level()>0:
-            log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
-            gobject.timeout_add(500, gtk_main_quit_really)
 
 
     def get_current_modifiers(self):

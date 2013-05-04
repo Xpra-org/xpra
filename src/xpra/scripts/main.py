@@ -260,7 +260,10 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--client-toolkit", action="store",
                       dest="client_toolkit", default=defaults.client_toolkit,
                       help="The type of client toolkit. Default: %s")
-
+    group.add_option("--window-layout", action="store",
+                      dest="window_layout", default=defaults.window_layout,
+                      help="The type of window layout to use, each client toolkit may provide different layouts."
+                        "use the value help to get a list of possible layouts. Default: %s")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
@@ -278,7 +281,7 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--key-shortcut", action="append",
                       dest="key_shortcut", type="str", default=defaults.key_shortcut,
                       help="Define key shortcuts that will trigger specific actions."
-                      + " Defaults to 'Meta+Shift+F4:quit' if no shortcuts are defined.")
+                      + "If no shortcuts are defined, it defaults to '%s'" % (",".join(defaults.key_shortcut or [])))
     group.add_option("--no-keyboard-sync", action="store_false",
                       dest="keyboard_sync", default=defaults.keyboard_sync,
                       help="Disable keyboard state synchronization, prevents keys from repeating on high latency links but also may disrupt applications which access the keyboard directly")
@@ -628,10 +631,6 @@ def run_client(parser, opts, extra_args, mode):
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
-    if mode in ("attach"):
-        sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
-        sys.stdout.flush()
-
     conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
@@ -678,10 +677,23 @@ def run_client(parser, opts, extra_args, mode):
                 toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
                 #print("toolkit_module(%s)=%s" % (client_module, toolkit_module))
                 if toolkit_module:
-                    app = toolkit_module.XpraClient(conn, opts)
+                    app = toolkit_module.XpraClient()
         if not app:
             from xpra.client.client import XpraClient
-            app = XpraClient(conn, opts)
+            app = XpraClient()
+        layouts = app.get_supported_window_layouts() or ["default"]
+        if opts.window_layout=="help":
+            print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))
+            return 0
+        if not opts.window_layout:
+            opts.window_layout = "default"
+        if opts.window_layout not in layouts:
+            parser.error("window layout '%s' is not supported by the %s toolkit" % (opts.window_layout, app.client_toolkit()))
+        if mode in ("attach"):
+            sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
+            sys.stdout.flush()
+        app.setup_connection(conn)
+        app.init(opts)
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()

@@ -114,14 +114,14 @@ class ClientWindow(GTKClientWindowBase):
     def do_expose_event(self, event):
         if DRAW_DEBUG:
             #cannot use self
-            self.info("do_expose_event(%s) area=%s", event, event.area)
+            self.debug("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
         if self._offset!=(0, 0, 0, 0):
-            self.info("do_expose_event paint offset: %s", self._offset)
+            self.debug("do_expose_event paint offset: %s", self._offset)
             self.paint_offset(event, context)
             #clip to offset:
             oL, oT = self._offset[:2]

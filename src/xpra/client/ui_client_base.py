@@ -33,17 +33,6 @@ DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
 
-#for using custom client window classes:
-CUSTOM_CLIENT_WINDOW_CLASS = os.environ.get("XPRA_CLIENT_WINDOW_CLASS")
-CLIENT_WINDOW_CLASS = None
-if CUSTOM_CLIENT_WINDOW_CLASS:
-    try:
-        module_name, class_name = CUSTOM_CLIENT_WINDOW_CLASS.rsplit(".", 1)
-        custom_module = __import__(module_name, globals(), locals(), class_name)
-        CLIENT_WINDOW_CLASS = getattr(custom_module, class_name)
-    except Exception, e:
-        log.error("failed to load custom window class: %s", e)
-
 
 """
 Utility superclass for client classes which have a UI.
@@ -62,27 +51,26 @@ class UIXpraClient(XpraClientBase):
         "microphone-changed"        : no_arg_signal,        #bitrate or pipeline state has changed
         }
 
-    def __init__(self, conn, opts):
-        XpraClientBase.__init__(self, opts)
+    def __init__(self):
+        XpraClientBase.__init__(self)
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
         self._pid_to_group_leader = {}
         self._group_leader_wids = {}
         self._ui_events = 0
-        self.title = opts.title
-        self.session_name = opts.session_name
-        self.auto_refresh_delay = opts.auto_refresh_delay
-        self.max_bandwidth = opts.max_bandwidth
+        self.title = ""
+        self.session_name = ""
+        self.auto_refresh_delay = -1
+        self.max_bandwidth = -1
         if self.max_bandwidth>0.0 and self.quality==0:
             """ quality was not set, use a better start value """
             self.quality = 80
-        self.dpi = int(opts.dpi)
+        self.dpi = 96
 
         #draw thread:
         self._draw_queue = Queue()
         self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
-        self._draw_thread.start()
 
         #statistics and server info:
         self.server_start_time = -1
@@ -103,16 +91,14 @@ class UIXpraClient(XpraClientBase):
         self.info_request_pending = False
 
         #sound:
-        self.speaker_allowed = bool(opts.speaker) and HAS_SOUND
+        self.speaker_allowed = HAS_SOUND
         self.speaker_enabled = False
-        self.microphone_allowed = bool(opts.microphone) and HAS_SOUND
-        self.microphone_enabled = False
-        self.speaker_codecs = opts.speaker_codec
-        if len(self.speaker_codecs)==0 and self.speaker_allowed:
+        if self.speaker_allowed:
             self.speaker_codecs = get_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
-        self.microphone_codecs = opts.microphone_codec
-        if len(self.microphone_codecs)==0 and self.microphone_allowed:
+        self.microphone_allowed = HAS_SOUND
+        self.microphone_enabled = False
+        if self.microphone_allowed:
             self.microphone_codecs = get_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
         self.sound_sink = None
@@ -132,13 +118,64 @@ class UIXpraClient(XpraClientBase):
         self.mmap_size = 0
 
         #features:
-        self.init_opengl(opts.opengl)
+        self.opengl_enabled = False
+        self.opengl_props = {}
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
         self.change_quality = False
         self.change_min_quality = False
         self.change_speed = False
+        self.readonly = False
+        self.windows_enabled = True
+        self.pings = False
+
+        self.client_supports_notifications = False
+        self.client_supports_system_tray = False
+        self.client_supports_clipboard = False
+        self.client_supports_cursors = False
+        self.client_supports_bell = False
+        self.client_supports_sharing = False
+        self.notifications_enabled = self.client_supports_notifications
+        self.clipboard_enabled = self.client_supports_clipboard
+        self.cursors_enabled = self.client_supports_cursors
+        self.bell_enabled = self.client_supports_bell
+
+        self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in ENCODINGS)
+
+        #helpers and associated flags:
+        self.keyboard_helper = None
+        self.clipboard_helper = None
+        self.clipboard_enabled = False
+        self.tray = None
+        self.notifier = None
+        self.client_supports_notifications = False
+
+        #state:
+        self._focused = None
+
+        self.init_packet_handlers()
+
+
+    def init(self, opts):
+        self.title = opts.title
+        self.session_name = opts.session_name
+        self.auto_refresh_delay = opts.auto_refresh_delay
+        self.max_bandwidth = opts.max_bandwidth
+        if self.max_bandwidth>0.0 and self.quality==0:
+            """ quality was not set, use a better start value """
+            self.quality = 80
+        self.dpi = int(opts.dpi)
+
+        self.speaker_allowed = bool(opts.speaker) and HAS_SOUND
+        self.microphone_allowed = bool(opts.microphone) and HAS_SOUND
+        self.speaker_codecs = opts.speaker_codec
+        if len(self.speaker_codecs)==0 and self.speaker_allowed:
+            self.speaker_codecs = get_codecs(True, False)
+            self.speaker_allowed = len(self.speaker_codecs)>0
+        self.microphone_codecs = opts.microphone_codec
+
+        self.init_opengl(opts.opengl)
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
 
@@ -148,40 +185,37 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
-        self.notifications_enabled = self.client_supports_notifications
-        self.clipboard_enabled = self.client_supports_clipboard
-        self.cursors_enabled = self.client_supports_cursors
-        self.bell_enabled = self.client_supports_bell
 
         self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in ENCODINGS)
         if self.supports_mmap:
-            self.init_mmap(opts.mmap_group, conn.filename)
+            self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
 
-        #initialize helpers:
-        self.keyboard_helper = None
         if not self.readonly:
             self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
-        self.clipboard_helper = None
-        self.clipboard_enabled = False
+
+        if not opts.no_tray:
+            self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
+
         if self.client_supports_clipboard:
             self.clipboard_helper = self.make_clipboard_helper()
             self.clipboard_enabled = self.clipboard_helper is not None
-        self.tray = None
-        if not opts.no_tray:
-            self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
+
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
             self.client_supports_notifications = self.notifier is not None
 
-        #state:
-        self._focused = None
 
-        self.init_packet_handlers()
-        self.ready(conn)
+    def run(self):
+        XpraClientBase.run(self)    #start network threads
+        self._draw_thread.start()
         self.send_hello()
+        if self.pings:
+            self.timeout_add(1000, self.send_ping)
+        else:
+            self.timeout_add(10*1000, self.send_ping)
 
         def compute_receive_bandwidth(delay):
-            bytecount = conn.input_bytecount
+            bytecount = self._protocol._conn.input_bytecount
             bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay
             self.last_input_bytecount = bytecount;
             log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
@@ -193,17 +227,11 @@ class UIXpraClient(XpraClientBase):
             self.min_quality = max(10, min(95 ,q))
             self.send_min_quality()
             return True
-        if (self.max_bandwidth):
+        if self.max_bandwidth>0:
             self.last_input_bytecount = 0
             self.timeout_add(2000, compute_receive_bandwidth, 2000)
-        if opts.pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
 
 
-    def run(self):
-        raise Exception("override me!")
 
     def quit(self, exit_code=0):
         raise Exception("override me!")
@@ -235,6 +263,8 @@ class UIXpraClient(XpraClientBase):
         self._window_to_id = {}
         log("XpraClient.cleanup() done")
 
+    def get_supported_window_layouts(self):
+        return  []
 
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
         return KeyboardHelper(self.send, keyboard_sync, key_shortcuts)
@@ -849,12 +879,7 @@ class UIXpraClient(XpraClientBase):
         window.show_all()
 
     def get_client_window_class(self, metadata):
-        if CLIENT_WINDOW_CLASS:
-            return CLIENT_WINDOW_CLASS
-        return self.do_get_client_window_class(metadata)
-
-    def do_get_client_window_class(self, metadata):
-        raise Exception("override me!")
+        return self.ClientWindowClass
 
     def _process_new_window(self, packet):
         self._process_new_common(packet, False)
