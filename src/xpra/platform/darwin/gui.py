@@ -30,6 +30,22 @@ except:
     Snd = None
 
 
+
+
+def do_init():
+    from xpra.gtk_common.quit import gtk_main_quit_really
+    def quit_launcher(*args):
+        gtk_main_quit_really()
+    from osx_menu import getOSXMenu
+    from xpra.platform.paths import get_icon
+    osxapp = get_OSXApplication()
+    icon = get_icon("xpra.png")
+    if icon:
+        osxapp.set_dock_icon_pixbuf(icon)
+    osxapp.set_menu_bar(getOSXMenu().rebuild())
+    osxapp.ready()
+
+
 def make_tray_menu(client):
     return OSXMenuHelper(client)
 

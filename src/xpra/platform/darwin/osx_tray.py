@@ -6,7 +6,6 @@
 import os.path
 import gtk.gdk
 
-from xpra.platform.darwin.gui import get_OSXApplication
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 log = Logger()
@@ -19,6 +18,8 @@ INFO_REQUEST = 10
 class OSXTray(object):
 
     def __init__(self, menu_helper, tray_icon):
+        from xpra.platform.darwin.gui import get_OSXApplication
+        self.menu_helper = menu_helper
         self.macapp = get_OSXApplication()
         self.icon_filename = tray_icon
         self.last_attention_request_id = -1
@@ -26,7 +27,8 @@ class OSXTray(object):
         self.set_dock_menu()
         self.set_dock_icon()
         menu = self.menu_helper.build()
-        self.macapp.set_menu_bar(menu)
+        if menu:
+            self.macapp.set_menu_bar(menu)
         #not needed?:
         #self.macapp.connect("NSApplicationBlockTermination", self.quit)
 

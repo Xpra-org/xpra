@@ -4,6 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+
+_init_done = False
+def init():
+    global _init_done
+    if not _init_done:
+        _init_done = True
+        do_init()
+
+def do_init():
+    pass
+
 #defaults:
 def make_tray_menu(client):
     #let the toolkit classes use their own

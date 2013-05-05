@@ -61,11 +61,11 @@ class ShadowServer(ShadowServerBase, ServerBase):
     def make_hello(self):
         capabilities = ServerBase.make_hello(self)
         capabilities["shadow"] = True
-        capabilities["server_type"] = "gtk-shadow"
+        capabilities["server_type"] = "Python/gtk2/win32-shadow"
         return capabilities
 
     def get_info(self, proto):
         info = ServerBase.get_info(self, proto)
         info["shadow"] = True
-        info["server_type"] = "gtk-shadow"
+        info["server_type"] = "Python/gtk2/win32-shadow"
         return info

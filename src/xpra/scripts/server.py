@@ -424,7 +424,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_error():
         return  1
 
-    if not sys.platform.startswith("win"):
+    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin"):
         from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
         # Whether we spawned our server or not, it is now running -- or at least
         # starting.  First wait for it to start up:

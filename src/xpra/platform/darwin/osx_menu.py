@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gtk
-from xpra.gtk_common.gtk_util import CheckMenuItem
-gtk = import_gtk()
+import gtk.gdk
+from xpra.gtk_common.gtk_util import menuitem
+from xpra.client.gtk_base.about import about
+from xpra.platform.paths import get_icon
 
 from xpra.log import Logger
 log = Logger()
@@ -15,20 +16,36 @@ CRITICAL_REQUEST = 0
 INFO_REQUEST = 10
 
 
+OSXMenu = None
+def getOSXMenu():
+    global OSXMenu
+    if OSXMenu is None:
+        OSXMenu = OSXMenuHelper()
+    return OSXMenu
+
+
 class OSXMenuHelper(object):
     """
     we have to do this stuff here so we can
-    re-use the same instance
+    re-use the same instance,
+    and change the callbacks if needed.
+    (that way, the launcher and the client can both change the menus)
     """
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
         self.menu_bar = None
         self.hidden_window = None
         self.quit_menu_item = None
+        self.menus = []
+        self.quit_callback = None
+
+    def set_quit_callback(self, cb):
+        self.quit_callback = cb
 
     def quit(self):
-        self.client.quit(0)
+        log("quit() callback=%s", self.quit_callback)
+        if self.quit_callback:
+            self.quit_callback()
 
     def build(self):
         if self.menu_bar is None:
@@ -39,20 +56,14 @@ class OSXMenuHelper(object):
         if self.menu_bar:
             self.remove_all_menus()
             self.menu_bar = None
-        self.build()
+        return self.build()
 
     def remove_all_menus(self):
         if self.menu_bar:
             for x in self.menu_bar.get_children():
                 self.menu_bar.remove(x)
                 x.hide()
-        self.info_menu        = None
-        self.features_menu    = None
-        self.encodings_menu   = None
-        self.quality_menu     = None
-        self.actions_menu     = None
-        #if self.macapp:
-        #    self.macapp.sync_menubar()
+        self.menus = []
 
     def build_menu_bar(self):
         self.menu_bar = gtk.MenuBar()
@@ -62,77 +73,30 @@ class OSXMenuHelper(object):
             item.show_all()
             self.menu_bar.add(item)
             return submenu
-        self.info_menu        = make_menu("Info", gtk.Menu())
-        self.features_menu    = make_menu("Features", gtk.Menu())
-        self.encodings_menu   = make_menu("Encodings", self.make_encodingssubmenu(False))
-        if (self.client.speaker_allowed and len(self.client.speaker_codecs)>0) or \
-            (self.client.microphone_allowed and len(self.client.microphone_codecs)>0):
-            self.sound_menu       = make_menu("Sound", gtk.Menu())
-        self.quality_menu     = make_menu("Min Quality", self.make_qualitysubmenu())
-        self.speed_menu       = make_menu("Speed", self.make_speedsubmenu())
-        self.actions_menu     = make_menu("Actions", gtk.Menu())
-        def reset_encodings(*args):
-            self.reset_encoding_options(self.encodings_menu)
-        self.client.connect("handshake-complete", reset_encodings)
-
-        #info
-        self.info_menu.add(self.make_aboutmenuitem())
-        self.info_menu.add(self.make_sessioninfomenuitem())
-        #features
-        self.features_menu.add(self.make_bellmenuitem())
-        self.features_menu.add(self.make_cursorsmenuitem())
-        self.features_menu.add(self.make_notificationsmenuitem())
-        if not self.client.readonly:
-            self.features_menu.add(self.make_layoutsmenuitem())
-        #sound:
-        if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
-            self.sound_menu.add(self.make_speakermenuitem())
-        if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
-            self.sound_menu.add(self.make_microphonemenuitem())
-        #actions:
-        self.actions_menu.add(self.make_refreshmenuitem())
-        self.actions_menu.add(self.make_raisewindowsmenuitem())
-
+        self.menuitem("About Xpra", "information.png", None, about)
+        info_menu        = make_menu("Info", gtk.Menu())
+        info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.menu_bar.show_all()
 
 
-    def make_speakermenuitem(self):
-        speaker = CheckMenuItem("Speaker", "Forward sound output from the server")
-        def speaker_toggled(*args):
-            if speaker.active:
-                self.spk_on()
-            else:
-                self.spk_off()
-        def set_speaker(*args):
-            speaker.set_active(self.client.speaker_enabled)
-            speaker.connect('toggled', speaker_toggled)
-        self.client.connect("handshake-complete", set_speaker)
-        return speaker
+    #the code below is mostly duplicated from xpra/client/gtk2...
 
-    def make_microphonemenuitem(self):
-        microphone = CheckMenuItem("Microphone", "Forward sound input to the server")
-        def microphone_toggled(*args):
-            if microphone.active:
-                self.mic_on()
-            else:
-                self.mic_off()
-        def set_microphone(*args):
-            microphone.set_active(self.client.microphone_enabled)
-            microphone.connect('toggled', microphone_toggled)
-        self.client.connect("handshake-complete", set_microphone)
-        return microphone
+    def menuitem(self, title, icon_name=None, tooltip=None, cb=None):
+        """ Utility method for easily creating an ImageMenuItem """
+        image = None
+        if icon_name:
+            image = self.get_image(icon_name, 24)
+        return menuitem(title, image, tooltip, cb)
 
-    def set_speedmenu(self, *args):
-        for x in self.speed_menu.get_children():
-            if isinstance(x, gtk.CheckMenuItem):
-                x.set_sensitive(self.client.encoding=="x264")
-
-    def set_qualitymenu(self, *args):
-        vq = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
-        if not vq:
-            self.quality_menu.hide()
-        else:
-            self.quality_menu.show()
-        self.quality_menu.set_sensitive(vq)
-        for i in self.quality_menu.get_children():
-            i.set_sensitive(vq)
+    def get_image(self, icon_name, size=None):
+        try:
+            pixbuf = get_icon(icon_name)
+            log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
+            if not pixbuf:
+                return  None
+            if size:
+                pixbuf = pixbuf.scale_simple(size, size, gtk.gdk.INTERP_BILINEAR)
+            return  gtk.image_new_from_pixbuf(pixbuf)
+        except:
+            log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
+            return  None

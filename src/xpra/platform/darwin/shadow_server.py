@@ -4,4 +4,37 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-raise Exception("shadow server not supported on darwin")
+from xpra.log import Logger
+log = Logger()
+
+from xpra.server.server_base import ServerBase
+from xpra.server.shadow_server_base import ShadowServerBase
+
+
+class ShadowServer(ShadowServerBase, ServerBase):
+
+    def __init__(self, sockets, opts):
+        ShadowServerBase.__init__(self)
+        ServerBase.__init__(self, True, sockets, opts)
+        self.keycodes = {}
+
+    def _process_mouse_common(self, proto, wid, pointer, modifiers):
+        pass
+
+    def fake_key(self, keycode, press):
+        pass
+
+    def _process_button_action(self, proto, packet):
+        pass
+
+    def make_hello(self):
+        capabilities = ServerBase.make_hello(self)
+        capabilities["shadow"] = True
+        capabilities["server_type"] = "Python/gtk2/osx-shadow"
+        return capabilities
+
+    def get_info(self, proto):
+        info = ServerBase.get_info(self, proto)
+        info["shadow"] = True
+        info["server_type"] = "Python/gtk2/osx-shadow"
+        return info
