@@ -130,7 +130,7 @@ class ServerBase(object):
 
     def init_notification_forwarder(self, notifications):
         self.notifications_forwarder = None
-        if notifications and os.name=="posix":
+        if notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
             try:
                 from xpra.x11.dbus_notifications_forwarder import register
                 self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
@@ -343,7 +343,7 @@ class ServerBase(object):
         try:
             peername = sock.getpeername()
         except:
-            peername = ""
+            peername = str(address)
         sc = SocketConnection(sock, sock.getsockname(), address, peername)
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
