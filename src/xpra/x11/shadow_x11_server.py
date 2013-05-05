@@ -24,11 +24,11 @@ class ShadowX11Server(ShadowServerBase, X11ServerBase):
     def make_hello(self):
         capabilities = X11ServerBase.make_hello(self)
         capabilities["shadow"] = True
-        capabilities["server_type"] = "gtk-x11-shadow"
+        capabilities["server_type"] = "Python/gtk2/x11-shadow"
         return capabilities
 
     def get_info(self, proto):
         info = X11ServerBase.get_info(self, proto)
         info["shadow"] = True
-        info["server_type"] = "gtk-shadow"
+        info["server_type"] = "Python/gtk2/x11-shadow"
         return info
