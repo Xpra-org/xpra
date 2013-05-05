@@ -65,8 +65,9 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
 [\fB\-\-readonly\fP]
 [\fB\-\-enable-sharing\fP]
-[\fB\-\-title\-suffix\fP=\fIVALUE\fP]
 [\fB\-\-title\fP=\fIVALUE\fP]
+[\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
+[\fB\-\-window\-layout\fP=\fILAYOUT\fP]
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-tray\-icon\fP=\fIfilename\fP]
 [\fB\-\-ssh\fP=\fICMD\fP] [\fB\-\-remote\-xpra\fP=\fICMD\fP]
@@ -561,10 +562,6 @@ are specified defines the preferred codec order.
 Use the special value 'help' to get a list of options.
 When unspecified, all the available codecs are allowed and the first one is used.
 .TP
-\fB\-\-title\-suffix\fP=\fIVALUE\fP
-Sets the portion of text which is appended to the windows' title.
-This option is deprecated and \fB\-\-title\fP should be used instead.
-.TP
 \fB\-\-title\fP\=\fIVALUE\fP
 Sets the text shown as window title.
 The string supplied can make use of remote metadata placeholders
@@ -575,6 +572,18 @@ remote server. ie:
 hostname.
 
 The default value used is "@title@ on @client-machine@".
+.TP
+\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP
+Specifies the client toolkit to use. This changes the user interface toolkit
+used to draw the windows and may affect the availibility of other features.
+The 'gtk2' toolkit is the one with the most features.
+Use the special value 'help' to get a list of options.
+.TP
+\fB\-\-window\-layout\fP=\fILAYOUT\fP
+Specifies how main windows are drawn, this can be used to add widgets or
+coloured borders to the window frame.
+Use the special value 'help' to get a list of options. Each client toolkit
+may or may not provide different window layouts.
 .TP
 \fB\-\-window\-icon\fP=\fIFILENAME\fP
 Path to the default image which will be used for all windows.

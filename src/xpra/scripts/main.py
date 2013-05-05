@@ -260,11 +260,11 @@ When unspecified, all the available codecs are allowed and the first one is used
                       help="The name of this session, which may be used in notifications, menus, etc. Default: Xpra")
     group.add_option("--client-toolkit", action="store",
                       dest="client_toolkit", default=defaults.client_toolkit,
-                      help="The type of client toolkit. Default: %s")
+                      help="The type of client toolkit. Use the value 'help' to get a list of options. Default: %s")
     group.add_option("--window-layout", action="store",
                       dest="window_layout", default=defaults.window_layout,
                       help="The type of window layout to use, each client toolkit may provide different layouts."
-                        "use the value help to get a list of possible layouts. Default: %s")
+                        "use the value 'help' to get a list of possible layouts. Default: %s")
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables (default: '%default')")
@@ -678,6 +678,7 @@ def run_client(parser, opts, extra_args, mode):
     else:
         app = None
         if opts.client_toolkit:
+            ct = opts.client_toolkit.lower()
             toolkits = {}
             try:
                 import gtk.gdk                      #@UnusedImport
@@ -698,7 +699,9 @@ def run_client(parser, opts, extra_args, mode):
             except Exception, e:
                 print("failed to load qt client: %s", e)
                 pass
-            client_module = toolkits.get(opts.client_toolkit)
+            if ct=="help":
+                parser.error("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
+            client_module = toolkits.get(ct)
             if client_module is None:
                 parser.error("invalid client toolkit: %s, try one of: %s" % (
                             opts.client_toolkit, ", ".join(toolkits.keys())))
@@ -711,7 +714,7 @@ def run_client(parser, opts, extra_args, mode):
             from xpra.client.client import XpraClient
             app = XpraClient()
         layouts = app.get_supported_window_layouts() or ["default"]
-        if opts.window_layout=="help":
+        if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))
             return 0
         if not opts.window_layout:
