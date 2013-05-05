@@ -1061,7 +1061,7 @@ class UIXpraClient(XpraClientBase):
                             group_leader.destroy()
         if len(self._id_to_window)==0:
             log.debug("last window gone, clearing key repeat")
-            self.clear_repeat()
+            self.keyboard_helper.clear_repeat()
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
