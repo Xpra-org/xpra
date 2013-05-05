@@ -31,7 +31,7 @@ if _has_PIL:
 try:
     from xpra.codecs import vpx            #@UnusedImport
     try:
-        from xpra.codecs.vpx import codec      #@UnusedImport @UnresolvedImport @Reimport
+        from xpra.codecs.vpx import encoder,decoder      #@UnusedImport @UnresolvedImport @Reimport
         ENCODINGS.insert(0, "vpx")
     except Exception, e:
         warn("cannot load vpx codec: %s" % e)
@@ -42,7 +42,7 @@ except ImportError, e:
 try:
     from xpra.codecs import x264           #@UnusedImport
     try:
-        from xpra.codecs.x264 import codec     #@UnusedImport @UnresolvedImport
+        from xpra.codecs.x264 import encoder,decoder     #@UnusedImport @UnresolvedImport
         ENCODINGS.insert(0, "x264")
     except Exception, e:
         warn("cannot load x264 codec: %s" % e)
