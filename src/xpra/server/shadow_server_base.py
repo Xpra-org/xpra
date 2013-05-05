@@ -54,9 +54,9 @@ class RootWindowModel(object):
         elif prop=="client-machine":
             return socket.gethostname()
         elif prop=="size-hints":
-            from xpra.util import AutoPropGObjectMixin
+            from xpra.util import AdHocStruct
             size = self.window.get_size()
-            size_hints = AutoPropGObjectMixin()
+            size_hints = AdHocStruct()
             size_hints.max_size = size
             size_hints.min_size = size
             size_hints.base_size = size
