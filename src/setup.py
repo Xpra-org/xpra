@@ -22,8 +22,8 @@ print(" ".join(sys.argv))
 import xpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 
-
 WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
 #*******************************************************************************
 #NOTE: these variables are defined here to make it easier
 #to keep their line number unchanged.
@@ -69,7 +69,7 @@ client_ENABLED = True
 
 
 
-x11_ENABLED = not WIN32
+x11_ENABLED = not WIN32 and not OSX
 
 
 
@@ -699,7 +699,7 @@ else:
         data_files.append(('share/xpra/webm', ["xpra/codecs/webm/LICENSE"]))
 
     add_packages("xpra", "xpra.platform")
-    if sys.platform.startswith("darwin"):
+    if OSX:
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
