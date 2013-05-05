@@ -340,7 +340,11 @@ class ServerBase(object):
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
             return  True
-        sc = SocketConnection(sock, sock.getsockname(), address, sock.getpeername())
+        try:
+            peername = sock.getpeername()
+        except:
+            peername = ""
+        sc = SocketConnection(sock, sock.getsockname(), address, peername)
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
         protocol.large_packets.append("info-response")
