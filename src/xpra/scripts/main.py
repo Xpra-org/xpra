@@ -850,7 +850,6 @@ def may_cleanup_socket(sockdir, state, display, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\n")
 
 def run_list(parser, opts, extra_args):
-    print("run_list")
     assert "gtk" not in sys.modules
     if extra_args:
         parser.error("too many arguments for mode")
