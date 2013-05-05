@@ -341,7 +341,7 @@ When unspecified, all the available codecs are allowed and the first one is used
             setattr(options, k, v)
 
     #special handling for URL mode:
-    #xpra attach xpra://mode:host:port/?param1=value1&param2=value2
+    #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
     if len(args)==2 and args[0]=="attach" and args[1].startswith("xpra://"):
         url = args[1]
         from urlparse import urlparse, parse_qs
@@ -362,6 +362,10 @@ When unspecified, all the available codecs are allowed and the first one is used
                 if t!=list:
                     v = v[0]
                 setattr(options, k, v)
+        al = address.lower()
+        if not al.startswith(":") and not al.startswith("tcp") and not al.startswith("ssh"):
+            #assume tcp if not specified
+            address = "tcp:%s" % address
         args[1] = address
 
     try:
