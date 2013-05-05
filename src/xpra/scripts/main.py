@@ -22,7 +22,8 @@ from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
-from xpra.scripts.config import OPTION_TYPES, ENCODINGS, ENCRYPTION_CIPHERS, make_defaults_struct, show_codec_help, parse_bool
+from xpra.scripts.config import OPTION_TYPES, ENCODINGS, ENCRYPTION_CIPHERS, \
+    make_defaults_struct, show_codec_help, parse_bool, validate_config
 
 
 def warn(msg):
@@ -351,16 +352,15 @@ When unspecified, all the available codecs are allowed and the first one is used
         if qpos>0:
             params_str = url[qpos+1:]
             params = parse_qs(params_str, keep_blank_values=True)
+            f_params = {}
+            #print("params=%s" % str(params))
             for k,v in params.items():
                 t = OPTION_TYPES.get(k)
-                if t is None:
-                    print("invalid option: %s" % k)
-                    continue
-                if len(v)!=1 and t!=list:
-                    print("invalid number of values for option '%s': %s" % (k, len(v)))
-                    continue
-                if t!=list:
+                if t is not None and t!=list:
                     v = v[0]
+                f_params[k] = v
+            v_params = validate_config(f_params)
+            for k,v in v_params.items():
                 setattr(options, k, v)
         al = address.lower()
         if not al.startswith(":") and not al.startswith("tcp") and not al.startswith("ssh"):
