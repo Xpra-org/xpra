@@ -12,6 +12,9 @@ export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
 
+override_dh_auto_install:
+	dh_auto_install --destdir=$(CURDIR)/debian/tmp
+
 ## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
 override_dh_strip:
 	[ -d "$(CURDIR)/debian/xpra-dbg" ] \
