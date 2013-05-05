@@ -449,12 +449,12 @@ When unspecified, all the available codecs are allowed and the first one is used
         return run_server(parser, options, mode, script_file, args)
     elif mode in ("attach", "detach", "screenshot", "version", "info"):
         return run_client(parser, options, args, mode)
-    elif mode == "stop" and supports_server or supports_shadow:
+    elif mode == "stop" and (supports_server or supports_shadow):
         nox()
         return run_stop(parser, options, args)
-    elif mode == "list" and supports_server or supports_shadow:
+    elif mode == "list" and (supports_server or supports_shadow):
         return run_list(parser, options, args)
-    elif mode in ("_proxy", "_proxy_start") and supports_server or supports_shadow:
+    elif mode in ("_proxy", "_proxy_start") and (supports_server or supports_shadow):
         nox()
         return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
     else:
@@ -850,6 +850,7 @@ def may_cleanup_socket(sockdir, state, display, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\n")
 
 def run_list(parser, opts, extra_args):
+    print("run_list")
     assert "gtk" not in sys.modules
     if extra_args:
         parser.error("too many arguments for mode")
