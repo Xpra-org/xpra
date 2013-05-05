@@ -297,7 +297,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._add_new_window_common(window)
         for prop in self._window_export_properties:
             window.connect("notify::%s" % prop, self._update_metadata)
-        (x, y, w, h, _) = window.get_property("client-window").get_geometry()
+        _, _, w, h, _ = window.get_property("client-window").get_geometry()
+        x, y, _, _, _ = window.corral_window.get_geometry()
         log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
         self._send_new_window_packet(window)

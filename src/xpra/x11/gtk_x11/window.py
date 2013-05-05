@@ -591,11 +591,11 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         BaseWindowModel.setup(self)
 
+        x, y, w, h, _ = self.client_window.get_geometry()
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
         self.corral_window = gtk.gdk.Window(self.parking_window,
-                                            width=100,
-                                            height=100,
+                                            x = x, y = y, width =w, height= h,
                                             window_type=gtk.gdk.WINDOW_CHILD,
                                             wclass=gtk.gdk.INPUT_OUTPUT,
                                             event_mask=gtk.gdk.PROPERTY_CHANGE_MASK,
@@ -810,6 +810,15 @@ class WindowModel(BaseWindowModel):
                 return  owner.window_size(self)
             def window_position(w, h):
                 return  owner.window_position(self, w, h)
+            self._do_update_client_geometry(window_size, window_position)
+        elif not self._setup_done:
+            log("_update_client_geometry: using initial size=%s and position=%s",
+                self.get_property("requested-size"), self.get_property("requested-position"))
+            #try to honour initial size and position requests during setup:
+            def window_size():
+                return self.get_property("requested-size")
+            def window_position(w, h):
+                return self.get_property("requested-position")
             self._do_update_client_geometry(window_size, window_position)
 
     def _do_update_client_geometry(self, window_size_cb, window_position_cb):
