@@ -70,13 +70,17 @@ def main(script_file, cmdline):
                         "\t%prog info [DISPLAY]\n",
                         "\t%prog version [DISPLAY]\n"
                       ]
+    server_modes = []
     if supports_server:
+        server_modes.append("start")
+        server_modes.append("upgrade")
         command_options = ["\t%prog start DISPLAY\n",
                            "\t%prog stop [DISPLAY]\n",
                            "\t%prog list\n",
                            "\t%prog upgrade DISPLAY\n",
                            ] + command_options
     if supports_shadow:
+        server_modes.append("shadow")
         command_options.append("\t%prog shadow DISPLAY\n")
     if not supports_server:
         command_options.append("(This xpra installation does not support starting local servers.)")
@@ -85,9 +89,10 @@ def main(script_file, cmdline):
     parser = OptionParser(version="xpra v%s" % XPRA_VERSION,
                           usage="\n" + "".join(command_options))
     defaults = make_defaults_struct()
-    if supports_server or supports_shadow:
+    if len(server_modes):
         group = OptionGroup(parser, "Server Options",
-                    "These options are only relevant on the server when using the 'start', 'upgrade' or 'shadow' mode.")
+                    "These options are only relevant on the server when using the %s mode." % 
+                    "or".join(["'%s'" % x for x in server_modes]))
         parser.add_option_group(group)
     if supports_server:
         group.add_option("--start-child", action="append",
@@ -444,12 +449,12 @@ When unspecified, all the available codecs are allowed and the first one is used
         return run_server(parser, options, mode, script_file, args)
     elif mode in ("attach", "detach", "screenshot", "version", "info"):
         return run_client(parser, options, args, mode)
-    elif mode == "stop" and supports_server:
+    elif mode == "stop" and supports_server or supports_shadow:
         nox()
         return run_stop(parser, options, args)
-    elif mode == "list" and supports_server:
+    elif mode == "list" and supports_server or supports_shadow:
         return run_list(parser, options, args)
-    elif mode in ("_proxy", "_proxy_start") and supports_server:
+    elif mode in ("_proxy", "_proxy_start") and supports_server or supports_shadow:
         nox()
         return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
     else:
