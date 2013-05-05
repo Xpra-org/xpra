@@ -609,7 +609,7 @@ if WIN32:
                         "ctypes.macholib",
                         #not used:
                         "curses", "email", "mimetypes", "mimetools", "pdb",
-                        "urllib", "urllib2", "urlparse", "tty",
+                        "urllib", "urllib2", "tty",
                         "ssl", "_ssl",
                         "cookielib", "BaseHTTPServer", "ftplib", "httplib", "fileinput",
                         "distutils", "setuptools", "doctest")
