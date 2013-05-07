@@ -9,13 +9,15 @@
 import gtk.gdk
 import os.path
 import threading
-import gobject
 import sys
 import hmac
 import time
 import socket
 import thread
 import signal
+
+import gobject
+gobject.threads_init()
 
 from xpra.log import Logger
 log = Logger()
