@@ -64,6 +64,13 @@ class ServerSource(object):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
+        log("ServerSource%s", (protocol, disconnect_cb,
+                 get_transient_for,
+                 supports_mmap,
+                 supports_speaker, supports_microphone,
+                 speaker_codecs, microphone_codecs,
+                 default_quality, default_min_quality,
+                 default_speed, default_min_speed))
         self.close_event = Event()
         self.ordinary_packets = []
         self.protocol = protocol

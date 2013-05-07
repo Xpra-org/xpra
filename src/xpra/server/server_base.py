@@ -48,8 +48,8 @@ class ServerBase(object):
         See X11ServerBase, XpraServer and XpraX11ShadowServer
     """
 
-    def __init__(self, clobber, sockets, opts):
-        log("ServerBase.__init__(%s, %s, %s)", clobber, sockets, opts)
+    def __init__(self):
+        log("ServerBase.__init__()")
         self.init_uuid()
         self.start_time = time.time()
 
@@ -62,20 +62,49 @@ class ServerBase(object):
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
 
-        self.supports_mmap = opts.mmap
-        self.default_encoding = opts.encoding
-        assert self.default_encoding in ENCODINGS
-        self.session_name = opts.session_name
-        set_application_name(self.session_name)
+        self.supports_mmap = False
+        self.default_encoding = ENCODINGS[0]
+        self.session_name = "Xpra"
+        self.randr = False
 
         self._window_to_id = {}
         self._id_to_window = {}
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
-        self.randr = False
 
         ### Misc. state:
         self._upgrading = False
+
+        #Features:
+        self.compression_level = 1
+        self.password_file = ""
+
+        self.default_quality = -1
+        self.default_min_quality = 0
+        self.default_speed = -1
+        self.default_min_speed = 0
+        self.pulseaudio = False
+        self.sharing = False
+        self.bell = False
+        self.cursors = False
+        self.default_dpi = 96
+        self.dpi = 96
+
+        ### Misc. state:
+        self._settings = {}
+        self._xsettings_manager = None
+
+        self.init_packet_handlers()
+        self.init_aliases()
+
+    def init(self, sockets, opts):
+        log("ServerBase.init(%s, %s)", sockets, opts)
+
+        self.supports_mmap = opts.mmap
+        self.default_encoding = opts.encoding
+        assert self.default_encoding in ENCODINGS
+        self.session_name = opts.session_name
+        set_application_name(self.session_name)
 
         #Features:
         self.compression_level = opts.compression_level
@@ -92,10 +121,6 @@ class ServerBase(object):
         self.default_dpi = int(opts.dpi)
         self.dpi = self.default_dpi
 
-        ### Misc. state:
-        self._settings = {}
-        self._xsettings_manager = None
-
         log("starting component init")
         self.init_clipboard(opts.clipboard, opts.clipboard_filter_file)
         self.init_keyboard()
@@ -104,12 +129,10 @@ class ServerBase(object):
 
         self.load_existing_windows(opts.system_tray)
 
-        self.init_packet_handlers()
-        self.init_aliases()
         log("enabling all sockets: %s", sockets)
         ### All right, we're ready to accept customers:
         for sock in sockets:
-            self.add_listen_socket(sock)
+            gobject.idle_add(self.add_listen_socket, sock)
 
         if opts.pings:
             gobject.timeout_add(1000, self.send_ping)
@@ -132,6 +155,7 @@ class ServerBase(object):
         pass
 
     def init_notification_forwarder(self, notifications):
+        log("init_notification_forwarder(%s)", notifications)
         self.notifications_forwarder = None
         if notifications and os.name=="posix" and not sys.platform.startswith("darwin"):
             try:
@@ -147,6 +171,7 @@ class ServerBase(object):
                 log.info("")
 
     def init_sound(self, speaker, speaker_codec, microphone, microphone_codec):
+        log("init_sound(%s, %s, %s, %s)", speaker, speaker_codec, microphone, microphone_codec)
         self.supports_speaker = bool(speaker)
         self.supports_microphone = bool(microphone)
         self.speaker_codecs = speaker_codec
@@ -164,6 +189,7 @@ class ServerBase(object):
             log("failed to set pulseaudio audio tagging: %s", e)
 
     def init_clipboard(self, clipboard_enabled, clipboard_filter_file):
+        log("init_clipboard(%s, %s)", clipboard_enabled, clipboard_filter_file)
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
@@ -195,6 +221,7 @@ class ServerBase(object):
             log.error("failed to setup clipboard helper: %s" % e)
 
     def init_keyboard(self):
+        log("init_keyboard()")
         ## These may get set by the client:
         self.xkbmap_mod_meanings = {}
 
@@ -209,6 +236,9 @@ class ServerBase(object):
         self.keys_timedout = {}
         #timers for cancelling key repeat when we get jitter
         self.keys_repeat_timers = {}
+        self.watch_keymap_changes()
+
+    def watch_keymap_changes(self):
         ### Set up keymap change notification:
         gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
 
@@ -339,6 +369,7 @@ class ServerBase(object):
 
     def _new_connection(self, listener, *args):
         sock, address = listener.accept()
+        log("new_connection(%s) sock=%s, address=%s", args, sock, address)
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()

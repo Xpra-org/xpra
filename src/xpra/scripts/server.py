@@ -460,7 +460,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
 
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
-        app = ShadowServer(sockets, opts)
+        app = ShadowServer()
+        app.init(sockets, opts)
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
@@ -480,7 +481,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if not X11Window.displayHasXComposite():
             log.error("Xpra is a compositing manager, it cannot use a display which lacks the XComposite extension!")
             return 1
-        app = XpraServer(clobber, sockets, opts)
+        app = XpraServer()
+        app.init(clobber, sockets, opts)
 
 
     if xvfb_pid is not None:

@@ -155,12 +155,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         "xpra-cursor-event": one_arg_signal,
         }
 
-    def __init__(self, clobber, sockets, opts):
+    def __init__(self):
         gobject.GObject.__init__(self)
-        X11ServerBase.__init__(self, clobber, sockets, opts)
+        X11ServerBase.__init__(self)
 
-    def x11_init(self, clobber):
-        X11ServerBase.x11_init(self, clobber)
+    def init(self, clobber, sockets, opts):
+        X11ServerBase.init(self, clobber, sockets, opts)
+
+    def x11_init(self):
+        X11ServerBase.x11_init(self)
         init_x11_filter()
 
         self._has_focus = 0
@@ -176,7 +179,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         add_event_receiver(root, self)
 
         ### Create the WM object
-        self._wm = Wm("Xpra", clobber)
+        self._wm = Wm("Xpra", self.clobber)
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)

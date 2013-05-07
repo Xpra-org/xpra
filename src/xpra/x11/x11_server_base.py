@@ -60,13 +60,13 @@ class X11ServerBase(ServerBase):
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
-    def __init__(self, clobber, sockets, opts):
-        self.x11_init(clobber)
+    def init(self, clobber, sockets, opts):
+        self.clobber = clobber
+        self.x11_init()
+        ServerBase.init(self, sockets, opts)
 
-        ServerBase.__init__(self, clobber, sockets, opts)
 
-
-    def x11_init(self, clobber):
+    def x11_init(self):
         self.init_x11_atoms()
         self.randr = RandR.has_randr()
         if self.randr and len(RandR.get_screen_sizes())<=1:

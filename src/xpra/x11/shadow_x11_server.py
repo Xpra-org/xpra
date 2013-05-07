@@ -10,9 +10,8 @@ from xpra.server.shadow_server_base import ShadowServerBase
 
 class ShadowX11Server(ShadowServerBase, X11ServerBase):
 
-    def __init__(self, sockets, opts):
-        ShadowServerBase.__init__(self)
-        X11ServerBase.__init__(self, True, sockets, opts)
+    def init(self, sockets, opts):
+        X11ServerBase.init(self, False, sockets, opts)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:

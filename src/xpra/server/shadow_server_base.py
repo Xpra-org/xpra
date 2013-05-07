@@ -82,6 +82,12 @@ class ShadowServerBase(object):
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
         DamageBatchConfig.RECALCULATE_DELAY = 0.1   #re-compute delay 10 times per second at most
 
+    def watch_keymap_changes(self):
+        pass
+
+    def calculate_workarea(self):
+        pass
+
     def start_refresh(self):
         gobject.timeout_add(50, self.refresh)
 
