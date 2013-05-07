@@ -28,6 +28,7 @@ def system_bell(*args):
 
 from xpra.platform import platform_import
 platform_import(globals(), "gui", False,
+                "do_init",
                 "make_tray_menu",
                 "make_native_tray",
                 "system_bell")
