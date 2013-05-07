@@ -70,6 +70,7 @@ class ServerBase(object):
         self._id_to_window = {}
         # Window id 0 is reserved for "not a window"
         self._max_window_id = 1
+        self.randr = False
 
         ### Misc. state:
         self._upgrading = False
