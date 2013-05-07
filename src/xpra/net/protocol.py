@@ -209,6 +209,9 @@ class Protocol(object):
         scheduler.idle_add(do_start)
 
     def send_now(self, packet):
+        if self._closed:
+            log("send_now(%s ...) connection is closed already, not sending", packet[0])
+            return
         log("send_now(%s ...)", packet[0])
         assert self._get_packet_cb==None, "cannot use send_now when a packet source exists!"
         def packet_cb():
@@ -391,6 +394,7 @@ class Protocol(object):
         try:
             while not self._closed:
                 callback()
+            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except KeyboardInterrupt, e:
             raise e
         except (OSError, IOError, socket_error), e:
