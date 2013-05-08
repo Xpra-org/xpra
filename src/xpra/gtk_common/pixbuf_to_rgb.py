@@ -11,7 +11,7 @@ import time
 from xpra.log import Logger
 log = Logger()
 
-def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, height, encoding, sequence, options, logger=None):
+def get_rgb_rawdata(pixmap, x, y, width, height, logger=None):
     """
         Extracts pixels from the given pixmap
     """
@@ -40,4 +40,4 @@ def get_rgb_rawdata(damage_time, process_damage_time, wid, pixmap, x, y, width, 
              int(1000*(time.time()-start)), colormap.get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
-    return (damage_time, process_damage_time, wid, x, y, width, height, encoding, raw_data, rowstride, sequence, options)
+    return (x, y, width, height, raw_data, rowstride)
