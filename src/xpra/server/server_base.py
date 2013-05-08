@@ -1097,7 +1097,7 @@ class ServerBase(object):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        keycode = ss.get_keycode(client_keycode, keyname, modifiers)
+        keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
         log("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
@@ -1107,6 +1107,10 @@ class ServerBase(object):
         if keycode>0:
             self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
         ss.user_event()
+
+    def get_keycode(self, ss, client_keycode, keyname, modifiers):
+        return ss.get_keycode(client_keycode, keyname, modifiers)
+
 
     def fake_key(self, keycode, press):
         pass

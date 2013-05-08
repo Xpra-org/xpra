@@ -65,9 +65,17 @@ class ShadowServer(ShadowServerBase, ServerBase):
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         CG.CGWarpMouseCursorPosition(pointer)
 
+    def get_keycode(self, ss, client_keycode, keyname, modifiers):
+        #no mapping yet...
+        return client_keycode
+
     def fake_key(self, keycode, press):
-        #CG.CGPostKeyboardEvent()
-        pass
+        log.info("fake_key(%s, %s)", keycode, press)
+        e = CG.CGEventCreateKeyboardEvent(None, keycode, press)
+        #CGEventSetFlags(keyPress, modifierFlags)
+        #modifierFlags: kCGEventFlagMaskShift, ...
+        CG.CGEventPost(CG.kCGSessionEventTap, e)
+        CG.CFRelease(e)
 
     def _process_button_action(self, proto, packet):
         wid, button, pressed, pointer, modifiers = packet[1:6]
