@@ -8,7 +8,32 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.server.server_base import ServerBase
-from xpra.server.shadow_server_base import ShadowServerBase
+from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
+
+import Quartz.CoreGraphics as CG    #@UnresolvedImport
+
+
+class OSXRootWindowModel(RootWindowModel):
+
+    def OSXRootWindowModel(self, root_window):
+        RootWindowModel.__init__(root_window)
+
+    def get_rgb_rawdata(self, x, y, width, height):
+        #region = CG.CGRectMake(0, 0, 100, 100)
+        region = CG.CGRectInfinite
+        image = CG.CGWindowListCreateImage(region,
+                    CG.kCGWindowListOptionOnScreenOnly,
+                    CG.kCGNullWindowID,
+                    CG.kCGWindowImageDefault)
+        width = CG.CGImageGetWidth(image)
+        height = CG.CGImageGetHeight(image)        
+        log("OSXRootWindowModel.get_rgb_rawdata(..) image size: %sx%s", width, height)
+        prov = CG.CGImageGetDataProvider(image)
+        data = CG.CGDataProviderCopyData(prov)
+        #log.info("data=%s", data)
+        return (0, 0, width, height, data, width*4)
+        #import Image
+        #window_image = Image.fromstring("RGB", (width, height), data, "raw", "RGBA", width*4)
 
 
 class ShadowServer(ShadowServerBase, ServerBase):
@@ -20,6 +45,9 @@ class ShadowServer(ShadowServerBase, ServerBase):
     def init(self, sockets, opts):
         ServerBase.init(self, sockets, opts)
         self.keycodes = {}
+
+    def makeRootWindowModel(self):
+        return  OSXRootWindowModel(self.root)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         pass
