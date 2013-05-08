@@ -15,18 +15,28 @@ cdef extern from "Python.h":
                               Py_ssize_t * buffer_len) except -1
 
 
-cdef argbdata_to_pixdata(unsigned long* data, len):
-    if len <= 0:
+def argb_to_rgba(buf):
+    # b is a Python buffer object
+    cdef unsigned long * cbuf = <unsigned long *> 0
+    cdef Py_ssize_t cbuf_len = 0
+    assert sizeof(int) == 4
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    PyObject_AsReadBuffer(buf, <void **>&cbuf, &cbuf_len)
+    return argbdata_to_pixdata(cbuf, cbuf_len)
+
+cdef argbdata_to_pixdata(unsigned long* data, int dlen):
+    if dlen <= 0:
         return None
+    assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
     import array
     # Create byte array
-    b = array.array('b', '\0'* len*4)
+    b = array.array('b', '\0'* dlen)
     cdef int offset = 0
     cdef int i = 0
     cdef unsigned long rgba
     cdef unsigned long argb
     cdef char b1, b2, b3, b4
-    while i < len:
+    while i < dlen/4:
         argb = data[i] & 0xffffffff
         rgba = <unsigned long> ((argb << 8) | (argb >> 24)) & 0xffffffff
         b1 = (rgba >> 24) & 0xff
@@ -44,7 +54,7 @@ cdef argbdata_to_pixdata(unsigned long* data, len):
 def premultiply_argb_in_place(buf):
     # b is a Python buffer object
     cdef unsigned int * cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0
+    cdef Py_ssize_t cbuf_len = 0                #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)

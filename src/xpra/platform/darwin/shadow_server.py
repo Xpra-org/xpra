@@ -9,6 +9,7 @@ log = Logger()
 
 from xpra.server.server_base import ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
+from xpra.codecs.argb.argb import argb_to_rgba
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -29,11 +30,9 @@ class OSXRootWindowModel(RootWindowModel):
         height = CG.CGImageGetHeight(image)        
         log("OSXRootWindowModel.get_rgb_rawdata(..) image size: %sx%s", width, height)
         prov = CG.CGImageGetDataProvider(image)
-        data = CG.CGDataProviderCopyData(prov)
-        #log.info("data=%s", data)
-        return (0, 0, width, height, data, width*4)
-        #import Image
-        #window_image = Image.fromstring("RGB", (width, height), data, "raw", "RGBA", width*4)
+        argb = CG.CGDataProviderCopyData(prov)
+        rgba = argb_to_rgba(argb)
+        return (0, 0, width, height, rgba, width*4)
 
 
 class ShadowServer(ShadowServerBase, ServerBase):

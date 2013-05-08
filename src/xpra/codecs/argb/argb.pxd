@@ -5,4 +5,4 @@
 # later version. See the file COPYING for details.
 
 
-cdef argbdata_to_pixdata(unsigned long* data, len)
+cdef argbdata_to_pixdata(unsigned long* data, int len)
