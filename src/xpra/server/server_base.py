@@ -424,20 +424,24 @@ class ServerBase(object):
         return source
 
     def disconnect_client(self, protocol, reason):
-        ss = None
         if protocol:
             log.info("Disconnecting existing client %s, reason is: %s", protocol, reason)
             # send message asking client to disconnect (politely):
             protocol.flush_then_close(["disconnect", reason])
             self.cleanup_source(protocol)
+        if len(self._server_sources)==0:
+            self.no_more_clients()
+        log.info("Connection lost")
+
+    def no_more_clients(self):
         #so it is now safe to clear them:
         #(this may fail during shutdown - which is ok)
         try:
             self._clear_keys_pressed()
         except:
             pass
-        self._focus(ss, 0, [])
-        log.info("Connection lost")
+        self._focus(None, 0, [])
+
 
     def _process_disconnect(self, proto, packet):
         self.disconnect(proto, "on client request")
