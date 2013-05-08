@@ -60,6 +60,8 @@ class RootWindowModel(object):
             return self.window.get_screen().get_display().get_name()
         elif prop=="client-machine":
             return socket.gethostname()
+        elif prop=="window-type":
+            return ["_NET_WM_WINDOW_TYPE_NORMAL"]
         elif prop=="size-hints":
             from xpra.util import AdHocStruct
             size = self.window.get_size()
@@ -143,7 +145,7 @@ class ShadowServerBase(object):
             window = self._id_to_window[wid]
             assert window == self.root_window_model
             w, h = self.root.get_size()
-            props = ("title", "client-machine", "size-hints")
+            props = ("title", "client-machine", "size-hints", "window-type")
             ss.new_window("new-window", wid, window, 0, 0, w, h, props, self.client_properties.get(ss.uuid))
         #ss.send_cursor(self.cursor_data)
 
