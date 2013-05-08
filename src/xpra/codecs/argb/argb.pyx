@@ -51,6 +51,41 @@ cdef argbdata_to_pixdata(unsigned long* data, int dlen):
         i = i + 1
     return b
 
+def argb_to_rgb(buf):
+    # b is a Python buffer object
+    cdef unsigned long * cbuf = <unsigned long *> 0     #@DuplicateSignature
+    cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
+    assert sizeof(int) == 4
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    PyObject_AsReadBuffer(buf, <void **>&cbuf, &cbuf_len)
+    return argbdata_to_rgb(cbuf, cbuf_len)
+
+cdef argbdata_to_rgb(unsigned long* data, int dlen):
+    if dlen <= 0:
+        return None
+    assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
+    import array
+    # Create byte array
+    b = array.array('b', '\0'* (dlen/4*3))
+    cdef int offset = 0                     #@DuplicateSignature
+    cdef int i = 0                          #@DuplicateSignature
+    cdef unsigned long rgba                 #@DuplicateSignature
+    cdef unsigned long argb                 #@DuplicateSignature
+    cdef char b1, b2, b3                    #@DuplicateSignature
+    while i < dlen/4:
+        argb = data[i] & 0xffffffff
+        rgba = <unsigned long> ((argb << 8) | (argb >> 24)) & 0xffffffff
+        b1 = (rgba >> 24) & 0xff
+        b2 = (rgba >> 16) & 0xff
+        b3 = (rgba >> 8) & 0xff
+        b[offset] = b1
+        b[offset+1] = b2
+        b[offset+2] = b3
+        offset = offset + 3
+        i = i + 1
+    return b
+
+
 def premultiply_argb_in_place(buf):
     # b is a Python buffer object
     cdef unsigned int * cbuf = <unsigned int *> 0
