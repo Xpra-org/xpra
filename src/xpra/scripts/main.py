@@ -17,7 +17,7 @@ import shlex
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.dotxpra import DotXpra
-from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
+from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
@@ -104,7 +104,7 @@ def main(script_file, cmdline):
     else:
         hidden_options["start_child"] = None
         hidden_options["exit_with_children"] = False
-    if supports_server or supports_shadow:
+    if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         group.add_option("--no-daemon", action="store_false",
                           dest="daemon", default=True,
                           help="Don't daemonize when running as a server")

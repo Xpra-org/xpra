@@ -14,11 +14,13 @@ GOT_PASSWORD_PROMPT_SUGGESTION = ""
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = False
 CLIPBOARD_GREEDY = False
+CAN_DAEMONIZE = False
 
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,
                 "LOCAL_SERVERS_SUPPORTED",
                 "SHADOW_SUPPORTED",
+                "CAN_DAEMONIZE",
                 "MMAP_SUPPORTED",
                 "SYSTEM_TRAY_SUPPORTED",
                 "DEFAULT_SSH_CMD",
