@@ -6,7 +6,6 @@
 
 import gtk
 import gobject
-import xpra.x11.gtk_x11.window
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.window_bindings import const         #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
@@ -164,13 +163,8 @@ class WorldWindow(gtk.Window):
     def reset_x_focus(self):
         focus = self.get_focus()
         log("widget with focus: %s", focus)
-        if isinstance(focus, xpra.x11.gtk_x11.window.WindowView):
-            # FIXME: ugly:
-            focus.model.give_client_focus()
-            trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "window", focus.model.get_property("client-window"))
-        else:
-            self._take_focus()
-            trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
+        self._take_focus()
+        trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
 
     def _after_set_focus(self, *args):
         # GTK focus has changed.  See comment in __init__ for why this isn't a
