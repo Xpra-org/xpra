@@ -162,35 +162,7 @@ cdef extern from "X11/extensions/xfixeswire.h":
 
 
 
-
-cdef argbdata_to_pixdata(unsigned long* data, len):
-    if len <= 0:
-        return None
-    import array
-    # Create byte array
-    b = array.array('b', '\0'* len*4)
-    cdef int offset = 0
-    cdef int i = 0
-    cdef unsigned long rgba
-    cdef unsigned long argb
-    cdef char b1, b2, b3, b4
-    while i < len:
-        argb = data[i] & 0xffffffff
-        rgba = <unsigned long> ((argb << 8) | (argb >> 24)) & 0xffffffff
-        b1 = (rgba >> 24) & 0xff
-        b2 = (rgba >> 16) & 0xff
-        b3 = (rgba >> 8) & 0xff
-        b4 = rgba & 0xff
-        b[offset] = b1
-        b[offset+1] = b2
-        b[offset+2] = b3
-        b[offset+3] = b4
-        offset = offset + 4
-        i = i + 1
-    return b
-
-
-
+from xpra.codecs.argb.argb cimport argbdata_to_pixdata
 
 # xmodmap's "keycode" action done implemented in python
 # some of the methods aren't very pythonic

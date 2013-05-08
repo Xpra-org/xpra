@@ -73,6 +73,10 @@ x11_ENABLED = not WIN32 and not OSX
 
 
 
+argb_ENABLED = x11_ENABLED or OSX
+
+
+
 gtk2_ENABLED = client_ENABLED
 
 
@@ -121,7 +125,7 @@ PIC_ENABLED = True
 SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4",
-            "sound", "cyxor", "cymaths", "opengl",
+            "sound", "cyxor", "cymaths", "opengl", "argb",
             "warn", "strict", "shadow", "debug", "PIC", "Xdummy")
 HELP = "-h" in sys.argv or "--help" in sys.argv
 if HELP:
@@ -185,6 +189,9 @@ if x11_ENABLED and WIN32:
     print("Warning: enabling x11 on MS Windows is unlikely to work!")
 if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
     print("Warning: client is enabled but none of the client toolkits are!?")
+if not argb_ENABLED and (x11_ENABLED or OSX):
+    print("Error: argb is required for x11 and osx builds!")
+    exit(1)
 if not client_ENABLED and not server_ENABLED:
     print("Error: you must build at least the client or server!")
     exit(1)
@@ -849,6 +856,10 @@ elif WIN32:
     remove_packages("xpra", "xpra.scripts")
 
 
+if argb_ENABLED:
+    toggle_packages(True, "xpra.codecs.argb")
+    cython_add(Extension("xpra.codecs.argb.argb",
+                ["xpra/codecs/argb/argb.pyx"]))
 
 toggle_packages(client_ENABLED, "xpra.client")
 toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")

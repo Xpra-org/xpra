@@ -22,8 +22,8 @@ from xpra.x11.bindings.window_bindings import (
                 const,                      #@UnresolvedImport
                 X11WindowBindings,          #@UnresolvedImport
                 NoSuchProperty,             #@UnresolvedImport
-                PropertyError,              #@UnresolvedImport
-                premultiply_argb_in_place)  #@UnresolvedImport
+                PropertyError)              #@UnresolvedImport
+from xpra.codecs.argb.argb import premultiply_argb_in_place
 X11Window = X11WindowBindings()
 
 from xpra.os_util import StringIOClass

@@ -372,32 +372,6 @@ def _munge_packed_longs_to_ints(data):
 
 
 
-###################################
-# Simple speed-up code
-###################################
-
-def premultiply_argb_in_place(buf):
-    # b is a Python buffer object, containing non-premultiplied ARGB32 data in
-    # native-endian.
-    # We convert to premultiplied ARGB32 data, in-place.
-    cdef unsigned int * cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0
-    cdef unsigned int a, r, g, b
-    assert sizeof(int) == 4
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)
-    cdef int i
-    for 0 <= i < cbuf_len / 4:
-        a = (cbuf[i] >> 24) & 0xff
-        r = (cbuf[i] >> 16) & 0xff
-        r = (r * a) / 255
-        g = (cbuf[i] >> 8) & 0xff
-        g = g * a / 255
-        b = (cbuf[i] >> 0) & 0xff
-        b = b * a / 255
-        cbuf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
-
-
 cdef long cast_to_long(i):
     if i < 0:
         return <long>i
