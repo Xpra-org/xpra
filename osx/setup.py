@@ -61,11 +61,12 @@ setup_options["options"] = {"py2app": py2app_options}
 xpra_src = "../src/"
 data_files += [
                 ("share/man/man1", [xpra_src+"man/xpra.1", xpra_src+"man/xpra_launcher.1"]),
-                ("share/xpra", [xpra_src+"xpra.README", xpra_src+"COPYING"]),
+                ("share/xpra", [xpra_src+"README", xpra_src+"COPYING"]),
                 ("share/xpra/icons", glob.glob(xpra_src+"icons/*")),
-                ("share/applications", [xpra_src+"xpra_launcher.desktop"]),
-                ("share/icons", [xpra_src+"xpra.png"])
+                ("share/applications", [xpra_src+"xdg/xpra_launcher.desktop"]),
+                ("share/applications", [xpra_src+"xdg/xpra.desktop"]),
+                ("share/icons", [xpra_src+"xdg/xpra.png"])
               ]
-data_files.append(('share/xpra/webm', [xpra_src+"xpra/webm/LICENSE"]))
+data_files.append(('share/xpra/webm', [xpra_src+"xpra/codecs/webm/LICENSE"]))
 
 setup(**setup_options)
