@@ -25,23 +25,29 @@ class PixmapBacking(GTK2WindowBacking):
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
         self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         cr = self._backing.cairo_create()
+        cr.set_source_rgb(1, 1, 1)
         if old_backing is not None:
             # Really we should respect bit-gravity here but... meh.
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_pixmap(old_backing, 0, 0)
             cr.paint()
             old_w, old_h = old_backing.get_size()
-            cr.move_to(old_w, 0)
-            cr.line_to(w, 0)
-            cr.line_to(w, h)
-            cr.line_to(0, h)
-            cr.line_to(0, old_h)
-            cr.line_to(old_w, old_h)
-            cr.close_path()
+            if w>old_w:
+                cr.move_to(old_w, 0)
+                cr.line_to(w, 0)
+                cr.line_to(w, h)
+                cr.line_to(0, h)
+                cr.fill()
+            if h>old_h:
+                cr.move_to(0, old_h)
+                cr.line_to(0, h)
+                cr.line_to(w, h)
+                cr.line_to(w, old_h)
+                cr.fill()
+            #note: we may paint the rectangle (old_w, old_h) to (w, h) twice - no big deal
         else:
             cr.rectangle(0, 0, w, h)
-        cr.set_source_rgb(1, 1, 1)
-        cr.fill()
+            cr.fill()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         gc = self._backing.new_gc()
