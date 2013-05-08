@@ -16,14 +16,4 @@ except ImportError, e:
         log("numpyxor loaded")
     except ImportError, e:
         log("numpyxor not present")
-        try:
-            bytearray()
-        except NameError:
-            raise Exception("your python version lacks the bytearray type, you must install numpy or compile the xpra.xor.cyxor module")
-        log.warn("using python xor fallback (much slower)")
-        def xor_str(a, b):
-            assert len(a)==len(b), "cannot xor strings of different lengths (pyxor)"
-            c = bytearray("\0"*len(a))
-            for i in range(len(a)):
-                c[i] = ord(a[i])^ord(b[i])
-            return str(c)
+        raise Exception("xor support is missing: you must install numpy or compile the xpra.codecs.xor.cyxor module")

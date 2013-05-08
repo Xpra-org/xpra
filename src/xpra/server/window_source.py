@@ -55,7 +55,10 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.stats.maths import calculate_time_weighted_average
 from xpra.server.batch_delay_calculator import calculate_batch_delay, update_video_encoder
-from xpra.codecs.xor import xor_str        #@UnresolvedImport
+try:
+    from xpra.codecs.xor import xor_str        #@UnresolvedImport
+except:
+    xor_str = None
 from xpra.os_util import StringIOClass
 
 #old gtk versions lack gtk.gdk.Region().get_rectangles()
@@ -154,7 +157,9 @@ class WindowSource(object):
         self.uses_swscale = encoding_options.get("uses_swscale", True)
                                                         #client uses uses_swscale (has extra limits on sizes)
                                                         #unused since we still use swscale on the server...
-        self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24")]
+        self.supports_delta = []
+        if xor_str is not None:
+            self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
         #auto-refresh:
@@ -780,6 +785,7 @@ class WindowSource(object):
         totals[0] = totals[0] + 1
         totals[1] = totals[1] + w*h
         self._last_sequence_queued = sequence
+        #debug("make_data_packet: returning packet=%s,[..],%s", packet[:7], packet[8:])
         return packet
 
     def webp_encode(self, w, h, data, rowstride, options):

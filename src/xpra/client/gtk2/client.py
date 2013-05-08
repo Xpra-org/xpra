@@ -16,7 +16,7 @@ import gtk
 from gtk import gdk
 
 from xpra.scripts.config import ENCODINGS
-from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.gtk_common.cursor_names import cursor_names
 from xpra.log import Logger
@@ -149,7 +149,8 @@ class XpraClient(GTKXpraClient):
 
     def make_hello(self, challenge_response=None):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)
-        capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24") if x in ENCODINGS]
+        if xor_str is not None:
+            capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24") if x in ENCODINGS]
         return capabilities
 
     def process_ui_capabilities(self, capabilities):

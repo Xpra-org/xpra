@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
 from xpra.gtk_common.gobject_compat import import_gobject3, import_gtk3, import_gdk3
 gobject = import_gobject3()
 gtk = import_gtk3()
@@ -26,7 +26,8 @@ class XpraClient(GTKXpraClient):
 
     def make_hello(self, challenge_response=None):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)
-        capabilities["encoding.supports_delta"] = [x for x in ("rgb24",) if x in ENCODINGS]
+        if xor_str is not None:
+            capabilities["encoding.supports_delta"] = [x for x in ("rgb24",) if x in ENCODINGS]
         return capabilities
 
     def client_type(self):

@@ -26,6 +26,10 @@ from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import make_native_tray, system_bell
 from xpra.client.gtk_base.client_tray import ClientTray
+try:
+    from xpra.codecs.xor import xor_str        #@UnresolvedImport
+except:
+    xor_str = None
 
 
 sys.modules['QtCore']=None
