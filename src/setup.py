@@ -61,7 +61,7 @@ shadow_ENABLED = SHADOW_SUPPORTED
 
 
 
-server_ENABLED = LOCAL_SERVERS_SUPPORTED
+server_ENABLED = LOCAL_SERVERS_SUPPORTED or shadow_ENABLED
 
 
 
@@ -178,6 +178,9 @@ if opengl_ENABLED and not gtk2_ENABLED:
 if shadow_ENABLED and not server_ENABLED:
     print("Warning: shadow requires server to be enabled!")
     shadow_ENABLED = False
+if cymaths_ENABLED and not server_ENABLED:
+    print("Warning: cymaths requires server to be enabled!")
+    cymaths_ENABLED = False
 if x11_ENABLED and WIN32:
     print("Warning: enabling x11 on MS Windows is unlikely to work!")
 if client_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED and not qt4_ENABLED:
