@@ -9,7 +9,7 @@ log = Logger()
 
 from xpra.server.server_base import ServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
-from xpra.codecs.argb.argb import argb_to_rgb
+from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -63,13 +63,39 @@ class ShadowServer(ShadowServerBase, ServerBase):
         return  OSXRootWindowModel(self.root)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
-        pass
+        CG.CGWarpMouseCursorPosition(pointer)
 
     def fake_key(self, keycode, press):
+        #CG.CGPostKeyboardEvent()
         pass
 
     def _process_button_action(self, proto, packet):
-        pass
+        wid, button, pressed, pointer, modifiers = packet[1:6]
+        log("process_button_action(%s, %s)", proto, packet)
+        self._process_mouse_common(proto, wid, pointer, modifiers)
+        if button<=3:
+            #we should be using CGEventCreateMouseEvent
+            #instead we clear previous clicks when a "higher" button is pressed... oh well
+            args = []
+            for i in range(button):
+                args.append(i==(button-1) and pressed)
+            log("CG.CGPostMouseEvent(%s, %s, %s, %s)", pointer, 1, button, args)
+            CG.CGPostMouseEvent(pointer, 1, button, *args)
+        else:
+            if not pressed:
+                #we don't simulate press/unpress
+                #so just ignore unpressed events
+                return
+            wheel = (button-2)//2
+            direction = 1-(((button-2) % 2)*2)
+            args = []
+            for i in range(wheel):
+                if i!=(wheel-1):
+                    args.append(0)
+                else:
+                    args.append(direction)
+            log("CG.CGPostScrollWheelEvent(%s, %s)", wheel, args)
+            CG.CGPostScrollWheelEvent(wheel, *args)
 
     def make_hello(self):
         capabilities = ServerBase.make_hello(self)
