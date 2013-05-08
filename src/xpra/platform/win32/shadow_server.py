@@ -29,9 +29,6 @@ class ShadowServer(ShadowServerBase, ServerBase):
     def __init__(self):
         ShadowServerBase.__init__(self)
         ServerBase.__init__(self)
-
-    def init(self, sockets, opts):
-        ServerBase.__init__(self, sockets, opts)
         self.keycodes = {}
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):

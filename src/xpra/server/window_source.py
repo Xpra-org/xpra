@@ -52,7 +52,6 @@ from xpra.deque import maxdeque
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.scripts.config import ENCODINGS
 from xpra.server.window_stats import WindowPerformanceStatistics
-from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.simple_stats import add_list_stats
 from xpra.server.stats.maths import calculate_time_weighted_average
 from xpra.server.batch_delay_calculator import calculate_batch_delay, update_video_encoder
@@ -573,14 +572,15 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
-        pixmap = window.get_property("client-contents")
-        if pixmap is None:
-            debug("get_window_pixmap: pixmap is None for window %s, wid=%s", window, self.wid)
+        rgb = window.get_rgb_rawdata(x, y, w, h)
+        if rgb is None:
+            debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return
+        if self.is_cancelled(sequence):
+            return
+        px, py, pw, ph, rgb_data, rowstride = rgb
         process_damage_time = time.time()
-        data = get_rgb_rawdata(damage_time, process_damage_time, self.wid, pixmap, x, y, w, h, coding, sequence, options, logger=rgblog)
-        if not data or self.is_cancelled(sequence):
-            return
+        data = (damage_time, process_damage_time, self.wid, px, py, pw, ph, coding, rgb_data, rowstride, sequence, options)
         self._sequence += 1
         debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %.1f ms", data[:6], 1000*(time.time()-damage_time))
         def make_data_packet_cb(*args):

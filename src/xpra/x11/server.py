@@ -36,7 +36,6 @@ log = Logger()
 import xpra
 from xpra.os_util import StringIOClass
 from xpra.x11.x11_server_base import X11ServerBase
-from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.net.protocol import zlib_compress, Compressed
 
 
@@ -579,18 +578,18 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("screenshot: window(%s)=%s", wid, window)
             if window is None or window.is_tray() or not window.is_managed():
                 continue
-            pixmap = window.get_property("client-contents")
-            log("screenshot: pixmap(%s)=%s", window, pixmap)
-            if pixmap is None:
-                continue
             if window.is_OR():
-                x, y = window.get_property("geometry")[:2]
+                x, y, w, h = window.get_property("geometry")[:4]
             else:
-                x, y = self._desktop_manager.window_geometry(window)[:2]
+                x, y, w, h = self._desktop_manager.window_geometry(window)[:4]
             log("screenshot: position(%s)=%s,%s", window, x, y)
-            w, h = pixmap.get_size()
-            log("screenshot: size(%s)=%sx%s", pixmap, w, h)
-            item = (wid, x, y, w, h, pixmap)
+            log("screenshot: size(%s)=%sx%s", window, w, h)
+            data = window.get_rgb_rawdata(x, y, w, h)
+            log("screenshot: len(%s.get_rgb_data(..))=%s", window, len(data))
+            if data is None:
+                continue
+            px, py, pw, ph, raw_data, rowstride = data
+            item = (wid, px, py, pw, ph, raw_data, rowstride)
             if window.is_OR():
                 OR_regions.append(item)
             elif self._has_focus==wid:
@@ -603,17 +602,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("screenshot: no regions found, returning empty 0x0 image!")
             return ["screenshot", 0, 0, "png", -1, ""]
         log("screenshot: found regions=%s, OR_regions=%s", regions, OR_regions)
-        minx = min([x for (_,x,_,_,_,_) in all_regions])
-        miny = min([y for (_,_,y,_,_,_) in all_regions])
-        maxx = max([(x+w) for (_,x,_,w,_,_) in all_regions])
-        maxy = max([(y+h) for (_,_,y,_,h,_) in all_regions])
+        #in theory, we could run the rest in a non-UI thread since we're done with GTK..
+        minx = min([x for (_,x,_,_,_,_,_) in all_regions])
+        miny = min([y for (_,_,y,_,_,_,_) in all_regions])
+        maxx = max([(x+w) for (_,x,_,w,_,_,_) in all_regions])
+        maxy = max([(y+h) for (_,_,y,_,h,_,_) in all_regions])
         width = maxx-minx
         height = maxy-miny
         log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
         import Image
         image = Image.new("RGBA", (width, height))
-        for wid, x, y, w, h, pixmap in reversed(all_regions):
-            _, _, wid, _, _, w, h, _, raw_data, rowstride, _, _ = get_rgb_rawdata(0, 0, wid, pixmap, 0, 0, w, h, "rgb24", -1, None, logger=log.debug)
+        for wid, x, y, w, h, raw_data, rowstride in reversed(all_regions):
             window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
             tx = x-minx
             ty = y-miny

@@ -13,6 +13,7 @@ log = Logger()
 
 from xpra.net.protocol import Compressed
 from xpra.server.window_source import DamageBatchConfig
+from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 
 
 def take_root_screenshot():
@@ -46,9 +47,15 @@ class RootWindowModel(object):
     def acknowledge_changes(self):
         pass
 
+    def get_rgb_rawdata(self, x, y, width, height):
+        return get_rgb_rawdata(self.window, x, y, width, height, logger=log)
+
+    def get_client_contents(self):
+        return self.window
+
     def get_property(self, prop):
         if prop=="client-contents":
-            return self.window
+            return self.get_client_contents()
         elif prop=="title":
             return self.window.get_screen().get_display().get_name()
         elif prop=="client-machine":
@@ -124,8 +131,11 @@ class ShadowServerBase(object):
 
     def load_existing_windows(self, system_tray):
         log("loading existing windows")
-        self.root_window_model = RootWindowModel(self.root)
+        self.root_window_model = self.makeRootWindowModel()
         self._add_new_window(self.root_window_model)
+
+    def makeRootWindowModel(self):
+        return RootWindowModel(self.root)
 
     def send_windows_and_cursors(self, ss):
         log("send_windows_and_cursors(%s) will send: %s", ss, self._id_to_window)

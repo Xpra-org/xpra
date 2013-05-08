@@ -35,6 +35,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
+from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal, no_arg_signal,
                            non_none_list_accumulator)
@@ -366,6 +367,14 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def is_tray(self):
         return False
+
+    def get_rgb_rawdata(self, x, y, width, height):
+        pixmap = self.get_property("client-contents")
+        if pixmap is None:
+            log.debug("get_rgb_rawdata: pixmap is None for window %s", hex(get_xwindow(self.client_window)))
+            return  None
+        return get_rgb_rawdata(pixmap, x, y, width, height, logger=log)
+
 
 gobject.type_register(BaseWindowModel)
 
