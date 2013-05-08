@@ -59,8 +59,10 @@ class AppindicatorTray(TrayBase):
         filename = self.get_tray_icon_filename(tray_icon_filename)
         self.tray_widget = appindicator.Indicator("Xpra", filename, appindicator.CATEGORY_APPLICATION_STATUS)
         if delay_tray:
-            self.hide_tray()
+            self.hide()
             self.client.connect("first-ui-received", self.show_appindicator)
+        else:
+            self.show()
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
