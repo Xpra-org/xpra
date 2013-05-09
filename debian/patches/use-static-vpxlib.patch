@@ -1,20 +1,17 @@
 Index: setup.py
 ===================================================================
---- a/setup.py	(revision 3248)
-+++ b/setup.py	(working copy)
-@@ -884,9 +884,14 @@
+--- setup.py	(revision 3336)
++++ setup.py	(working copy)
+@@ -902,7 +902,11 @@
  
  toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
  if vpx_ENABLED:
-+    vpxstatic = {'include_dirs': ["/usr/local/include"],
-+                'library_dirs': ["/usr/local/lib"],
-+                'extra_link_args': ["-Wl,-soname,vpxlib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+-    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
++    vpx_pkgconfig = {'include_dirs': ["/usr/local/include"],
++                     'library_dirs': ["/usr/local/lib"],
++                     'extra_link_args': ["-Wl,-soname,vpxlib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
 +                                    "-lvpx", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
-+                 }
-     cython_add(Extension("xpra.codecs.vpx.codec",
-                 ["xpra/codecs/vpx/codec.pyx", "xpra/codecs/vpx/vpxlib.c"],
--                **pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
-+                **vpxstatic
-                 ), min_version=(0, 16))
- 
- 
++                     }
+     cython_add(Extension("xpra.codecs.vpx.encoder",
+                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
+                 **vpx_pkgconfig), min_version=(0, 16))
