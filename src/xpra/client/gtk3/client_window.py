@@ -12,7 +12,8 @@ gtk = import_gtk3()
 gdk = import_gdk3()
 
 from xpra.client.gtk_base.cairo_backing import CairoBacking
-from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, DRAW_DEBUG, HAS_X11_BINDINGS
+from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.client.client_window_base import DRAW_DEBUG
 from xpra.log import Logger
 log = Logger()
 
