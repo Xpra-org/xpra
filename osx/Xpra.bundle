@@ -40,10 +40,7 @@
 		${prefix}/lib/librsvg-2.2.dylib
 	</binary>
 	<binary>
-		${prefix}/lib/pango/1.8.0/modules/pango*.so
-	</binary>
-	<binary>
-	${prefix}/lib/libx264.*.dylib
+		${prefix}/lib/libx264.*.dylib
 	</binary>
 	<binary>
 		${prefix}/lib/libavcodec.*.dylib
@@ -78,6 +75,9 @@
 
 	<data>
 		${prefix}/lib/pygtk/2.0/
+	</data>
+	<data>
+		${prefix}/etc/pango/
 	</data>
 
 	<data>
