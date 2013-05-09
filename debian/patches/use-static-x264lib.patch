@@ -1,7 +1,9 @@
-Index: setup.py
-===================================================================
---- setup.py	(revision 3336)
-+++ setup.py	(working copy)
+Description: Build x264 codec as a static library.
+ Author: Arthur Huillet <ahuillet@serviware.com>
+ Forwarded: not-needed
+ 
+--- a/setup.py	(revision 3336)
++++ b/setup.py	(working copy)
 @@ -890,7 +890,11 @@
  
  toggle_packages(x264_ENABLED, "xpra.codecs.x264")

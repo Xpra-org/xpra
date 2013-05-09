@@ -1,7 +1,9 @@
-Index: setup.py
-===================================================================
---- setup.py	(revision 3336)
-+++ setup.py	(working copy)
+Description: Build vpx codec as a static library.
+ Author: Arthur Huillet <ahuillet@serviware.com>
+ Forwarded: not-needed
+ 
+--- a/setup.py	(revision 3336)
++++ b/setup.py	(working copy)
 @@ -902,7 +902,11 @@
  
  toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
