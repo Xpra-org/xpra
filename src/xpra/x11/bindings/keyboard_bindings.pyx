@@ -697,7 +697,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             image = XFixesGetCursorImage(self.display)
             if image==NULL:
                 return  None
-            l = image.width*image.height
+            l = image.width*image.height*4
             pixels = argbdata_to_pixdata(image.pixels, l)
             name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
