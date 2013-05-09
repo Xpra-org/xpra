@@ -127,6 +127,7 @@ class ServerSource(object):
         self.screen_sizes = []
         self.raw_window_icons = False
         self.system_tray = False
+        self.generic_window_types = False
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -307,6 +308,7 @@ class ServerSource(object):
         self.named_cursors = capabilities.get("named_cursors", False)
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
         self.system_tray = capabilities.get("system_tray", False)
+        self.generic_window_types = capabilities.get("generic_window_types", False)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention:
@@ -530,7 +532,10 @@ class ServerSource(object):
             log("window_types=%s", window_types)
             wts = []
             for window_type in window_types:
-                wts.append(str(window_type))
+                s = str(window_type)
+                if self.generic_window_types:
+                    s = s.replace("_NET_WM_WINDOW_TYPE_", "")
+                wts.append(s)
             log("window_types=%s", wts)
             return {"window-type" : wts}
         raise Exception("unhandled property name: %s" % propname)

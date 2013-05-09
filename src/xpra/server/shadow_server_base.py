@@ -61,7 +61,7 @@ class RootWindowModel(object):
         elif prop=="client-machine":
             return socket.gethostname()
         elif prop=="window-type":
-            return ["_NET_WM_WINDOW_TYPE_NORMAL"]
+            return ["NORMAL"]
         elif prop=="size-hints":
             from xpra.util import AdHocStruct
             size = self.window.get_size()

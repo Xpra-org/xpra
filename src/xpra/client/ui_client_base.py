@@ -423,6 +423,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
+        capabilities["generic_window_types"] = True
         capabilities["server-window-resize"] = True
         if self.encoding:
             capabilities["encoding"] = self.encoding

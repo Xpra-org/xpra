@@ -29,20 +29,20 @@ Qt4 version of the ClientWindow class
 class ClientWindow(QWidget, ClientWindowBase):
 
     NAME_TO_HINT = {
-                "_NET_WM_WINDOW_TYPE_NORMAL"        : Qt.Widget,
-                "_NET_WM_WINDOW_TYPE_DIALOG"        : Qt.Dialog,
-                #"_NET_WM_WINDOW_TYPE_MENU"          : Qt??,
-                "_NET_WM_WINDOW_TYPE_TOOLBAR"       : Qt.Tool,
-                "_NET_WM_WINDOW_TYPE_SPLASH"        : Qt.SplashScreen,
-                "_NET_WM_WINDOW_TYPE_UTILITY"       : Qt.Tool,
-                #"_NET_WM_WINDOW_TYPE_DOCK"          : Qt???,
-                "_NET_WM_WINDOW_TYPE_DESKTOP"       : Qt.Desktop,
-                "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU" : Qt.Popup,
-                "_NET_WM_WINDOW_TYPE_POPUP_MENU"    : Qt.Popup,
-                "_NET_WM_WINDOW_TYPE_TOOLTIP"       : Qt.ToolTip,
-                #"_NET_WM_WINDOW_TYPE_NOTIFICATION"  : Qt??,
-                "_NET_WM_WINDOW_TYPE_COMBO"         : Qt.SubWindow,
-                #"_NET_WM_WINDOW_TYPE_DND"           : Qt??
+                "NORMAL"        : Qt.Widget,
+                "DIALOG"        : Qt.Dialog,
+                #"MENU"          : Qt??,
+                "TOOLBAR"       : Qt.Tool,
+                "SPLASH"        : Qt.SplashScreen,
+                "UTILITY"       : Qt.Tool,
+                #"DOCK"          : Qt???,
+                "DESKTOP"       : Qt.Desktop,
+                "DROPDOWN_MENU" : Qt.Popup,
+                "POPUP_MENU"    : Qt.Popup,
+                "TOOLTIP"       : Qt.ToolTip,
+                #"NOTIFICATION"  : Qt??,
+                "COMBO"         : Qt.SubWindow,
+                #"DND"           : Qt??
                     }
 
     def __init__(self, *args):

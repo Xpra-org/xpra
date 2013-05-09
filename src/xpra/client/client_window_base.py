@@ -142,6 +142,12 @@ class ClientWindowBase(object):
 
 
     def update_metadata(self, metadata):
+        #normalize window-type:
+        window_type = metadata.get("window-type")
+        if window_type is not None:
+            window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "") for x in window_type]
+            metadata["window-type"] = window_type
+
         self._metadata.update(metadata)
 
         title = u(self._client.title)
@@ -272,9 +278,9 @@ class ClientWindowBase(object):
         window_types = self._metadata.get("window-type")
         if not window_types:
             return False
-        return ("_NET_WM_WINDOW_TYPE_NORMAL" in window_types) or \
-               ("_NET_WM_WINDOW_TYPE_DIALOG" in window_types) or \
-               ("_NET_WM_WINDOW_TYPE_SPLASH" in window_types)
+        return ("NORMAL" in window_types) or \
+               ("DIALOG" in window_types) or \
+               ("SPLASH" in window_types)
 
 
     def _unfocus(self):

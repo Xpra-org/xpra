@@ -309,7 +309,7 @@ class XpraClient(GTKXpraClient):
             return self.ClientWindowClass
         #only enable GL for normal windows:
         window_types = metadata.get("window-type", ())
-        if "_NET_WM_WINDOW_TYPE_NORMAL" not in window_types:
+        if "NORMAL" not in window_types:
             return self.ClientWindowClass
         return self.GLClientWindowClass
 

@@ -40,20 +40,20 @@ class ClientWindow(GTKClientWindowBase):
                 #gdk.WINDOW_TYPE_HINT_NOTIFICATION,
                 gdk.WINDOW_TYPE_HINT_COMBO,gdk.WINDOW_TYPE_HINT_DND]
     NAME_TO_HINT = {
-                "_NET_WM_WINDOW_TYPE_NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
-                "_NET_WM_WINDOW_TYPE_DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
-                "_NET_WM_WINDOW_TYPE_MENU"          : gdk.WINDOW_TYPE_HINT_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLBAR"       : gdk.WINDOW_TYPE_HINT_TOOLBAR,
-                "_NET_WM_WINDOW_TYPE_SPLASH"        : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
-                "_NET_WM_WINDOW_TYPE_UTILITY"       : gdk.WINDOW_TYPE_HINT_UTILITY,
-                "_NET_WM_WINDOW_TYPE_DOCK"          : gdk.WINDOW_TYPE_HINT_DOCK,
-                "_NET_WM_WINDOW_TYPE_DESKTOP"       : gdk.WINDOW_TYPE_HINT_DESKTOP,
-                "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
-                "_NET_WM_WINDOW_TYPE_POPUP_MENU"    : gdk.WINDOW_TYPE_HINT_POPUP_MENU,
-                "_NET_WM_WINDOW_TYPE_TOOLTIP"       : gdk.WINDOW_TYPE_HINT_TOOLTIP,
-                "_NET_WM_WINDOW_TYPE_NOTIFICATION"  : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
-                "_NET_WM_WINDOW_TYPE_COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
-                "_NET_WM_WINDOW_TYPE_DND"           : gdk.WINDOW_TYPE_HINT_DND
+                "NORMAL"        : gdk.WINDOW_TYPE_HINT_NORMAL,
+                "DIALOG"        : gdk.WINDOW_TYPE_HINT_DIALOG,
+                "MENU"          : gdk.WINDOW_TYPE_HINT_MENU,
+                "TOOLBAR"       : gdk.WINDOW_TYPE_HINT_TOOLBAR,
+                "SPLASH"        : gdk.WINDOW_TYPE_HINT_SPLASHSCREEN,
+                "UTILITY"       : gdk.WINDOW_TYPE_HINT_UTILITY,
+                "DOCK"          : gdk.WINDOW_TYPE_HINT_DOCK,
+                "DESKTOP"       : gdk.WINDOW_TYPE_HINT_DESKTOP,
+                "DROPDOWN_MENU" : gdk.WINDOW_TYPE_HINT_DROPDOWN_MENU,
+                "POPUP_MENU"    : gdk.WINDOW_TYPE_HINT_POPUP_MENU,
+                "TOOLTIP"       : gdk.WINDOW_TYPE_HINT_TOOLTIP,
+                "NOTIFICATION"  : gdk.WINDOW_TYPE_HINT_NOTIFICATION,
+                "COMBO"         : gdk.WINDOW_TYPE_HINT_COMBO,
+                "DND"           : gdk.WINDOW_TYPE_HINT_DND
                 }
     # Map scroll directions back to mouse buttons.  Mapping is taken from
     # gdk/x11/gdkevents-x11.c.
