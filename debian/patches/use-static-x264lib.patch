@@ -1,31 +1,20 @@
-Description: Build x264 codec as a static library.
- Author: Arthur Huillet <ahuillet@serviware.com>
- Forwarded: not-needed
+Index: setup.py
+===================================================================
+--- a/setup.py	(revision 3160)
++++ b/setup.py	(working copy)
+@@ -875,9 +875,14 @@
  
---- a/setup.py
-+++ b/setup.py
-@@ -499,6 +499,10 @@
- 
- 
+ toggle_packages(x264_ENABLED, "xpra.codecs.x264")
  if x264_ENABLED:
-+    def pkgconfig(*args):
-+        return {'include_dirs': ["/usr/local/include"],
-+                'library_dirs': ["/usr/local/lib"],
-+                'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic", "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"] }
-     packages.append("xpra.x264")
-     cython_add(Extension("xpra.x264.codec",
-                 ["xpra/x264/codec.pyx", "xpra/x264/x264lib.c"],
---- a/debian/control
-+++ b/debian/control
-@@ -11,7 +11,6 @@
-               ,libxcomposite-dev
-               ,libxdamage-dev
-               ,libxtst-dev
--              ,libx264-dev
-               ,python-all-dev
-               ,python-gobject-dev
-               ,python-gtk2-dev
-Description: Build x264 codec as a static library.
- Author: Arthur Huillet <ahuillet@serviware.com>
- Forwarded: not-needed
++    x264static = {'include_dirs': ["/usr/local/include"],
++                  'library_dirs': ["/usr/local/lib"],
++                  'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
++                                      "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
++                  }
+     cython_add(Extension("xpra.codecs.x264.codec",
+                 ["xpra/codecs/x264/codec.pyx", "xpra/codecs/x264/x264lib.c"],
+-                **pkgconfig("x264", "libswscale", "libavcodec")
++                **x264static
+                 ), min_version=(0, 16))
+ 
  

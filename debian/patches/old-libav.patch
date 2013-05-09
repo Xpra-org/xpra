@@ -1,15 +1,27 @@
-Description: Build against old versions of libav.
- Author: Antoine Martin <antoine@devloop.org.uk>
- Forwarded: not-needed
- 
---- a/xpra/x264/x264lib.c	(revision 2661)
-+++ b/xpra/x264/x264lib.c	(working copy)
-@@ -440,7 +440,7 @@
- 		sws_freeContext(ctx->yuv2rgb);
- 		ctx->yuv2rgb = NULL;
+Index: xpra/codecs/x264/x264lib.c
+===================================================================
+--- a/xpra/codecs/x264/x264lib.c	(revision 3160)
++++ b/xpra/codecs/x264/x264lib.c	(working copy)
+@@ -408,11 +408,12 @@
+ 		fprintf(stderr, "could not open codec\n");
+ 		return 1;
  	}
--	avcodec_free_frame(&ctx->frame);
-+	av_free(&ctx->frame);
+-	ctx->frame = avcodec_alloc_frame();
++	ctx->frame = malloc(sizeof(struct AVFrame));
+ 	if (!ctx->frame) {
+ 	    fprintf(stderr, "could not allocate an AVFrame for decoding\n");
+ 	    return 1;
+ 	}
++	memset(ctx->frame, 0, sizeof(struct AVFrame));
+ 	return 0;
  }
- void clean_decoder(struct x264lib_ctx *ctx)
+ struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
+@@ -431,7 +432,7 @@
+ void do_clean_decoder(struct x264lib_ctx *ctx)
  {
+ 	if (ctx->frame) {
+-		avcodec_free_frame(&ctx->frame);
++		free(ctx->frame);
+ 		ctx->frame = NULL;
+ 	}
+ 	if (ctx->codec_ctx) {
