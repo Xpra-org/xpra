@@ -1,20 +1,17 @@
 include COPYING NEWS README
-include xpra/x11/bindings/*.pxi
-include xpra/x11/bindings/*.pxd
 include xpra/x11/bindings/constants.txt
-include xpra/x11/gtk_x11/*.pxi
-include xpra/x11/gtk_x11/*.pxd
 include xpra/x11/gtk_x11/constants.txt
-include xpra/codecs/x264/*.h
-include xpra/codecs/vpx/*.h
-include xpra.png
+include xpra/codecs/x264/x264lib.h
+include xpra/codecs/x264/x264lib.c
+include xpra/codecs/vpx/vpxlib.h
+include xpra/codecs/vpx/vpxlib.c
 recursive-include man *
 recursive-include patches *
 recursive-include etc *
 recursive-include xdg *
 recursive-include icons *
-global-include *.py *.txt
-global-exclude *~ #* *.orig *.bak *.rej
+global-include *.py *.txt *.pyx *.pxd
+global-exclude *~ #* *.orig *.bak *.rej *.pxi
 prune build
 prune dist
 prune install
