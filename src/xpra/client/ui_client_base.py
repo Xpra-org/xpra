@@ -89,6 +89,7 @@ class UIXpraClient(XpraClientBase):
         self.server_info_request = False
         self.server_last_info = None
         self.info_request_pending = False
+        self.encoding = ENCODINGS[0]
 
         #sound:
         self.speaker_allowed = HAS_SOUND
@@ -158,6 +159,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def init(self, opts):
+        self.encoding = opts.encoding
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -421,6 +423,22 @@ class UIXpraClient(XpraClientBase):
         capabilities["raw_window_icons"] = True
         capabilities["system_tray"] = self.client_supports_system_tray
         capabilities["xsettings-tuple"] = True
+        capabilities["server-window-resize"] = True
+        if self.encoding:
+            capabilities["encoding"] = self.encoding
+        capabilities["encodings"] = ENCODINGS
+        if self.quality>0:
+            capabilities["jpeg"] = self.quality
+            capabilities["quality"] = self.quality
+            capabilities["encoding.quality"] = self.quality
+        if self.min_quality>0:
+            capabilities["encoding.min-quality"] = self.min_quality
+        if self.speed>=0:
+            capabilities["speed"] = self.speed
+            capabilities["encoding.speed"] = self.speed
+        if self.min_speed>=0:
+            capabilities["encoding.min-speed"] = self.min_speed
+        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in ENCODINGS:
             # some profile options: "baseline", "main", "high", "high10", ...

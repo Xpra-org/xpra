@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
-from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform
+from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
@@ -55,7 +55,6 @@ class XpraClientBase(object):
         self.password = None
         self.password_file = None
         self.password_sent = False
-        self.encoding = ENCODINGS[0]
         self.encryption = None
         self.quality = -1
         self.min_quality = 0
@@ -79,7 +78,6 @@ class XpraClientBase(object):
     def init(self, opts):
         self.compression_level = opts.compression_level
         self.password_file = opts.password_file
-        self.encoding = opts.encoding
         self.encryption = opts.encryption
         self.quality = opts.quality
         self.min_quality = opts.min_quality
@@ -168,21 +166,6 @@ class XpraClientBase(object):
             capabilities["cipher.key_stretch_iterations"] = iterations
             self._protocol.set_cipher_in(self.encryption, iv, self.get_password(), key_salt, iterations)
             log("encryption capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("cipher")])
-        if self.encoding:
-            capabilities["encoding"] = self.encoding
-        capabilities["encodings"] = ENCODINGS
-        if self.quality>0:
-            capabilities["jpeg"] = self.quality
-            capabilities["quality"] = self.quality
-            capabilities["encoding.quality"] = self.quality
-        if self.min_quality>0:
-            capabilities["encoding.min-quality"] = self.min_quality
-        if self.speed>=0:
-            capabilities["speed"] = self.speed
-            capabilities["encoding.speed"] = self.speed
-        if self.min_speed>=0:
-            capabilities["encoding.min-speed"] = self.min_speed
-        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["platform"] = sys.platform
         capabilities["platform.release"] = python_platform.release()
         capabilities["platform.machine"] = python_platform.machine()
@@ -193,7 +176,6 @@ class XpraClientBase(object):
         capabilities["rencode"] = has_rencode
         if has_rencode:
             capabilities["rencode.version"] = rencode_version
-        capabilities["server-window-resize"] = True
         capabilities["hostname"] = socket.gethostname()
         capabilities["uuid"] = self.uuid
         capabilities["randr_notify"] = False    #only client.py cares about this
