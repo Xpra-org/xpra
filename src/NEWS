@@ -1,6 +1,30 @@
-v0.10.0 (2013-04-26)
+v0.10.0 (2013-05-09)
 ======================
-	-- TODO
+	-- register as a generic URL handler
+	-- initial support for Qt based client
+	-- support for different window layouts with custom widgets
+	-- basic support of OSX shadow servers
+	-- don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
+	-- refactoring: move features and components to sub-modules
+	-- refactoring: split X11 bindings from pure gtk code
+	-- refactoring: codecs split encoding and decoding side
+	-- refactoring: move more common code to utility classes
+	-- refactoring: remove direct dependency on gobject in many places
+	-- refactoring: platform code better separated
+	-- refactoring: move wimpiggy inside xpra, delete parti
+	-- export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
+
+
+v0.9.1 (2013-05-08)
+======================
+	-- honour initial client window's requested position
+	-- fix for hidden appindicator
+	-- fix string formatting error in non-cython fallback math code
+	-- fix error if ping packets fail from the start
+	-- fix for windows without a valid window-type (ie: shadows)
+	-- fix OpenGL missing required feature detection (and add debug)
+	-- add required CentOS RPM libXfont dependency
+	-- tag our /etc configuration files in RPM spec file
 
 
 v0.9.0 (2013-04-25)
