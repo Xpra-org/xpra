@@ -3,7 +3,7 @@
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages`
+PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"
 rm -fr image/* dist/*
 
