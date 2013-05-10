@@ -214,6 +214,10 @@ class ClientWindowBase(object):
             window_types = self._metadata.get("window-type")
             self.set_window_type(window_types)
 
+        if "xid" in self._metadata:
+            xid = self._metadata.get("xid")
+            self.set_xid(xid)
+
     def set_window_type(self, window_types):
         self.debug("set_window_type(%s)", window_types)
         hints = 0
@@ -224,6 +228,8 @@ class ClientWindowBase(object):
         self.debug("setting window type to %s - %s", window_type, hint)
         self.set_type_hint(hint)
 
+    def set_xid(self, xid):
+        pass
 
     def magic_key(self, *args):
         self.info("magic_key(%s) not handled in %s", args, type(self))

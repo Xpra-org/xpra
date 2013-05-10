@@ -23,7 +23,7 @@ CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
 if os.name=="posix":
     try:
-        from xpra.x11.gtk_x11.prop import prop_get
+        from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.gtk_x11.gdk_bindings import get_xwindow
         from xpra.x11.bindings.window_bindings import const, X11WindowBindings  #@UnresolvedImport
         from xpra.x11.gtk_x11.error import trap
@@ -75,6 +75,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.move(*self._pos)
         self.set_default_size(*self._size)
 
+    def set_xid(self, xid):
+        if HAS_X11_BINDINGS and self.is_realized():
+            self.debug("set_xid(%s)", xid)
+            try:
+                if xid.startswith("0x") and xid.endswith("L"):
+                    xid = xid[:-1]
+                iid = int(xid, 16)
+                self.debug("set_xid(%s) using xset_u32_property", iid)
+                self.xset_u32_property(self.gdk_window(), "XID", iid)
+            except Exception, e:
+                self.debug("set_xid(%s) error parsing/setting xid: %s", xid, e)
+                return
 
     def xget_u32_property(self, target, name):
         v = prop_get(target, name, "u32", ignore_errors=True)
@@ -82,6 +94,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if type(v)==int:
             return  v
         return None
+
+    def xset_u32_property(self, target, name, value):
+        prop_set(target, name, "u32", value)
 
     def is_realized(self):
         if hasattr(self, "get_realized"):
@@ -202,6 +217,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         gtk.Window.do_map_event(self, event)
         if self.group_leader:
             self.window.set_group(self.group_leader)
+        xid = self._metadata.get("xid")
+        if xid:
+            self.set_xid(xid)
         if not self._override_redirect:
             x, y, w, h = self.get_window_geometry()
             if not self._been_mapped:

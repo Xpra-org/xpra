@@ -363,8 +363,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
-    _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal")
-    _OR_metadata = ("transient-for", "window-type")
+    _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal", "xid")
+    _OR_metadata = ("transient-for", "window-type", "xid")
 
 
 

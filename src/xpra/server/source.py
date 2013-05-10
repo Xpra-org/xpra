@@ -473,6 +473,8 @@ class ServerSource(object):
             cache["tray"] = window.is_tray()
             if get_xwindow:
                 cache["xid"] = hex(get_xwindow(window.client_window))
+        if propname in cache:
+            return cache.copy()
         props = self.do_make_metadata(window, propname)
         props.update(cache)
         return props
