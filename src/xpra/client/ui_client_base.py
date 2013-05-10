@@ -28,6 +28,10 @@ from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import set_application_name
 from xpra.util import nn
+try:
+    from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
+except:
+    ALL_CLIPBOARDS = []
 
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
@@ -616,15 +620,8 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_bell = capabilities.get("bell", True)          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = capabilities.get("clipboard", False)
-        try:
-            from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
-        except:
-            ALL_CLIPBOARDS = []
         self.server_clipboards = capabilities.get("clipboards", ALL_CLIPBOARDS)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
-        if self.clipboard_enabled:
-            self.clipboard_helper = self.make_clipboard_helper()
-            self.clipboard_enabled = self.clipboard_helper is not None
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and capabilities.get("mmap_enabled")
         if self.mmap_enabled:
             mmap_token = capabilities.get("mmap_token")
@@ -667,6 +664,9 @@ class UIXpraClient(XpraClientBase):
     def process_ui_capabilities(self, capabilities):
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
+        if self.clipboard_enabled:
+            self.clipboard_helper = self.make_clipboard_helper()
+            self.clipboard_enabled = self.clipboard_helper is not None
         self.set_max_packet_size()
         self.send_deflate_level()
         server_desktop_size = capabilities.get("desktop_size")
