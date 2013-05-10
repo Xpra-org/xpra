@@ -146,7 +146,7 @@ file path=usr/share/man/man1/xpra.1 owner=root group=bin mode=644
 file path=usr/share/man/man1/xpra_launcher.1 owner=root group=bin mode=644
 dir  path=usr/share/xpra owner=root group=root mode=755
 file path=usr/share/xpra/COPYING owner=root group=bin mode=644
-file path=usr/share/xpra/xpra.README owner=root group=bin mode=644
+file path=usr/share/xpra/README owner=root group=bin mode=644
 file path=usr/share/xpra/Solaris.README owner=root group=bin mode=644
 dir  path=usr/share/xpra/icons owner=root group=root mode=755
 file path=usr/share/xpra/icons/close.png owner=root group=bin mode=644
