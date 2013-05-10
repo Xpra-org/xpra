@@ -474,7 +474,7 @@ class ServerSource(object):
             if get_xwindow:
                 cache["xid"] = hex(get_xwindow(window.client_window))
         props = self.do_make_metadata(window, propname)
-        cache.update(props)
+        props.update(cache)
         return props
 
     def do_make_metadata(self, window, propname):
