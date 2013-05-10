@@ -23,6 +23,7 @@ ALPHA = {
          CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
    }
 
+
 class OSXRootWindowModel(RootWindowModel):
 
     def OSXRootWindowModel(self, root_window):
@@ -52,6 +53,13 @@ class OSXRootWindowModel(RootWindowModel):
 class ShadowServer(ShadowServerBase, ServerBase):
 
     def __init__(self):
+        #sanity check:
+        image = CG.CGWindowListCreateImage(CG.CGRectInfinite,
+                    CG.kCGWindowListOptionOnScreenOnly,
+                    CG.kCGNullWindowID,
+                    CG.kCGWindowImageDefault)
+        if image is None:
+            raise Exception("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
         ShadowServerBase.__init__(self)
         ServerBase.__init__(self)
 
