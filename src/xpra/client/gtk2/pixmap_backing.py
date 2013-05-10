@@ -53,3 +53,8 @@ class PixmapBacking(GTK2WindowBacking):
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
         return True
+
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        gc = self._backing.new_gc()
+        self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        return True

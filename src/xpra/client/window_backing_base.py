@@ -164,6 +164,34 @@ class WindowBackingBase(object):
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         raise Exception("override me!")
 
+
+    def paint_rgb32(self, raw_data, x, y, width, height, rowstride, options, callbacks):
+        """ called from non-UI thread
+            this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
+        """
+        assert "rgb32" in ENCODINGS
+        rgb32_data = self.process_delta(raw_data, width, height, rowstride, options)
+        self.idle_add(self.do_paint_rgb32, rgb32_data, x, y, width, height, rowstride, options, callbacks)
+        return  False
+
+    def do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        """ must be called from UI thread
+            this method is only here to ensure that we always fire the callbacks,
+            the actual paint code is in _do_paint_rgb32
+        """
+        try:
+            success = self._do_paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
+            fire_paint_callbacks(callbacks, success)
+        except KeyboardInterrupt:
+            raise
+        except:
+            log.error("do_paint_rgb32 error", exc_info=True)
+            fire_paint_callbacks(callbacks, False)
+
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        raise Exception("override me!")
+
+
     def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options, callbacks):
         assert x==0 and y==0
         try:
@@ -224,6 +252,10 @@ class WindowBackingBase(object):
             if rowstride==0:
                 rowstride = width * 3
             self.paint_rgb24(img_data, x, y, width, height, rowstride, options, callbacks)
+        elif coding == "rgb32":
+            if rowstride==0:
+                rowstride = width * 4
+            self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
             assert "x264" in ENCODINGS
             self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, rowstride, options, callbacks)
