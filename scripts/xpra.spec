@@ -796,6 +796,10 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xpra.conf
 
+%check
+desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
+
 
 %post
 %if 0%{?static_video_libs}
