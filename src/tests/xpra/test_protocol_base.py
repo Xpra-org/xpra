@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+# This file is part of Xpra.
+# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import socket
+import os
+import logging
+logging.basicConfig(format="%(asctime)s %(message)s")
+logging.root.setLevel(logging.DEBUG)
+
+from xpra.net.protocol import Protocol, set_scheduler
+from xpra.net.bytestreams import SocketConnection
+from xpra.log import Logger
+log = Logger()
+
+import gobject
+gobject.threads_init()
+set_scheduler(gobject)
+
+TEST_SOCKFILE = "./test-socket"
+
+
+def makeSocketConnection(sock, name):
+    try:
+        peername = sock.getpeername()
+    except:
+        peername = str(sock)
+    return SocketConnection(sock, sock.getsockname(), peername, "test-client-socket")
+
+
+class SimpleServer(object):
+
+    def init(self, exit_cb, sockfile=TEST_SOCKFILE):
+        log.info("SimpleServer(%s, %s)", exit_cb, sockfile)
+        if os.path.exists(sockfile):
+            os.unlink(sockfile)
+        self.exit_cb = exit_cb
+        sock = socket.socket(socket.AF_UNIX)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setblocking(1)
+        orig_umask = os.umask(127) #600
+        sock.bind(sockfile)
+        os.umask(orig_umask)
+        sock.listen(5)
+        self.listener = sock
+        gobject.io_add_watch(sock, gobject.IO_IN, self.new_connection, sock)
+        log.info("SimpleServer() on %s", sock)
+
+    def new_connection(self, *args):
+        log.info("new_connection(%s)", args)
+        sock, address = self.listener.accept()
+        log.info("new_connection(%s) sock=%s, address=%s", args, sock, address)
+        sock.settimeout(None)
+        sock.setblocking(1)
+        sc = makeSocketConnection(sock, str(address)+"server")
+        protocol = Protocol(sc, self.process_packet)
+        protocol.salt = None
+        protocol.set_compression_level(1)
+        protocol.start()
+        return True
+
+    def process_packet(self, proto, packet):
+        log.info("process_packet(%s, %s)", proto, packet)
+        if packet and packet[0]=="disconnect":
+            self.exit_cb()
+
+
+class SimpleClient(object):
+
+    def init(self, exit_cb, packets=[]):
+        self.packets = packets
+        sock = socket.socket(socket.AF_UNIX)
+        sock.settimeout(5)
+        sock.connect(TEST_SOCKFILE)
+        sock.settimeout(None)
+        sc = makeSocketConnection(sock, "test-client-socket")
+        self.protocol = Protocol(sc, self.process_packet, None)
+        self.protocol.start()
+        if len(self.packets)>0:
+            gobject.timeout_add(1000, self.send_packet)
+
+    def send_packet(self):
+        self.protocol.send_now(self.packets[0])
+        self.packets = self.packets[1:]
+        return len(self.packets)>0
+
+    def process_packet(self, proto, packet):
+        log.info("process_packet(%s, %s)", proto, packet)
+
+    def get_packet(self, *args):
+        log.info("get_packet(%s)", args)
+        return None
+
+
+def init_main(prgname):
+    logging.basicConfig(format="%(asctime)s %(message)s")
+    logging.root.setLevel(logging.DEBUG)
+    from xpra.os_util import set_application_name, set_prgname
+    set_prgname(prgname)
+    set_application_name(prgname)
