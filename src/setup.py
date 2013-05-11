@@ -421,8 +421,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
-                   "etc/xpra/xpra.conf",
-                   "xpra/build_info.py"]
+                   "etc/xpra/xpra.conf"]
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
