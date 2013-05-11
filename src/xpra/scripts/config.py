@@ -168,7 +168,11 @@ def get_build_info():
         info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
         if BUILD_DATE:
             info.append(BUILD_DATE)
-        if int(LOCAL_MODIFICATIONS)==0:
+        try:
+            mods = int(LOCAL_MODIFICATIONS)
+        except:
+            mods = 0
+        if mods==0:
             info.append("revision %s" % REVISION)
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
