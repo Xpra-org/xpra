@@ -173,7 +173,7 @@ def get_build_info():
         else:
             info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
     except Exception, e:
-        warn("Error: could not find the build information: %s", e)
+        warn("Error: could not find the build information: %s" % e)
     return info
 
 
