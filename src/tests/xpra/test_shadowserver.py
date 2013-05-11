@@ -19,7 +19,7 @@ def main():
     from xpra.os_util import set_application_name, set_prgname
     set_prgname("OSX Shadow Test")
     set_application_name("OSX Shadow Test")
-    
+
     defaults = make_defaults_struct()
     for x in ("daemon", "clipboard", "mmap", "speaker", "microphone",
               "cursors", "bell", "notifications",

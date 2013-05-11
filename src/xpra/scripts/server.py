@@ -465,7 +465,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
-        
+
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
         if not wm_check(display):

@@ -242,7 +242,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
     def keysym_str(self, keysym_val):
         return self._keysym_str(keysym_val)
-    
+
     def get_keysym_list(self, symbols):
         """ convert a list of key symbols into a list of KeySym values
             by calling parse_keysym on each one
@@ -253,7 +253,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             if keysym is not None:
                 keysymlist.append(keysym)
         return keysymlist
-    
+
     cdef _parse_keycode(self, keycode_str):
         if keycode_str=="any":
             #find a free one:
@@ -389,7 +389,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             if len(keynames)>0:
                 mappings[keycode] = keynames
         return mappings
-    
+
 
     def get_keycodes(self, keyname):
         codes = []
@@ -456,7 +456,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         self.set_keymap(NULL)
         XFree(keyboard_map)
         return (keysyms_per_keycode, mappings)
-    
+
     cdef _get_modifier_mappings(self):
         """
         the mappings from _get_raw_modifier_mappings are in raw format
@@ -614,7 +614,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
 
     def set_xmodmap(self, xmodmap_data):
         return self.native_xmodmap(xmodmap_data)
-    
+
     def grab_key(self, xwindow, keycode, modifiers):
         XGrabKey(self.display, keycode, modifiers,
                  xwindow,
@@ -662,11 +662,11 @@ cdef class X11KeyboardBindings(X11CoreBindings):
             except:
                 self.xtest_supported = 0
         assert self.xtest_supported==1
-    
+
     def xtest_fake_key(self, keycode, is_press):
         self._ensure_XTest_support()
         XTestFakeKeyEvent(self.display, keycode, is_press, 0)
-    
+
     def xtest_fake_button(self, button, is_press):
         self._ensure_XTest_support()
         XTestFakeButtonEvent(self.display, button, is_press, 0)
@@ -689,7 +689,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         return XkbSetAutoRepeatRate(self.display, deviceSpec, cdelay, cinterval)
 
 
-    
+
     def get_cursor_image(self):
         cdef XFixesCursorImage* image
         #cdef char* pixels
@@ -704,13 +704,13 @@ cdef class X11KeyboardBindings(X11CoreBindings):
                 image.cursor_serial, pixels, name]
         finally:
             XFree(image)
-    
+
     def get_XFixes_event_base(self):
         cdef int event_base = 0                             #@DuplicatedSignature
         cdef int error_base = 0                             #@DuplicatedSignature
         XFixesQueryExtension(self.display, &event_base, &error_base)
         return int(event_base)
-    
+
     def selectCursorChange(self, on):
         root_window = XDefaultRootWindow(self.display)
         if on:
@@ -718,7 +718,7 @@ cdef class X11KeyboardBindings(X11CoreBindings):
         else:
             v = 0
         XFixesSelectCursorInput(self.display, root_window, v)
-    
+
 
     def selectBellNotification(self, on):
         cdef int bits = XkbBellNotifyMask

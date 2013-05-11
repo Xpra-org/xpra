@@ -12,7 +12,7 @@ try:
     from xpra.x11.gtk_x11.error import trap, XError
     from xpra.x11.gtk_x11.gdk_bindings import get_xwindow   #@UnresolvedImport
     from xpra.x11.bindings import X11KeyboardBindings   #@UnresolvedImport
-    device_bell = X11KeyboardBindings().device_bell      
+    device_bell = X11KeyboardBindings().device_bell
 except:
     device_bell = None
 

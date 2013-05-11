@@ -105,10 +105,10 @@ cdef class RandRBindings(X11CoreBindings):
             xrr = xrrs[i]
             sizes.append((xrr.width, xrr.height))
         return    sizes
-    
+
     def get_screen_sizes(self):
         return self._get_screen_sizes()
-    
+
     cdef _set_screen_size(self, width, height):
         cdef Window window
         cdef XRRScreenConfiguration *config
@@ -121,7 +121,7 @@ cdef class RandRBindings(X11CoreBindings):
         cdef int sizeID = 0
         cdef XRRScreenSize *xrrs
         cdef XRRScreenSize xrr                          #@DuplicatedSignature
-    
+
         window = XDefaultRootWindow(self.display)
         try:
             config = XRRGetScreenInfo(self.display, window)
@@ -146,7 +146,7 @@ cdef class RandRBindings(X11CoreBindings):
             return True
         finally:
             XRRFreeScreenConfigInfo(config)
-    
+
     def get_screen_size(self):
         return self._get_screen_size()
 
@@ -163,12 +163,12 @@ cdef class RandRBindings(X11CoreBindings):
             xrrs = XRRConfigSizes(config, &num_sizes)
             #short original_rate = XRRConfigCurrentRate(config);
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation);
-    
+
             width = xrrs[size_id].width;
             height = xrrs[size_id].height;
             return int(width), int(height)
         finally:
             XRRFreeScreenConfigInfo(config)
-    
+
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)

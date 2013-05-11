@@ -91,7 +91,7 @@ def main(script_file, cmdline):
     defaults = make_defaults_struct()
     if len(server_modes):
         group = OptionGroup(parser, "Server Options",
-                    "These options are only relevant on the server when using the %s mode." % 
+                    "These options are only relevant on the server when using the %s mode." %
                     "or".join(["'%s'" % x for x in server_modes]))
         parser.add_option_group(group)
     if supports_server:
