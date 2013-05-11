@@ -401,18 +401,28 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                  "xpra.platform.win32",
                  "xpra.platform.darwin")
     #ensure we remove the files we generate:
-    CLEAN_FILES = ["xpra/x11/bindings/constants.pxi",
-                   "xpra/x11/bindings/core_bindings.c",
-                   "xpra/x11/bindings/display_source.c",
-                   "xpra/x11/bindings/keyboard_bindings.c",
-                   "xpra/x11/bindings/randr_bindings.c",
-                   "xpra/x11/bindings/wait_for_x_server.c",
+    CLEAN_FILES = [
+                   "xpra/gtk_common/gdk_atoms.c",
+                   "xpra/x11/gtk_x11/constants.pxi",
                    "xpra/x11/gtk_x11/gdk_bindings.c",
                    "xpra/x11/gtk_x11/gdk_display_source.c",
-                   "xpra/codecs/vpx/codec.c",
-                   "xpra/codecs/x264/codec.c",
+                   "xpra/x11/bindings/constants.pxi",
+                   "xpra/x11/bindings/wait_for_x_server.c",
+                   "xpra/x11/bindings/keyboard_bindings.c",
+                   "xpra/x11/bindings/display_source.c",
+                   "xpra/x11/bindings/window_bindings.c",
+                   "xpra/x11/bindings/randr_bindings.c",
+                   "xpra/x11/bindings/core_bindings.c",
                    "xpra/net/rencode/rencode.c",
-                   "etc/xpra/xpra.conf"]
+                   "xpra/codecs/vpx/encoder.c",
+                   "xpra/codecs/vpx/decoder.c",
+                   "xpra/codecs/x264/encoder.c",
+                   "xpra/codecs/x264/decoder.c",
+                   "xpra/codecs/xor/cyxor.c",
+                   "xpra/codecs/argb/argb.c",
+                   "xpra/server/stats/cymaths.c",
+                   "etc/xpra/xpra.conf",
+                   "xpra/build_info.py"]
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
@@ -425,6 +435,11 @@ if "clean" not in sys.argv:
     # Add build info to build_info.py file:
     import add_build_info
     add_build_info.main()
+
+if 'clean' in sys.argv or 'sdist' in sys.argv:
+    #take shortcut to skip cython/pkgconfig steps:
+    setup(**setup_options)
+    sys.exit(0)
 
 
 
