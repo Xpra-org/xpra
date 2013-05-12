@@ -53,6 +53,7 @@ class WindowBackingBase(object):
     def __init__(self, wid, idle_add):
         self.wid = wid
         self.idle_add = idle_add
+        self._has_alpha = False
         self._backing = None
         self._last_pixmap_data = None
         self._video_use_swscale = True
@@ -118,16 +119,24 @@ class WindowBackingBase(object):
 
     def paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
         """ can be called from any thread """
+        #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, rowstride, options, callbacks)
         assert coding in ENCODINGS, "encoding %s is not supported!" % coding
         assert has_PIL
         buf = BytesIOClass(img_data)
         img = Image.open(buf)
-        assert img.mode=="RGB", "invalid image mode: %s" % img.mode
-        raw_data = img.tostring("raw", "RGB")
-        #PIL flattens the data to a continuous straightforward RGB format:
-        rowstride = width*3
-        img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+        assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
+        raw_data = img.tostring("raw", img.mode)
+        if img.mode=="RGB":
+            #PIL flattens the data to a continuous straightforward RGB format:
+            if rowstride<=0:
+                rowstride = width*3
+            img_data = self.process_delta(raw_data, width, height, rowstride, options)
+            self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
+        elif img.mode=="RGBA":
+            if rowstride<=0:
+                rowstride = width*4
+            img_data = self.process_delta(raw_data, width, height, rowstride, options)
+            self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, options, callbacks)
         return False
 
     def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):

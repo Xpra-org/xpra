@@ -466,13 +466,12 @@ class ServerSource(object):
     def _make_metadata(self, wid, window, propname):
         cache = self.window_metdata_cache.setdefault(wid, {})
         if len(cache)==0:
-            #these never change and are never queried,
-            #but we want to report on them via "xpra info",
-            #so populate them here
+            #these never change so populate them here just once
             cache["override-redirect"] = window.is_OR()
             cache["tray"] = window.is_tray()
             if get_xwindow:
                 cache["xid"] = hex(get_xwindow(window.client_window))
+            cache["has-alpha"] = window.has_alpha()
         if propname in cache:
             return cache.copy()
         props = self.do_make_metadata(window, propname)

@@ -44,6 +44,9 @@ class RootWindowModel(object):
     def is_OR(self):
         return False
 
+    def has_alpha(self):
+        return False
+
     def acknowledge_changes(self):
         pass
 
@@ -145,7 +148,7 @@ class ShadowServerBase(object):
             window = self._id_to_window[wid]
             assert window == self.root_window_model
             w, h = self.root.get_size()
-            props = ("title", "client-machine", "size-hints", "window-type")
+            props = ("title", "client-machine", "size-hints", "window-type", "has-alpha")
             ss.new_window("new-window", wid, window, 0, 0, w, h, props, self.client_properties.get(ss.uuid))
         #ss.send_cursor(self.cursor_data)
 

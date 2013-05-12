@@ -63,7 +63,7 @@ class ClientWindowBase(object):
         self._been_mapped = False
         self._override_redirect_windows = []
         self.update_metadata(metadata)
-    
+
     def setup_window(self):
         self.new_backing(*self._size)
 
@@ -71,6 +71,7 @@ class ClientWindowBase(object):
     def make_new_backing(self, backing_class, w, h):
         w = max(1, w)
         h = max(1, h)
+        has_alpha = self._metadata.get("has-alpha", False)
         lock = None
         backing = self._backing
         if backing:
@@ -79,13 +80,16 @@ class ClientWindowBase(object):
             if lock:
                 lock.acquire()
             if backing is None:
+                bc = backing_class
                 if USE_FAKE_BACKING:
                     from xpra.client.fake_window_backing import FakeBacking
-                    backing_class = FakeBacking
-                backing = backing_class(self._id, w, h)
+                    bc = FakeBacking
+                self.debug("make_new_backing(%s, %s, %s) effective backing class=%s", backing_class, w, h, bc)
+                backing = bc(self._id, w, h, has_alpha)
                 if self._client.mmap_enabled:
                     backing.enable_mmap(self._client.mmap)
-            backing.init(w, h)
+            self.debug("make_new_backing(%s, %s, %s) init with alpha=%s", backing_class, w, h, has_alpha)
+            backing.init(w, h, has_alpha)
         finally:
             if lock:
                 lock.release()
@@ -218,6 +222,10 @@ class ClientWindowBase(object):
             xid = self._metadata.get("xid")
             self.set_xid(xid)
 
+        if "has-alpha" in self._metadata:
+            has_alpha = self._metadata.get("has-alpha")
+            self.set_alpha(has_alpha)
+
     def set_window_type(self, window_types):
         self.debug("set_window_type(%s)", window_types)
         hints = 0
@@ -227,6 +235,9 @@ class ClientWindowBase(object):
                 hints |= hint
         self.debug("setting window type to %s - %s", window_type, hint)
         self.set_type_hint(hint)
+
+    def set_alpha(self, has_alpha):
+        pass
 
     def set_xid(self, xid):
         pass

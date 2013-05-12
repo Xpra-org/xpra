@@ -490,9 +490,9 @@ class WindowSource(object):
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
     def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
-        return self.do_get_best_encoding(batching, window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
+        return self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
 
-    def do_get_best_encoding(self, batching, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
+    def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
             decide whether we send a full screen update
             using the video encoder or if a small lossless region(s) is a better choice
@@ -501,6 +501,10 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
             debug("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
+        if has_alpha and current_encoding not in ("png", "rgb32"):
+            for x in ("png", "rgb32"):
+                if x in ENCODINGS:
+                    return x
         if is_tray:
             #tray needs a lossless encoder
             return switch()
@@ -583,9 +587,9 @@ class WindowSource(object):
             return
         if self.is_cancelled(sequence):
             return
-        px, py, pw, ph, rgb_data, rowstride = rgb
+        px, py, pw, ph, rgb_data, rgb_format, rowstride = rgb
         process_damage_time = time.time()
-        data = (damage_time, process_damage_time, self.wid, px, py, pw, ph, coding, rgb_data, rowstride, sequence, options)
+        data = (damage_time, process_damage_time, self.wid, px, py, pw, ph, coding, rgb_data, rgb_format, rowstride, sequence, options)
         self._sequence += 1
         debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %.1f ms", data[:6], 1000*(time.time()-damage_time))
         def make_data_packet_cb(*args):
@@ -710,7 +714,7 @@ class WindowSource(object):
         if self._damage_delayed is not None and self._damage_delayed_expired:
             gobject.idle_add(self.may_send_delayed)
 
-    def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, rgbdata, rowstride, sequence, options):
+    def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, rgbdata, rgb_format, rowstride, sequence, options):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'damage_data_queue'
@@ -730,7 +734,7 @@ class WindowSource(object):
         assert rgbdata, "data is missing"
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
+        if self._mmap and self._mmap_size>0 and len(rgbdata)>256 and rgb_format=="RGB":
             #try with mmap (will change coding to "mmap" if it succeeds)
             coding, data = self.mmap_send(coding, rgbdata)
         else:
@@ -744,8 +748,12 @@ class WindowSource(object):
                 delta = lsequence
                 data = xor_str(rgbdata, ldata)
 
+        if rgb_format.upper()!="RGB" and rgb_format.upper()!="RGBX":
+            assert rgb_format.upper()=="RGBA", "invalid rgb format: %s" % rgb_format
+            assert coding in ("rgb32", "png", ), "invalid encoding for %s: %s" % (rgb_format, coding)
+
         if coding in ("jpeg", "png"):
-            data, client_options = self.PIL_encode(w, h, coding, data, rowstride, options)
+            data, client_options = self.PIL_encode(w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="x264":
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
@@ -754,8 +762,8 @@ class WindowSource(object):
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="vpx":
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
-        elif coding=="rgb24":
-            data, client_options = self.rgb24_encode(data)
+        elif coding=="rgb24" or coding=="rgb32":
+            data, client_options = self.rgb_encode(coding, data)
         elif coding=="webp":
             data, client_options = self.webp_encode(w, h, data, rowstride, options)
         elif coding=="mmap":
@@ -798,19 +806,19 @@ class WindowSource(object):
         q = min(99, max(1, q))
         return Compressed("webp", str(EncodeRGB(image, quality=q).data)), {"quality" : q}
 
-    def rgb24_encode(self, data):
+    def rgb_encode(self, coding, data):
         #compress here and return a wrapper so network code knows it is already zlib compressed:
-        zlib = zlib_compress("rgb24", data)
+        zlib = zlib_compress(coding, data)
         if not self.encoding_client_options or not self.supports_rgb24zlib:
             return  zlib, {}
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed("rgb24", zlib.data), {"zlib" : zlib.level}
+        return Compressed(coding, zlib.data), {"zlib" : zlib.level}
 
-    def PIL_encode(self, w, h, coding, data, rowstride, options):
+    def PIL_encode(self, w, h, coding, data, rgb_format, rowstride, options):
         assert coding in ENCODINGS
         import Image
-        im = Image.fromstring("RGB", (w, h), data, "raw", "RGB", rowstride)
+        im = Image.fromstring(rgb_format, (w, h), data, "raw", rgb_format, rowstride)
         buf = StringIOClass()
         client_options = {}
         if coding=="jpeg":
@@ -823,7 +831,7 @@ class WindowSource(object):
             client_options["quality"] = q
         else:
             assert coding=="png"
-            debug("sending as %s", coding)
+            debug("sending as %s, mode=%s", coding, im.mode)
             #transparency = False
             #transparency=transparency
             im.save(buf, coding.upper())

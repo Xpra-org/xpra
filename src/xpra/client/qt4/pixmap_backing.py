@@ -20,10 +20,10 @@ Superclass for PixmapBacking and GLBacking
 """
 class QtPixmapBacking(WindowBackingBase):
 
-    def __init__(self, wid, w, h):
+    def __init__(self, wid, w, h, has_alpha):
         WindowBackingBase.__init__(self, wid, getQtScheduler().idle_add)
 
-    def init(self, w, h):
+    def init(self, w, h, has_alpha):
         #TODO: repaint from old backing!
         #old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)

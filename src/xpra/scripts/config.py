@@ -23,7 +23,7 @@ except:
     _has_PIL = False
 
 #if you use gtk3, you *must* have PIL installed so we can handle rgb24...
-ENCODINGS = ["rgb24"]
+ENCODINGS = ["rgb24", "rgb32"]
 if _has_PIL:
     ENCODINGS.append("png")
     ENCODINGS.append("jpeg")

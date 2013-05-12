@@ -156,11 +156,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         return self._contents_handle
 
     def do_get_property_contents(self, name):
-        handle = self.get_property("contents-handle")
-        if handle is None:
-            return None
-        else:
-            return handle.pixmap
+        return self.get_property("contents-handle")
 
     def do_xpra_unmap_event(self, *args):
         self.invalidate_pixmap()

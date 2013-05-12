@@ -133,6 +133,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef CARD32 Time
 
     ctypedef CARD32 VisualID
+    ctypedef CARD32 Colormap
 
     ctypedef struct Visual:
         void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
@@ -244,6 +245,40 @@ cdef extern from "X11/Xlib.h":
     Status XQueryTree(Display * display, Window w,
                       Window * root, Window * parent,
                       Window ** children, unsigned int * nchildren)
+
+    ctypedef char* XPointer
+
+    ctypedef struct XImage:
+        int width
+        int height
+        int xoffset             # number of pixels offset in X direction
+        int format              # XYBitmap, XYPixmap, ZPixmap
+        char *data              # pointer to image data
+        int byte_order          # data byte order, LSBFirst, MSBFirst
+        int bitmap_unit         # quant. of scanline 8, 16, 32
+        int bitmap_bit_order    # LSBFirst, MSBFirst
+        int bitmap_pad          # 8, 16, 32 either XY or ZPixmap
+        int depth               # depth of image
+        int bytes_per_line      # accelerator to next scanline
+        int bits_per_pixel      # bits per pixel (ZPixmap)
+        unsigned long red_mask  # bits in z arrangement
+        unsigned long green_mask
+        unsigned long blue_mask
+        XPointer *obdata
+        void *funcs
+
+    unsigned long AllPlanes
+    int XYPixmap
+    int ZPixmap
+    int MSBFirst
+    int LSBFirst
+
+    XImage *XGetImage(Display *display, Drawable d,
+            int x, int y, unsigned int width, unsigned int  height,
+            unsigned long plane_mask, int format)
+
+    void XDestroyImage(XImage *ximage)
+
 
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
@@ -529,34 +564,79 @@ def calc_constrained_size(width, height, hints):
     return (new_width, new_height, vis_width, vis_height)
 
 
+class PixmapWrapper(object):
+    "Reference count an X Pixmap that needs explicit cleanup."
+    def __init__(self, display, colormap, xpixmap):
+        self.display = display
+        self.colormap = colormap
+        self.xpixmap = xpixmap
 
+    def get_pixmap(self):
+        assert self.xpixmap
+        gpixmap = gtk.gdk.pixmap_foreign_new_for_display(self.display, self.xpixmap)
+        if gpixmap is None:
+            # Can't always actually get a pixmap, e.g. if window is not yet mapped
+            # or if it has disappeared.  In such cases we might not actually see
+            # an X error yet, but xpixmap will actually point to an invalid
+            # Pixmap, and pixmap_foreign_new_for_display will fail when it tries
+            # to look up that pixmap's dimensions, and return None.
+            return None
+        gpixmap.set_colormap(self.colormap)
+        return gpixmap
 
-class _PixmapCleanupHandler(object):
-    "Reference count a GdkPixmap that needs explicit cleanup."
-    def __init__(self, pixmap):
-        self.pixmap = pixmap
+    def get_pixels(self, x, y, width, height):
+        if self.xpixmap is None:
+            log.warn("PixmapWrapper.get_pixels() xpixmap=%s", self.xpixmap)
+            return  None
+        return get_pixels(self.display, self.xpixmap, x, y, width, height)
 
     def __del__(self):
-        if self.pixmap is not None:
-            XFreePixmap(get_xdisplay_for(self.pixmap), self.pixmap.xid)
-            self.pixmap = None
+        if self.xpixmap is not None:
+            XFreePixmap(get_xdisplay_for(self.display), self.xpixmap)
+            self.xpixmap = None
+
+SBFirst = {
+           MSBFirst : "MSBFirst",
+           LSBFirst : "LSBFirst"
+           }
+
+cdef get_pixels(display, xpixmap, x, y, width, height):
+    cdef Display * xdisplay                              #@DuplicatedSignature
+    cdef XImage* ximage
+    xdisplay = get_xdisplay_for(display)
+    ximage = XGetImage(xdisplay, xpixmap, x, y, width, height, AllPlanes, ZPixmap)
+    if ximage==NULL:
+        log.error("get_pixels(..) failed to get XImage for xpixmap %s", xpixmap)
+        return None
+    depth = ximage.depth
+    #rowstride = ximage.bytes_per_line
+    #size = w * ximage.bytes_per_line
+    #rowstride = w * ximage.depth/8
+    rowstride = ximage.bytes_per_line
+    size = rowstride * height
+    data = ximage.data[:size]
+    bitmap_bit_order = SBFirst.get(ximage.bitmap_bit_order, "unknown")
+    byte_order = SBFirst.get(ximage.byte_order, "unknown")
+    big_endian = ximage.byte_order==MSBFirst
+    #log.info("get_pixels(%s) byte_order=%s, bitmap_unit=%s, bitmap_bit_order=%s, bitmap_pad=%s, xoffset=%s, masks: red=%s, green=%s, blue=%s",
+    #         xpixmap, byte_order, ximage.bitmap_unit, bitmap_bit_order, ximage.bitmap_pad, ximage.xoffset, hex(ximage.red_mask), hex(ximage.green_mask), hex(ximage.blue_mask))
+    #log.info("get_pixels(%s) XImage depth=%s, width=%s, height=%s, bytes_per_line=%s, size=%s",
+    #         xpixmap, ximage.depth, ximage.width, ximage.height, ximage.bytes_per_line, size)
+    XDestroyImage(ximage)
+    return depth, width, height, rowstride, big_endian, data
+
 
 def xcomposite_name_window_pixmap(window):
+    cdef Display * display                              #@DuplicatedSignature
+    display = get_xdisplay_for(window)
     _ensure_XComposite_support(window)
-    xpixmap = XCompositeNameWindowPixmap(get_xdisplay_for(window),
-                                         get_xwindow(window))
-    gpixmap = gtk.gdk.pixmap_foreign_new_for_display(get_display_for(window),
-                                                     xpixmap)
-    if gpixmap is None:
-        # Can't always actually get a pixmap, e.g. if window is not yet mapped
-        # or if it has disappeared.  In such cases we might not actually see
-        # an X error yet, but xpixmap will actually point to an invalid
-        # Pixmap, and pixmap_foreign_new_for_display will fail when it tries
-        # to look up that pixmap's dimensions, and return None.
+    xpixmap = XCompositeNameWindowPixmap(display, get_xwindow(window))
+    w, h = window.get_size()
+    if xpixmap==XNone:
         return None
-    else:
-        gpixmap.set_colormap(window.get_colormap())
-        return _PixmapCleanupHandler(gpixmap)
+    colormap = window.get_colormap()
+    return PixmapWrapper(get_display_for(window), colormap, xpixmap)
+
 
 def _ensure_XComposite_support(display_source):
     # We need NameWindowPixmap, but we don't need the overlay window

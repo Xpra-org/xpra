@@ -368,11 +368,54 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def is_tray(self):
         return False
 
+    def has_alpha(self):
+        log.debug("has_alpha() client_window.depth=%s", self.client_window.get_depth())
+        return self.client_window.get_depth()==32
+
     def get_rgb_rawdata(self, x, y, width, height):
-        pixmap = self.get_property("client-contents")
-        if pixmap is None:
-            log.debug("get_rgb_rawdata: pixmap is None for window %s", hex(get_xwindow(self.client_window)))
+        handle = self.get_property("client-contents")
+        log.debug("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
+        if handle is None:
+            log.debug("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
             return  None
+
+        pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
+        if pixels:
+            import Image
+            depth, w, h, rowstride, big_endian, data = pixels
+            #log.info("get_rgb_rawdata(..) get_pixels=%s", (depth, w, h, rowstride, big_endian, "%s bytes" % len(data)))
+            #log.info("get_rgb_rawdata(..) head=%s", [hex(ord(v)) for v in data[:100]])
+            if depth==24:
+                if big_endian:
+                    imode = "XRGB"
+                else:
+                    imode = "BGRX"
+                smode = "RGB"
+                omode = "RGB"
+                orowstride = rowstride*3/4
+                #rowstride = w*3
+            elif depth==32:
+                if big_endian:
+                    imode = "ARGB"
+                else:
+                    imode = "BGRA"
+                smode = "RGBA"
+                omode = "RGBA"
+                orowstride = rowstride
+                #RGBa?
+            else:
+                raise Exception("unhandled depth: %s", depth)
+            im = Image.fromstring(smode, (w, h), data, "raw", imode, rowstride)
+            if omode!=smode:
+                im = im.convert(omode)
+            #    tmp = im.convert("RGB")
+            #    tmp.save("./window-rgba-%s.png" % time.time(), "PNG")
+            pixels = im.tostring("raw", omode)
+            #log.debug("depth=%s, returning %s %s pixels", depth, len(pixels), omode)
+            return x, y, w, h, im.tostring(), omode, orowstride
+
+        pixmap = handle.get_pixmap()
+        log.info("get_rgb_rawdata(..) get_pixels() returned None, trying to use the pixmap fallback %s", pixmap)
         return get_rgb_rawdata(pixmap, x, y, width, height, logger=log)
 
 
@@ -440,6 +483,9 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
 
     def is_tray(self):
         return  True
+
+    def has_alpha(self):
+        return True         #assume that we do
 
     def _read_initial_properties(self):
         pass

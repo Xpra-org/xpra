@@ -25,10 +25,10 @@ Superclass for PixmapBacking and GLBacking
 """
 class GTK2WindowBacking(GTKWindowBacking):
 
-    def __init__(self, wid, w, h):
+    def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid)
 
-    def init(self, w, h):
+    def init(self, w, h, has_alpha):
         raise Exception("override me!")
 
 

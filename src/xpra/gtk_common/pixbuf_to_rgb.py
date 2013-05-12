@@ -40,4 +40,4 @@ def get_rgb_rawdata(pixmap, x, y, width, height, logger=None):
              int(1000*(time.time()-start)), colormap.get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
-    return (x, y, width, height, raw_data, rowstride)
+    return (x, y, width, height, raw_data, "RGB", rowstride)

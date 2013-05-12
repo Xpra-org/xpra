@@ -38,8 +38,8 @@ class ClientWindow(GTKClientWindowBase):
         gtk.Window.__init__(self)
         GTKClientWindowBase.init_window(self)
 
-    def new_backing(self, w, h):
-        self._backing = self.make_new_backing(CairoBacking, w, h)
+    def new_backing(self, w, h, has_alpha):
+        self._backing = self.make_new_backing(CairoBacking, w, h, has_alpha)
 
 
     def xget_u32_property(self, target, name):

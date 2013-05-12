@@ -363,8 +363,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
-    _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "transient-for", "window-type", "modal", "xid")
-    _OR_metadata = ("transient-for", "window-type", "xid")
+    _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "modal",
+                     "transient-for", "window-type", "xid", "has-alpha")
+    _OR_metadata = ("transient-for", "window-type", "xid", "has-alpha")
 
 
 
@@ -588,8 +589,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("screenshot: len(%s.get_rgb_data(..))=%s", window, len(data))
             if data is None:
                 continue
-            px, py, pw, ph, raw_data, rowstride = data
-            item = (wid, px, py, pw, ph, raw_data, rowstride)
+            px, py, pw, ph, raw_data, rgb_format, rowstride = data
+            if rgb_format.upper() not in ("RGB", "RGBA"):
+                log.warn("window pixels for window %s in unhandled format: %s", wid, rgb_format)
+                continue
+            item = (wid, px, py, pw, ph, raw_data, rgb_format, rowstride)
             if window.is_OR():
                 OR_regions.append(item)
             elif self._has_focus==wid:
@@ -603,17 +607,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return ["screenshot", 0, 0, "png", -1, ""]
         log("screenshot: found regions=%s, OR_regions=%s", regions, OR_regions)
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
-        minx = min([x for (_,x,_,_,_,_,_) in all_regions])
-        miny = min([y for (_,_,y,_,_,_,_) in all_regions])
-        maxx = max([(x+w) for (_,x,_,w,_,_,_) in all_regions])
-        maxy = max([(y+h) for (_,_,y,_,h,_,_) in all_regions])
+        minx = min([x for (_,x,_,_,_,_,_,_) in all_regions])
+        miny = min([y for (_,_,y,_,_,_,_,_) in all_regions])
+        maxx = max([(x+w) for (_,x,_,w,_,_,_,_) in all_regions])
+        maxy = max([(y+h) for (_,_,y,_,h,_,_,_) in all_regions])
         width = maxx-minx
         height = maxy-miny
         log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
         import Image
         image = Image.new("RGBA", (width, height))
-        for wid, x, y, w, h, raw_data, rowstride in reversed(all_regions):
-            window_image = Image.fromstring("RGB", (w, h), raw_data, "raw", "RGB", rowstride)
+        for wid, x, y, w, h, raw_data, rgb_format, rowstride in reversed(all_regions):
+            assert rgb_format in ("RGB", "RGBA"), "invalid pixel format for window %s: %s" % (wid, rgb_format)
+            window_image = Image.fromstring(rgb_format, (w, h), raw_data, "raw", rgb_format, rowstride)
+            if rgb_format!="RGBA":
+                window_image = window_image.convert("RGB")
             tx = x-minx
             ty = y-miny
             image.paste(window_image, (tx, ty))
