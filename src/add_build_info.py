@@ -103,7 +103,10 @@ BUILD_INFO_FILE = "./xpra/build_info.py"
 
 def save_properties_to_file(props):
     if os.path.exists(BUILD_INFO_FILE):
-        os.unlink(BUILD_INFO_FILE)
+        try:
+            os.unlink(BUILD_INFO_FILE)
+        except:
+            print("WARNING: failed to delete %s" % BUILD_INFO_FILE)
     f = open(BUILD_INFO_FILE, mode='w')
     for name,value in props.items():
         f.write("%s='%s'\n" % (name,value))
@@ -157,6 +160,11 @@ def record_info(is_build=True):
         set_prop(props, "BUILD_DATE", date.today().isoformat())
         set_prop(props, "BUILD_CPU", get_cpuinfo())
         set_prop(props, "BUILD_BIT", platform.architecture()[0])
+        try:
+            from Cython import __version__ as cython_version
+        except:
+            cython_version = "unknown"
+        set_prop(props, "CYTHON_VERSION", cython_version)
     set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     for k,v in get_svn_props().items():
         set_prop(props, k, v)
