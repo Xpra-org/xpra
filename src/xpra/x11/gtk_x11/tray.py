@@ -197,7 +197,7 @@ class SystemTray(gobject.GObject):
         xwin = get_xwindow(window)
         xtray = get_xwindow(tray_window)
         X11Window.Withdraw(xwin)
-        X11Window.reparent(xwin, xtray, 0, 0)
+        X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
         log("dock_tray(%s) new tray container window %s", hex(xid), hex(xtray))
         tray_window.invalidate_rect(gtk.gdk.Rectangle(width=w, height=h), True)
