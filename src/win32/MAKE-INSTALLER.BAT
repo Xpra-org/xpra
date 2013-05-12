@@ -7,7 +7,8 @@ SET OLDPYTHONPATH=%PYTHONPATH%
 REM "*********CHANGE THESE BEFORE RUNNING**************"
 SET PYTHON=C:\Python27
 SET PYTHON_EXE=%PYTHON%\python.exe
-SET INNOSETUP="C:\Program Files\Inno Setup 5\ISCC.exe"
+SET VC=C:\Program Files\Microsoft Visual Studio 9.0\VC
+SET INNOSETUP=C:\Program Files\Inno Setup 5\ISCC.exe
 SET TORTOISESVN=C:\Program Files\TortoiseSVN
 SET SVNVERSION_EXE=svnversion
 
@@ -87,6 +88,12 @@ IF %SHADOW% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-shadow
 IF %DEBUG% NEQ 1 SET BUILD_ARGS=%BUILD_ARGS% --without-debug
 IF %DEBUG% EQU 1 SET BUILD_ARGS=%BUILD_ARGS% --with-debug
 
+
+ECHO ***************************************************************
+ECHO ****** ensure Visual Studio env is available
+if "%VSINSTALLDIR%"=="" (
+	call "%VC%\bin\vcvars32.bat"
+)
 
 ECHO ***************************************************************
 ECHO ****** build cython pyd files inplace
@@ -179,7 +186,7 @@ COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
 ECHO ***************************************************************
 ECHO ****** InnoSetup
 COPY win32\xpra.iss xpra.iss
-%INNOSETUP% xpra.iss > innosetup.log
+"%INNOSETUP%" xpra.iss > innosetup.log
 ECHO returncode: %errorlevel%
 if %errorlevel% NEQ 0 (
 	ECHO "InnoSetup error"

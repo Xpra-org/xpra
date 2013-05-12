@@ -12,6 +12,7 @@ import socket
 import platform
 import os.path
 import re
+import sys
 
 
 def load_ignored_changed_files():
@@ -109,7 +110,8 @@ def save_properties_to_file(props):
             print("WARNING: failed to delete %s" % BUILD_INFO_FILE)
     f = open(BUILD_INFO_FILE, mode='w')
     for name,value in props.items():
-        f.write("%s='%s'\n" % (name,value))
+        s = str(value).replace("'", "\\'")
+        f.write("%s='%s'\n" % (name, s))
     f.close()
     print("updated build_info.py with %s" % props)
 
@@ -148,6 +150,26 @@ def get_cpuinfo():
         pass
     return "unknown"
 
+def get_compiler_info():
+    if sys.platform.startswith("win"):
+        cmd = "cl"
+    else:
+        cmd = "gcc --version"
+    proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    stdout, _ = proc.communicate()
+    #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
+    #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
+    #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
+    if proc.returncode!=0:
+        print("'%s' failed with return code %s" % (cmd, proc.returncode))
+        return  ""
+    if not stdout:
+        print("could not get GCC version information")
+        return  ""
+    out = stdout.decode('utf-8')
+    return out.splitlines()[0]
+
+
 def record_info(is_build=True):
     def set_prop(props, key, value):
         if value!="unknown" or props.get(key) is None:
@@ -165,6 +187,7 @@ def record_info(is_build=True):
         except:
             cython_version = "unknown"
         set_prop(props, "CYTHON_VERSION", cython_version)
+        set_prop(props, "COMPILER_INFO", get_compiler_info())
     set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     for k,v in get_svn_props().items():
         set_prop(props, k, v)
