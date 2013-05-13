@@ -15,6 +15,15 @@ v0.10.0 (2013-05-09)
 	-- export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
 
 
+v0.9.2 (2013-05-13)
+======================
+	-- fix double error when loading build information (missing about dialog)
+	-- fix and simplify build "clean" subcommand
+	-- fix OpenGL rendering alignment for padded rowstrides case
+	-- fix potential double error when tray initialization fails
+	-- fix window static properties usage
+
+
 v0.9.1 (2013-05-08)
 ======================
 	-- honour initial client window's requested position
