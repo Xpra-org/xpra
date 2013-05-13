@@ -37,7 +37,7 @@ class OSXRootWindowModel(RootWindowModel):
                     CG.kCGNullWindowID,
                     CG.kCGWindowImageDefault)
         width = CG.CGImageGetWidth(image)
-        height = CG.CGImageGetHeight(image)        
+        height = CG.CGImageGetHeight(image)
         bpc = CG.CGImageGetBitsPerComponent(image)
         bpp = CG.CGImageGetBitsPerPixel(image)
         rowstride = CG.CGImageGetBytesPerRow(image)
@@ -47,7 +47,7 @@ class OSXRootWindowModel(RootWindowModel):
         prov = CG.CGImageGetDataProvider(image)
         argb = CG.CGDataProviderCopyData(prov)
         rgba = argb_to_rgb(argb)
-        return (0, 0, width, height, rgba, width*3)
+        return (0, 0, width, height, rgba, "RGB", width*3)
 
 
 class ShadowServer(ShadowServerBase, ServerBase):
