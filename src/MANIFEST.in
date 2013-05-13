@@ -10,6 +10,7 @@ recursive-include patches *
 recursive-include etc *
 recursive-include xdg *
 recursive-include icons *
+recursive-include scripts * 
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ #* *.orig *.bak *.rej *.pxi
 prune build
