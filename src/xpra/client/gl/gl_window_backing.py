@@ -85,8 +85,8 @@ window image, which is critical because of backbuffer content losses upon buffer
 """
 class GLPixmapBacking(GTK2WindowBacking):
 
-    def __init__(self, wid, w, h):
-        GTK2WindowBacking.__init__(self, wid, w, h)
+    def __init__(self, wid, w, h, has_alpha):
+        GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
         display_mode = get_DISPLAY_MODE()
         try:
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
