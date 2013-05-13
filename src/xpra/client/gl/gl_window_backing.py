@@ -277,11 +277,24 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         self.set_rgb24_paint_state()
 
-        self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d" % (x, y, width, height, rowstride, rowstride/3))
+        # Compute alignment and row length
+        row_length = 0
+        alignment = 1
+        for a in [2, 4, 8]:
+            # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
+            if (rowstride & a-1) == 0: 
+                alignment = a
+        # If number of extra bytes is greater than the alignment value,
+        # then we also have to set row_length
+        # Otherwise it remains at 0 (= width implicitely)
+        if (rowstride - width * 3) > a:
+            row_length = width + (rowstride - width * 3) / 3
+            
+        self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
         # Upload data as temporary RGB texture
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstride/3)
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
