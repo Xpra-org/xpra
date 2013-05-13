@@ -73,11 +73,16 @@ class OSXMenuHelper(object):
             item.show_all()
             self.menu_bar.add(item)
             return submenu
-        self.menuitem("About Xpra", "information.png", None, about)
-        info_menu        = make_menu("Info", gtk.Menu())
+        info_menu = make_menu("Info", gtk.Menu())
         info_menu.add(self.menuitem("About Xpra", "information.png", None, about))
         self.menu_bar.show_all()
 
+
+    def build_dock_menu(self):
+        self.dock_menu = gtk.Menu()
+        self.dock_menu.add(self.menuitem("About Xpra", "information.png", None, about))
+        self.dock_menu.show_all()
+        return self.dock_menu
 
     #the code below is mostly duplicated from xpra/client/gtk2...
 

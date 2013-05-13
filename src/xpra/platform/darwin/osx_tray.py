@@ -32,6 +32,9 @@ class OSXTray(object):
         #not needed?:
         #self.macapp.connect("NSApplicationBlockTermination", self.quit)
 
+    def cleanup(self):
+        pass
+
     def quit(self, *args):
         self.menu_helper.quit()
 
