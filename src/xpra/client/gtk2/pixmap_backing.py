@@ -21,11 +21,10 @@ class PixmapBacking(GTK2WindowBacking):
     def __init__(self, wid, w, h, has_alpha):
         GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
 
-    def init(self, w, h, has_alpha):
+    def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        self._has_alpha = has_alpha
-        if has_alpha:
+        if self.has_alpha:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()

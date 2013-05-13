@@ -71,7 +71,6 @@ class ClientWindowBase(object):
     def make_new_backing(self, backing_class, w, h):
         w = max(1, w)
         h = max(1, h)
-        has_alpha = self._metadata.get("has-alpha", False)
         lock = None
         backing = self._backing
         if backing:
@@ -84,12 +83,13 @@ class ClientWindowBase(object):
                 if USE_FAKE_BACKING:
                     from xpra.client.fake_window_backing import FakeBacking
                     bc = FakeBacking
-                self.debug("make_new_backing(%s, %s, %s) effective backing class=%s", backing_class, w, h, bc)
+                has_alpha = self._metadata.get("has-alpha", False)
+                self.debug("make_new_backing(%s, %s, %s) effective backing class=%s, alpha=%s", backing_class, w, h, bc, has_alpha)
                 backing = bc(self._id, w, h, has_alpha)
                 if self._client.mmap_enabled:
                     backing.enable_mmap(self._client.mmap)
-            self.debug("make_new_backing(%s, %s, %s) init with alpha=%s", backing_class, w, h, has_alpha)
-            backing.init(w, h, has_alpha)
+            self.debug("make_new_backing(%s, %s, %s) calling init", backing_class, w, h)
+            backing.init(w, h)
         finally:
             if lock:
                 lock.release()

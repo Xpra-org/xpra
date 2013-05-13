@@ -50,21 +50,4 @@ class GLClientWindow(ClientWindow):
         ClientWindow.destroy(self)
 
     def new_backing(self, w, h):
-        debug("GL new_backing(%s, %s)", w, h)
-        w = max(2, w)
-        h = max(2, h)
-        has_alpha = self._metadata.get("has-alpha", False)
-        lock = None
-        if self._backing:
-            lock = self._backing._video_decoder_lock
-        try:
-            if lock:
-                lock.acquire()
-            if self._backing is None:
-                self._backing = self.gl_pixmap_backing_class(self._id, w, h, has_alpha)
-                if self._client.supports_mmap:
-                    self._backing.enable_mmap(self._client.mmap)
-            self._backing.init(w, h)
-        finally:
-            if lock:
-                lock.release()
+        self._backing = self.make_new_backing(self.gl_pixmap_backing_class, w, h)

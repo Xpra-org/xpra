@@ -27,6 +27,7 @@ class GTK2WindowBacking(GTKWindowBacking):
 
     def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid)
+        self.has_alpha = has_alpha
 
     def init(self, w, h, has_alpha):
         raise Exception("override me!")
