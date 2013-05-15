@@ -375,7 +375,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
         except XError, e:
-            log.warn("get_rgb_rawdata(..) get_pixels %s", e)
+            log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e)
             pixels = None
         if pixels:
             import Image
