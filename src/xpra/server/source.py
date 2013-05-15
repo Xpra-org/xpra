@@ -309,6 +309,44 @@ class ServerSource(object):
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
         self.system_tray = capabilities.get("system_tray", False)
         self.generic_window_types = capabilities.get("generic_window_types", False)
+
+        #sound stuff:
+        self.pulseaudio_id = capabilities.get("sound.pulseaudio.id")
+        self.pulseaudio_server = capabilities.get("sound.pulseaudio.server")
+        self.sound_decoders = capabilities.get("sound.decoders", [])
+        self.sound_encoders = capabilities.get("sound.encoders", [])
+        self.sound_receive = capabilities.get("sound.receive", False)
+        self.sound_send = capabilities.get("sound.send", False)
+
+        log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
+        log("client uuid %s", self.uuid)
+        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
+        if self.hostname:
+            msg += " connected from '%s'" % self.hostname
+        log.info(msg)
+
+        #keyboard:
+        try:
+            from xpra.x11.server_keyboard_config import KeyboardConfig
+            self.keyboard_config = KeyboardConfig()
+            self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
+            self.assign_keymap_options(capabilities)
+            self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
+            self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
+        except ImportError, e:
+            log.error("failed to load keyboard support: %s", e)
+            self.keyboard_config = None
+
+        #encodings:
+        self.encodings = capabilities.get("encodings", [])
+        #skip all other encoding related settings if we don't send pixels:
+        if not self.send_windows:
+            log.info("windows/pixels forwarding is disabled for this client")
+        else:
+            self.parse_encoding_caps(capabilities)
+    
+    def parse_encoding_caps(self, capabilities):
+        self.set_encoding(capabilities.get("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention:
@@ -325,9 +363,7 @@ class ServerSource(object):
                 k = k[len("encoding."):]
                 self.encoding_options[k] = v
         elog("encoding options: %s", self.encoding_options)
-        #encodings:
-        self.encodings = capabilities.get("encodings", [])
-        self.set_encoding(capabilities.get("encoding", None), None)
+
         q = self.default_quality
         if "jpeg" in capabilities:      #pre 0.7 versions
             q = capabilities["jpeg"]
@@ -354,55 +390,27 @@ class ServerSource(object):
         self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         elog("encoding_options: %s", self.encoding_options)
-        #keyboard:
-        try:
-            from xpra.x11.server_keyboard_config import KeyboardConfig
-            self.keyboard_config = KeyboardConfig()
-            self.keyboard_config.enabled = self.send_windows and bool(capabilities.get("keyboard", True))
-            self.assign_keymap_options(capabilities)
-            self.keyboard_config.xkbmap_layout = capabilities.get("xkbmap_layout")
-            self.keyboard_config.xkbmap_variant = capabilities.get("xkbmap_variant")
-        except ImportError, e:
-            log.error("failed to load keyboard support: %s", e)
-            self.keyboard_config = None
         #mmap:
-        if self.send_windows:
-            #we don't need mmap if not sending pixels
-            mmap_filename = capabilities.get("mmap_file")
-            mmap_token = capabilities.get("mmap_token")
-            log("client supplied mmap_file=%s, mmap supported=%s", mmap_filename, self.supports_mmap)
-            if mmap_filename:
-                if not self.supports_mmap:
-                    log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
-                elif not os.path.exists(mmap_filename):
-                    log.warn("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
-                else:
-                    from xpra.net.mmap_pipe import init_server_mmap
-                    from xpra.os_util import get_int_uuid
-                    new_token = get_int_uuid()
-                    self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token)
-                    if self.mmap_size>0:
-                        self.mmap_client_token = new_token
-        log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
-        log("client uuid %s", self.uuid)
-        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
-        if self.hostname:
-            msg += " connected from '%s'" % self.hostname
-        log.info(msg)
-        if self.send_windows:
-            if self.mmap_size>0:
-                log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
+        mmap_filename = capabilities.get("mmap_file")
+        mmap_token = capabilities.get("mmap_token")
+        log("client supplied mmap_file=%s, mmap supported=%s", mmap_filename, self.supports_mmap)
+        if mmap_filename:
+            if not self.supports_mmap:
+                log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
+            elif not os.path.exists(mmap_filename):
+                log.warn("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
             else:
-                log.info("using %s as primary encoding", self.encoding)
+                from xpra.net.mmap_pipe import init_server_mmap
+                from xpra.os_util import get_int_uuid
+                new_token = get_int_uuid()
+                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_token, new_token)
+                if self.mmap_size>0:
+                    self.mmap_client_token = new_token
+
+        if self.mmap_size>0:
+            log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
-            log.info("windows forwarding is disabled")
-        #sound stuff:
-        self.pulseaudio_id = capabilities.get("sound.pulseaudio.id")
-        self.pulseaudio_server = capabilities.get("sound.pulseaudio.server")
-        self.sound_decoders = capabilities.get("sound.decoders", [])
-        self.sound_encoders = capabilities.get("sound.encoders", [])
-        self.sound_receive = capabilities.get("sound.receive", False)
-        self.sound_send = capabilities.get("sound.send", False)
+            log.info("using %s as primary encoding", self.encoding)
 
     def start_sending_sound(self):
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"
