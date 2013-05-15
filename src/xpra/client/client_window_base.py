@@ -9,6 +9,7 @@ import os
 import re
 import sys
 
+from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger()
 
@@ -24,20 +25,11 @@ else:
         return x
 
 
-class ClientWindowBase(object):
+class ClientWindowBase(ClientWidgetBase):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        self.info = log.info
-        self.debug = log.debug
-        self.warn = log.warn
-        self.error  = log.error
-        #gobject-like scheduler:
-        self.source_remove = client.source_remove
-        self.idle_add = client.idle_add
-        self.timeout_add = client.timeout_add
-        self._client = client
+        ClientWidgetBase.__init__(self, client, wid)
         self._override_redirect = override_redirect
         self.group_leader = group_leader
-        self._id = wid
         self._pos = (x, y)
         self._size = (w, h)
         self._client_properties = client_properties
@@ -67,36 +59,6 @@ class ClientWindowBase(object):
     def setup_window(self):
         self.new_backing(*self._size)
 
-
-    def make_new_backing(self, backing_class, w, h):
-        w = max(1, w)
-        h = max(1, h)
-        lock = None
-        backing = self._backing
-        if backing:
-            lock = backing._video_decoder_lock
-        try:
-            if lock:
-                lock.acquire()
-            if backing is None:
-                bc = backing_class
-                if USE_FAKE_BACKING:
-                    from xpra.client.fake_window_backing import FakeBacking
-                    bc = FakeBacking
-                has_alpha = self._metadata.get("has-alpha", False)
-                self.debug("make_new_backing(%s, %s, %s) effective backing class=%s, alpha=%s", backing_class, w, h, bc, has_alpha)
-                backing = bc(self._id, w, h, has_alpha)
-                if self._client.mmap_enabled:
-                    backing.enable_mmap(self._client.mmap)
-            self.debug("make_new_backing(%s, %s, %s) calling init", backing_class, w, h)
-            backing.init(w, h)
-        finally:
-            if lock:
-                lock.release()
-        return backing
-
-    def new_backing(self, w, h):
-        raise Exception("override me!")
 
     def update_icon(self, width, height, coding, data):
         raise Exception("override me!")
@@ -137,12 +99,6 @@ class ClientWindowBase(object):
 
     def is_OR(self):
         return self._override_redirect
-
-    def is_tray(self):
-        return False
-
-    def is_GL(self):
-        return False
 
 
     def update_metadata(self, metadata):
@@ -223,8 +179,8 @@ class ClientWindowBase(object):
             self.set_xid(xid)
 
         if "has-alpha" in self._metadata:
-            has_alpha = self._metadata.get("has-alpha")
-            self.set_alpha(has_alpha)
+            self._has_alpha = self._metadata.get("has-alpha", False)
+            self.set_alpha()
 
     def set_window_type(self, window_types):
         self.debug("set_window_type(%s)", window_types)
@@ -236,7 +192,7 @@ class ClientWindowBase(object):
         self.debug("setting window type to %s - %s", window_type, hint)
         self.set_type_hint(hint)
 
-    def set_alpha(self, has_alpha):
+    def set_alpha(self):
         pass
 
     def set_xid(self, xid):

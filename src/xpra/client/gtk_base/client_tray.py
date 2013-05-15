@@ -3,12 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
+gdk = import_gdk()
 
+import cairo
+
+from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger()
 
+from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.gtk2.pixmap_backing import PixmapBacking
 
 ORIENTATION = {}
@@ -23,10 +28,10 @@ ORIENTATION = {HORIZONTAL   : "HORIZONTAL",
                VERTICAL     : "VERTICAL"}
 
 
-class ClientTray(object):
+class ClientTray(ClientWidgetBase):
     def __init__(self, client, wid, w, h):
-        self._client = client
-        self._id = wid
+        ClientWidgetBase.__init__(self, client, wid)
+        self._has_alpha = True
         self._geometry = None
         self._screen = -1
         self._orientation = VERTICAL
@@ -39,6 +44,7 @@ class ClientTray(object):
         self.tray_widget.connect('activate', self.activate_menu)
         self.tray_widget.connect('size-changed', self.size_changed)
         self.tray_widget.set_visible(True)
+        self.new_backing(w, h)
         self.may_configure()
 
     def is_OR(self):
@@ -46,9 +52,6 @@ class ClientTray(object):
 
     def is_tray(self):
         return True
-
-    def is_GL(self):
-        return False
 
     def get_window(self):
         return None
@@ -89,10 +92,8 @@ class ClientTray(object):
         self.reconfigure()
 
     def new_backing(self, w, h):
-        if self._backing:
-            self._backing.close()
-        self._backing = PixmapBacking(self._id, w, h)
         self._size = w, h
+        self._backing = self.make_new_backing(PixmapBacking, w, h)
 
     def size_changed(self, status_icon, size):
         log("ClientTray.size_changed(%s, %s)", status_icon, size)
@@ -129,7 +130,16 @@ class ClientTray(object):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
         assert coding in ("rgb24", "png", "mmap"), "invalid encoding for tray data: %s" % coding
-        log("draw_region for tray")
+        log.info("ClientTray.draw_region(%s)", [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
+        if coding=="png" and False:
+            colorspace = self.tray_widget.get_screen().get_rgba_colormap()
+            tray_icon = gdk.pixbuf_new_from_data(img_data, colorspace, True, 24, width, height, rowstride)
+            #def gtk.gdk.pixbuf_new_from_data(data, colorspace, has_alpha, bits_per_sample, width, height, rowstride)
+            self.tray_widget.set_from_pixbuf(tray_icon)
+            self.may_configure()
+            fire_paint_callbacks(callbacks, True)
+            return
+
         def after_draw_update_tray(success):
             if not success:
                 log.warn("after_draw_update_tray(%s) options=%s", success, options)

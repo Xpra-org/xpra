@@ -70,9 +70,9 @@ class ClientWindow(GTKClientWindowBase):
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         GTKClientWindowBase.init_window(self, metadata)
 
-    def set_alpha(self, has_alpha):
-        self.debug("set_alpha(%s)", has_alpha)
-        if has_alpha:
+    def set_alpha(self):
+        self.debug("set_alpha()")
+        if self._has_alpha:
             screen = self.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba is None:
