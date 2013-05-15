@@ -385,6 +385,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.cursor_data = X11Keyboard.get_cursor_image()
         if self.cursor_data:
             pixels = self.cursor_data[7]
+            log("send_cursor() cursor=%s", self.cursor_data[:7]+["%s bytes" % len(pixels)]+self.cursor_data[8:])
             if self.default_cursor_data and pixels==self.default_cursor_data[7]:
                 log("send_cursor(): default cursor - clearing it")
                 self.cursor_data = None
