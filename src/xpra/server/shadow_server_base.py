@@ -57,9 +57,7 @@ class RootWindowModel(object):
         return self.window
 
     def get_property(self, prop):
-        if prop=="client-contents":
-            return self.get_client_contents()
-        elif prop=="title":
+        if prop=="title":
             return self.window.get_screen().get_display().get_name()
         elif prop=="client-machine":
             return socket.gethostname()

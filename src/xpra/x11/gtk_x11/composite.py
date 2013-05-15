@@ -32,8 +32,6 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         }
 
     __gproperties__ = {
-        "contents": (gobject.TYPE_PYOBJECT,
-                     "", "", gobject.PARAM_READABLE),
         "contents-handle": (gobject.TYPE_PYOBJECT,
                             "", "", gobject.PARAM_READABLE),
         }

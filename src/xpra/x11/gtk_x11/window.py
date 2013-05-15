@@ -208,10 +208,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
                         gobject.PARAM_READABLE),
-        # NB "notify" signal never fires for the client-contents properties:
-        "client-contents": (gobject.TYPE_PYOBJECT,
-                            "gtk.gdk.Pixmap containing the window contents", "",
-                            gobject.PARAM_READABLE),
         "client-contents-handle": (gobject.TYPE_PYOBJECT,
                                    "", "",
                                    gobject.PARAM_READABLE),
@@ -302,9 +298,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if self._managed:
             self.emit("client-contents-changed", event)
 
-    def do_get_property_client_contents(self, name):
-        return self._composite.get_property("contents")
-
     def do_get_property_client_contents_handle(self, name):
         return self._composite.get_property("contents-handle")
 
@@ -373,13 +366,17 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         return self.client_window.get_depth()==32
 
     def get_rgb_rawdata(self, x, y, width, height):
-        handle = self.get_property("client-contents")
+        handle = self.get_property("client-contents-handle")
         log.debug("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
         if handle is None:
             log.debug("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
             return  None
 
-        pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
+        try:
+            pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
+        except XError, e:
+            log.warn("get_rgb_rawdata(..) get_pixels %s", e)
+            pixels = None
         if pixels:
             import Image
             depth, w, h, rowstride, big_endian, data = pixels
