@@ -104,7 +104,7 @@ class XpraClient(GTKXpraClient):
             log.error("GDK clipboard failed to load: %s - using default fallback", e)
         try:
             from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
-            self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=clipboards)
+            return self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=clipboards)
         except ImportError, e:
             log.error("clipboard fallback failed to load: %s - no clipboard available", e)
         return None
@@ -123,16 +123,17 @@ class XpraClient(GTKXpraClient):
                 self.remote_clipboard_requests = remote_requests
             n = self.local_clipboard_requests+self.remote_clipboard_requests
             self.clipboard_notify(n)
-        return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
         def register_clipboard_toggled(*args):
-            def clipboard_toggled(*args):
-                log("clipboard_toggled enabled=%s, server_supports_clipboard=%s", self.clipboard_enabled, self.server_supports_clipboard)
+            def clipboard_toggled(*targs):
+                log("clipboard_toggled(%s) enabled=%s, server_supports_clipboard=%s", targs, self.clipboard_enabled, self.server_supports_clipboard)
                 if self.clipboard_enabled and self.server_supports_clipboard:
+                    assert self.clipboard_helper is not None
                     self.clipboard_helper.send_all_tokens()
                 else:
                     pass    #FIXME: todo!
             self.connect("clipboard-toggled", clipboard_toggled)
         self.connect("handshake-complete", register_clipboard_toggled)
+        return helperClass(clipboard_send, clipboard_progress, *args, **kwargs)
 
     def clipboard_notify(self, n):
         if not self.tray:
