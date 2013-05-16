@@ -23,14 +23,8 @@ class BorderClientWindow(ClientWindow):
         ClientWindow.setup_window(self)
 
     def magic_key(self, *args):
-        if self._offset==(0, 0, 0, 0):
-            u = self._offset_unit
-        else:
-            u = 0
-        self._offset = u, u, u, u
-        self.adjust_for_offset()
-        self.resize(*self._size)
-        self.queue_draw(0, 0, *self._size)
+        u = self._offset_unit
+        self.toggle_offset((u, u, u, u))
 
     def paint_offset(self, event, context):
         oL, oT, oR, oB = self._offset

@@ -59,6 +59,17 @@ class ClientWindowBase(ClientWidgetBase):
     def setup_window(self):
         self.new_backing(*self._size)
 
+    def toggle_offset(self, new_offset):
+        if self._override_redirect:
+            return
+        if self._offset==(0, 0, 0, 0):
+            self._offset = new_offset
+        else:
+            self._offset = (0, 0, 0, 0)
+        self.adjust_for_offset()
+        self.resize(*self._size)
+        self.queue_draw(0, 0, *self._size)
+
 
     def update_icon(self, width, height, coding, data):
         raise Exception("override me!")

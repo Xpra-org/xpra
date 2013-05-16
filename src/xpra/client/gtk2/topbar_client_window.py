@@ -20,8 +20,9 @@ where we can place widgets.
 class TopBarClientWindow(ClientWindow):
 
     def setup_window(self):
-        self.info("setup_window(%s)")
+        self.debug("setup_window()")
         self._has_custom_decorations = False
+        self._top_bar_box = None
         if not self._override_redirect:
             self._has_custom_decorations = True
             vbox = gtk.VBox()
@@ -32,9 +33,20 @@ class TopBarClientWindow(ClientWindow):
             vbox.show_all()
             w, h = vbox.size_request()
             self.debug("vbox size: %sx%s", w, h)
+            self._top_bar_box = vbox
             self._offset = 0, h, 0, 0
             self.adjust_for_offset()
         ClientWindow.setup_window(self)
+
+    def magic_key(self, *args):
+        assert self._top_bar_box
+        if self._top_bar_box.get_visible():
+            self._top_bar_box.hide()
+            h = -1
+        else:
+            self._top_bar_box.show()
+            _, h = self._top_bar_box.size_request()
+        self.toggle_offset((0, h, 0, 0))
 
     def add_top_bar_widgets(self, hbox):
         label = gtk.Label("hello")
