@@ -10,31 +10,24 @@ import logging
 # This module is used by non-GUI programs and thus must not import gtk.
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:
-#   -- You initialize it with a prefix (like "xpra.window"), but can pass
-#      a type= kwarg to any of the loggin methods to further specialize the
-#      logging target (like "damage" to get "xpra.window.damage").
+#   -- You initialize it with a prefix (like "xpra.window")
+#      If unset, the default logging target is set to the name of the module where
+#      Logger() was called.
 #   -- You can pass exc_info=True to any method, and sys.exc_info() will be
 #      substituted.
 #   -- __call__ is an alias for debug
-#   -- The default logging target is set to the name of the module where
-#      Logger() was called.
 
 class Logger(object):
     def __init__(self, base=None):
         if base is None:
             base = sys._getframe(1).f_globals["__name__"]
         self._base = base
-
-    def getLogger(self, ltype=None):
-        name = self._base
-        if ltype:
-            name += ". " + ltype
-        return logging.getLogger(name)
+        self.logger = logging.getLogger(self._base)
 
     def log(self, level, msg, *args, **kwargs):
         if kwargs.get("exc_info") is True:
             kwargs["exc_info"] = sys.exc_info()
-        self.getLogger().log(level, msg, *args, **kwargs)
+        self.logger.log(level, msg, *args, **kwargs)
 
     def _method_maker(level):           #@NoSelf
         return (lambda self, msg, *args, **kwargs:
@@ -47,6 +40,9 @@ class Logger(object):
     error = _method_maker(logging.ERROR)
 
 
+#utility function returning a logging function whose logging level
+#depends on the value of the environment variable given
+#(info if set to "1", debug otherwise)
 def debug_if_env(log, env_name):
     if os.environ.get(env_name, "0")=="1":
         return log.info
