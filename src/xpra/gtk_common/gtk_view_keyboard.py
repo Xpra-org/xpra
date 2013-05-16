@@ -10,7 +10,8 @@ import pango
 import gobject
 
 from xpra.deque import maxdeque
-from xpra.platform import get_icon, init
+from xpra.platform.paths import get_icon
+from xpra.platform import init
 
 
 modifier_names = {

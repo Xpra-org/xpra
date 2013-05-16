@@ -11,7 +11,8 @@ import re
 
 from xpra.deque import maxdeque
 from xpra.gtk_common.gtk_util import TableBuilder, label
-from xpra.platform import get_icon, init
+from xpra.platform.paths import get_icon
+from xpra.platform import init
 
 
 class ClipboardInstance(object):
