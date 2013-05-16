@@ -430,7 +430,7 @@ class ClipboardProxy(gtk.Invisible):
         debug("do_selection_clear_event(%s) selection=%s", event, self._selection)
         #if greedy_client is set, do_owner_changed will fire the token
         #so don't bother sending it now (same if we don't have it)
-        send = ((not self._greedy_client or self._block_owner_change) or not self._have_token)
+        send = ((self._greedy_client and not self._block_owner_change) or self._have_token)
         self._have_token = False
 
         # Emit a signal -> send a note to the other side saying "hey its
