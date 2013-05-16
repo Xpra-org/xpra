@@ -557,10 +557,10 @@ class WindowSource(object):
         if coding in ("vpx", "x264"):
             if w%2==1:
                 lossless = self.find_common_lossless_encoder(coding, 1*h)
-                self.do_process_damage_region(damage_time, window, x+w-1, y, x+w-1, h, lossless, options)
+                self.do_process_damage_region(damage_time, window, x+w-1, y, 1, h, lossless, options)
             if h%2==1:
                 lossless = self.find_common_lossless_encoder(coding, w*1)
-                self.do_process_damage_region(damage_time, window, x, y+h-1, x+w, y+h-1, lossless, options)
+                self.do_process_damage_region(damage_time, window, x, y+h-1, x+w, 1, lossless, options)
 
     def do_process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         """
