@@ -50,6 +50,13 @@ if gtk.pygtk_version<(2,17):
     log.error("your version of PyGTK is too old - expect some bugs")
 
 
+#if you want to use a virtual screen bigger than 32767x32767
+#you will need to change those values, but some broken toolkits
+#will then misbehave (they use signed shorts instead of signed ints..)
+MAX_WINDOW_SIZE = 2**15-1
+MAX_ASPECT = 2*15-1
+
+
 # Todo:
 #   client focus hints
 #   _NET_WM_SYNC_REQUEST
@@ -374,8 +381,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
         try:
             pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
-        except XError, e:
-            log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e)
+        except Exception, e:
+            log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e, exc_info=True)
             pixels = None
         if pixels:
             import Image
@@ -672,7 +679,7 @@ class WindowModel(BaseWindowModel):
         hints = self.get_property("size-hints")
         self._sanitize_size_hints(hints)
         nw, nh = calc_constrained_size(w, h, hints)[:2]
-        if nw>=32768 or nh>=32768:
+        if nw>=MAX_WINDOW_SIZE or nh>=MAX_WINDOW_SIZE:
             #we can't handle windows that big!
             raise Unmanageable("window constrained size is too large: %sx%s (from client geometry: %s,%s with size hints=%s)" % (nw, nh, w, h, hints))
         log("setup() resizing windows to %sx%s", nw, nh)
@@ -811,7 +818,7 @@ class WindowModel(BaseWindowModel):
                     f = float(v)
                 except:
                     f = None
-                if f is None or f>=(2**32-1):
+                if f is None or f>=MAX_ASPECT:
                     log.warn("clearing invalid aspect hint value for %s: %s", attr, v)
                     setattr(size_hints, attr, -1.0)
         for attr in ["max_size", "min_size", "base_size", "resize_inc",
@@ -822,7 +829,7 @@ class WindowModel(BaseWindowModel):
                     w,h = v
                 except:
                     w,h = None,None
-                if (w is None or h is None) or w>=(2**32-1) or h>(2**32-1):
+                if (w is None or h is None) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
                     log.warn("clearing invalid size hint value for %s: %s", attr, v)
                     setattr(size_hints, attr, (-1,-1))
         #if max-size is smaller than min-size (bogus), clamp it..
@@ -832,9 +839,9 @@ class WindowModel(BaseWindowModel):
             minw,minh = mins
             maxw,maxh = maxs
             if maxw<minw or maxh<minh:
-                size_hints.max_size = max(minw, maxw), max(minh, maxh)
-                log.warn("invalid max_size=%s for min_size=%s has now been clamped to: %s",
-                         maxs, mins, size_hints.max_size)
+                size_hints.max_size = None
+                log.warn("invalid max_size=%s for min_size=%s has now been cleared",
+                         maxs, mins)
 
     def _update_client_geometry(self):
         owner = self.get_property("owner")

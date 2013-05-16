@@ -176,12 +176,15 @@ class X11ServerBase(ServerBase):
 
 
     def get_max_screen_size(self):
+        from xpra.x11.gtk_x11.window import MAX_WINDOW_SIZE
         max_w, max_h = gtk.gdk.get_default_root_window().get_size()
         sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
                 max_w = max(max_w, w)
                 max_h = max(max_h, h)
+        if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
+            log.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
         return max_w, max_h
 
 
