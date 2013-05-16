@@ -279,6 +279,9 @@ cdef extern from "X11/Xlib.h":
 
     void XDestroyImage(XImage *ximage)
 
+    Status XGetGeometry(Display *display, Drawable d, Window *root_return,
+                        int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
+                        unsigned int *border_width_return, unsigned int *depth_return)
 
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
@@ -566,10 +569,12 @@ def calc_constrained_size(width, height, hints):
 
 class PixmapWrapper(object):
     "Reference count an X Pixmap that needs explicit cleanup."
-    def __init__(self, display, colormap, xpixmap):
+    def __init__(self, display, colormap, xpixmap, width, height):
         self.display = display
         self.colormap = colormap
         self.xpixmap = xpixmap
+        self.width = width
+        self.height = height
 
     def get_pixmap(self):
         assert self.xpixmap
@@ -588,6 +593,8 @@ class PixmapWrapper(object):
         if self.xpixmap is None:
             log.warn("PixmapWrapper.get_pixels() xpixmap=%s", self.xpixmap)
             return  None
+        assert width<=self.width, "invalid width: %s (pixmap width is %s)" % (width, self.width)
+        assert height<=self.height, "invalid height: %s (pixmap height is %s)" % (height, self.height)
         return get_pixels(self.display, self.xpixmap, x, y, width, height)
 
     def __del__(self):
@@ -628,6 +635,10 @@ cdef get_pixels(display, xpixmap, x, y, width, height):
 
 def xcomposite_name_window_pixmap(window):
     cdef Display * display                              #@DuplicatedSignature
+    cdef Window root_window
+    cdef int x, y
+    cdef unsigned int width, height, border, depth
+    cdef Status status
     display = get_xdisplay_for(window)
     _ensure_XComposite_support(window)
     xpixmap = XCompositeNameWindowPixmap(display, get_xwindow(window))
@@ -635,7 +646,13 @@ def xcomposite_name_window_pixmap(window):
     if xpixmap==XNone:
         return None
     colormap = window.get_colormap()
-    return PixmapWrapper(get_display_for(window), colormap, xpixmap)
+    status = XGetGeometry(display, xpixmap, &root_window,
+                        &x, &y, &width, &height, &border, &depth)
+    if status==0:
+        print("failed to get pixmap dimensions for %s" % xpixmap)
+        XFreePixmap(display, xpixmap)
+        return None
+    return PixmapWrapper(get_display_for(window), colormap, xpixmap, width, height)
 
 
 def _ensure_XComposite_support(display_source):

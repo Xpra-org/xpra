@@ -380,7 +380,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return  None
 
         try:
-            pixels = trap.call_synced(handle.get_pixels, x, y, width, height)
+            w = min(handle.width, width)
+            h = min(handle.height, height)
+            if w!=width or h!=height:
+                log.warn("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+            pixels = trap.call_synced(handle.get_pixels, x, y, w, h)
         except Exception, e:
             log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e, exc_info=True)
             pixels = None
