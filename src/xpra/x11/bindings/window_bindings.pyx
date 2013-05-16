@@ -871,6 +871,7 @@ cdef class X11WindowBindings(X11CoreBindings):
             data = _munge_packed_ints_to_longs(data)
         cdef char * data_str
         data_str = data
+        #print("XChangeProperty(%s, %s, %s) data=%s" % (hex(xwindow), property, value, str([hex(x) for x in data_str])))
         XChangeProperty(self.display, xwindow,
                          self.get_xatom(property),
                          self.get_xatom(type),
