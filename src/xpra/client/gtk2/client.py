@@ -47,6 +47,8 @@ class XpraClient(GTKXpraClient):
         if opts.window_layout:
             assert opts.window_layout in WINDOW_LAYOUTS
             self.ClientWindowClass = WINDOW_LAYOUTS.get(opts.window_layout)
+        else:
+            self.ClientWindowClass = ClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
 
     def client_type(self):

@@ -681,56 +681,16 @@ def run_client(parser, opts, extra_args, mode):
         from xpra.client.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(conn, opts)
     else:
-        app = None
-        if opts.client_toolkit:
-            ct = opts.client_toolkit.lower()
-            toolkits = {}
-            try:
-                import gtk.gdk                      #@UnusedImport
-                import xpra.client.gtk2             #@UnusedImport
-                toolkits["gtk2"] = "xpra.client.gtk2.client"
-            except:
-                pass
-            try:
-                from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
-                import xpra.client.gtk3             #@UnusedImport
-                toolkits["gtk3"] = "xpra.client.gtk3.client"
-            except:
-                pass
-            try:
-                from PyQt4 import QtCore, QtGui     #@UnusedImport
-                import xpra.client.qt4              #@UnusedImport
-                toolkits["qt4"] = "xpra.client.qt4.client"
-            except Exception, e:
-                print("failed to load qt client: %s", e)
-                pass
-            if ct=="help":
-                parser.error("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
-            client_module = toolkits.get(ct)
-            if client_module is None:
-                parser.error("invalid client toolkit: %s, try one of: %s" % (
-                            opts.client_toolkit, ", ".join(toolkits.keys())))
-            else:
-                toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
-                #print("toolkit_module(%s)=%s" % (client_module, toolkit_module))
-                if toolkit_module:
-                    app = toolkit_module.XpraClient()
-        if not app:
-            from xpra.client.client import XpraClient
-            app = XpraClient()
+        if mode in ("attach"):
+            sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
+            sys.stdout.flush()
+        app = make_client(parser, opts)
         layouts = app.get_supported_window_layouts() or ["default"]
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))
             return 0
-        if not opts.window_layout:
-            opts.window_layout = "default"
         if opts.window_layout not in layouts:
             parser.error("window layout '%s' is not supported by the %s toolkit" % (opts.window_layout, app.client_toolkit()))
-        if mode in ("attach"):
-            sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
-            sys.stdout.flush()
-        app.setup_connection(conn)
-        app.init(opts)
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
@@ -741,7 +701,53 @@ def run_client(parser, opts, extra_args, mode):
                 log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
         if hasattr(app, "connect"):
             app.connect("handshake-complete", handshake_complete)
+        app.setup_connection(conn)
+        app.init(opts)
     return do_run_client(app, conn.target, mode)
+
+def make_client(parser, opts):
+    app = None
+    if not opts.client_toolkit:
+        from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
+        import_gobject()
+        if is_gtk3():
+            opts.client_toolkit = "gtk3"
+        else:
+            opts.client_toolkit = "gtk2"
+
+    ct = opts.client_toolkit.lower()
+    toolkits = {}
+    try:
+        import gtk.gdk                      #@UnusedImport
+        import xpra.client.gtk2             #@UnusedImport
+        toolkits["gtk2"] = "xpra.client.gtk2.client"
+    except:
+        pass
+    try:
+        from gi.repository import Gtk       #@UnresolvedImport @UnusedImport
+        import xpra.client.gtk3             #@UnusedImport
+        toolkits["gtk3"] = "xpra.client.gtk3.client"
+    except:
+        pass
+    try:
+        from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
+        import xpra.client.qt4              #@UnusedImport
+        toolkits["qt4"] = "xpra.client.qt4.client"
+    except Exception, e:
+        print("failed to load qt client: %s", e)
+        pass
+    if ct=="help":
+        parser.error("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
+    client_module = toolkits.get(ct)
+    if client_module is None:
+        parser.error("invalid client toolkit: %s, try one of: %s" % (
+                    opts.client_toolkit, ", ".join(toolkits.keys())))
+    toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
+    if toolkit_module is None:
+        parser.error("could not load %s" % client_module)
+    if not opts.window_layout:
+        opts.window_layout = "default"
+    return toolkit_module.XpraClient()
 
 def do_run_client(app, target, mode):
     try:
@@ -766,8 +772,9 @@ def run_remote_server(parser, opts, args):
     #and use _proxy_start subcommand:
     params["proxy_command"] = ["_proxy_start"]
     conn = connect_or_fail(params)
-    from xpra.client.client import XpraClient
-    app = XpraClient(conn, opts)
+    app = make_client(parser, opts)
+    app.setup_connection(conn)
+    app.init(opts)
     do_run_client(app, params["display_name"], "attach")
 
 def run_proxy(parser, opts, script_file, args, start_server=False):
