@@ -129,7 +129,7 @@ class ClientTray(ClientWidgetBase):
                                       (x, y), modifiers])
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
-        assert coding in ("rgb24", "png", "mmap"), "invalid encoding for tray data: %s" % coding
+        assert coding in ("rgb24", "rgb32", "png", "mmap"), "invalid encoding for tray data: %s" % coding
         log.info("ClientTray.draw_region(%s)", [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
         if coding=="png" and False:
             colorspace = self.tray_widget.get_screen().get_rgba_colormap()
