@@ -118,18 +118,17 @@ class Wm(gobject.GObject):
         "_NET_WM_WINDOW_TYPE_NORMAL",
         # "_NET_WM_WINDOW_TYPE_DESKTOP",
         # "_NET_WM_WINDOW_TYPE_DOCK",
-        # "_NET_WM_WINDOW_TYPE_TOOLBAR",
-        # "_NET_WM_WINDOW_TYPE_MENU",
-        # "_NET_WM_WINDOW_TYPE_UTILITY",
-        # "_NET_WM_WINDOW_TYPE_SPLASH",
-        # "_NET_WM_WINDOW_TYPE_DIALOG",
-        # "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
-        # "_NET_WM_WINDOW_TYPE_POPUP_MENU",
-        # "_NET_WM_WINDOW_TYPE_TOOLTIP",
+        "_NET_WM_WINDOW_TYPE_TOOLBAR",
+        "_NET_WM_WINDOW_TYPE_MENU",
+        "_NET_WM_WINDOW_TYPE_UTILITY",
+        "_NET_WM_WINDOW_TYPE_SPLASH",
+        "_NET_WM_WINDOW_TYPE_DIALOG",
+        "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+        "_NET_WM_WINDOW_TYPE_POPUP_MENU",
+        "_NET_WM_WINDOW_TYPE_TOOLTIP",
         # "_NET_WM_WINDOW_TYPE_NOTIFICATION",
-        # "_NET_WM_WINDOW_TYPE_COMBO",
+        "_NET_WM_WINDOW_TYPE_COMBO",
         # "_NET_WM_WINDOW_TYPE_DND",
-        # "_NET_WM_WINDOW_TYPE_NORMAL",
 
         "_NET_WM_STATE",
         "_NET_WM_STATE_DEMANDS_ATTENTION",
@@ -221,9 +220,9 @@ class Wm(gobject.GObject):
         self.set_current_desktop(0)
         # Start with the full display as workarea:
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        self.root_set("_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
         self.set_workarea(0, 0, root_w, root_h)
         self.root_set("_NET_DESKTOP_VIEWPORT", ["u32"], [0, 0])
-        self.root_set("_NET_SUPPORTED", ["atom"], self._NET_SUPPORTED)
 
         # Load up our full-screen widget
         self._world_window = WorldWindow()
