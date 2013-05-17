@@ -179,6 +179,8 @@ class GTKTrayMenuBase(object):
         def cursors_toggled(*args):
             self.client.cursors_enabled = self.cursors_menuitem.get_active()
             self.client.send_cursors_enabled()
+            if not self.client.cursors_enabled:
+                self.client.reset_cursor()
             log.debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
         self.cursors_menuitem.set_sensitive(False)

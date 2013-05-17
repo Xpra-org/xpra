@@ -873,6 +873,9 @@ class UIXpraClient(XpraClientBase):
         self.send("encoding", encoding)
 
 
+    def reset_cursor(self):
+        self.set_windows_cursor(self._id_to_window.values(), [])
+
     def _ui_event(self):
         if self._ui_events==0:
             self.emit("first-ui-received")
