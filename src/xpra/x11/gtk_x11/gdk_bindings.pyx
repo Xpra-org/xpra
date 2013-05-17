@@ -642,16 +642,15 @@ def xcomposite_name_window_pixmap(window):
     display = get_xdisplay_for(window)
     _ensure_XComposite_support(window)
     xpixmap = XCompositeNameWindowPixmap(display, get_xwindow(window))
-    w, h = window.get_size()
     if xpixmap==XNone:
         return None
-    colormap = window.get_colormap()
     status = XGetGeometry(display, xpixmap, &root_window,
                         &x, &y, &width, &height, &border, &depth)
     if status==0:
         print("failed to get pixmap dimensions for %s" % xpixmap)
         XFreePixmap(display, xpixmap)
         return None
+    colormap = window.get_colormap()
     return PixmapWrapper(get_display_for(window), colormap, xpixmap, width, height)
 
 
@@ -1009,7 +1008,6 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)
-        info("get_XDamage_event_base()=%s", get_XDamage_event_base())
         if XPRA_X11_DEBUG:
             msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
             info(*msg)
