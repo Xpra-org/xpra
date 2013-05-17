@@ -209,7 +209,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
-        self.queue_draw(self, 0, 0, w, h)
+        self.queue_draw(0, 0, w, h)
 
 
     def do_map_event(self, event):
