@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 
-from PyQt4.QtGui import QWidget, QPainter
-from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QWidget, QPainter       #@UnresolvedImport
+from PyQt4.QtCore import Qt                     #@UnresolvedImport
 
 from xpra.util import AdHocStruct
 from xpra.client.client_window_base import ClientWindowBase

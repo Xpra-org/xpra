@@ -5,7 +5,7 @@
 
 import sys
 import os
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui             #@UnresolvedImport
 
 from xpra.log import Logger
 log = Logger()
