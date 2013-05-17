@@ -899,8 +899,10 @@ def init_x11_events():
 
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
     if XPRA_X11_DEBUG_EVENTS=="*":
-        XPRA_X11_DEBUG_EVENTS = names_to_event_type.keys()
-    for n in XPRA_X11_DEBUG_EVENTS.split(","):
+        debug_events = names_to_event_type.keys()
+    else:
+        debug_events = XPRA_X11_DEBUG_EVENTS.split(",")
+    for n in debug_events:
         name = n.strip()
         if len(name)==0:
             continue
@@ -936,14 +938,15 @@ def _route_event(event, signal, parent_signal):
             # Copy the 'handlers' list, because signal handlers might cause items
             # to be added or removed from it while we are iterating:
             for handler in list(handlers):
-                if signal in gobject.signal_list_names(handler):
+                signals = gobject.signal_list_names(handler)
+                if signal in signals:
                     l("  forwarding event to a %s handler's %s signal",
                         type(handler).__name__, signal)
                     handler.emit(signal, event)
                     l("  forwarded")
                 else:
-                    l("  not forwarding to %s handler, it has no %s signal",
-                        type(handler).__name__, signal)
+                    l("  not forwarding to %s handler, it has no %s signal (it has: %s)",
+                        type(handler).__name__, signal, signals)
         else:
             l("  no handler registered for this window, ignoring event")
 
