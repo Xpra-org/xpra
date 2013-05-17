@@ -33,11 +33,11 @@ class GTK2WindowBacking(GTKWindowBacking):
         raise Exception("override me!")
 
 
-    def paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         assert coding in ENCODINGS
         if use_PIL:
-            return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks)
+            return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
         gobject.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False

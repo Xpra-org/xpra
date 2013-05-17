@@ -752,6 +752,8 @@ class WindowSource(object):
             assert rgb_format.upper()=="RGBA", "invalid rgb format: %s" % rgb_format
             assert coding in ("rgb32", "png", ), "invalid encoding for %s: %s" % (rgb_format, coding)
 
+        #by default, don't set rowstride (the container format will take care of providing it):
+        outstride = 0
         if coding in ("jpeg", "png"):
             data, client_options = self.PIL_encode(w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="x264":
@@ -764,10 +766,12 @@ class WindowSource(object):
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
         elif coding=="rgb24" or coding=="rgb32":
             data, client_options = self.rgb_encode(coding, data)
+            outstride = rowstride
         elif coding=="webp":
             data, client_options = self.webp_encode(w, h, data, rowstride, options)
         elif coding=="mmap":
             client_options = {}  #actual sending is already handled via mmap_send above
+            outstride = rowstride
         else:
             raise Exception("invalid encoding: %s" % coding)
         #check cancellation list again since the code above may take some time:
@@ -782,7 +786,7 @@ class WindowSource(object):
             self.last_pixmap_data = w, h, coding, sequence, rgbdata
             client_options["store"] = sequence
         #actual network packet:
-        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
+        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
         #debug("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
         #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)

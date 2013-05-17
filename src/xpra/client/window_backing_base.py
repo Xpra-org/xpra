@@ -117,9 +117,9 @@ class WindowBackingBase(object):
         return rgb24_data
 
 
-    def paint_image(self, coding, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, rowstride, options, callbacks)
+        #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
         assert coding in ENCODINGS, "encoding %s is not supported!" % coding
         assert has_PIL
         buf = BytesIOClass(img_data)
@@ -128,23 +128,22 @@ class WindowBackingBase(object):
         raw_data = img.tostring("raw", img.mode)
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
-            if rowstride<=0:
-                rowstride = width*3
+            rowstride = width*3
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
             self.idle_add(self.do_paint_rgb24, img_data, x, y, width, height, rowstride, options, callbacks)
         elif img.mode=="RGBA":
-            if rowstride<=0:
-                rowstride = width*4
+            rowstride = width*4
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
             self.idle_add(self.do_paint_rgb32, img_data, x, y, width, height, rowstride, options, callbacks)
         return False
 
-    def paint_webp(self, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         assert "webp" in ENCODINGS
         from xpra.codecs.webm.decode import DecodeRGB
         rgb24 = DecodeRGB(img_data)
-        self.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, width*3, options, callbacks)
+        rowstride = width*3
+        self.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, rowstride, options, callbacks)
         return  False
 
     def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):
@@ -201,7 +200,7 @@ class WindowBackingBase(object):
         raise Exception("override me!")
 
 
-    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, rowstride, options, callbacks):
+    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
         try:
             self._video_decoder_lock.acquire()
@@ -267,11 +266,11 @@ class WindowBackingBase(object):
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
             assert "x264" in ENCODINGS
-            self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, options, callbacks)
         elif coding == "vpx":
             assert "vpx" in ENCODINGS
-            self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
-            self.paint_webp(img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_webp(img_data, x, y, width, height, options, callbacks)
         else:
-            self.paint_image(coding, img_data, x, y, width, height, rowstride, options, callbacks)
+            self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
