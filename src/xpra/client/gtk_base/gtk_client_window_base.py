@@ -82,7 +82,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s", widget, repr(event), event.new_window_state, self._fullscreen)
 
     def set_fullscreen(self, fullscreen):
-        self.info("set_fullscreen(%s)", fullscreen)
+        self.debug("set_fullscreen(%s)", fullscreen)
         if self._fullscreen is None or self._fullscreen!=fullscreen:
             #note: the "_fullscreen" flag is updated by the window-state-event, not here
             if fullscreen:
