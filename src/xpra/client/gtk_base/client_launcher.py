@@ -24,6 +24,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobjec
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
+gobject.threads_init()
 import pango
 
 
@@ -34,10 +35,9 @@ from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_i
 from xpra.os_util import set_prgname
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
-from xpra.scripts.main import connect_to
+from xpra.scripts.main import connect_to, make_client
 from xpra.platform import init as platform_init
 from xpra.platform.paths import get_icon_dir
-from xpra.client.client import XpraClient
 from xpra.log import Logger
 log = Logger()
 
@@ -363,7 +363,12 @@ class ApplicationWindow:
 		gobject.idle_add(self.window.hide)
 
 		def start_XpraClient():
-			self.client = XpraClient(conn, self.config)
+			self.client = make_client(Exception, self.config)
+			log("start_XpraClient() client=%s", self.client)
+			self.client.setup_connection(conn)
+			self.client.init(self.config)
+			log("start_XpraClient() client initialized")
+			
 			if self.config.password:
 				#pass the password to the class directly:
 				self.client.password = self.config.password
@@ -389,6 +394,7 @@ class ApplicationWindow:
 					self.destroy()
 					gtk.main_quit()
 			self.client.warn_and_quit = warn_and_quit_override
+			self.client.run()
 		gobject.idle_add(start_XpraClient)
 
 	def password_ok(self, *args):

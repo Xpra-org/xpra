@@ -684,7 +684,7 @@ def run_client(parser, opts, extra_args, mode):
         if mode in ("attach"):
             sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
             sys.stdout.flush()
-        app = make_client(parser, opts)
+        app = make_client(parser.error, opts)
         layouts = app.get_supported_window_layouts() or ["default"]
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))
@@ -705,7 +705,7 @@ def run_client(parser, opts, extra_args, mode):
         app.init(opts)
     return do_run_client(app, conn.target, mode)
 
-def make_client(parser, opts):
+def make_client(error_cb, opts):
     app = None
     if not opts.client_toolkit:
         from xpra.gtk_common.gobject_compat import import_gobject, is_gtk3
@@ -737,14 +737,14 @@ def make_client(parser, opts):
         print("failed to load qt client: %s", e)
         pass
     if ct=="help":
-        parser.error("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
+        error_cb("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
     client_module = toolkits.get(ct)
     if client_module is None:
-        parser.error("invalid client toolkit: %s, try one of: %s" % (
+        error_cb("invalid client toolkit: %s, try one of: %s" % (
                     opts.client_toolkit, ", ".join(toolkits.keys())))
     toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
     if toolkit_module is None:
-        parser.error("could not load %s" % client_module)
+        error_cb("could not load %s" % client_module)
     if not opts.window_layout:
         opts.window_layout = "default"
     return toolkit_module.XpraClient()
@@ -772,7 +772,7 @@ def run_remote_server(parser, opts, args):
     #and use _proxy_start subcommand:
     params["proxy_command"] = ["_proxy_start"]
     conn = connect_or_fail(params)
-    app = make_client(parser, opts)
+    app = make_client(parser.error, opts)
     app.setup_connection(conn)
     app.init(opts)
     do_run_client(app, params["display_name"], "attach")
