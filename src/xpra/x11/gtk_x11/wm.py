@@ -94,6 +94,7 @@ class Wm(gobject.GObject):
 
         "_NET_WM_ALLOWED_ACTIONS",
         "_NET_WM_ACTION_CLOSE",
+        "_NET_WM_ACTION_FULLSCREEN",
 
         # We don't actually use _NET_WM_USER_TIME at all (yet), but it is
         # important to say we support the _NET_WM_USER_TIME_WINDOW property,

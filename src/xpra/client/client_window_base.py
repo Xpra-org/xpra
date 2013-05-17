@@ -193,6 +193,10 @@ class ClientWindowBase(ClientWidgetBase):
             self._has_alpha = self._metadata.get("has-alpha", False)
             self.set_alpha()
 
+        if "fullscreen" in self._metadata:
+            self.set_fullscreen(self._metadata.get("fullscreen"))
+
+
     def set_window_type(self, window_types):
         self.debug("set_window_type(%s)", window_types)
         hints = 0
@@ -202,6 +206,9 @@ class ClientWindowBase(ClientWidgetBase):
                 hints |= hint
         self.debug("setting window type to %s - %s", window_type, hint)
         self.set_type_hint(hint)
+
+    def set_fullscreen(self, fullscreen):
+        pass
 
     def set_alpha(self):
         pass

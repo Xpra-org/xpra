@@ -26,11 +26,12 @@ from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@Unresol
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
-               add_event_receiver,                          #@UnresolvedImport
-               remove_event_receiver,                       #@UnresolvedImport
-               get_display_for,                             #@UnresolvedImport
-               calc_constrained_size,                       #@UnresolvedImport
-               get_xwindow,                                 #@UnresolvedImport
+                get_pyatom,                                 #@UnresolvedImport
+                add_event_receiver,                         #@UnresolvedImport
+                remove_event_receiver,                      #@UnresolvedImport
+                get_display_for,                            #@UnresolvedImport
+                calc_constrained_size,                      #@UnresolvedImport
+                get_xwindow,                                #@UnresolvedImport
                )
 from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
@@ -208,6 +209,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
                           gobject.PARAM_READABLE),
+        "fullscreen": (gobject.TYPE_BOOLEAN,
+                       "Fullscreen-ness of window", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
                           gobject.PARAM_READABLE),
@@ -426,6 +431,32 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log.info("get_rgb_rawdata(..) get_pixels() returned None, trying to use the pixmap fallback %s", pixmap)
         return get_rgb_rawdata(pixmap, x, y, width, height, logger=log)
 
+    def do_xpra_client_message_event(self, event):
+        # FIXME
+        # Need to listen for:
+        #   _NET_CLOSE_WINDOW
+        #   _NET_ACTIVE_WINDOW
+        #   _NET_CURRENT_DESKTOP
+        #   _NET_REQUEST_FRAME_EXTENTS
+        #   _NET_WM_PING responses
+        # and maybe:
+        #   _NET_RESTACK_WINDOW
+        #   _NET_WM_DESKTOP
+        #   _NET_WM_STATE (more fully)
+        if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
+            atom = get_pyatom(event.window, event.data[1])
+            if atom=="_NET_WM_STATE_FULLSCREEN":
+                _NET_WM_STATE_REMOVE = 0
+                _NET_WM_STATE_ADD = 1
+                fullscreen = event.data[0]==_NET_WM_STATE_ADD
+                log.info("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
+                self.set_property("fullscreen", fullscreen)
+                return
+            log("do_xpra_client_message_event(%s) atom=%s", event, atom)
+        else:
+            log("do_xpra_client_message_event(%s)", event)
+
+
 
 gobject.type_register(BaseWindowModel)
 
@@ -436,6 +467,7 @@ gobject.type_register(BaseWindowModel)
 class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = {
         "xpra-unmap-event": one_arg_signal,
+        "xpra-client-message-event" : one_arg_signal,
         }
 
     def __init__(self, client_window):
@@ -525,11 +557,6 @@ class WindowModel(BaseWindowModel):
                                 "Urgency hint from client, or us", "",
                                 False,
                                 gobject.PARAM_READWRITE),
-        "fullscreen": (gobject.TYPE_BOOLEAN,
-                       "Fullscreen-ness of window", "",
-                       False,
-                       gobject.PARAM_READWRITE),
-
         "actual-size": (gobject.TYPE_PYOBJECT,
                         "Size of client window (actual (width,height))", "",
                         gobject.PARAM_READABLE),
@@ -606,6 +633,7 @@ class WindowModel(BaseWindowModel):
 
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
+        "xpra-client-message-event" : one_arg_signal,
         "xpra-property-notify-event": one_arg_signal,
         "xpra-unmap-event": one_arg_signal,
         "xpra-destroy-event": one_arg_signal,

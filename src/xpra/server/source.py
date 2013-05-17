@@ -496,6 +496,8 @@ class ServerSource(object):
             return {"modal" : window.get_property("modal")}
         elif propname == "pid":
             return {"pid" : window.get_property("pid") or -1}
+        elif propname == "fullscreen":
+            return {"fullscreen" : window.get_property("fullscreen") or False}
         elif propname == "size-hints":
             hints_metadata = {}
             hints = window.get_property("size-hints")

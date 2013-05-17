@@ -45,11 +45,12 @@ class GTKKeyEvent(AdHocStruct):
 class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def init_window(self, metadata):
+        self._fullscreen = None
+        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         ClientWindowBase.init_window(self, metadata)
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)
-        self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
 
     def setup_window(self):
         ClientWindowBase.setup_window(self)
@@ -71,9 +72,23 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.connect("notify::has-toplevel-focus", self._focus_change)
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
+        self.connect("window-state-event", self.window_state_updated)
 
         self.move(*self._pos)
         self.set_default_size(*self._size)
+
+    def window_state_updated(self, widget, event):
+        self._fullscreen = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN)
+        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s", widget, repr(event), event.new_window_state, self._fullscreen)
+
+    def set_fullscreen(self, fullscreen):
+        self.info("set_fullscreen(%s)", fullscreen)
+        if self._fullscreen is None or self._fullscreen!=fullscreen:
+            #note: the "_fullscreen" flag is updated by the window-state-event, not here
+            if fullscreen:
+                self.fullscreen()
+            else:
+                self.unfullscreen()
 
     def set_xid(self, xid):
         if HAS_X11_BINDINGS and self.is_realized():

@@ -294,7 +294,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("unmanaged", self._lost_window)
         return wid
 
-    _window_export_properties = ("title", "size-hints")
+    _window_export_properties = ("title", "size-hints", "fullscreen")
     def _add_new_window(self, window):
         self._add_new_window_common(window)
         for prop in self._window_export_properties:
@@ -364,8 +364,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     # These are the names of WindowModel properties that, when they change,
     # trigger updates in the xpra window metadata:
     _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "modal",
-                     "transient-for", "window-type", "xid", "has-alpha")
-    _OR_metadata = ("transient-for", "window-type", "xid", "has-alpha")
+                     "transient-for", "fullscreen", "window-type", "xid", "has-alpha")
+    _OR_metadata = ("transient-for", "fullscreen", "window-type", "xid", "has-alpha")
 
 
 
