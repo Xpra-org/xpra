@@ -334,14 +334,6 @@ def pkgconfig(*packages_options, **ekw):
 def get_xorg_conf_and_script():
     if not server_ENABLED:
         return "etc/xpra/client-only/xpra.conf", False
-    def Xvfb():
-        return "etc/xpra/Xvfb/xpra.conf", False
-    if Xdummy_ENABLED is True:
-        return "etc/xpra/Xdummy/xpra.conf", False
-    elif Xdummy_ENABLED is False:
-        return Xvfb()
-    else:
-        print("Xdummy support unspecified, will try to detect")
     XORG_BIN = None
     PATHS = os.environ.get("PATH").split(os.pathsep)
     for x in PATHS:
@@ -352,6 +344,28 @@ def get_xorg_conf_and_script():
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()
+
+    def Xvfb():
+        return "etc/xpra/Xvfb/xpra.conf", False
+    def Xorg_suid_check():
+        xorg_stat = os.stat(XORG_BIN)
+        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+            if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                print("Xorg is suid and not readable, Xdummy support unavailable")
+                return Xvfb()
+            print("%s is suid and readable, using the xpra_Xdummy wrapper" % XORG_BIN)
+            return "etc/xpra/xpra_Xdummy/xpra.conf", True
+        else:
+            print("using Xdummy config file")
+            return "etc/xpra/Xdummy/xpra.conf", False
+
+    if Xdummy_ENABLED is False:
+        return Xvfb()
+    elif Xdummy_ENABLED is True:
+        print("Xdummy support specified as 'enabled', will detect suid mode")
+        return Xorg_suid_check()
+    else:
+        print("Xdummy support unspecified, will try to detect")
 
     #do live detection
     cmd = ["Xorg", "-version"]
@@ -373,16 +387,7 @@ def get_xorg_conf_and_script():
             print("Xorg version %s is too old, Xdummy support not available" % str(xorg_version))
             return Xvfb()
         print("found valid recent version of Xorg server: %s" % v_str)
-        xorg_stat = os.stat(XORG_BIN)
-        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-            if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                print("Xorg is suid and not readable, Xdummy support unavailable")
-                return Xvfb()
-            print("%s is suid, using the xpra_Xdummy wrapper" % XORG_BIN)
-            return "etc/xpra/xpra_Xdummy/xpra.conf", True
-        else:
-            print("using Xdummy config file")
-            return "etc/xpra/Xdummy/xpra.conf", False
+        return Xorg_suid_check()
     except Exception, e:
         print("failed to detect Xorg version: %s" % e)
         print("not installing Xdummy support")
