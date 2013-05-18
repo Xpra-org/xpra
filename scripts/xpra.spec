@@ -822,10 +822,6 @@ fi
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
-%config
-/etc/xpra/xpra.conf
-/etc/xpra/xorg.conf
-
 ###
 ### eof
 ###
