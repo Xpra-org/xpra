@@ -5,6 +5,7 @@ include xpra/codecs/x264/x264lib.h
 include xpra/codecs/x264/x264lib.c
 include xpra/codecs/vpx/vpxlib.h
 include xpra/codecs/vpx/vpxlib.c
+include xpra/codecs/webm/LICENSE
 recursive-include man *
 recursive-include patches *
 recursive-include etc *
