@@ -184,6 +184,7 @@ class UIXpraClient(XpraClientBase):
         self.init_opengl(opts.opengl)
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
+        self.pings = opts.pings
 
         self.client_supports_notifications = opts.notifications
         self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
