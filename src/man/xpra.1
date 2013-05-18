@@ -61,7 +61,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speed\fP=\fISPEED\fP]
 [\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
-[\fB\-\-max\-bandwidth\fP=\fIBW\fP]
 [\fB\-\-key\-shortcut\fP=\fIkey:action\fP]
 [\fB\-\-readonly\fP]
 [\fB\-\-enable-sharing\fP]
@@ -496,11 +495,6 @@ The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 1 second.
 This option is only relevant when using a lossy encoding
 (\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP).
-.TP
-\fB\-\-max\-bandwidth\fP=\fIBW\fP
-Specify the link's maximal receive bandwidth. Xpra will adjust the
-JPEG quality to match this bandwidth. Specify 0.0 (default) to disable.
-(requires \fBjpeg\fP encoding)
 .TP
 \fB\-\-key\-shortcut\fP=\fIkey:action\fP
 Can be specified multiple times to add multiple key shortcuts.

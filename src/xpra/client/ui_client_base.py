@@ -66,10 +66,6 @@ class UIXpraClient(XpraClientBase):
         self.title = ""
         self.session_name = ""
         self.auto_refresh_delay = -1
-        self.max_bandwidth = -1
-        if self.max_bandwidth>0.0 and self.quality==0:
-            """ quality was not set, use a better start value """
-            self.quality = 80
         self.dpi = 96
 
         #draw thread:
@@ -167,10 +163,6 @@ class UIXpraClient(XpraClientBase):
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
-        self.max_bandwidth = opts.max_bandwidth
-        if self.max_bandwidth>0.0 and self.quality==0:
-            """ quality was not set, use a better start value """
-            self.quality = 80
         self.dpi = int(opts.dpi)
 
         self.speaker_allowed = bool(opts.speaker) and HAS_SOUND
@@ -216,24 +208,6 @@ class UIXpraClient(XpraClientBase):
             self.timeout_add(1000, self.send_ping)
         else:
             self.timeout_add(10*1000, self.send_ping)
-
-        def compute_receive_bandwidth(delay):
-            bytecount = self._protocol._conn.input_bytecount
-            bw = ((bytecount - self.last_input_bytecount) / 1024) * 1000 / delay
-            self.last_input_bytecount = bytecount;
-            log.debug("Bandwidth is ", bw, "kB/s, max ", self.max_bandwidth, "kB/s")
-            q = self.quality
-            if bw > self.max_bandwidth:
-                q -= 10
-            elif bw < self.max_bandwidth:
-                q += 5
-            self.min_quality = max(10, min(95 ,q))
-            self.send_min_quality()
-            return True
-        if self.max_bandwidth>0:
-            self.last_input_bytecount = 0
-            self.timeout_add(2000, compute_receive_bandwidth, 2000)
-
 
 
     def quit(self, exit_code=0):

@@ -205,12 +205,6 @@ When unspecified, all the available codecs are allowed and the first one is used
                       help="What image compression algorithm to use: %s." % (", ".join(ENCODINGS)) +
                             " Default: %default."
                       )
-    if "jpeg" in ENCODINGS:
-        group.add_option("-b", "--max-bandwidth", action="store",
-                          dest="max_bandwidth", type="float", default=defaults.max_bandwidth, metavar="BANDWIDTH (kB/s)",
-                          help="Specify the link's maximal receive speed to auto-adjust JPEG quality, 0.0 disables. (default: %default)")
-    else:
-        hidden_options["max_bandwidth"] = 0
     if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))>0:
         group.add_option("--min-quality", action="store",
                           metavar="MIN-LEVEL",
