@@ -719,6 +719,7 @@ class ServerBase(object):
         if key_repeat:
             capabilities["key_repeat"] = key_repeat
             capabilities["key_repeat_modifiers"] = True
+        capabilities["cursor.default_size"] = gtk.gdk.display_get_default().get_default_cursor_size()
         capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
         if server_cipher:
             capabilities.update(server_cipher)
