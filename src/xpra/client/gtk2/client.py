@@ -59,10 +59,15 @@ class XpraClient(GTKXpraClient):
     def get_supported_window_layouts(self):
         return  WINDOW_LAYOUTS
 
+    def get_core_encodings(self):
+        encodings = GTKXpraClient.get_core_encodings(self)
+        if gdk.screen_get_default().get_rgba_visual() is not None:
+            encodings.append("rgb32")
+        return encodings
+
 
     def do_set_default_window_icon(self, window_icon):
         gtk.window_set_default_icon_from_file(window_icon)
-
 
 
     def do_get_pixbuf(self, icon_filename):

@@ -249,7 +249,7 @@ class UIXpraClient(XpraClientBase):
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
 
     def get_core_encodings(self):
-        encodings = ["rgb24", "rgb32"]
+        encodings = ["rgb24"]
         from xpra.scripts.config import has_PIL, has_vpx, has_x264, has_webp
         for test, formats in (
                               (has_vpx    , ["vpx"]),
