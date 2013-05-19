@@ -7,6 +7,7 @@
 cdef extern from "Python.h":
     object PyString_FromStringAndSize(char * s, int len)
     ctypedef int Py_ssize_t
+    ctypedef void** const_void_pp "const void**"
     int PyObject_AsWriteBuffer(object obj,
                                void ** buffer,
                                Py_ssize_t * buffer_len) except -1
@@ -17,14 +18,14 @@ cdef extern from "Python.h":
 
 def argb_to_rgba(buf):
     # b is a Python buffer object
-    cdef unsigned long * cbuf = <unsigned long *> 0
+    cdef const unsigned long * cbuf = <unsigned long *> 0
     cdef Py_ssize_t cbuf_len = 0
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsReadBuffer(buf, <void **>&cbuf, &cbuf_len)
+    PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)
     return argbdata_to_pixdata(cbuf, cbuf_len)
 
-cdef argbdata_to_pixdata(unsigned long* data, int dlen):
+cdef argbdata_to_pixdata(const unsigned long* data, int dlen):
     if dlen <= 0:
         return None
     assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
@@ -57,10 +58,10 @@ def argb_to_rgb(buf):
     cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsReadBuffer(buf, <void **>&cbuf, &cbuf_len)
+    PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)
     return argbdata_to_rgb(cbuf, cbuf_len)
 
-cdef argbdata_to_rgb(unsigned long* data, int dlen):
+cdef argbdata_to_rgb(const unsigned long* data, int dlen):
     if dlen <= 0:
         return None
     assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
