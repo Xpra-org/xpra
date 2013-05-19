@@ -399,9 +399,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
             return  1
-        raw_cookie = os.urandom(16)
-        baked_cookie = raw_cookie.encode("hex")
-        xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", baked_cookie]
+        from xpra.os_util import get_hex_uuid
+        xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", get_hex_uuid()]
         try:
             code = subprocess.call(xauth_cmd)
             if code != 0:
