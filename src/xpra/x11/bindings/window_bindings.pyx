@@ -633,7 +633,8 @@ cdef class X11WindowBindings(X11CoreBindings):
         cdef XEvent e
         t = xtarget
         w = xwindow
-        debug("sending message to %s", hex(w))
+        debug("sendClientMessage(%s)", (hex(xtarget), hex(w), hex(propagate), hex(event_mask),
+                                        message_type, data0, data1, data2, data3, data4))
         e.type = ClientMessage
         e.xany.display = self.display
         e.xany.window = w
