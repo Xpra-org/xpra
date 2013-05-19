@@ -417,8 +417,8 @@ class SessionInfo(gtk.Window):
 
         scaps = self.client.server_capabilities
         se = scaps.get("encodings.core", scaps.get("encodings", []))
-        self.server_encodings_label.set_text(", ".join(se))
-        self.client_encodings_label.set_text(", ".join(self.client.get_core_encodings()))
+        self.server_encodings_label.set_text(", ".join(sorted(se)))
+        self.client_encodings_label.set_text(", ".join(sorted(self.client.get_core_encodings())))
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         self.bool_icon(self.server_clipboard_icon, scaps.get("clipboard", False))
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))
