@@ -630,6 +630,7 @@ class ServerBase(object):
         ss = ServerSource(proto, drop_client,
                           self.get_transient_for,
                           self.supports_mmap,
+                          self.default_encoding,
                           self.supports_speaker, self.supports_microphone,
                           self.speaker_codecs, self.microphone_codecs,
                           self.default_quality, self.default_min_quality,

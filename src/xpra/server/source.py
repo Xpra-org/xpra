@@ -60,6 +60,7 @@ class ServerSource(object):
     def __init__(self, protocol, disconnect_cb,
                  get_transient_for,
                  supports_mmap,
+                 default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -67,6 +68,7 @@ class ServerSource(object):
         log("ServerSource%s", (protocol, disconnect_cb,
                  get_transient_for,
                  supports_mmap,
+                 default_encoding,
                  supports_speaker, supports_microphone,
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
@@ -89,6 +91,7 @@ class ServerSource(object):
         self.sound_source = None
         self.sound_sink = None
 
+        self.default_encoding = default_encoding
         self.default_quality = default_quality      #default encoding quality for lossy encodings
         self.default_min_quality = default_min_quality #default minimum encoding quality
         self.default_speed = default_speed          #encoding speed (only used by x264)
@@ -683,13 +686,17 @@ class ServerSource(object):
         else:
             elog("encoding not specified, will use the first match")
         if not encoding:
-            #not specified or not supported, find intersection of supported encodings:
-            common = [e for e in self.encodings if e in SERVER_ENCODINGS]
-            elog("encodings supported by both ends: %s", common)
-            if not common:
-                raise Exception("cannot find compatible encoding between "
-                                "client (%s) and server (%s)" % (self.encodings, SERVER_ENCODINGS))
-            encoding = common[0]
+            #not specified or not supported, try server default
+            if self.default_encoding and self.default_encoding in self.encodings:
+                encoding = self.default_encoding
+            else:
+                #or find intersection of supported encodings:
+                common = [e for e in self.encodings if e in SERVER_ENCODINGS]
+                elog("encodings supported by both ends: %s", common)
+                if not common:
+                    raise Exception("cannot find compatible encoding between "
+                                    "client (%s) and server (%s)" % (self.encodings, SERVER_ENCODINGS))
+                encoding = common[0]
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
         else:
