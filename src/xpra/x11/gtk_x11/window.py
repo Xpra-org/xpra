@@ -327,8 +327,23 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite.do_xpra_configure_event(event)
 
     def do_get_property_geometry(self, pspec):
-        (x, y, w, h, b) = self._geometry
+        if self._geometry is None:
+            self.read_geometry(False)
+        x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
+
+    def read_geometry(self, emit):
+        def synced_update():
+            xwin = get_xwindow(self.client_window)
+            self._geometry = X11Window.geometry_with_border(xwin)
+            log.info("BaseWindowModel.read_geometry(%s) geometry(%s)=%s", emit, hex(xwin), self._geometry)
+            if emit:
+                self.emit("geometry")
+        try:
+            trap.call_unsynced(synced_update)
+        except XError:
+            log.error("failed to retrieve updated window geometry - maybe it's gone?", exc_info=True)
+
 
     def unmanage(self, exiting=False):
         if self._managed:
@@ -493,12 +508,9 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def composite_configure_event(self, composite_window, event):
         BaseWindowModel.composite_configure_event(self, composite_window, event)
-        log("OverrideRedirectWindowModel.composite_configure_event(%s, %s) client window geometry=%s", composite_window, event, self.client_window.get_geometry())
-        try:
-            self._geometry = trap.call_unsynced(X11Window.geometry_with_border, get_xwindow(self.client_window))
-            self.emit("geometry")
-        except XError:
-            log.error("failed to update geometry!", exc_info=True)
+        if self.client_window is None:
+            return
+        self.read_geometry(True)
 
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
