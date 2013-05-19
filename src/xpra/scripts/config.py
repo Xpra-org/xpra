@@ -63,7 +63,7 @@ except ImportError, e:
 except Exception, e:
     warn("cannot load webp: %s" % e)
 
-PREFERED_ENCODING_ORDER = ("x264", "vpx", "png", "webp", "rgb24", "jpeg")
+PREFERED_ENCODING_ORDER = ("x264", "vpx", "png", "webp", "rgb24", "jpeg", "png/P", "png/L")
 
 
 ENCRYPTION_CIPHERS = []

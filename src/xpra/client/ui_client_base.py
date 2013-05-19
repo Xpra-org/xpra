@@ -255,7 +255,7 @@ class UIXpraClient(XpraClientBase):
                               (has_vpx    , ["vpx"]),
                               (has_x264   , ["x264"]),
                               (has_webp   , ["webp"]),
-                              (has_PIL    , ["png", "jpeg"]),
+                              (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
                         ):
             if test:
                 for enc in formats:

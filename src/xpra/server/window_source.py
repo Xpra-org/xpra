@@ -757,7 +757,7 @@ class WindowSource(object):
 
         #by default, don't set rowstride (the container format will take care of providing it):
         outstride = 0
-        if coding in ("jpeg", "png"):
+        if coding.startswith("png") or coding=="jpeg":
             data, client_options = self.PIL_encode(w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="x264":
             #x264 needs sizes divisible by 2:
@@ -837,11 +837,16 @@ class WindowSource(object):
             im.save(buf, "JPEG", quality=q)
             client_options["quality"] = q
         else:
-            assert coding=="png"
+            assert coding in ("png", "png/P", "png/L")
             debug("sending as %s, mode=%s", coding, im.mode)
-            #transparency = False
-            #transparency=transparency
-            im.save(buf, coding.upper())
+            if coding=="png/L":
+                im = im.convert("L", palette=Image.ADAPTIVE) 
+            elif coding=="png/P":
+                #I wanted to use the "better" adaptive method,
+                #but this does NOT work (produces a black image instead):
+                #im.convert("P", palette=Image.ADAPTIVE)
+                im = im.convert("P", palette=Image.WEB)
+            im.save(buf, "PNG", **im.info)
         data = buf.getvalue()
         buf.close()
         return Compressed(coding, data), client_options

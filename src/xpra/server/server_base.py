@@ -45,7 +45,7 @@ for test, formats in (
                       (has_vpx    , ["vpx"]),
                       (has_x264   , ["x264"]),
                       (has_webp   , ["webp"]),
-                      (has_PIL    , ["png", "jpeg"]),
+                      (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
                 ):
     if test:
         for enc in formats:
@@ -117,10 +117,12 @@ class ServerBase(object):
         log("ServerBase.init(%s, %s)", sockets, opts)
 
         self.supports_mmap = opts.mmap
-        self.default_encoding = opts.encoding
+        if opts.encoding not in SERVER_ENCODINGS:
+            log.warn("ignored invalid default encoding option: %s", opts.encoding)
+        else:
+            self.default_encoding = opts.encoding
         if not self.default_encoding:
             self.default_encoding = DEFAULT_ENCODING
-        assert self.default_encoding in SERVER_ENCODINGS, "invalid encoding: %s" % self.default_encoding
         self.session_name = opts.session_name
         set_application_name(self.session_name)
 

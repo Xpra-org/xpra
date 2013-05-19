@@ -122,7 +122,10 @@ class WindowBackingBase(object):
         assert has_PIL
         buf = BytesIOClass(img_data)
         img = Image.open(buf)
-        assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
+        assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
+        if img.mode in ("P", "L"):
+            #TODO: use RGB for images without transparency
+            img = img.convert("RGB")
         raw_data = img.tostring("raw", img.mode)
         if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
@@ -265,5 +268,7 @@ class WindowBackingBase(object):
             self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
-        else:
+        elif coding.startswith("png") or coding=="jpeg":
             self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
+        else:
+            raise Exception("invalid encoding: %s" % coding)
