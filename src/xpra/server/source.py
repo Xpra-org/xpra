@@ -415,7 +415,8 @@ class ServerSource(object):
         if self.mmap_size>0:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
         else:
-            log.info("using %s as primary encoding", self.encoding)
+            others = [x for x in self.core_encodings if x in SERVER_CORE_ENCODINGS and x!=self.encoding]
+            log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
 
     def start_sending_sound(self):
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"
