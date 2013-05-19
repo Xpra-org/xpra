@@ -10,7 +10,7 @@
 
 import gobject
 import gtk
-from struct import pack, unpack
+from struct import pack, unpack, calcsize
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.error import trap, XError
@@ -89,7 +89,14 @@ class ManagerSelection(gobject.GObject):
 
         # Ask ourselves when we acquired the selection:
         ts_data = self.clipboard.wait_for_contents("TIMESTAMP").data
-        ts_num = unpack("@i", ts_data[:4])[0]
+        #data is a timestamp, X11 datatype is Time which is CARD32,
+        #(which is 64 bits on 64-bit systems!)
+        Lsize = calcsize("@L")
+        if len(ts_data)==Lsize:
+            ts_num = unpack("@L", ts_data[:Lsize])[0]
+        else:
+            ts_num = 0      #CurrentTime
+            log.warn("invalid data for 'TIMESTAMP': %s", ([hex(ord(x)) for x in ts_data]))
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
