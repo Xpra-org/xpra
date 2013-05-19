@@ -159,7 +159,7 @@ cdef class Encoder:
 
     def compress_image(self, input, rowstride, options):
         cdef x264_picture_t *pic_in = NULL
-        cdef uint8_t *pic_buf = NULL
+        cdef const uint8_t *pic_buf = NULL
         cdef Py_ssize_t pic_buf_len = 0
         cdef int quality_override = options.get("quality", -1)
         cdef int speed_override = options.get("speed", -1)

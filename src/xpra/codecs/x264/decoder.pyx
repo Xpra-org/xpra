@@ -77,7 +77,7 @@ cdef class Decoder:
         cdef uint8_t *dout[3]
         cdef int outstrides[3]
         cdef unsigned char * padded_buf = NULL
-        cdef unsigned char * buf = NULL
+        cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         assert self.context!=NULL
@@ -122,7 +122,7 @@ cdef class Decoder:
         cdef int yuvstrides[3]
         cdef int outstride
         cdef unsigned char * padded_buf = NULL  #@DuplicatedSignature
-        cdef unsigned char * buf = NULL         #@DuplicatedSignature
+        cdef const unsigned char * buf = NULL   #@DuplicatedSignature
         cdef Py_ssize_t buf_len = 0             #@DuplicatedSignature
         cdef int i = 0                          #@DuplicatedSignature
         assert self.context!=NULL

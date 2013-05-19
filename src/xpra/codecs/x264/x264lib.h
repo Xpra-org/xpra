@@ -92,7 +92,7 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
  @param out: Will be filled to point to the output data in planar YUV420 format (3 planes). This data will be freed automatically upon next call to the decoder.
  @param outstride: Output strides (3 planes).
 */
-int decompress_image(struct x264lib_ctx *, uint8_t *in, int size, uint8_t *(*out)[3], int (*outstride)[3]);
+int decompress_image(struct x264lib_ctx *, const uint8_t *in, int size, uint8_t *(*out)[3], int (*outstride)[3]);
 
 /**
  * Change the speed of encoding (x264 preset).

@@ -70,7 +70,7 @@ cdef class Encoder:
 
     def compress_image(self, input, rowstride, options):
         cdef vpx_image_t *pic_in = NULL
-        cdef uint8_t *pic_buf = NULL
+        cdef const uint8_t *pic_buf = NULL
         cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
         #colourspace conversion with gil held:

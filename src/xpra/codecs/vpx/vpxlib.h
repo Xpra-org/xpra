@@ -64,7 +64,7 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
  @param outsize: Output size.
  @param outstride: Output strides (3 planes).
 */
-int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]);
+int decompress_image(struct vpx_context *ctx, const uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]);
 
 /**
  * Define our own memalign function so we can more easily

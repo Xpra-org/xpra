@@ -22,17 +22,6 @@ cdef extern from "stdlib.h":
 cdef extern from "X11/Xutil.h":
     pass
 
-cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char * s, int len)
-    ctypedef int Py_ssize_t
-    int PyObject_AsWriteBuffer(object obj,
-                               void ** buffer,
-                               Py_ssize_t * buffer_len) except -1
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
-
-
 ######
 # Xlib primitives and constants
 ######

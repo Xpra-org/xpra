@@ -188,12 +188,12 @@ int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[
 	return 0;
 }
 
-int decompress_image(struct vpx_context *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
+int decompress_image(struct vpx_context *ctx, const uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 {
 	vpx_image_t      *img;
 	int frame_sz = size;
 	vpx_codec_iter_t  iter = NULL;
-	uint8_t* frame = in;
+	const uint8_t* frame = in;
 	int i = 0;
 
 	if (vpx_codec_decode(&ctx->codec, frame, frame_sz, NULL, 0)) {

@@ -537,7 +537,7 @@ void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt)
 	}
 }
 
-int decompress_image(struct x264lib_ctx *ctx, uint8_t *in, int size, uint8_t *(*out)[3], int (*outstride)[3])
+int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8_t *(*out)[3], int (*outstride)[3])
 {
 	int got_picture;
 	int len;

@@ -29,7 +29,7 @@ cdef extern from "vpxlib.h":
 
     vpx_codec_ctx_t* init_decoder(int width, int height, int use_swscale)
     void clean_decoder(vpx_codec_ctx_t *context)
-    int decompress_image(vpx_codec_ctx_t *context, uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
+    int decompress_image(vpx_codec_ctx_t *context, const uint8_t *input, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3])
 
 
 def get_version():
@@ -71,7 +71,7 @@ cdef class Decoder:
         cdef uint8_t *dout[3]
         cdef int outsize
         cdef int outstrides[3]
-        cdef unsigned char * buf = NULL
+        cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         assert self.context!=NULL
@@ -98,7 +98,7 @@ cdef class Decoder:
         cdef int outsize                    #@DuplicatedSignature
         cdef int yuvstrides[3]
         cdef int outstride
-        cdef unsigned char * buf = NULL     #@DuplicatedSignature
+        cdef const unsigned char * buf = NULL     #@DuplicatedSignature
         cdef Py_ssize_t buf_len = 0         #@DuplicatedSignature
         cdef int i = 0                      #@DuplicatedSignature
         assert self.context!=NULL

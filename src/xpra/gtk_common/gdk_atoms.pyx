@@ -33,11 +33,7 @@ cdef extern from "gdk/gdk.h":
     pass
 
 cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char * s, int len)
     ctypedef int Py_ssize_t
-    int PyObject_AsWriteBuffer(object obj,
-                               void ** buffer,
-                               Py_ssize_t * buffer_len) except -1
     int PyObject_AsReadBuffer(object obj,
                               void ** buffer,
                               Py_ssize_t * buffer_len) except -1
@@ -63,11 +59,9 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     # interpret atoms when dealing with the clipboard, therefore, we need to
     # be able to take an array of GDK atom objects (integers) and figure out
     # what they mean.
-    cdef GdkAtom * array = <GdkAtom*> NULL
+    cdef const GdkAtom * array = <GdkAtom*> NULL
     cdef Py_ssize_t array_len_bytes = 0
     cdef long gdk_atom_value = 0
-    # const_void_pp is a typedef for "const void**"
-    # (only defined to avoid a compile warning on the following line)
     PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)
     array_len = array_len_bytes / sizeof(GdkAtom)
     objects = []

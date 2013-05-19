@@ -46,16 +46,6 @@ cdef extern from "gdk/gdk.h":
 cdef extern from "gdk/gdkx.h":
     pass
 
-cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char * s, int len)
-    ctypedef int Py_ssize_t
-    int PyObject_AsWriteBuffer(object obj,
-                               void ** buffer,
-                               Py_ssize_t * buffer_len) except -1
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
-
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":
     void init_pygobject()
@@ -76,7 +66,6 @@ cdef extern from "glib-2.0/glib-object.h":
 
 cdef extern from "pygtk-2.0/pygobject.h":
     cGObject * pygobject_get(object box)
-    ctypedef void** const_void_pp "const void**"
     object pygobject_new(cGObject * contents)
 
 cdef cGObject * unwrap(box, pyclass) except? NULL:
