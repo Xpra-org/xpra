@@ -10,7 +10,6 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
 gtk = import_gtk()
 gobject = import_gobject()
 
-from xpra.scripts.config import ENCODINGS
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.client.gtk_base.session_info import SessionInfo
@@ -65,14 +64,14 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())
-        if self.client.windows_enabled and len(ENCODINGS)>1:
+        if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
-        lossy_encodings = set(ENCODINGS) & set(["jpeg", "webp", "x264", "vpx"])
+        lossy_encodings = set(self.client.get_core_encodings()) & set(["jpeg", "webp", "x264", "vpx"])
         if self.client.windows_enabled and len(lossy_encodings)>0:
             menu.append(self.make_qualitymenuitem())
         else:
             self.quality = None
-        if self.client.windows_enabled and "x264" in ENCODINGS:
+        if self.client.windows_enabled and "x264" in self.client.get_encodings():
             menu.append(self.make_speedmenuitem())
         else:
             self.speed = None
@@ -358,7 +357,7 @@ class GTKTrayMenuBase(object):
 
     def populate_encodingssubmenu(self, encodings_submenu):
         server_encodings = self.client.server_capabilities.get("encodings", [])
-        for encoding in ENCODINGS:
+        for encoding in self.client.get_encodings():
             encoding_item = CheckMenuItem(encoding)
             def encoding_changed(item):
                 item = ensure_item_selected(encodings_submenu, item)

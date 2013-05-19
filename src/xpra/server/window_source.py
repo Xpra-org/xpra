@@ -50,7 +50,6 @@ else:
 
 from xpra.deque import maxdeque
 from xpra.net.protocol import zlib_compress, Compressed
-from xpra.scripts.config import ENCODINGS
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.stats.maths import calculate_time_weighted_average
@@ -100,6 +99,7 @@ class DamageBatchConfig(object):
     RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
                                         #(this theoretical limit is never achieved since calculations take time + scheduling also does)
 
+
     def __init__(self):
         self.always = self.ALWAYS
         self.max_events = self.MAX_EVENTS
@@ -137,7 +137,7 @@ class WindowSource(object):
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
-                    encoding, encodings, encoding_options,
+                    encoding, encodings, core_encodings, encoding_options,
                     default_encoding_options,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
@@ -147,6 +147,7 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
+        self.core_encodings = core_encodings            #the core encodings
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
                                                         #may change at runtime (ie: see ServerSource.set_quality)
@@ -157,6 +158,8 @@ class WindowSource(object):
         self.uses_swscale = encoding_options.get("uses_swscale", True)
                                                         #client uses uses_swscale (has extra limits on sizes)
                                                         #unused since we still use swscale on the server...
+        from xpra.server.server_base import SERVER_CORE_ENCODINGS
+        self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
         self.supports_delta = []
         if xor_str is not None:
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24")]
@@ -503,7 +506,7 @@ class WindowSource(object):
             return  coding
         if has_alpha and current_encoding not in ("png", "rgb32"):
             for x in ("png", "rgb32"):
-                if x in ENCODINGS:
+                if x in self.SERVER_CORE_ENCODINGS and x in self.core_encodings:
                     return x
         if is_tray:
             #tray needs a lossless encoder
@@ -543,7 +546,7 @@ class WindowSource(object):
         else:
             encs = "png", "rgb24"
         for e in encs:
-            if e in ENCODINGS and e in self.encodings:
+            if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
                 return e
         return fallback
 
@@ -820,7 +823,7 @@ class WindowSource(object):
         return Compressed(coding, zlib.data), {"zlib" : zlib.level}
 
     def PIL_encode(self, w, h, coding, data, rgb_format, rowstride, options):
-        assert coding in ENCODINGS
+        assert coding in self.SERVER_CORE_ENCODINGS
         import Image
         im = Image.fromstring(rgb_format, (w, h), data, "raw", rgb_format, rowstride)
         buf = StringIOClass()
@@ -844,7 +847,7 @@ class WindowSource(object):
         return Compressed(coding, data), client_options
 
     def make_video_encoder(self, coding):
-        assert coding in ENCODINGS
+        assert coding in self.SERVER_CORE_ENCODINGS
         if coding=="x264":
             from xpra.codecs.x264.encoder import Encoder as x264Encoder   #@UnresolvedImport
             return x264Encoder()

@@ -23,7 +23,7 @@ elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_source import WindowSource, DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.scripts.config import HAS_SOUND, ENCODINGS
+from xpra.scripts.config import HAS_SOUND
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass
@@ -339,6 +339,7 @@ class ServerSource(object):
 
         #encodings:
         self.encodings = capabilities.get("encodings", [])
+        self.core_encodings = capabilities.get("encodings.core", self.encodings)
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
@@ -387,7 +388,8 @@ class ServerSource(object):
         if ms>0:
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
-        self.png_window_icons = "png" in self.encodings and "png" in ENCODINGS
+        from xpra.server.server_base import SERVER_CORE_ENCODINGS
+        self.png_window_icons = "png" in self.encodings and "png" in SERVER_CORE_ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
         elog("encoding_options: %s", self.encoding_options)
         #mmap:
@@ -671,9 +673,10 @@ class ServerSource(object):
         """ Changes the encoder for the given 'window_ids',
             or for all windows if 'window_ids' is None.
         """
+        from xpra.server.server_base import SERVER_ENCODINGS
         if encoding:
             assert encoding in self.encodings, "encoding %s is not supported, client supplied list: %s" % (encoding, self.encodings)
-            if encoding not in ENCODINGS:
+            if encoding not in SERVER_ENCODINGS:
                 log.error("encoding %s is not supported by this server! " \
                          "Will use the first commonly supported encoding instead", encoding)
                 encoding = None
@@ -681,11 +684,11 @@ class ServerSource(object):
             elog("encoding not specified, will use the first match")
         if not encoding:
             #not specified or not supported, find intersection of supported encodings:
-            common = [e for e in self.encodings if e in ENCODINGS]
+            common = [e for e in self.encodings if e in SERVER_ENCODINGS]
             elog("encodings supported by both ends: %s", common)
             if not common:
                 raise Exception("cannot find compatible encoding between "
-                                "client (%s) and server (%s)" % (self.encodings, ENCODINGS))
+                                "client (%s) and server (%s)" % (self.encodings, SERVER_ENCODINGS))
             encoding = common[0]
         if window_ids is not None:
             wss = [self.window_sources.get(wid) for wid in window_ids]
@@ -946,6 +949,7 @@ class ServerSource(object):
         except:
             pass
         info["client_encodings%s" % suffix] = ",".join(self.encodings)
+        info["client_core_encodings%s" % suffix] = ",".join(self.core_encodings)
         info["damage_data_queue_size%s.current" % suffix] = self.damage_data_queue.qsize()
         info["damage_packet_queue_size%s.current" % suffix] = len(self.damage_packet_queue)
         qpixels = [x[2] for x in list(self.damage_packet_queue)]
@@ -1039,7 +1043,7 @@ class ServerSource(object):
             batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, batch_config, self.auto_refresh_delay,
-                              self.encoding, self.encodings, self.encoding_options,
+                              self.encoding, self.encodings, self.core_encodings, self.encoding_options,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws

@@ -16,7 +16,7 @@ import platform
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
-from xpra.scripts.config import HAS_SOUND, ENCODINGS
+from xpra.scripts.config import HAS_SOUND
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
 log = Logger()
@@ -416,8 +416,9 @@ class SessionInfo(gtk.Window):
         self.opengl_buffering.set_text(buffering)
 
         scaps = self.client.server_capabilities
-        self.server_encodings_label.set_text(", ".join(scaps.get("encodings", [])))
-        self.client_encodings_label.set_text(", ".join(ENCODINGS))
+        se = scaps.get("encodings.core", scaps.get("encodings", []))
+        self.server_encodings_label.set_text(", ".join(se))
+        self.client_encodings_label.set_text(", ".join(self.client.get_core_encodings()))
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         self.bool_icon(self.server_clipboard_icon, scaps.get("clipboard", False))
         self.bool_icon(self.server_notifications_icon, scaps.get("notifications", False))

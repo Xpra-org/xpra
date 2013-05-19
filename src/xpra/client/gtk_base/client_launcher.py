@@ -30,7 +30,7 @@ import pango
 
 from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
-from xpra.scripts.config import ENCODINGS, read_config, make_defaults_struct, validate_config
+from xpra.scripts.config import read_config, make_defaults_struct, validate_config
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
 from xpra.os_util import set_prgname
 from xpra.client.gtk_base.about import about
@@ -47,8 +47,6 @@ LOSSY_20 = "low quality"
 LOSSY_50 = "average quality"
 LOSSY_90 = "best lossy quality"
 
-DEFAULT_ENCODING = ENCODINGS[0]
-
 XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
 XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
 						LOSSY_20 : 20,
@@ -61,8 +59,9 @@ class ApplicationWindow:
 
 	def	__init__(self):
 		# Default connection options
-		self.client = None
 		self.config = make_defaults_struct()
+		self.config.client_toolkit = "gtk2"
+		self.client = make_client(Exception, self.config)
 
 	def create_window(self):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -116,7 +115,7 @@ class ApplicationWindow:
 		hbox.pack_start(gtk.Label("Encoding: "))
 		self.encoding_combo = gtk.combo_box_new_text()
 		self.encoding_combo.get_model().clear()
-		for option in ENCODINGS:
+		for option in self.client.get_encodings():
 			self.encoding_combo.append_text(option)
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
@@ -363,7 +362,6 @@ class ApplicationWindow:
 		gobject.idle_add(self.window.hide)
 
 		def start_XpraClient():
-			self.client = make_client(Exception, self.config)
 			log("start_XpraClient() client=%s", self.client)
 			self.client.setup_connection(conn)
 			self.client.init(self.config)
@@ -446,7 +444,8 @@ class ApplicationWindow:
 			self.mode_combo.set_active(1)
 		else:
 			self.mode_combo.set_active(2)
-		self.encoding_combo.set_active(ENCODINGS.index(self.config.encoding))
+		if self.config.encoding:
+			self.encoding_combo.set_active(self.client.get_encodings().index(self.config.encoding))
 		self.username_entry.set_text(self.config.username)
 		self.password_entry.set_text(self.config.password)
 		self.host_entry.set_text(self.config.host)
@@ -482,7 +481,8 @@ def main():
 	set_prgname("Xpra-Launcher")
 	app = ApplicationWindow()
 	def app_signal(signum, frame):
-		log("\ngot signal %s" % SIGNAMES.get(signum, signum))
+		print("")
+		log("got signal %s" % SIGNAMES.get(signum, signum))
 		app.show()
 		app.client.cleanup()
 		gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))

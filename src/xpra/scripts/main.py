@@ -22,7 +22,7 @@ from xpra.platform.options import add_client_options
 from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
-from xpra.scripts.config import OPTION_TYPES, ENCODINGS, ENCRYPTION_CIPHERS, \
+from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
     make_defaults_struct, show_codec_help, parse_bool, validate_config
 
 
@@ -202,33 +202,25 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
-                      help="What image compression algorithm to use: %s." % (", ".join(ENCODINGS)) +
+                      help="What image compression algorithm to use, specify 'help' to get a list of options."
                             " Default: %default."
                       )
-    if len(set(("jpeg", "webp", "x264")).intersection(set(ENCODINGS)))>0:
-        group.add_option("--min-quality", action="store",
-                          metavar="MIN-LEVEL",
-                          dest="min_quality", type="int", default=defaults.min_quality,
-                          help="Sets the minimum x264 encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
-        group.add_option("--quality", action="store",
-                          metavar="LEVEL",
-                          dest="quality", type="int", default=defaults.quality,
-                          help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
-    else:
-        hidden_options["min_quality"] = defaults.min_quality
-        hidden_options["quality"] = defaults.quality
-    if "x264" in ENCODINGS:
-        group.add_option("--min-speed", action="store",
-                          metavar="SPEED",
-                          dest="min_speed", type="int", default=defaults.min_speed,
-                          help="Sets the minimum x264 encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
-        group.add_option("--speed", action="store",
-                          metavar="SPEED",
-                          dest="speed", type="int", default=defaults.speed,
-                          help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
-    else:
-        hidden_options["min_speed"] = defaults.min_speed
-        hidden_options["speed"] = defaults.speed
+    group.add_option("--min-quality", action="store",
+                      metavar="MIN-LEVEL",
+                      dest="min_quality", type="int", default=defaults.min_quality,
+                      help="Sets the minimum x264 encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
+    group.add_option("--quality", action="store",
+                      metavar="LEVEL",
+                      dest="quality", type="int", default=defaults.quality,
+                      help="Use a fixed image compression quality - only relevant to lossy encodings (1-100, 0 to use automatic setting). Default: %default.")
+    group.add_option("--min-speed", action="store",
+                      metavar="SPEED",
+                      dest="min_speed", type="int", default=defaults.min_speed,
+                      help="Sets the minimum x264 encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
+    group.add_option("--speed", action="store",
+                      metavar="SPEED",
+                      dest="speed", type="int", default=defaults.speed,
+                      help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
@@ -371,8 +363,6 @@ When unspecified, all the available codecs are allowed and the first one is used
         int(options.dpi)
     except Exception, e:
         parser.error("invalid dpi: %s" % e)
-    if options.encoding and options.encoding not in ENCODINGS:
-        parser.error("encoding %s is not supported, try: %s" % (options.encoding, ", ".join(ENCODINGS)))
     if options.encryption:
         assert len(ENCRYPTION_CIPHERS)>0, "cannot use encryption: no ciphers available"
         if options.encryption not in ENCRYPTION_CIPHERS:
@@ -659,32 +649,38 @@ def run_client(parser, opts, extra_args, mode):
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
-    conn = connect_or_fail(pick_display(parser, opts, extra_args))
     if opts.compression_level < 0 or opts.compression_level > 9:
         parser.error("Compression level must be between 0 and 9 inclusive.")
     if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
         parser.error("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
+    def connect():
+        return connect_or_fail(pick_display(parser, opts, extra_args))
+
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
-        app = ScreenshotXpraClient(conn, opts, screenshot_filename)
+        app = ScreenshotXpraClient(connect(), opts, screenshot_filename)
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
-        app = InfoXpraClient(conn, opts)
+        app = InfoXpraClient(connect(), opts)
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient
-        app = VersionXpraClient(conn, opts)
+        app = VersionXpraClient(connect(), opts)
     else:
         if mode in ("attach"):
             sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
             sys.stdout.flush()
         app = make_client(parser.error, opts)
+        if opts.encoding and opts.encoding=="help":
+            print("%s xpra client supports the following encodings: %s" % (app.client_toolkit(), ", ".join(app.get_encodings())))
+            return 0
         layouts = app.get_supported_window_layouts() or ["default"]
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))
             return 0
         if opts.window_layout not in layouts:
             parser.error("window layout '%s' is not supported by the %s toolkit" % (opts.window_layout, app.client_toolkit()))
+        conn = connect()
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
@@ -697,7 +693,7 @@ def run_client(parser, opts, extra_args, mode):
             app.connect("handshake-complete", handshake_complete)
         app.setup_connection(conn)
         app.init(opts)
-    return do_run_client(app, conn.target, mode)
+    return do_run_client(app)
 
 def make_client(error_cb, opts):
     app = None
@@ -743,7 +739,7 @@ def make_client(error_cb, opts):
         opts.window_layout = "default"
     return toolkit_module.XpraClient()
 
-def do_run_client(app, target, mode):
+def do_run_client(app):
     try:
         try:
             return app.run()
@@ -769,7 +765,7 @@ def run_remote_server(parser, opts, args):
     app = make_client(parser.error, opts)
     app.setup_connection(conn)
     app.init(opts)
-    do_run_client(app, params["display_name"], "attach")
+    do_run_client(app)
 
 def run_proxy(parser, opts, script_file, args, start_server=False):
     from xpra.server.proxy import XpraProxy

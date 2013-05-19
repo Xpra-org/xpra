@@ -11,7 +11,6 @@ gdk = import_gdk3()
 from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
 from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
 
-from xpra.scripts.config import ENCODINGS
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
 from xpra.log import Logger
@@ -27,7 +26,7 @@ class XpraClient(GTKXpraClient):
     def make_hello(self, challenge_response=None):
         capabilities = GTKXpraClient.make_hello(self, challenge_response)
         if xor_str is not None:
-            capabilities["encoding.supports_delta"] = [x for x in ("rgb24",) if x in ENCODINGS]
+            capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
         return capabilities
 
     def client_type(self):

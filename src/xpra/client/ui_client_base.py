@@ -22,7 +22,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
-from xpra.scripts.config import HAS_SOUND, ENCODINGS, get_codecs
+from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
@@ -69,8 +69,8 @@ class UIXpraClient(XpraClientBase):
         self.dpi = 96
 
         #draw thread:
-        self._draw_queue = Queue()
-        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
+        self._draw_queue = None
+        self._draw_thread = None
 
         #statistics and server info:
         self.server_start_time = -1
@@ -89,7 +89,7 @@ class UIXpraClient(XpraClientBase):
         self.server_info_request = False
         self.server_last_info = None
         self.info_request_pending = False
-        self.encoding = ENCODINGS[0]
+        self.encoding = self.get_encodings()[0]
 
         #sound:
         self.speaker_allowed = HAS_SOUND
@@ -142,7 +142,7 @@ class UIXpraClient(XpraClientBase):
         self.cursors_enabled = self.client_supports_cursors
         self.bell_enabled = self.client_supports_bell
 
-        self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in ENCODINGS)
+        self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in self.get_core_encodings())
 
         #helpers and associated flags:
         self.keyboard_helper = None
@@ -185,7 +185,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
 
-        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in ENCODINGS)
+        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in self.get_encodings())
         if self.supports_mmap:
             self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
 
@@ -198,6 +198,10 @@ class UIXpraClient(XpraClientBase):
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
             self.client_supports_notifications = self.notifier is not None
+
+        #draw thread:
+        self._draw_queue = Queue()
+        self._draw_thread = make_daemon_thread(self._draw_thread_loop, "draw")
 
 
     def run(self):
@@ -239,6 +243,26 @@ class UIXpraClient(XpraClientBase):
         self._id_to_window = {}
         self._window_to_id = {}
         log("XpraClient.cleanup() done")
+
+    def get_encodings(self):
+        cenc = self.get_core_encodings()
+        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
+
+    def get_core_encodings(self):
+        encodings = ["rgb24", "rgb32"]
+        from xpra.scripts.config import has_PIL, has_vpx, has_x264, has_webp
+        for test, formats in (
+                              (has_vpx    , ["vpx"]),
+                              (has_x264   , ["x264"]),
+                              (has_webp   , ["webp"]),
+                              (has_PIL    , ["png", "jpeg"]),
+                        ):
+            if test:
+                for enc in formats:
+                    if enc not in encodings:
+                        encodings.append(enc)
+        return encodings
+
 
     def get_supported_window_layouts(self):
         return  []
@@ -406,7 +430,8 @@ class UIXpraClient(XpraClientBase):
         capabilities["server-window-resize"] = True
         if self.encoding:
             capabilities["encoding"] = self.encoding
-        capabilities["encodings"] = ENCODINGS
+        capabilities["encodings"] = self.get_encodings()
+        capabilities["encodings.core"] = self.get_core_encodings()
         if self.quality>0:
             capabilities["jpeg"] = self.quality
             capabilities["quality"] = self.quality
@@ -420,7 +445,7 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.min-speed"] = self.min_speed
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
-        if "x264" in ENCODINGS:
+        if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high" for i420 as the python client always supports all the profiles
             # whereas on the server side, the default is baseline to accomodate less capable clients.
@@ -844,7 +869,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def set_encoding(self, encoding):
-        assert encoding in ENCODINGS
+        assert encoding in self.get_encodings()
         server_encodings = self.server_capabilities.get("encodings", [])
         assert encoding in server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, server_encodings)
         self.encoding = encoding

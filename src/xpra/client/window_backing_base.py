@@ -11,7 +11,6 @@ from xpra.log import Logger
 log = Logger()
 
 from threading import Lock
-from xpra.scripts.config import ENCODINGS
 from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
 from xpra.os_util import BytesIOClass
@@ -120,7 +119,6 @@ class WindowBackingBase(object):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
-        assert coding in ENCODINGS, "encoding %s is not supported!" % coding
         assert has_PIL
         buf = BytesIOClass(img_data)
         img = Image.open(buf)
@@ -139,7 +137,6 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        assert "webp" in ENCODINGS
         from xpra.codecs.webm.decode import DecodeRGB
         rgb24 = DecodeRGB(img_data)
         rowstride = width*3
@@ -150,7 +147,6 @@ class WindowBackingBase(object):
         """ called from non-UI thread
             this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
         """
-        assert "rgb24" in ENCODINGS
         rgb24_data = self.process_delta(raw_data, width, height, rowstride, options)
         self.idle_add(self.do_paint_rgb24, rgb24_data, x, y, width, height, rowstride, options, callbacks)
         return  False
@@ -177,7 +173,6 @@ class WindowBackingBase(object):
         """ called from non-UI thread
             this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
         """
-        assert "rgb32" in ENCODINGS
         rgb32_data = self.process_delta(raw_data, width, height, rowstride, options)
         self.idle_add(self.do_paint_rgb32, rgb32_data, x, y, width, height, rowstride, options, callbacks)
         return  False
@@ -265,10 +260,8 @@ class WindowBackingBase(object):
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
-            assert "x264" in ENCODINGS
             self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, options, callbacks)
         elif coding == "vpx":
-            assert "vpx" in ENCODINGS
             self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)

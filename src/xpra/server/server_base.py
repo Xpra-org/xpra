@@ -25,7 +25,7 @@ log = Logger()
 import xpra
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.scripts.config import ENCODINGS, ENCRYPTION_CIPHERS, python_platform, get_codecs
+from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, has_PIL, has_vpx, has_x264, has_webp
 from xpra.scripts.server import deadly_signal
 from xpra.server.source import ServerSource
 from xpra.net.bytestreams import SocketConnection
@@ -38,6 +38,22 @@ from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencod
 set_scheduler(gobject)
 
 MAX_CONCURRENT_CONNECTIONS = 20
+
+
+SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
+for test, formats in (
+                      (has_vpx    , ["vpx"]),
+                      (has_x264   , ["x264"]),
+                      (has_webp   , ["webp"]),
+                      (has_PIL    , ["png", "jpeg"]),
+                ):
+    if test:
+        for enc in formats:
+            if enc not in SERVER_CORE_ENCODINGS:
+                SERVER_CORE_ENCODINGS.append(enc)
+SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", )]
+
+DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
 
 
 class ServerBase(object):
@@ -63,7 +79,7 @@ class ServerBase(object):
         self.client_properties = {}
 
         self.supports_mmap = False
-        self.default_encoding = ENCODINGS[0]
+        self.default_encoding = DEFAULT_ENCODING
         self.session_name = "Xpra"
         self.randr = False
 
@@ -102,7 +118,9 @@ class ServerBase(object):
 
         self.supports_mmap = opts.mmap
         self.default_encoding = opts.encoding
-        assert self.default_encoding in ENCODINGS
+        if not self.default_encoding:
+            self.default_encoding = DEFAULT_ENCODING
+        assert self.default_encoding in SERVER_ENCODINGS, "invalid encoding: %s" % self.default_encoding
         self.session_name = opts.session_name
         set_application_name(self.session_name)
 
@@ -316,7 +334,8 @@ class ServerBase(object):
             i += 1
 
     def signal_quit(self, signum, frame):
-        log.info("\ngot signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        log.info("")
+        log.info("got signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.clean_quit()
@@ -677,7 +696,8 @@ class ServerBase(object):
         capabilities["version"] = xpra.__version__
         capabilities["platform"] = sys.platform
         capabilities["python_version"] = python_platform.python_version()
-        capabilities["encodings"] = ENCODINGS
+        capabilities["encodings"] = SERVER_ENCODINGS
+        capabilities["encodings.core"] = SERVER_CORE_ENCODINGS
         capabilities["clipboards"] = self._clipboards
         if self.session_name:
             capabilities["session_name"] = self.session_name
@@ -764,7 +784,8 @@ class ServerBase(object):
         info["notifications"] = self.notifications_forwarder is not None
         info["pulseaudio"] = self.pulseaudio
         info["start_time"] = int(self.start_time)
-        info["encodings"] = ",".join(ENCODINGS)
+        info["encodings"] = ",".join(SERVER_ENCODINGS)
+        info["encodings.core"] = ",".join(SERVER_CORE_ENCODINGS)
         info["platform"] = sys.platform
         info["python_version"] = python_platform.python_version()
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])

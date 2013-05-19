@@ -16,45 +16,43 @@ def warn(msg):
 
 from xpra.util import AdHocStruct
 try:
-    import Image
-    assert Image
-    _has_PIL = True
+    import Image                            #@UnusedImport
+    has_PIL = True
 except:
-    _has_PIL = False
+    has_PIL = False
 
-#if you use gtk3, you *must* have PIL installed so we can handle rgb24...
-ENCODINGS = ["rgb24", "rgb32"]
-if _has_PIL:
-    ENCODINGS.append("png")
-    ENCODINGS.append("jpeg")
-#we need rgb24 for x264 and vpx (as well as the cython bindings and libraries):
+has_vpx = False
 try:
     from xpra.codecs import vpx            #@UnusedImport
     try:
         from xpra.codecs.vpx import encoder,decoder      #@UnusedImport @UnresolvedImport @Reimport
-        ENCODINGS.insert(0, "vpx")
+        has_vpx = True
     except Exception, e:
         warn("cannot load vpx codec: %s" % e)
 except ImportError, e:
     #the vpx module does not exist
     #xpra was probably built with --without-vpx
     pass
+
+has_x264 = False
 try:
     from xpra.codecs import x264           #@UnusedImport
     try:
         from xpra.codecs.x264 import encoder,decoder     #@UnusedImport @UnresolvedImport
-        ENCODINGS.insert(0, "x264")
+        has_x264 = True
     except Exception, e:
         warn("cannot load x264 codec: %s" % e)
 except ImportError, e:
     #the x264 module does not exist
     #xpra was probably built with --without-x264
     pass
+
+has_webp = False
 try:
     bytearray()
     from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
     from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
-    ENCODINGS.append("webp")
+    has_webp = True
 except NameError, e:
     #we need bytearray to use the bindings
     pass
@@ -65,6 +63,9 @@ except ImportError, e:
 except Exception, e:
     warn("cannot load webp: %s" % e)
 
+PREFERED_ENCODING_ORDER = ("x264", "vpx", "png", "webp", "rgb24", "jpeg")
+
+
 ENCRYPTION_CIPHERS = []
 try:
     from Crypto.Cipher import AES
@@ -72,6 +73,7 @@ try:
     ENCRYPTION_CIPHERS.append("AES")
 except:
     pass
+
 
 def OpenGL_safety_check():
     if sys.platform.startswith("win"):
@@ -355,7 +357,7 @@ def get_defaults():
     except:
         username = ""
     GLOBAL_DEFAULTS = {
-                    "encoding"          : ENCODINGS[0],
+                    "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
                     "host"              : "",
                     "username"          : username,
@@ -424,7 +426,6 @@ def validate_in_list(x, options):
         return None
     return "must be in %s" % (", ".join(options))
 OPTIONS_VALIDATION = {
-                    "encoding"          : lambda x : validate_in_list(x, ENCODINGS),
                     "mode"              : lambda x : validate_in_list(x, MODES),
                     }
 #fields that got renamed:
