@@ -553,7 +553,7 @@ int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8
 
 	avcodec_get_frame_defaults(picture);
 
-	avpkt.data = in;
+	avpkt.data = (uint8_t*) in;
 	avpkt.size = size;
 
 	len = avcodec_decode_video2(ctx->codec_ctx, picture, &got_picture, &avpkt);
