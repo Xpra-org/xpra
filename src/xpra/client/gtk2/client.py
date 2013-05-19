@@ -63,6 +63,11 @@ class XpraClient(GTKXpraClient):
         encodings = GTKXpraClient.get_core_encodings(self)
         if gdk.screen_get_default().get_rgba_visual() is not None:
             encodings.append("rgb32")
+        #gtk2 can handle 'png' and 'jpeg' natively (without PIL)
+        #(though using PIL is better since we can do that in the decode thread)
+        for x in ("png", "jpeg"):
+            if x not in encodings:
+                encodings.append(x)
         return encodings
 
 
