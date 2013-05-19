@@ -8,9 +8,6 @@
 
 import time
 
-cdef extern from "Python.h":
-    char * PyString_AsString(object string) except NULL
-
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
@@ -21,13 +18,15 @@ cdef extern from "X11/Xlib.h":
 # timeout is in seconds
 def wait_for_x_server(display_name, timeout):
     cdef Display * d
+    cdef char* name
     start = time.time()
+    name = display_name
     first_time = True
     while first_time or (time.time() - start) < timeout:
         if not first_time:
             time.sleep(0.2)
         first_time = False
-        d = XOpenDisplay(PyString_AsString(display_name))
+        d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)
             return
