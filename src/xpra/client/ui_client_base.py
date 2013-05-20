@@ -185,7 +185,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing
 
-        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in self.get_encodings())
+        self.supports_mmap = MMAP_SUPPORTED and opts.mmap and ("rgb24" in self.get_core_encodings())
         if self.supports_mmap:
             self.init_mmap(opts.mmap_group, self._protocol._conn.filename)
 
@@ -246,6 +246,8 @@ class UIXpraClient(XpraClientBase):
 
     def get_encodings(self):
         cenc = self.get_core_encodings()
+        if "rgb24" in cenc and "rgb" not in cenc:
+            cenc.append("rgb")
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32",)]
 
     def get_core_encodings(self):

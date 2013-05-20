@@ -13,6 +13,7 @@ gobject = import_gobject()
 from xpra.gtk_common.gtk_util import set_tooltip_text, CheckMenuItem, ensure_item_selected, set_checkeditems, menuitem
 from xpra.client.gtk_base.about import about, close_about
 from xpra.client.gtk_base.session_info import SessionInfo
+from xpra.scripts.config import PREFERED_ENCODING_ORDER
 from xpra.log import Logger
 log = Logger()
 
@@ -357,7 +358,8 @@ class GTKTrayMenuBase(object):
 
     def populate_encodingssubmenu(self, encodings_submenu):
         server_encodings = self.client.server_capabilities.get("encodings", [])
-        for encoding in self.client.get_encodings():
+        encs = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+        for encoding in encs:
             encoding_item = CheckMenuItem(encoding)
             def encoding_changed(item):
                 item = ensure_item_selected(encodings_submenu, item)

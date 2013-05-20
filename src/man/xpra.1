@@ -309,12 +309,12 @@ may be overridden on the client.
 \fB\-\-encoding\fP=\fIENCODING\fP
 This specifies the image encoding to use,
 there are a number of encodings supported:
-\fBjpeg\fP, \fBpng\fP, \fBrgb24\fP, \fBvpx\fP and \fBx264\fP
+\fBjpeg\fP, \fBpng\fP, \fBwebp\fP, \fBrgb\fP, \fBvpx\fP and \fBx264\fP
 (some may not be available in your environment).
 The default is generally \fBpng\fP, if available.
-\fBpng\fP is compressed and lossless, the most efficient lossless
-encoding.
-\fBrgb24\fP (rather inefficient, it is compressed with zlib).
+\fBpng\fP is compressed and lossless.
+\fBrgb\fP is a raw pixel format compressed with zlib,
+the compression ratio is poor, but it is fast.
 \fBwebp\fP can be useful for graphical applications, and is
 generally better than jpeg.
 \fBjpeg\fP can be useful for graphical applications.
@@ -458,7 +458,7 @@ You generally do not need to use this option,
 the default value should be adequate in almost all cases.
 
 This compression is not used on pixel data (except
-when using the \fBrgb24\fP encoding).
+when using the \fBrgb\fP encoding).
 .TP
 \fB\-\-jpeg\-quality\fP=\fIVALUE\fP
 Deprecated, use \fB\-\-quality\fP:

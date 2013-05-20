@@ -23,7 +23,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, show_codec_help, parse_bool, validate_config
+    make_defaults_struct, show_codec_help, parse_bool, validate_config, encodings_help
 
 
 def warn(msg):
@@ -671,9 +671,18 @@ def run_client(parser, opts, extra_args, mode):
             sys.stdout.write("xpra client version %s\n" % XPRA_VERSION)
             sys.stdout.flush()
         app = make_client(parser.error, opts)
-        if opts.encoding and opts.encoding=="help":
-            print("%s xpra client supports the following encodings: %s" % (app.client_toolkit(), ", ".join(app.get_encodings())))
-            return 0
+        if opts.encoding:
+            if opts.encoding=="rgb24":
+                #fix old encoding name
+                opts.encoding = "rgb"
+            err = opts.encoding not in app.get_encodings()
+            if err:
+                print("invalid encoding: %s" % opts.encoding)
+            if opts.encoding=="help" or err:
+                print("%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(app.get_encodings()))))
+                if err:
+                    return 1
+                return 0
         layouts = app.get_supported_window_layouts() or ["default"]
         if opts.window_layout and opts.window_layout.lower()=="help":
             print("%s supports the following layouts: %s" % (app.client_toolkit(), ", ".join(layouts)))

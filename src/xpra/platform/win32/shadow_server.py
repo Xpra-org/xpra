@@ -9,7 +9,7 @@ import win32con         #@UnresolvedImport
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.server_base import ServerBase
+from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 
 BUTTON_EVENTS = {
@@ -24,11 +24,11 @@ BUTTON_EVENTS = {
                  (5, True)  : (win32con.MOUSEEVENTF_WHEEL,      -win32con.WHEEL_DELTA),
                  }
 
-class ShadowServer(ShadowServerBase, ServerBase):
+class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
         ShadowServerBase.__init__(self)
-        ServerBase.__init__(self)
+        GTKServerBase.__init__(self)
         self.keycodes = {}
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
@@ -59,13 +59,13 @@ class ShadowServer(ShadowServerBase, ServerBase):
         win32api.mouse_event(dwFlags, x, y, dwData, 0)
 
     def make_hello(self):
-        capabilities = ServerBase.make_hello(self)
+        capabilities = GTKServerBase.make_hello(self)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/win32-shadow"
         return capabilities
 
     def get_info(self, proto):
-        info = ServerBase.get_info(self, proto)
+        info = GTKServerBase.get_info(self, proto)
         info["shadow"] = True
         info["server_type"] = "Python/gtk2/win32-shadow"
         return info

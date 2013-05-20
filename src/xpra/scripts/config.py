@@ -63,7 +63,28 @@ except ImportError, e:
 except Exception, e:
     warn("cannot load webp: %s" % e)
 
-PREFERED_ENCODING_ORDER = ("x264", "vpx", "png", "webp", "rgb24", "jpeg", "png/P", "png/L")
+PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
+
+ENCODINGS_HELP = {
+                  "x264"    : "H.264 video codec",
+                  "vpx"     : "VPx video codec",
+                  "png"     : "Portable Network Graphics (24 or 32bpp for transparency)",
+                  "png/P"   : "Portable Network Graphics (8bpp colour)",
+                  "png/L"   : "Portable Network Graphics (8bpp grayscale)",
+                  "webp"    : "WebP lossy compression",
+                  "jpeg"    : "JPEG lossy compression",
+                  "rgb"     : "Raw RGB pixels, compressed using zlib (24 or 32bpp for transparency)",
+                  }
+
+HELP_ORDER = ("x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg")
+
+def encodings_help(encodings):
+    h = []
+    for e in HELP_ORDER:
+        if e in encodings:
+            ehelp = ENCODINGS_HELP.get(e)
+            h.append(e.ljust(12) + ehelp)
+    return h
 
 
 ENCRYPTION_CIPHERS = []

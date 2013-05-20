@@ -210,8 +210,9 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if len(extra_args) != 1:
         parser.error("need exactly 1 extra argument")
     if opts.encoding and opts.encoding=="help":
+        from xpra.scripts.config import encodings_help
         from xpra.server.server_base import SERVER_ENCODINGS
-        print("server supports the following encodings: %s" % (", ".join(SERVER_ENCODINGS)))
+        print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(SERVER_ENCODINGS))))
         return 0
     assert mode in ("start", "upgrade", "shadow")
     upgrading = mode == "upgrade"

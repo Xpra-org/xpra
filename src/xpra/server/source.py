@@ -348,7 +348,7 @@ class ServerSource(object):
             log.info("windows/pixels forwarding is disabled for this client")
         else:
             self.parse_encoding_caps(capabilities)
-    
+
     def parse_encoding_caps(self, capabilities):
         self.set_encoding(capabilities.get("encoding", None), None)
         #encoding options (filter):
@@ -679,7 +679,11 @@ class ServerSource(object):
         """
         from xpra.server.server_base import SERVER_ENCODINGS
         if encoding:
-            assert encoding in self.encodings, "encoding %s is not supported, client supplied list: %s" % (encoding, self.encodings)
+            if encoding not in self.encodings:
+                log.warn("client specified an encoding it does not support: %s, client supplied list: %s" % (encoding, self.encodings))
+            #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
+            if encoding=="rgb24":
+                encoding = "rgb"
             if encoding not in SERVER_ENCODINGS:
                 log.error("encoding %s is not supported by this server! " \
                          "Will use the first commonly supported encoding instead", encoding)

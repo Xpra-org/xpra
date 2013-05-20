@@ -26,7 +26,7 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.server_base import ServerBase
+from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.xsettings import XSettingsManager
 
@@ -53,17 +53,17 @@ def dump_windows():
         log("found window: %s", window_info(window))
 
 
-class X11ServerBase(ServerBase):
+class X11ServerBase(GTKServerBase):
     """
         Base class for X11 servers,
-        adds X11 specific methods to ServerBase.
+        adds X11 specific methods to GTKServerBase.
         (see XpraServer or XpraX11ShadowServer for actual implementations)
     """
 
     def init(self, clobber, sockets, opts):
         self.clobber = clobber
         self.x11_init()
-        ServerBase.init(self, sockets, opts)
+        GTKServerBase.init(self, sockets, opts)
 
 
     def x11_init(self):
@@ -106,7 +106,7 @@ class X11ServerBase(ServerBase):
             X11Core.get_xatom(atom_name)
 
     def init_keyboard(self):
-        ServerBase.init_keyboard(self)
+        GTKServerBase.init_keyboard(self)
         #clear all modifiers
         clean_keyboard_state()
 
@@ -132,13 +132,13 @@ class X11ServerBase(ServerBase):
 
 
     def make_hello(self):
-        capabilities = ServerBase.make_hello(self)
+        capabilities = GTKServerBase.make_hello(self)
         capabilities["resize_screen"] = self.randr
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
-        info = ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        info["server_type"] = "gtk-x11"
+        info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
+        info["server_type"] = "Python/gtk/x11"
         return info
 
 
@@ -247,7 +247,7 @@ class X11ServerBase(ServerBase):
 
 
     def update_server_settings(self, settings):
-        ServerBase.update_server_settings(self, settings)
+        GTKServerBase.update_server_settings(self, settings)
         old_settings = dict(self._settings)
         log("server_settings: old=%s, updating with=%s", old_settings, settings)
         self._settings.update(settings)

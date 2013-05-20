@@ -7,7 +7,7 @@
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.server_base import ServerBase
+from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
 
@@ -50,7 +50,7 @@ class OSXRootWindowModel(RootWindowModel):
         return (0, 0, width, height, rgba, "RGB", width*3)
 
 
-class ShadowServer(ShadowServerBase, ServerBase):
+class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
         #sanity check:
@@ -61,10 +61,10 @@ class ShadowServer(ShadowServerBase, ServerBase):
         if image is None:
             raise Exception("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
         ShadowServerBase.__init__(self)
-        ServerBase.__init__(self)
+        GTKServerBase.__init__(self)
 
     def init(self, sockets, opts):
-        ServerBase.init(self, sockets, opts)
+        GTKServerBase.init(self, sockets, opts)
         self.keycodes = {}
 
     def makeRootWindowModel(self):
@@ -114,13 +114,13 @@ class ShadowServer(ShadowServerBase, ServerBase):
             CG.CGPostScrollWheelEvent(wheel, *args)
 
     def make_hello(self):
-        capabilities = ServerBase.make_hello(self)
+        capabilities = GTKServerBase.make_hello(self)
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/gtk2/osx-shadow"
         return capabilities
 
     def get_info(self, proto):
-        info = ServerBase.get_info(self, proto)
+        info = GTKServerBase.get_info(self, proto)
         info["shadow"] = True
         info["server_type"] = "Python/gtk2/osx-shadow"
         return info

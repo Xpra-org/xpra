@@ -6,7 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
 import os.path
 import threading
 import sys
@@ -16,26 +15,18 @@ import socket
 import thread
 import signal
 
-import gobject
-gobject.threads_init()
-
 from xpra.log import Logger
 log = Logger()
 
 import xpra
-from xpra.gtk_common.quit import (gtk_main_quit_really,
-                           gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, has_PIL, has_vpx, has_x264, has_webp
 from xpra.scripts.server import deadly_signal
-from xpra.server.source import ServerSource
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, SIGNAMES
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.codecs.version_info import add_codec_version_info
-from xpra.gtk_common.gtk_util import add_gtk_version_info
 from xpra.os_util import set_application_name
-from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode, set_scheduler
-set_scheduler(gobject)
+from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -52,6 +43,10 @@ for test, formats in (
             if enc not in SERVER_CORE_ENCODINGS:
                 SERVER_CORE_ENCODINGS.append(enc)
 SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", )]
+#renamed rgb24 to rgb in public encodings:
+SERVER_ENCODINGS.remove("rgb24")
+SERVER_ENCODINGS.append("rgb")
+
 
 DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
 
@@ -61,7 +56,7 @@ class ServerBase(object):
         This is the base class for servers.
         It provides all the generic functions but is not tied
         to a specific backend (X11 or otherwise).
-        See X11ServerBase, XpraServer and XpraX11ShadowServer
+        See GTKServerBase/X11ServerBase and other platform specific subclasses.
     """
 
     def __init__(self):
@@ -106,12 +101,17 @@ class ServerBase(object):
         self.default_dpi = 96
         self.dpi = 96
 
-        ### Misc. state:
-        self._settings = {}
-        self._xsettings_manager = None
-
         self.init_packet_handlers()
         self.init_aliases()
+
+    def idle_add(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def timeout_add(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def source_remove(self, timer):
+        raise NotImplementedError()
 
     def init(self, sockets, opts):
         log("ServerBase.init(%s, %s)", sockets, opts)
@@ -149,15 +149,14 @@ class ServerBase(object):
 
         self.load_existing_windows(opts.system_tray)
 
-        log("enabling all sockets: %s", sockets)
         ### All right, we're ready to accept customers:
         for sock in sockets:
-            gobject.idle_add(self.add_listen_socket, sock)
+            self.idle_add(self.add_listen_socket, sock)
 
         if opts.pings:
-            gobject.timeout_add(1000, self.send_ping)
+            self.timeout_add(1000, self.send_ping)
         else:
-            gobject.timeout_add(10*1000, self.send_ping)
+            self.timeout_add(10*1000, self.send_ping)
 
 
     def init_uuid(self):
@@ -259,8 +258,7 @@ class ServerBase(object):
         self.watch_keymap_changes()
 
     def watch_keymap_changes(self):
-        ### Set up keymap change notification:
-        gtk.gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
+        pass
 
     def load_existing_windows(self, system_tray):
         pass
@@ -337,7 +335,7 @@ class ServerBase(object):
 
     def signal_quit(self, signum, frame):
         log.info("")
-        log.info("got signal %s, exiting", {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}.get(signum, signum))
+        log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.clean_quit()
@@ -347,30 +345,33 @@ class ServerBase(object):
         def quit_timer(*args):
             log.debug("quit_timer()")
             self.quit(False)
-        gobject.timeout_add(500, quit_timer, priority=gobject.PRIORITY_HIGH)
+        self.timeout_add(500, quit_timer)
         def force_quit(*args):
             log.debug("force_quit()")
             os._exit(1)
-        gobject.timeout_add(5000, force_quit, priority=gobject.PRIORITY_HIGH)
+        self.timeout_add(5000, force_quit)
 
     def quit(self, upgrading):
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
         log.info("xpra is terminating.")
         sys.stdout.flush()
-        gtk_main_quit_really()
+        self.do_quit()
+
+    def do_quit(self):
+        raise NotImplementedError()
 
     def run(self):
         log.info("xpra server version %s" % xpra.__version__)
-        gtk_main_quit_on_fatal_exceptions_enable()
         def print_ready():
             log.info("xpra is ready.")
             sys.stdout.flush()
-        gobject.idle_add(print_ready)
-        log("calling gtk.main")
-        gtk.main()
-        log("xpra end of gtk.main().")
+        self.idle_add(print_ready)
+        self.do_run()
         return self._upgrading
+
+    def do_run(self):
+        raise NotImplementedError()
 
     def cleanup(self, *args):
         if self.notifications_forwarder:
@@ -384,9 +385,8 @@ class ServerBase(object):
             self.disconnect_client(proto, "shutting down")
         self._potential_protocols = []
 
-    def add_listen_socket(self, sock):
-        sock.listen(5)
-        gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
+    def add_listen_socket(self, socket):
+        raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
         sock, address = listener.accept()
@@ -411,7 +411,7 @@ class ServerBase(object):
             if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
                 log.error("connection timedout: %s", protocol)
                 self.send_disconnect(protocol, "login timeout")
-        gobject.timeout_add(10*1000, verify_connection_accepted, protocol)
+        self.timeout_add(10*1000, verify_connection_accepted, protocol)
         return True
 
     def _process_shutdown_server(self, proto, packet):
@@ -421,7 +421,7 @@ class ServerBase(object):
                 self.send_disconnect(p, "server shutdown")
             except:
                 pass
-        gobject.timeout_add(1000, self.clean_quit)
+        self.timeout_add(1000, self.clean_quit)
 
     def send_disconnect(self, proto, reason):
         if proto._closed:
@@ -430,7 +430,7 @@ class ServerBase(object):
             self.cleanup_source(proto)
             proto.close()
         proto.send_now(["disconnect", reason])
-        gobject.timeout_add(1000, force_disconnect)
+        self.timeout_add(1000, force_disconnect)
 
     def cleanup_source(self, protocol):
         #this ensures that from now on we ignore any incoming packets coming
@@ -498,7 +498,7 @@ class ServerBase(object):
             def login_failed(*args):
                 log.error("Password supplied does not match! dropping the connection.")
                 self.send_disconnect(proto, "invalid password")
-            gobject.timeout_add(1000, login_failed)
+            self.timeout_add(1000, login_failed)
             return False
         log.info("Password matches!")
         sys.stdout.flush()
@@ -528,7 +528,7 @@ class ServerBase(object):
         if capabilities.get("version_request", False):
             response = {"version" : xpra.__version__}
             proto.send_now(("hello", response))
-            gobject.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
+            self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
         if not self.sanity_checks(proto, capabilities):
             return
@@ -592,7 +592,7 @@ class ServerBase(object):
                     self.send_disconnect(proto, "screenshot failed")
                     return
                 proto.send_now(packet)
-                gobject.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+                self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
             except Exception, e:
                 log.error("failed to capture screenshot", exc_info=True)
                 self.send_disconnect(proto, "screenshot failed: %s" % e)
@@ -629,6 +629,7 @@ class ServerBase(object):
         proto.aliases = capabilities.get("aliases", {})
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
+        from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.get_transient_for,
                           self.supports_mmap,
@@ -695,7 +696,6 @@ class ServerBase(object):
         capabilities = {}
         capabilities["hostname"] = socket.gethostname()
         capabilities["max_desktop_size"] = self.get_max_screen_size()
-        capabilities["display"] = gtk.gdk.display_get_default().get_name()
         capabilities["version"] = xpra.__version__
         capabilities["platform"] = sys.platform
         capabilities["python_version"] = python_platform.python_version()
@@ -730,7 +730,6 @@ class ServerBase(object):
             capabilities["aliases"] = self._reverse_aliases
         capabilities["server_type"] = "base"
         add_version_info(capabilities)
-        add_gtk_version_info(capabilities, gtk)
         add_codec_version_info(capabilities)
         return capabilities
 
@@ -742,7 +741,6 @@ class ServerBase(object):
         if key_repeat:
             capabilities["key_repeat"] = key_repeat
             capabilities["key_repeat_modifiers"] = True
-        capabilities["cursor.default_size"] = gtk.gdk.display_get_default().get_default_cursor_size()
         capabilities["clipboard"] = self._clipboard_helper is not None and self._clipboard_client == server_source
         if server_cipher:
             capabilities.update(server_cipher)
@@ -750,7 +748,7 @@ class ServerBase(object):
 
     def send_hello_info(self, proto):
         proto.send_now(("hello", self.get_info(proto)))
-        gobject.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
+        self.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
 
     def _process_info_request(self, proto, packet):
         client_uuids, wids = packet[1:3]
@@ -772,11 +770,9 @@ class ServerBase(object):
         start = time.time()
         info = {}
         add_version_info(info)
-        add_gtk_version_info(info, gtk)
         add_codec_version_info(info)
-        info["server_type"] = "gtk-x11"
+        info["server_type"] = "Python"
         info["hostname"] = socket.gethostname()
-        info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
         info["password_file"] = self.password_file or ""
@@ -891,17 +887,20 @@ class ServerBase(object):
         log("_screen_size_changed(%s)", args)
         #randr has resized the screen, tell the client (if it supports it)
         self.calculate_workarea()
-        gobject.idle_add(self.send_updated_screen_size)
+        self.idle_add(self.send_updated_screen_size)
+
+    def get_root_window_size(self):
+        raise NotImplementedError()
 
     def send_updated_screen_size(self):
         max_w, max_h = self.get_max_screen_size()
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = self.get_root_window_size()
         log.info("sending updated screen size to clients: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         for ss in self._server_sources.values():
             ss.updated_desktop_size(root_w, root_h, max_w, max_h)
 
     def get_max_screen_size(self):
-        max_w, max_h = gtk.gdk.get_default_root_window().get_size()
+        max_w, max_h = self.get_root_window_size()
         return max_w, max_h
 
     def _get_desktop_size_capability(self, server_source, root_w, root_h):
@@ -916,7 +915,7 @@ class ServerBase(object):
         return    w, h
 
     def set_best_screen_size(self):
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
+        root_w, root_h = self.get_root_window_size()
         return root_w, root_h
 
 
@@ -932,28 +931,7 @@ class ServerBase(object):
             self.calculate_workarea()
 
     def calculate_workarea(self):
-        root_w, root_h = gtk.gdk.get_default_root_window().get_size()
-        workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
-        for ss in self._server_sources.values():
-            screen_sizes = ss.screen_sizes
-            log("screen_sizes(%s)=%s", ss, screen_sizes)
-            if not screen_sizes:
-                continue
-            for display in screen_sizes:
-                #avoid error with old/broken clients:
-                if not display or type(display) not in (list, tuple):
-                    continue
-                #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
-                if len(display)>10:
-                    work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = gtk.gdk.Rectangle(work_x, work_y, work_w, work_h)
-                    log("found workarea % for display %s", display_workarea, display[0])
-                    workarea = workarea.intersect(display_workarea)
-        #sanity checks:
-        if workarea.width==0 or workarea.height==0:
-            log.warn("failed to calculate a common workarea - using the full display area")
-            workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
-        self.set_workarea(workarea)
+        raise NotImplementedError()
 
     def set_workarea(self, workarea):
         pass
@@ -1172,7 +1150,7 @@ class ServerBase(object):
         timer = self.keys_repeat_timers.get(keycode, None)
         if timer:
             log("cancelling key repeat timer: %s for %s / %s", timer, keyname, keycode)
-            gobject.source_remove(timer)
+            self.source_remove(timer)
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             log("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
@@ -1182,7 +1160,7 @@ class ServerBase(object):
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
             now = time.time()
-            self.keys_repeat_timers[keycode] = gobject.timeout_add(delay_ms, _key_repeat_timeout, now)
+            self.keys_repeat_timers[keycode] = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
@@ -1212,9 +1190,7 @@ class ServerBase(object):
 
 
     def _move_pointer(self, pos):
-        x, y = pos
-        display = gtk.gdk.display_get_default()
-        display.warp_pointer(display.get_default_screen(), x, y)
+        raise NotImplementedError()
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         pass
@@ -1337,7 +1313,7 @@ class ServerBase(object):
                     "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
             assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
             assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
-            gobject.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
+            self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
             return
         if proto in self._server_sources:
             handlers = self._authenticated_packet_handlers
@@ -1353,7 +1329,7 @@ class ServerBase(object):
         handler = ui_handlers.get(packet_type)
         if handler:
             log("will process ui packet %s", packet_type)
-            gobject.idle_add(handler, proto, packet)
+            self.idle_add(handler, proto, packet)
             return
         log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
         if proto not in self._server_sources:

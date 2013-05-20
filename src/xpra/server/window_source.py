@@ -162,7 +162,7 @@ class WindowSource(object):
         self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
         self.supports_delta = []
         if xor_str is not None:
-            self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24")]
+            self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
         #auto-refresh:
@@ -501,7 +501,7 @@ class WindowSource(object):
             using the video encoder or if a small lossless region(s) is a better choice
         """
         def switch():
-            coding = self.find_common_lossless_encoder(current_encoding, ww*wh)
+            coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
             debug("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
         if has_alpha and current_encoding not in ("png", "rgb32"):
@@ -512,7 +512,7 @@ class WindowSource(object):
             #tray needs a lossless encoder
             return switch()
         if current_encoding not in ("x264", "vpx"):
-            return current_encoding
+            return self.get_core_encoding(has_alpha, current_encoding)
         max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
         max_nvp = MAX_NONVIDEO_PIXELS
         if not batching:
@@ -534,17 +534,37 @@ class WindowSource(object):
             return switch()
         if pixel_count>max_nvp:
             #too many pixels, use current video encoder
-            return current_encoding
+            return self.get_core_encoding(has_alpha, current_encoding)
         if pixel_count>0.5*ww*wh and batching:
             #small, but over 50% of the full window
-            return current_encoding
+            return self.get_core_encoding(has_alpha, current_encoding)
         return switch()
 
-    def find_common_lossless_encoder(self, fallback, pixel_count):
-        if pixel_count<512:
-            encs = "rgb24", "png"
+    def get_core_encoding(self, has_alpha, current_encoding):
+        encs = [current_encoding]
+        if current_encoding=="rgb":
+            if has_alpha:
+                encs.insert(0, "rgb32")
+                encs.insert(1, "rgb24")
+            else:
+                encs.insert(0, "rgb24")
+                encs.insert(1, "rgb32")
+            for e in encs:
+                if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
+                    return e
+        return current_encoding
+
+    def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
+        if has_alpha:
+            rgb_fmt = "rgb24"
         else:
-            encs = "png", "rgb24"
+            rgb_fmt = "rgb32"
+        if self.encoding=="rgb":
+            return rgb_fmt
+        if pixel_count<512:
+            encs = rgb_fmt, "png"
+        else:
+            encs = "png", rgb_fmt
         for e in encs:
             if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
                 return e
@@ -559,10 +579,10 @@ class WindowSource(object):
         self.do_process_damage_region(damage_time, window, x, y, w, h, coding, options)
         if coding in ("vpx", "x264"):
             if w%2==1:
-                lossless = self.find_common_lossless_encoder(coding, 1*h)
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, 1*h)
                 self.do_process_damage_region(damage_time, window, x+w-1, y, 1, h, lossless, options)
             if h%2==1:
-                lossless = self.find_common_lossless_encoder(coding, w*1)
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*1)
                 self.do_process_damage_region(damage_time, window, x, y+h-1, x+w, 1, lossless, options)
 
     def do_process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
@@ -602,7 +622,7 @@ class WindowSource(object):
             #because the code may rely on the client having received this frame
             if packet:
                 self.queue_damage_packet(packet, damage_time, process_damage_time)
-                if self.encoding in ("png", "rgb24"):
+                if self.encoding.startswith("png") or self.encoding.startswith("rgb"):
                     #primary encoding is lossless, no need for auto-refresh
                     return
                 #auto-refresh:
@@ -728,7 +748,7 @@ class WindowSource(object):
             * 'jpeg' and 'png' are handled by 'PIL_encode'.
             * 'webp' uses 'webp_encode'
             * 'x264' and 'vpx' use 'video_encode'
-            * 'rgb24' uses 'rgb24_encode' and the 'Compressed' wrapper to tell the network layer it is already zlibbed
+            * 'rgb24' and 'rgb32' use 'rgb_encode' and the 'Compressed' wrapper to tell the network layer it is already zlibbed
         """
         if self.is_cancelled(sequence):
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
@@ -840,7 +860,7 @@ class WindowSource(object):
             assert coding in ("png", "png/P", "png/L")
             debug("sending as %s, mode=%s", coding, im.mode)
             if coding=="png/L":
-                im = im.convert("L", palette=Image.ADAPTIVE) 
+                im = im.convert("L", palette=Image.ADAPTIVE)
             elif coding=="png/P":
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
