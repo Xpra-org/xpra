@@ -141,7 +141,7 @@ class DesktopManager(gtk.Widget):
         root = gtk.gdk.get_default_root_window()
         if root.xid==transient_for.xid:
             return -1       #-1 is the backwards compatible marker for root...
-        log.info("not found transient_for=%s, xid=%s", transient_for, hex(transient_for.xid))
+        log("not found transient_for=%s, xid=%s", transient_for, hex(transient_for.xid))
         return  None
 
 

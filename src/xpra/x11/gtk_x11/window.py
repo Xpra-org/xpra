@@ -36,7 +36,6 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
-from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
                            one_arg_signal, no_arg_signal,
                            non_none_list_accumulator)
@@ -403,48 +402,46 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             w = min(handle.width, width)
             h = min(handle.height, height)
             if w!=width or h!=height:
-                log.warn("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+                log.debug("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             pixels = trap.call_synced(handle.get_pixels, x, y, w, h)
         except Exception, e:
-            log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e, exc_info=True)
-            pixels = None
-        if pixels:
-            import Image
-            depth, w, h, rowstride, big_endian, data = pixels
-            #log.info("get_rgb_rawdata(..) get_pixels=%s", (depth, w, h, rowstride, big_endian, "%s bytes" % len(data)))
-            #log.info("get_rgb_rawdata(..) head=%s", [hex(ord(v)) for v in data[:100]])
-            if depth==24:
-                if big_endian:
-                    imode = "XRGB"
-                else:
-                    imode = "BGRX"
-                smode = "RGB"
-                omode = "RGB"
-                orowstride = rowstride*3/4
-                #rowstride = w*3
-            elif depth==32:
-                if big_endian:
-                    imode = "ARGB"
-                else:
-                    imode = "BGRA"
-                smode = "RGBA"
-                omode = "RGBA"
-                orowstride = rowstride
-                #RGBa?
+            if type(e)==XError and e.msg=="BadMatch":
+                log.debug("get_rgb_rawdata(%s, %s, %s, %s) get_pixels BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                raise Exception("unhandled depth: %s", depth)
-            im = Image.fromstring(smode, (w, h), data, "raw", imode, rowstride)
-            if omode!=smode:
-                im = im.convert(omode)
-            #    tmp = im.convert("RGB")
-            #    tmp.save("./window-rgba-%s.png" % time.time(), "PNG")
-            pixels = im.tostring("raw", omode)
-            #log.debug("depth=%s, returning %s %s pixels", depth, len(pixels), omode)
-            return x, y, w, h, im.tostring(), omode, orowstride
-
-        pixmap = handle.get_pixmap()
-        log.info("get_rgb_rawdata(..) get_pixels() returned None, trying to use the pixmap fallback %s", pixmap)
-        return get_rgb_rawdata(pixmap, x, y, width, height, logger=log)
+                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e)
+            return None
+        if pixels is None:
+            log.info("get_rgb_rawdata(..) get_pixels() returned None (window already gone?)")
+            return None
+        import Image
+        depth, w, h, rowstride, big_endian, data = pixels
+        #log.info("get_rgb_rawdata(..) get_pixels=%s", (depth, w, h, rowstride, big_endian, "%s bytes" % len(data)))
+        #log.info("get_rgb_rawdata(..) head=%s", [hex(ord(v)) for v in data[:100]])
+        if depth==24:
+            if big_endian:
+                imode = "XRGB"
+            else:
+                imode = "BGRX"
+            smode = "RGB"
+            omode = "RGB"
+            orowstride = rowstride*3/4
+            #rowstride = w*3
+        elif depth==32:
+            if big_endian:
+                imode = "ARGB"
+            else:
+                imode = "BGRA"
+            smode = "RGBA"
+            omode = "RGBA"
+            orowstride = rowstride
+            #RGBa?
+        else:
+            raise Exception("unhandled depth: %s", depth)
+        im = Image.fromstring(smode, (w, h), data, "raw", imode, rowstride)
+        if omode!=smode:
+            im = im.convert(omode)
+        pixels = im.tostring("raw", omode)
+        return x, y, w, h, im.tostring(), omode, orowstride
 
     def do_xpra_client_message_event(self, event):
         # FIXME
