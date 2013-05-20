@@ -7,8 +7,6 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
 gdk = import_gdk()
 
-import cairo
-
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger()
