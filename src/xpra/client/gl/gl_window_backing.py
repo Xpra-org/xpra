@@ -282,14 +282,14 @@ class GLPixmapBacking(GTK2WindowBacking):
         alignment = 1
         for a in [2, 4, 8]:
             # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
-            if (rowstride & a-1) == 0: 
+            if (rowstride & a-1) == 0:
                 alignment = a
         # If number of extra bytes is greater than the alignment value,
         # then we also have to set row_length
         # Otherwise it remains at 0 (= width implicitely)
         if (rowstride - width * 3) > a:
             row_length = width + (rowstride - width * 3) / 3
-            
+
         self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
         # Upload data as temporary RGB texture
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
