@@ -341,12 +341,14 @@ def get_xorg_conf_and_script():
         if os.path.isfile(xorg):
             XORG_BIN = xorg
             break
+
+    def Xvfb():
+        return "etc/xpra/Xvfb/xpra.conf", False
+
     if not XORG_BIN:
         print("Xorg not found, cannot detect version or Xdummy support")
         return Xvfb()
 
-    def Xvfb():
-        return "etc/xpra/Xvfb/xpra.conf", False
     def Xorg_suid_check():
         xorg_stat = os.stat(XORG_BIN)
         if (xorg_stat.st_mode & stat.S_ISUID)!=0:
