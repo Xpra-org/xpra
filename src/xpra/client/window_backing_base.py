@@ -244,7 +244,13 @@ class WindowBackingBase(object):
         """ see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, img_data)
-        self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+        rgb_format = options.get("rgb_format", "rgb24")
+        if rgb_format=="RGB":
+            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+        elif rgb_format=="RGBA":
+            self.do_paint_rgb32(data, x, y, width, height, rowstride, options, callbacks)
+        else:
+            raise Exception("invalid rgb format: %s" % rgb_format)
         return  False
 
 

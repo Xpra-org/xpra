@@ -505,7 +505,11 @@ class WindowSource(object):
             debug("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
             return  coding
         if has_alpha and current_encoding not in ("png", "rgb32"):
-            for x in ("png", "rgb32"):
+            if current_encoding=="rgb":
+                encs = ("rgb32", "png")
+            else:
+                encs = ("png", "rgb32")
+            for x in encs:
                 if x in self.SERVER_CORE_ENCODINGS and x in self.core_encodings:
                     return x
         if is_tray:
@@ -757,9 +761,10 @@ class WindowSource(object):
         assert rgbdata, "data is missing"
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and len(rgbdata)>256 and rgb_format=="RGB":
-            #try with mmap (will change coding to "mmap" if it succeeds)
-            coding, data = self.mmap_send(coding, rgbdata)
+        if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
+            if rgb_format.upper()=="RGB" or (rgb_format.upper()=="RGBA" and "rgb32" in self.core_encodings):
+                #try with mmap (will change coding to "mmap" if it succeeds)
+                coding, data = self.mmap_send(coding, rgbdata)
         else:
             data = rgbdata
         #if client supports delta pre-compression for this encoding, use it if we can:
@@ -773,7 +778,7 @@ class WindowSource(object):
 
         if rgb_format.upper()!="RGB" and rgb_format.upper()!="RGBX":
             assert rgb_format.upper()=="RGBA", "invalid rgb format: %s" % rgb_format
-            assert coding in ("rgb32", "png", ), "invalid encoding for %s: %s" % (rgb_format, coding)
+            assert coding in ("rgb32", "png", "mmap"), "invalid encoding for %s: %s" % (rgb_format, coding)
 
         #by default, don't set rowstride (the container format will take care of providing it):
         outstride = 0
@@ -793,7 +798,8 @@ class WindowSource(object):
         elif coding=="webp":
             data, client_options = self.webp_encode(w, h, data, rowstride, options)
         elif coding=="mmap":
-            client_options = {}  #actual sending is already handled via mmap_send above
+            #actual sending is already handled via mmap_send above
+            client_options = {"rgb_format" : rgb_format}
             outstride = rowstride
         else:
             raise Exception("invalid encoding: %s" % coding)
