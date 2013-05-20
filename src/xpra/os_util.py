@@ -7,6 +7,9 @@
 import re
 import os
 import sys
+import signal
+
+SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
 
 #python3 making life difficult:
