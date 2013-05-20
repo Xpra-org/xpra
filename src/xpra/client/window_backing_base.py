@@ -102,18 +102,18 @@ class WindowBackingBase(object):
             img_data = zlib.decompress(raw_data)
         assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
         delta = options.get("delta", -1)
-        rgb24_data = img_data
+        rgb_data = img_data
         if delta>=0:
             if not self._last_pixmap_data:
                 raise Exception("delta region references pixmap data we do not have!")
             lwidth, lheight, store, ldata = self._last_pixmap_data
             assert width==lwidth and height==lheight and delta==store
-            rgb24_data = xor_str(img_data, ldata)
+            rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
         store = options.get("store", -1)
         if store>=0:
-            self._last_pixmap_data =  width, height, store, rgb24_data
-        return rgb24_data
+            self._last_pixmap_data =  width, height, store, rgb_data
+        return rgb_data
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
@@ -174,7 +174,7 @@ class WindowBackingBase(object):
 
     def paint_rgb32(self, raw_data, x, y, width, height, rowstride, options, callbacks):
         """ called from non-UI thread
-            this method calls process_delta before calling do_paint_rgb24 from the UI thread via idle_add
+            this method calls process_delta before calling do_paint_rgb32 from the UI thread via idle_add
         """
         rgb32_data = self.process_delta(raw_data, width, height, rowstride, options)
         self.idle_add(self.do_paint_rgb32, rgb32_data, x, y, width, height, rowstride, options, callbacks)
