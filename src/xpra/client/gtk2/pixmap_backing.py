@@ -18,13 +18,10 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
-    def __init__(self, wid, w, h, has_alpha):
-        GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
-
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
-        if self.has_alpha:
+        if self._has_alpha:
             self._backing = gdk.Pixmap(None, w, h, 32)
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
@@ -65,10 +62,9 @@ class PixmapBacking(GTK2WindowBacking):
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        log.debug("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s)", len(img_data), x, y, width, height, rowstride, options, callbacks)
+        #log.debug("do_paint_rgb32(%s bytes, %s, %s, %s, %s, %s, %s, %s) backing depth=%s", len(img_data), x, y, width, height, rowstride, options, callbacks, self._backing.get_depth())
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
-        log.debug("do_paint_rgb32(..) backing depth=%s", self._backing.get_depth())
         cr = self._backing.cairo_create()
         cr.rectangle(x, y, width, height)
         cr.set_source_pixbuf(pixbuf, x, y)
