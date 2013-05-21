@@ -38,14 +38,12 @@ log = Logger()
 
 XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"
 if XPRA_DAMAGE_DEBUG:
-    debug = log.debug
-    info = log.info
-    rgblog = log.debug
+    debug = log.info
+    rgblog = log.info
 else:
     def noop(*args, **kwargs):
         pass
     debug = noop
-    info = noop
     rgblog = None
 
 from xpra.deque import maxdeque
@@ -500,21 +498,25 @@ class WindowSource(object):
             decide whether we send a full screen update
             using the video encoder or if a small lossless region(s) is a better choice
         """
-        def switch():
+        def switch_to_lossless(reason):
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
-            debug("temporarily switching to %s encoder for %s pixels", coding, pixel_count)
+            debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
-        if has_alpha and current_encoding not in ("png", "rgb32"):
+        if has_alpha:
+            if current_encoding in ("png", "rgb32"):
+                return current_encoding
             if current_encoding=="rgb":
                 encs = ("rgb32", "png")
             else:
                 encs = ("png", "rgb32")
             for x in encs:
                 if x in self.SERVER_CORE_ENCODINGS and x in self.core_encodings:
+                    debug("do_get_best_encoding(..) using %s for alpha channel support", x)
                     return x
+            debug("no alpha channel encodings supported: no %s in %s", encs, [x for x in self.SERVER_CORE_ENCODINGS if x in self.core_encodings])
         if is_tray:
             #tray needs a lossless encoder
-            return switch()
+            return switch_to_lossless("for a tray window")
         if current_encoding not in ("x264", "vpx"):
             return self.get_core_encoding(has_alpha, current_encoding)
         max_nvoip = MAX_NONVIDEO_OR_INITIAL_PIXELS
@@ -525,24 +527,24 @@ class WindowSource(object):
         if self._sequence==1 and is_OR and pixel_count<max_nvoip:
             #first frame of a small-ish OR window, those are generally short lived
             #so delay using a video encoder until the next frame:
-            return switch()
+            return switch_to_lossless("first small frame of an OR window")
         if current_encoding=="x264":
             #x264 needs sizes divisible by 2:
             ww = ww & 0xFFFE
             wh = wh & 0xFFFE
         if ww<8 or wh<=2:
             #swscale limitation
-            return switch()
+            return switch_to_lossless("window dimensions are unsuitable for swscale")
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
-            return switch()
+            return switch_to_lossless("few pixels (%.2f% of window)" % (100*ww*wh/pixel_count))
         if pixel_count>max_nvp:
             #too many pixels, use current video encoder
             return self.get_core_encoding(has_alpha, current_encoding)
-        if pixel_count>0.5*ww*wh and batching:
-            #small, but over 50% of the full window
-            return self.get_core_encoding(has_alpha, current_encoding)
-        return switch()
+        if pixel_count<0.5*ww*wh and not batching:
+            #less than 50% of the full window and we're not batching
+            return switch_to_lossless("%i%% of image, not batching" % (100*ww*wh/pixel_count))
+        return self.get_core_encoding(has_alpha, current_encoding)
 
     def get_core_encoding(self, has_alpha, current_encoding):
         encs = [current_encoding]
