@@ -11,8 +11,7 @@ from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.log import Logger
 log = Logger()
 
-from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.client.gtk2.pixmap_backing import PixmapBacking
+from xpra.client.gtk2.pixmap_backing import GTK2WindowBacking
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -91,7 +90,7 @@ class ClientTray(ClientWidgetBase):
 
     def new_backing(self, w, h):
         self._size = w, h
-        self._backing = self.make_new_backing(PixmapBacking, w, h)
+        self._backing = TrayBacking(self._id, w, h, self._has_alpha)
 
     def size_changed(self, status_icon, size):
         log("ClientTray.size_changed(%s, %s)", status_icon, size)
@@ -128,28 +127,22 @@ class ClientTray(ClientWidgetBase):
 
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
         assert coding in ("rgb24", "rgb32", "png", "mmap"), "invalid encoding for tray data: %s" % coding
-        log.info("ClientTray.draw_region(%s)", [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
-        if coding=="png" and False:
-            colorspace = self.tray_widget.get_screen().get_rgba_colormap()
-            tray_icon = gdk.pixbuf_new_from_data(img_data, colorspace, True, 24, width, height, rowstride)
-            #def gtk.gdk.pixbuf_new_from_data(data, colorspace, has_alpha, bits_per_sample, width, height, rowstride)
-            self.tray_widget.set_from_pixbuf(tray_icon)
-            self.may_configure()
-            fire_paint_callbacks(callbacks, True)
-            return
+        log("ClientTray.draw_region(%s)", [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
 
         def after_draw_update_tray(success):
             if not success:
                 log.warn("after_draw_update_tray(%s) options=%s", success, options)
                 return
-            w, h = self._size
-            pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, w, h)
-            tray_icon = pixbuf.get_from_drawable(self._backing._backing, self._backing._backing.get_colormap(),
-                                      0, 0, 0, 0, w, h)
-            size = self.tray_widget.get_size()
-            if size!=w or size!=h:
-                tray_icon = tray_icon.scale_simple(size, size, gtk.gdk.INTERP_HYPER)
-            log("after_draw_update_tray(%s) tray icon=%s, size=%s", success, tray_icon, size)
+            if not self._backing.pixels:
+                log.warn("TrayBacking does not have any pixels / format!")
+                return
+            enc, w, h, rowstride = self._backing.format
+            has_alpha = enc=="rgb32"
+            tray_icon = gdk.pixbuf_new_from_data(self._backing.pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+            #size = self.tray_widget.get_size()
+            #if size!=w or size!=h:
+            #    tray_icon = tray_icon.scale_simple(size, size, gtk.gdk.INTERP_HYPER)
+            #log("after_draw_update_tray(%s) tray icon=%s, size=%s", success, tray_icon, size)
             self.tray_widget.set_from_pixbuf(tray_icon)
             self.may_configure()
         callbacks.append(after_draw_update_tray)
@@ -158,3 +151,21 @@ class ClientTray(ClientWidgetBase):
     def destroy(self):
         self.tray_widget.set_visible(False)
         self.tray_widget = None
+
+
+class TrayBacking(GTK2WindowBacking):
+
+    def __init__(self, wid, w, h, has_alpha):
+        self.pixels = None
+        self.format = None
+        GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
+
+    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        self.pixels = img_data
+        self.format = ("rgb24", width, height, rowstride)
+        return True
+
+    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options, callbacks):
+        self.pixels = img_data
+        self.format = ("rgb32", width, height, rowstride)
+        return True
