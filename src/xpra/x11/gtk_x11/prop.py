@@ -242,7 +242,7 @@ _prop_types = {
             lambda disp, c: struct.pack("=I", c),
             lambda disp, d: struct.unpack("=I", d)[0],
             ""),
-    "visual": (gtk.gdk.Visual, "XA_VISUALID", 32,
+    "visual": (gtk.gdk.Visual, "VISUALID", 32,
                lambda disp, c: struct.pack("=I", get_xvisual(c)),
                unsupported,
                ""),
