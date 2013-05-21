@@ -175,8 +175,8 @@ class SystemTray(gobject.GObject):
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
-        w = max(1, min(200, w))
-        h = max(1, min(200, h))
+        w = max(1, min(64, w))
+        h = max(1, min(64, h))
         debug("dock_tray(%s) window=%s, geometry=%s, visual.depth=%s", hex(xid), window, window.get_geometry(), window.get_visual().depth)
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         tray_window = gtk.gdk.Window(root, width=w, height=h,
