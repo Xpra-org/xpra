@@ -533,9 +533,6 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
     def is_tray(self):
         return  True
 
-    def has_alpha(self):
-        return True         #assume that we do
-
     def _read_initial_properties(self):
         pass
 
