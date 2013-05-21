@@ -11,4 +11,4 @@ def get_sys_info():
 
 from xpra.platform import platform_import
 platform_import(globals(), "info", False,
-                "get_info")
+                "get_sys_info")

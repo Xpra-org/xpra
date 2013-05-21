@@ -45,7 +45,7 @@ def platform_import(where, pm, required, *imports):
             if required:
                 raise Exception("could not find %s in %s" % (x, module))
             else:
-                debug("%s=%s (unchanged)" % (x, where[x]))
+                debug("%s=%s (unchanged)", x, where[x])
                 continue
         v = getattr(platform_module, x)
         debug("%s=%s" % (x, str(v).replace("\n", "\\n")))
