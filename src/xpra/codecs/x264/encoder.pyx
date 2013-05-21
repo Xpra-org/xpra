@@ -44,7 +44,7 @@ cdef extern from "x264lib.h":
 
     int get_x264_build_no()
 
-    x264lib_ctx* init_encoder(int width, int height,
+    x264lib_ctx* init_encoder(int width, int height, char *rgb_format,
                               int initial_quality, int initial_speed,
                               int supports_csc_option,
                               int I422_quality, int I444_quality,
@@ -71,10 +71,12 @@ cdef class Encoder:
     cdef x264lib_ctx *context
     cdef int width
     cdef int height
+    cdef char* rgb_format
 
-    def init_context(self, int width, int height, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, rgb_format, options):    #@DuplicatedSignature
         self.width = width
         self.height = height
+        self.rgb_format = rgb_format
         self.frames = 0
         self.supports_options = int(options.get("client_options", False))
         I420_profile = self._get_profile(options, "I420", DEFAULT_I420_PROFILE, I420_PROFILES)
@@ -88,7 +90,7 @@ cdef class Encoder:
         initial_speed = options.get("initial_speed", options.get("speed", DEFAULT_INITIAL_SPEED))
         initial_quality = min(100, max(0, initial_quality))
         initial_speed = min(100, max(0, initial_speed))
-        self.context = init_encoder(width, height,
+        self.context = init_encoder(width, height, rgb_format,
                                     initial_quality, initial_speed,
                                     int(self.supports_options),
                                     int(I422_quality), int(I444_quality),
@@ -109,6 +111,9 @@ cdef class Encoder:
 
     def get_type(self):
         return  "x264"
+
+    def get_rgb_format(self):
+        return self.rgb_format
 
     def _get_profile(self, options, csc_mode, default_value, valid_options):
         #try the environment as a default, fallback to hardcoded default:

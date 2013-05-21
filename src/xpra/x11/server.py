@@ -591,7 +591,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if data is None:
                 continue
             px, py, pw, ph, raw_data, rgb_format, rowstride = data
-            if rgb_format.upper() not in ("RGB", "RGBA"):
+            if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB"):
                 log.warn("window pixels for window %s in unhandled format: %s", wid, rgb_format)
                 continue
             item = (wid, px, py, pw, ph, raw_data, rgb_format, rowstride)
@@ -618,10 +618,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         import Image
         image = Image.new("RGBA", (width, height))
         for wid, x, y, w, h, raw_data, rgb_format, rowstride in reversed(all_regions):
-            assert rgb_format in ("RGB", "RGBA"), "invalid pixel format for window %s: %s" % (wid, rgb_format)
             window_image = Image.fromstring(rgb_format, (w, h), raw_data, "raw", rgb_format, rowstride)
-            if rgb_format!="RGBA":
-                window_image = window_image.convert("RGB")
+            if rgb_format not in ("RGBA", "RGB"):
+                window_image = window_image.convert("RGBA")
             tx = x-minx
             ty = y-miny
             image.paste(window_image, (tx, ty))

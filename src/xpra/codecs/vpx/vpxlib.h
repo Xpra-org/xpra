@@ -20,7 +20,7 @@ int get_vpx_abi_version(void);
 struct vpx_context;
 
 /** Create an encoding context for images of a given size.  */
-struct vpx_context *init_encoder(int width, int height);
+struct vpx_context *init_encoder(int width, int height, char *rgb_format);
 
 /** Create a decoding context for images of a given size. */
 struct vpx_context *init_decoder(int width, int height, int use_swscale);

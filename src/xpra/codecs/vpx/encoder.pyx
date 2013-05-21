@@ -21,7 +21,7 @@ cdef extern from "vpxlib.h":
 
     int get_vpx_abi_version()
 
-    vpx_codec_ctx_t* init_encoder(int width, int height)
+    vpx_codec_ctx_t* init_encoder(int width, int height, char *rgb_format)
     void clean_encoder(vpx_codec_ctx_t *context)
     vpx_image_t* csc_image_rgb2yuv(vpx_codec_ctx_t *ctx, uint8_t *input, int stride)
     int csc_image_yuv2rgb(vpx_codec_ctx_t *ctx, uint8_t *input[3], int stride[3], uint8_t **out, int *outsz, int *outstride) nogil
@@ -41,11 +41,13 @@ cdef class Encoder:
     cdef vpx_codec_ctx_t *context
     cdef int width
     cdef int height
+    cdef char* rgb_format
 
-    def init_context(self, width, height, options):    #@DuplicatedSignature
+    def init_context(self, width, height, rgb_format, options):    #@DuplicatedSignature
         self.width = width
         self.height = height
-        self.context = init_encoder(width, height)
+        self.rgb_format = rgb_format
+        self.context = init_encoder(width, height, rgb_format)
         self.frames = 0
 
     def get_width(self):
@@ -59,6 +61,9 @@ cdef class Encoder:
 
     def get_type(self):
         return  "vpx"
+
+    def get_rgb_format(self):
+        return self.rgb_format
 
     def __dealloc__(self):
         self.clean()

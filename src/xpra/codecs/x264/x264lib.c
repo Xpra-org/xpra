@@ -27,6 +27,14 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
 
+//supported rgb formats:
+const char RGB_FORMAT_RGB[]		= "RGB";
+const char RGB_FORMAT_XRGB[]	= "XRGB";
+const char RGB_FORMAT_BGRX[]	= "BGRX";
+const char RGB_FORMAT_ARGB[]	= "ARGB";
+const char RGB_FORMAT_BGRA[]	= "BGRA";
+const char *ALL_RGB_FORMATS[6] = {RGB_FORMAT_RGB, RGB_FORMAT_XRGB, RGB_FORMAT_BGRX, RGB_FORMAT_ARGB, RGB_FORMAT_BGRA, NULL};
+
 
 //not honoured on MS Windows:
 #define MEMALIGN 1
@@ -46,6 +54,40 @@ int get_x264_build_no(void) {
 	return X264_BUILD;
 }
 
+const char *get_valid_rgb_format(const char* rgb_format)
+{
+	int i = 0;
+	if (rgb_format==NULL)
+		return	NULL;
+	while (ALL_RGB_FORMATS[i]!=NULL)
+	{
+		if (strcmp(ALL_RGB_FORMATS[i], rgb_format)==0) {
+			return ALL_RGB_FORMATS[i];
+		}
+		i++;
+	}
+	fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
+	return NULL;
+}
+
+int get_swscale_pixel_format(const char* rgb_format)
+{
+	if (strcmp(RGB_FORMAT_RGB, rgb_format)==0)
+		return PIX_FMT_RGB24;
+	else if (strcmp(RGB_FORMAT_XRGB, rgb_format)==0)
+		return PIX_FMT_0RGB;
+	else if (strcmp(RGB_FORMAT_BGRX, rgb_format)==0)
+		return PIX_FMT_BGR0;
+	else if (strcmp(RGB_FORMAT_ARGB, rgb_format)==0)
+		return PIX_FMT_ARGB;
+	else if (strcmp(RGB_FORMAT_BGRA, rgb_format)==0)
+		return PIX_FMT_BGRA;
+	else if (strcmp(RGB_FORMAT_RGB, rgb_format)==0) {
+		fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
+		return PIX_FMT_RGB24;
+	}
+}
+
 struct x264lib_ctx {
 	// Both
 	int width;
@@ -62,6 +104,7 @@ struct x264lib_ctx {
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
 	int use_swscale;
+	const char *rgb_format;
 
 	int speed;					//percentage 0-100
 	int quality;				//percentage 0-100
@@ -250,19 +293,23 @@ struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
 	}
-	return sws_getContext(ctx->width, ctx->height, PIX_FMT_RGB24, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
+	int pix_fmt = get_swscale_pixel_format(ctx->rgb_format);
+	return sws_getContext(ctx->width, ctx->height, pix_fmt, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
 }
 
 /**
  * Configure values that will not change during the lifetime of the encoder.
  */
-void configure_encoder(struct x264lib_ctx *ctx, int width, int height,
+void configure_encoder(struct x264lib_ctx *ctx,
+		int width, int height, char *rgb_format,
 		int initial_quality, int initial_speed,
 		int supports_csc_option,
 		int I422_quality, int I444_quality,
 		int I422_min, int I444_min,
 		char *i420_profile, char *i422_profile, char *i444_profile)
 {
+	const char *rgb = get_valid_rgb_format(rgb_format);
+	ctx->rgb_format = rgb;
 	//printf("configure_encoder(%p, %i, %i, %i, %i, %i, %i, %s, %s, %s)\n", ctx, width, height, initial_quality, supports_csc_option, I422_quality, I444_quality, i420_profile, i422_profile, i444_profile);
 	ctx->use_swscale = 1;
 	ctx->width = width;
@@ -337,7 +384,7 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 		ctx->rgb2yuv = init_encoder_csc(ctx);
 }
 
-struct x264lib_ctx *init_encoder(int width, int height,
+struct x264lib_ctx *init_encoder(int width, int height, char *rgb_format,
 		int initial_quality, int initial_speed,
 		int supports_csc_option,
 		int I422_quality, int I444_quality,
@@ -348,7 +395,8 @@ struct x264lib_ctx *init_encoder(int width, int height,
 	if (ctx==NULL)
 		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
-	configure_encoder(ctx, width, height, \
+	configure_encoder(ctx,
+					width, height, rgb_format, \
 					initial_quality, initial_speed, \
 					supports_csc_option, \
 					I422_quality, I444_quality, \

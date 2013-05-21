@@ -32,6 +32,17 @@
 #define fourcc    0x30385056
 #define IVF_FILE_HDR_SZ  (32)
 #include <libswscale/swscale.h>
+#include <libswscale/swscale.h>
+#include <libavutil/pixfmt.h>
+
+//supported rgb formats:
+const char RGB_FORMAT_RGB[]		= "RGB";
+const char RGB_FORMAT_XRGB[]	= "XRGB";
+const char RGB_FORMAT_BGRX[]	= "BGRX";
+const char RGB_FORMAT_ARGB[]	= "ARGB";
+const char RGB_FORMAT_BGRA[]	= "BGRA";
+const char *ALL_RGB_FORMATS[6] = {RGB_FORMAT_RGB, RGB_FORMAT_XRGB, RGB_FORMAT_BGRX, RGB_FORMAT_ARGB, RGB_FORMAT_BGRA, NULL};
+
 
 int get_vpx_abi_version(void) {
 	return	VPX_CODEC_ABI_VERSION;
@@ -44,7 +55,43 @@ struct vpx_context {
 	struct SwsContext *yuv2rgb;
 	int width;
 	int height;
+	const char *rgb_format;
 } vpx_context;
+
+
+const char *get_valid_rgb_format(const char* rgb_format)
+{
+	int i = 0;
+	if (rgb_format==NULL)
+		return	NULL;
+	while (ALL_RGB_FORMATS[i]!=NULL)
+	{
+		if (strcmp(ALL_RGB_FORMATS[i], rgb_format)==0) {
+			return ALL_RGB_FORMATS[i];
+		}
+		i++;
+	}
+	fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
+	return NULL;
+}
+
+int get_swscale_pixel_format(const char* rgb_format)
+{
+	if (strcmp(RGB_FORMAT_RGB, rgb_format)==0)
+		return PIX_FMT_RGB24;
+	else if (strcmp(RGB_FORMAT_XRGB, rgb_format)==0)
+		return PIX_FMT_0RGB;
+	else if (strcmp(RGB_FORMAT_BGRX, rgb_format)==0)
+		return PIX_FMT_BGR0;
+	else if (strcmp(RGB_FORMAT_ARGB, rgb_format)==0)
+		return PIX_FMT_ARGB;
+	else if (strcmp(RGB_FORMAT_BGRA, rgb_format)==0)
+		return PIX_FMT_BGRA;
+	else if (strcmp(RGB_FORMAT_RGB, rgb_format)==0) {
+		fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
+		return PIX_FMT_RGB24;
+	}
+}
 
 
 static void codec_error(vpx_codec_ctx_t *ctx, const char *s) {
@@ -55,8 +102,11 @@ static void codec_error(vpx_codec_ctx_t *ctx, const char *s) {
     //    printf("    %s\n", detail);
 }
 
-struct vpx_context *init_encoder(int width, int height)
+struct vpx_context *init_encoder(int width, int height, char *rgb_format)
 {
+	const char *rgb = get_valid_rgb_format(rgb_format);
+	if (rgb==NULL)
+		return NULL;
 	vpx_codec_enc_cfg_t  cfg;
 	struct vpx_context *ctx;
 	vpx_codec_iface_t *codec_iface = vpx_codec_vp8_cx();
@@ -74,11 +124,14 @@ struct vpx_context *init_encoder(int width, int height)
 		free(ctx);
 		return NULL;
 	}
+	ctx->rgb_format = rgb;
 	ctx->use_swscale = 1;
 	ctx->width = width;
 	ctx->height = height;
-	if (ctx->use_swscale)
-		ctx->rgb2yuv = sws_getContext(width, height, PIX_FMT_RGB24, width, height, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	if (ctx->use_swscale) {
+		int pf = get_swscale_pixel_format(ctx->rgb_format);
+		ctx->rgb2yuv = sws_getContext(width, height, pf, width, height, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+	}
 	return ctx;
 }
 

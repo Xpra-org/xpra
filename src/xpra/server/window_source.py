@@ -58,6 +58,11 @@ except:
     xor_str = None
 from xpra.os_util import StringIOClass
 
+try:
+    import Image
+except:
+    Image = None
+
 #old gtk versions lack gtk.gdk.Region().get_rectangles()
 #so for those we just keep them in a list..
 #(which isn't as good since we don't merge rectangles
@@ -537,13 +542,13 @@ class WindowSource(object):
             return switch_to_lossless("window dimensions are unsuitable for swscale")
         if pixel_count<ww*wh*0.01:
             #less than one percent of total area
-            return switch_to_lossless("few pixels (%.2f% of window)" % (100*ww*wh/pixel_count))
+            return switch_to_lossless("few pixels (%.2f%% of window)" % (100*pixel_count/ww/wh))
         if pixel_count>max_nvp:
             #too many pixels, use current video encoder
             return self.get_core_encoding(has_alpha, current_encoding)
         if pixel_count<0.5*ww*wh and not batching:
             #less than 50% of the full window and we're not batching
-            return switch_to_lossless("%i%% of image, not batching" % (100*ww*wh/pixel_count))
+            return switch_to_lossless("%i%% of image, not batching" % (100*pixel_count/ww/wh))
         return self.get_core_encoding(has_alpha, current_encoding)
 
     def get_core_encoding(self, has_alpha, current_encoding):
@@ -562,15 +567,13 @@ class WindowSource(object):
 
     def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
         if has_alpha:
-            rgb_fmt = "rgb24"
-        else:
             rgb_fmt = "rgb32"
-        if self.encoding=="rgb":
-            return rgb_fmt
-        if pixel_count<512:
-            encs = rgb_fmt, "png"
         else:
-            encs = "png", rgb_fmt
+            rgb_fmt = "rgb24"
+        if pixel_count<512:
+            encs = rgb_fmt, "png", "rgb24"
+        else:
+            encs = "png", rgb_fmt, "rgb24"
         for e in encs:
             if e in self.SERVER_CORE_ENCODINGS and e in self.core_encodings:
                 return e
@@ -583,7 +586,7 @@ class WindowSource(object):
              to deal with video encoders and odd window sizes)
         """
         self.do_process_damage_region(damage_time, window, x, y, w, h, coding, options)
-        if coding in ("vpx", "x264"):
+        if coding in ("vpx", "x264") and (w%2==1 or h%2==1):
             if w%2==1:
                 lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, 1*h)
                 self.do_process_damage_region(damage_time, window, x+w-1, y, 1, h, lossless, options)
@@ -764,7 +767,7 @@ class WindowSource(object):
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
         if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
-            if rgb_format.upper()=="RGB" or (rgb_format.upper()=="RGBA" and "rgb32" in self.core_encodings):
+            if rgb_format=="RGB" or (rgb_format=="RGBA" and "rgb32" in self.core_encodings):
                 #try with mmap (will change coding to "mmap" if it succeeds)
                 coding, data = self.mmap_send(coding, rgbdata)
         else:
@@ -777,10 +780,7 @@ class WindowSource(object):
                 #xor with the last frame:
                 delta = lsequence
                 data = xor_str(rgbdata, ldata)
-
-        if rgb_format.upper()!="RGB" and rgb_format.upper()!="RGBX":
-            assert rgb_format.upper()=="RGBA", "invalid rgb format: %s" % rgb_format
-            assert coding in ("rgb32", "png", "mmap"), "invalid encoding for %s: %s" % (rgb_format, coding)
+                debug("make_data_packet: xored against sequence %s", lsequence)
 
         #by default, don't set rowstride (the container format will take care of providing it):
         outstride = 0
@@ -791,9 +791,9 @@ class WindowSource(object):
             w = w & 0xFFFE
             h = h & 0xFFFE
             assert w>0 and h>0
-            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
+            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="vpx":
-            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rowstride, options)
+            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="rgb24" or coding=="rgb32":
             data, client_options = self.rgb_encode(coding, data)
             outstride = rowstride
@@ -852,8 +852,18 @@ class WindowSource(object):
 
     def PIL_encode(self, w, h, coding, data, rgb_format, rowstride, options):
         assert coding in self.SERVER_CORE_ENCODINGS
-        import Image
-        im = Image.fromstring(rgb_format, (w, h), data, "raw", rgb_format, rowstride)
+        assert Image is not None, "Python PIL is not available"
+        rgb = {
+               "XRGB"   : "RGB",
+               "BGRX"   : "RGB",
+               "RGBA"   : "RGBA",
+               "BGRA"   : "RGBA",
+               }.get(rgb_format, rgb_format)
+        try:
+            im = Image.fromstring(rgb, (w, h), data, "raw", rgb_format, rowstride)
+        except Exception, e:
+            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(data), rgb_format, rowstride, options), rgb, exc_info=True)
+            raise e
         buf = StringIOClass()
         client_options = {}
         if coding=="jpeg":
@@ -861,12 +871,12 @@ class WindowSource(object):
             if options:
                 q = options.get("quality", 80)
             q = min(99, max(1, q))
-            debug("sending with jpeg quality %s", q)
+            debug("sending %sx%s %s as jpeg with quality %s", w, h, rgb_format, q)
             im.save(buf, "JPEG", quality=q)
             client_options["quality"] = q
         else:
             assert coding in ("png", "png/P", "png/L")
-            debug("sending as %s, mode=%s", coding, im.mode)
+            debug("sending %sx%s %s as %s, mode=%s", w, h, rgb_format, coding, im.mode)
             if coding=="png/L":
                 im = im.convert("L", palette=Image.ADAPTIVE)
             elif coding=="png/P":
@@ -890,7 +900,7 @@ class WindowSource(object):
         else:
             raise Exception("invalid video encoder: %s" % coding)
 
-    def video_encode(self, wid, x, y, w, h, coding, data, rowstride, options):
+    def video_encode(self, wid, x, y, w, h, coding, data, rgb_format, rowstride, options):
         """
             This method is used by make_data_packet to encode frames using x264 or vpx.
             Video encoders only deal with fixed dimensions,
@@ -904,14 +914,17 @@ class WindowSource(object):
         try:
             self._video_encoder_lock.acquire()
             if self._video_encoder:
-                if self._video_encoder.get_type()!=coding:
-                    debug("video_encode: switching from %s to %s", self._video_encoder.get_type(), coding)
+                if self._video_encoder.get_rgb_format()!=rgb_format:
+                    debug("video_encode: switching rgb_format from %s to %s", self._video_encoder.get_rgb_format(), rgb_format)
+                    self.do_video_encoder_cleanup()
+                elif self._video_encoder.get_type()!=coding:
+                    debug("video_encode: switching encoding from %s to %s", self._video_encoder.get_type(), coding)
                     self.do_video_encoder_cleanup()
                 elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
                     debug("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
                     self._video_encoder.clean()
-                    self._video_encoder.init_context(w, h, self.encoding_options)
+                    self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
                     #if we had an encoding speed set, restore it (also scaled):
                     if len(self._video_encoder_speed):
                         _, recent_speed = calculate_time_weighted_average(list(self._video_encoder_speed))
@@ -921,7 +934,7 @@ class WindowSource(object):
             if self._video_encoder is None:
                 debug("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 self._video_encoder = self.make_video_encoder(coding)
-                self._video_encoder.init_context(w, h, self.encoding_options)
+                self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
             data, client_options = self._video_encoder.compress_image(data, rowstride, options)
             if data is None:
                 log.error("%s: ouch, compression failed", coding)

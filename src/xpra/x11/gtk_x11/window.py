@@ -413,35 +413,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if pixels is None:
             log.info("get_rgb_rawdata(..) get_pixels() returned None (window already gone?)")
             return None
-        import Image
         depth, w, h, rowstride, big_endian, data = pixels
         #log.info("get_rgb_rawdata(..) get_pixels=%s", (depth, w, h, rowstride, big_endian, "%s bytes" % len(data)))
         #log.info("get_rgb_rawdata(..) head=%s", [hex(ord(v)) for v in data[:100]])
         if depth==24:
             if big_endian:
-                imode = "XRGB"
+                mode = "XRGB"
             else:
-                imode = "BGRX"
-            smode = "RGB"
-            omode = "RGB"
-            orowstride = rowstride*3/4
-            #rowstride = w*3
+                mode = "BGRX"
         elif depth==32:
             if big_endian:
-                imode = "ARGB"
+                mode = "ARGB"
             else:
-                imode = "BGRA"
-            smode = "RGBA"
-            omode = "RGBA"
-            orowstride = rowstride
-            #RGBa?
+                mode = "BGRA"
         else:
             raise Exception("unhandled depth: %s", depth)
-        im = Image.fromstring(smode, (w, h), data, "raw", imode, rowstride)
-        if omode!=smode:
-            im = im.convert(omode)
-        pixels = im.tostring("raw", omode)
-        return x, y, w, h, im.tostring(), omode, orowstride
+        return x, y, w, h, data, mode, rowstride
 
     def do_xpra_client_message_event(self, event):
         # FIXME
