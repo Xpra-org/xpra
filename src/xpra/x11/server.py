@@ -573,38 +573,40 @@ class XpraServer(gobject.GObject, X11ServerBase):
             try:
                 self.do_make_screenshot_packet()
             except:
-                log.error("do_make_screenshot_packet()", exc_info=True)
+                log.error("make_screenshot_packet()", exc_info=True)
         return trap.call_synced(synced_screenshot)
 
     def do_make_screenshot_packet(self):
-        log("grabbing screenshot")
+        debug = log.debug
+        debug("grabbing screenshot")
         regions = []
         OR_regions = []
         for wid in reversed(sorted(self._id_to_window.keys())):
             window = self._id_to_window.get(wid)
-            log("screenshot: window(%s)=%s", wid, window)
+            debug("screenshot: window(%s)=%s", wid, window)
             if window is None:
                 continue
             if window.is_tray():
-                log("screenshot: skipping tray window %s", wid)
+                debug("screenshot: skipping tray window %s", wid)
                 continue
             if not window.is_managed():
-                log("screenshot: window %s is not/no longer managed", wid)
+                debug("screenshot: window %s is not/no longer managed", wid)
                 continue
             if window.is_OR():
-                x, y, w, h = window.get_property("geometry")[:4]
+                x, y = window.get_property("geometry")[:2]
             else:
-                x, y, w, h = self._desktop_manager.window_geometry(window)[:4]
-            log("screenshot: position(%s)=%s,%s", window, x, y)
-            log("screenshot: size(%s)=%sx%s", window, w, h)
-            data = window.get_rgb_rawdata(x, y, w, h, logger=log.info)
-            log("screenshot: len(%s.get_rgb_data(..))=%s", window, len(data or ""))
+                x, y = self._desktop_manager.window_geometry(window)[:2]
+            debug("screenshot: position(%s)=%s,%s", window, x, y)
+            w, h = window.get_dimensions()
+            debug("screenshot: size(%s)=%sx%s", window, w, h)
+            data = window.get_rgb_rawdata(0, 0, w, h, logger=log.info)
             if data is None:
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
             px, py, pw, ph, raw_data, rgb_format, rowstride = data
+            debug("screenshot: rgb_data=%s", (px, py, pw, ph, "%s bytes" % len(raw_data), rgb_format, rowstride))
             if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB"):
-                log.warn("window pixels for window %s in unhandled format: %s", wid, rgb_format)
+                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, rgb_format)
                 continue
             item = (wid, px, py, pw, ph, raw_data, rgb_format, rowstride)
             if window.is_OR():
@@ -616,9 +618,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 regions.append(item)
         all_regions = OR_regions+regions
         if len(all_regions)==0:
-            log("screenshot: no regions found, returning empty 0x0 image!")
+            debug("screenshot: no regions found, returning empty 0x0 image!")
             return ["screenshot", 0, 0, "png", -1, ""]
-        log("screenshot: found regions=%s, OR_regions=%s", regions, OR_regions)
+        debug("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
         minx = min([x for (_,x,_,_,_,_,_,_) in all_regions])
         miny = min([y for (_,_,y,_,_,_,_,_) in all_regions])
@@ -626,13 +628,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         maxy = max([(y+h) for (_,_,y,_,h,_,_,_) in all_regions])
         width = maxx-minx
         height = maxy-miny
-        log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
+        debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
         import Image
         image = Image.new("RGBA", (width, height))
         for wid, x, y, w, h, raw_data, rgb_format, rowstride in reversed(all_regions):
-            window_image = Image.fromstring(rgb_format, (w, h), raw_data, "raw", rgb_format, rowstride)
-            if rgb_format not in ("RGBA", "RGB"):
-                window_image = window_image.convert("RGBA")
+            target_format = {
+                     "XRGB"   : "RGB",
+                     "BGRX"   : "RGB",
+                     "BGRA"   : "RGBA"}.get(rgb_format)
+            window_image = Image.fromstring(target_format, (w, h), raw_data, "raw", rgb_format, rowstride)
             tx = x-minx
             ty = y-miny
             image.paste(window_image, (tx, ty))
@@ -641,7 +645,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         data = buf.getvalue()
         buf.close()
         packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
-        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
+        debug("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
 
 
