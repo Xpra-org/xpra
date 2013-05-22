@@ -587,7 +587,7 @@ cdef get_pixels(display, xpixmap, x, y, width, height):
     cdef XImage* ximage
     xdisplay = get_xdisplay_for(display)
     ximage = XGetImage(xdisplay, xpixmap, x, y, width, height, AllPlanes, ZPixmap)
-    log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
+    #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
         info("get_pixels(..) failed to get XImage for xpixmap %s", xpixmap)
         return None
@@ -605,7 +605,6 @@ cdef get_pixels(display, xpixmap, x, y, width, height):
     #         xpixmap, byte_order, ximage.bitmap_unit, bitmap_bit_order, ximage.bitmap_pad, ximage.xoffset, hex(ximage.red_mask), hex(ximage.green_mask), hex(ximage.blue_mask))
     #log.info("get_pixels(%s) XImage depth=%s, width=%s, height=%s, bytes_per_line=%s, size=%s",
     #         xpixmap, ximage.depth, ximage.width, ximage.height, ximage.bytes_per_line, size)
-    log.info("get_pixels(..) destroying image")
     XDestroyImage(ximage)
     return depth, width, height, rowstride, big_endian, data
 
