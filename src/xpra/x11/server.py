@@ -569,12 +569,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def make_screenshot_packet(self):
-        def synced_screenshot():
-            try:
-                self.do_make_screenshot_packet()
-            except:
-                log.error("make_screenshot_packet()", exc_info=True)
-        return trap.call_synced(synced_screenshot)
+        try:
+            return self.do_make_screenshot_packet()
+        except:
+            log.error("make_screenshot_packet()", exc_info=True)
+            return None
 
     def do_make_screenshot_packet(self):
         debug = log.debug
@@ -599,16 +598,20 @@ class XpraServer(gobject.GObject, X11ServerBase):
             debug("screenshot: position(%s)=%s,%s", window, x, y)
             w, h = window.get_dimensions()
             debug("screenshot: size(%s)=%sx%s", window, w, h)
-            data = window.get_rgb_rawdata(0, 0, w, h, logger=log.info)
+            try:
+                data = trap.call_synced(window.get_rgb_rawdata, 0, 0, w, h, log.info)
+            except:
+                log.warn("screenshot: window %s could not be captured", wid)
+                continue
             if data is None:
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
             px, py, pw, ph, raw_data, rgb_format, rowstride = data
             debug("screenshot: rgb_data=%s", (px, py, pw, ph, "%s bytes" % len(raw_data), rgb_format, rowstride))
-            if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB"):
+            if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
                 log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, rgb_format)
                 continue
-            item = (wid, px, py, pw, ph, raw_data, rgb_format, rowstride)
+            item = (wid, x, y, pw, ph, raw_data, rgb_format, rowstride)
             if window.is_OR():
                 OR_regions.append(item)
             elif self._has_focus==wid:
@@ -635,8 +638,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             target_format = {
                      "XRGB"   : "RGB",
                      "BGRX"   : "RGB",
-                     "BGRA"   : "RGBA"}.get(rgb_format)
-            window_image = Image.fromstring(target_format, (w, h), raw_data, "raw", rgb_format, rowstride)
+                     "BGRA"   : "RGBA"}.get(rgb_format, rgb_format)
+            try:
+                window_image = Image.fromstring(target_format, (w, h), raw_data, "raw", rgb_format, rowstride)
+            except:
+                log.warn("failed to parse window pixels in %s format", rgb_format)
+                continue
             tx = x-minx
             ty = y-miny
             image.paste(window_image, (tx, ty))
