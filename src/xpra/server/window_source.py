@@ -138,6 +138,8 @@ class WindowSource(object):
 
     """
 
+    _mmap_warnings = set()
+
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
@@ -180,7 +182,6 @@ class WindowSource(object):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
-        self._mmap_warnings = set()
 
         # video codecs:
         self._video_encoder = None
@@ -952,7 +953,7 @@ class WindowSource(object):
                      "XRGB"   : "RGB",
                      "BGRX"   : "RGB",
                      "BGRA"   : "RGBA"}.get(rgb_format)
-            if target_format not in self.rgb_formats or True:
+            if target_format not in self.rgb_formats:
                 warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
                 if warning_key not in self._mmap_warnings:
                     log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
