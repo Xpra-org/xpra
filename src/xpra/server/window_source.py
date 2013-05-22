@@ -140,7 +140,7 @@ class WindowSource(object):
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
-                    encoding, encodings, core_encodings, encoding_options,
+                    encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
@@ -151,6 +151,7 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.core_encodings = core_encodings            #the core encodings
+        self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
                                                         #may change at runtime (ie: see ServerSource.set_quality)
@@ -179,6 +180,7 @@ class WindowSource(object):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
+        self._mmap_warnings = set()
 
         # video codecs:
         self._video_encoder = None
@@ -767,9 +769,8 @@ class WindowSource(object):
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
         if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
-            if rgb_format=="RGB" or (rgb_format=="RGBA" and "rgb32" in self.core_encodings):
-                #try with mmap (will change coding to "mmap" if it succeeds)
-                coding, data = self.mmap_send(coding, rgbdata)
+            #try with mmap (will change coding to "mmap" if it succeeds)
+            coding, data, rgb_format, rowstride = self.mmap_send(w, h, coding, rgbdata, rgb_format, rowstride)
         else:
             data = rgbdata
         #if client supports delta pre-compression for this encoding, use it if we can:
@@ -944,7 +945,23 @@ class WindowSource(object):
         finally:
             self._video_encoder_lock.release()
 
-    def mmap_send(self, coding, data):
+    def mmap_send(self, w, h, coding, data, rgb_format, rowstride):
+        if rgb_format not in self.rgb_formats:
+            #need to convert to a supported format!
+            target_format = {
+                     "XRGB"   : "RGB",
+                     "BGRX"   : "RGB",
+                     "BGRA"   : "RGBA"}.get(rgb_format)
+            if target_format not in self.rgb_formats or True:
+                warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
+                if warning_key not in self._mmap_warnings:
+                    log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
+                    self._mmap_warnings.add(warning_key)
+                return coding, data, rgb_format, rowstride
+            img = Image.fromstring(target_format, (w, h), data, "raw", rgb_format, rowstride)
+            data = img.tostring("raw", target_format)
+            rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
+            rgb_format = target_format
         from xpra.net.mmap_pipe import mmap_write
         start = time.time()
         mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
@@ -955,4 +972,4 @@ class WindowSource(object):
             self.global_statistics.mmap_bytes_sent += len(data)
             coding = "mmap"
             data = mmap_data
-        return coding, data
+        return coding, data, rgb_format, rowstride

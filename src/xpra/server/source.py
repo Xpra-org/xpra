@@ -343,6 +343,7 @@ class ServerSource(object):
         #encodings:
         self.encodings = capabilities.get("encodings", [])
         self.core_encodings = capabilities.get("encodings.core", self.encodings)
+        self.rgb_formats = capabilities.get("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
@@ -1055,7 +1056,7 @@ class ServerSource(object):
             batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, batch_config, self.auto_refresh_delay,
-                              self.encoding, self.encodings, self.core_encodings, self.encoding_options,
+                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)
             self.window_sources[wid] = ws

@@ -434,6 +434,7 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = self.get_encodings()
         capabilities["encodings.core"] = self.get_core_encodings()
+        capabilities["encodings.rgb_formats"] = ["RGB", "RGBA"]
         if self.quality>0:
             capabilities["jpeg"] = self.quality
             capabilities["quality"] = self.quality
