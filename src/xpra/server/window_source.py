@@ -800,7 +800,7 @@ class WindowSource(object):
             data, client_options = self.rgb_encode(coding, data)
             outstride = rowstride
         elif coding=="webp":
-            data, client_options = self.webp_encode(w, h, data, rowstride, options)
+            data, client_options = self.webp_encode(w, h, data, rgb_format, rowstride, options)
         elif coding=="mmap":
             #actual sending is already handled via mmap_send above
             client_options = {"rgb_format" : rgb_format}
@@ -833,15 +833,26 @@ class WindowSource(object):
         #debug("make_data_packet: returning packet=%s,[..],%s", packet[:7], packet[8:])
         return packet
 
-    def webp_encode(self, w, h, data, rowstride, options):
-        from xpra.codecs.webm.encode import EncodeRGB
+    def webp_encode(self, w, h, data, rgb_format, rowstride, options):
+        from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
         from xpra.codecs.webm.handlers import BitmapHandler
-        image = BitmapHandler(data, BitmapHandler.RGB, w, h, rowstride)
+        handler_encs = {
+                    "RGB" : (BitmapHandler.RGB, EncodeRGB),
+                    "BGR" : (BitmapHandler.BGR, EncodeBGR),
+                    "RGBA": (BitmapHandler.RGBA, EncodeRGBA),
+                    "RGBX": (BitmapHandler.RGBA, EncodeRGBA),
+                    "BGRA": (BitmapHandler.BGRA, EncodeBGRA),
+                    "BGRX": (BitmapHandler.BGRA, EncodeBGRA),
+                    }
+        h_e = handler_encs.get(rgb_format)
+        assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
+        bh, enc = h_e
+        image = BitmapHandler(data, bh, w, h, rowstride)
         q = 80
         if options:
             q = options.get("quality", 80)
         q = min(99, max(1, q))
-        return Compressed("webp", str(EncodeRGB(image, quality=q).data)), {"quality" : q}
+        return Compressed("webp", str(enc(image, quality=q).data)), {"quality" : q}
 
     def rgb_encode(self, coding, data):
         #compress here and return a wrapper so network code knows it is already zlib compressed:
