@@ -569,7 +569,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def make_screenshot_packet(self):
-        return trap.call_synced(self.do_make_screenshot_packet)
+        def synced_screenshot():
+            try:
+                self.do_make_screenshot_packet()
+            except:
+                log.error("do_make_screenshot_packet()", exc_info=True)
+        return trap.call_synced(synced_screenshot)
 
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
@@ -578,7 +583,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for wid in reversed(sorted(self._id_to_window.keys())):
             window = self._id_to_window.get(wid)
             log("screenshot: window(%s)=%s", wid, window)
-            if window is None or window.is_tray() or not window.is_managed():
+            if window is None:
+                continue
+            if window.is_tray():
+                log("screenshot: skipping tray window %s", wid)
+                continue
+            if not window.is_managed():
+                log("screenshot: window %s is not/no longer managed", wid)
                 continue
             if window.is_OR():
                 x, y, w, h = window.get_property("geometry")[:4]
@@ -586,9 +597,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 x, y, w, h = self._desktop_manager.window_geometry(window)[:4]
             log("screenshot: position(%s)=%s,%s", window, x, y)
             log("screenshot: size(%s)=%sx%s", window, w, h)
-            data = window.get_rgb_rawdata(x, y, w, h)
-            log("screenshot: len(%s.get_rgb_data(..))=%s", window, len(data))
+            data = window.get_rgb_rawdata(x, y, w, h, logger=log.info)
+            log("screenshot: len(%s.get_rgb_data(..))=%s", window, len(data or ""))
             if data is None:
+                log.warn("screenshot: no pixels for window %s", wid)
                 continue
             px, py, pw, ph, raw_data, rgb_format, rowstride = data
             if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB"):

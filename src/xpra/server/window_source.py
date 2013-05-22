@@ -44,7 +44,7 @@ else:
     def noop(*args, **kwargs):
         pass
     debug = noop
-    rgblog = None
+    rgblog = noop
 
 from xpra.deque import maxdeque
 from xpra.net.protocol import zlib_compress, Compressed
@@ -616,7 +616,7 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
-        rgb = window.get_rgb_rawdata(x, y, w, h)
+        rgb = window.get_rgb_rawdata(x, y, w, h, logger=rgblog)
         if rgb is None:
             debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return

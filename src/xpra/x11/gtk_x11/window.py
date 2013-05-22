@@ -391,22 +391,22 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         log.debug("has_alpha() client_window.depth=%s", self.client_window.get_depth())
         return self.client_window.get_depth()==32
 
-    def get_rgb_rawdata(self, x, y, width, height):
+    def get_rgb_rawdata(self, x, y, width, height, logger=log.debug):
         handle = self.get_property("client-contents-handle")
-        log.debug("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
+        logger("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
         if handle is None:
-            log.debug("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
+            logger("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
             return  None
 
         try:
             w = min(handle.width, width)
             h = min(handle.height, height)
             if w!=width or h!=height:
-                log.debug("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+                logger("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             pixels = trap.call_synced(handle.get_pixels, x, y, w, h)
         except Exception, e:
             if type(e)==XError and e.msg=="BadMatch":
-                log.debug("get_rgb_rawdata(%s, %s, %s, %s) get_pixels BadMatch ignored (window already gone?)", x, y, width, height)
+                logger("get_rgb_rawdata(%s, %s, %s, %s) get_pixels BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e)
             return None
