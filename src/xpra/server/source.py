@@ -200,6 +200,8 @@ class ServerSource(object):
                 try:
                     ws.statistics.update_averages()
                     ws.calculate_batch_delay()
+                    ws.update_speed()
+                    ws.update_quality()
                     ws.update_video_encoder()
                 except:
                     log.error("error on window %s", wid, exc_info=True)

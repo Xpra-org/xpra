@@ -51,7 +51,8 @@ from xpra.net.protocol import zlib_compress, Compressed
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.stats.maths import calculate_time_weighted_average
-from xpra.server.batch_delay_calculator import calculate_batch_delay, update_video_encoder
+from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
+from xpra.server.stats.maths import time_weighted_average
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -138,7 +139,7 @@ class WindowSource(object):
 
     """
 
-    _mmap_warnings = set()
+    _rgb_format_warnings = set()
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
@@ -186,8 +187,9 @@ class WindowSource(object):
         # video codecs:
         self._video_encoder = None
         self._video_encoder_lock = Lock()               #to ensure we serialize access to the encoder and its internals
-        self._video_encoder_quality = maxdeque(NRECS)   #keep track of the target encoding_quality: (event time, encoding speed)
-        self._video_encoder_speed = maxdeque(NRECS)     #keep track of the target encoding_speed: (event time, encoding speed)
+        # general encoding tunables (mostly used by video encoders):
+        self._encoding_quality = maxdeque(NRECS)   #keep track of the target encoding_quality: (event time, encoding speed)
+        self._encoding_speed = maxdeque(NRECS)     #keep track of the target encoding_speed: (event time, encoding speed)
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
         self._damage_delayed_expired = False            #when this is True, the region should have expired
@@ -217,8 +219,6 @@ class WindowSource(object):
     def do_video_encoder_cleanup(self):
         self._video_encoder.clean()
         self._video_encoder = None
-        self._video_encoder_speed = maxdeque(NRECS)
-        self._video_encoder_quality = maxdeque(NRECS)
 
     def set_new_encoding(self, encoding):
         """ Changes the encoder for the given 'window_ids',
@@ -296,30 +296,65 @@ class WindowSource(object):
         if len(self.batch_config.last_actual_delays)>0:
             batch_delays = [x for _,x in list(self.batch_config.last_delays)]
             add_list_stats(info, prefix+"batch_delay"+suffix, batch_delays, show_percentile=[9])
-        try:
-            quality_list, speed_list = None, None
-            self._video_encoder_lock.acquire()
-            if self._video_encoder is not None:
-                quality_list = [x for _, x in list(self._video_encoder_quality)]
-                speed_list = [x for _, x in list(self._video_encoder_speed)]
-        finally:
-            self._video_encoder_lock.release()
-        if quality_list and speed_list:
-            add_list_stats(info, prefix+self._video_encoder.get_type()+".quality"+suffix, quality_list, show_percentile=[9])
-            add_list_stats(info, prefix+self._video_encoder.get_type()+".speed"+suffix, speed_list, show_percentile=[9])
+        quality_list = [x for _, x in list(self._encoding_quality)]
+        if len(quality_list)>0:
+            add_list_stats(info, prefix+"quality"+suffix, quality_list, show_percentile=[9])
+        speed_list = [x for _, x in list(self._encoding_speed)]
+        if len(speed_list)>0:
+            add_list_stats(info, prefix+"speed"+suffix, speed_list, show_percentile=[9])
 
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
 
+    def update_speed(self):
+        speed = self.default_encoding_options.get("speed", -1)
+        if speed<0:
+            min_speed = self.get_min_encoding_speed()
+            target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_speed)
+            #make a copy to work on
+            ves_copy = list(self._encoding_speed)
+            ves_copy.append((time.time(), target_speed))
+            speed = max(min_speed, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+        self._encoding_speed.append((time.time(), speed))
+
+    def get_min_encoding_speed(self):
+        return self.default_encoding_options.get("min-speed", -1)
+
+    def get_current_encoding_speed(self):
+        if len(self._encoding_speed)==0:
+            return 50
+        return self._encoding_speed[-1][1]
+
+    def update_quality(self):
+        quality = self.default_encoding_options.get("quality", -1)
+        if quality<0:
+            min_quality = self.default_encoding_options.get("min-quality", -1)
+            target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
+            #make a copy to work on
+            ves_copy = list(self._encoding_quality)
+            ves_copy.append((time.time(), target_quality))
+            quality = max(min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+        self._encoding_quality.append((time.time(), quality))
+
+    def get_min_encoding_quality(self):
+        return self.default_encoding_options.get("min-quality", -1)
+
+    def get_current_encoding_quality(self):
+        if len(self._encoding_quality)==0:
+            return 50
+        return self._encoding_quality[-1][1]
+
     def update_video_encoder(self):
         if self._video_encoder and not self._video_encoder.is_closed():
-            update_video_encoder(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics,
-                              self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality,
-                              fixed_quality=self.default_encoding_options.get("quality", -1),
-                              min_quality=self.default_encoding_options.get("min-quality", -1),
-                              fixed_speed=self.default_encoding_options.get("speed", -1),
-                              min_speed=self.default_encoding_options.get("min-speed", -1))
+            #set them with the lock held:
+            try:
+                self._video_encoder_lock.acquire()
+                if not self._video_encoder.is_closed():
+                    self._video_encoder.set_encoding_speed(self.get_current_encoding_speed())
+                    self._video_encoder.set_encoding_quality(self.get_current_encoding_quality())
+            finally:
+                self._video_encoder_lock.release()
 
 
     def damage(self, window, x, y, w, h, options={}):
@@ -797,8 +832,7 @@ class WindowSource(object):
         elif coding=="vpx":
             data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rgb_format, rowstride, options)
         elif coding=="rgb24" or coding=="rgb32":
-            data, client_options = self.rgb_encode(coding, data)
-            outstride = rowstride
+            data, client_options, outstride = self.rgb_encode(w, h, coding, data, rgb_format, rowstride)
         elif coding=="webp":
             data, client_options = self.webp_encode(w, h, data, rgb_format, rowstride, options)
         elif coding=="mmap":
@@ -854,14 +888,20 @@ class WindowSource(object):
         q = min(99, max(1, q))
         return Compressed("webp", str(enc(image, quality=q).data)), {"quality" : q}
 
-    def rgb_encode(self, coding, data):
+    def rgb_encode(self, w, h, coding, data, rgb_format, rowstride):
+        if rgb_format not in self.rgb_formats:
+            ok, data, rgb_format, rowstride = self.rgb_reformat(w, h, data, rgb_format, rowstride)
+            if not ok:
+                raise Exception("cannot find compatible rgb format to use for %s!" % rgb_format)
         #compress here and return a wrapper so network code knows it is already zlib compressed:
-        zlib = zlib_compress(coding, data)
+        level = max(1, min(6, int(100-self.get_current_encoding_speed())/16))
+        zlib = zlib_compress(coding, data, level=level)
+        log.info("rgb_encode using level=%s", level)
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  zlib, {}
+            return  zlib, {}, rowstride
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, zlib.data), {"zlib" : zlib.level}
+        return Compressed(coding, zlib.data), {"zlib" : zlib.level}, rowstride
 
     def PIL_encode(self, w, h, coding, data, rgb_format, rowstride, options):
         assert coding in self.SERVER_CORE_ENCODINGS
@@ -879,13 +919,20 @@ class WindowSource(object):
             raise e
         buf = StringIOClass()
         client_options = {}
+        optimize = False
+        if self.batch_config.delay>2*self.batch_config.START_DELAY:
+            ces = self.get_current_encoding_speed()
+            mes = self.get_min_encoding_speed()
+            optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
         if coding=="jpeg":
             q = 80
             if options:
                 q = options.get("quality", 80)
             q = min(99, max(1, q))
-            debug("sending %sx%s %s as jpeg with quality %s", w, h, rgb_format, q)
-            im.save(buf, "JPEG", quality=q)
+            kwargs = im.info
+            kwargs["quality"] = q
+            kwargs["optimize"] = optimize
+            im.save(buf, "JPEG", **kwargs)
             client_options["quality"] = q
         else:
             assert coding in ("png", "png/P", "png/L")
@@ -897,7 +944,10 @@ class WindowSource(object):
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
                 im = im.convert("P", palette=Image.WEB)
-            im.save(buf, "PNG", **im.info)
+            kwargs = im.info
+            kwargs["optimize"] = optimize
+            im.save(buf, "PNG", **kwargs)
+        debug("sending %sx%s %s as jpeg with options: %s", w, h, rgb_format, kwargs)
         data = buf.getvalue()
         buf.close()
         return Compressed(coding, data), client_options
@@ -939,8 +989,8 @@ class WindowSource(object):
                     self._video_encoder.clean()
                     self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
                     #if we had an encoding speed set, restore it (also scaled):
-                    if len(self._video_encoder_speed):
-                        _, recent_speed = calculate_time_weighted_average(list(self._video_encoder_speed))
+                    if len(self._encoding_speed)>0:
+                        _, recent_speed = calculate_time_weighted_average(list(self._encoding_speed))
                         new_pc = w * h
                         new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
                         self._video_encoder.set_encoding_speed(new_speed)
@@ -957,23 +1007,28 @@ class WindowSource(object):
         finally:
             self._video_encoder_lock.release()
 
+    def rgb_reformat(self, w, h, data, rgb_format, rowstride):
+        #need to convert to a supported format!
+        target_format = {
+                 "XRGB"   : "RGB",
+                 "BGRX"   : "RGB",
+                 "BGRA"   : "RGBA"}.get(rgb_format)
+        if target_format not in self.rgb_formats:
+            warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
+            if warning_key not in self._rgb_format_warnings:
+                log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
+                self._rgb_format_warnings.add(warning_key)
+            return False, data, rgb_format, rowstride
+        img = Image.fromstring(target_format, (w, h), data, "raw", rgb_format, rowstride)
+        data = img.tostring("raw", target_format)
+        rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
+        return True, data, target_format, rowstride
+
     def mmap_send(self, w, h, coding, data, rgb_format, rowstride):
         if rgb_format not in self.rgb_formats:
-            #need to convert to a supported format!
-            target_format = {
-                     "XRGB"   : "RGB",
-                     "BGRX"   : "RGB",
-                     "BGRA"   : "RGBA"}.get(rgb_format)
-            if target_format not in self.rgb_formats:
-                warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
-                if warning_key not in self._mmap_warnings:
-                    log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
-                    self._mmap_warnings.add(warning_key)
+            ok, data, rgb_format, rowstride = self.rgb_reformat(w, h, data, rgb_format, rowstride)
+            if not ok:
                 return coding, data, rgb_format, rowstride
-            img = Image.fromstring(target_format, (w, h), data, "raw", rgb_format, rowstride)
-            data = img.tostring("raw", target_format)
-            rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
-            rgb_format = target_format
         from xpra.net.mmap_pipe import mmap_write
         start = time.time()
         mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
