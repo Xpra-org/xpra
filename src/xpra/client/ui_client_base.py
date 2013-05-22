@@ -253,12 +253,14 @@ class UIXpraClient(XpraClientBase):
     def get_core_encodings(self):
         encodings = ["rgb24"]
         from xpra.scripts.config import has_PIL, has_vpx, has_x264, has_webp
-        for test, formats in (
-                              (has_vpx    , ["vpx"]),
-                              (has_x264   , ["x264"]),
-                              (has_webp   , ["webp"]),
-                              (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
-                        ):
+        encs = (
+              (has_vpx    , ["vpx"]),
+              (has_x264   , ["x264"]),
+              (has_webp   , ["webp"]),
+              (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
+               )
+        log("get_core_encodings() encs=%s", encs)
+        for test, formats in encs:
             if test:
                 for enc in formats:
                     if enc not in encodings:
