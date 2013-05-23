@@ -289,11 +289,12 @@ const char *get_valid_profile(const char* csc_mode, const char *profile, const c
 
 struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 {
+	int pix_fmt = -1;
 	if (ctx->rgb2yuv) {
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
 	}
-	int pix_fmt = get_swscale_pixel_format(ctx->rgb_format);
+	pix_fmt = get_swscale_pixel_format(ctx->rgb_format);
 	return sws_getContext(ctx->width, ctx->height, pix_fmt, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
 }
 
