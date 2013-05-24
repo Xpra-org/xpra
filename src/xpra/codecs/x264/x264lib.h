@@ -34,7 +34,7 @@ int get_encoder_speed(struct x264lib_ctx *ctx);
 int get_pixel_format(int csc);
 
 /** Create an encoding context for images of a given size.  */
-struct x264lib_ctx *init_encoder(int width, int height, char *rgb_format,
+struct x264lib_ctx *init_encoder(int width, int height, const char *rgb_format_str,
 		int initial_quality, int initial_speed,
 		int supports_csc_option,
 		int I422_quality, int I444_quality,

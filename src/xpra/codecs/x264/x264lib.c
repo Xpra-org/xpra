@@ -27,14 +27,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
 
-//supported rgb formats:
-const char RGB_FORMAT_RGB[]		= "RGB";
-const char RGB_FORMAT_XRGB[]	= "XRGB";
-const char RGB_FORMAT_BGRX[]	= "BGRX";
-const char RGB_FORMAT_ARGB[]	= "ARGB";
-const char RGB_FORMAT_BGRA[]	= "BGRA";
-const char *ALL_RGB_FORMATS[6] = {RGB_FORMAT_RGB, RGB_FORMAT_XRGB, RGB_FORMAT_BGRX, RGB_FORMAT_ARGB, RGB_FORMAT_BGRA, NULL};
-
 
 //not honoured on MS Windows:
 #define MEMALIGN 1
@@ -44,55 +36,15 @@ const char *ALL_RGB_FORMATS[6] = {RGB_FORMAT_RGB, RGB_FORMAT_XRGB, RGB_FORMAT_BG
 //(ie: when not supported by the library we build against)
 #define SUPPORT_CSC_MODES 1
 
-
-//beware that these macros may evaluate a or b twice!
-//ie: do not use them for something like: MAX(i++, N)
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
-int get_x264_build_no(void) {
-	return X264_BUILD;
-}
-
-const char *get_valid_rgb_format(const char* rgb_format)
-{
-	int i = 0;
-	if (rgb_format==NULL)
-		return	NULL;
-	while (ALL_RGB_FORMATS[i]!=NULL)
-	{
-		if (strcmp(ALL_RGB_FORMATS[i], rgb_format)==0) {
-			return ALL_RGB_FORMATS[i];
-		}
-		i++;
-	}
-	fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
-	return NULL;
-}
-
-int get_swscale_pixel_format(const char* rgb_format)
-{
-	if (strcmp(RGB_FORMAT_RGB, rgb_format)==0)
-		return AV_PIX_FMT_RGB24;
-	else if (strcmp(RGB_FORMAT_XRGB, rgb_format)==0)
-		return AV_PIX_FMT_0RGB;
-	else if (strcmp(RGB_FORMAT_BGRX, rgb_format)==0)
-		return AV_PIX_FMT_BGR0;
-	else if (strcmp(RGB_FORMAT_ARGB, rgb_format)==0)
-		return AV_PIX_FMT_ARGB;
-	else if (strcmp(RGB_FORMAT_BGRA, rgb_format)==0)
-		return AV_PIX_FMT_BGRA;
-	else if (strcmp(RGB_FORMAT_RGB, rgb_format)==0) {
-		fprintf(stderr, "invalid rgb_format specified: %s\n", rgb_format);
-		return AV_PIX_FMT_RGB24;
-	}
-}
-
+/** Context for x264lib */
 struct x264lib_ctx {
 	// Both
 	int width;
 	int height;
-	int csc_format;				//AV_PIX_FMT_YUV420P, X264_CSP_I422, AV_PIX_FMT_YUV444P
+	enum AVPixelFormat csc_dest_format;
 
 	// Decoding
 	AVCodec *codec;
@@ -104,7 +56,7 @@ struct x264lib_ctx {
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
 	int use_swscale;
-	const char *rgb_format;
+	enum AVPixelFormat csc_src_format;
 
 	int speed;					//percentage 0-100
 	int quality;				//percentage 0-100
@@ -112,16 +64,16 @@ struct x264lib_ctx {
 	int encoding_preset;		//index in preset_names 0-9
 	float x264_quality;			//rc.f_rf_constant (1 - 50)
 	int colour_sampling;		//X264_CSP_I420, X264_CSP_I422 or X264_CSP_I444
-	const char* profile;		//PROFILE_BASELINE, PROFILE_HIGH422 or PROFILE_HIGH444_PREDICTIVE
-	const char* preset;			//x264_preset_names, see below:
+	const char *profile;		//PROFILE_BASELINE, PROFILE_HIGH422 or PROFILE_HIGH444_PREDICTIVE
+	const char *preset;			//x264_preset_names, see below:
 	//x264_preset_names[] = {
 	// "ultrafast", "superfast", "veryfast", "faster", "fast", "medium",
 	//"slow", "slower", "veryslow", "placebo", 0 }
 	int csc_algo;
 
-	const char* I420_profile;
-	const char* I422_profile;
-	const char* I444_profile;
+	const char *I420_profile;
+	const char *I422_profile;
+	const char *I444_profile;
 
 	int I422_min;				//lowest point where we will continue to use 422
 	int I444_min;				//lowest point where we will continue to use 444
@@ -141,8 +93,35 @@ struct x264lib_ctx {
 	 */
 };
 
+
+/* RGB format name <-> swscale format correspondance */
+static struct {
+	enum AVPixelFormat sws_pixfmt;
+	const char *str;
+} sws_rgb_formats[] = {
+	{ AV_PIX_FMT_RGB24, "RGB" },
+	{ AV_PIX_FMT_0RGB, "XRGB" },
+	{ AV_PIX_FMT_BGR0, "BGRX" },
+	{ AV_PIX_FMT_ARGB, "ARGB" },
+	{ AV_PIX_FMT_BGRA, "BGRA" } };
+
+static enum AVPictureType get_swscale_format(const char *str)
+{
+	int i;
+	for (i = 0; i < sizeof(sws_rgb_formats)/sizeof(sws_rgb_formats[0]); i++) {
+		if (!strcmp(sws_rgb_formats[i].str, str))
+			return sws_rgb_formats[i].sws_pixfmt;
+	}
+	fprintf(stderr, "Unknown rgb_format specified: %s\n", str);
+	return AV_PIX_FMT_NONE;
+}
+
+int get_x264_build_no(void) {
+	return X264_BUILD;
+}
+
 int get_encoder_pixel_format(struct x264lib_ctx *ctx) {
-	return ctx->csc_format;
+	return ctx->csc_dest_format;
 }
 int get_encoder_quality(struct x264lib_ctx *ctx) {
 	return ctx->quality;
@@ -175,41 +154,45 @@ int get_x264_colour_sampling(struct x264lib_ctx *ctx, int pct)
 	return	X264_CSP_I420;
 #endif
 }
+
 int can_keep_colour_sampling(struct x264lib_ctx *ctx, int pct)
 {
 #ifdef SUPPORT_CSC_MODES
 	if (!ctx->supports_csc_option)
-		return	ctx->colour_sampling==X264_CSP_I420;
-	if (ctx->colour_sampling==X264_CSP_I444)
-		return	pct>=ctx->I444_min;
-	if (ctx->colour_sampling==X264_CSP_I422)
-		return	pct>=ctx->I422_min && pct<=ctx->I444_quality;
-	if (ctx->colour_sampling==X264_CSP_I420)
-		return	pct<=ctx->I422_quality;
+		return	(ctx->colour_sampling == X264_CSP_I420);
+	if (ctx->colour_sampling == X264_CSP_I444)
+		return	(pct >= ctx->I444_min);
+	if (ctx->colour_sampling == X264_CSP_I422)
+		return	(pct >= ctx->I422_min && pct <= ctx->I444_quality);
+	if (ctx->colour_sampling == X264_CSP_I420)
+		return	(pct <= ctx->I422_quality);
 	return	-1;	//we should never get here!
 #else
 	//we can only use this one:
-	return	ctx->colour_sampling==X264_CSP_I420;
+	return (ctx->colour_sampling == X264_CSP_I420);
 #endif
 }
 
-
+/** Return the AVPixelFormat corresponding to a given 
+ *  x264 format
+ */
 //Given an x264 colour sampling constant,
 //return the corresponding csc constant.
-int get_csc_format_for_x264_format(int i_csp)
+int get_csc_dest_format_for_x264_format(int i_csp)
 {
-	if (i_csp == X264_CSP_I420)
-		return	AV_PIX_FMT_YUV420P;
+	switch (i_csp) {
+		case X264_CSP_I420:
+			return AV_PIX_FMT_YUV420P;
 #ifdef SUPPORT_CSC_MODES
-	else if (i_csp == X264_CSP_I422)
-		return	AV_PIX_FMT_YUV422P;
-	else if (i_csp == X264_CSP_I444)
-		return	AV_PIX_FMT_YUV444P;
+		case X264_CSP_I422:
+			return AV_PIX_FMT_YUV422P;
+		case X264_CSP_I444:
+			return AV_PIX_FMT_YUV444P;
 #endif
-	else {
-		fprintf(stderr, "invalid pixel format: %i\n", i_csp);
-		return -1;
-	}
+		default:
+			fprintf(stderr, "invalid pixel format: %i\n", i_csp);
+			return -1;
+	}	
 }
 
 //Given a csc colour sampling constant,
@@ -269,7 +252,7 @@ const char *get_profile_for_quality(struct x264lib_ctx *ctx, int pct) {
  * returns a pointer to the const string for it.
  * (as we may pass temporary strings from python!)
  */
-const char *get_valid_profile(const char* csc_mode, const char *profile, const char *profiles[], const char *default_profile)
+const char *get_valid_profile(const char *csc_mode, const char *profile, const char *profiles[], const char *default_profile)
 {
 	//printf("get_valid_profile(%s, %s, %p, %s)\n", csc_mode, profile, profiles, default_profile);
 	int i = 0;
@@ -289,28 +272,27 @@ const char *get_valid_profile(const char* csc_mode, const char *profile, const c
 
 struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 {
-	int pix_fmt = -1;
+	enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 	if (ctx->rgb2yuv) {
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
 	}
-	pix_fmt = get_swscale_pixel_format(ctx->rgb_format);
-	return sws_getContext(ctx->width, ctx->height, pix_fmt, ctx->width, ctx->height, ctx->csc_format, ctx->csc_algo, NULL, NULL, NULL);
+	pix_fmt = ctx->csc_src_format;
+	return sws_getContext(ctx->width, ctx->height, pix_fmt, ctx->width, ctx->height, ctx->csc_dest_format, ctx->csc_algo, NULL, NULL, NULL);
 }
 
 /**
  * Configure values that will not change during the lifetime of the encoder.
  */
-void configure_encoder(struct x264lib_ctx *ctx,
-		int width, int height, char *rgb_format,
+static void configure_encoder(struct x264lib_ctx *ctx,
+		int width, int height, const char *rgb_format_str,
 		int initial_quality, int initial_speed,
 		int supports_csc_option,
 		int I422_quality, int I444_quality,
 		int I422_min, int I444_min,
 		char *i420_profile, char *i422_profile, char *i444_profile)
 {
-	const char *rgb = get_valid_rgb_format(rgb_format);
-	ctx->rgb_format = rgb;
+	ctx->csc_src_format = get_swscale_format(rgb_format_str);
 	//printf("configure_encoder(%p, %i, %i, %i, %i, %i, %i, %s, %s, %s)\n", ctx, width, height, initial_quality, supports_csc_option, I422_quality, I444_quality, i420_profile, i422_profile, i444_profile);
 	ctx->use_swscale = 1;
 	ctx->width = width;
@@ -361,7 +343,7 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 	x264_param_t param;
 	ctx->colour_sampling = get_x264_colour_sampling(ctx, ctx->quality);
 	ctx->x264_quality = get_x264_quality(ctx->quality);
-	ctx->csc_format = get_csc_format_for_x264_format(ctx->colour_sampling);
+	ctx->csc_dest_format = get_csc_dest_format_for_x264_format(ctx->colour_sampling);
 	ctx->encoding_preset = 2;
 	ctx->preset = x264_preset_names[ctx->encoding_preset];
 	ctx->profile = get_profile_for_quality(ctx, ctx->quality);
@@ -385,7 +367,7 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 		ctx->rgb2yuv = init_encoder_csc(ctx);
 }
 
-struct x264lib_ctx *init_encoder(int width, int height, char *rgb_format,
+struct x264lib_ctx *init_encoder(int width, int height, const char *rgb_format_str,
 		int initial_quality, int initial_speed,
 		int supports_csc_option,
 		int I422_quality, int I444_quality,
@@ -397,7 +379,7 @@ struct x264lib_ctx *init_encoder(int width, int height, char *rgb_format,
 		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	configure_encoder(ctx,
-					width, height, rgb_format, \
+					width, height, rgb_format_str, \
 					initial_quality, initial_speed, \
 					supports_csc_option, \
 					I422_quality, I444_quality, \
@@ -433,10 +415,10 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int use
 	ctx->use_swscale = use_swscale;
 	ctx->width = width;
 	ctx->height = height;
-	ctx->csc_format = csc_fmt;
+	ctx->csc_dest_format = csc_fmt;
 	ctx->csc_algo = get_csc_algo_for_quality(100);
 	if (use_swscale)
-		ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_format, ctx->width, ctx->height, AV_PIX_FMT_RGB24, ctx->csc_algo, NULL, NULL, NULL);
+		ctx->yuv2rgb = sws_getContext(ctx->width, ctx->height, ctx->csc_dest_format, ctx->width, ctx->height, AV_PIX_FMT_RGB24, ctx->csc_algo, NULL, NULL, NULL);
 
 	avcodec_register_all();
 
@@ -577,7 +559,7 @@ void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt)
 {
 	if (csc_fmt<0)
 		csc_fmt = AV_PIX_FMT_YUV420P;
-	if (ctx->csc_format!=csc_fmt) {
+	if (ctx->csc_dest_format!=csc_fmt) {
 		//we need to re-initialize with the new format:
 		do_clean_decoder(ctx);
 		if (init_decoder_context(ctx, ctx->width, ctx->height, ctx->use_swscale, csc_fmt)) {

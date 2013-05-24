@@ -44,7 +44,7 @@ cdef extern from "x264lib.h":
 
     int get_x264_build_no()
 
-    x264lib_ctx* init_encoder(int width, int height, char *rgb_format,
+    x264lib_ctx* init_encoder(int width, int height, const char *rgb_format_str,
                               int initial_quality, int initial_speed,
                               int supports_csc_option,
                               int I422_quality, int I444_quality,
