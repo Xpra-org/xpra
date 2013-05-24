@@ -13,6 +13,7 @@ log = Logger()
 
 from xpra.net.protocol import Compressed
 from xpra.server.window_source import DamageBatchConfig
+from xpra.server.image_wrapper import ImageWrapper
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 
 
@@ -51,7 +52,10 @@ class RootWindowModel(object):
         pass
 
     def get_rgb_rawdata(self, x, y, width, height):
-        return get_rgb_rawdata(self.window, x, y, width, height, logger=log)
+        v = get_rgb_rawdata(self.window, x, y, width, height, logger=log)
+        if v is None:
+            return None
+        return ImageWrapper(*v)
 
     def get_client_contents(self):
         return self.window

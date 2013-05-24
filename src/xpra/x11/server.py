@@ -599,19 +599,18 @@ class XpraServer(gobject.GObject, X11ServerBase):
             w, h = window.get_dimensions()
             debug("screenshot: size(%s)=%sx%s", window, w, h)
             try:
-                data = trap.call_synced(window.get_rgb_rawdata, 0, 0, w, h, log.info)
+                img = trap.call_synced(window.get_rgb_rawdata, 0, 0, w, h, log.info)
             except:
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue
-            if data is None:
+            if img is None:
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
-            px, py, pw, ph, raw_data, rgb_format, rowstride = data
-            debug("screenshot: rgb_data=%s", (px, py, pw, ph, "%s bytes" % len(raw_data), rgb_format, rowstride))
-            if rgb_format not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
-                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, rgb_format)
+            debug("screenshot: image=%s, size=%s", (img, img.get_size()))
+            if img.get_rgb_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
+                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_rgb_format())
                 continue
-            item = (wid, x, y, pw, ph, raw_data, rgb_format, rowstride)
+            item = (wid, x, y, img)
             if window.is_OR():
                 OR_regions.append(item)
             elif self._has_focus==wid:
@@ -633,25 +632,26 @@ class XpraServer(gobject.GObject, X11ServerBase):
         height = maxy-miny
         debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
         import Image
-        image = Image.new("RGBA", (width, height))
-        for wid, x, y, w, h, raw_data, rgb_format, rowstride in reversed(all_regions):
+        screenshot = Image.new("RGBA", (width, height))
+        for wid, x, y, img in reversed(all_regions):
+            rgb_format = img.get_rgb_format()
             target_format = {
                      "XRGB"   : "RGB",
                      "BGRX"   : "RGB",
                      "BGRA"   : "RGBA"}.get(rgb_format, rgb_format)
             try:
-                window_image = Image.fromstring(target_format, (w, h), raw_data, "raw", rgb_format, rowstride)
+                window_image = Image.fromstring(target_format, (w, h), img.get_pixels(), "raw", rgb_format, img.get_rowstride())
             except:
                 log.warn("failed to parse window pixels in %s format", rgb_format)
                 continue
             tx = x-minx
             ty = y-miny
-            image.paste(window_image, (tx, ty))
+            screenshot.paste(window_image, (tx, ty))
         buf = StringIOClass()
-        image.save(buf, "png")
+        screenshot.save(buf, "png")
         data = buf.getvalue()
         buf.close()
-        packet = ["screenshot", width, height, "png", rowstride, Compressed("png", data)]
+        packet = ["screenshot", width, height, "png", width*4, Compressed("png", data)]
         debug("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
         return packet
 

@@ -651,15 +651,14 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
-        rgb = window.get_rgb_rawdata(x, y, w, h, logger=rgblog)
-        if rgb is None:
+        image = window.get_rgb_rawdata(x, y, w, h, logger=rgblog)
+        if image is None:
             debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return
         if self.is_cancelled(sequence):
             return
-        px, py, pw, ph, rgb_data, rgb_format, rowstride = rgb
         process_damage_time = time.time()
-        data = (damage_time, process_damage_time, self.wid, px, py, pw, ph, coding, rgb_data, rgb_format, rowstride, sequence, options)
+        data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
         self._sequence += 1
         debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %.1f ms", data[:6], 1000*(time.time()-damage_time))
         def make_data_packet_cb(*args):
@@ -784,7 +783,7 @@ class WindowSource(object):
         if self._damage_delayed is not None and self._damage_delayed_expired:
             gobject.idle_add(self.may_send_delayed)
 
-    def make_data_packet(self, damage_time, process_damage_time, wid, x, y, w, h, coding, rgbdata, rgb_format, rowstride, sequence, options):
+    def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'damage_data_queue'
@@ -800,45 +799,48 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
+        x, y, w, h, _ = image.get_geometry()
+
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
-        assert rgbdata, "data is missing"
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and len(rgbdata)>256:
+        if self._mmap and self._mmap_size>0 and len(image.get_size())>256:
             #try with mmap (will change coding to "mmap" if it succeeds)
-            coding, data, rgb_format, rowstride = self.mmap_send(w, h, coding, rgbdata, rgb_format, rowstride)
-        else:
-            data = rgbdata
+            coding = self.mmap_send(coding, image)
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
-        if coding in self.supports_delta and self.last_pixmap_data is not None:
-            lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
-            if lw==w and lh==h and lcoding==coding and len(ldata)==len(rgbdata):
-                #xor with the last frame:
-                delta = lsequence
-                data = xor_str(rgbdata, ldata)
-                debug("make_data_packet: xored against sequence %s", lsequence)
+        if coding in self.supports_delta:
+            dpixels = image.get_pixels()
+            if self.last_pixmap_data is not None:
+                lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
+                if lw==w and lh==h and lcoding==coding and len(ldata)==image.get_size():
+                    #xor with the last frame:
+                    delta = lsequence
+                    data = xor_str(dpixels, ldata)
+                    image.set_pixels(data)
+                    debug("make_data_packet: xored against sequence %s", lsequence)
 
         #by default, don't set rowstride (the container format will take care of providing it):
         outstride = 0
         if coding.startswith("png") or coding=="jpeg":
-            data, client_options = self.PIL_encode(w, h, coding, data, rgb_format, rowstride, options)
+            data, client_options = self.PIL_encode(coding, image, options)
         elif coding=="x264":
             #x264 needs sizes divisible by 2:
             w = w & 0xFFFE
             h = h & 0xFFFE
             assert w>0 and h>0
-            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rgb_format, rowstride, options)
+            data, client_options = self.video_encode(wid, coding, image, options)
         elif coding=="vpx":
-            data, client_options = self.video_encode(wid, x, y, w, h, coding, data, rgb_format, rowstride, options)
+            data, client_options = self.video_encode(wid, coding, image, options)
         elif coding=="rgb24" or coding=="rgb32":
-            data, client_options, outstride = self.rgb_encode(w, h, coding, data, rgb_format, rowstride)
+            data, client_options = self.rgb_encode(coding, image)
+            outstride = image.get_rowstride()
         elif coding=="webp":
-            data, client_options = self.webp_encode(w, h, data, rgb_format, rowstride, options)
+            data, client_options = self.webp_encode(image, options)
         elif coding=="mmap":
             #actual sending is already handled via mmap_send above
-            client_options = {"rgb_format" : rgb_format}
-            outstride = rowstride
+            client_options = {"rgb_format" : image.get_rgb_format()}
+            outstride = image.get_rowstride()
         else:
             raise Exception("invalid encoding: %s" % coding)
         #check cancellation list again since the code above may take some time:
@@ -850,7 +852,7 @@ class WindowSource(object):
         if delta>=0:
             client_options["delta"] = delta
         if coding in self.supports_delta:
-            self.last_pixmap_data = w, h, coding, sequence, rgbdata
+            self.last_pixmap_data = w, h, coding, sequence, dpixels
             client_options["store"] = sequence
         #actual network packet:
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, outstride, client_options]
@@ -867,7 +869,7 @@ class WindowSource(object):
         #debug("make_data_packet: returning packet=%s,[..],%s", packet[:7], packet[8:])
         return packet
 
-    def webp_encode(self, w, h, data, rgb_format, rowstride, options):
+    def webp_encode(self, image, options):
         from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
         from xpra.codecs.webm.handlers import BitmapHandler
         handler_encs = {
@@ -878,34 +880,40 @@ class WindowSource(object):
                     "BGRA": (BitmapHandler.BGRA, EncodeBGRA),
                     "BGRX": (BitmapHandler.BGRA, EncodeBGRA),
                     }
+        rgb_format = image.get_rgb_format()
         h_e = handler_encs.get(rgb_format)
         assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
         bh, enc = h_e
-        image = BitmapHandler(data, bh, w, h, rowstride)
+        image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         q = 80
         if options:
             q = options.get("quality", 80)
         q = min(99, max(1, q))
         return Compressed("webp", str(enc(image, quality=q).data)), {"quality" : q}
 
-    def rgb_encode(self, w, h, coding, data, rgb_format, rowstride):
+    def rgb_encode(self, coding, image):
+        rgb_format = image.get_rgb_format()
         if rgb_format not in self.rgb_formats:
-            ok, data, rgb_format, rowstride = self.rgb_reformat(w, h, data, rgb_format, rowstride)
-            if not ok:
+            if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s!" % rgb_format)
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         level = max(1, min(6, int(100-self.get_current_encoding_speed())/16))
-        zlib = zlib_compress(coding, data, level=level)
-        log.info("rgb_encode using level=%s", level)
+        pixels = image.get_pixels()
+        rgb_format = image.get_rgb_format()
+        zlib = zlib_compress(coding, pixels, level=level)
+        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, rgb_format, len(pixels), len(zlib))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  zlib, {}, rowstride
+            return  zlib, {}
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, zlib.data), {"zlib" : zlib.level}, rowstride
+        return Compressed(coding, zlib.data), {"zlib" : zlib.level}
 
-    def PIL_encode(self, w, h, coding, data, rgb_format, rowstride, options):
+    def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
         assert Image is not None, "Python PIL is not available"
+        rgb_format = image.get_rgb_format()
+        w = image.get_width()
+        h = image.get_height()
         rgb = {
                "XRGB"   : "RGB",
                "BGRX"   : "RGB",
@@ -913,9 +921,9 @@ class WindowSource(object):
                "BGRA"   : "RGBA",
                }.get(rgb_format, rgb_format)
         try:
-            im = Image.fromstring(rgb, (w, h), data, "raw", rgb_format, rowstride)
+            im = Image.fromstring(rgb, (w, h), image.get_pixels(), "raw", rgb_format, image.get_rowstride())
         except Exception, e:
-            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(data), rgb_format, rowstride, options), rgb, exc_info=True)
+            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(image.get_size()), rgb_format, image.get_rowstride(), options), rgb, exc_info=True)
             raise e
         buf = StringIOClass()
         client_options = {}
@@ -963,7 +971,7 @@ class WindowSource(object):
         else:
             raise Exception("invalid video encoder: %s" % coding)
 
-    def video_encode(self, wid, x, y, w, h, coding, data, rgb_format, rowstride, options):
+    def video_encode(self, wid, coding, image, options):
         """
             This method is used by make_data_packet to encode frames using x264 or vpx.
             Video encoders only deal with fixed dimensions,
@@ -972,7 +980,11 @@ class WindowSource(object):
             Since this runs in the non-UI thread 'data_to_packet', we must
             use the 'video_encoder_lock' to prevent races.
         """
+        x, y, w, h = image.get_geometry()[:4]
+        w = w & 0xFFFE
+        h = h & 0xFFFE
         assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
+        rgb_format = image.get_rgb_format()
         #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()
@@ -998,7 +1010,7 @@ class WindowSource(object):
                 debug("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
                 self._video_encoder = self.make_video_encoder(coding)
                 self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
-            data, client_options = self._video_encoder.compress_image(data, rowstride, options)
+            data, client_options = self._video_encoder.compress_image(image, options)
             if data is None:
                 log.error("%s: ouch, compression failed", coding)
                 return None, None
@@ -1007,8 +1019,9 @@ class WindowSource(object):
         finally:
             self._video_encoder_lock.release()
 
-    def rgb_reformat(self, w, h, data, rgb_format, rowstride):
+    def rgb_reformat(self, image):
         #need to convert to a supported format!
+        rgb_format = image.get_rgb_format()
         target_format = {
                  "XRGB"   : "RGB",
                  "BGRX"   : "RGB",
@@ -1018,25 +1031,33 @@ class WindowSource(object):
             if warning_key not in self._rgb_format_warnings:
                 log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
                 self._rgb_format_warnings.add(warning_key)
-            return False, data, rgb_format, rowstride
-        img = Image.fromstring(target_format, (w, h), data, "raw", rgb_format, rowstride)
+            return False
+        w = image.get_width()
+        h = image.get_height()
+        img = Image.fromstring(target_format, (w, h), image.get_pixels(), "raw", rgb_format, image.get_rowstride())
         data = img.tostring("raw", target_format)
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
-        return True, data, target_format, rowstride
+        debug("rgb_reformat(%s) converted from %s to %s", image, rgb_format, target_format)
+        assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
+        image.set_pixels(data)
+        image.set_rowstride(rowstride)
+        image.set_rgb_format(target_format)
+        return True
 
-    def mmap_send(self, w, h, coding, data, rgb_format, rowstride):
-        if rgb_format not in self.rgb_formats:
-            ok, data, rgb_format, rowstride = self.rgb_reformat(w, h, data, rgb_format, rowstride)
-            if not ok:
-                return coding, data, rgb_format, rowstride
+    def mmap_send(self, coding, image):
+        if image.get_rgb_format() not in self.rgb_formats:
+            if not self.rgb_reformat(image):
+                return coding
         from xpra.net.mmap_pipe import mmap_write
         start = time.time()
+        data = image.get_pixels()
         mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
         self.global_statistics.mmap_free_size = mmap_free_size
         elapsed = time.time()-start+0.000000001 #make sure never zero!
         debug("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
-        if mmap_data is not None:
-            self.global_statistics.mmap_bytes_sent += len(data)
-            coding = "mmap"
-            data = mmap_data
-        return coding, data, rgb_format, rowstride
+        if mmap_data is None:
+            return coding
+        self.global_statistics.mmap_bytes_sent += len(data)
+        #replace pixels with mmap info:
+        image.set_pixels(mmap_data)
+        return "mmap"

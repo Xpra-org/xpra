@@ -100,7 +100,7 @@ class WindowBackingBase(object):
         img_data = raw_data
         if options and options.get("zlib", 0)>0:
             img_data = zlib.decompress(raw_data)
-        assert len(img_data) == rowstride * height, "expected %s bytes but received %s" % (rowstride * height, len(img_data))
+        assert len(img_data) == rowstride * height, "expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" % (rowstride * height, width, height, rowstride, len(img_data), len(raw_data))
         delta = options.get("delta", -1)
         rgb_data = img_data
         if delta>=0:

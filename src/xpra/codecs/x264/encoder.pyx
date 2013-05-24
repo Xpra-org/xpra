@@ -162,7 +162,7 @@ cdef class Encoder:
         client_options["speed"] = s
         return  client_options
 
-    def compress_image(self, input, rowstride, options):
+    def compress_image(self, image, options):
         cdef x264_picture_t *pic_in = NULL
         cdef const uint8_t *pic_buf = NULL
         cdef Py_ssize_t pic_buf_len = 0
@@ -176,6 +176,8 @@ cdef class Encoder:
             set_encoding_quality(self.context, quality_override)
         assert self.context!=NULL
         #colourspace conversion with gil held:
+        input = image.get_pixels()
+        rowstride = image.get_rowstride()
         PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
         pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"

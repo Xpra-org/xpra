@@ -34,6 +34,11 @@ error = log.error
 ###################################
 # Headers, python magic
 ###################################
+cdef extern from "Python.h":
+    ctypedef int Py_ssize_t
+    ctypedef object PyObject
+    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
     void free(void* mem)
@@ -564,13 +569,13 @@ class PixmapWrapper(object):
         self.width = width
         self.height = height
 
-    def get_pixels(self, x, y, width, height):
+    def get_image(self, x, y, width, height):
         if self.xpixmap is None:
             log.warn("PixmapWrapper.get_pixels() xpixmap=%s", self.xpixmap)
             return  None
         assert x+width<=self.width, "invalid width: %s (pixmap width is %s)" % (width, self.width)
         assert y+height<=self.height, "invalid height: %s (pixmap height is %s)" % (height, self.height)
-        return get_pixels(self.display, self.xpixmap, x, y, width, height)
+        return get_image(self.display, self.xpixmap, x, y, width, height)
 
     def __del__(self):
         if self.xpixmap is not None:
@@ -582,7 +587,97 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
-cdef get_pixels(display, xpixmap, x, y, width, height):
+cdef class XImageWrapper:
+    cdef XImage *image
+    cdef int x
+    cdef int y
+    cdef int width
+    cdef int height
+    cdef int rowstride
+    cdef char *rgb_format
+    cdef char *pixels
+
+    def __cinit__(self, int x, int y, int width, int height):
+        self.image = NULL
+        self.pixels = NULL
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.rgb_format = ""
+        self.rowstride = 0
+
+    cdef set_image(self, XImage* image):
+        self.image = image
+        self.rowstride = self.image.bytes_per_line
+        if self.image.depth==24:
+            if self.image.byte_order==MSBFirst:
+                self.rgb_format = "XRGB"
+            else:
+                self.rgb_format = "BGRX"
+        elif self.image.depth==32:
+            if self.image.byte_order==MSBFirst:
+                self.rgb_format = "ARGB"
+            else:
+                self.rgb_format = "BGRA"
+        else:
+            raise Exception("invalid image depth: %s bpp" % self.image.depth)
+
+    def __str__(self):
+        return "XImageWrapper(%s, %s, %s, %s)" % (self.x, self.y, self.width, self.height)
+
+    def get_geometry(self):
+        return self.x, self.y, self.width, self.height, self.image.depth
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
+    def get_width(self):
+        return self.width
+
+    def get_height(self):
+        return self.height
+
+    def get_rowstride(self):
+        return self.rowstride
+
+    def get_depth(self):
+        return self.image.depth
+
+    def get_size(self):
+        return self.rowstride * self.height
+
+    def get_rgb_format(self):
+        return self.rgb_format
+
+    cdef get_data_ptr(self):
+        return self.image.data
+
+    def get_pixels(self):
+        if self.pixels!=NULL:
+            return PyBuffer_FromMemory(self.pixels, self.get_size())
+        return PyBuffer_FromMemory(self.image.data, self.get_size())
+
+    def set_rowstride(self, rowstride):
+        self.rowstride = rowstride
+
+    def set_rgb_format(self, rgb_format):
+        self.rgb_format = rgb_format
+
+    def set_pixels(self, pixels):
+        self.pixels = pixels
+
+
+    def __dealloc__(self):
+        if self.image!=NULL:
+            XDestroyImage(self.image)
+            self.image = NULL
+
+
+cdef get_image(display, xpixmap, x, y, width, height):
     cdef Display * xdisplay                              #@DuplicatedSignature
     cdef XImage* ximage
     xdisplay = get_xdisplay_for(display)
@@ -591,22 +686,9 @@ cdef get_pixels(display, xpixmap, x, y, width, height):
     if ximage==NULL:
         info("get_pixels(..) failed to get XImage for xpixmap %s", xpixmap)
         return None
-    depth = ximage.depth
-    #rowstride = ximage.bytes_per_line
-    #size = w * ximage.bytes_per_line
-    #rowstride = w * ximage.depth/8
-    rowstride = ximage.bytes_per_line
-    size = rowstride * height
-    data = ximage.data[:size]
-    bitmap_bit_order = SBFirst.get(ximage.bitmap_bit_order, "unknown")
-    byte_order = SBFirst.get(ximage.byte_order, "unknown")
-    big_endian = ximage.byte_order==MSBFirst
-    #log.info("get_pixels(%s) byte_order=%s, bitmap_unit=%s, bitmap_bit_order=%s, bitmap_pad=%s, xoffset=%s, masks: red=%s, green=%s, blue=%s",
-    #         xpixmap, byte_order, ximage.bitmap_unit, bitmap_bit_order, ximage.bitmap_pad, ximage.xoffset, hex(ximage.red_mask), hex(ximage.green_mask), hex(ximage.blue_mask))
-    #log.info("get_pixels(%s) XImage depth=%s, width=%s, height=%s, bytes_per_line=%s, size=%s",
-    #         xpixmap, ximage.depth, ximage.width, ximage.height, ximage.bytes_per_line, size)
-    XDestroyImage(ximage)
-    return depth, width, height, rowstride, big_endian, data
+    xi = XImageWrapper(x, y, width, height)
+    xi.set_image(ximage)
+    return xi
 
 
 def xcomposite_name_window_pixmap(window):

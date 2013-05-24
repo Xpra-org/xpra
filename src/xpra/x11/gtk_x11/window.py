@@ -403,32 +403,13 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             h = min(handle.height, height)
             if w!=width or h!=height:
                 logger("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
-            pixels = trap.call_synced(handle.get_pixels, x, y, w, h)
+            return trap.call_synced(handle.get_image, x, y, w, h)
         except Exception, e:
             if type(e)==XError and e.msg=="BadMatch":
-                logger("get_rgb_rawdata(%s, %s, %s, %s) get_pixels BadMatch ignored (window already gone?)", x, y, width, height)
+                logger("get_rgb_rawdata(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_pixels %s", x, y, width, height, e)
+                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
             return None
-        if pixels is None:
-            log.info("get_rgb_rawdata(..) get_pixels() returned None (window already gone?)")
-            return None
-        depth, w, h, rowstride, big_endian, data = pixels
-        #log.info("get_rgb_rawdata(..) get_pixels=%s", (depth, w, h, rowstride, big_endian, "%s bytes" % len(data)))
-        #log.info("get_rgb_rawdata(..) head=%s", [hex(ord(v)) for v in data[:100]])
-        if depth==24:
-            if big_endian:
-                mode = "XRGB"
-            else:
-                mode = "BGRX"
-        elif depth==32:
-            if big_endian:
-                mode = "ARGB"
-            else:
-                mode = "BGRA"
-        else:
-            raise Exception("unhandled depth: %s", depth)
-        return x, y, w, h, data, mode, rowstride
 
     def do_xpra_client_message_event(self, event):
         # FIXME

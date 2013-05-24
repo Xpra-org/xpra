@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger()
 
+from xpra.server.image_wrapper import ImageWrapper
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
@@ -47,7 +48,7 @@ class OSXRootWindowModel(RootWindowModel):
         prov = CG.CGImageGetDataProvider(image)
         argb = CG.CGDataProviderCopyData(prov)
         rgba = argb_to_rgb(argb)
-        return (0, 0, width, height, rgba, "RGB", width*3)
+        return ImageWrapper(0, 0, width, height, rgba, "RGB", 24, width*3)
 
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
