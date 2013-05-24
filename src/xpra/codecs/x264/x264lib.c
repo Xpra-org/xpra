@@ -61,7 +61,6 @@ struct x264lib_ctx {
 	int quality;				//percentage 0-100
 	int supports_csc_option;	//can we change colour sampling
 	int encoding_preset;		//index in preset_names 0-9
-	float x264_quality;			//rc.f_rf_constant (1 - 50)
 	int color_sampling;			//X264_CSP_I420, X264_CSP_I422 or X264_CSP_I444
 	const char *profile;		//PROFILE_BASELINE, PROFILE_HIGH422 or PROFILE_HIGH444_PREDICTIVE
 	const char *preset;			//x264_preset_names, see below:
@@ -349,20 +348,19 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 {
 	x264_param_t param;
 	ctx->color_sampling = get_x264_color_sampling(ctx, ctx->quality);
-	ctx->x264_quality = get_x264_quality(ctx->quality);
 	ctx->csc_dest_format = get_csc_dest_format_for_x264_format(ctx->color_sampling);
 	ctx->encoding_preset = 2;
 	ctx->preset = x264_preset_names[ctx->encoding_preset];
 	ctx->profile = get_profile_for_quality(ctx, ctx->quality);
 	ctx->csc_algo = get_csc_algo_for_quality(ctx->quality);
-	//printf("do_init_encoder(%p, %i, %i, %i, %i) color_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->color_sampling, ctx->x264_quality, ctx->profile);
+	//printf("do_init_encoder(%p, %i, %i, %i, %i) color_sampling=%i, initial quality=%d, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->color_sampling, ctx->quality, ctx->profile);
 
 	x264_param_default_preset(&param, ctx->preset, "zerolatency");
 	param.i_threads = 1;
 	param.i_width = ctx->width;
 	param.i_height = ctx->height;
 	param.i_csp = ctx->color_sampling;
-	param.rc.f_rf_constant = ctx->x264_quality;
+	param.rc.f_rf_constant = get_x264_quality(ctx->quality);
 	param.i_log_level = X264_LOG_ERROR;
 	param.i_keyint_max = 999999;	//we never lose frames or use seeking, so no need for regular I-frames
 	param.i_keyint_min = 999999;	//we don't want IDR frames either
@@ -632,25 +630,20 @@ void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 		return;
 	//printf("set_encoding_speed(%i) old preset: %i=%s, new preset: %i=%s\n", pct, ctx->encoding_preset, x264_preset_names[ctx->encoding_preset], new_preset, x264_preset_names[new_preset]);
 	ctx->encoding_preset = new_preset;
-	//"tune" options: film, animation, grain, stillimage, psnr, ssim, fastdecode, zerolatency
-	//Multiple tunings can be used if separated by a delimiter in ",./-+"
-	//however multiple psy tunings cannot be used.
-	//film, animation, grain, stillimage, psnr, and ssim are psy tunings.
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
-	param.rc.f_rf_constant = ctx->x264_quality;
+	param.rc.f_rf_constant = get_x264_quality(ctx->quality);
 	x264_param_apply_profile(&param, ctx->profile);
 	x264_encoder_reconfig(ctx->encoder, &param);
 }
 
 /**
- * Change the quality of encoding (x264 f_rf_constant).
+ * Change the quality of encoding
  * @param percent: 100 for best quality, 0 for lowest quality.
  */
 void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 {
 	int old_csc_algo = ctx->csc_algo;
-	float new_quality = get_x264_quality(pct);
-	//printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
+	//printf("set_encoding_quality(%i) can csc=%i\n", pct, ctx->supports_csc_option);
 	if (ctx->supports_csc_option) {
 		if (!can_keep_color_sampling(ctx, pct)) {
 			int new_color_sampling = get_x264_color_sampling(ctx, pct);
@@ -659,7 +652,6 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 				//pixel encoding has changed, we must re-init everything:
 				do_clean_encoder(ctx);
 				ctx->quality = pct;
-				ctx->x264_quality = new_quality;
 				do_init_encoder(ctx);
 				//printf("new pixel format: %i / %i\n", get_encoder_pixel_format(ctx), get_pixel_format(get_encoder_pixel_format(ctx)));
 				return;
@@ -668,15 +660,13 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 	}
 	if ((ctx->quality & ~0x1) != (pct & ~0x1)) {
 		//float old_quality = ctx->x264_quality;
-		//printf("set_encoding_quality(%i) was %i, new x264 quality %f was %f\n", pct, ctx->quality, new_quality, old_quality);
 		//only f_rf_constant was changed,
 		//read new configuration is sufficient
 		x264_param_t param;
 		// Retrieve current parameters
 		x264_encoder_parameters(ctx->encoder, &param);
 		ctx->quality = pct;
-		ctx->x264_quality = new_quality;
-		param.rc.f_rf_constant = new_quality;
+		param.rc.f_rf_constant = get_x264_quality(pct);
 		x264_encoder_reconfig(ctx->encoder, &param);
 	}
 	ctx->csc_algo = get_csc_algo_for_quality(pct);
