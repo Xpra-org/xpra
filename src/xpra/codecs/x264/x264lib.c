@@ -27,12 +27,11 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
 
-
 //not honoured on MS Windows:
 #define MEMALIGN 1
 //not honoured on OSX:
 #define MEMALIGN_ALIGNMENT 32
-//comment this out to turn off csc 422 and 444 colourspace modes
+//comment this out to turn off csc 422 and 444 colorspace modes
 //(ie: when not supported by the library we build against)
 #define SUPPORT_CSC_MODES 1
 
@@ -63,7 +62,7 @@ struct x264lib_ctx {
 	int supports_csc_option;	//can we change colour sampling
 	int encoding_preset;		//index in preset_names 0-9
 	float x264_quality;			//rc.f_rf_constant (1 - 50)
-	int colour_sampling;		//X264_CSP_I420, X264_CSP_I422 or X264_CSP_I444
+	int color_sampling;			//X264_CSP_I420, X264_CSP_I422 or X264_CSP_I444
 	const char *profile;		//PROFILE_BASELINE, PROFILE_HIGH422 or PROFILE_HIGH444_PREDICTIVE
 	const char *preset;			//x264_preset_names, see below:
 	//x264_preset_names[] = {
@@ -85,14 +84,13 @@ struct x264lib_ctx {
 	 * So the "quality" attributes define the thresholds where we want to raise the CSC quality,
 	 * but once a CSC mode is set, we will only downgrade it if the quality then becomes
 	 * lower than the "min" value. This prevents the yoyo effect.
-	 * See get_x264_colour_sampling and can_keep_colour_sampling for the implementation.
+	 * See get_x264_color_sampling and can_keep_color_sampling for the implementation.
 	 * configure_encoder will ensure that the values respect these rules:
 	 * 0 <= I422_min <= I422_quality <= 100
 	 * 0 <= I444_min <= I444_quality <= 100
 	 * I422_quality <= I444_quality
 	 */
 };
-
 
 /* RGB format name <-> swscale format correspondance */
 static struct {
@@ -108,7 +106,7 @@ static struct {
 static enum AVPictureType get_swscale_format(const char *str)
 {
 	int i;
-	for (i = 0; i < sizeof(sws_rgb_formats)/sizeof(sws_rgb_formats[0]); i++) {
+	for (i = 0; i < sizeof(sws_rgb_formats) / sizeof(sws_rgb_formats[0]); i++) {
 		if (!strcmp(sws_rgb_formats[i].str, str))
 			return sws_rgb_formats[i].sws_pixfmt;
 	}
@@ -116,67 +114,74 @@ static enum AVPictureType get_swscale_format(const char *str)
 	return AV_PIX_FMT_NONE;
 }
 
-int get_x264_build_no(void) {
+int get_x264_build_no(void)
+{
 	return X264_BUILD;
 }
 
-int get_encoder_pixel_format(struct x264lib_ctx *ctx) {
+int get_encoder_pixel_format(struct x264lib_ctx *ctx)
+{
 	return ctx->csc_dest_format;
 }
-int get_encoder_quality(struct x264lib_ctx *ctx) {
+
+int get_encoder_quality(struct x264lib_ctx *ctx)
+{
 	return ctx->quality;
 }
-int get_encoder_speed(struct x264lib_ctx *ctx) {
+
+int get_encoder_speed(struct x264lib_ctx *ctx)
+{
 	return ctx->speed;
 }
 
 //Given a quality percentage (0 to 100),
 //return the x264 quality constant to use
-float get_x264_quality(int pct) {
-	return	50.0f - (MIN(100, MAX(0, pct)) * 49.0f / 100.0f);
+float get_x264_quality(int pct)
+{
+	return 50.0f - (MIN(100, MAX(0, pct)) * 49.0f / 100.0f);
 }
 
 //Given a quality percentage (0 to 100),
-//return the x264 colour sampling to use
+//return the x264 color sampling to use
 //IMPORTANT: changes here must be reflected in get_profile_for_quality
 // as not all pixel formats are supported by all profiles.
-int get_x264_colour_sampling(struct x264lib_ctx *ctx, int pct)
+int get_x264_color_sampling(struct x264lib_ctx *ctx, int pct)
 {
 #ifdef SUPPORT_CSC_MODES
 	if (!ctx->supports_csc_option)
-		return	X264_CSP_I420;
+		return X264_CSP_I420;
 	if (pct < ctx->I422_quality)
-		return	X264_CSP_I420;
+		return X264_CSP_I420;
 	else if (pct < ctx->I444_quality)
-		return	X264_CSP_I422;
-	return	X264_CSP_I444;
+		return X264_CSP_I422;
+	return X264_CSP_I444;
 #else
-	return	X264_CSP_I420;
+	return X264_CSP_I420;
 #endif
 }
 
-int can_keep_colour_sampling(struct x264lib_ctx *ctx, int pct)
+int can_keep_color_sampling(struct x264lib_ctx *ctx, int pct)
 {
 #ifdef SUPPORT_CSC_MODES
 	if (!ctx->supports_csc_option)
-		return	(ctx->colour_sampling == X264_CSP_I420);
-	if (ctx->colour_sampling == X264_CSP_I444)
-		return	(pct >= ctx->I444_min);
-	if (ctx->colour_sampling == X264_CSP_I422)
-		return	(pct >= ctx->I422_min && pct <= ctx->I444_quality);
-	if (ctx->colour_sampling == X264_CSP_I420)
-		return	(pct <= ctx->I422_quality);
-	return	-1;	//we should never get here!
+		return (ctx->color_sampling == X264_CSP_I420);
+	if (ctx->color_sampling == X264_CSP_I444)
+		return (pct >= ctx->I444_min);
+	if (ctx->color_sampling == X264_CSP_I422)
+		return (pct >= ctx->I422_min && pct <= ctx->I444_quality);
+	if (ctx->color_sampling == X264_CSP_I420)
+		return (pct <= ctx->I422_quality);
+	return -1;		//we should never get here!
 #else
 	//we can only use this one:
-	return (ctx->colour_sampling == X264_CSP_I420);
+	return (ctx->color_sampling == X264_CSP_I420);
 #endif
 }
 
 /** Return the AVPixelFormat corresponding to a given 
  *  x264 format
  */
-//Given an x264 colour sampling constant,
+//Given an x264 color sampling constant,
 //return the corresponding csc constant.
 int get_csc_dest_format_for_x264_format(int i_csp)
 {
@@ -195,7 +200,7 @@ int get_csc_dest_format_for_x264_format(int i_csp)
 	}	
 }
 
-//Given a csc colour sampling constant,
+//Given a csc color sampling constant,
 //return our own generic csc constant (see codec_constants.py)
 int get_pixel_format(int csc)
 {
@@ -209,7 +214,8 @@ int get_pixel_format(int csc)
 		return -1;
 }
 
-int get_csc_algo_for_quality(int initial_quality) {
+int get_csc_algo_for_quality(int initial_quality)
+{
 	//always use the best quality as lower quality options
 	//do not offer a significant speed improvement
 	return SWS_BICUBLIN | SWS_ACCURATE_RND;
@@ -229,6 +235,7 @@ const char PROFILE_HIGH444_PREDICTIVE[] = "high444";
 const char *I420_PROFILES[7] = {PROFILE_BASELINE, PROFILE_MAIN, PROFILE_HIGH, PROFILE_HIGH10, PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE, NULL};
 const char *I422_PROFILES[3] = {PROFILE_HIGH422, PROFILE_HIGH444_PREDICTIVE, NULL};
 const char *I444_PROFILES[2] = {PROFILE_HIGH444_PREDICTIVE, NULL};
+
 const char *DEFAULT_I420_PROFILE = PROFILE_BASELINE;
 const char *DEFAULT_I422_PROFILE = PROFILE_HIGH422;
 const char *DEFAULT_I444_PROFILE = PROFILE_HIGH444_PREDICTIVE;
@@ -237,14 +244,15 @@ const int DEFAULT_I444_MIN_QUALITY = 90;
 
 //Given a quality percentage (0 to 100)
 //return the profile to use
-//IMPORTANT: changes here must be reflected in get_x264_colour_sampling
+//IMPORTANT: changes here must be reflected in get_x264_color_sampling
 // as not all pixel formats are supported by all profiles.
-const char *get_profile_for_quality(struct x264lib_ctx *ctx, int pct) {
+const char *get_profile_for_quality(struct x264lib_ctx *ctx, int pct)
+{
 	if (pct < ctx->I422_quality)
-		return	ctx->I420_profile;
+		return ctx->I420_profile;
 	if (pct < ctx->I444_quality)
-		return	ctx->I422_profile;
-	return	ctx->I444_profile;
+		return ctx->I422_profile;
+	return ctx->I444_profile;
 }
 
 /**
@@ -256,11 +264,10 @@ const char *get_valid_profile(const char *csc_mode, const char *profile, const c
 {
 	//printf("get_valid_profile(%s, %s, %p, %s)\n", csc_mode, profile, profiles, default_profile);
 	int i = 0;
-	if (profile==NULL)
-		return	default_profile;
-	while (profiles[i]!=NULL)
-	{
-		if (strcmp(profiles[i], profile)==0) {
+	if (profile == NULL)
+		return default_profile;
+	while (profiles[i] != NULL) {
+		if (strcmp(profiles[i], profile) == 0) {
 			//printf("found valid %s profile: %s\n", csc_mode, profiles[i]);
 			return profiles[i];
 		}
@@ -307,23 +314,23 @@ static void configure_encoder(struct x264lib_ctx *ctx,
 		ctx->quality = DEFAULT_INITIAL_QUALITY;
 	//printf("configure_encoder: %ix%i q=%i\n", ctx->width, ctx->height, ctx->quality);
 	ctx->supports_csc_option = supports_csc_option;
-	if (I422_quality>=0 && I422_quality<=100)
+	if (I422_quality >= 0 && I422_quality <= 100)
 		ctx->I422_quality = I422_quality;
 	else
 		ctx->I422_quality = DEFAULT_I422_MIN_QUALITY;
-	if (I444_quality>=0 && I444_quality<=100 && I444_quality>=ctx->I422_quality)
+	if (I444_quality >= 0 && I444_quality <= 100 && I444_quality >= ctx->I422_quality)
 		ctx->I444_quality = I444_quality;
 	else
-		ctx->I444_quality = MIN(100, MAX(DEFAULT_I444_MIN_QUALITY, ctx->I422_quality+10));
+		ctx->I444_quality = MIN(100, MAX(DEFAULT_I444_MIN_QUALITY, ctx->I422_quality + 10));
 	//"min" values must be lower than the corresponding "quality" value:
-	if (I422_min>=0 && I422_min<=100 && I422_min<=ctx->I422_quality)
+	if (I422_min >= 0 && I422_min <= 100 && I422_min <= ctx->I422_quality)
 		ctx->I422_min = I422_min;
 	else
-		ctx->I422_min = MAX(0, ctx->I422_quality-10);
-	if (I444_min>=0 && I444_min<=100 && I444_min<=ctx->I444_quality)
+		ctx->I422_min = MAX(0, ctx->I422_quality - 10);
+	if (I444_min >= 0 && I444_min <= 100 && I444_min <= ctx->I444_quality)
 		ctx->I444_min = I444_min;
 	else
-		ctx->I444_min = MAX(0, MIN(ctx->I422_min, ctx->I444_quality-10));
+		ctx->I444_min = MAX(0, MIN(ctx->I422_min, ctx->I444_quality - 10));
 	//printf("configure_encoder: quality thresholds: I422=%i / I444=%i\n", ctx->I422_quality, ctx->I444_quality);
 	//printf("configure_encoder: min quality: I422=%i / I444=%i\n", ctx->I422_min, ctx->I444_min);
 	ctx->I420_profile = get_valid_profile(I420, i420_profile, I420_PROFILES, DEFAULT_I420_PROFILE);
@@ -341,20 +348,20 @@ static void configure_encoder(struct x264lib_ctx *ctx,
 void do_init_encoder(struct x264lib_ctx *ctx)
 {
 	x264_param_t param;
-	ctx->colour_sampling = get_x264_colour_sampling(ctx, ctx->quality);
+	ctx->color_sampling = get_x264_color_sampling(ctx, ctx->quality);
 	ctx->x264_quality = get_x264_quality(ctx->quality);
-	ctx->csc_dest_format = get_csc_dest_format_for_x264_format(ctx->colour_sampling);
+	ctx->csc_dest_format = get_csc_dest_format_for_x264_format(ctx->color_sampling);
 	ctx->encoding_preset = 2;
 	ctx->preset = x264_preset_names[ctx->encoding_preset];
 	ctx->profile = get_profile_for_quality(ctx, ctx->quality);
 	ctx->csc_algo = get_csc_algo_for_quality(ctx->quality);
-	//printf("do_init_encoder(%p, %i, %i, %i, %i) colour_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->colour_sampling, ctx->x264_quality, ctx->profile);
+	//printf("do_init_encoder(%p, %i, %i, %i, %i) color_sampling=%i, initial x264_quality=%f, initial profile=%s\n", ctx, ctx->width, ctx->height, ctx->quality, ctx->supports_csc_option, ctx->color_sampling, ctx->x264_quality, ctx->profile);
 
 	x264_param_default_preset(&param, ctx->preset, "zerolatency");
 	param.i_threads = 1;
 	param.i_width = ctx->width;
 	param.i_height = ctx->height;
-	param.i_csp = ctx->colour_sampling;
+	param.i_csp = ctx->color_sampling;
 	param.rc.f_rf_constant = ctx->x264_quality;
 	param.i_log_level = X264_LOG_ERROR;
 	param.i_keyint_max = 999999;	//we never lose frames or use seeking, so no need for regular I-frames
@@ -368,33 +375,33 @@ void do_init_encoder(struct x264lib_ctx *ctx)
 }
 
 struct x264lib_ctx *init_encoder(int width, int height, const char *rgb_format_str,
-		int initial_quality, int initial_speed,
-		int supports_csc_option,
-		int I422_quality, int I444_quality,
-		int I422_min, int I444_min,
-        char *i420_profile, char *i422_profile, char *i444_profile)
+				 int initial_quality, int initial_speed,
+				 int supports_csc_option, int I422_quality,
+				 int I444_quality, int I422_min, int I444_min,
+				 char *i420_profile, char *i422_profile,
+				 char *i444_profile)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
-	if (ctx==NULL)
+	if (ctx == NULL)
 		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	configure_encoder(ctx,
-					width, height, rgb_format_str, \
-					initial_quality, initial_speed, \
-					supports_csc_option, \
-					I422_quality, I444_quality, \
-					I422_min, I444_min, \
-					i420_profile, i422_profile, i444_profile);
+			  width, height, rgb_format_str,
+			  initial_quality, initial_speed,
+			  supports_csc_option,
+			  I422_quality, I444_quality,
+			  I422_min, I444_min,
+			  i420_profile, i422_profile, i444_profile);
 	do_init_encoder(ctx);
 	return ctx;
 }
-
 
 void clean_encoder(struct x264lib_ctx *ctx)
 {
 	do_clean_encoder(ctx);
 	free(ctx);
 }
+
 void do_clean_encoder(struct x264lib_ctx *ctx)
 {
 	if (ctx->rgb2yuv) {
@@ -407,10 +414,9 @@ void do_clean_encoder(struct x264lib_ctx *ctx)
 	}
 }
 
-
 int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int use_swscale, int csc_fmt)
 {
-	if (csc_fmt<0)
+	if (csc_fmt < 0)
 		csc_fmt = AV_PIX_FMT_YUV420P;
 	ctx->use_swscale = use_swscale;
 	ctx->width = width;
@@ -441,15 +447,16 @@ int init_decoder_context(struct x264lib_ctx *ctx, int width, int height, int use
 	}
 	ctx->frame = avcodec_alloc_frame();
 	if (!ctx->frame) {
-	    fprintf(stderr, "could not allocate an AVFrame for decoding\n");
-	    return 1;
+		fprintf(stderr, "could not allocate an AVFrame for decoding\n");
+		return 1;
 	}
 	return 0;
 }
+
 struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
 {
 	struct x264lib_ctx *ctx = malloc(sizeof(struct x264lib_ctx));
-	if (ctx==NULL)
+	if (ctx == NULL)
 		return NULL;
 	memset(ctx, 0, sizeof(struct x264lib_ctx));
 	if (init_decoder_context(ctx, width, height, use_swscale, csc_fmt)) {
@@ -475,23 +482,23 @@ void do_clean_decoder(struct x264lib_ctx *ctx)
 		ctx->yuv2rgb = NULL;
 	}
 }
+
 void clean_decoder(struct x264lib_ctx *ctx)
 {
 	do_clean_decoder(ctx);
 	free(ctx);
 }
 
-
-x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t *in, int stride)
+x264_picture_t *csc_image_rgb2yuv(struct x264lib_ctx *ctx, const uint8_t * in, int stride)
 {
 	x264_picture_t *pic_in = NULL;
 	if (!ctx->encoder || !ctx->rgb2yuv)
 		return NULL;
 
 	pic_in = malloc(sizeof(x264_picture_t));
-	if (ctx==NULL)
+	if (ctx == NULL)
 		return NULL;
-	x264_picture_alloc(pic_in, ctx->colour_sampling, ctx->width, ctx->height);
+	x264_picture_alloc(pic_in, ctx->color_sampling, ctx->width, ctx->height);
 
 	/* Colorspace conversion (RGB -> I4??) */
 	sws_scale(ctx->rgb2yuv, &in, &stride, 0, ctx->height, pic_in->img.plane, pic_in->img.i_stride);
@@ -506,7 +513,7 @@ static void free_csc_image(x264_picture_t *image)
 
 int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **out, int *outsz)
 {
-	x264_nal_t* nals = NULL;
+	x264_nal_t *nals = NULL;
 	int i_nals = 0;
 	x264_picture_t pic_out;
 	int frame_size = 0;
@@ -535,7 +542,6 @@ int compress_image(struct x264lib_ctx *ctx, x264_picture_t *pic_in, uint8_t **ou
 	return 0;
 }
 
-
 int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride)
 {
 	AVPicture pic;
@@ -545,7 +551,7 @@ int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[
 
 	avpicture_fill(&pic, xmemalign(ctx->height * ctx->width * 3), AV_PIX_FMT_RGB24, ctx->width, ctx->height);
 
-	sws_scale(ctx->yuv2rgb, (const uint8_t * const*) in, stride, 0, ctx->height, pic.data, pic.linesize);
+	sws_scale(ctx->yuv2rgb, (const uint8_t * const *)in, stride, 0, ctx->height, pic.data, pic.linesize);
 
 	/* Output (must be freed!) */
 	*out = pic.data[0];
@@ -557,9 +563,9 @@ int csc_image_yuv2rgb(struct x264lib_ctx *ctx, uint8_t *in[3], const int stride[
 
 void set_decoder_csc_format(struct x264lib_ctx *ctx, int csc_fmt)
 {
-	if (csc_fmt<0)
+	if (csc_fmt < 0)
 		csc_fmt = AV_PIX_FMT_YUV420P;
-	if (ctx->csc_dest_format!=csc_fmt) {
+	if (ctx->csc_dest_format != csc_fmt) {
 		//we need to re-initialize with the new format:
 		do_clean_decoder(ctx);
 		if (init_decoder_context(ctx, ctx->width, ctx->height, ctx->use_swscale, csc_fmt)) {
@@ -584,7 +590,7 @@ int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8
 
 	avcodec_get_frame_defaults(picture);
 
-	avpkt.data = (uint8_t*) in;
+	avpkt.data = (uint8_t *)in;
 	avpkt.size = size;
 
 	len = avcodec_decode_video2(ctx->codec_ctx, picture, &got_picture, &avpkt);
@@ -600,10 +606,14 @@ int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8
 		(*outstride)[i] = picture->linesize[i];
 	}
 
-    if (outsize == 0) {
-        fprintf(stderr, "Decoded image, size %d %d %d, ptr %p %p %p\n", (*outstride)[0] * ctx->height, (*outstride)[1]*ctx->height, (*outstride)[2]*ctx->height, picture->data[0], picture->data[1], picture->data[2]);
-        return 3;
-    }
+	if (outsize == 0) {
+		fprintf(stderr, "Decoded image, size %d %d %d, ptr %p %p %p\n",
+			(*outstride)[0] * ctx->height,
+			(*outstride)[1] * ctx->height,
+			(*outstride)[2] * ctx->height, picture->data[0],
+			picture->data[1], picture->data[2]);
+		return 3;
+	}
 
 	return 0;
 }
@@ -615,10 +625,10 @@ int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8
 void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
-	int new_preset = 7-MAX(0, MIN(6, pct/16));
+	int new_preset = 7 - MAX(0, MIN(6, pct / 16));
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->speed = pct;
-	if (new_preset==ctx->encoding_preset)
+	if (new_preset == ctx->encoding_preset)
 		return;
 	//printf("set_encoding_speed(%i) old preset: %i=%s, new preset: %i=%s\n", pct, ctx->encoding_preset, x264_preset_names[ctx->encoding_preset], new_preset, x264_preset_names[new_preset]);
 	ctx->encoding_preset = new_preset;
@@ -642,10 +652,10 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 	float new_quality = get_x264_quality(pct);
 	//printf("set_encoding_quality(%i) new_quality=%f, can csc=%i\n", pct, new_quality, ctx->supports_csc_option);
 	if (ctx->supports_csc_option) {
-		if (!can_keep_colour_sampling(ctx, pct)) {
-			int new_colour_sampling = get_x264_colour_sampling(ctx, pct);
-			//printf("set_encoding_quality(%i) old colour_sampling=%i, new colour_sampling %i\n", pct, ctx->colour_sampling, new_colour_sampling);
-			if (ctx->colour_sampling!=new_colour_sampling) {
+		if (!can_keep_color_sampling(ctx, pct)) {
+			int new_color_sampling = get_x264_color_sampling(ctx, pct);
+			//printf("set_encoding_quality(%i) old color_sampling=%i, new color_sampling %i\n", pct, ctx->color_sampling, new_color_sampling);
+			if (ctx->color_sampling != new_color_sampling) {
 				//pixel encoding has changed, we must re-init everything:
 				do_clean_encoder(ctx);
 				ctx->quality = pct;
@@ -656,7 +666,7 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 			}
 		}
 	}
-	if ((ctx->quality & ~0x1)!=(pct & ~0x1)) {
+	if ((ctx->quality & ~0x1) != (pct & ~0x1)) {
 		//float old_quality = ctx->x264_quality;
 		//printf("set_encoding_quality(%i) was %i, new x264 quality %f was %f\n", pct, ctx->quality, new_quality, old_quality);
 		//only f_rf_constant was changed,
@@ -670,13 +680,12 @@ void set_encoding_quality(struct x264lib_ctx *ctx, int pct)
 		x264_encoder_reconfig(ctx->encoder, &param);
 	}
 	ctx->csc_algo = get_csc_algo_for_quality(pct);
-	if (old_csc_algo!=ctx->csc_algo) {
+	if (old_csc_algo != ctx->csc_algo) {
 		ctx->rgb2yuv = init_encoder_csc(ctx);
 	}
 }
 
-
-void* xmemalign(size_t size)
+void *xmemalign(size_t size)
 {
 #ifdef MEMALIGN
 #ifdef _WIN32
@@ -690,14 +699,14 @@ void* xmemalign(size_t size)
 	return malloc(size);
 #else
 	//not WIN32 and not APPLE/OSX, assume POSIX:
-	void* memptr=NULL;
+	void *memptr = NULL;
 	if (posix_memalign(&memptr, MEMALIGN_ALIGNMENT, size))
-		return	NULL;
-	return	memptr;
+		return NULL;
+	return memptr;
 #endif
 //MEMALIGN not set:
 #else
-	return	malloc(size);
+	return malloc(size);
 #endif
 }
 
