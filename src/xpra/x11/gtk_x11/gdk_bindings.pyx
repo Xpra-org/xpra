@@ -587,12 +587,18 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
+cdef char *XRGB = "XRGB"
+cdef char *BGRX = "BGRX"
+cdef char *ARGB = "ARGB"
+cdef char *BGRA = "BGRA"
+
 cdef class XImageWrapper:
     cdef XImage *image
     cdef int x
     cdef int y
     cdef int width
     cdef int height
+    cdef int depth
     cdef int rowstride
     cdef char *rgb_format
     cdef char *pixels
@@ -610,24 +616,25 @@ cdef class XImageWrapper:
     cdef set_image(self, XImage* image):
         self.image = image
         self.rowstride = self.image.bytes_per_line
-        if self.image.depth==24:
+        self.depth = self.image.depth
+        if self.depth==24:
             if self.image.byte_order==MSBFirst:
-                self.rgb_format = "XRGB"
+                self.rgb_format = XRGB
             else:
-                self.rgb_format = "BGRX"
-        elif self.image.depth==32:
+                self.rgb_format = BGRX
+        elif self.depth==32:
             if self.image.byte_order==MSBFirst:
-                self.rgb_format = "ARGB"
+                self.rgb_format = ARGB
             else:
-                self.rgb_format = "BGRA"
+                self.rgb_format = BGRA
         else:
-            raise Exception("invalid image depth: %s bpp" % self.image.depth)
+            raise Exception("invalid image depth: %s bpp" % self.depth)
 
     def __str__(self):
         return "XImageWrapper(%s, %s, %s, %s)" % (self.x, self.y, self.width, self.height)
 
     def get_geometry(self):
-        return self.x, self.y, self.width, self.height, self.image.depth
+        return self.x, self.y, self.width, self.height, self.depth
 
     def get_x(self):
         return self.x
@@ -645,7 +652,7 @@ cdef class XImageWrapper:
         return self.rowstride
 
     def get_depth(self):
-        return self.image.depth
+        return self.depth
 
     def get_size(self):
         return self.rowstride * self.height
@@ -653,12 +660,10 @@ cdef class XImageWrapper:
     def get_rgb_format(self):
         return self.rgb_format
 
-    cdef get_data_ptr(self):
-        return self.image.data
-
     def get_pixels(self):
         if self.pixels!=NULL:
             return PyBuffer_FromMemory(self.pixels, self.get_size())
+        assert self.image!=NULL
         return PyBuffer_FromMemory(self.image.data, self.get_size())
 
     def set_rowstride(self, rowstride):
@@ -669,9 +674,13 @@ cdef class XImageWrapper:
 
     def set_pixels(self, pixels):
         self.pixels = pixels
-
+        #since we have replaced the pixels, we no longer need the XImage:
+        self.free()
 
     def __dealloc__(self):
+        self.free()
+    
+    def free(self):
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL
