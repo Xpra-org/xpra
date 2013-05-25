@@ -65,6 +65,17 @@ except Exception, e:
 
 PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
 
+ENCODINGS_TO_NAME = {
+                  "x264"    : "H.264",
+                  "vpx"     : "VPx",
+                  "png"     : "PNG (24/32bpp)",
+                  "png/P"   : "PNG (8bpp colour)",
+                  "png/L"   : "PNG (8bpp grayscale)",
+                  "webp"    : "WebP (lossy)",
+                  "jpeg"    : "JPEG",
+                  "rgb"     : "Raw RGB + zlib (24/32bpp)",
+                }
+
 ENCODINGS_HELP = {
                   "x264"    : "H.264 video codec",
                   "vpx"     : "VPx video codec",
