@@ -37,7 +37,12 @@ error = log.error
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
+    ctypedef void** const_void_pp "const void**"
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+
+cdef extern from "string.h":
+    void * memcpy ( void * destination, void * source, size_t num )
 
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
@@ -673,17 +678,26 @@ cdef class XImageWrapper:
         self.rgb_format = rgb_format
 
     def set_pixels(self, pixels):
-        self.pixels = pixels
-        #since we have replaced the pixels, we no longer need the XImage:
+        cdef const unsigned char * buf = NULL
+        cdef Py_ssize_t buf_len = 0
+        #since we replace the pixels,
+        #we no longer need the XImage or the previous pixels:
         self.free()
+        PyObject_AsReadBuffer(pixels, <const_void_pp> &buf, &buf_len)
+        self.pixels = <char *> malloc(buf_len)
+        assert self.pixels!=NULL
+        memcpy(self.pixels, buf, buf_len)
 
     def __dealloc__(self):
         self.free()
-    
+
     def free(self):
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL
+        if self.pixels!=NULL:
+            free(self.pixels)
+            self.pixels = NULL
 
 
 cdef get_image(display, xpixmap, x, y, width, height):

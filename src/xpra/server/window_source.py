@@ -23,6 +23,8 @@ AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
+DELTA = os.environ.get("XPRA_DELTA", "0")=="1"
+
 #how many historical records to keep
 #for the various statistics we collect:
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
@@ -765,7 +767,7 @@ class WindowSource(object):
             we record the 'client decode time' (provided by the client itself)
             and the "client latency".
         """
-        debug("packet decoding sequence %s for window %s %sx%s took %s µs", damage_packet_sequence, self.wid, width, height, decode_time)
+        debug("packet decoding sequence %s for window %s %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
@@ -804,12 +806,14 @@ class WindowSource(object):
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
         debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
         start = time.time()
-        if self._mmap and self._mmap_size>0 and len(image.get_size())>256:
+        if self._mmap and self._mmap_size>0 and image.get_size()>256:
             #try with mmap (will change coding to "mmap" if it succeeds)
-            coding = self.mmap_send(coding, image)
+            data = self.mmap_send(image)
+            if data:
+                coding = "mmap"
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
-        if coding in self.supports_delta:
+        if DELTA and coding in self.supports_delta:
             dpixels = image.get_pixels()
             if self.last_pixmap_data is not None:
                 lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
@@ -851,7 +855,7 @@ class WindowSource(object):
         #tell client about delta/store for this pixmap:
         if delta>=0:
             client_options["delta"] = delta
-        if coding in self.supports_delta:
+        if DELTA and coding in self.supports_delta:
             self.last_pixmap_data = w, h, coding, sequence, dpixels
             client_options["store"] = sequence
         #actual network packet:
@@ -896,6 +900,8 @@ class WindowSource(object):
         if rgb_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s!" % rgb_format)
+            #get the new format:
+            rgb_format = image.get_rgb_format()
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
         if len(pixels)<512:
@@ -903,7 +909,6 @@ class WindowSource(object):
         else:
             min_level = 1
         level = max(min_level, min(5, int(110-self.get_current_encoding_speed())/20))
-        rgb_format = image.get_rgb_format()
         zlib = str(pixels)
         cdata = zlib
         if level>0:
@@ -1045,22 +1050,25 @@ class WindowSource(object):
                 log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
                 self._rgb_format_warnings.add(warning_key)
             return False
+        start = time.time()
         w = image.get_width()
         h = image.get_height()
-        img = Image.fromstring(target_format, (w, h), image.get_pixels(), "raw", rgb_format, image.get_rowstride())
-        data = img.tostring("raw", target_format)
+        pixels = image.get_pixels()
+        img = Image.frombuffer(target_format, (w, h), pixels, "raw", rgb_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
-        debug("rgb_reformat(%s) converted from %s to %s", image, rgb_format, target_format)
+        data = img.tostring("raw", target_format)
         assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
         image.set_pixels(data)
         image.set_rowstride(rowstride)
         image.set_rgb_format(target_format)
+        end = time.time()
+        debug("rgb_reformat(%s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, rgb_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
         return True
 
-    def mmap_send(self, coding, image):
+    def mmap_send(self, image):
         if image.get_rgb_format() not in self.rgb_formats:
             if not self.rgb_reformat(image):
-                return coding
+                return None
         from xpra.net.mmap_pipe import mmap_write
         start = time.time()
         data = image.get_pixels()
@@ -1069,8 +1077,7 @@ class WindowSource(object):
         elapsed = time.time()-start+0.000000001 #make sure never zero!
         debug("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
         if mmap_data is None:
-            return coding
+            return None
         self.global_statistics.mmap_bytes_sent += len(data)
         #replace pixels with mmap info:
-        image.set_pixels(mmap_data)
-        return "mmap"
+        return mmap_data
