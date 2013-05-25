@@ -43,7 +43,7 @@ struct x264lib_ctx {
 	// Both
 	int width;
 	int height;
-	enum AVPixelFormat csc_dest_format;
+	enum PixelFormat csc_dest_format;
 
 	// Decoding
 	AVCodec *codec;
@@ -55,7 +55,7 @@ struct x264lib_ctx {
 	x264_t *encoder;
 	struct SwsContext *rgb2yuv;
 	int use_swscale;
-	enum AVPixelFormat csc_src_format;
+	enum PixelFormat csc_src_format;
 
 	int speed;					//percentage 0-100
 	int quality;				//percentage 0-100
@@ -93,7 +93,7 @@ struct x264lib_ctx {
 
 /* RGB format name <-> swscale format correspondance */
 static struct {
-	enum AVPixelFormat sws_pixfmt;
+	enum PixelFormat sws_pixfmt;
 	const char *str;
 } sws_rgb_formats[] = {
 	{ PIX_FMT_RGB24, "RGB" },
@@ -177,7 +177,7 @@ int can_keep_color_sampling(struct x264lib_ctx *ctx, int pct)
 #endif
 }
 
-/** Return the AVPixelFormat corresponding to a given 
+/** Return the PixelFormat corresponding to a given
  *  x264 format
  */
 //Given an x264 color sampling constant,
@@ -278,7 +278,7 @@ const char *get_valid_profile(const char *csc_mode, const char *profile, const c
 
 struct SwsContext *init_encoder_csc(struct x264lib_ctx *ctx)
 {
-	enum AVPixelFormat pix_fmt = PIX_FMT_NONE;
+	enum PixelFormat pix_fmt = PIX_FMT_NONE;
 	if (ctx->rgb2yuv) {
 		sws_freeContext(ctx->rgb2yuv);
 		ctx->rgb2yuv = NULL;
