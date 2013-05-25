@@ -359,6 +359,8 @@ class GTKTrayMenuBase(object):
             NAME_TO_ENCODING[name] = encoding
             encoding_item = CheckMenuItem(name)
             if descr:
+                if encoding not in server_encodings:
+                    descr += "\n(not available on this server)"
                 set_tooltip_text(encoding_item, descr)
             def encoding_changed(item):
                 item = ensure_item_selected(encodings_submenu, item)
