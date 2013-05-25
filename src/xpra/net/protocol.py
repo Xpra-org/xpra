@@ -224,12 +224,16 @@ class Protocol(object):
         self._source_has_more.set()
 
     def _write_format_thread_loop(self):
-        while not self._closed:
-            self._source_has_more.wait()
-            if self._closed:
-                return
-            self._source_has_more.clear()
-            self._add_packet_to_queue(*self._get_packet_cb())
+        try:
+            while not self._closed:
+                self._source_has_more.wait()
+                if self._closed:
+                    return
+                self._source_has_more.clear()
+                self._add_packet_to_queue(*self._get_packet_cb())
+        except Exception, e:
+            log.error("error in write format loop", exc_info=True)
+            self._call_connection_lost("error in network packet write/format: %s" % e)
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
         if has_more:
