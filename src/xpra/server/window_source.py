@@ -897,16 +897,29 @@ class WindowSource(object):
             if not self.rgb_reformat(image):
                 raise Exception("cannot find compatible rgb format to use for %s!" % rgb_format)
         #compress here and return a wrapper so network code knows it is already zlib compressed:
-        level = max(1, min(6, int(100-self.get_current_encoding_speed())/16))
         pixels = image.get_pixels()
+        if len(pixels)<512:
+            min_level = 0
+        else:
+            min_level = 1
+        level = max(min_level, min(5, int(110-self.get_current_encoding_speed())/20))
         rgb_format = image.get_rgb_format()
-        zlib = zlib_compress(coding, pixels, level=level)
-        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, rgb_format, len(pixels), len(zlib))
+        zlib = str(pixels)
+        cdata = zlib
+        if level>0:
+            zlib = zlib_compress(coding, pixels, level=level)
+            cdata = zlib.data
+            if len(cdata)>=(len(pixels)-32):
+                #compressed is actually bigger! (use uncompressed)
+                level = 0
+                zlib = str(pixels)
+                cdata = zlib
+        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, rgb_format, len(pixels), len(cdata))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
             return  zlib, {}
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, zlib.data), {"zlib" : zlib.level}
+        return Compressed(coding, cdata), {"zlib" : level}
 
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
