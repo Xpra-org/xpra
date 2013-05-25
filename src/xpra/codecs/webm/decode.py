@@ -27,8 +27,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from ctypes import (c_int, c_uint, create_string_buffer, memmove, c_void_p,
     POINTER)
-from xpra.webm import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
-from xpra.webm.handlers import BitmapHandler
+from xpra.codecs.webm import _LIBRARY, PIXEL_ALPHA_SZ, PIXEL_SZ
+from xpra.codecs.webm.handlers import BitmapHandler
 
 
 # -----------------------------------------------------------------------------

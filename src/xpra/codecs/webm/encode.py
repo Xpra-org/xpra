@@ -27,8 +27,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from ctypes import (c_int, c_float, c_void_p, byref, memmove,
     create_string_buffer)
-from xpra.webm import _LIBRARY
-from xpra.webm.handlers import WebPHandler
+from xpra.codecs.webm import _LIBRARY
+from xpra.codecs.webm.handlers import WebPHandler
 
 
 # -----------------------------------------------------------------------------
