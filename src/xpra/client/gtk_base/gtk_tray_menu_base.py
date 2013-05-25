@@ -67,15 +67,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_clipboardmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
-        lossy_encodings = set(self.client.get_core_encodings()) & set(["jpeg", "webp", "x264", "vpx"])
-        if self.client.windows_enabled and len(lossy_encodings)>0:
-            menu.append(self.make_qualitymenuitem())
-        else:
-            self.quality = None
-        if self.client.windows_enabled and "x264" in self.client.get_encodings():
-            menu.append(self.make_speedmenuitem())
-        else:
-            self.speed = None
+        menu.append(self.make_qualitymenuitem())
+        menu.append(self.make_speedmenuitem())
         if self.client.speaker_allowed and STARTSTOP_SOUND_MENU:
             menu.append(self.make_speakermenuitem())
         if self.client.microphone_allowed and STARTSTOP_SOUND_MENU:
@@ -414,7 +407,7 @@ class GTKTrayMenuBase(object):
 
     def set_qualitymenu(self, *args):
         if self.quality:
-            can_use = not self.client.mmap_enabled and self.client.encoding in ("jpeg", "webp", "x264")
+            can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_quality
             self.quality.set_sensitive(can_use)
             if can_use:
                 set_tooltip_text(self.quality, "Minimum picture quality")
@@ -528,7 +521,7 @@ class GTKTrayMenuBase(object):
 
     def set_speedmenu(self, *args):
         if self.speed:
-            can_use = not self.client.mmap_enabled and self.client.encoding=="x264" and self.client.change_speed
+            can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_speed and self.client.change_speed
             self.speed.set_sensitive(can_use)
             if self.client.mmap_enabled:
                 set_tooltip_text(self.speed, "Quality is always 100% with mmap")

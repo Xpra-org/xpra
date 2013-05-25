@@ -701,6 +701,8 @@ class ServerBase(object):
         capabilities["python_version"] = python_platform.python_version()
         capabilities["encodings"] = SERVER_ENCODINGS
         capabilities["encodings.core"] = SERVER_CORE_ENCODINGS
+        capabilities["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
+        capabilities["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]
         capabilities["clipboards"] = self._clipboards
         if self.session_name:
             capabilities["session_name"] = self.session_name
