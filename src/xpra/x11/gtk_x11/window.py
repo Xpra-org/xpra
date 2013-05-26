@@ -127,14 +127,7 @@ MAX_ASPECT = 2*15-1
 #      The part of the client window that was modified, and needs to be
 #      redrawn.
 # To get the actual contents of the window to draw, there is a "handle"
-# available as the "client-contents-handle" property on the
-# (Base)WindowModel.  So long as you hold a reference to this object, the
-# window contents will be available in its ".pixmap" member.  The pixmap
-# itself is also available as the "client-contents" property of the
-# (Base)WindowModel.  The pixmap object will be destroyed as soon as the
-# handle object leaves scope, so if you want to hold onto the pixmap for some
-# reason (animating a fade when a window is unmapped or whatever) then make
-# sure to hold a reference to the handle.
+# available as the "contents-handle" property on the Composite window.
 #
 # But what if you'd like to do more than just look at your pretty composited
 # windows?  Maybe you'd like to, say, *interact* with them?  Then life is a
@@ -219,9 +212,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                         "Window type",
                         "NB, most preferred comes first, then fallbacks",
                         gobject.PARAM_READABLE),
-        "client-contents-handle": (gobject.TYPE_PYOBJECT,
-                                   "", "",
-                                   gobject.PARAM_READABLE),
         }
     __gsignals__ = {
         "geometry": no_arg_signal,
@@ -309,9 +299,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         if self._managed:
             self.emit("client-contents-changed", event)
 
-    def do_get_property_client_contents_handle(self, name):
-        return self._composite.get_property("contents-handle")
-
     def acknowledge_changes(self):
         self._composite.acknowledge_changes()
 
@@ -392,7 +379,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         return self.client_window.get_depth()==32
 
     def get_rgb_rawdata(self, x, y, width, height, logger=log.debug):
-        handle = self.get_property("client-contents-handle")
+        handle = self._composite.get_property("contents-handle")
         logger("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
         if handle is None:
             logger("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
