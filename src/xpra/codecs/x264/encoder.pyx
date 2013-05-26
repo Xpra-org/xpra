@@ -178,7 +178,7 @@ cdef class Encoder:
         #colourspace conversion with gil held:
         input = image.get_pixels()
         rowstride = image.get_rowstride()
-        PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)
+        assert PyObject_AsReadBuffer(input, <const_void_pp> &pic_buf, &pic_buf_len)==0
         pic_in = csc_image_rgb2yuv(self.context, pic_buf, rowstride)
         assert pic_in!=NULL, "colourspace conversion failed"
         try:

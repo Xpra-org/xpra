@@ -22,7 +22,7 @@ def argb_to_rgba(buf):
     cdef Py_ssize_t cbuf_len = 0
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)
+    assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
     return argbdata_to_pixdata(cbuf, cbuf_len)
 
 cdef argbdata_to_pixdata(const unsigned long* data, int dlen):
@@ -58,7 +58,7 @@ def argb_to_rgb(buf):
     cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)
+    assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
     return argbdata_to_rgb(cbuf, cbuf_len)
 
 cdef argbdata_to_rgb(const unsigned long* data, int dlen):
@@ -93,7 +93,7 @@ def premultiply_argb_in_place(buf):
     cdef Py_ssize_t cbuf_len = 0                #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)
+    assert PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)==0
     do_premultiply_argb_in_place(cbuf, cbuf_len)
 
 cdef do_premultiply_argb_in_place(unsigned int * cbuf, Py_ssize_t cbuf_len):

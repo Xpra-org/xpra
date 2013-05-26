@@ -683,7 +683,7 @@ cdef class XImageWrapper:
         #since we replace the pixels,
         #we no longer need the XImage or the previous pixels:
         self.free()
-        PyObject_AsReadBuffer(pixels, <const_void_pp> &buf, &buf_len)
+        assert PyObject_AsReadBuffer(pixels, <const_void_pp> &buf, &buf_len)==0
         self.pixels = <char *> malloc(buf_len)
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)

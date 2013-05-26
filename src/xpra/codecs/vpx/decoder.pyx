@@ -75,7 +75,7 @@ cdef class Decoder:
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         assert self.context!=NULL
-        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
+        assert PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)==0
         i = decompress_image(self.context, buf, buf_len, &dout, &outsize, &outstrides)
         if i!=0:
             return i, [0, 0, 0], ["", "", ""]
@@ -102,7 +102,7 @@ cdef class Decoder:
         cdef Py_ssize_t buf_len = 0         #@DuplicatedSignature
         cdef int i = 0                      #@DuplicatedSignature
         assert self.context!=NULL
-        PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
+        assert PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)==0
         i = decompress_image(self.context, buf, buf_len, &yuvplanes, &outsize, &yuvstrides)
         if i!=0:
             return i, None

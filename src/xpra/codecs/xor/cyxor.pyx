@@ -19,10 +19,10 @@ def xor_str(buf, xor_string):
     assert len(buf)==len(xor_string), "cannot xor strings of different lengths (cyxor)"
     cdef const unsigned char * cbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicatedSignature
-    PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)
+    assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
     cdef const unsigned char * xbuf = <unsigned char *> 0 #@DuplicatedSignature
     cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    PyObject_AsReadBuffer(xor_string, <const_void_pp> &xbuf, &xbuf_len)
+    assert PyObject_AsReadBuffer(xor_string, <const_void_pp> &xbuf, &xbuf_len)==0
     assert cbuf_len == xbuf_len
     cdef unsigned char * out = <unsigned char *> malloc(cbuf_len)
     cdef int i                                      #@DuplicatedSignature
