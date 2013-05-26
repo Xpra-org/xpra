@@ -205,6 +205,7 @@ class WindowSource(object):
         self.cancel_damage()
         self.video_encoder_cleanup()
         self._damage_cancelled = float("inf")
+        self.statistics.reset()
         debug("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
 
     def video_encoder_cleanup(self):
@@ -653,6 +654,7 @@ class WindowSource(object):
         if self.is_cancelled(sequence):
             debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
+        rgb_request_time = time.time()
         image = window.get_rgb_rawdata(x, y, w, h, logger=rgblog)
         if image is None:
             debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
@@ -662,7 +664,8 @@ class WindowSource(object):
         process_damage_time = time.time()
         data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
         self._sequence += 1
-        debug("process_damage_regions: adding pixel data %s to queue, elapsed time: %.1f ms", data[:6], 1000*(time.time()-damage_time))
+        debug("process_damage_regions: wid=%s, adding pixel data %s to queue, elapsed time: %.1f ms, request rgb time: %.1f ms",
+                self.wid, data[:6], 1000.0*(time.time()-damage_time), 1000.0*(time.time()-rgb_request_time))
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
             packet = self.make_data_packet(*data)
@@ -804,7 +807,7 @@ class WindowSource(object):
         x, y, w, h, _ = image.get_geometry()
 
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
-        debug("make_data_packet: damage data: %s", (wid, x, y, w, h, coding))
+        debug("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
         if self._mmap and self._mmap_size>0 and image.get_size()>256:
             #try with mmap (will change coding to "mmap" if it succeeds)
@@ -847,6 +850,7 @@ class WindowSource(object):
             outstride = image.get_rowstride()
         else:
             raise Exception("invalid encoding: %s" % coding)
+        del image
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and self.is_cancelled(sequence):
@@ -962,7 +966,6 @@ class WindowSource(object):
             client_options["quality"] = q
         else:
             assert coding in ("png", "png/P", "png/L")
-            debug("sending %sx%s %s as %s, mode=%s", w, h, rgb_format, coding, im.mode)
             if coding=="png/L":
                 im = im.convert("L", palette=Image.ADAPTIVE)
             elif coding=="png/P":
@@ -973,7 +976,7 @@ class WindowSource(object):
             kwargs = im.info
             kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
-        debug("sending %sx%s %s as jpeg with options: %s", w, h, rgb_format, kwargs)
+        debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, rgb_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
         return Compressed(coding, data), client_options
@@ -1008,10 +1011,10 @@ class WindowSource(object):
             self._video_encoder_lock.acquire()
             if self._video_encoder:
                 if self._video_encoder.get_rgb_format()!=rgb_format:
-                    debug("video_encode: switching rgb_format from %s to %s", self._video_encoder.get_rgb_format(), rgb_format)
+                    debug("video_encode: wid=%s, switching rgb_format from %s to %s", self.wid, self._video_encoder.get_rgb_format(), rgb_format)
                     self.do_video_encoder_cleanup()
                 elif self._video_encoder.get_type()!=coding:
-                    debug("video_encode: switching encoding from %s to %s", self._video_encoder.get_type(), coding)
+                    debug("video_encode: wid=%s, switching encoding from %s to %s", self.wid, self._video_encoder.get_type(), coding)
                     self.do_video_encoder_cleanup()
                 elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
                     debug("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
@@ -1025,7 +1028,7 @@ class WindowSource(object):
                         new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
                         self._video_encoder.set_encoding_speed(new_speed)
             if self._video_encoder is None:
-                debug("%s: new encoder for wid=%s %sx%s", coding, wid, w, h)
+                debug("%s: new encoder for wid=%s %sx%s, using rgb_format=%s", coding, wid, w, h, rgb_format)
                 self._video_encoder = self.make_video_encoder(coding)
                 self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
             data, client_options = self._video_encoder.compress_image(image, options)
