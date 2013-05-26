@@ -6,7 +6,7 @@
 import os
 from libc.stdlib cimport free
 
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS
 
 DEFAULT_INITIAL_QUALITY = 70
 DEFAULT_INITIAL_SPEED = 20
@@ -76,7 +76,12 @@ cdef class Encoder:
     def init_context(self, int width, int height, rgb_format, options):    #@DuplicatedSignature
         self.width = width
         self.height = height
-        self.rgb_format = rgb_format
+        #ugly trick to use a string which won't go away from underneath us:
+        assert rgb_format in RGB_FORMATS
+        for x in RGB_FORMATS:
+            if x==rgb_format:
+                self.rgb_format = x
+                break
         self.frames = 0
         self.supports_options = int(options.get("client_options", False))
         I420_profile = self._get_profile(options, "I420", DEFAULT_I420_PROFILE, I420_PROFILES)

@@ -18,3 +18,9 @@ def get_subsampling_divs(pixel_format):
     elif pixel_format==YUV444P:
         return (1, 1), (1, 1), (1, 1)
     raise Exception("invalid pixel format: %s" % pixel_format)
+
+RGB_FORMATS = ("XRGB",
+               "BGRX",
+               "ARGB",
+               "BGRA",
+               "RGB")

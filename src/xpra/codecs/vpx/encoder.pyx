@@ -5,6 +5,7 @@
 
 import os
 from libc.stdlib cimport free
+from xpra.codecs.codec_constants import RGB_FORMATS
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
@@ -46,7 +47,12 @@ cdef class Encoder:
     def init_context(self, width, height, rgb_format, options):    #@DuplicatedSignature
         self.width = width
         self.height = height
-        self.rgb_format = rgb_format
+        #ugly trick to use a string which won't go away from underneath us:
+        assert rgb_format in RGB_FORMATS
+        for x in RGB_FORMATS:
+            if x==rgb_format:
+                self.rgb_format = x
+                break
         self.context = init_encoder(width, height, rgb_format)
         self.frames = 0
 
