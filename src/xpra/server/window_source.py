@@ -1006,7 +1006,6 @@ class WindowSource(object):
         h = h & 0xFFFE
         assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
         rgb_format = image.get_rgb_format()
-        #time_before = time.clock()
         try:
             self._video_encoder_lock.acquire()
             if self._video_encoder:
@@ -1017,7 +1016,7 @@ class WindowSource(object):
                     debug("video_encode: wid=%s, switching encoding from %s to %s", self.wid, self._video_encoder.get_type(), coding)
                     self.do_video_encoder_cleanup()
                 elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
-                    debug("%s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
+                    debug("video_encode: %s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
                     self._video_encoder.clean()
                     self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
@@ -1028,14 +1027,14 @@ class WindowSource(object):
                         new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
                         self._video_encoder.set_encoding_speed(new_speed)
             if self._video_encoder is None:
-                debug("%s: new encoder for wid=%s %sx%s, using rgb_format=%s", coding, wid, w, h, rgb_format)
+                debug("video_encode: %s: new encoder for wid=%s %sx%s, using rgb_format=%s", coding, wid, w, h, rgb_format)
                 self._video_encoder = self.make_video_encoder(coding)
                 self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
             data, client_options = self._video_encoder.compress_image(image, options)
             if data is None:
                 log.error("%s: ouch, compression failed", coding)
                 return None, None
-            debug("compress_image(..) %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
+            debug("video_encode: %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
             return Compressed(coding, data), client_options
         finally:
             self._video_encoder_lock.release()
