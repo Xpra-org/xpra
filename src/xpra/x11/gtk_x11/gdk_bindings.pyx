@@ -596,6 +596,15 @@ cdef char *XRGB = "XRGB"
 cdef char *BGRX = "BGRX"
 cdef char *ARGB = "ARGB"
 cdef char *BGRA = "BGRA"
+cdef char *RGB = "RGB"
+
+cdef char *RGB_FORMATS[6]
+RGB_FORMATS[0] = XRGB
+RGB_FORMATS[1] = BGRX
+RGB_FORMATS[2] = ARGB
+RGB_FORMATS[3] = BGRA
+RGB_FORMATS[4] = RGB
+RGB_FORMATS[5] = NULL
 
 cdef class XImageWrapper:
     cdef XImage *image
@@ -634,6 +643,7 @@ cdef class XImageWrapper:
                 self.rgb_format = BGRA
         else:
             raise Exception("invalid image depth: %s bpp" % self.depth)
+        assert self.rgb_format in RGB_FORMATS
 
     def __str__(self):
         return "XImageWrapper(%s, %s, %s, %s)" % (self.x, self.y, self.width, self.height)
@@ -675,7 +685,11 @@ cdef class XImageWrapper:
         self.rowstride = rowstride
 
     def set_rgb_format(self, rgb_format):
-        self.rgb_format = rgb_format
+        assert rgb_format in RGB_FORMATS, "invalid rgb_format: %s" % rgb_format
+        cdef int i =0
+        while RGB_FORMATS[i]!=rgb_format:
+            i +=1
+        self.rgb_format = RGB_FORMATS[i]
 
     def set_pixels(self, pixels):
         cdef const unsigned char * buf = NULL
