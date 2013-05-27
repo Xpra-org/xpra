@@ -15,3 +15,17 @@ Description: Build against versions of libav without PIX_FMT_0RGB and PIX_FMT_BG
  	{ PIX_FMT_ARGB, "ARGB" },
  	{ PIX_FMT_BGRA, "BGRA" } };
  
+--- a/xpra/codecs/vpx/vpxlib.c	(revision 3496)
++++ b/xpra/codecs/vpx/vpxlib.c	(working copy)
+@@ -80,9 +80,9 @@
+ 	if (strcmp(RGB_FORMAT_RGB, rgb_format)==0)
+ 		return PIX_FMT_RGB24;
+ 	else if (strcmp(RGB_FORMAT_XRGB, rgb_format)==0)
+-		return PIX_FMT_0RGB;
++		return PIX_FMT_ARGB;
+ 	else if (strcmp(RGB_FORMAT_BGRX, rgb_format)==0)
+-		return PIX_FMT_BGR0;
++		return PIX_FMT_BGRA;
+ 	else if (strcmp(RGB_FORMAT_ARGB, rgb_format)==0)
+ 		return PIX_FMT_ARGB;
+ 	else if (strcmp(RGB_FORMAT_BGRA, rgb_format)==0)
