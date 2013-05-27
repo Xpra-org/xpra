@@ -2,8 +2,8 @@ Description: Build against old versions of libav.
  Author: Antoine Martin <antoine@devloop.org.uk>
  Forwarded: not-needed
  
---- a/xpra/x264/x264lib.c	(revision 2661)
-+++ b/xpra/x264/x264lib.c	(working copy)
+--- a/xpra/codecs/x264/x264lib.c	(revision 2661)
++++ b/xpra/codecs/x264/x264lib.c	(working copy)
 @@ -443,11 +443,12 @@
  		fprintf(stderr, "could not open codec\n");
  		return 1;
