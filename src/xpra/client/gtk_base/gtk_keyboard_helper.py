@@ -35,6 +35,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         self._keymap = gdk.keymap_get_default()
         if not self._keymap_changing:
             self._keymap_changing = True
+            log.info("keymap has changed, sending updated mappings to the server")
             gobject.timeout_add(500, self._do_keys_changed, True)
 
     def _do_keys_changed(self, sendkeymap=False):

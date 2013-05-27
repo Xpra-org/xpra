@@ -1078,6 +1078,7 @@ class ServerBase(object):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        log.info("received new keymap from client %s", proto)
         if ss.assign_keymap_options(props):
             self.set_keymap(ss, True)
         modifiers = props.get("modifiers")
