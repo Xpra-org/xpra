@@ -1,6 +1,13 @@
-v0.10.0 (2013-05-09)
+v0.10.0 (2013-05-27)
 ======================
+	-- performance: X11 shared memory (XShm) transfers
+	-- performance: zero-copy window pixels to picture encoders
+	-- support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
+	-- support for grayscale and pallette based png encoding
+	-- support for window transparency
 	-- register as a generic URL handler
+	-- fullscreen toggle support
+	-- stricter Cython code
 	-- initial support for Qt based client
 	-- support for different window layouts with custom widgets
 	-- basic support of OSX shadow servers
@@ -13,6 +20,28 @@ v0.10.0 (2013-05-09)
 	-- refactoring: platform code better separated
 	-- refactoring: move wimpiggy inside xpra, delete parti
 	-- export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
+	-- export compiler information with build (Cython, C compiler, etc)
+	-- simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
+
+
+v0.9.4 (2013-05-27)
+======================
+	-- revert cursor scaling fix which broke other applications
+	-- fix auto refresh mis-firing
+	-- fix type (atom) of the X11 visual property we expose
+
+
+v0.9.3 (2013-05-20)
+======================
+	-- fix clipboard for *nix clients
+	-- fix selection timestamp parsing
+	-- fix crash due to logging code location
+	-- fix pixel area request dimensions for lossless edges
+	-- fix advertized tray visual property
+	-- fix cursors are too small with some applications
+	-- fix crash when low level debug code is enabled
+	-- reset cursors when disabling cursor forwarding
+	-- workaround invalid window size hints
 
 
 v0.9.2 (2013-05-13)

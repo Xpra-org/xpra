@@ -146,8 +146,62 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Fri Apr 25 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
-- TODO
+* Mon May 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
+- performance: X11 shared memory (XShm) transfers
+- performance: zero-copy window pixels to picture encoders
+- support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
+- support for grayscale and pallette based png encoding
+- support for window transparency
+- register as a generic URL handler
+- fullscreen toggle support
+- stricter Cython code
+- initial support for Qt based client
+- support for different window layouts with custom widgets
+- basic support of OSX shadow servers
+- don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
+- refactoring: move features and components to sub-modules
+- refactoring: split X11 bindings from pure gtk code
+- refactoring: codecs split encoding and decoding side
+- refactoring: move more common code to utility classes
+- refactoring: remove direct dependency on gobject in many places
+- refactoring: platform code better separated
+- refactoring: move wimpiggy inside xpra, delete parti
+- export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
+- export compiler information with build (Cython, C compiler, etc)
+- simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
+
+* Mon May 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.4-1
+- revert cursor scaling fix which broke other applications
+- fix auto refresh mis-firing
+- fix type (atom) of the X11 visual property we expose
+
+* Mon May 20 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.3-1
+- fix clipboard for *nix clients
+- fix selection timestamp parsing
+- fix crash due to logging code location
+- fix pixel area request dimensions for lossless edges
+- fix advertized tray visual property
+- fix cursors are too small with some applications
+- fix crash when low level debug code is enabled
+- reset cursors when disabling cursor forwarding
+- workaround invalid window size hints
+
+* Mon May 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.2-1
+- fix double error when loading build information (missing about dialog)
+- fix and simplify build "clean" subcommand
+- fix OpenGL rendering alignment for padded rowstrides case
+- fix potential double error when tray initialization fails
+- fix window static properties usage
+
+* Wed May 08 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.1-1
+- honour initial client window's requested position
+- fix for hidden appindicator
+- fix string formatting error in non-cython fallback math code
+- fix error if ping packets fail from the start
+- fix for windows without a valid window-type (ie: shadows)
+- fix OpenGL missing required feature detection (and add debug)
+- add required CentOS RPM libXfont dependency
+- tag our /etc configuration files in RPM spec file
 
 * Thu Apr 25 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.0-1
 - fix focus problems with old Xvfb display servers
