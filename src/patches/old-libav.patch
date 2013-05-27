@@ -1,22 +1,22 @@
 Index: xpra/codecs/x264/x264lib.c
 ===================================================================
---- a/xpra/codecs/x264/x264lib.c	(revision 3160)
-+++ b/xpra/codecs/x264/x264lib.c	(working copy)
-@@ -408,11 +408,12 @@
+--- xpra/codecs/x264/x264lib.c	(revision 3499)
++++ xpra/codecs/x264/x264lib.c	(working copy)
+@@ -443,11 +443,12 @@
  		fprintf(stderr, "could not open codec\n");
  		return 1;
  	}
 -	ctx->frame = avcodec_alloc_frame();
 +	ctx->frame = malloc(sizeof(struct AVFrame));
  	if (!ctx->frame) {
- 	    fprintf(stderr, "could not allocate an AVFrame for decoding\n");
- 	    return 1;
+ 		fprintf(stderr, "could not allocate an AVFrame for decoding\n");
+ 		return 1;
  	}
 +	memset(ctx->frame, 0, sizeof(struct AVFrame));
  	return 0;
  }
- struct x264lib_ctx *init_decoder(int width, int height, int use_swscale, int csc_fmt)
-@@ -431,7 +432,7 @@
+ 
+@@ -467,7 +468,7 @@
  void do_clean_decoder(struct x264lib_ctx *ctx)
  {
  	if (ctx->frame) {
