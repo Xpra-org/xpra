@@ -643,7 +643,7 @@ class UIXpraClient(XpraClientBase):
                     self.mmap_enabled = False
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
-        self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000
+        self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000.0
         self.server_encodings_with_speed = capabilities.get("encodings.with_speed", ("x264",)) #old servers only supported x264
         self.server_encodings_with_quality = capabilities.get("encodings.with_quality", ("jpeg", "webp", "x264"))
         self.change_quality = capabilities.get("change-quality", False)
