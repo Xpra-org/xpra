@@ -140,10 +140,21 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        from xpra.codecs.webm.decode import DecodeRGB
-        rgb24 = DecodeRGB(img_data)
-        rowstride = width*3
-        self.idle_add(self.do_paint_rgb24, str(rgb24.bitmap), x, y, width, height, rowstride, options, callbacks)
+        from xpra.codecs.webm.decode import DecodeRGB, DecodeRGBA
+        if options.get("has_alpha", False):
+            decode = DecodeRGBA
+            rowstride = width*4
+            paint_rgb = self.do_paint_rgb32
+        else:
+            decode = DecodeRGB
+            rowstride = width*3
+            paint_rgb = self.do_paint_rgb24
+        if DRAW_DEBUG:
+            log.info("paint_webp(%s) using decode=%s, paint=%s",
+                 ("%s bytes" % len(img_data), x, y, width, height, options, callbacks), decode, paint_rgb)
+        rgb_data = decode(img_data)
+        pixels = str(rgb_data.bitmap)
+        self.idle_add(paint_rgb, pixels, x, y, width, height, rowstride, options, callbacks)
         return  False
 
     def paint_rgb24(self, raw_data, x, y, width, height, rowstride, options, callbacks):

@@ -549,12 +549,12 @@ class WindowSource(object):
             debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
         if has_alpha:
-            if current_encoding in ("png", "rgb32"):
+            if current_encoding in ("png", "rgb32", "webp"):
                 return current_encoding
             if current_encoding=="rgb":
-                encs = ("rgb32", "png")
+                encs = ("rgb32", "png", "webp")
             else:
-                encs = ("png", "rgb32")
+                encs = ("png", "rgb32", "webp")
             for x in encs:
                 if x in self.SERVER_CORE_ENCODINGS and x in self.core_encodings:
                     debug("do_get_best_encoding(..) using %s for alpha channel support", x)
@@ -881,23 +881,27 @@ class WindowSource(object):
         from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
         from xpra.codecs.webm.handlers import BitmapHandler
         handler_encs = {
-                    "RGB" : (BitmapHandler.RGB, EncodeRGB),
-                    "BGR" : (BitmapHandler.BGR, EncodeBGR),
-                    "RGBA": (BitmapHandler.RGBA, EncodeRGBA),
-                    "RGBX": (BitmapHandler.RGBA, EncodeRGBA),
-                    "BGRA": (BitmapHandler.BGRA, EncodeBGRA),
-                    "BGRX": (BitmapHandler.BGRA, EncodeBGRA),
+                    "RGB" : (BitmapHandler.RGB, EncodeRGB, False),
+                    "BGR" : (BitmapHandler.BGR, EncodeBGR, False),
+                    "RGBA": (BitmapHandler.RGBA, EncodeRGBA, True),
+                    "RGBX": (BitmapHandler.RGBA, EncodeRGBA, False),
+                    "BGRA": (BitmapHandler.BGRA, EncodeBGRA, True),
+                    "BGRX": (BitmapHandler.BGRA, EncodeBGRA, False),
                     }
         rgb_format = image.get_rgb_format()
         h_e = handler_encs.get(rgb_format)
         assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
-        bh, enc = h_e
+        bh, enc, has_alpha = h_e
+        debug("webp_encode(%s, %s) using encoder=%s for %s", image, options, enc, rgb_format)
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         q = 80
         if options:
             q = options.get("quality", 80)
         q = min(99, max(1, q))
-        return Compressed("webp", str(enc(image, quality=q).data)), {"quality" : q}
+        client_options = {"quality" : q}
+        if has_alpha:
+            client_options["has_alpha"] = True
+        return Compressed("webp", str(enc(image, quality=q).data)), client_options
 
     def rgb_encode(self, coding, image):
         rgb_format = image.get_rgb_format()
