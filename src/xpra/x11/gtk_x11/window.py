@@ -55,6 +55,7 @@ if gtk.pygtk_version<(2,17):
 #will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE = 2**15-1
 MAX_ASPECT = 2*15-1
+USE_XSHM = os.environ.get("XPRA_XSHM", "0")=="1"
 
 
 # Todo:
@@ -231,7 +232,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._geometry = None
         self._damage_forward_handle = None
         self._internal_set_property("client-window", client_window)
-        self._composite = CompositeHelper(self.client_window, False)
+        use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
+        self._composite = CompositeHelper(self.client_window, False, use_xshm)
 
     def managed_connect(self, detailed_signal, handler, *args):
         """ connects a signal handler and makes sure we will clean it up on unmanage() """
@@ -380,12 +382,20 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def get_rgb_rawdata(self, x, y, width, height, logger=log.debug):
         handle = self._composite.get_property("contents-handle")
-        logger("get_rgb_rawdata(%s, %s, %s, %s) handle=%s", x, y, width, height, handle)
         if handle is None:
             logger("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
             return  None
 
         try:
+            #try XShm:
+            w, h = self._geometry[2:4]
+            logger("get_rgb_rawdata(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
+            if x==0 and y==0 and w==width and h==height:
+                shm = self._composite.get_property("shm-handle")
+                logger("get_rgb_rawdata(..) XShm image: %s", shm)
+                if shm is not None:
+                    return trap.call_synced(shm.get_image, handle.xpixmap)
+
             w = min(handle.width, width)
             h = min(handle.height, height)
             if w!=width or h!=height:

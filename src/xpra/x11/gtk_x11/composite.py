@@ -7,6 +7,7 @@
 import gobject
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
 from xpra.x11.gtk_x11.gdk_bindings import (
+            XShmWrapper,                    #@UnresolvedImport
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             get_xwindow,                    #@UnresolvedImport
@@ -34,16 +35,20 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
     __gproperties__ = {
         "contents-handle": (gobject.TYPE_PYOBJECT,
                             "", "", gobject.PARAM_READABLE),
+        "shm-handle": (gobject.TYPE_PYOBJECT,
+                            "", "", gobject.PARAM_READABLE),
         }
 
     # This may raise XError.
-    def __init__(self, window, already_composited):
+    def __init__(self, window, already_composited, use_shm=False):
         super(CompositeHelper, self).__init__()
         log("CompositeHelper.__init__(%s,%s)", window, already_composited)
         self._window = window
         self._already_composited = already_composited
         self._listening_to = None
         self._damage_handle = None
+        self._use_shm = use_shm
+        self._shm_handle = None
 
     def setup(self):
         xwin = get_xwindow(self._window)
@@ -71,6 +76,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
         if self._damage_handle:
             trap.swallow_synced(X11Window.XDamageDestroy, self._damage_handle)
             self._damage_handle = None
+        if self._shm_handle:
+            self._shm_handle.cleanup()
+            self._shm_handle = None
         #note: this should be redundant since we cleared the
         #reference to self._window and shortcut out in do_get_property_contents_handle
         #but it's cheap anyway
@@ -95,6 +103,15 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             assert self._window is None or self._window not in listening
             for w in listening:
                 remove_event_receiver(w, self)
+
+    def do_get_property_shm_handle(self, name):
+        if not self._use_shm:
+            return None
+        if self._shm_handle is None:
+            self._shm_handle = XShmWrapper()
+            if not self._shm_handle.init(self._window):
+                self._shm_handle = None
+        return self._shm_handle
 
     def do_get_property_contents_handle(self, name):
         if self._window is None:
@@ -152,9 +169,6 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                     self._listening_to = listening
             trap.swallow_synced(set_pixmap)
         return self._contents_handle
-
-    def do_get_property_contents(self, name):
-        return self.get_property("contents-handle")
 
     def do_xpra_unmap_event(self, *args):
         self.invalidate_pixmap()
