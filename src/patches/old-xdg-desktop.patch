@@ -1,0 +1,21 @@
+Description: Use old deprecated format
+ Author: Antoine Martin <antoine@devloop.org.uk>
+ Forwarded: not-needed
+ 
+--- a/xdg/xpra.desktop	(revision 3496)
++++ b/xdg/xpra.desktop	(working copy)
+@@ -8,4 +8,5 @@
+ Type=Application
+ StartupNotify=false
+ Categories=Network;
+-MimeType=x-scheme-handler/xpra;
+\ No newline at end of file
++MimeType=x-scheme-handler/xpra;
++Encoding=UTF-8
+--- a/xdg/xpra_launcher.desktop	(revision 3496)
++++ b/xdg/xpra_launcher.desktop	(working copy)
+@@ -9,3 +9,4 @@
+ StartupNotify=false
+ Categories=Network;
+ MimeType=text/x-xpraconfig;
++Encoding=UTF-8

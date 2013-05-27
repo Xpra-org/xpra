@@ -9,6 +9,7 @@
 %define build_no 0
 %endif
 %define include_egg 1
+%define old_xdg 0
 
 #if building a generic rpm: exclude anything that requires cython modules:
 %if 0%{?generic}
@@ -77,6 +78,7 @@
 %define no_sound 1
 %define no_pulseaudio 1
 %define no_strict 1
+%define old_xdg 1
 #uuidgen is in e2fsprogs! (no we don't do any fs stuff)
 %define requires_extra , e2fsprogs, python-ctypes
 %define include_egg 0
@@ -136,6 +138,7 @@ Patch6: x264-limited-csc.patch
 Patch7: no-strict.patch
 Patch8: old-libav.patch
 Patch9: disable-pulseaudio.patch
+Patch10: old-xdg-desktop.patch
 
 
 %description
@@ -770,6 +773,11 @@ cd xpra-all-%{version}
 %patch9 -p1
 (echo "etc/*/xpra.conf" > %{S:ignored_changed_files.txt})
 %endif
+%if 0%{?old_xdg}
+%patch10 -p1
+(echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
+%endif
+
 
 %build
 cd xpra-all-%{version}
