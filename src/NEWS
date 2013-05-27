@@ -3,7 +3,7 @@ v0.10.0 (2013-05-27)
 	-- performance: X11 shared memory (XShm) transfers
 	-- performance: zero-copy window pixels to picture encoders
 	-- support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
-	-- support for grayscale and pallette based png encoding
+	-- support for grayscale and palette based png encoding
 	-- support for window transparency
 	-- register as a generic URL handler
 	-- fullscreen toggle support

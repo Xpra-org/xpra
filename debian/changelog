@@ -1,8 +1,8 @@
 xpra (0.10.0-1) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) transfers
   * performance: zero-copy window pixels to picture encoders
-  * support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
-  * support for grayscale and pallette based png encoding
+  * support for speed tuning (latency vs bandwidth) with more encodings
+  * support for grayscale and palette based png encoding
   * support for window transparency
   * register as a generic URL handler
   * fullscreen toggle support
@@ -10,7 +10,7 @@ xpra (0.10.0-1) UNRELEASED; urgency=low
   * initial support for Qt based client
   * support for different window layouts with custom widgets
   * basic support of OSX shadow servers
-  * don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
+  * don't try to synchronize with clipboards that do not exist
   * refactoring: move features and components to sub-modules
   * refactoring: split X11 bindings from pure gtk code
   * refactoring: codecs split encoding and decoding side
@@ -20,7 +20,7 @@ xpra (0.10.0-1) UNRELEASED; urgency=low
   * refactoring: move wimpiggy inside xpra, delete parti
   * export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
   * export compiler information with build (Cython, C compiler, etc)
-  * simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
+  * simplify non-UI subcommands and their packets ("info", "version", etc)
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 May 2013 11:17:15 +0700
 
