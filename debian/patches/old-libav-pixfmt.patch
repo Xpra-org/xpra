@@ -1,0 +1,17 @@
+Description: Build against versions of libav without PIX_FMT_0RGB and PIX_FMT_BGR0
+ Author: Antoine Martin <antoine@devloop.org.uk>
+ Forwarded: not-needed
+ 
+--- a/xpra/codecs/x264/x264lib.c	(revision 3499)
++++ b/xpra/codecs/x264/x264lib.c	(working copy)
+@@ -97,8 +97,8 @@
+ 	const char *str;
+ } sws_rgb_formats[] = {
+ 	{ PIX_FMT_RGB24, "RGB" },
+-	{ PIX_FMT_0RGB, "XRGB" },
+-	{ PIX_FMT_BGR0, "BGRX" },
++	{ PIX_FMT_ARGB, "XRGB" },
++	{ PIX_FMT_BGRA, "BGRX" },
+ 	{ PIX_FMT_ARGB, "ARGB" },
+ 	{ PIX_FMT_BGRA, "BGRA" } };
+ 
