@@ -141,7 +141,7 @@ class WindowSource(object):
 
     """
 
-    _rgb_format_warnings = set()
+    _encoding_warnings = set()
 
     def __init__(self, queue_damage, queue_packet, statistics,
                     wid, batch_config, auto_refresh_delay,
@@ -880,31 +880,53 @@ class WindowSource(object):
         #debug("make_data_packet: returning packet=%s,[..],%s", packet[:7], packet[8:])
         return packet
 
+
+    def warn_encoding_once(self, key, message):
+        if key not in self._encoding_warnings:
+            log.warn("Warning: "+message)
+            self._encoding_warnings.add(key)
+
     def webp_encode(self, image, options):
         from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
+        try:
+            from xpra.codecs.webm.encode import EncodeLosslessRGB, EncodeLosslessBGR, EncodeLosslessRGBA, EncodeLosslessBGRA
+        except Exception, e:
+            self.warn_encoding_once(str(e), "cannot use lossless webp encoders: %s" % e)
+            #fallback for old versions of webm (you should be using the version in tree!)
+            EncodeLosslessRGB   = EncodeRGB
+            EncodeLosslessBGR   = EncodeBGR
+            EncodeLosslessRGBA  = EncodeRGBA
+            EncodeLosslessBGRA  = EncodeBGRA
         from xpra.codecs.webm.handlers import BitmapHandler
         handler_encs = {
-                    "RGB" : (BitmapHandler.RGB, EncodeRGB, False),
-                    "BGR" : (BitmapHandler.BGR, EncodeBGR, False),
-                    "RGBA": (BitmapHandler.RGBA, EncodeRGBA, True),
-                    "RGBX": (BitmapHandler.RGBA, EncodeRGBA, False),
-                    "BGRA": (BitmapHandler.BGRA, EncodeBGRA, True),
-                    "BGRX": (BitmapHandler.BGRA, EncodeBGRA, False),
+                    "RGB" : (BitmapHandler.RGB,     EncodeRGB,  EncodeLosslessRGB,  False),
+                    "BGR" : (BitmapHandler.BGR,     EncodeBGR,  EncodeLosslessBGR,  False),
+                    "RGBA": (BitmapHandler.RGBA,    EncodeRGBA, EncodeLosslessRGBA, True),
+                    "RGBX": (BitmapHandler.RGBA,    EncodeRGBA, EncodeLosslessRGBA, False),
+                    "BGRA": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, True),
+                    "BGRX": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, False),
                     }
         rgb_format = image.get_rgb_format()
         h_e = handler_encs.get(rgb_format)
         assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
-        bh, enc, has_alpha = h_e
+        bh, lossy_enc, lossless_enc, has_alpha = h_e
+        q = self.get_current_encoding_quality()
+        if options:
+            q = options.get("quality", q)
+        q = min(100, max(1, q))
+        if q<100:
+            enc = lossy_enc
+            kwargs = {"quality" : q}
+            client_options = {"quality" : q}
+        else:
+            enc = lossless_enc
+            kwargs = {}
+            client_options = {}
         debug("webp_encode(%s, %s) using encoder=%s for %s", image, options, enc, rgb_format)
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
-        q = 80
-        if options:
-            q = options.get("quality", 80)
-        q = min(99, max(1, q))
-        client_options = {"quality" : q}
         if has_alpha:
             client_options["has_alpha"] = True
-        return Compressed("webp", str(enc(image, quality=q).data)), client_options
+        return Compressed("webp", str(enc(image, **kwargs).data)), client_options
 
     def rgb_encode(self, coding, image):
         rgb_format = image.get_rgb_format()
@@ -962,9 +984,9 @@ class WindowSource(object):
             mes = self.get_min_encoding_speed()
             optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
         if coding=="jpeg":
-            q = 80
+            q = self.get_current_encoding_quality()
             if options:
-                q = options.get("quality", 80)
+                q = options.get("quality", q)
             q = min(99, max(1, q))
             kwargs = im.info
             kwargs["quality"] = q
@@ -1055,9 +1077,7 @@ class WindowSource(object):
                  "BGRA"   : "RGBA"}.get(rgb_format)
         if target_format not in self.rgb_formats:
             warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
-            if warning_key not in self._rgb_format_warnings:
-                log.warn("cannot use mmap to send pixels: we would need to convert %s to one of: %s", rgb_format, self.rgb_formats)
-                self._rgb_format_warnings.add(warning_key)
+            self.warn_encoding_once(warning_key, "cannot use mmap to send pixels: we would need to convert %s to one of: %s" % (rgb_format, self.rgb_formats))
             return False
         start = time.time()
         w = image.get_width()

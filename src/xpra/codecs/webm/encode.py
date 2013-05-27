@@ -47,23 +47,30 @@ class EncodeError(Exception):
 # -----------------------------------------------------------------------------
 
 # Set argument types
-_LIBRARY.WebPEncodeRGB.argtypes = [c_void_p, c_int, c_int, c_int,
-                                   c_float, c_void_p]
-_LIBRARY.WebPEncodeBGR.argtypes = [c_void_p, c_int, c_int, c_int, c_float,
-                                   c_void_p]
-_LIBRARY.WebPEncodeRGBA.argtypes = [c_void_p, c_int, c_int, c_int, c_float,
-                                    c_void_p]
-_LIBRARY.WebPEncodeBGRA.argtypes = [c_void_p, c_int, c_int, c_int, c_float,
-                                    c_void_p]
+LOSSY_ARGS = [c_void_p, c_int, c_int, c_int, c_float, c_void_p]
+_LIBRARY.WebPEncodeRGB.argtypes = LOSSY_ARGS
+_LIBRARY.WebPEncodeBGR.argtypes = LOSSY_ARGS
+_LIBRARY.WebPEncodeRGBA.argtypes = LOSSY_ARGS
+_LIBRARY.WebPEncodeBGRA.argtypes = LOSSY_ARGS
+
+LOSSLESS_ARGS = [c_void_p, c_int, c_int, c_int, c_void_p]
+_LIBRARY.WebPEncodeLosslessRGB.argtypes = LOSSLESS_ARGS 
+_LIBRARY.WebPEncodeLosslessBGR.argtypes = LOSSLESS_ARGS
+_LIBRARY.WebPEncodeLosslessRGBA.argtypes = LOSSLESS_ARGS
+_LIBRARY.WebPEncodeLosslessBGRA.argtypes = LOSSLESS_ARGS
 
 # Set return types
 _LIBRARY.WebPEncodeRGB.restype = c_int
 _LIBRARY.WebPEncodeBGR.restype = c_int
 _LIBRARY.WebPEncodeRGBA.restype = c_int
 _LIBRARY.WebPEncodeBGRA.restype = c_int
+_LIBRARY.WebPEncodeLosslessRGB.restype = c_int 
+_LIBRARY.WebPEncodeLosslessBGR.restype = c_int
+_LIBRARY.WebPEncodeLosslessRGBA.restype = c_int
+_LIBRARY.WebPEncodeLosslessBGRA.restype = c_int
 
 
-def _encode(func, image, quality):
+def _lossy(func, image, quality):
     """
     Encode the image with the given quality using the given encoding
     function
@@ -98,6 +105,40 @@ def _encode(func, image, quality):
     return WebPHandler(bytearray(output), image.width, image.height)
 
 
+def _lossless(func, image):
+    """
+    Encode the image losslessly using the given encoding
+    function
+
+    :param func: The encoding function
+    :param image: The image to be encoded
+
+    :type function: function
+    :type image: BitmapHandler
+    """
+    # Call encode function
+    data = str(image.bitmap)
+    width = c_int(image.width)
+    height = c_int(image.height)
+    stride = c_int(image.stride)
+    output_p = c_void_p()
+
+    size = func(data, width, height, stride, byref(output_p))
+
+    # Check return size
+    if size == 0:
+        raise EncodeError
+
+    # Convert output
+    output = create_string_buffer(size)
+
+    memmove(output, output_p, size)
+
+    return WebPHandler(bytearray(output), image.width, image.height)
+
+
+
+
 # -----------------------------------------------------------------------------
 # Public functions
 # -----------------------------------------------------------------------------
@@ -112,7 +153,7 @@ def EncodeRGB(image, quality=100):
     :type image: BitmapHandler
     :type quality: float
     """
-    return _encode(_LIBRARY.WebPEncodeRGB, image, quality)
+    return _lossy(_LIBRARY.WebPEncodeRGB, image, quality)
 
 def EncodeRGBA(image, quality=100):
     """
@@ -124,7 +165,7 @@ def EncodeRGBA(image, quality=100):
     :type image: BitmapHandler
     :type quality: float
     """
-    return _encode(_LIBRARY.WebPEncodeRGBA, image, quality)
+    return _lossy(_LIBRARY.WebPEncodeRGBA, image, quality)
 
 def EncodeBGRA(image, quality=100):
     """
@@ -136,7 +177,7 @@ def EncodeBGRA(image, quality=100):
     :type image: BitmapHandler
     :type quality: float
     """
-    return _encode(_LIBRARY.WebPEncodeBGRA, image, quality)
+    return _lossy(_LIBRARY.WebPEncodeBGRA, image, quality)
 
 def EncodeBGR(image, quality=100):
     """
@@ -148,4 +189,44 @@ def EncodeBGR(image, quality=100):
     :type image: BitmapHandler
     :type quality: float
     """
-    return _encode(_LIBRARY.WebPEncodeBGR, image, quality)
+    return _lossy(_LIBRARY.WebPEncodeBGR, image, quality)
+
+def EncodeLosslessRGB(image):
+    """
+    Encode the given RGB image losslessly
+
+    :param image: The RGB image
+
+    :type image: BitmapHandler
+    """
+    return _lossless(_LIBRARY.WebPEncodeLosslessRGB, image)
+
+def EncodeLosslessRGBA(image):
+    """
+    Encode the given RGBA image losslessly
+
+    :param image: The RGBA image
+
+    :type image: BitmapHandler
+    """
+    return _lossless(_LIBRARY.WebPEncodeLosslessRGBA, image)
+
+def EncodeLosslessBGRA(image):
+    """
+    Encode the given BGRA image losslessly
+
+    :param image: The BGRA image
+
+    :type image: BitmapHandler
+    """
+    return _lossless(_LIBRARY.WebPEncodeLosslessBGRA, image)
+
+def EncodeLosslessBGR(image):
+    """
+    Encode the given BGR image losslessly
+
+    :param image: The BGR image
+
+    :type image: BitmapHandler
+    """
+    return _lossless(_LIBRARY.WebPEncodeLosslessBGR, image)
