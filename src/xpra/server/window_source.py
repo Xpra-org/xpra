@@ -996,7 +996,7 @@ class WindowSource(object):
             q = self.get_current_encoding_quality()
             if options:
                 q = options.get("quality", q)
-            q = min(99, max(1, q))
+            q = int(min(99, max(1, q)))
             kwargs = im.info
             kwargs["quality"] = q
             kwargs["optimize"] = optimize
