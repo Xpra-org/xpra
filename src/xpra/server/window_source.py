@@ -23,7 +23,8 @@ AUTO_REFRESH_THRESHOLD = int(os.environ.get("XPRA_AUTO_REFRESH_THRESHOLD", 90))
 AUTO_REFRESH_QUALITY = int(os.environ.get("XPRA_AUTO_REFRESH_QUALITY", 95))
 AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
-DELTA = os.environ.get("XPRA_DELTA", "0")=="1"
+DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
+MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 
 #how many historical records to keep
 #for the various statistics we collect:
@@ -834,16 +835,19 @@ class WindowSource(object):
                 coding = "mmap"
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
-        if DELTA and coding in self.supports_delta:
-            dpixels = image.get_pixels()
+        store = -1
+        if DELTA and coding in self.supports_delta and image.get_size()<MAX_DELTA_SIZE:
+            #we need to copy the pixels because some delta encodings
+            #will modify the pixel array in-place!
+            dpixels = image.get_pixels()[:]
+            store = sequence
             if self.last_pixmap_data is not None:
                 lw, lh, lcoding, lsequence, ldata = self.last_pixmap_data
-                if lw==w and lh==h and lcoding==coding and len(ldata)==image.get_size():
+                if lw==w and lh==h and lcoding==coding and len(ldata)==len(dpixels):
                     #xor with the last frame:
                     delta = lsequence
                     data = xor_str(dpixels, ldata)
                     image.set_pixels(data)
-                    debug("make_data_packet: xored against sequence %s", lsequence)
 
         #by default, don't set rowstride (the container format will take care of providing it):
         outstride = 0
@@ -877,9 +881,9 @@ class WindowSource(object):
         #tell client about delta/store for this pixmap:
         if delta>=0:
             client_options["delta"] = delta
-        if DELTA and coding in self.supports_delta:
-            self.last_pixmap_data = w, h, coding, sequence, dpixels
-            client_options["store"] = sequence
+        if store>0:
+            self.last_pixmap_data = w, h, coding, store, dpixels
+            client_options["store"] = store
         #actual network packet:
         packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
