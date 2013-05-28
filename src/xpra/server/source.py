@@ -1023,12 +1023,13 @@ class ServerSource(object):
         self.update_video_encoders()
 
     def set_speed(self, speed):
+        prev_speed = self.default_encoding_options.get("speed", 0)
         if speed<=0:
             if "speed" in self.default_encoding_options:
                 del self.default_encoding_options["speed"]
         else:
             self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
-        self.update_video_encoders(force_reload=speed>99)
+        self.update_video_encoders(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
