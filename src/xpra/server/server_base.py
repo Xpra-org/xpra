@@ -19,7 +19,8 @@ from xpra.log import Logger
 log = Logger()
 
 import xpra
-from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, has_PIL, has_vpx, has_x264, has_webp
+from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, \
+        has_PIL, has_vpx, has_x264, has_webp, has_webp_lossless
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid, SIGNAMES
@@ -46,6 +47,10 @@ SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", )]
 #renamed rgb24 to rgb in public encodings:
 SERVER_ENCODINGS.remove("rgb24")
 SERVER_ENCODINGS.append("rgb")
+
+HAS_LOSSLESS_ENCODINGS = []
+if has_webp_lossless:
+    HAS_LOSSLESS_ENCODINGS.append("webp")
 
 
 DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
@@ -703,6 +708,7 @@ class ServerBase(object):
         capabilities["encodings.core"] = SERVER_CORE_ENCODINGS
         capabilities["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
         capabilities["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]
+        capabilities["encodings.with_lossless_mode"] = HAS_LOSSLESS_ENCODINGS
         capabilities["clipboards"] = self._clipboards
         if self.session_name:
             capabilities["session_name"] = self.session_name

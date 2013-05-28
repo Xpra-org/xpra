@@ -48,11 +48,18 @@ except ImportError, e:
     pass
 
 has_webp = False
+has_webp_lossless = False
 try:
     bytearray()
     from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
     from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
     has_webp = True
+    try:
+        from xpra.codecs.webm.encode import EncodeLosslessRGB   #@UnusedImport
+        has_webp_lossless = True
+    except Exception, e:
+        print("cannot load lossless webp: %s", e)
+        pass
 except NameError, e:
     #we need bytearray to use the bindings
     pass
@@ -71,7 +78,7 @@ ENCODINGS_TO_NAME = {
                   "png"     : "PNG (24/32bpp)",
                   "png/P"   : "PNG (8bpp colour)",
                   "png/L"   : "PNG (8bpp grayscale)",
-                  "webp"    : "WebP (lossy)",
+                  "webp"    : "WebP",
                   "jpeg"    : "JPEG",
                   "rgb"     : "Raw RGB + zlib (24/32bpp)",
                 }
@@ -82,9 +89,9 @@ ENCODINGS_HELP = {
                   "png"     : "Portable Network Graphics (24 or 32bpp for transparency)",
                   "png/P"   : "Portable Network Graphics (8bpp colour)",
                   "png/L"   : "Portable Network Graphics (8bpp grayscale)",
-                  "webp"    : "WebP lossy compression",
+                  "webp"    : "WebP compression (lossless or lossy)",
                   "jpeg"    : "JPEG lossy compression",
-                  "rgb"     : "Raw RGB pixels, compressed using zlib (24 or 32bpp for transparency)",
+                  "rgb"     : "Raw RGB pixels, lossless, compressed using zlib (24 or 32bpp for transparency)",
                   }
 
 HELP_ORDER = ("x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg")

@@ -328,6 +328,9 @@ class WindowSource(object):
         return self.default_encoding_options.get("min-speed", -1)
 
     def get_current_encoding_speed(self):
+        s = min(100, max(self.get_min_encoding_speed(), self.default_encoding_options.get("speed", -1)))
+        if s>=0:
+            return s
         if len(self._encoding_speed)==0:
             return 50
         return self._encoding_speed[-1][1]
@@ -350,6 +353,9 @@ class WindowSource(object):
         return self.default_encoding_options.get("min-quality", -1)
 
     def get_current_encoding_quality(self):
+        q = min(100, max(self.get_min_encoding_quality(), self.default_encoding_options.get("quality", -1)))
+        if q>=0:
+            return q
         if len(self._encoding_quality)==0:
             return 50
         return self._encoding_quality[-1][1]
@@ -922,16 +928,17 @@ class WindowSource(object):
         q = self.get_current_encoding_quality()
         if options:
             q = options.get("quality", q)
-        q = min(100, max(1, q))
+        q = max(1, q)
         if q<100:
             enc = lossy_enc
             kwargs = {"quality" : q}
             client_options = {"quality" : q}
+            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, rgb_format)
         else:
             enc = lossless_enc
             kwargs = {}
             client_options = {}
-        debug("webp_encode(%s, %s) using encoder=%s for %s", image, options, enc, rgb_format)
+            debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, rgb_format)
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True

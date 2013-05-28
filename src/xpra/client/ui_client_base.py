@@ -126,6 +126,7 @@ class UIXpraClient(XpraClientBase):
         self.window_configure = False
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
+        self.server_encodings_with_lossless = ()
         self.change_quality = False
         self.change_min_quality = False
         self.change_speed = False
@@ -646,6 +647,7 @@ class UIXpraClient(XpraClientBase):
         self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000.0
         self.server_encodings_with_speed = capabilities.get("encodings.with_speed", ("x264",)) #old servers only supported x264
         self.server_encodings_with_quality = capabilities.get("encodings.with_quality", ("jpeg", "webp", "x264"))
+        self.server_encodings_with_lossless_mode = capabilities.get("encodings.with_lossless_mode", ())
         self.change_quality = capabilities.get("change-quality", False)
         self.change_min_quality = capabilities.get("change-min-quality", False)
         self.change_speed = capabilities.get("change-speed", False)

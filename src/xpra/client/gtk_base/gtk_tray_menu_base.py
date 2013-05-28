@@ -385,42 +385,56 @@ class GTKTrayMenuBase(object):
         self.client.connect("handshake-complete", may_enable_qualitymenu)
         return self.quality
 
+    LOSSLESS = "lossless"
+    QUALITY_OPTIONS = {20   : "20%",
+                       50   : "50%",
+                       80   : "80%",
+                       95   : "95%",
+                       100  : LOSSLESS,
+                       }
+
     def make_qualitysubmenu(self):
         #WARNING: this changes "min-quality", not "quality" (or at least it tries to..)
-        quality_submenu = gtk.Menu()
-        self.popup_menu_workaround(quality_submenu)
-        quality_options = [20, 50, 80, 95]
+        self.quality_submenu = gtk.Menu()
+        self.popup_menu_workaround(self.quality_submenu)
+        quality_options = self.QUALITY_OPTIONS.copy()
         if self.client.min_quality>0 and self.client.min_quality not in quality_options:
             """ add the current value to the list of options """
-            quality_options.append(self.client.min_quality)
+            q = self.client.min_quality
+            quality_options[q] = "%s%%" % q
         def set_quality(item):
-            item = ensure_item_selected(quality_submenu, item)
+            item = ensure_item_selected(self.quality_submenu, item)
             q = -1
-            try:
-                q = int(item.get_label().replace("%", ""))
-            except:
-                pass
-            if q!=self.client.min_quality:
+            for v, text in quality_options.items():
+                if text==item.get_label():
+                    q = v
+                    break
+            if q>0 and q!=self.client.min_quality:
                 log.debug("setting minimum picture quality to %s", q)
                 self.client.min_quality = q
                 self.client.send_min_quality()
         for q in sorted(quality_options):
-            qi = CheckMenuItem("%s%%" % q)
+            label = quality_options.get(q)
+            qi = CheckMenuItem(label)
             qi.set_draw_as_radio(True)
             qi.set_active(q==self.client.min_quality)
             qi.connect('activate', set_quality)
-            quality_submenu.append(qi)
-        quality_submenu.show_all()
-        return quality_submenu
+            self.quality_submenu.append(qi)
+        self.quality_submenu.show_all()
+        return self.quality_submenu
 
     def set_qualitymenu(self, *args):
         if self.quality:
             can_use = not self.client.mmap_enabled and self.client.encoding in self.client.server_encodings_with_quality
             self.quality.set_sensitive(can_use)
-            if can_use:
-                set_tooltip_text(self.quality, "Minimum picture quality")
-            else:
+            if not can_use:
                 set_tooltip_text(self.quality, "Not supported with %s encoding" % self.client.encoding)
+                return
+            set_tooltip_text(self.quality, "Minimum picture quality")
+            #now check if lossless is supported:
+            can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
+            for cmi in self.quality_submenu.get_children():
+                cmi.set_sensitive(cmi.get_label()!=self.LOSSLESS or can_lossless)
 
 
     def make_speedmenuitem(self):
