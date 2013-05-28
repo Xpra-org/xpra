@@ -623,12 +623,13 @@ int decompress_image(struct x264lib_ctx *ctx, const uint8_t *in, int size, uint8
 void set_encoding_speed(struct x264lib_ctx *ctx, int pct)
 {
 	x264_param_t param;
-	int new_preset = 7 - MAX(0, MIN(6, pct / 16));
+	int new_preset = 7 - MAX(0, MIN(6, pct / 15));
+	if (pct>99)
+		new_preset = 0;	//only allow "ultrafast" when speed is >99
 	x264_encoder_parameters(ctx->encoder, &param);
 	ctx->speed = pct;
 	if (new_preset == ctx->encoding_preset)
 		return;
-	//printf("set_encoding_speed(%i) old preset: %i=%s, new preset: %i=%s\n", pct, ctx->encoding_preset, x264_preset_names[ctx->encoding_preset], new_preset, x264_preset_names[new_preset]);
 	ctx->encoding_preset = new_preset;
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
 	param.rc.f_rf_constant = get_x264_quality(ctx->quality);

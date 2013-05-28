@@ -1002,9 +1002,9 @@ class ServerSource(object):
             batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
-    def update_video_encoders(self):
+    def update_video_encoders(self, force_reload=False):
         for ws in self.window_sources.values():
-            ws.update_video_encoder()
+            ws.update_video_encoder(force_reload)
 
     def set_min_quality(self, min_quality):
         self.default_encoding_options["min-quality"] = min_quality
@@ -1028,7 +1028,7 @@ class ServerSource(object):
                 del self.default_encoding_options["speed"]
         else:
             self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
-        self.update_video_encoders()
+        self.update_video_encoders(force_reload=speed>99)
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):

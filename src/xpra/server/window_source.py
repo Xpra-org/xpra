@@ -319,6 +319,9 @@ class WindowSource(object):
             ves_copy = list(self._encoding_speed)
             ves_copy.append((time.time(), target_speed))
             speed = max(min_speed, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+            speed = min(99, speed)
+        else:
+            speed = min(100, speed)
         self._encoding_speed.append((time.time(), speed))
 
     def get_min_encoding_speed(self):
@@ -338,6 +341,9 @@ class WindowSource(object):
             ves_copy = list(self._encoding_quality)
             ves_copy.append((time.time(), target_quality))
             quality = max(min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
+            quality = min(99, quality)
+        else:
+            quality = min(100, quality)
         self._encoding_quality.append((time.time(), quality))
 
     def get_min_encoding_quality(self):
@@ -348,14 +354,17 @@ class WindowSource(object):
             return 50
         return self._encoding_quality[-1][1]
 
-    def update_video_encoder(self):
+    def update_video_encoder(self, force_reload=False):
         if self._video_encoder and not self._video_encoder.is_closed():
             #set them with the lock held:
             try:
                 self._video_encoder_lock.acquire()
                 if not self._video_encoder.is_closed():
-                    self._video_encoder.set_encoding_speed(self.get_current_encoding_speed())
-                    self._video_encoder.set_encoding_quality(self.get_current_encoding_quality())
+                    if force_reload:
+                        self.do_video_encoder_cleanup()
+                    else:
+                        self._video_encoder.set_encoding_speed(self.get_current_encoding_speed())
+                        self._video_encoder.set_encoding_quality(self.get_current_encoding_quality())
             finally:
                 self._video_encoder_lock.release()
 
@@ -1048,7 +1057,7 @@ class WindowSource(object):
                     debug("video_encode: %s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
                     old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
                     self._video_encoder.clean()
-                    self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
+                    self._video_encoder.init_context(w, h, rgb_format, self.default_encoding_options)
                     #if we had an encoding speed set, restore it (also scaled):
                     if len(self._encoding_speed)>0:
                         _, recent_speed = calculate_time_weighted_average(list(self._encoding_speed))
@@ -1058,7 +1067,7 @@ class WindowSource(object):
             if self._video_encoder is None:
                 debug("video_encode: %s: new encoder for wid=%s %sx%s, using rgb_format=%s", coding, wid, w, h, rgb_format)
                 self._video_encoder = self.make_video_encoder(coding)
-                self._video_encoder.init_context(w, h, rgb_format, self.encoding_options)
+                self._video_encoder.init_context(w, h, rgb_format, self.default_encoding_options)
             data, client_options = self._video_encoder.compress_image(image, options)
             if data is None:
                 log.error("%s: ouch, compression failed", coding)
