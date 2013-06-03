@@ -20,7 +20,7 @@ log = Logger()
 
 import xpra
 from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, \
-        has_PIL, has_vpx, has_x264, has_webp, has_webp_lossless
+        has_PIL, has_vpx_enc, has_enc_x264, has_webp, has_webp_lossless
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid, SIGNAMES
@@ -34,10 +34,10 @@ MAX_CONCURRENT_CONNECTIONS = 20
 
 SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
 for test, formats in (
-                      (has_vpx    , ["vpx"]),
-                      (has_x264   , ["x264"]),
-                      (has_webp   , ["webp"]),
-                      (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
+                      (has_vpx_enc  , ["vpx"]),
+                      (has_enc_x264 , ["x264"]),
+                      (has_webp     , ["webp"]),
+                      (has_PIL      , ["png", "png/L", "png/P", "jpeg"]),
                 ):
     if test:
         for enc in formats:
@@ -122,7 +122,7 @@ class ServerBase(object):
         log("ServerBase.init(%s, %s)", sockets, opts)
 
         self.supports_mmap = opts.mmap
-        if opts.encoding not in SERVER_ENCODINGS:
+        if opts.encoding and opts.encoding not in SERVER_ENCODINGS:
             log.warn("ignored invalid default encoding option: %s", opts.encoding)
         else:
             self.default_encoding = opts.encoding

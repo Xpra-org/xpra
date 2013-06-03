@@ -1052,7 +1052,7 @@ class ServerSource(object):
             batch_config = self.default_batch_config.clone()
             batch_config.wid = wid
             ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
-                              wid, batch_config, self.auto_refresh_delay,
+                              wid, window, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,
                               self.mmap, self.mmap_size)

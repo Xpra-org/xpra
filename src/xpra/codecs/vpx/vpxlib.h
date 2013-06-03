@@ -13,6 +13,8 @@
 #endif
 #include "vpx/vpx_image.h"
 
+const char **get_supported_colorspaces();
+
 /** Expose the VPX_CODEC_ABI_VERSION value */
 int get_vpx_abi_version(void);
 
@@ -20,10 +22,10 @@ int get_vpx_abi_version(void);
 struct vpx_context;
 
 /** Create an encoding context for images of a given size.  */
-struct vpx_context *init_encoder(int width, int height, char *rgb_format);
+struct vpx_context *init_encoder(int width, int height, const char *colorspace);
 
 /** Create a decoding context for images of a given size. */
-struct vpx_context *init_decoder(int width, int height, int use_swscale);
+struct vpx_context *init_decoder(int width, int height, const char *colorspace);
 
 /** Cleanup encoding context. Must be freed after calling this function. */
 void clean_encoder(struct vpx_context *ctx);
@@ -31,31 +33,13 @@ void clean_encoder(struct vpx_context *ctx);
 /** Cleanup decoding context. Must be freed after calling this function. */
 void clean_decoder(struct vpx_context *ctx);
 
-/** Colourspace conversion.
- * Note: you must call compress_image to free the image buffer.
- @param in: Input buffer, format is packed RGB24.
- @param stride: Input stride (size is taken from context).
- @return: the converted picture.
-*/
-vpx_image_t* csc_image_rgb2yuv(struct vpx_context *ctx, const uint8_t *in, int stride);
-
-/** Colorspace conversion.
- @param in: Input picture (3 planes).
- @param stride: Input strides (3 planes).
- @param out: Will be set to point to the output data in packed RGB24 format. Must be freed after use by calling free().
- @param outsz: Will be set to the size of the output buffer.
- @param outstride: Output stride.
- @return non zero on error.
-*/
-int csc_image_yuv2rgb(struct vpx_context *ctx, uint8_t *in[3], const int stride[3], uint8_t **out, int *outsz, int *outstride);
-
 /** Compress an image using the given context.
  @param pic_in: the input image, as returned by csc_image
  @param out: Will be set to point to the output data. This output buffer MUST NOT BE FREED and will be erased on the
  next call to compress_image.
  @param outsz: Output size
 */
-int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, int *outsz);
+int compress_image(struct vpx_context *ctx, uint8_t *input[3], int input_stride[3], uint8_t **out, int *outsz);
 
 /** Decompress an image using the given context.
  @param in: Input buffer, format is H264.
@@ -64,16 +48,9 @@ int compress_image(struct vpx_context *ctx, vpx_image_t *image, uint8_t **out, i
  @param outsize: Output size.
  @param outstride: Output strides (3 planes).
 */
-int decompress_image(struct vpx_context *ctx, const uint8_t *in, int size, uint8_t *(*out)[3], int *outsize, int (*outstride)[3]);
+int decompress_image(struct vpx_context *ctx, const uint8_t *in, int size, uint8_t *out[3], int outstride[3]);
 
 /**
- * Define our own memalign function so we can more easily
- * workaround platforms that lack posix_memalign.
- * It does its best to provide sse compatible memory allocation.
+ * Retrieve the currently used colorspace (updated automatically by decoder).
  */
-void* xmemalign(size_t size);
-
-/**
- * Frees memory allocated with xmemalign
- */
-void xmemfree(void *ptr);
+const char *get_colorspace(struct vpx_context *ctx);

@@ -14,9 +14,10 @@ from threading import Lock
 from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
 from xpra.os_util import BytesIOClass
+from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
 
 try:
-    from xpra.codecs.x264.decoder import Decoder as x264_Decoder     #@UnresolvedImport
+    from xpra.codecs.dec_avcodec.decoder import Decoder as x264_Decoder     #@UnresolvedImport
 except:
     pass
 try:
@@ -55,9 +56,9 @@ class WindowBackingBase(object):
         self._has_alpha = False
         self._backing = None
         self._last_pixmap_data = None
-        self._video_use_swscale = True
         self._video_decoder = None
-        self._video_decoder_lock = Lock()
+        self._csc_decoder = None
+        self._decoder_lock = Lock()
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False
@@ -68,14 +69,23 @@ class WindowBackingBase(object):
 
     def close(self):
         log("%s.close() video_decoder=%s", type(self), self._video_decoder)
-        if self._video_decoder:
+        if self._video_decoder or self._csc_decoder:
             try:
-                self._video_decoder_lock.acquire()
-                self._video_decoder.clean()
-                self._video_decoder = None
+                self._decoder_lock.acquire()
+                self.do_clean_video_decoder()
+                self.do_clean_csc_decoder()
             finally:
-                self._video_decoder_lock.release()
+                self._decoder_lock.release()
 
+    def do_clean_video_decoder(self):
+        if self._video_decoder:
+            self._video_decoder.clean()
+            self._video_decoder = None
+
+    def do_clean_csc_decoder(self):
+        if self._csc_decoder:
+            self._csc_decoder.clean()
+            self._csc_decoder = None
 
     def jpegimage(self, img_data, width, height):
         """ can be called from any thread """
@@ -212,40 +222,85 @@ class WindowBackingBase(object):
     def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
         try:
-            self._video_decoder_lock.acquire()
+            self._decoder_lock.acquire()
+            enc_width, enc_height = options.get("scaled_size", (width, height))
+            colorspace = options.get("csc")
+            if not colorspace:
+                # Backwards compatibility with pre 0.10.x clients
+                # We used to specify the colorspace as an avutil PixelFormat constant
+                old_csc_fmt = options.get("csc_pixel_format")
+                assert old_csc_fmt is not None, "csc_format was not specified and neither is csc_pixel_format?!?"
+                colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
             if self._video_decoder:
                 if self._video_decoder.get_type()!=coding:
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
                     self._video_decoder.clean()
-                    self._video_decoder = None
-                elif self._video_decoder.get_width()!=width or self._video_decoder.get_height()!=height:
+                elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
                     if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (width, height))
+                        log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
                     self._video_decoder.clean()
-                    self._video_decoder.init_context(width, height, self._video_use_swscale, options)
+                elif self._video_decoder.get_colorspace()!=colorspace:
+                    if DRAW_DEBUG:
+                        log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), colorspace)
+                    self._video_decoder.clean()
             if self._video_decoder is None:
                 if DRAW_DEBUG:
-                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, options)
+                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, colorspace)
                 self._video_decoder = factory()
-                self._video_decoder.init_context(width, height, self._video_use_swscale, options)
-            if DRAW_DEBUG:
-                log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
-            self.do_video_paint(coding, img_data, x, y, width, height, options, callbacks)
+                self._video_decoder.init_context(enc_width, enc_height, colorspace)
+                if DRAW_DEBUG:
+                    log.info("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
+
+            img = self._video_decoder.decompress_image(img_data, options)
+            if not img:
+                raise Exception("paint_with_video_decoder: %s decompression error on %s bytes of picture data for %sx%s pixels, options=%s" % (
+                      coding, len(img_data), width, height, options))
+            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         finally:
-            self._video_decoder_lock.release()
+            self._decoder_lock.release()
         return  False
 
-    def do_video_paint(self, coding, img_data, x, y, width, height, options, callbacks):
-        if DRAW_DEBUG:
-            log.info("paint_with_video_decoder: options=%s, decoder=%s", options, type(self._video_decoder))
-        err, data, rowstride = self._video_decoder.decompress_image_to_rgb(img_data, options)
-        success = err==0 and data is not None and rowstride>0
-        if not success:
-            raise Exception("paint_with_video_decoder: %s decompression error %s on %s bytes of picture data for %sx%s pixels, options=%s" % (
-                      coding, err, len(img_data), width, height, options))
+    def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+        rgb_format = "RGB"  #we may want to be able to change this (RGBA, BGR, ..)
+        #as some video formats like vpx can forward transparency
+        #also we can save the csc step in some cases
+        pixel_format = img.get_pixel_format()
+        if self._csc_decoder is not None:
+            if self._csc_decoder.get_src_format()!=pixel_format:
+                log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
+                self.do_clean_csc_decoder()
+            elif self._csc_decoder.get_dst_format()!=rgb_format:
+                log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), rgb_format)
+                self.do_clean_csc_decoder()
+            elif self._csc_decoder.get_src_width()!=enc_width or self._csc_decoder.get_src_height()!=enc_height:
+                log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                         enc_width, enc_height, self._csc_decoder.get_src_width(), self._csc_decoder.get_src_height())
+                self.do_clean_csc_decoder()
+            elif self._csc_decoder.get_dst_width()!=width or self._csc_decoder.get_dst_height()!=height:
+                log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                         width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
+                self.do_clean_csc_decoder()
+        if self._csc_decoder is None and pixel_format!=rgb_format:
+            from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
+            self._csc_decoder = ColorspaceConverter()
+            self._csc_decoder.init_context(enc_width, enc_height, pixel_format,
+                                           width, height, rgb_format, 0)
+            log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
+        if self._csc_decoder:
+            rgb = self._csc_decoder.convert_image(img)
+            log.info("do_video_paint rgb(%s)=%s", img, rgb)
+            img.free()
+        else:
+            rgb = img
+        assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #this will also take care of firing callbacks (from the UI thread):
-        self.idle_add(self.do_paint_rgb24, data, x, y, width, height, rowstride, options, callbacks)
+        def paint():
+            data = rgb.get_pixels()
+            rowstride = rgb.get_rowstride()
+            self.do_paint_rgb24(data, x, y, width, height, rowstride, options, callbacks)
+            rgb.free()
+        self.idle_add(paint)
 
     def paint_mmap(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """

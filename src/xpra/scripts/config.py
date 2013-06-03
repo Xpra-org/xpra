@@ -21,30 +21,58 @@ try:
 except:
     has_PIL = False
 
-has_vpx = False
+has_vpx_enc = False
+has_vpx_dec = False
 try:
     from xpra.codecs import vpx            #@UnusedImport
     try:
-        from xpra.codecs.vpx import encoder,decoder      #@UnusedImport @UnresolvedImport @Reimport
-        has_vpx = True
+        from xpra.codecs.vpx import encoder      #@UnusedImport @UnresolvedImport @Reimport
+        has_vpx_enc = True
     except Exception, e:
-        warn("cannot load vpx codec: %s" % e)
+        warn("cannot load vpx encoder: %s" % e)
+    try:
+        from xpra.codecs.vpx import decoder      #@UnusedImport @UnresolvedImport @Reimport
+        has_vpx_dec = True
+    except Exception, e:
+        warn("cannot load vpx decoder: %s" % e)
 except ImportError, e:
     #the vpx module does not exist
     #xpra was probably built with --without-vpx
     pass
 
-has_x264 = False
+has_enc_x264 = False
 try:
-    from xpra.codecs import x264           #@UnusedImport
+    from xpra.codecs import enc_x264            #@UnusedImport
     try:
-        from xpra.codecs.x264 import encoder,decoder     #@UnusedImport @UnresolvedImport
-        has_x264 = True
+        from xpra.codecs.enc_x264 import encoder     #@UnusedImport @UnresolvedImport
+        has_enc_x264 = True
     except Exception, e:
-        warn("cannot load x264 codec: %s" % e)
+        warn("cannot load x264: %s" % e)
 except ImportError, e:
     #the x264 module does not exist
     #xpra was probably built with --without-x264
+    pass
+
+has_csc_swscale = False
+try:
+    from xpra.codecs import csc_swscale         #@UnusedImport
+    try:
+        from xpra.codecs.csc_swscale import colorspace_converter    #@UnusedImport @UnresolvedImport
+        has_csc_swscale = True
+    except Exception, e:
+        warn("cannot load colorspace_converter: %s" % e)
+except ImportError, e:
+    pass
+
+has_dec_avcodec = False
+try:
+    from xpra.codecs import dec_avcodec         #@UnusedImport
+    try:
+        from xpra.codecs.dec_avcodec import decoder    #@UnusedImport @UnresolvedImport
+        has_dec_avcodec = True
+    except Exception, e:
+        warn("cannot load dec_avcodec: %s" % e)
+except ImportError, e:
     pass
 
 has_webp = False
@@ -59,7 +87,6 @@ try:
         has_webp_lossless = True
     except Exception, e:
         print("cannot load lossless webp: %s", e)
-        pass
 except NameError, e:
     #we need bytearray to use the bindings
     pass

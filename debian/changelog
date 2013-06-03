@@ -1,3 +1,8 @@
+xpra (0.10.0-2) UNRELEASED; urgency=low
+  * bump version to make it easier to test codec refactoring
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 03 Jun 2013 17:04:56 +0700
+
 xpra (0.10.0-1) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) transfers
   * performance: zero-copy window pixels to picture encoders

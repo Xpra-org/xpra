@@ -37,7 +37,11 @@ clipboard_ENABLED = True
 
 
 
-x264_ENABLED = True
+enc_x264_ENABLED = True
+
+
+
+nvenc_ENABLED = False
 
 
 
@@ -121,8 +125,20 @@ PIC_ENABLED = True
 
 
 
+dec_avcodec_ENABLED = True
+
+
+
+csc_swscale_ENABLED = True
+
+
+
+csc_nvcuda_ENABLED = False
+
+
+
 #allow some of these flags to be modified on the command line:
-SWITCHES = ("x264", "vpx", "webp", "rencode", "clipboard",
+SWITCHES = ("enc_x264", "nvenc", "dec_avcodec", "csc_swscale", "csc_nvcuda", "vpx", "webp", "rencode", "clipboard",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4",
             "sound", "cyxor", "cymaths", "opengl", "argb",
@@ -423,8 +439,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/net/rencode/rencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/x264/encoder.c",
-                   "xpra/codecs/x264/decoder.c",
+                   "xpra/codecs/enc_x264/encoder.c",
+                   "xpra/codecs/dec_avcodec/decoder.c",
+                   "xpra/codecs/csc_swscale/colorspace_converter.c",
+                   "xpra/codecs/csc_nvcuda/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
@@ -492,16 +510,11 @@ if WIN32:
     #and stdint.h:
     win32_include_dir = os.path.join(os.getcwd(), "win32")
 
-    #libav is needed for both swscale and x264,
-    #you can find binary builds here:
-    #http://win32.libav.org/releases/
-    #the path after unzipping may look like this:
-    #libav_path="C:\\libav-9.1-win32\\win32\\usr"
-    #but we use something more generic, without the version numbers:
-    libav_path="C:\\libav-win32\\win32\\usr"
-    libav_include_dir   = os.path.join(libav_path, "include")
-    libav_lib_dir       = os.path.join(libav_path, "lib")
-    libav_bin_dir       = os.path.join(libav_path, "bin")
+    #ffmpeg is needed for both swscale and x264:
+    libffmpeg_path="C:\\ffmpeg-win32-bin"
+    libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
+    libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
+    libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
     #x264 (direct from build dir.. yuk - sorry!):
     x264_path ="C:\\x264"
     x264_include_dir    = x264_path
@@ -545,26 +558,38 @@ if WIN32:
             if bindir not in sys.path:
                 sys.path.append(bindir)
         kw = dict(ekw)
-        if "x264" in packages[0]:
-            add_to_PATH(libav_bin_dir)
+        if "libavcodec" in packages[0]:
+            add_to_PATH(libffmpeg_bin_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
+            add_to_keywords(kw, 'libraries', "avcodec", "avutil")
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
+        elif "libswscale" in packages[0]:
+            add_to_PATH(libffmpeg_bin_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
+            add_to_keywords(kw, 'libraries', "swscale", "avutil")
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_lib_dir)
+            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libffmpeg_bin_dir)
+            add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
+            checkdirs(libffmpeg_include_dir, libffmpeg_lib_dir, libffmpeg_bin_dir)
+        elif "x264" in packages[0]:
+            add_to_PATH(libffmpeg_bin_dir)
             add_to_PATH(x264_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, libav_include_dir, x264_include_dir)
-            add_to_keywords(kw, 'libraries', "libx264", "swscale", "avcodec", "avutil")
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, x264_include_dir)
+            add_to_keywords(kw, 'libraries', "libx264")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % x264_lib_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(libav_include_dir, libav_lib_dir, libav_bin_dir)
+            checkdirs(x264_include_dir, x264_lib_dir)
         elif "vpx" in packages[0]:
-            add_to_PATH(libav_bin_dir)
-            add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir, libav_include_dir)
-            add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd", "swscale", "avcodec", "avutil")
+            add_to_PATH(libffmpeg_bin_dir)
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, vpx_include_dir)
+            add_to_keywords(kw, 'libraries', "vpxmt", "vpxmtd")
             add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
             add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % vpx_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_lib_dir)
-            add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % libav_bin_dir)
             add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            checkdirs(libav_include_dir, vpx_lib_dir, libav_lib_dir, libav_bin_dir)
+            checkdirs(vpx_include_dir, vpx_lib_dir)
         elif "pygobject-2.0" in packages[0]:
             dirs = (python_include_path,
                     pygtk_include_dir, atk_include_dir, gtk2_include_dir,
@@ -699,7 +724,7 @@ if WIN32:
                    ('icons', glob.glob('icons\\*.*')),
                    ('Microsoft.VC90.CRT', glob.glob('%s\\Microsoft.VC90.CRT\\*.*' % C_DLLs)),
                    ('Microsoft.VC90.MFC', glob.glob('%s\\Microsoft.VC90.MFC\\*.*' % C_DLLs)),
-                   ('', glob.glob('%s\\bin\\*.dll' % libav_path)),
+                   ('', glob.glob('%s\\bin\\*.dll' % libffmpeg_path)),
                    ]
 
     if webp_ENABLED:
@@ -909,21 +934,42 @@ if cymaths_ENABLED:
 
 
 
-toggle_packages(x264_ENABLED, "xpra.codecs.x264")
-if x264_ENABLED:
-    x264_pkgconfig = pkgconfig("x264", "libswscale", "libavcodec")
-    cython_add(Extension("xpra.codecs.x264.encoder",
-                ["xpra/codecs/x264/encoder.pyx", "xpra/codecs/x264/x264lib.c"],
-                **x264_pkgconfig), min_version=(0, 16))
-    cython_add(Extension("xpra.codecs.x264.decoder",
-                ["xpra/codecs/x264/decoder.pyx", "xpra/codecs/x264/x264lib.c"],
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
+
+
+
+toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
+if enc_x264_ENABLED:
+    x264_pkgconfig = pkgconfig("x264")
+    cython_add(Extension("xpra.codecs.enc_x264.encoder",
+                ["xpra/codecs/enc_x264/encoder.pyx", "xpra/codecs/enc_x264/enc_x264.c"],
                 **x264_pkgconfig), min_version=(0, 16))
 
+toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
+if dec_avcodec_ENABLED:
+    avcodec_pkgconfig = pkgconfig("libavcodec")
+    cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
+                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c"],
+                **avcodec_pkgconfig), min_version=(0, 16))
+
+toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
+if csc_swscale_ENABLED:
+    swscale_pkgconfig = pkgconfig("libswscale")
+    cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
+                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c"],
+                **swscale_pkgconfig), min_version=(0, 16))
+
+toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
+#if csc_nvcuda_ENABLED:
+#    nvcuda_pkgconfig = pkgconfig("cuda")
+#    cython_add(Extension("xpra.codecs.csc_nvcuda.colorspace_converter",
+#                ["xpra/codecs/csc_nvcuda/colorspace_converter.pyx", "xpra/codecs/csc_nvcuda/csc_nvcuda.c"],
+#                **nvcuda_pkgconfig), min_version=(0, 16))
 
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"], "libswscale", "libavcodec")
+    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
                 **vpx_pkgconfig), min_version=(0, 16))

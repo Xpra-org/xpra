@@ -34,7 +34,6 @@ NRECS = 100
 import gtk.gdk
 import gobject
 import time
-from threading import Lock
 
 from xpra.log import Logger
 log = Logger()
@@ -54,7 +53,8 @@ from xpra.net.protocol import zlib_compress, Compressed
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
-from xpra.server.stats.maths import time_weighted_average, calculate_time_weighted_average
+from xpra.server.stats.maths import time_weighted_average
+from xpra.codecs.video_enc_pipeline import VideoEncoderPipeline
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -144,7 +144,7 @@ class WindowSource(object):
     _encoding_warnings = set()
 
     def __init__(self, queue_damage, queue_packet, statistics,
-                    wid, batch_config, auto_refresh_delay,
+                    wid, window, batch_config, auto_refresh_delay,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
@@ -169,9 +169,6 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
-        self.uses_swscale = encoding_options.get("uses_swscale", True)
-                                                        #client uses uses_swscale (has extra limits on sizes)
-                                                        #unused since we still use swscale on the server...
         from xpra.server.server_base import SERVER_CORE_ENCODINGS
         self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
         self.supports_delta = []
@@ -186,14 +183,20 @@ class WindowSource(object):
         self.expire_timer = None
 
         self.window_dimensions = 0, 0
+        self.fullscreen = window.get_property("fullscreen")
+        self.scaling = window.get_property("scaling")
+        window.connect("notify::scaling", self._scaling_changed)
+        window.connect("notify::fullscreen", self._fullscreen_changed)
 
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
 
-        # video codecs:
-        self._video_encoder = None
-        self._video_encoder_lock = Lock()               #to ensure we serialize access to the encoder and its internals
+        # video support:
+        self.video = None
+        if "vpx" in self.encodings or "x264" in self.encodings:
+            self.video = VideoEncoderPipeline(self.encodings, self.encoding_options)
+
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = maxdeque(NRECS)   #keep track of the target encoding_quality: (event time, encoding speed)
         self._encoding_speed = maxdeque(NRECS)     #keep track of the target encoding_speed: (event time, encoding speed)
@@ -206,27 +209,14 @@ class WindowSource(object):
         self._damage_cancelled = 0                      #stores the highest _sequence cancelled
         self._damage_packet_sequence = 1                #increase with every damage packet created
 
+
     def cleanup(self):
         self.cancel_damage()
-        self.video_encoder_cleanup()
+        if self.video:
+            self.video.cleanup()
         self._damage_cancelled = float("inf")
         self.statistics.reset()
         debug("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
-
-    def video_encoder_cleanup(self):
-        """ Video encoders (x264 and vpx) require us to run
-            cleanup code to free the memory they use.
-        """
-        try:
-            self._video_encoder_lock.acquire()
-            if self._video_encoder:
-                self.do_video_encoder_cleanup()
-        finally:
-            self._video_encoder_lock.release()
-
-    def do_video_encoder_cleanup(self):
-        self._video_encoder.clean()
-        self._video_encoder = None
 
     def set_new_encoding(self, encoding):
         """ Changes the encoder for the given 'window_ids',
@@ -234,10 +224,21 @@ class WindowSource(object):
         """
         if self.encoding==encoding:
             return
-        self.video_encoder_cleanup()
+        if self.video:
+            self.video.cleanup()
+        self.statistics.reset()
         self.last_pixmap_data = None
         self.encoding = encoding
-        self.statistics.reset()
+
+    def _scaling_changed(self, window, *args):
+        self.scaling = window.get_property("scaling")
+        log.info("window recommended scaling changed: %s", self.scaling)
+        self.update_video_encoder(False)
+
+    def _fullscreen_changed(self, window, *args):
+        self.fullscreen = window.get_property("fullscreen")
+        log.info("window fullscreen state changed: %s", self.fullscreen)
+        self.update_video_encoder(False)
 
     def cancel_damage(self):
         """
@@ -255,11 +256,11 @@ class WindowSource(object):
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.last_pixmap_data = None
-        if self._last_sequence_queued<self._sequence:
+        if self._last_sequence_queued<self._sequence and self.video:
             #we must clean the video encoder to ensure
             #we will resend a key frame because it looks like we will
             #drop a frame which is being processed
-            self.video_encoder_cleanup()
+            self.video.cleanup()
 
     def cancel_expire_timer(self):
         if self.expire_timer:
@@ -310,7 +311,8 @@ class WindowSource(object):
         speed_list = [x for _, x in list(self._encoding_speed)]
         if len(speed_list)>0:
             add_list_stats(info, prefix+"speed"+suffix, speed_list, show_percentile=[9])
-
+        if self.video:
+            self.video.add_stats(info, prefix, suffix)
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
@@ -346,6 +348,7 @@ class WindowSource(object):
         if quality<0:
             min_quality = self.default_encoding_options.get("min-quality", -1)
             target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
+            log.info("update_quality() default quality=%s, min=%s, target=%s", quality, min_quality, target_quality)
             #make a copy to work on
             ves_copy = list(self._encoding_quality)
             ves_copy.append((time.time(), target_quality))
@@ -368,18 +371,9 @@ class WindowSource(object):
         return max(mq, self._encoding_quality[-1][1])
 
     def update_video_encoder(self, force_reload=False):
-        if self._video_encoder and not self._video_encoder.is_closed():
-            #set them with the lock held:
-            try:
-                self._video_encoder_lock.acquire()
-                if not self._video_encoder.is_closed():
-                    if force_reload:
-                        self.do_video_encoder_cleanup()
-                    else:
-                        self._video_encoder.set_encoding_speed(self.get_current_speed())
-                        self._video_encoder.set_encoding_quality(self.get_current_quality())
-            finally:
-                self._video_encoder_lock.release()
+        #debug("update_video_encoder(%s) default_encoding_options=%s", force_reload, self.default_encoding_options)
+        if self.video:
+            self.video.update_video_encoder(self.fullscreen, self.scaling, self.get_current_quality(), self.get_current_speed(), force_reload)
 
 
     def damage(self, window, x, y, w, h, options={}):
@@ -868,9 +862,13 @@ class WindowSource(object):
             w = w & 0xFFFE
             h = h & 0xFFFE
             assert w>0 and h>0
-            data, client_options = self.video_encode(wid, coding, image, options)
+            data, client_options = self.video.video_encode(wid, coding, image,
+                                            self.fullscreen, self.scaling,
+                                            self.get_current_quality(), self.get_current_speed(), options)
         elif coding=="vpx":
-            data, client_options = self.video_encode(wid, coding, image, options)
+            data, client_options = self.video.video_encode(wid, coding, image,
+                                            self.fullscreen, self.scaling,
+                                            self.get_current_quality(), self.get_current_speed(), options)
         elif coding=="rgb24" or coding=="rgb32":
             data, client_options = self.rgb_encode(coding, image)
             outstride = image.get_rowstride()
@@ -1042,64 +1040,6 @@ class WindowSource(object):
         data = buf.getvalue()
         buf.close()
         return Compressed(coding, data), client_options
-
-    def make_video_encoder(self, coding):
-        assert coding in self.SERVER_CORE_ENCODINGS
-        if coding=="x264":
-            from xpra.codecs.x264.encoder import Encoder as x264Encoder   #@UnresolvedImport
-            return x264Encoder()
-        elif coding=="vpx":
-            from xpra.codecs.vpx.encoder import Encoder as vpxEncoder     #@UnresolvedImport
-            return vpxEncoder()
-        else:
-            raise Exception("invalid video encoder: %s" % coding)
-
-    def video_encode(self, wid, coding, image, options):
-        """
-            This method is used by make_data_packet to encode frames using x264 or vpx.
-            Video encoders only deal with fixed dimensions,
-            so we must clean and reinitialize the encoder if the window dimensions
-            has changed.
-            Since this runs in the non-UI thread 'data_to_packet', we must
-            use the 'video_encoder_lock' to prevent races.
-        """
-        x, y, w, h = image.get_geometry()[:4]
-        w = w & 0xFFFE
-        h = h & 0xFFFE
-        assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
-        rgb_format = image.get_rgb_format()
-        try:
-            self._video_encoder_lock.acquire()
-            if self._video_encoder:
-                if self._video_encoder.get_rgb_format()!=rgb_format:
-                    debug("video_encode: wid=%s, switching rgb_format from %s to %s", self.wid, self._video_encoder.get_rgb_format(), rgb_format)
-                    self.do_video_encoder_cleanup()
-                elif self._video_encoder.get_type()!=coding:
-                    debug("video_encode: wid=%s, switching encoding from %s to %s", self.wid, self._video_encoder.get_type(), coding)
-                    self.do_video_encoder_cleanup()
-                elif self._video_encoder.get_width()!=w or self._video_encoder.get_height()!=h:
-                    debug("video_encode: %s: window dimensions have changed from %sx%s to %sx%s", coding, self._video_encoder.get_width(), self._video_encoder.get_height(), w, h)
-                    old_pc = self._video_encoder.get_width() * self._video_encoder.get_height()
-                    self._video_encoder.clean()
-                    self._video_encoder.init_context(w, h, rgb_format, self.default_encoding_options)
-                    #if we had an encoding speed set, restore it (also scaled):
-                    if len(self._encoding_speed)>0:
-                        _, recent_speed = calculate_time_weighted_average(list(self._encoding_speed))
-                        new_pc = w * h
-                        new_speed = max(0, min(100, recent_speed*new_pc/old_pc))
-                        self._video_encoder.set_encoding_speed(new_speed)
-            if self._video_encoder is None:
-                debug("video_encode: %s: new encoder for wid=%s %sx%s, using rgb_format=%s", coding, wid, w, h, rgb_format)
-                self._video_encoder = self.make_video_encoder(coding)
-                self._video_encoder.init_context(w, h, rgb_format, self.default_encoding_options)
-            data, client_options = self._video_encoder.compress_image(image, options)
-            if data is None:
-                log.error("%s: ouch, compression failed", coding)
-                return None, None
-            debug("video_encode: %s wid=%s, result is %s bytes, client options=%s", coding, wid, len(data), client_options)
-            return Compressed(coding, data), client_options
-        finally:
-            self._video_encoder_lock.release()
 
     def rgb_reformat(self, image):
         #need to convert to a supported format!

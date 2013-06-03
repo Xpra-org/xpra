@@ -255,12 +255,12 @@ class UIXpraClient(XpraClientBase):
 
     def get_core_encodings(self):
         encodings = ["rgb24"]
-        from xpra.scripts.config import has_PIL, has_vpx, has_x264, has_webp
+        from xpra.scripts.config import has_PIL, has_vpx_dec, has_dec_avcodec, has_webp, has_csc_swscale
         encs = (
-              (has_vpx    , ["vpx"]),
-              (has_x264   , ["x264"]),
-              (has_webp   , ["webp"]),
-              (has_PIL    , ["png", "png/L", "png/P", "jpeg"]),
+              (has_vpx_dec & has_csc_swscale        , ["vpx"]),
+              (has_dec_avcodec & has_csc_swscale    , ["x264"]),
+              (has_webp                             , ["webp"]),
+              (has_PIL                              , ["png", "png/L", "png/P", "jpeg"]),
                )
         log("get_core_encodings() encs=%s", encs)
         for test, formats in encs:
@@ -424,6 +424,11 @@ class UIXpraClient(XpraClientBase):
         capabilities["bell"] = self.client_supports_bell
         capabilities["encoding.client_options"] = True
         capabilities["encoding_client_options"] = True
+        capabilities["encoding.csc_atoms"] = True
+        #TODO: check for csc support (swscale only?)
+        capabilities["encoding.video_scaling"] = True
+        #TODO: check for csc support (swscale only?)
+        capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA")
         capabilities["rgb24zlib"] = True
         capabilities["encoding.rgb24zlib"] = True
         capabilities["named_cursors"] = False
@@ -451,7 +456,7 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.speed"] = self.speed
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
-        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
+        log.info("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...

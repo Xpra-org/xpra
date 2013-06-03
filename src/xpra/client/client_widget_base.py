@@ -36,7 +36,7 @@ class ClientWidgetBase(object):
         lock = None
         backing = self._backing
         if backing:
-            lock = backing._video_decoder_lock
+            lock = backing._decoder_lock
         try:
             if lock:
                 lock.acquire()

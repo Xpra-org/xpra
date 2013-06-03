@@ -15,7 +15,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
-from xpra.codecs.codec_constants import YUV420P, YUV422P, YUV444P, get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
 from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
@@ -318,30 +318,24 @@ class GLPixmapBacking(GTK2WindowBacking):
         drawable.gl_end()
         return True
 
-    def do_video_paint(self, coding, img_data, x, y, w, h, options, callbacks):
-        debug("do_video_paint: options=%s, decoder=%s", options, type(self._video_decoder))
-        err, rowstrides, data = self._video_decoder.decompress_image_to_yuv(img_data, options)
-        csc_pixel_format = options.get("csc_pixel_format", -1)
-        #this needs to be done here so we still hold the video_decoder lock:
-        pixel_format = self._video_decoder.get_pixel_format(csc_pixel_format)
-        success = err==0 and data and len(data)==3
-        if not success:
-            log.error("do_video_paint: %s decompression error %s on %s bytes of compressed picture data for %sx%s pixels, options=%s",
-                      coding, err, len(img_data), w, h, options)
-            gobject.idle_add(fire_paint_callbacks, callbacks, False)
-            return
-        gobject.idle_add(self.do_gl_yuv_paint, x, y, w, h, data, rowstrides, pixel_format, callbacks)
+    def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+        #we need to run in UI thread from here on!
+        #debug("paint_yuv(..) will call via idle_add")
+        assert enc_width==width and enc_height==height, "scaling not implemented for OpenGL!"
+        gobject.idle_add(self.gl_paint_yuv, img, x, y, width, height, callbacks)
 
-    def do_gl_yuv_paint(self, x, y, w, h, img_data, rowstrides, pixel_format, callbacks):
+    def gl_paint_yuv(self, img, x, y, w, h, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         drawable = self.gl_init()
         if not drawable:
             debug("OpenGL cannot paint yuv, drawable is not set")
             fire_paint_callbacks(callbacks, False)
             return
+        pixel_format = img.get_pixel_format()
+        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
         try:
             try:
-                self.update_texture_yuv(img_data, x, y, w, h, rowstrides, pixel_format)
+                self.update_texture_yuv(x, y, w, h, img, pixel_format)
                 if self.paint_screen:
                     # Update FBO texture
                     self.render_yuv_update(x, y, x+w, y+h)
@@ -354,9 +348,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
-    def update_texture_yuv(self, img_data, x, y, width, height, rowstrides, pixel_format):
+    def update_texture_yuv(self, x, y, width, height, img, pixel_format):
         assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
+        debug("update_texture_yuv(%s)", (x, y, width, height, img, pixel_format))
 
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.pixel_format = pixel_format
@@ -392,16 +387,23 @@ class GLPixmapBacking(GTK2WindowBacking):
                     #FIXME: maybe we should do something else here?
                     log.error(err)
 
-        self.gl_marker("Updating YUV textures")
+        debug("Updating YUV textures: %sx%s %s", width, height, pixel_format)
+        self.gl_marker("Updating YUV textures: %sx%s %s" % (width, height, pixel_format))
         divs = get_subsampling_divs(pixel_format)
         U_width = 0
         U_height = 0
+        rowstrides = img.get_rowstride()
+        img_data = img.get_pixels()
+        assert len(rowstrides)==3
+        assert len(img_data)==3
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_data[index])
+            pixel_data = img_data[index]
+            debug("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             if index == 1:
                 U_width = width/div_w
                 U_height = height/div_h
@@ -409,11 +411,11 @@ class GLPixmapBacking(GTK2WindowBacking):
                 if width/div_w != U_width:
                     log.error("Width of V plane is %d, differs from width of corresponding U plane (%d), pixel_format is %d", width/div_w, U_width, pixel_format)
                 if height/div_h != U_height:
-                    log.error("Height of V plane is %d, differs from height of corresponding U plane (%d)", height/div_h, U_height)
+                    log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
 
     def render_yuv_update(self, rx, ry, rw, rh):
         debug("render_yuv_update %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
-        if self.pixel_format not in (YUV420P, YUV422P, YUV444P):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P"):
             #not ready to render yet
             return
         self.gl_marker("Painting YUV update")
