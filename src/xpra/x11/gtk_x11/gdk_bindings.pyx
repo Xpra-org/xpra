@@ -755,7 +755,8 @@ cdef class XImageWrapper:
     cdef int height                                 #@DuplicatedSignature
     cdef int depth                                  #@DuplicatedSignature
     cdef int rowstride
-    cdef char *rgb_format
+    cdef int planes
+    cdef char *pixel_format
     cdef char *pixels
     cdef object del_callback
 
@@ -769,8 +770,9 @@ cdef class XImageWrapper:
         self.y = y
         self.width = width
         self.height = height
-        self.rgb_format = ""
+        self.pixel_format = ""
         self.rowstride = 0
+        self.planes = 0
 
     cdef set_image(self, XImage* image):
         self.image = image
@@ -778,20 +780,20 @@ cdef class XImageWrapper:
         self.depth = self.image.depth
         if self.depth==24:
             if self.image.byte_order==MSBFirst:
-                self.rgb_format = XRGB
+                self.pixel_format = XRGB
             else:
-                self.rgb_format = BGRX
+                self.pixel_format = BGRX
         elif self.depth==32:
             if self.image.byte_order==MSBFirst:
-                self.rgb_format = ARGB
+                self.pixel_format = ARGB
             else:
-                self.rgb_format = BGRA
+                self.pixel_format = BGRA
         else:
             raise Exception("invalid image depth: %s bpp" % self.depth)
-        assert self.rgb_format in RGB_FORMATS
+        assert self.pixel_format in RGB_FORMATS
 
     def __str__(self):
-        return "XImageWrapper(%s, %s, %s, %s)" % (self.x, self.y, self.width, self.height)
+        return "XImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
@@ -811,14 +813,17 @@ cdef class XImageWrapper:
     def get_rowstride(self):
         return self.rowstride
 
+    def get_planes(self):
+        return self.planes
+
     def get_depth(self):
         return self.depth
 
     def get_size(self):
         return self.rowstride * self.height
 
-    def get_rgb_format(self):
-        return self.rgb_format
+    def get_pixel_format(self):
+        return self.pixel_format
 
     def get_pixels(self):
         if self.pixels!=NULL:
@@ -829,12 +834,12 @@ cdef class XImageWrapper:
     def set_rowstride(self, rowstride):
         self.rowstride = rowstride
 
-    def set_rgb_format(self, rgb_format):
-        assert rgb_format in RGB_FORMATS, "invalid rgb_format: %s" % rgb_format
+    def set_pixel_format(self, pixel_format):
+        assert pixel_format in RGB_FORMATS, "invalid rgb_format: %s" % pixel_format
         cdef int i =0
-        while RGB_FORMATS[i]!=rgb_format:
+        while RGB_FORMATS[i]!=pixel_format:
             i +=1
-        self.rgb_format = RGB_FORMATS[i]
+        self.pixel_format = RGB_FORMATS[i]
 
     def set_pixels(self, pixels):
         cdef const unsigned char * buf = NULL

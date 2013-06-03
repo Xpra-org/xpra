@@ -7,15 +7,19 @@
 
 class ImageWrapper(object):
 
-    def __init__(self, x, y, width, height, pixels, rgb_format, depth, rowstride):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=1):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.pixels = pixels
-        self.rgb_format = rgb_format
+        self.pixel_format = pixel_format
         self.depth = depth
         self.rowstride = rowstride
+        self.planes = planes
+
+    def __str__(self):
+        return "%s(%s:%s)" % (type(self), self.pixel_format, self.get_geometry())
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
@@ -41,18 +45,32 @@ class ImageWrapper(object):
     def get_size(self):
         return self.rowstride * self.height
 
-    def get_rgb_format(self):
-        return self.rgb_format
+    def get_pixel_format(self):
+        return self.pixel_format
 
     def get_pixels(self):
         return self.pixels
 
+    def get_planes(self):
+        return self.planes
+
+
+    def set_planes(self, planes):
+        self.planes = planes
 
     def set_rowstride(self, rowstride):
         self.rowstride = rowstride
 
-    def set_rgb_format(self, rgb_format):
-        self.rgb_format = rgb_format
+    def set_pixel_format(self, pixel_format):
+        self.pixel_format = pixel_format
 
     def set_pixels(self, pixels):
         self.pixels = pixels
+
+    def __del__(self):
+        #print("ImageWrapper.__del__() calling %s" % self.free)
+        self.free()
+
+    def free(self):
+        pass
+        #print("ImageWrapper.free()")

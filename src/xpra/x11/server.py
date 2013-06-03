@@ -607,8 +607,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 log.warn("screenshot: no pixels for window %s", wid)
                 continue
             debug("screenshot: image=%s, size=%s", (img, img.get_size()))
-            if img.get_rgb_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
-                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_rgb_format())
+            if img.get_pixel_format() not in ("RGB", "RGBA", "XRGB", "BGRX", "ARGB", "BGRA"):
+                log.warn("window pixels for window %s using an unexpected rgb format: %s", wid, img.get_pixel_format())
                 continue
             item = (wid, x, y, img)
             if window.is_OR():
@@ -634,15 +634,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
         import Image
         screenshot = Image.new("RGBA", (width, height))
         for wid, x, y, img in reversed(all_regions):
-            rgb_format = img.get_rgb_format()
+            pixel_format = img.get_pixel_format()
             target_format = {
                      "XRGB"   : "RGB",
                      "BGRX"   : "RGB",
-                     "BGRA"   : "RGBA"}.get(rgb_format, rgb_format)
+                     "BGRA"   : "RGBA"}.get(pixel_format, pixel_format)
             try:
-                window_image = Image.fromstring(target_format, (w, h), img.get_pixels(), "raw", rgb_format, img.get_rowstride())
+                window_image = Image.fromstring(target_format, (w, h), img.get_pixels(), "raw", pixel_format, img.get_rowstride())
             except:
-                log.warn("failed to parse window pixels in %s format", rgb_format)
+                log.warn("failed to parse window pixels in %s format", pixel_format)
                 continue
             tx = x-minx
             ty = y-miny

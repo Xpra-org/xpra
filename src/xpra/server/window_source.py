@@ -878,7 +878,7 @@ class WindowSource(object):
             data, client_options = self.webp_encode(image, options)
         elif coding=="mmap":
             #actual sending is already handled via mmap_send above
-            client_options = {"rgb_format" : image.get_rgb_format()}
+            client_options = {"rgb_format" : image.get_pixel_format()}
             outstride = image.get_rowstride()
         else:
             raise Exception("invalid encoding: %s" % coding)
@@ -938,9 +938,9 @@ class WindowSource(object):
                     "BGRA": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, True),
                     "BGRX": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, False),
                     }
-        rgb_format = image.get_rgb_format()
-        h_e = handler_encs.get(rgb_format)
-        assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
+        pixel_format = image.get_pixel_format()
+        h_e = handler_encs.get(pixel_format)
+        assert h_e is not None, "cannot handle rgb format %s with webp!" % pixel_format
         bh, lossy_enc, lossless_enc, has_alpha = h_e
         q = self.get_current_quality()
         if options:
@@ -950,24 +950,24 @@ class WindowSource(object):
             enc = lossy_enc
             kwargs = {"quality" : q}
             client_options = {"quality" : q}
-            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, rgb_format)
+            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
         else:
             enc = lossless_enc
             kwargs = {}
             client_options = {}
-            debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, rgb_format)
+            debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, pixel_format)
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True
         return Compressed("webp", str(enc(image, **kwargs).data)), client_options
 
     def rgb_encode(self, coding, image):
-        rgb_format = image.get_rgb_format()
-        if rgb_format not in self.rgb_formats:
+        pixel_format = image.get_pixel_format()
+        if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
-                raise Exception("cannot find compatible rgb format to use for %s!" % rgb_format)
+                raise Exception("cannot find compatible rgb format to use for %s!" % pixel_format)
             #get the new format:
-            rgb_format = image.get_rgb_format()
+            pixel_format = image.get_pixel_format()
         #compress here and return a wrapper so network code knows it is already zlib compressed:
         pixels = image.get_pixels()
         if len(pixels)<512:
@@ -985,7 +985,7 @@ class WindowSource(object):
                 level = 0
                 zlib = str(pixels)
                 cdata = zlib
-        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, rgb_format, len(pixels), len(cdata))
+        debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cdata))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
             return  zlib, {}
         #wrap it using "Compressed" so the network layer receiving it
@@ -995,7 +995,7 @@ class WindowSource(object):
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
         assert Image is not None, "Python PIL is not available"
-        rgb_format = image.get_rgb_format()
+        pixel_format = image.get_pixel_format()
         w = image.get_width()
         h = image.get_height()
         rgb = {
@@ -1003,11 +1003,11 @@ class WindowSource(object):
                "BGRX"   : "RGB",
                "RGBA"   : "RGBA",
                "BGRA"   : "RGBA",
-               }.get(rgb_format, rgb_format)
+               }.get(pixel_format, pixel_format)
         try:
-            im = Image.fromstring(rgb, (w, h), image.get_pixels(), "raw", rgb_format, image.get_rowstride())
+            im = Image.fromstring(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
         except Exception, e:
-            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(image.get_size()), rgb_format, image.get_rowstride(), options), rgb, exc_info=True)
+            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(image.get_size()), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
             raise e
         buf = StringIOClass()
         client_options = {}
@@ -1038,7 +1038,7 @@ class WindowSource(object):
             kwargs = im.info
             kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
-        debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, rgb_format, coding, im.mode, kwargs)
+        debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
         return Compressed(coding, data), client_options
@@ -1103,33 +1103,35 @@ class WindowSource(object):
 
     def rgb_reformat(self, image):
         #need to convert to a supported format!
-        rgb_format = image.get_rgb_format()
+        pixel_format = image.get_pixel_format()
         target_format = {
                  "XRGB"   : "RGB",
                  "BGRX"   : "RGB",
-                 "BGRA"   : "RGBA"}.get(rgb_format)
+                 "BGRA"   : "RGBA"}.get(pixel_format)
         if target_format not in self.rgb_formats:
-            warning_key = "%s/%s" % (rgb_format, "|".join(self.rgb_formats))
-            self.warn_encoding_once(warning_key, "cannot use mmap to send pixels: we would need to convert %s to one of: %s" % (rgb_format, self.rgb_formats))
+            warning_key = "rgb_reformats(%s)" % pixel_format
+            self.warn_encoding_once(warning_key, "cannot convert %s to one of: %s" % (pixel_format, self.rgb_formats))
             return False
         start = time.time()
         w = image.get_width()
         h = image.get_height()
         pixels = image.get_pixels()
-        img = Image.frombuffer(target_format, (w, h), pixels, "raw", rgb_format, image.get_rowstride())
+        img = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)
         assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
         image.set_pixels(data)
         image.set_rowstride(rowstride)
-        image.set_rgb_format(target_format)
+        image.set_pixel_format(target_format)
         end = time.time()
-        debug("rgb_reformat(%s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, rgb_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
+        debug("rgb_reformat(%s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
         return True
 
     def mmap_send(self, image):
-        if image.get_rgb_format() not in self.rgb_formats:
+        if image.get_pixel_format() not in self.rgb_formats:
             if not self.rgb_reformat(image):
+                warning_key = "mmap_send(%s)" % image.get_pixel_format()
+                self.warn_encoding_once(warning_key, "cannot use mmap to send %s" % image.get_pixel_format())
                 return None
         from xpra.net.mmap_pipe import mmap_write
         start = time.time()
