@@ -1,8 +1,12 @@
 include COPYING NEWS README
 include xpra/x11/bindings/constants.txt
 include xpra/x11/gtk_x11/constants.txt
-include xpra/codecs/x264/x264lib.h
-include xpra/codecs/x264/x264lib.c
+include xpra/codecs/csc_swscale/csc_swscale.h
+include xpra/codecs/csc_swscale/csc_swscale.c
+include xpra/codecs/dec_avcodec/dec_avcodec.h
+include xpra/codecs/dec_avcodec/dec_avcodec.c
+include xpra/codecs/enc_x264/enc_x264.h
+include xpra/codecs/enc_x264/enc_x264.c
 include xpra/codecs/vpx/vpxlib.h
 include xpra/codecs/vpx/vpxlib.c
 include xpra/codecs/webm/LICENSE
