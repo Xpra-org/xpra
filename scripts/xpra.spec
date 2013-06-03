@@ -772,6 +772,7 @@ cd xpra-all-%{version}
 %if 0%{?old_xdg}
 %patch10 -p1
 (echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
+%endif
 %if 0%{?static_avcodec}
 %patch11 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
@@ -779,7 +780,6 @@ cd xpra-all-%{version}
 %if 0%{?static_swscale}
 %patch12 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
 %endif
 
 
