@@ -206,6 +206,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Fullscreen-ness of window", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "scaling" : (gobject.TYPE_PYOBJECT,
+                       "Application requested scaling as a fraction (pair of numbers)", "",
+                       gobject.PARAM_READABLE), 
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
                           gobject.PARAM_READABLE),
@@ -219,6 +222,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
+        "xpra-property-notify-event": one_arg_signal,
         "xpra-configure-event": one_arg_signal,
         }
 
@@ -276,7 +280,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 log.error("error in cleanup handler: %s", ex)
             raise Unmanageable(e)
         self._setup_done = True
-        log("call_setup() ended")
+        log("call_setup() ended, property_handlers=%s", self._property_handlers)
 
     def setup_failed(self, e):
         log("cannot manage %s: %s", hex(get_xwindow(self.client_window)), e)
@@ -303,6 +307,23 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def acknowledge_changes(self):
         self._composite.acknowledge_changes()
+
+    ################################
+    # Property reading
+    ################################
+
+    def do_xpra_property_notify_event(self, event):
+        if event.delivered_to is self.corral_window:
+            return
+        assert event.window is self.client_window
+        self._handle_property_change(str(event.atom))
+
+    _property_handlers = {}
+
+    def _handle_property_change(self, name):
+        log("Property changed on %s: %s", self.client_window.xid, name)
+        if name in self._property_handlers:
+            self._property_handlers[name](self)
 
     def do_xpra_configure_event(self, event):
         self._geometry = (event.x, event.y, event.width, event.height,
@@ -363,6 +384,18 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             window_type = self._guess_window_type(transient_for)
             window_types = [gtk.gdk.atom_intern(window_type)]
         self._internal_set_property("window-type", window_types)
+        self._handle_scaling()
+
+    def _handle_scaling(self):
+        scaling = self.prop_get("_XPRA_SCALING", "u32", raise_xerrors=False)
+        scaling_v, scaling_u = 1, 1
+        if scaling>0:
+            scaling_v = scaling & 0xFFFF
+            scaling_u = (scaling >> 16) & 0xFFFF
+            self._internal_set_property("scaling", (scaling_v, scaling_u))
+        else:
+            self._internal_set_property("scaling", None)
+    _property_handlers["_XPRA_SCALING"] = _handle_scaling
 
     def _guess_window_type(self, transient_for):
         if transient_for is not None:
@@ -605,7 +638,6 @@ class WindowModel(BaseWindowModel):
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
         "xpra-client-message-event" : one_arg_signal,
-        "xpra-property-notify-event": one_arg_signal,
         "xpra-unmap-event": one_arg_signal,
         "xpra-destroy-event": one_arg_signal,
         "xpra-xkb-event": one_arg_signal,
@@ -949,23 +981,6 @@ class WindowModel(BaseWindowModel):
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
 
-    ################################
-    # Property reading
-    ################################
-
-    def do_xpra_property_notify_event(self, event):
-        if event.delivered_to is self.corral_window:
-            return
-        assert event.window is self.client_window
-        self._handle_property_change(str(event.atom))
-
-    _property_handlers = {}
-
-    def _handle_property_change(self, name):
-        log("Property changed on %s: %s", self.client_window.xid, name)
-        if name in self._property_handlers:
-            self._property_handlers[name](self)
-
     def _handle_wm_hints(self):
         wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
         if wm_hints is not None:
@@ -985,6 +1000,7 @@ class WindowModel(BaseWindowModel):
                 if bool(self._input_field):
                     self.notify("can-focus")
 
+    _property_handlers = BaseWindowModel._property_handlers.copy()
     _property_handlers["WM_HINTS"] = _handle_wm_hints
 
     def _handle_wm_normal_hints(self):
