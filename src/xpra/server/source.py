@@ -371,27 +371,18 @@ class ServerSource(object):
                 self.encoding_options[k] = v
         elog("encoding options: %s", self.encoding_options)
 
-        q = self.default_quality
-        if "jpeg" in capabilities:      #pre 0.7 versions
-            q = capabilities["jpeg"]
-        if "quality" in self.encoding_options:   #0.7 onwards:
-            q = self.encoding_options["quality"]
+        q = capabilities.get("jpeg", self.default_quality)  #pre 0.7 versions
+        q = self.encoding_options.get("quality", q)         #0.7 onwards:
         if q>0:
             self.default_encoding_options["quality"] = q
-        mq = self.default_min_quality
-        if "min-quality" in self.encoding_options:
-            mq = self.encoding_options["min-quality"]
-        if mq>0:
+        mq = self.encoding_options.get("min-quality", self.default_min_quality)
+        if mq>0 and (q<=0 or q>mq):
             self.default_encoding_options["min-quality"] = mq
-        s = self.default_speed
-        if "speed" in self.encoding_options:
-            s = self.encoding_options["speed"]
+        s = self.encoding_options.get("speed", self.default_speed)
         if s>0:
             self.default_encoding_options["speed"] = s
-        ms = self.default_min_speed
-        if "min-speed" in self.encoding_options:
-            ms = self.encoding_options["min-speed"]
-        if ms>0:
+        ms = self.encoding_options.get("min-speed", self.default_min_speed)
+        if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
         from xpra.server.server_base import SERVER_CORE_ENCODINGS
