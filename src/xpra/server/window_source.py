@@ -53,9 +53,8 @@ from xpra.deque import maxdeque
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
-from xpra.server.stats.maths import calculate_time_weighted_average
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
-from xpra.server.stats.maths import time_weighted_average
+from xpra.server.stats.maths import time_weighted_average, calculate_time_weighted_average
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -156,7 +155,12 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        self.core_encodings = core_encodings            #the core encodings
+        refresh_encoding = [x for x in self.encodings if x in ("png", "rgb", "webp")]
+        refresh_encoding.append("")
+        self.auto_refresh_encoding = encoding_options.get("auto_refresh_encoding", refresh_encoding[0])
+        if self.auto_refresh_encoding not in self.encodings:
+            self.auto_refresh_encoding = ""
+        self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.default_encoding_options = default_encoding_options    #default encoding options, like "quality", "min-quality", etc
@@ -314,7 +318,7 @@ class WindowSource(object):
     def update_speed(self):
         speed = self.default_encoding_options.get("speed", -1)
         if speed<0:
-            min_speed = self.get_min_encoding_speed()
+            min_speed = self.get_min_speed()
             target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_speed)
             #make a copy to work on
             ves_copy = list(self._encoding_speed)
@@ -325,16 +329,17 @@ class WindowSource(object):
             speed = min(100, speed)
         self._encoding_speed.append((time.time(), speed))
 
-    def get_min_encoding_speed(self):
+    def get_min_speed(self):
         return self.default_encoding_options.get("min-speed", -1)
 
-    def get_current_encoding_speed(self):
-        s = min(100, max(self.get_min_encoding_speed(), self.default_encoding_options.get("speed", -1)))
+    def get_current_speed(self):
+        ms = self.get_min_speed()
+        s = min(100, self.default_encoding_options.get("speed", -1))
         if s>=0:
-            return s
+            return max(ms, s)
         if len(self._encoding_speed)==0:
-            return 50
-        return self._encoding_speed[-1][1]
+            return max(ms, 80)
+        return max(ms, self._encoding_speed[-1][1])
 
     def update_quality(self):
         quality = self.default_encoding_options.get("quality", -1)
@@ -350,16 +355,17 @@ class WindowSource(object):
             quality = min(100, quality)
         self._encoding_quality.append((time.time(), quality))
 
-    def get_min_encoding_quality(self):
+    def get_min_quality(self):
         return self.default_encoding_options.get("min-quality", -1)
 
-    def get_current_encoding_quality(self):
-        q = min(100, max(self.get_min_encoding_quality(), self.default_encoding_options.get("quality", -1)))
+    def get_current_quality(self):
+        mq = self.get_min_quality()
+        q = min(100, self.default_encoding_options.get("quality", -1))
         if q>=0:
-            return q
+            return max(mq, q)
         if len(self._encoding_quality)==0:
-            return 50
-        return self._encoding_quality[-1][1]
+            return max(mq, 90)
+        return max(mq, self._encoding_quality[-1][1])
 
     def update_video_encoder(self, force_reload=False):
         if self._video_encoder and not self._video_encoder.is_closed():
@@ -370,8 +376,8 @@ class WindowSource(object):
                     if force_reload:
                         self.do_video_encoder_cleanup()
                     else:
-                        self._video_encoder.set_encoding_speed(self.get_current_encoding_speed())
-                        self._video_encoder.set_encoding_quality(self.get_current_encoding_quality())
+                        self._video_encoder.set_encoding_speed(self.get_current_speed())
+                        self._video_encoder.set_encoding_quality(self.get_current_quality())
             finally:
                 self._video_encoder_lock.release()
 
@@ -430,7 +436,9 @@ class WindowSource(object):
         if packets_backlog==0 and not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             debug("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
-            actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
+            actual_encoding = options.get("encoding")
+            if actual_encoding is None:
+                actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
             if actual_encoding in ("x264", "vpx") or window.is_tray():
                 x, y = 0, 0
                 w, h = ww, wh
@@ -443,7 +451,8 @@ class WindowSource(object):
         region = new_region()
         add_rectangle(region, gtk.gdk.Rectangle(x, y, w, h))
         self._damage_delayed_expired = False
-        self._damage_delayed = now, window, region, self.encoding, options or {}
+        actual_encoding = options.get("encoding", self.encoding)
+        self._damage_delayed = now, window, region, actual_encoding, options or {}
         debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = gobject.timeout_add(int(delay), self.expire_delayed_region)
@@ -506,17 +515,17 @@ class WindowSource(object):
         """ Called by 'send_delayed' when we expire a delayed region,
             There may be many rectangles within this delayed region,
             so figure out if we want to send them all or if we
-            just send one full screen update instead.
+            just send one full window update instead.
         """
         regions = []
         ww,wh = window.get_dimensions()
-        def send_full_screen_update():
+        def send_full_window_update():
             actual_encoding = self.get_best_encoding(True, window, ww*wh, ww, wh, coding)
-            debug("send_delayed_regions: using full screen update %sx%s with %s", ww, wh, actual_encoding)
+            debug("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
         if window.is_tray():
-            send_full_screen_update()
+            send_full_window_update()
             return
 
         try:
@@ -531,9 +540,9 @@ class WindowSource(object):
             pixel_count = 0
             for rect in get_rectangles(damage):
                 pixel_count += rect.width*rect.height
-                #favor full screen updates over many regions:
+                #favor full window  updates over many regions:
                 if len(regions)>count_threshold or pixel_count+packet_cost*len(regions)>=pixels_threshold:
-                    send_full_screen_update()
+                    send_full_window_update()
                     return
                 regions.append((rect.x, rect.y, rect.width, rect.height))
             debug("send_delayed_regions: to regions: %s items, %s pixels", len(regions), pixel_count)
@@ -557,7 +566,7 @@ class WindowSource(object):
 
     def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
-            decide whether we send a full screen update
+            decide whether we send a full window update
             using the video encoder or if a small lossless region(s) is a better choice
         """
         def switch_to_lossless(reason):
@@ -734,11 +743,12 @@ class WindowSource(object):
                 return  False
             self.refresh_timer = None
             new_options = damage_options.copy()
-            if AUTO_REFRESH_ENCODING:
-                new_options["encoding"] = AUTO_REFRESH_ENCODING
-            #FIXME: with x264, the quality must be higher than the YUV444 threshold
-            new_options["quality"] = AUTO_REFRESH_QUALITY
-            new_options["speed"] = AUTO_REFRESH_SPEED
+            if self.auto_refresh_encoding:
+                new_options["encoding"] = self.auto_refresh_encoding
+            if self.auto_refresh_encoding not in ("png", "rgb", "webp"):
+                #FIXME: with x264, the quality must be higher than the YUV444 threshold
+                new_options["quality"] = AUTO_REFRESH_QUALITY
+                new_options["speed"] = AUTO_REFRESH_SPEED
             debug("full_quality_refresh() with options=%s", new_options)
             self.damage(window, 0, 0, ww, wh, options=new_options)
             return False
@@ -878,6 +888,9 @@ class WindowSource(object):
         if coding!="mmap" and self.is_cancelled(sequence):
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
+        if data is None:
+            #something went wrong.. nothing we can do about it here!
+            return  None
         #tell client about delta/store for this pixmap:
         if delta>=0:
             client_options["delta"] = delta
@@ -929,7 +942,7 @@ class WindowSource(object):
         h_e = handler_encs.get(rgb_format)
         assert h_e is not None, "cannot handle rgb format %s with webp!" % rgb_format
         bh, lossy_enc, lossless_enc, has_alpha = h_e
-        q = self.get_current_encoding_quality()
+        q = self.get_current_quality()
         if options:
             q = options.get("quality", q)
         q = max(1, q)
@@ -961,7 +974,7 @@ class WindowSource(object):
             min_level = 0
         else:
             min_level = 1
-        level = max(min_level, min(5, int(110-self.get_current_encoding_speed())/20))
+        level = max(min_level, min(5, int(110-self.get_current_speed())/20))
         zlib = str(pixels)
         cdata = zlib
         if level>0:
@@ -1000,11 +1013,11 @@ class WindowSource(object):
         client_options = {}
         optimize = False
         if self.batch_config.delay>2*self.batch_config.START_DELAY:
-            ces = self.get_current_encoding_speed()
-            mes = self.get_min_encoding_speed()
+            ces = self.get_current__speed()
+            mes = self.get_min_speed()
             optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
         if coding=="jpeg":
-            q = self.get_current_encoding_quality()
+            q = self.get_current_quality()
             if options:
                 q = options.get("quality", q)
             q = int(min(99, max(1, q)))
