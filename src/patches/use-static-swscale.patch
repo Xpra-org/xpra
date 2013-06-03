@@ -1,0 +1,20 @@
+Description: Build csc_swscale as a static library.
+ Author: Arthur Huillet <ahuillet@serviware.com>
+ Author: Antoine Martin <antoine@nagafix.co.uk>
+ Forwarded: not-needed
+ 
+--- a/setup.py	(revision 3545)
++++ b/setup.py	(working copy)
+@@ -954,7 +954,11 @@
+ 
+ toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
+ if csc_swscale_ENABLED:
+-    swscale_pkgconfig = pkgconfig("libswscale")
++    swscale_pkgconfig = {'include_dirs': ["/usr/local/include"],
++                         'library_dirs': ["/usr/local/lib"],
++                         'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
++                                      "-lswscale", "-Wl,-Bdynamic"]
++                      }
+     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
+                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c"],
+                 **swscale_pkgconfig), min_version=(0, 16))

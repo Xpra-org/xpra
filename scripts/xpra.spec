@@ -57,10 +57,6 @@
 %if %(egrep -q 'release 7|release 6.3|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
-%if 0%{?static_video_libs}
-%define static_x264 1
-%define static_vpx 1
-%endif
 #6.4 has dummy support, but detection fails because of console ownership issues..
 #so override and set it for 6.4 and later
 %if %(egrep -q 'release 7|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
@@ -82,10 +78,13 @@
 #uuidgen is in e2fsprogs! (no we don't do any fs stuff)
 %define requires_extra , e2fsprogs, python-ctypes
 %define include_egg 0
+%endif
+
 %if 0%{?static_video_libs}
 %define static_x264 1
 %define static_vpx 1
-%endif
+%define static_avcodec 1
+%define static_swscale 1
 %endif
 
 %if 0%{?no_webp}
@@ -134,11 +133,12 @@ Patch2: disable-vpx.patch
 Patch3: disable-webp.patch
 Patch4: use-static-x264lib.patch
 Patch5: use-static-vpxlib.patch
-Patch6: x264-limited-csc.patch
 Patch7: no-strict.patch
 Patch8: old-libav.patch
 Patch9: disable-pulseaudio.patch
 Patch10: old-xdg-desktop.patch
+Patch11: use-static-avcodec.patch
+Patch12: use-static-swscale.patch
 
 
 %description
@@ -757,17 +757,13 @@ cd xpra-all-%{version}
 %patch5 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
-%if 0%{?limited_csc}
-%patch6 -p1
-(echo "xpra/codecs/x264/x264lib.c" > %{S:ignored_changed_files.txt})
-%endif
 %if 0%{?no_strict}
 %patch7 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
-(echo "xpra/codecs/x264/x264lib.c" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/dec_avcodec/dec_avcodec.c" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_pulseaudio}
 %patch9 -p1
@@ -776,6 +772,14 @@ cd xpra-all-%{version}
 %if 0%{?old_xdg}
 %patch10 -p1
 (echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
+%if 0%{?static_avcodec}
+%patch11 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?static_swscale}
+%patch12 -p1
+(echo "setup.py" > %{S:ignored_changed_files.txt})
+%endif
 %endif
 
 
