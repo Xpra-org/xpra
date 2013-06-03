@@ -146,12 +146,12 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     dec_lat = 0.0
     if statistics.avg_decode_speed:
         dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
-    target = max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0)
+    target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0))
     ms = min(100.0, max(min_speed, 0.0))
-    target_speed = ms + (100.0-ms) * min(1.0, target)
+    target_speed = ms + (100.0-ms) * target
     if DEBUG_VIDEO:
-        msg = "get_target_speed: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.3f, avg damage in latency=%.3f, target_damage_latency=%.3f, batch.delay=%.1f, dam_lat=%.3f / %.3f, dec_lat=%.3f, target=%i, new_speed=%i", \
-             wid, low_limit, min_speed, min_damage_latency, statistics.avg_damage_in_latency, target_damage_latency, batch.delay, dam_lat_abs, dam_lat_rel, dec_lat, int(target_speed), int(target_speed)
+        msg = "get_target_speed: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.3f, avg damage in latency=%.3f, target_damage_latency=%.3f, batch.delay=%.1f, dam_lat=%.3f / %.3f, dec_lat=%.3f, target speed=%i", \
+             wid, low_limit, min_speed, min_damage_latency, statistics.avg_damage_in_latency, target_damage_latency, batch.delay, dam_lat_abs, dam_lat_rel, dec_lat, int(target_speed)
         add_DEBUG_MESSAGE(*msg)
     return target_speed
 
@@ -164,17 +164,25 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     # here we try minimize client-latency, packet-backlog and batch.delay
     packets_backlog, _, _ = statistics.get_backlog()
     packets_bl = 1.0 - logp(packets_backlog/low_limit)
-    batch_q = batch.min_delay / max(batch.min_delay, batch.delay)
-    target = min(packets_bl, batch_q)
-    latency_q = 0.0
+    target = packets_bl
+    batch_q = -1
+    recs = len(batch.last_actual_delays)
+    if recs>0:
+        #weighted average between start delay and min_delay
+        #so when we start and we don't have any records, we don't lower quality
+        #just because the start delay is higher than min_delay
+        ref_delay = (batch.START_DELAY*10.0/recs + batch.min_delay*recs) / (recs+10.0/recs)
+        batch_q = ref_delay / max(batch.min_delay, batch.delay)
+        target = min(1.0, target, batch_q)
+    latency_q = -1
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
-        latency_q = 6.0 * statistics.target_latency / global_statistics.recent_client_latency
+        latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
         target = min(target, latency_q)
     target = min(1.0, max(0.0, target))
     mq = min(100.0, max(min_quality, 0.0))
-    target_quality = mq + (100.0-mq) * min(1.0, target)
+    target_quality = mq + (100.0-mq) * target
     if DEBUG_VIDEO:
-        msg = "get_target_quality: wid=%s, min quality=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target=%s, new_quality=%s", \
-             wid, min_quality, packets_bl, batch_q, latency_q, int(target_quality), int(target_quality)
+        msg = "get_target_quality: wid=%s, min quality=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target quality=%s", \
+             wid, min_quality, packets_bl, batch_q, latency_q, int(target_quality)
         add_DEBUG_MESSAGE(*msg)
     return target_quality
