@@ -10,9 +10,9 @@
 
 #ifdef _WIN32
 #define _STDINT_H
+#define inline __inline
 #endif
 
-#define inline __inline
 #include <x264.h>
 
 /** Opaque structure - "context". You must have a context to encode frames. */

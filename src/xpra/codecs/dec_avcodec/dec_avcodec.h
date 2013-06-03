@@ -10,6 +10,7 @@
 
 #ifdef _WIN32
 #define _STDINT_H
+#define inline __inline
 #endif
 
 /** Opaque structure - "context". You must have a context to decode frames. */
