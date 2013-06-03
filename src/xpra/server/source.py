@@ -388,7 +388,6 @@ class ServerSource(object):
         from xpra.server.server_base import SERVER_CORE_ENCODINGS
         self.png_window_icons = "png" in self.encodings and "png" in SERVER_CORE_ENCODINGS
         self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
-        elog("encoding_options: %s", self.encoding_options)
         #mmap:
         mmap_filename = capabilities.get("mmap_file")
         mmap_token = capabilities.get("mmap_token")
