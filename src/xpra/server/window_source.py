@@ -1013,7 +1013,7 @@ class WindowSource(object):
         client_options = {}
         optimize = False
         if self.batch_config.delay>2*self.batch_config.START_DELAY:
-            ces = self.get_current__speed()
+            ces = self.get_current_speed()
             mes = self.get_min_speed()
             optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
         if coding=="jpeg":
