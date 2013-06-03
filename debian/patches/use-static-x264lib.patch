@@ -4,16 +4,16 @@ Description: Build x264 codec as a static library.
  
 --- a/setup.py	(revision 3336)
 +++ b/setup.py	(working copy)
-@@ -890,7 +890,11 @@
+@@ -940,7 +940,11 @@
  
- toggle_packages(x264_ENABLED, "xpra.codecs.x264")
- if x264_ENABLED:
--    x264_pkgconfig = pkgconfig("x264", "libswscale", "libavcodec")
+ toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
+ if enc_x264_ENABLED:
+-    x264_pkgconfig = pkgconfig("x264")
 +    x264_pkgconfig = {'include_dirs': ["/usr/local/include"],
 +                      'library_dirs': ["/usr/local/lib"],
 +                      'extra_link_args': ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
 +                                      "-lx264", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
 +                      }
-     cython_add(Extension("xpra.codecs.x264.encoder",
-                 ["xpra/codecs/x264/encoder.pyx", "xpra/codecs/x264/x264lib.c"],
+     cython_add(Extension("xpra.codecs.enc_x264.encoder",
+                 ["xpra/codecs/enc_x264/encoder.pyx", "xpra/codecs/enc_x264/enc_x264.c"],
                  **x264_pkgconfig), min_version=(0, 16))

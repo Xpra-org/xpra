@@ -8,8 +8,8 @@ Description: Disable x264 encoding support.
  
  
  
--x264_ENABLED = True
-+x264_ENABLED = False
+-enc_x264_ENABLED = True
++enc_x264_ENABLED = False
  
  
  

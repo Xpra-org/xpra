@@ -4,12 +4,12 @@ Description: Disable x264 encoding support.
  
 --- a/setup.py
 +++ b/setup.py
-@@ -37,7 +37,7 @@
+@@ -125,7 +125,7 @@
  
  
  
--enc_x264_ENABLED = True
-+enc_x264_ENABLED = False
+-dec_avcodec_ENABLED = True
++dec_avcodec_ENABLED = False
  
  
  
