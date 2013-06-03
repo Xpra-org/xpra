@@ -17,11 +17,18 @@ from xpra.server.stats.maths import queue_inspect, logp
 
 
 MAX_DEBUG_MESSAGES = 1000
-DEBUG_DELAY = int(os.environ.get("XPRA_DELAY_DEBUG", "0"))
-DEBUG_VIDEO = os.environ.get("XPRA_VIDEO_DEBUG", "0")=="1"
+DEBUG_DELAY = int(os.environ.get("XPRA_VIDEO_DEBUG", "-1"))
+DEBUG_FACTORS = os.environ.get("XPRA_FACTORS_DEBUG", "0")=="1"
 
-if DEBUG_DELAY>0 or DEBUG_VIDEO:
+
+if DEBUG_DELAY>0:
     _debug_delay_messages = []
+
+    def add_DEBUG_MESSAGE(*recs):
+        global _debug_delay_messages
+        if len(_debug_delay_messages)>=MAX_DEBUG_MESSAGES:
+            dump_debug_messages()
+        _debug_delay_messages.append(recs)
 
     def dump_debug_messages():
         global _debug_delay_messages
@@ -30,14 +37,12 @@ if DEBUG_DELAY>0 or DEBUG_VIDEO:
             log.info(*x)
         _debug_delay_messages = []
         return  True
+    gobject.timeout_add(DEBUG_DELAY*1000, dump_debug_messages)
 
+elif DEBUG_DELAY==0:
     def add_DEBUG_MESSAGE(*recs):
-        global _debug_delay_messages
-        if len(_debug_delay_messages)>=MAX_DEBUG_MESSAGES:
-            dump_debug_messages()
-        _debug_delay_messages.append(recs)
+        log.info(*recs)
 
-    gobject.timeout_add(30*1000, dump_debug_messages)
 else:
     def add_DEBUG_MESSAGE(*recs):
         pass
@@ -117,7 +122,7 @@ def update_batch_delay(batch, factors):
         tv += target_delay*w
     batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
-    if DEBUG_DELAY>0:
+    if DEBUG_DELAY>=0:
         decimal_delays = [x for _,x in list(batch.last_delays)]
         if len(decimal_delays)==0:
             decimal_delays.append(0)
@@ -125,7 +130,7 @@ def update_batch_delay(batch, factors):
                 batch.wid, 1000.0*now-1000.0*last_updated, decay, 100.0*(batch.delay/current_delay-1), min(decimal_delays), sum(decimal_delays)/len(decimal_delays), max(decimal_delays),
                 current_delay, avg, tw, hist_w, batch.delay)
         add_DEBUG_MESSAGE(*rec)
-        if DEBUG_DELAY>1:
+        if DEBUG_FACTORS:
             logfactors = [("{0:+}".format(int(100.0*f-100.0)).rjust(4) + str(int(100*w)).rjust(8) + "  "+ msg) for (msg, f, w) in valid_factors]
             add_DEBUG_MESSAGE("Factors (change - weight - description):\n "+("\n ".join([str(x) for x in logfactors])))
 
@@ -149,7 +154,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0))
     ms = min(100.0, max(min_speed, 0.0))
     target_speed = ms + (100.0-ms) * target
-    if DEBUG_VIDEO:
+    if DEBUG_DELAY>=0:
         msg = "get_target_speed: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.3f, avg damage in latency=%.3f, target_damage_latency=%.3f, batch.delay=%.1f, dam_lat=%.3f / %.3f, dec_lat=%.3f, target speed=%i", \
              wid, low_limit, min_speed, min_damage_latency, statistics.avg_damage_in_latency, target_damage_latency, batch.delay, dam_lat_abs, dam_lat_rel, dec_lat, int(target_speed)
         add_DEBUG_MESSAGE(*msg)
@@ -181,7 +186,7 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     target = min(1.0, max(0.0, target))
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
-    if DEBUG_VIDEO:
+    if DEBUG_DELAY>=0:
         msg = "get_target_quality: wid=%s, min quality=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target quality=%s", \
              wid, min_quality, packets_bl, batch_q, latency_q, int(target_quality)
         add_DEBUG_MESSAGE(*msg)
