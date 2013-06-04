@@ -99,6 +99,16 @@ class WindowVideoSource(WindowSource):
             #drop a frame which is being processed
             self.cleanup_codecs()
 
+    def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
+        WindowSource.process_damage_region(self, damage_time, window, x, y, w, h, coding, options)
+        if coding in ("vpx", "x264") and (w%2==1 or h%2==1):
+            if w%2==1:
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, 1*h)
+                WindowSource.process_damage_region(self, damage_time, window, x+w-1, y, 1, h, lossless, options)
+            if h%2==1:
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*1)
+                WindowSource.process_damage_region(self, damage_time, window, x, y+h-1, x+w, 1, lossless, options)
+
 
     def reconfigure(self, force_reload=False):
         debug("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
@@ -241,7 +251,7 @@ class WindowVideoSource(WindowSource):
         return int((qscore+sscore+er_score)/3.0)
 
     def get_encoder_dimensions(self, csc_spec, width, height):
-        if not csc_spec or not self.video_scaling:
+        if not csc_spec or not self.video_scaling or width<=32 or height<=16:
             return width, height
         #FIXME: take screensize into account,
         #we want to scale more when speed is high and min-quality is low
@@ -249,16 +259,18 @@ class WindowVideoSource(WindowSource):
         scaling = self.scaling
         if scaling is None:
             quality = self.get_current_quality()
-            if self.maximized and quality<30:
+            if width*height>=1024*1024 and quality<10:
+                scaling = 1,2
+            elif self.maximized and quality<30:
                 scaling = 2,3
-            if self.fullscreen and quality<50:
+            elif self.fullscreen and quality<50:
                 scaling = 1,2
         if scaling is None:
             return width, height
         v, u = scaling
         if v/u>1.0:         #never upscale before encoding!
             return width, height
-        if v/u<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)
+        if float(v)/float(u)<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             v, u = 1, 10
         enc_width = int(width * v / u)
         enc_height = int(height * v / u)
