@@ -14,6 +14,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     ctypedef void** const_void_pp "const void**"
+    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
@@ -217,7 +218,7 @@ cdef class ColorspaceConverter:
                     raise Exception("invalid height divisor %s" % dy)
                 stride = output_stride[i]
                 if stride>0 and output_image[i]!=NULL:
-                    plane = (<char *>output_image[i])[:(height * stride)]
+                    plane = PyBuffer_FromMemory(<void *>output_image[i], height * stride)
                 else:
                     stride = 0
                     plane = None
@@ -227,7 +228,7 @@ cdef class ColorspaceConverter:
         else:
             nplanes = 0
             strides = output_stride[0]
-            out = (<char *>output_image[0])[:(self.dst_height * strides)]
+            out = PyBuffer_FromMemory(<void *>output_image[0], self.dst_height * strides)
             csci.set_plane(0, output_image[0])
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, nplanes)
         out_image.csc_image = csci
