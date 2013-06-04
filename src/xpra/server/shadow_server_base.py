@@ -13,7 +13,7 @@ log = Logger()
 
 from xpra.net.protocol import Compressed
 from xpra.server.window_source import DamageBatchConfig
-from xpra.server.image_wrapper import ImageWrapper
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
 
 

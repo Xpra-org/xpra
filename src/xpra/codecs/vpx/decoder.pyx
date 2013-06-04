@@ -7,7 +7,7 @@ import os
 from libc.stdlib cimport free
 
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.server.image_wrapper import ImageWrapper
+from xpra.codecs.image_wrapper import ImageWrapper
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t

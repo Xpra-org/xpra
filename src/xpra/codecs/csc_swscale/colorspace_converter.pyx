@@ -4,9 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.codecs.codec_constants import codec_spec
-from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.server.image_wrapper import ImageWrapper
+from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
+from xpra.codecs.image_wrapper import ImageWrapper
 
 cdef extern from "stdlib.h":
     void free(void *ptr)

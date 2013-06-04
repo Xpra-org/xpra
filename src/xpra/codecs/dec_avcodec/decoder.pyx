@@ -7,7 +7,7 @@ import os
 from libc.stdlib cimport free
 
 from xpra.codecs.codec_constants import get_subsampling_divs, get_colorspace_from_avutil_enum, RGB_FORMATS 
-from xpra.server.image_wrapper import ImageWrapper
+from xpra.codecs.image_wrapper import ImageWrapper
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )

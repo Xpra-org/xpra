@@ -7,10 +7,10 @@
 from xpra.log import Logger
 log = Logger()
 
-from xpra.server.image_wrapper import ImageWrapper
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
+from xpra.codecs.image_wrapper import ImageWrapper
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
