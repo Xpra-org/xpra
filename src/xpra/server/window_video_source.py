@@ -155,8 +155,8 @@ class WindowVideoSource(WindowSource):
                 self.setup_pipeline(scores, width, height, pixel_format)
 
             if self._video_encoder:
-                self._video_encoder.set_encoding_speed(quality)
-                self._video_encoder.set_encoding_quality(speed)
+                self._video_encoder.set_encoding_speed(speed)
+                self._video_encoder.set_encoding_quality(quality)
         finally:
             self._lock.release()
 
@@ -355,6 +355,7 @@ class WindowVideoSource(WindowSource):
             start = time.time()
             data, client_options = self._video_encoder.compress_image(csc_image, options)
             end = time.time()
+            log.info("video encode: %s", self._video_encoder.get_info())
 
             csc_image.free()
             del csc_image
