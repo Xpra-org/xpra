@@ -228,6 +228,7 @@ cdef class ColorspaceConverter:
             nplanes = 0
             strides = output_stride[0]
             out = (<char *>output_image[0])[:(self.dst_height * strides)]
+            csci.set_plane(0, output_image[0])
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, nplanes)
         out_image.csc_image = csci
         #print("convert_image(%s)=%s" % (image, yuv))
