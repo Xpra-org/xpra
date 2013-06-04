@@ -229,8 +229,8 @@ class WindowBackingBase(object):
                 # Backwards compatibility with pre 0.10.x clients
                 # We used to specify the colorspace as an avutil PixelFormat constant
                 old_csc_fmt = options.get("csc_pixel_format")
-                assert old_csc_fmt is not None, "csc_format was not specified and neither is csc_pixel_format?!?"
                 colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
+                assert colorspace is not None, "csc was not specified and we cannot find a colorspace from csc_pixel_format=%s" % old_csc_fmt
             if self._video_decoder:
                 if self._video_decoder.get_type()!=coding:
                     if DRAW_DEBUG:
