@@ -235,15 +235,15 @@ class WindowBackingBase(object):
                 if self._video_decoder.get_type()!=coding:
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: encoding changed from %s to %s", self._video_decoder.get_type(), coding)
-                    self._video_decoder.clean()
+                    self.do_clean_video_decoder()
                 elif self._video_decoder.get_width()!=enc_width or self._video_decoder.get_height()!=enc_height:
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
-                    self._video_decoder.clean()
+                    self.do_clean_video_decoder()
                 elif self._video_decoder.get_colorspace()!=colorspace:
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), colorspace)
-                    self._video_decoder.clean()
+                    self.do_clean_video_decoder()
             if self._video_decoder is None:
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, colorspace)
