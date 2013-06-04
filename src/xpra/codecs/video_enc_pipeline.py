@@ -332,7 +332,7 @@ class VideoEncoderPipeline(object):
         return False
 
     def get_encoder_dimensions(self, csc_spec, width, height, fullscreen, scaling, quality, speed):
-        if not csc_spec:
+        if not csc_spec or not self.video_scaling:
             return width, height
         #FIXME: take screensize into account,
         #we want to scale more when speed is high and min-quality is low
@@ -345,6 +345,10 @@ class VideoEncoderPipeline(object):
         if scaling is None:
             return width, height
         v, u = scaling
+        if v/u>1.0:         #never upscale before encoding!
+            return width, height
+        if v/u<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)
+            v, u = 1, 10
         enc_width = int(width * v / u)
         enc_height = int(height * v / u)
         return enc_width, enc_height
