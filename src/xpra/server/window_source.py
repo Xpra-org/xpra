@@ -305,7 +305,6 @@ class WindowSource(object):
         if quality<0:
             min_quality = self.default_encoding_options.get("min-quality", -1)
             target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
-            log.info("update_quality() default quality=%s, min=%s, target=%s", quality, min_quality, target_quality)
             #make a copy to work on
             ves_copy = list(self._encoding_quality)
             ves_copy.append((time.time(), target_quality))
