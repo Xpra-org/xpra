@@ -241,7 +241,7 @@ class WindowVideoSource(WindowSource):
         scaling = self.scaling
         if scaling is None:
             quality = self.get_current_quality()
-            if width>1024 and height>768 and quality<30:
+            if self.maximized and quality<30:
                 scaling = 2,3
             if self.fullscreen and quality<50:
                 scaling = 1,2
