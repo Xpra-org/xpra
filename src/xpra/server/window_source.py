@@ -26,11 +26,6 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 
-#how many historical records to keep
-#for the various statistics we collect:
-#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
-NRECS = 100
-
 import gtk.gdk
 import gobject
 import time
@@ -89,47 +84,6 @@ else:
     def get_rectangles(region):
         return region
 del tmp_region
-
-
-class DamageBatchConfig(object):
-    """
-    Encapsulate all the damage batching configuration into one object.
-    """
-    ALWAYS = False
-    MAX_EVENTS = min(50, NRECS)         #maximum number of damage events
-    MAX_PIXELS = 1024*1024*MAX_EVENTS   #small screen at MAX_EVENTS frames
-    TIME_UNIT = 1                       #per second
-    MIN_DELAY = 5                       #lower than 5 milliseconds does not make sense, just don't batch
-    START_DELAY = 50
-    MAX_DELAY = 15000
-    RECALCULATE_DELAY = 0.04            #re-compute delay 25 times per second at most
-                                        #(this theoretical limit is never achieved since calculations take time + scheduling also does)
-
-
-    def __init__(self):
-        self.always = self.ALWAYS
-        self.max_events = self.MAX_EVENTS
-        self.max_pixels = self.MAX_PIXELS
-        self.time_unit = self.TIME_UNIT
-        self.min_delay = self.MIN_DELAY
-        self.max_delay = self.MAX_DELAY
-        self.delay = self.START_DELAY
-        self.last_delays = maxdeque(64)                 #the delays we have tried to use (milliseconds)
-        self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
-        self.last_updated = 0
-        self.wid = 0
-
-    def clone(self):
-        c = DamageBatchConfig()
-        for x in ["always", "max_events", "max_pixels", "time_unit",
-                  "min_delay", "max_delay", "delay"]:
-            setattr(c, x, getattr(self, x))
-        return c
-
-    def __str__(self):
-        return  "DamageBatchConfig(wid=%s, always=%s, min=%s, max=%s, current=%s, max events=%s, max pixels=%s, time unit=%s)" % \
-                (self.wid, self.always, self.min_delay, self.max_delay, self.delay, self.max_events, self.max_pixels, self.time_unit)
-
 
 
 class WindowSource(object):
@@ -200,8 +154,8 @@ class WindowSource(object):
             self.video = VideoEncoderPipeline(self.encodings, self.encoding_options)
 
         # general encoding tunables (mostly used by video encoders):
-        self._encoding_quality = maxdeque(NRECS)   #keep track of the target encoding_quality: (event time, encoding speed)
-        self._encoding_speed = maxdeque(NRECS)     #keep track of the target encoding_speed: (event time, encoding speed)
+        self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, encoding speed)
+        self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, encoding speed)
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
         self._damage_delayed_expired = False            #when this is True, the region should have expired

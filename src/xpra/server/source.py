@@ -21,7 +21,8 @@ log = Logger()
 elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
-from xpra.server.window_source import WindowSource, DamageBatchConfig
+from xpra.server.window_source import WindowSource
+from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import HAS_SOUND
 from xpra.net.protocol import zlib_compress, Compressed
