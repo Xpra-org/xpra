@@ -858,7 +858,7 @@ cdef class XImageWrapper:
         self.del_callback = callback
 
     def __dealloc__(self):                              #@DuplicatedSignature
-        log.info("XImageWrapper.__dealloc__() self=%s, del_callback=%s", self, self.del_callback)
+        debug("XImageWrapper.__dealloc__() self=%s, del_callback=%s", self, self.del_callback)
         if self.del_callback:
             cb = self.del_callback
             self.del_callback = None
@@ -866,7 +866,7 @@ cdef class XImageWrapper:
         self.free()
 
     def free(self):                                     #@DuplicatedSignature
-        log.info("XImageWrapper.free()")
+        debug("XImageWrapper.free()")
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL

@@ -179,7 +179,6 @@ cdef class Encoder:
                 PyObject_AsReadBuffer(pixels[i], <const_void_pp> &pic_buf, &pic_buf_len)
                 pic_in[i] = pic_buf
                 strides[i] = istrides[i]
-        print("compress_image strides=%s, planes=%s" % ([x for x in strides], [len(x or "") for x in pic_in]))
         try:
             with nogil:
                 i = compress_image(self.context, pic_in, strides, &cout, &coutsz)

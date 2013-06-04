@@ -452,7 +452,7 @@ class UIXpraClient(XpraClientBase):
             capabilities["encoding.speed"] = self.speed
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
-        log.info("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
+        log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...

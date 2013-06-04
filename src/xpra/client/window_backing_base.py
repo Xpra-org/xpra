@@ -270,17 +270,21 @@ class WindowBackingBase(object):
         assert pixel_format!=rgb_format, "no csc needed! but we don't handle this scenario yet!"
         if self._csc_decoder is not None:
             if self._csc_decoder.get_src_format()!=pixel_format:
-                log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
+                if DRAW_DEBUG:
+                    log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_dst_format()!=rgb_format:
-                log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), rgb_format)
+                if DRAW_DEBUG:
+                    log.info("do_video_paint csc: switching dst format from %s to %s", self._csc_decoder.get_dst_format(), rgb_format)
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_src_width()!=enc_width or self._csc_decoder.get_src_height()!=enc_height:
-                log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                if DRAW_DEBUG:
+                    log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          enc_width, enc_height, self._csc_decoder.get_src_width(), self._csc_decoder.get_src_height())
                 self.do_clean_csc_decoder()
             elif self._csc_decoder.get_dst_width()!=width or self._csc_decoder.get_dst_height()!=height:
-                log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                if DRAW_DEBUG:
+                    log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
@@ -288,9 +292,11 @@ class WindowBackingBase(object):
             self._csc_decoder = ColorspaceConverter()
             self._csc_decoder.init_context(enc_width, enc_height, pixel_format,
                                            width, height, rgb_format, 0)
-            log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
+            if DRAW_DEBUG:
+                log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
         rgb = self._csc_decoder.convert_image(img)
-        log.info("do_video_paint rgb(%s)=%s", img, rgb)
+        if DRAW_DEBUG:
+            log.info("do_video_paint rgb(%s)=%s", img, rgb)
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #this will also take care of firing callbacks (from the UI thread):
