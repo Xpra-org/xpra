@@ -148,6 +148,9 @@ class WindowSource(object):
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
+        from xpra.server.server_base import SERVER_CORE_ENCODINGS
+        self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
+
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
         self.wid = wid
@@ -155,11 +158,11 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        refresh_encoding = [x for x in self.encodings if x in ("png", "rgb", "webp")]
-        refresh_encoding.append("")
-        self.auto_refresh_encoding = encoding_options.get("auto_refresh_encoding", refresh_encoding[0])
-        if self.auto_refresh_encoding not in self.encodings:
-            self.auto_refresh_encoding = ""
+        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "webp")]
+        client_refresh_encodings = encoding_options.get("auto_refresh_encodings", refresh_encodings)
+        self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.SERVER_CORE_ENCODINGS]
+        if self.auto_refresh_encodings not in self.encodings:
+            self.auto_refresh_encodings = []
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
@@ -169,8 +172,6 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
-        from xpra.server.server_base import SERVER_CORE_ENCODINGS
-        self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
         self.supports_delta = []
         if xor_str is not None:
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -718,6 +719,8 @@ class WindowSource(object):
             return
         if not window.is_managed():
             return
+        if len(self.auto_refresh_encodings)==0:
+            return
         ww, wh = window.get_dimensions()
         if actual_quality>=AUTO_REFRESH_THRESHOLD:
             if w*h>=ww*wh:
@@ -737,9 +740,9 @@ class WindowSource(object):
                 return  False
             self.refresh_timer = None
             new_options = damage_options.copy()
-            if self.auto_refresh_encoding:
-                new_options["encoding"] = self.auto_refresh_encoding
-            if self.auto_refresh_encoding not in ("png", "rgb", "webp"):
+            encoding = self.auto_refresh_encodings[0]
+            new_options["encoding"] = encoding
+            if encoding not in ("png", "rgb", "webp"):
                 #FIXME: with x264, the quality must be higher than the YUV444 threshold
                 new_options["quality"] = AUTO_REFRESH_QUALITY
                 new_options["speed"] = AUTO_REFRESH_SPEED
