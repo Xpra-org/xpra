@@ -259,11 +259,12 @@ class WindowVideoSource(WindowSource):
         scaling = self.scaling
         if scaling is None:
             quality = self.get_current_quality()
-            if width*height>=1024*1024 and quality<10:
-                scaling = 1,2
-            elif self.maximized and quality<30:
+            speed = self.get_current_speed()
+            if width*height>=1024*1024 and quality<30 and speed>90:
                 scaling = 2,3
-            elif self.fullscreen and quality<50:
+            elif self.maximized and quality<50 and speed>80:
+                scaling = 2,3
+            elif self.fullscreen and quality<60 and speed>70:
                 scaling = 1,2
         if scaling is None:
             return width, height
@@ -304,7 +305,7 @@ class WindowVideoSource(WindowSource):
                     #csc speed is not very important compared to encoding speed,
                     #so make sure it never degrades quality
                     #and reduce our requirements when scaling (since this will increase speed already):
-                    csc_speed = min(speed, 100-quality)
+                    csc_speed = min(speed, 100-quality/2.0)
                     csc_speed = csc_speed * (enc_width * enc_height) / (width * height)
                     csc_start = time.time()
                     self._csc_encoder = csc_spec.codec_class()
@@ -355,7 +356,6 @@ class WindowVideoSource(WindowSource):
             start = time.time()
             data, client_options = self._video_encoder.compress_image(csc_image, options)
             end = time.time()
-            log.info("video encode: %s", self._video_encoder.get_info())
 
             csc_image.free()
             del csc_image
