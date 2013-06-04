@@ -104,6 +104,7 @@ const char *COLORSPACES[] = {
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(51, 21, 0)
 		GBRP,
 #endif
+		NULL,
 	};
 
 const char **get_supported_colorspaces(void)
