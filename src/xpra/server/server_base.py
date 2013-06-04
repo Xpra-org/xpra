@@ -1055,9 +1055,14 @@ class ServerBase(object):
         self._settings.update(settings)
 
 
-    def _set_client_properties(self, proto, wid, new_client_properties):
+    def _set_client_properties(self, proto, wid, window, new_client_properties):
+        """
+        Allows us to keep window properties for a client after disconnection.
+        (we keep it in a map with the client's uuid as key)
+        """
         ss = self._server_sources.get(proto)
         if ss:
+            ss.set_client_properties(wid, window, new_client_properties)
             client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
             log("set_client_properties updating %s with %s", client_properties, new_client_properties)
             client_properties.update(new_client_properties)

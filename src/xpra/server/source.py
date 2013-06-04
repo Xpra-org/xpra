@@ -1032,6 +1032,23 @@ class ServerSource(object):
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
+    def set_client_properties(self, wid, window, new_client_properties):
+        ws = self.make_window_source(wid, window)
+        ws.set_client_properties(new_client_properties)
+
+    def make_window_source(self, wid, window):
+        ws = self.window_sources.get(wid)
+        if ws is None:
+            batch_config = self.default_batch_config.clone()
+            batch_config.wid = wid
+            ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
+                              wid, window, batch_config, self.auto_refresh_delay,
+                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
+                              self.default_encoding_options,
+                              self.mmap, self.mmap_size)
+            self.window_sources[wid] = ws
+        return ws
+
     def damage(self, wid, window, x, y, w, h, options=None):
         """
             Main entry point from the window manager,
@@ -1047,16 +1064,7 @@ class ServerSource(object):
         if options:
             damage_options = options.copy()
         self.statistics.damage_last_events.append((wid, time.time(), w*h))
-        ws = self.window_sources.get(wid)
-        if ws is None:
-            batch_config = self.default_batch_config.clone()
-            batch_config.wid = wid
-            ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
-                              wid, window, batch_config, self.auto_refresh_delay,
-                              self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
-                              self.default_encoding_options,
-                              self.mmap, self.mmap_size)
-            self.window_sources[wid] = ws
+        ws = self.make_window_source(wid, window)
         ws.damage(window, x, y, w, h, damage_options)
 
     def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time):

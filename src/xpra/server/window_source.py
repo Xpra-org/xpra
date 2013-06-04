@@ -186,6 +186,7 @@ class WindowSource(object):
         self.window_dimensions = 0, 0
         self.fullscreen = window.get_property("fullscreen")
         self.scaling = window.get_property("scaling")
+        self.maximized = False          #set by the client!
         window.connect("notify::scaling", self._scaling_changed)
         window.connect("notify::fullscreen", self._fullscreen_changed)
 
@@ -233,13 +234,18 @@ class WindowSource(object):
 
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
-        log.info("window recommended scaling changed: %s", self.scaling)
+        debug("window recommended scaling changed: %s", self.scaling)
         self.update_video_encoder(False)
 
     def _fullscreen_changed(self, window, *args):
         self.fullscreen = window.get_property("fullscreen")
-        log.info("window fullscreen state changed: %s", self.fullscreen)
+        debug("window fullscreen state changed: %s", self.fullscreen)
         self.update_video_encoder(False)
+
+    def set_client_properties(self, properties):
+        debug("set_client_properties(%s)", properties)
+        self.maximized = properties.get("maximized", False)
+
 
     def cancel_damage(self):
         """

@@ -484,7 +484,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._desktop_manager.show_window(window)
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, packet[6])
+            self._set_client_properties(proto, wid, window, packet[6])
 
 
     def _process_unmap_window(self, proto, packet):
@@ -514,7 +514,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
             self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, packet[6])
+            self._set_client_properties(proto, wid, window, packet[6])
 
     def _process_move_window(self, proto, packet):
         wid, x, y = packet[1:4]

@@ -79,7 +79,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def window_state_updated(self, widget, event):
         self._fullscreen = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN)
-        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s", widget, repr(event), event.new_window_state, self._fullscreen)
+        maximized = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_MAXIMIZED)
+        self._client_properties["maximized"] = maximized
+        self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized)
 
     def set_fullscreen(self, fullscreen):
         self.debug("set_fullscreen(%s)", fullscreen)
