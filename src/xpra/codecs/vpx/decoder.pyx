@@ -104,3 +104,5 @@ cdef class Decoder:
     def get_colorspace(self):
         return get_colorspace(self.context)
 
+    def get_actual_colorspace(self):
+        return get_colorspace(self.context)

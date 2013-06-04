@@ -30,8 +30,37 @@ struct dec_avcodec_ctx{
 	AVCodec *codec;
 	AVCodecContext *codec_ctx;
 	AVFrame *frame;
-	enum PixelFormat pixfmt; // updated at every frame
+	enum PixelFormat pixfmt;		//may get updated by swscale!
 };
+
+
+const char YUV420P[] = "YUV420P";
+const char YUV422P[] = "YUV422P";
+const char YUV444P[] = "YUV444P";
+const char ARGB[] = "ARGB";
+const char BGRA[] = "BGRA";
+const char BGRX[] = "BGRX";
+const char XRGB[] = "XRGB";
+const char GBRP[] = "GBRP";
+
+const char *COLORSPACES[] = {
+	YUV420P,
+	YUV422P,
+	YUV444P,
+	XRGB,
+	BGRX,
+	ARGB,
+	BGRA,
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(51, 21, 0)
+	GBRP,
+#endif
+	NULL
+};
+
+const char **get_supported_colorspaces(void)
+{
+	return COLORSPACES;
+}
 
 /* string format name <-> swscale format correspondance */
 static const struct {
@@ -72,6 +101,8 @@ static enum PixelFormat get_swscale_format(const char *str)
 
 static const char *get_string_format(enum PixelFormat pixfmt)
 {
+	//BEWARE: XRGB/BGRX and ARGB/BGRA may get mapped to the same
+	//underlying swscale constant.. so you may not get the string you expect!
 	int i;
 	for (i = 0; i < TOTAL_FORMATS; i++) {
 		if (sws_formats[i].pixfmt == pixfmt)
@@ -184,7 +215,7 @@ int decompress_image(struct dec_avcodec_ctx *ctx, const uint8_t *in, int size, u
 		return 3;
 	}
 
-	// Update colorspace from what avcodec tells us
+	// Update actual colorspace from what avcodec tells us
 	if (ctx->pixfmt!=picture->format) {
 		//fprintf(stderr, "decompress_image actual output format updated from %s to %s\n",
 		//				get_string_format(ctx->pixfmt), get_string_format(picture->format));

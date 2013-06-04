@@ -13,6 +13,8 @@
 #define inline __inline
 #endif
 
+const char **get_supported_colorspaces(void);
+
 /** Opaque structure - "context". You must have a context to decode frames. */
 struct dec_avcodec_ctx;
 
@@ -32,4 +34,3 @@ int decompress_image(struct dec_avcodec_ctx *ctx, const uint8_t *in, int size, u
 
 /** Retrieve video colorspace */
 const char *get_colorspace(struct dec_avcodec_ctx *ctx);
-

@@ -25,22 +25,47 @@ cdef extern from "Python.h":
 ctypedef unsigned char uint8_t
 ctypedef void dec_avcodec_ctx
 cdef extern from "dec_avcodec.h":
+    char **get_supported_colorspaces()
+
     dec_avcodec_ctx *init_decoder(int width, int height, const char *colorspace)
     void set_decoder_csc_format(dec_avcodec_ctx *ctx, int csc_fmt)
     void clean_decoder(dec_avcodec_ctx *)
     int decompress_image(dec_avcodec_ctx *ctx, const uint8_t *input_image, int size, uint8_t *out[3], int outstride[3])
     const char *get_colorspace(dec_avcodec_ctx *)
+    const char *get_actual_colorspace(dec_avcodec_ctx *)
+
+
+#copy C list of colorspaces to a python list:
+cdef do_get_colorspaces():
+    cdef const char** c_colorspaces
+    cdef int i
+    c_colorspaces = get_supported_colorspaces()
+    i = 0;
+    colorspaces = []
+    while c_colorspaces[i]!=NULL:
+        colorspaces.append(c_colorspaces[i])
+        i += 1
+    return colorspaces
+COLORSPACES = do_get_colorspaces()
+def get_colorspaces():
+    return COLORSPACES
 
 
 cdef class Decoder:
     cdef dec_avcodec_ctx *context
     cdef int width
     cdef int height
+    cdef char *colorspace
 
     def init_context(self, width, height, colorspace):
         self.width = width
         self.height = height
-        self.context = init_decoder(self.width, self.height, colorspace)
+        assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
+        for x in COLORSPACES:
+            if x==colorspace:
+                self.colorspace = x
+                break
+        self.context = init_decoder(self.width, self.height, self.colorspace)
         assert self.context!=NULL, "failed to init decoder for %sx%s %s" % (self.width, self.height, colorspace)
 
     def get_info(self):
@@ -85,16 +110,10 @@ cdef class Decoder:
             return None
         out = []
         strides = []
-        #print("decompress image: colorspace=%s" % self.get_colorspace())
-        if self.get_colorspace() in RGB_FORMATS:
-            strides = outstrides[0]+outstrides[1]+outstrides[2]
-            out = (<char *>dout[i])[:(self.height * strides)]
-            nplanes = 0
-        else:
-            #if self.get_colorspace() in RGB_FORMATS:
-            #    divs = (1, 1), (1, 1), (1, 1)
-            #else:
-            divs = get_subsampling_divs(self.get_colorspace())
+        #print("decompress image: colorspace=%s / %s" % (self.colorspace, self.get_colorspace()))
+        cs = self.get_actual_colorspace()
+        if cs.endswith("P"):
+            divs = get_subsampling_divs(cs)
             nplanes = 3
             for i in range(nplanes):
                 _, dy = divs[i]
@@ -108,8 +127,14 @@ cdef class Decoder:
                 plane = (<char *>dout[i])[:(height * stride)]
                 out.append(plane)
                 strides.append(stride)
-        img = ImageWrapper(0, 0, self.width, self.height, out, self.get_colorspace(), 24, strides, nplanes)
-        return  img
+        else:
+            strides = outstrides[0]+outstrides[1]+outstrides[2]
+            out = (<char *>dout[i])[:(self.height * strides)]
+            nplanes = 0
+        return ImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes)
 
     def get_colorspace(self):
+        return self.colorspace
+
+    def get_actual_colorspace(self):
         return get_colorspace(self.context)
