@@ -47,11 +47,8 @@ typedef struct {
 } swscale_flag;
 static swscale_flag swscale_flags[] = {
 	{ SWS_BICUBIC | SWS_ACCURATE_RND,		30,		"BICUBIC | SWS_ACCURATE_RND" },
-	{ SWS_BICUBLIN | SWS_ACCURATE_RND,		50,		"BICUBLIN | SWS_ACCURATE_RND" },
-	{ SWS_FAST_BILINEAR | SWS_ACCURATE_RND,	70,		"FAST_BILINEAR | SWS_ACCURATE_RND" },
-	{ SWS_BICUBIC,							80,		"BICUBIC" },
-	{ SWS_BICUBLIN,							90,		"BICUBLIN" },
-	{ SWS_FAST_BILINEAR,					100,	"FAST_BILINEAR" },
+	{ SWS_BICUBLIN | SWS_ACCURATE_RND,		60,		"BICUBLIN | SWS_ACCURATE_RND" },
+	{ SWS_FAST_BILINEAR | SWS_ACCURATE_RND,	100,	"FAST_BILINEAR | SWS_ACCURATE_RND" },
 };
 #define TOTAL_FLAGS (int)(sizeof(swscale_flags)/sizeof(swscale_flags[0]))
 
