@@ -36,7 +36,7 @@ class GTKTrayMenuBase(object):
 
     def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:
-            self.session_info.raise_()
+            self.session_info.present()
         else:
             pixbuf = self.client.get_pixbuf("statistics.png")
             if not pixbuf:
