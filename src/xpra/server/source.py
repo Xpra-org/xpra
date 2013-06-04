@@ -21,7 +21,7 @@ log = Logger()
 elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
-from xpra.server.window_source import WindowSource
+from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import HAS_SOUND
@@ -201,9 +201,7 @@ class ServerSource(object):
                 try:
                     ws.statistics.update_averages()
                     ws.calculate_batch_delay()
-                    ws.update_speed()
-                    ws.update_quality()
-                    ws.update_video_encoder()
+                    ws.reconfigure()
                 except:
                     log.error("error on window %s", wid, exc_info=True)
                 wait_time -= AFTER_EACH_WINDOW_WAIT
@@ -993,14 +991,14 @@ class ServerSource(object):
             batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
             add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
 
-    def update_video_encoders(self, force_reload=False):
+    def reconfigure(self, force_reload=False):
         for ws in self.window_sources.values():
-            ws.update_video_encoder(force_reload)
+            ws.reconfigure(force_reload)
 
     def set_min_quality(self, min_quality):
         self.default_encoding_options["min-quality"] = min_quality
         debug("set_min_quality(%s) default_encoding_options=%s", min_quality, self.default_encoding_options)
-        self.update_video_encoders()
+        self.reconfigure()
 
     def set_quality(self, quality):
         if quality<=0:
@@ -1009,12 +1007,12 @@ class ServerSource(object):
         else:
             self.default_encoding_options["quality"] = max(quality, self.default_encoding_options.get("min-quality", 0))
         debug("set_quality(%s) default_encoding_options=%s", quality, self.default_encoding_options)
-        self.update_video_encoders()
+        self.reconfigure()
 
     def set_min_speed(self, min_speed):
         self.default_encoding_options["min-speed"] = min_speed
         debug("set_min_speed(%s) default_encoding_options=%s", min_speed, self.default_encoding_options)
-        self.update_video_encoders()
+        self.reconfigure()
 
     def set_speed(self, speed):
         prev_speed = self.default_encoding_options.get("speed", 0)
@@ -1024,7 +1022,7 @@ class ServerSource(object):
         else:
             self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
         debug("set_speed(%s) prev_speed=%s, default_encoding_options=%s", speed, prev_speed, self.default_encoding_options)
-        self.update_video_encoders(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
+        self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
 
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
@@ -1042,7 +1040,7 @@ class ServerSource(object):
         if ws is None:
             batch_config = self.default_batch_config.clone()
             batch_config.wid = wid
-            ws = WindowSource(self.queue_damage, self.queue_packet, self.statistics,
+            ws = WindowVideoSource(self.queue_damage, self.queue_packet, self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,

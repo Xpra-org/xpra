@@ -49,7 +49,6 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
-from xpra.codecs.video_enc_pipeline import VideoEncoderPipeline
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -148,11 +147,6 @@ class WindowSource(object):
         self._mmap = mmap
         self._mmap_size = mmap_size
 
-        # video support:
-        self.video = None
-        if "vpx" in self.encodings or "x264" in self.encodings:
-            self.video = VideoEncoderPipeline(self.encodings, self.encoding_options)
-
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, encoding speed)
         self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, encoding speed)
@@ -165,11 +159,20 @@ class WindowSource(object):
         self._damage_cancelled = 0                      #stores the highest _sequence cancelled
         self._damage_packet_sequence = 1                #increase with every damage packet created
 
+        self._encoders = {
+                          "rgb24"   : self.rgb_encode,
+                          "rgb32"   : self.rgb_encode,
+                          }
+        for x in ("png", "png/P", "png/L", "jpeg"):
+            if x in self.SERVER_CORE_ENCODINGS:
+                self._encoders[x] = self.PIL_encode
+        if "webp" in self.SERVER_CORE_ENCODINGS:
+            self._encoders["webp"] = self.webp_encode
+        if self._mmap and self._mmap_size>0:
+            self._encoders["mmap"] = self.mmap_encode
 
     def cleanup(self):
         self.cancel_damage()
-        if self.video:
-            self.video.cleanup()
         self._damage_cancelled = float("inf")
         self.statistics.reset()
         debug("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
@@ -180,8 +183,6 @@ class WindowSource(object):
         """
         if self.encoding==encoding:
             return
-        if self.video:
-            self.video.cleanup()
         self.statistics.reset()
         self.last_pixmap_data = None
         self.encoding = encoding
@@ -189,12 +190,12 @@ class WindowSource(object):
     def _scaling_changed(self, window, *args):
         self.scaling = window.get_property("scaling")
         debug("window recommended scaling changed: %s", self.scaling)
-        self.update_video_encoder(False)
+        self.reconfigure(False)
 
     def _fullscreen_changed(self, window, *args):
         self.fullscreen = window.get_property("fullscreen")
         debug("window fullscreen state changed: %s", self.fullscreen)
-        self.update_video_encoder(False)
+        self.reconfigure(False)
 
     def set_client_properties(self, properties):
         debug("set_client_properties(%s)", properties)
@@ -331,10 +332,9 @@ class WindowSource(object):
             return max(mq, 90)
         return max(mq, self._encoding_quality[-1][1])
 
-    def update_video_encoder(self, force_reload=False):
-        #debug("update_video_encoder(%s) default_encoding_options=%s", force_reload, self.default_encoding_options)
-        if self.video:
-            self.video.update_video_encoder(self.fullscreen, self.scaling, self.get_current_quality(), self.get_current_speed(), force_reload)
+    def reconfigure(self, force_reload=False):
+        self.update_quality()
+        self.update_speed()
 
 
     def damage(self, window, x, y, w, h, options={}):
@@ -781,7 +781,7 @@ class WindowSource(object):
             by the 'data_to_packet' thread and returns a packet
             ready for sending by the network layer.
 
-            * 'mmap' will use 'mmap_send' - always if available, otherwise:
+            * 'mmap' will use 'mmap_send' + 'mmap_encode' - always if available, otherwise:
             * 'jpeg' and 'png' are handled by 'PIL_encode'.
             * 'webp' uses 'webp_encode'
             * 'x264' and 'vpx' use 'video_encode'
@@ -796,10 +796,12 @@ class WindowSource(object):
         debug("make_data_packet: image=%s, damage data: %s", image, (wid, x, y, w, h, coding))
         start = time.time()
         if self._mmap and self._mmap_size>0 and image.get_size()>256:
-            #try with mmap (will change coding to "mmap" if it succeeds)
             data = self.mmap_send(image)
             if data:
-                coding = "mmap"
+                #hackish: pass data to mmap_encode using "options":
+                coding = "mmap"         #changed encoding!
+                options["mmap_data"] = data
+
         #if client supports delta pre-compression for this encoding, use it if we can:
         delta = -1
         store = -1
@@ -817,32 +819,9 @@ class WindowSource(object):
                     image.set_pixels(data)
 
         #by default, don't set rowstride (the container format will take care of providing it):
-        outstride = 0
-        if coding.startswith("png") or coding=="jpeg":
-            data, client_options = self.PIL_encode(coding, image, options)
-        elif coding=="x264":
-            #x264 needs sizes divisible by 2:
-            w = w & 0xFFFE
-            h = h & 0xFFFE
-            assert w>0 and h>0
-            data, client_options = self.video.video_encode(wid, coding, image,
-                                            self.fullscreen, self.scaling,
-                                            self.get_current_quality(), self.get_current_speed(), options)
-        elif coding=="vpx":
-            data, client_options = self.video.video_encode(wid, coding, image,
-                                            self.fullscreen, self.scaling,
-                                            self.get_current_quality(), self.get_current_speed(), options)
-        elif coding=="rgb24" or coding=="rgb32":
-            data, client_options = self.rgb_encode(coding, image)
-            outstride = image.get_rowstride()
-        elif coding=="webp":
-            data, client_options = self.webp_encode(image, options)
-        elif coding=="mmap":
-            #actual sending is already handled via mmap_send above
-            client_options = {"rgb_format" : image.get_pixel_format()}
-            outstride = image.get_rowstride()
-        else:
-            raise Exception("invalid encoding: %s" % coding)
+        encoder = self._encoders.get(coding)
+        assert encoder is not None, "encoder not found for %s" % coding
+        data, client_options, outstride = encoder(coding, image, options)
         del image
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
@@ -874,12 +853,16 @@ class WindowSource(object):
         return packet
 
 
+    def mmap_encode(self, coding, image, options):
+        data = options["mmap_data"]
+        return data, {"rgb_format" : image.get_pixel_format()}, image.get_rowstride()
+
     def warn_encoding_once(self, key, message):
         if key not in self._encoding_warnings:
             log.warn("Warning: "+message)
             self._encoding_warnings.add(key)
 
-    def webp_encode(self, image, options):
+    def webp_encode(self, coding, image, options):
         from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
         try:
             from xpra.codecs.webm.encode import EncodeLosslessRGB, EncodeLosslessBGR, EncodeLosslessRGBA, EncodeLosslessBGRA
@@ -920,9 +903,9 @@ class WindowSource(object):
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True
-        return Compressed("webp", str(enc(image, **kwargs).data)), client_options
+        return Compressed("webp", str(enc(image, **kwargs).data)), client_options, 0
 
-    def rgb_encode(self, coding, image):
+    def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()
         if pixel_format not in self.rgb_formats:
             if not self.rgb_reformat(image):
@@ -948,10 +931,10 @@ class WindowSource(object):
                 cdata = zlib
         debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cdata))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  zlib, {}
+            return  zlib, {}, image.get_rowstride()
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, cdata), {"zlib" : level}
+        return Compressed(coding, cdata), {"zlib" : level}, image.get_rowstride()
 
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
@@ -1002,7 +985,7 @@ class WindowSource(object):
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
-        return Compressed(coding, data), client_options
+        return Compressed(coding, data), client_options, 0
 
     def rgb_reformat(self, image):
         #need to convert to a supported format!
