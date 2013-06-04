@@ -11,5 +11,6 @@ from xpra.platform.darwin.options import add_client_options
 from xpra.platform.darwin.osx_menu import getOSXMenu
 from xpra.platform.darwin.osx_tray import OSXTray
 from xpra.platform.darwin.paths import get_resources_dir
+from xpra.client.gtk2.client import XpraClient
 
 main()
