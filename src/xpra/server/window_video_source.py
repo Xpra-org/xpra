@@ -91,6 +91,14 @@ class WindowVideoSource(WindowSource):
         WindowSource.set_new_encoding(self, encoding)
 
 
+    def cancel_damage(self):
+        WindowSource.cancel_damage(self)
+        if self._last_sequence_queued<self._sequence:
+            #we must clean the video encoder to ensure
+            #we will resend a key frame because it looks like we will
+            #drop a frame which is being processed
+            self.cleanup_codecs()
+
 
     def reconfigure(self, force_reload=False):
         debug("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)

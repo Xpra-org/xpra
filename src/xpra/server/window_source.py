@@ -218,11 +218,7 @@ class WindowSource(object):
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.last_pixmap_data = None
-        if self._last_sequence_queued<self._sequence and self.video:
-            #we must clean the video encoder to ensure
-            #we will resend a key frame because it looks like we will
-            #drop a frame which is being processed
-            self.video.cleanup()
+
 
     def cancel_expire_timer(self):
         if self.expire_timer:
@@ -273,8 +269,7 @@ class WindowSource(object):
         speed_list = [x for _, x in list(self._encoding_speed)]
         if len(speed_list)>0:
             add_list_stats(info, prefix+"speed"+suffix, speed_list, show_percentile=[9])
-        if self.video:
-            self.video.add_stats(info, prefix, suffix)
+
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
