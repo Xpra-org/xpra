@@ -372,7 +372,7 @@ class WindowVideoSource(WindowSource):
                 #tell the client about scaling:
                 if self._csc_encoder and (enc_width!=width or enc_height!=height):
                     client_options["scaled_size"] = enc_width, enc_height
-            debug("video_encode encoder: %s wid=%s, %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
+            debug("video_encode encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                                 encoding, enc_width, enc_height, len(data), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
             return Compressed(encoding, data), client_options, 0
         finally:
