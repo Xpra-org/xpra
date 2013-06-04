@@ -34,6 +34,11 @@
 
 const char YUV420P[] = "YUV420P";
 
+//Although those constants exist, they are not supported (yet?):
+//"vpx_codec_encode: Invalid parameter"
+//see:
+//https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
+//"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 #define SUPPORT_RGB_MODES 0
 #if SUPPORT_RGB_MODES
 const char RGB[] = "RGB";
@@ -47,8 +52,9 @@ const char ARGB[] = "ARGB";
 const char *COLORSPACES[] = {
 	YUV420P,
 #if SUPPORT_RGB_MODES
-	RGB, BGR, BGRA, BGRX, ARGB
+	RGB, BGR, BGRA, BGRX, ARGB,
 #endif
+	NULL
 };
 
 const char **get_supported_colorspaces(void)
