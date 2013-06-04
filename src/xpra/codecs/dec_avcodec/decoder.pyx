@@ -20,6 +20,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     ctypedef void** const_void_pp "const void**"
+    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
@@ -56,6 +57,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef char *colorspace
+    cdef object last_image
 
     def init_context(self, width, height, colorspace):
         self.width = width
@@ -67,6 +69,7 @@ cdef class Decoder:
                 break
         self.context = init_decoder(self.width, self.height, self.colorspace)
         assert self.context!=NULL, "failed to init decoder for %sx%s %s" % (self.width, self.height, colorspace)
+        self.last_image = None
 
     def get_info(self):
         return {
@@ -92,6 +95,11 @@ cdef class Decoder:
         return "x264"
 
     def clean(self):
+        if self.last_image:
+            #make sure the ImageWrapper does not reference memory
+            #that is going to be freed!
+            self.last_image.clone_pixel_data()
+            self.last_image = None
         if self.context!=NULL:
             clean_decoder(self.context)
             self.context = NULL
@@ -104,6 +112,14 @@ cdef class Decoder:
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         assert self.context!=NULL
+        if self.last_image:
+            #if another thread is still using this image
+            #it is probably too late to prevent a race...
+            #(it may be using the buffer directly by now)
+            #but at least try to prevent new threads from
+            #using the same buffer we are about to write to:
+            self.last_image.clone_pixel_data()
+            self.last_image = None
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
         i = decompress_image(self.context, buf, buf_len, dout, outstrides)
         if i!=0:
@@ -124,14 +140,16 @@ cdef class Decoder:
                 else:
                     raise Exception("invalid height divisor %s" % dy)
                 stride = outstrides[i]
-                plane = (<char *>dout[i])[:(height * stride)]
+                plane = PyBuffer_FromMemory(<void *>dout[i], height * stride)
                 out.append(plane)
                 strides.append(stride)
         else:
             strides = outstrides[0]+outstrides[1]+outstrides[2]
-            out = (<char *>dout[i])[:(self.height * strides)]
+            out = PyBuffer_FromMemory(<void *>dout[0], self.height * strides)
             nplanes = 0
-        return ImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes)
+        img = ImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes)
+        self.last_image = img
+        return img
 
     def get_colorspace(self):
         return self.colorspace

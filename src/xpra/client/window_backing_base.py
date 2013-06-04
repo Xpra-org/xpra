@@ -264,8 +264,10 @@ class WindowBackingBase(object):
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         rgb_format = "RGB"  #we may want to be able to change this (RGBA, BGR, ..)
         #as some video formats like vpx can forward transparency
-        #also we can save the csc step in some cases
+        #also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
+        #to handle this, we would need the decoder to handle buffers allocation properly:
+        assert pixel_format!=rgb_format, "no csc needed! but we don't handle this scenario yet!"
         if self._csc_decoder is not None:
             if self._csc_decoder.get_src_format()!=pixel_format:
                 log.info("do_video_paint csc: switching src format from %s to %s", self._csc_decoder.get_src_format(), pixel_format)
@@ -281,18 +283,15 @@ class WindowBackingBase(object):
                 log.info("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          width, height, self._csc_decoder.get_dst_width(), self._csc_decoder.get_dst_height())
                 self.do_clean_csc_decoder()
-        if self._csc_decoder is None and pixel_format!=rgb_format:
+        if self._csc_decoder is None:
             from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
             self._csc_decoder = ColorspaceConverter()
             self._csc_decoder.init_context(enc_width, enc_height, pixel_format,
                                            width, height, rgb_format, 0)
             log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
-        if self._csc_decoder:
-            rgb = self._csc_decoder.convert_image(img)
-            log.info("do_video_paint rgb(%s)=%s", img, rgb)
-            img.free()
-        else:
-            rgb = img
+        rgb = self._csc_decoder.convert_image(img)
+        log.info("do_video_paint rgb(%s)=%s", img, rgb)
+        img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #this will also take care of firing callbacks (from the UI thread):
         def paint():

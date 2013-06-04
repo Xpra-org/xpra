@@ -87,10 +87,11 @@ cdef class CSCImage:
 class CSCImageWrapper(ImageWrapper):
 
     def free(self):                             #@DuplicatedSignature
-        #print("YUVImageWrapper.free() csc_image=%s" % self.csc_image)
+        ImageWrapper.free(self)
         if self.csc_image:
             self.csc_image.free()
             self.csc_image = None
+
 
 cdef class ColorspaceConverter:
     cdef int frames

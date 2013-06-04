@@ -322,6 +322,9 @@ class GLPixmapBacking(GTK2WindowBacking):
         #we need to run in UI thread from here on!
         #debug("paint_yuv(..) will call via idle_add")
         assert enc_width==width and enc_height==height, "scaling not implemented for OpenGL!"
+        #ideally, the decoder would manage buffers properly...
+        #instead of relying on us making a copy before leaving the decoding thread
+        img.clone_pixel_data()
         gobject.idle_add(self.gl_paint_yuv, img, x, y, width, height, callbacks)
 
     def gl_paint_yuv(self, img, x, y, w, h, callbacks):

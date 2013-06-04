@@ -17,6 +17,7 @@ class ImageWrapper(object):
         self.depth = depth
         self.rowstride = rowstride
         self.planes = planes
+        self.freed = False
 
     def __str__(self):
         return "%s(%s:%s)" % (type(self), self.pixel_format, self.get_geometry())
@@ -67,10 +68,25 @@ class ImageWrapper(object):
     def set_pixels(self, pixels):
         self.pixels = pixels
 
+    def clone_pixel_data(self):
+        if not self.freed:
+            if self.planes == 0:
+                #no planes, simple buffer:
+                assert self.pixels, "no pixels!"
+                self.pixels = self.pixels[:]
+            else:
+                assert self.planes>0
+                for i in range(self.planes):
+                    self.pixels[i] = self.pixels[i][:]
+
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
         self.free()
 
     def free(self):
-        pass
         #print("ImageWrapper.free()")
+        if not self.freed:
+            self.freed = True
+            self.planes = None
+            self.pixels = None
+            self.pixel_format = None
