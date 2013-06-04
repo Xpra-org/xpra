@@ -211,10 +211,6 @@ class UIXpraClient(XpraClientBase):
         XpraClientBase.run(self)    #start network threads
         self._draw_thread.start()
         self.send_hello()
-        if self.pings:
-            self.timeout_add(1000, self.send_ping)
-        else:
-            self.timeout_add(10*1000, self.send_ping)
 
 
     def quit(self, exit_code=0):

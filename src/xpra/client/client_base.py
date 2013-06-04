@@ -355,6 +355,10 @@ class XpraClientBase(object):
             self.set_server_encryption(capabilities)
         self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
         self._protocol.aliases = capabilities.get("aliases", {})
+        if self.pings:
+            self.timeout_add(1000, self.send_ping)
+        else:
+            self.timeout_add(10*1000, self.send_ping)
         return True
 
     def _process_set_deflate(self, packet):
