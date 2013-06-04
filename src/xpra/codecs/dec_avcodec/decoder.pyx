@@ -31,7 +31,7 @@ cdef extern from "dec_avcodec.h":
     dec_avcodec_ctx *init_decoder(int width, int height, const char *colorspace)
     void set_decoder_csc_format(dec_avcodec_ctx *ctx, int csc_fmt)
     void clean_decoder(dec_avcodec_ctx *)
-    int decompress_image(dec_avcodec_ctx *ctx, const uint8_t *input_image, int size, uint8_t *out[3], int outstride[3])
+    int decompress_image(dec_avcodec_ctx *ctx, const uint8_t *input_image, int size, uint8_t *out[3], int outstride[3]) nogil
     const char *get_colorspace(dec_avcodec_ctx *)
     const char *get_actual_colorspace(dec_avcodec_ctx *)
 
@@ -121,7 +121,8 @@ cdef class Decoder:
             self.last_image.clone_pixel_data()
             self.last_image = None
         PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)
-        i = decompress_image(self.context, buf, buf_len, dout, outstrides)
+        with nogil:
+            i = decompress_image(self.context, buf, buf_len, dout, outstrides)
         if i!=0:
             return None
         out = []

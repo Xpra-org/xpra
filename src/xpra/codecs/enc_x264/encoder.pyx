@@ -35,7 +35,7 @@ cdef extern from "enc_x264.h":
         const char *colorspace, const char *profile,
         int initial_quality, int initial_speed)
     void clean_encoder(enc_x264_ctx *)
-    int compress_image(enc_x264_ctx *ctx, uint8_t *input[3], int in_stride[3], uint8_t **out, int *outsz)
+    int compress_image(enc_x264_ctx *ctx, uint8_t *input[3], int in_stride[3], uint8_t **out, int *outsz) nogil
     int get_encoder_quality(enc_x264_ctx *ctx)
     int get_encoder_speed(enc_x264_ctx *ctx)
 
@@ -151,6 +151,8 @@ cdef class Encoder:
         cdef int strides[3]
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
+        cdef uint8_t *cout
+        cdef int coutsz
         cdef int quality_override = options.get("quality", -1)
         cdef int speed_override = options.get("speed", -1)
         cdef int saved_quality = get_encoder_quality(self.context)
@@ -179,23 +181,19 @@ cdef class Encoder:
                 strides[i] = istrides[i]
         print("compress_image strides=%s, planes=%s" % ([x for x in strides], [len(x or "") for x in pic_in]))
         try:
-            return self.do_compress_image(pic_in, strides), self.get_client_options(options)
+            with nogil:
+                i = compress_image(self.context, pic_in, strides, &cout, &coutsz)
+            if i!=0:
+                return None, {}
+            coutv = (<char *>cout)[:coutsz]
+            self.frames += 1
+            return  coutv, self.get_client_options(options)
         finally:
             if speed_override>=0 and saved_speed!=speed_override:
                 set_encoding_speed(self.context, saved_speed)
             if quality_override>=0 and saved_quality!=quality_override:
                 set_encoding_quality(self.context, saved_quality)
 
-    cdef do_compress_image(self, uint8_t *pic_in[], int strides[]):
-        cdef int i                              #@DuplicatedSignature
-        cdef uint8_t *cout
-        cdef int coutsz
-        i = compress_image(self.context, pic_in, strides, &cout, &coutsz)
-        if i!=0:
-            return None
-        coutv = (<char *>cout)[:coutsz]
-        self.frames += 1
-        return  coutv
 
     def set_encoding_speed(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct

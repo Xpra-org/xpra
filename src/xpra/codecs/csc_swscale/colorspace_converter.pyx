@@ -27,7 +27,7 @@ cdef extern from "csc_swscale.h":
     csc_swscale_ctx *init_csc(int src_width, int src_height, const char *src_format,
                               int dst_width, int dst_height, const char *dst_format, int speed)
     void free_csc(csc_swscale_ctx *ctx)
-    int csc_image(csc_swscale_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3])
+    int csc_image(csc_swscale_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3]) nogil
     void free_csc_image(uint8_t *buf[3])
 
 
@@ -183,6 +183,7 @@ cdef class ColorspaceConverter:
         cdef int i                          #@DuplicatedSignature
         cdef int height
         cdef int stride
+        cdef int result
         planes = image.get_planes()
         assert planes in (0, 1, 3), "invalid number of planes: %s" % planes
         input = image.get_pixels()
@@ -198,7 +199,8 @@ cdef class ColorspaceConverter:
         for i in range(planes):
             input_stride[i] = strides[i]
             PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
-        result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
+        with nogil:
+            result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
         if result != 0:
             return None
         #now parse the output:
