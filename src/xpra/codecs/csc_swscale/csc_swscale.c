@@ -78,7 +78,7 @@ struct csc_swscale_ctx {
 	int dst_width;
 	int dst_height;
 	enum PixelFormat dst_format;
-	swscale_flag *flags;
+	const swscale_flag *flags;
 	struct SwsContext *sws_ctx;
 };
 
