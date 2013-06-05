@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
+
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
@@ -102,6 +104,7 @@ cdef class ColorspaceConverter:
     cdef int dst_width
     cdef int dst_height
     cdef char* dst_format
+    cdef double time
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed):    #@DuplicatedSignature
@@ -109,6 +112,7 @@ cdef class ColorspaceConverter:
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
+        self.time = 0
         #ugly trick to use a string which won't go away from underneath us: 
         assert src_format in COLORSPACES, "invalid source format: %s" % src_format
         for x in COLORSPACES:
@@ -125,7 +129,7 @@ cdef class ColorspaceConverter:
                                 self.dst_width, self.dst_height, self.dst_format, speed)
 
     def get_info(self):
-        return {"flags"     : get_flags_description(self.context),
+        info = {"flags"     : get_flags_description(self.context),
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
@@ -133,6 +137,10 @@ cdef class ColorspaceConverter:
                 "dst_width" : self.dst_width,
                 "dst_height": self.dst_height,
                 "dst_format": self.dst_format}
+        if self.frames>0 and self.time>0:
+            pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
+            info["pixels_per_second"] = int(pps)
+        return info
 
     def __str__(self):
         return "swscale(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
@@ -199,10 +207,14 @@ cdef class ColorspaceConverter:
         for i in range(planes):
             input_stride[i] = strides[i]
             PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
+        start = time.time()
         with nogil:
             result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
         if result != 0:
             return None
+        end = time.time()
+        self.time += (end-start)
+        self.frames += 1
         #now parse the output:
         csci = CSCImage()           #keep a reference to memory for cleanup
         if self.dst_format.endswith("P"):

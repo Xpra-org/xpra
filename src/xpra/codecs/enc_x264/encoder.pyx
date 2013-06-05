@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import os
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
@@ -75,11 +76,13 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef char *src_format
+    cdef double time
 
     def init_context(self, int width, int height, src_format, int quality, int speed, options):    #@DuplicatedSignature
         self.width = width
         self.height = height
         self.frames = 0
+        self.time = 0
         assert src_format in COLORSPACES, "invalid source format: %s" % src_format
         for x in COLORSPACES:
             if x==src_format:
@@ -93,12 +96,17 @@ cdef class Encoder:
             raise Exception("context initialization failed for format %s" % src_format)
 
     def get_info(self):
-        return {"profile"   : get_profile(self.context),
+        cdef float pps
+        info = {"profile"   : get_profile(self.context),
                 "preset"    : get_preset(self.context),
                 "frames"    : self.frames,
                 "width"     : self.width,
                 "height"    : self.height,
                 "src_format": self.src_format}
+        if self.frames>0 and self.time>0:
+            pps = float(self.width) * float(self.height) * float(self.frames) / self.time
+            info["pixels_per_second"] = int(pps)
+        return info
 
     def __str__(self):
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
@@ -180,11 +188,14 @@ cdef class Encoder:
                 pic_in[i] = pic_buf
                 strides[i] = istrides[i]
         try:
+            start = time.time()
             with nogil:
                 i = compress_image(self.context, pic_in, strides, &cout, &coutsz)
             if i!=0:
                 return None, {}
             coutv = (<char *>cout)[:coutsz]
+            end = time.time()
+            self.time += end-start
             self.frames += 1
             return  coutv, self.get_client_options(options)
         finally:
