@@ -40,29 +40,18 @@ Speed results at 1024x1024 on Athlon II X4 620:
    */
 
 /* string format name <-> swscale flag correspondence */
-typedef struct {
+struct swscale_flag{
 	const int flags;					/* swscale flags, ie: BICUBIC */
 	const int speed;					/* ie: 50 */
 	const char *description;			/* ie: "BICUBIC" */
-} swscale_flag;
-static swscale_flag swscale_flags[] = {
+};
+
+static struct swscale_flag swscale_flags[] = {
 	{ SWS_BICUBIC | SWS_ACCURATE_RND,		30,		"BICUBIC | SWS_ACCURATE_RND" },
 	{ SWS_BICUBLIN | SWS_ACCURATE_RND,		60,		"BICUBLIN | SWS_ACCURATE_RND" },
 	{ SWS_FAST_BILINEAR | SWS_ACCURATE_RND,	80,		"FAST_BILINEAR | SWS_ACCURATE_RND" },
 };
 #define TOTAL_FLAGS (int)(sizeof(swscale_flags)/sizeof(swscale_flags[0]))
-
-
-const swscale_flag *get_swscale_flags(int speed) {
-	int i = 0;
-	while (i<(TOTAL_FLAGS-1) && swscale_flags[i].speed<=speed)
-	{
-		i++;
-	}
-	return &swscale_flags[i];
-}
-
-
 
 
 /** Context for csc_swscale_lib
@@ -75,7 +64,7 @@ struct csc_swscale_ctx {
 	int dst_width;
 	int dst_height;
 	enum PixelFormat dst_format;
-	const swscale_flag *flags;
+	const struct swscale_flag *flags;
 	struct SwsContext *sws_ctx;
 };
 
@@ -109,6 +98,15 @@ const char **get_supported_colorspaces(void)
 	return COLORSPACES;
 }
 
+static const struct swscale_flag *get_swscale_flags(int speed) 
+{
+	int i;
+	for (i = 0; i < TOTAL_FLAGS; i++) {
+	   if (swscale_flags[i].speed > speed)	
+		   return &swscale_flags[i];
+	}
+	return &swscale_flags[i - 1];
+}
 
 /* string format name <-> swscale format correspondence */
 static const struct {
