@@ -105,6 +105,7 @@ cdef class Encoder:
                 "src_format": self.src_format}
         if self.frames>0 and self.time>0:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
+            info["total_time_ms"] = int(self.time*1000.0)
             info["pixels_per_second"] = int(pps)
         return info
 
