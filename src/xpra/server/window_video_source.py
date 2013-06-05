@@ -111,6 +111,15 @@ class WindowVideoSource(WindowSource):
 
 
     def reconfigure(self, force_reload=False):
+        """
+            This is called when we want to force a full re-init (force_reload=True)
+            or from the timer that allows to tune the quality and speed.
+            (this tuning is done in WindowSource.reconfigure)
+            Here we re-evaluate if the pipeline we are currently using
+            is really the best one, and if not we switch to the best one.
+            This uses get_video_pipeline_options() to get a list of pipeline
+            options with a score for each.
+        """
         debug("reconfigure(%s) csc_encoder=%s, video_encoder=%s", force_reload, self._csc_encoder, self._video_encoder)
         WindowSource.reconfigure(self, force_reload)
         if not self._video_encoder:
@@ -162,6 +171,16 @@ class WindowVideoSource(WindowSource):
 
 
     def get_video_pipeline_options(self, encoding, width, height, src_format):
+        """
+            Given a picture format (width, height and src pixel format),
+            we find all the pipeline options that will allow us to compress
+            it using the given encoding.
+            First, we try with direct encoders (for those that support the
+            source pixel format natively), then we try all the combinations
+            using csc encoders to convert to an intermediary format.
+            Each solution is rated and we return all of them in descending
+            score (best solution comes first).
+        """
         encoder_specs = self._video_pipeline_helper.get_encoder_specs(encoding)
         assert len(encoder_specs)>0, "cannot handle %s encoding!" % encoding
         scores = []
@@ -191,8 +210,18 @@ class WindowVideoSource(WindowSource):
         debug("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
         return s
 
-    def get_score(self, csc_format, csc_spec, encoder_spec,
-                  width, height):
+    def get_score(self, csc_format, csc_spec, encoder_spec, width, height):
+        """
+            Given an optional csc step (csc_format and csc_spec), and
+            and a required encoding step (encoder_spec and width/height),
+            we calculate a score of how well this matches our requirements:
+            * our quality target (as per get_currend_quality)
+            * our speed target (as per get_current_speed)
+            * how expensive it would be to switch to this pipeline option
+            Note: we know the current pipeline settings, so the "switching
+            cost" will be lower for pipelines that share components with the
+            current one.
+        """
         #first discard if we cannot handle this size:
         if csc_spec and not csc_spec.can_handle(width, height):
             return -1, ""
@@ -251,6 +280,15 @@ class WindowVideoSource(WindowSource):
         return int((qscore+sscore+er_score)/3.0)
 
     def get_encoder_dimensions(self, csc_spec, width, height):
+        """
+            Given a csc spec and dimensions, we calculate
+            the dimensions that we would use as output.
+            Taking into account:
+            * applications can require scaling (see "scaling" attribute)
+            * we scale fullscreen and maximize windows when at high speed
+              and low quality.
+            * we do not bother scaling small dimensions
+        """
         if not csc_spec or not self.video_scaling or width<=32 or height<=16:
             return width, height
         #FIXME: take screensize into account,
@@ -279,6 +317,10 @@ class WindowVideoSource(WindowSource):
 
 
     def check_pipeline(self, encoding, width, height, src_format):
+        """
+            Checks that the current pipeline is still valid
+            for the given input. If not, close it and make a new one.
+        """
         #must be called with video lock held!
         if self._video_pipeline_helper.check_pipeline(self._csc_encoder, self._video_encoder, encoding, width, height, src_format):
             return True  #OK!
@@ -292,6 +334,12 @@ class WindowVideoSource(WindowSource):
         return self.setup_pipeline(scores, width, height, src_format)
 
     def setup_pipeline(self, scores, width, height, src_format):
+        """
+            Given a list of pipeline options ordered by their score
+            and an input format (width, height and source pixel format),
+            we try to create a working pipeline, trying each option
+            until one succeeds.
+        """
         start = time.time()
         debug("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
@@ -378,6 +426,13 @@ class WindowVideoSource(WindowSource):
             self._lock.release()
 
     def csc_image(self, image, width, height):
+        """
+            Takes a source image and converts it
+            using the current csc_encoder.
+            If there are no csc_encoders (because the video
+            encoder can process the source format directly)
+            then the image is returned unchanged.
+        """
         if self._csc_encoder is None:
             #no csc step!
             return image, image.get_pixel_format(), width, height
