@@ -454,21 +454,22 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         import gtk          #@Reimport
 
     if shadowing:
-        xvfb_pid = None
-    elif clobber:
-        xvfb_pid = get_pid()
-    else:
-        if xvfb_error(True):
-            return  1
-        xvfb_pid = xvfb.pid
-
-    if shadowing:
+        xvfb_pid = None     #we don't own the display
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
         app.init(sockets, opts)
     else:
         from xpra.x11.gtk_x11 import gdk_display_source
         assert gdk_display_source
+
+        if clobber:
+            #get the saved pid:
+            xvfb_pid = get_pid()
+        else:
+            #check that the vfb has started ok:
+            if xvfb_error(True):
+                return  1
+            xvfb_pid = xvfb.pid
 
         #check for an existing window manager:
         from xpra.x11.gtk_x11.wm import wm_check
