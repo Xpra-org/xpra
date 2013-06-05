@@ -304,9 +304,7 @@ class WindowVideoSource(WindowSource):
                     enc_width, enc_height = self.get_encoder_dimensions(csc_spec, width, height)
                     #csc speed is not very important compared to encoding speed,
                     #so make sure it never degrades quality
-                    #and reduce our requirements when scaling (since this will increase speed already):
                     csc_speed = min(speed, 100-quality/2.0)
-                    csc_speed = csc_speed * (enc_width * enc_height) / (width * height)
                     csc_start = time.time()
                     self._csc_encoder = csc_spec.codec_class()
                     self._csc_encoder.init_context(width, height, src_format,
