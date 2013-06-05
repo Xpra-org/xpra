@@ -39,6 +39,9 @@ class WindowVideoSource(WindowSource):
             if x in self.SERVER_CORE_ENCODINGS:
                 self._encoders[x] = self.video_encode
 
+        self.width_mask = 0xFFFF
+        self.height_mask = 0xFFFF
+
         self._csc_encoder = None
         self._video_encoder = None
         self._lock = Lock()               #to ensure we serialize access to the encoder and its internals
@@ -101,13 +104,16 @@ class WindowVideoSource(WindowSource):
 
     def process_damage_region(self, damage_time, window, x, y, w, h, coding, options):
         WindowSource.process_damage_region(self, damage_time, window, x, y, w, h, coding, options)
-        if coding in ("vpx", "x264") and (w%2==1 or h%2==1):
-            if w%2==1:
-                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, 1*h)
-                WindowSource.process_damage_region(self, damage_time, window, x+w-1, y, 1, h, lossless, options)
-            if h%2==1:
-                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*1)
-                WindowSource.process_damage_region(self, damage_time, window, x, y+h-1, x+w, 1, lossless, options)
+        #now figure out if we need to send edges separately:
+        dw = w - (w & self.width_mask)
+        dh = h - (h & self.height_mask)
+        if coding in ("vpx", "x264") and (dw>0 or dh>0):
+            if dw>0:
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, dw*h)
+                WindowSource.process_damage_region(self, damage_time, window, x+w-dw, y, dw, h, lossless, options)
+            if dh>0:
+                lossless = self.find_common_lossless_encoder(window.has_alpha(), coding, w*dh)
+                WindowSource.process_damage_region(self, damage_time, window, x, y+h-dh, x+w, dh, lossless, options)
 
 
     def reconfigure(self, force_reload=False):
@@ -224,9 +230,9 @@ class WindowVideoSource(WindowSource):
         """
         #first discard if we cannot handle this size:
         if csc_spec and not csc_spec.can_handle(width, height):
-            return -1, ""
+            return -1
         if not encoder_spec.can_handle(width, height):
-            return -1, ""
+            return -1
         #debug("get_score%s", (csc_format, csc_spec, encoder_spec,
         #          width, height, min_quality, target_quality, min_speed, target_speed))
         def clamp(v):
@@ -261,12 +267,22 @@ class WindowVideoSource(WindowSource):
         #score for "edge resistance":
         ecsc_score = 100
         if csc_spec:
+            #OR the masks so we have a chance of making it work
+            width_mask = csc_spec.width_mask & encoder_spec.width_mask
+            height_mask = csc_spec.height_mask & encoder_spec.height_mask
+            csc_width = width & width_mask
+            csc_height = height & height_mask
             if self._csc_encoder is None or self._csc_encoder.get_dst_format()!=csc_format or \
                type(self._csc_encoder)!=csc_spec.codec_class or \
-               self._csc_encoder.get_src_width()!=width or self._csc_encoder.get_src_height()!=height:
+               self._csc_encoder.get_src_width()!=csc_width or self._csc_encoder.get_src_height()!=csc_height:
                 #if we have to change csc, account for new csc setup cost:
                 ecsc_score = 100 - csc_spec.setup_cost
-        enc_width, enc_height = self.get_encoder_dimensions(csc_spec, width, height)
+            enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
+        else:
+            width_mask = encoder_spec.width_mask
+            height_mask = encoder_spec.height_mask
+            enc_width = width & width_mask
+            enc_height = height & height_mask
         ee_score = 100
         if self._video_encoder is None or type(self._video_encoder)!=encoder_spec.codec_class or \
            self._video_encoder.get_src_format()!=csc_format or \
@@ -279,22 +295,22 @@ class WindowVideoSource(WindowSource):
                   width, height), int(qscore), int(sscore), int(er_score))
         return int((qscore+sscore+er_score)/3.0)
 
-    def get_encoder_dimensions(self, csc_spec, width, height):
+    def get_encoder_dimensions(self, csc_spec, encoder_spec, width, height):
         """
-            Given a csc spec and dimensions, we calculate
+            Given a csc and encoder specs and dimensions, we calculate
             the dimensions that we would use as output.
             Taking into account:
             * applications can require scaling (see "scaling" attribute)
             * we scale fullscreen and maximize windows when at high speed
               and low quality.
             * we do not bother scaling small dimensions
+            * the encoder may not support all dimensions
+              (see width and height masks)
         """
-        if not csc_spec or not self.video_scaling or width<=32 or height<=16:
-            return width, height
-        #FIXME: take screensize into account,
-        #we want to scale more when speed is high and min-quality is low
-        #also framerate?
+        #TODO: framerate is relevant, probably
         scaling = self.scaling
+        if not self.video_scaling:
+            scaling = None
         if scaling is None:
             quality = self.get_current_quality()
             speed = self.get_current_speed()
@@ -311,8 +327,10 @@ class WindowVideoSource(WindowSource):
             return width, height
         if float(v)/float(u)<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)
             v, u = 1, 10
-        enc_width = int(width * v / u)
-        enc_height = int(height * v / u)
+        enc_width = int(width * v / u) & encoder_spec.width_mask
+        enc_height = int(height * v / u) & encoder_spec.height_mask
+        if not encoder_spec.can_handle(enc_width, enc_height):
+            return width, height
         return enc_width, enc_height
 
 
@@ -321,9 +339,11 @@ class WindowVideoSource(WindowSource):
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.
         """
+        debug("check_pipeline%s", (encoding, width, height, src_format))
         #must be called with video lock held!
-        if self._video_pipeline_helper.check_pipeline(self._csc_encoder, self._video_encoder, encoding, width, height, src_format):
+        if self.do_check_pipeline(encoding, width, height, src_format):
             return True  #OK!
+
         #cleanup existing one if needed:
         if self._csc_encoder:
             self.do_csc_encoder_cleanup()
@@ -332,6 +352,56 @@ class WindowVideoSource(WindowSource):
         #and make a new one:
         scores = self.get_video_pipeline_options(encoding, width, height, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
+
+    def do_check_pipeline(self, encoding, width, height, src_format):
+        """
+            Checks that the current pipeline is still valid
+            for the given input. If not, close it and make a new one.
+        """
+        debug("do_check_pipeline%s", (encoding, width, height, src_format))
+        #must be called with video lock held!
+        if self._video_encoder is None:
+            return False
+
+        if self._csc_encoder:
+            csc_width = width & self.width_mask
+            csc_height = height & self.height_mask
+            if self._csc_encoder.get_src_format()!=src_format:
+                debug("check_pipeline csc: switching source format from %s to %s",
+                                            self._csc_encoder.get_src_format(), src_format)
+                return False
+            elif self._csc_encoder.get_src_width()!=csc_width or self._csc_encoder.get_src_height()!=csc_height:
+                debug("check_pipeline csc: window dimensions have changed from %sx%s to %sx%s, csc info=%s",
+                                            self._csc_encoder.get_src_width(), self._csc_encoder.get_src_height(), csc_width, csc_height, self._csc_encoder.get_info())
+                return False
+            elif self._csc_encoder.get_dst_format()!=self._video_encoder.get_src_format():
+                log.warn("check_pipeline csc: intermediate format mismatch: %s vs %s, csc info=%s",
+                                            self._csc_encoder.get_dst_format(), self._video_encoder.get_src_format(), self._csc_encoder.get_info())
+                return False
+
+            encoder_src_format = self._csc_encoder.get_dst_format()
+            encoder_src_width = self._csc_encoder.get_dst_width()
+            encoder_src_height = self._csc_encoder.get_dst_height()
+        else:
+            #direct to video encoder without csc:
+            encoder_src_format = src_format
+            encoder_src_width = width & self.width_mask
+            encoder_src_height = height & self.height_mask
+
+        if self._video_encoder.get_src_format()!=encoder_src_format:
+            debug("check_pipeline video: invalid source format %s, expected %s",
+                                            self._video_encoder.get_src_format(), encoder_src_format)
+            return False
+        elif self._video_encoder.get_type()!=encoding:
+            debug("check_pipeline video: invalid encoding %s, expected %s",
+                                            self._video_encoder.get_type(), encoding)
+            return False
+        elif self._video_encoder.get_width()!=encoder_src_width or self._video_encoder.get_height()!=encoder_src_height:
+            debug("check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
+                                            self._video_encoder.get_width(), self._video_encoder.get_height(), encoder_src_width, encoder_src_height)
+            return False
+        return True
+
 
     def setup_pipeline(self, scores, width, height, src_format):
         """
@@ -349,20 +419,28 @@ class WindowVideoSource(WindowSource):
                 speed = self.get_current_speed()
                 quality = self.get_current_quality()
                 if csc_spec:
-                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, width, height)
+                    #TODO: no need to OR encoder mask if we are scaling...
+                    self.width_mask = csc_spec.width_mask & encoder_spec.width_mask
+                    self.height_mask = csc_spec.height_mask & encoder_spec.height_mask
+                    csc_width = width & self.width_mask
+                    csc_height = height & self.height_mask
+                    enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
                     #csc speed is not very important compared to encoding speed,
                     #so make sure it never degrades quality
                     csc_speed = min(speed, 100-quality/2.0)
                     csc_start = time.time()
                     self._csc_encoder = csc_spec.codec_class()
-                    self._csc_encoder.init_context(width, height, src_format,
+                    self._csc_encoder.init_context(csc_width, csc_height, src_format,
                                                           enc_width, enc_height, enc_in_format, csc_speed)
                     csc_end = time.time()
                     debug("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
                           self._csc_encoder, self._csc_encoder.get_info(), (csc_end-csc_start)*1000.0)
                 else:
-                    enc_width = width
-                    enc_height = height
+                    #use the encoder's mask directly since that's all we have to worry about!
+                    self.width_mask = encoder_spec.width_mask
+                    self.height_mask = encoder_spec.height_mask
+                    enc_width = width & self.width_mask
+                    enc_height = height & self.height_mask
                 enc_start = time.time()
                 self._video_encoder = encoder_spec.codec_class()
                 self._video_encoder.init_context(enc_width, enc_height, enc_in_format, quality, speed, self.encoding_options)
@@ -388,14 +466,17 @@ class WindowVideoSource(WindowSource):
         """
         debug("video_encode%s", (encoding, image, options))
         x, y, w, h = image.get_geometry()[:4]
-        width = w & 0xFFFE
-        height = h & 0xFFFE
         assert x==0 and y==0, "invalid position: %s,%s" % (x,y)
         src_format = image.get_pixel_format()
         try:
             self._lock.acquire()
-            if not self.check_pipeline(encoding, width, height, src_format):
+            if not self.check_pipeline(encoding, w, h, src_format):
                 raise Exception("failed to setup a pipeline for %s encoding!" % encoding)
+
+            #dw and dh are the edges we don't handle here
+            width = w & self.width_mask
+            height = h & self.height_mask
+            debug("video_encode%s w-h=%s-%s, width-height=%s-%s", (encoding, image, options), w, h, width, height)
 
             csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 

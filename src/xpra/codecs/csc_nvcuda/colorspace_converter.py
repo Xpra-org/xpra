@@ -17,7 +17,7 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(ColorspaceConverter, 100, 100, 10, 100, 0, 50, 4096, 4096, 4096*4096, False)
+    return codec_spec(ColorspaceConverter, setup_cost=10)
 
 
 class ColorspaceConverter(object):

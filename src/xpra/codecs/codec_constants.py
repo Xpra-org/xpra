@@ -44,21 +44,30 @@ RGB_FORMATS = ("XRGB",
 
 class codec_spec(object):
 
-    def __init__(self, codec_class, quality, speed, setup_cost, cpu_cost, gpu_cost, latency, max_w, max_h, max_pixels, can_scale=False):
+    def __init__(self, codec_class, quality=100, speed=100,
+                    setup_cost=50, cpu_cost=100, gpu_cost=0,
+                    min_w=1, min_h=1, max_w=4*1024, max_h=4*1024, max_pixels=4*1024*4*1024,
+                    can_scale=False,
+                    width_mask=0xFFFF, height_mask=0xFFFF):
         self.codec_class = codec_class
         self.quality = quality
         self.speed = speed
         self.setup_cost = setup_cost
         self.cpu_cost = cpu_cost
         self.gpu_cost = gpu_cost
-        self.latency = latency
+        self.min_w = min_w
+        self.min_h = min_h
         self.max_w = max_w
         self.max_h = max_h
         self.max_pixels = max_pixels
+        self.width_mask = width_mask
+        self.height_mask = height_mask
         self.can_scale = can_scale
 
     def can_handle(self, width, height):
-        return self.max_w>=width and self.max_h>=height and self.max_pixels>(width*height)
+        return self.max_w>=width and self.max_h>=height \
+            and self.min_w<=width and self.min_h<=height \
+            and self.max_pixels>(width*height)
 
     def __str__(self):
         return "codec_spec(%s)" % self.__dict__

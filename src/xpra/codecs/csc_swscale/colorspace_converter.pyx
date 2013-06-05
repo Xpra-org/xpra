@@ -57,10 +57,10 @@ def get_output_colorspaces(input_colorspace):
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES)
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    #we can handle high quality and full speed
     #setup cost is very low (usually less than 1ms!)
-    return codec_spec(ColorspaceConverter, 100, 100, 20, 100, 0, 0, 4096, 4096, 4096*4096, True)
+    #there are restrictions on dimensions (8x2 minimum!)
+    #swscale can be used to scale (obviously)
+    return codec_spec(ColorspaceConverter, setup_cost=20, min_w=8, min_h=2, can_scale=True)
 
 
 cdef class CSCImage:

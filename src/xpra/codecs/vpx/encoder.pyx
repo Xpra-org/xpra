@@ -52,7 +52,7 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Encoder, 100, 100, 40, 100, 0, 30, 4096, 4096, 4096*4096)
+    return codec_spec(Encoder, setup_cost=40)
 
 
 cdef class Encoder:

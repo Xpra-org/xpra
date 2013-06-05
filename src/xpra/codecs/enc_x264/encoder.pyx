@@ -67,7 +67,7 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
-    return codec_spec(Encoder, 100, 100, 70, 100, 0, 40, 4096, 4096, 4096*4096)
+    return codec_spec(Encoder, setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
 
 cdef class Encoder:

@@ -12,7 +12,7 @@ def get_colorspaces():
 def get_spec(colorspace):
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(Encoder, 60, 100, 80, 10, 100, 80, 4096, 4096, 4096*4096)
+    return codec_spec(Encoder, quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100)
 
 
 class Encoder(object):
