@@ -607,127 +607,6 @@ def calc_constrained_size(width, height, hints):
     return (new_width, new_height, vis_width, vis_height)
 
 
-cdef class XShmWrapper(object):
-    cdef Display *display                              #@DuplicatedSignature
-    cdef XShmSegmentInfo shminfo
-    cdef XImage *image
-    cdef int width
-    cdef int height
-    cdef XImageWrapper imageWrapper
-    cdef Bool closed
-
-    def __init__(self):
-        self.imageWrapper = None
-
-    def init(self, window):
-        cdef Visual *visual
-        cdef int depth
-        cdef size_t size
-        self.closed = False
-        self.shminfo.shmaddr = <char *> -1
-
-        self.display = get_xdisplay_for(window)
-        visual = _get_xvisual(window.get_visual())
-        depth = window.get_depth()
-        self.width, self.height = window.get_size()
-        self.image = XShmCreateImage(self.display, visual, depth,
-                          ZPixmap, NULL, &self.shminfo,
-                          self.width, self.height)
-        log.info("XShmWrapper.XShmCreateImage(..) %s", self.image!=NULL)
-        if self.image==NULL:
-            log.info("XShmWrapper.XShmCreateImage(..) failed!")
-            self.free()
-            return False
-        # Get the shared memory:
-        size = self.image.bytes_per_line*self.image.height
-        self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
-        log.info("XShmWrapper.shmget(..) %s", self.shminfo.shmid >= 0)
-        if self.shminfo.shmid < 0:
-            log.info("XShmWrapper.shmget(..) failed!")
-            self.free()
-            return False
-        # Attach:
-        self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
-        self.shminfo.shmaddr = self.image.data
-        log.info("XShmWrapper.shmat(..) %s", self.shminfo.shmaddr != <char *> -1)
-        if self.shminfo.shmaddr == <char *> -1:
-            log.info("XShmWrapper.shmat(..) failed!")
-            self.free()
-            return False
-
-        # set as read/write, and attach to the display:
-        self.shminfo.readOnly = False
-        a = XShmAttach(self.display, &self.shminfo)
-        log.info("XShmWrapper.shmat(..) %s", bool(a))
-        if not a:
-            log.info("XShmWrapper.shmat(..) failed!")
-            self.free()
-            return False
-        return True
-
-    def get_image(self, xpixmap):
-        assert self.image!=NULL
-        if self.closed:
-            return None
-        if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
-            log.warn("get_image(%s) XShmGetImage failed!", xpixmap)
-            return None
-        if self.imageWrapper is None:
-            self.imageWrapper = XImageWrapper(0, 0, self.width, self.height)
-            self.imageWrapper.set_image(self.image)
-        return self.imageWrapper
-
-    def cleanup(self):
-        #ok, we want to free resources... problem is,
-        #we may have handed out an imageWrapper!
-        #and it will point to our Image xshm area.
-        #so we have to wait until *that* is freed,
-        #and rely on it telling us it's done.
-        #(by setting the callback, we also prevent __dealloc__
-        #from firing, since our class is still referenced there)
-        log.info("XShmWrapper.cleanup()")
-        self.closed = True
-        if self.imageWrapper:
-            self.imageWrapper.set_del_callback(self.free)
-            self.imageWrapper = None
-
-    def __dealloc__(self):
-        log.info("XShmWrapper.__dealloc__() self=%s", self)
-        self.free()
-
-    def free(self):
-        has_shm = self.shminfo.shmaddr!=<char *> -1
-        log.info("XShmWrapper.free() has_shm=%s, imageWrapper=%s", has_shm, self.imageWrapper)
-        if has_shm:
-            XShmDetach(self.display, &self.shminfo)
-        #this should take care of freeing the XImage via garbage collection:
-        #see: XImageWrapper.__dealloc__(), but see also cleanup() above...
-        self.imageWrapper = None
-        if has_shm:
-            shmdt(self.shminfo.shmaddr)
-            self.shminfo.shmaddr = <char *> -1
-
-class PixmapWrapper(object):
-    "Reference count an X Pixmap that needs explicit cleanup."
-    def __init__(self, display, xpixmap, width, height):     #@DuplicatedSignature
-        self.display = display
-        self.xpixmap = xpixmap
-        self.width = width
-        self.height = height
-
-    def get_image(self, x, y, width, height):               #@DuplicatedSignature
-        if self.xpixmap is None:
-            log.warn("PixmapWrapper.get_pixels() xpixmap=%s", self.xpixmap)
-            return  None
-        assert x+width<=self.width, "invalid width: %s (pixmap width is %s)" % (width, self.width)
-        assert y+height<=self.height, "invalid height: %s (pixmap height is %s)" % (height, self.height)
-        return get_image(self.display, self.xpixmap, x, y, width, height)
-
-    def __del__(self):
-        if self.xpixmap is not None:
-            XFreePixmap(get_xdisplay_for(self.display), self.xpixmap)
-            self.xpixmap = None
-
 SBFirst = {
            MSBFirst : "MSBFirst",
            LSBFirst : "LSBFirst"
@@ -759,9 +638,6 @@ cdef class XImageWrapper:
     cdef char *pixel_format
     cdef char *pixels
     cdef object del_callback
-
-    def __init__(self, *args):                      #@DuplicatedSignature
-        self.del_callback = None
 
     def __cinit__(self, int x, int y, int width, int height):
         self.image = NULL
@@ -854,25 +730,179 @@ cdef class XImageWrapper:
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)
 
+    def __dealloc__(self):                              #@DuplicatedSignature
+        debug("XImageWrapper.__dealloc__() self=%s", self)
+        self.free()
+
+    def free(self):                                     #@DuplicatedSignature
+        debug("XImageWrapper.free()")
+        self.free_image()
+        self.free_pixels()
+
+    def free_image(self):
+        debug("XImageWrapper.free_image() image=%s", self.image!=NULL)
+        if self.image!=NULL:
+            XDestroyImage(self.image)
+            self.image = NULL
+
+    def free_pixels(self):
+        debug("XImageWrapper.free_pixels() pixels=%s", self.pixels!=NULL)
+        if self.pixels!=NULL:
+            free(self.pixels)
+            self.pixels = NULL
+
+
+cdef class XShmWrapper(object):
+    cdef Display *display                              #@DuplicatedSignature
+    cdef XShmSegmentInfo shminfo
+    cdef XImage *image
+    cdef int width
+    cdef int height
+    cdef XImageWrapper imageWrapper
+    cdef Bool closed
+
+    def __init__(self):
+        self.imageWrapper = None
+
+    def init(self, window):
+        cdef Visual *visual
+        cdef int depth
+        cdef size_t size
+        self.closed = False
+        self.shminfo.shmaddr = <char *> -1
+
+        self.display = get_xdisplay_for(window)
+        visual = _get_xvisual(window.get_visual())
+        depth = window.get_depth()
+        self.width, self.height = window.get_size()
+        self.image = XShmCreateImage(self.display, visual, depth,
+                          ZPixmap, NULL, &self.shminfo,
+                          self.width, self.height)
+        debug("XShmWrapper.XShmCreateImage(%sx%s-%s) %s", self.width, self.height, depth, self.image!=NULL)
+        if self.image==NULL:
+            log.error("XShmWrapper.XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, depth)
+            self.free()
+            return False
+        # Get the shared memory:
+        size = self.image.bytes_per_line*self.image.height
+        self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
+        debug("XShmWrapper.shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
+        if self.shminfo.shmid < 0:
+            log.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed!", size, IPC_CREAT | 0777)
+            self.free()
+            return False
+        # Attach:
+        self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
+        self.shminfo.shmaddr = self.image.data
+        debug("XShmWrapper.shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
+        if self.shminfo.shmaddr == <char *> -1:
+            log.error("XShmWrapper.shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
+            self.free()
+            return False
+
+        # set as read/write, and attach to the display:
+        self.shminfo.readOnly = False
+        a = XShmAttach(self.display, &self.shminfo)
+        debug("XShmWrapper.XShmAttach(..) %s", bool(a))
+        if not a:
+            log.error("XShmWrapper.XShmAttach(..) failed!")
+            self.free()
+            return False
+        return True
+
+    def get_image(self, xpixmap):
+        assert self.image!=NULL
+        if self.closed:
+            return None
+        debug("XShmWrapper.get_image(%s)", xpixmap)
+        if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
+            log.warn("XShmWrapper.get_image(%s) XShmGetImage failed!", xpixmap)
+            return None
+        if self.imageWrapper is None:
+            self.imageWrapper = XShmImageWrapper(0, 0, self.width, self.height)
+            self.imageWrapper.set_image(self.image)
+        return self.imageWrapper
+
+    def __dealloc__(self):                              #@DuplicatedSignature
+        debug("XShmWrapper.__dealloc__() self=%s", self)
+        self.cleanup()
+
+    def cleanup(self):
+        #ok, we want to free resources... problem is,
+        #we may have handed out an imageWrapper!
+        #and it will point to our Image xshm area.
+        #so we have to wait until *that* is freed,
+        #and rely on it telling us it's done.
+        #(by setting the callback, we also prevent __dealloc__
+        #from firing, since our class is still referenced there)
+        debug("XShmWrapper.cleanup()")
+        self.closed = True
+        if self.imageWrapper:
+            self.imageWrapper.set_del_callback(self.free)
+            self.imageWrapper = None
+        else:
+            self.free()
+
+    def free(self):                                     #@DuplicatedSignature
+        has_shm = self.shminfo.shmaddr!=<char *> -1
+        debug("XShmWrapper.free() has_shm=%s, imageWrapper=%s", has_shm, self.imageWrapper)
+        if has_shm:
+            XShmDetach(self.display, &self.shminfo)
+        #this should take care of freeing the XImage via garbage collection:
+        #see: XImageWrapper.__dealloc__(), but see also cleanup() above...
+        self.imageWrapper = None
+        if has_shm:
+            shmdt(self.shminfo.shmaddr)
+            self.shminfo.shmaddr = <char *> -1
+        if self.image!=NULL:
+            XDestroyImage(self.image)
+            self.image = NULL
+
+
+cdef class XShmImageWrapper(XImageWrapper):
+
+    def __init__(self, *args):                      #@DuplicatedSignature
+        self.del_callback = None
+
+    def free(self):                                         #@DuplicatedSignature
+        debug("XShmImageWrapper.free()")
+        self.free_pixels()
+
     def set_del_callback(self, callback):
         self.del_callback = callback
 
     def __dealloc__(self):                              #@DuplicatedSignature
-        debug("XImageWrapper.__dealloc__() self=%s, del_callback=%s", self, self.del_callback)
+        debug("XShmImageWrapper.__dealloc__() self=%s, del_callback=%s", self, self.del_callback)
         if self.del_callback:
             cb = self.del_callback
             self.del_callback = None
             cb()
         self.free()
 
-    def free(self):                                     #@DuplicatedSignature
-        debug("XImageWrapper.free()")
-        if self.image!=NULL:
-            XDestroyImage(self.image)
-            self.image = NULL
-        if self.pixels!=NULL:
-            free(self.pixels)
-            self.pixels = NULL
+
+class PixmapWrapper(object):
+    "Reference count an X Pixmap that needs explicit cleanup."
+    def __init__(self, display, xpixmap, width, height):     #@DuplicatedSignature
+        self.display = display
+        self.xpixmap = xpixmap
+        self.width = width
+        self.height = height
+
+    def get_image(self, x, y, width, height):               #@DuplicatedSignature
+        if self.xpixmap is None:
+            log.warn("PixmapWrapper.get_pixels(%s, %s, %s, %s) xpixmap=%s", x, y, width, height, self.xpixmap)
+            return  None
+        debug("PixmapWrapper.get_pixels(%s, %s, %s, %s) xpixmap=%s, width=%s, height=%s", x, y, width, height, self.xpixmap, self.width, self.height)
+        assert x+width<=self.width, "invalid width: %s (pixmap width is %s)" % (width, self.width)
+        assert y+height<=self.height, "invalid height: %s (pixmap height is %s)" % (height, self.height)
+        return get_image(self.display, self.xpixmap, x, y, width, height)
+
+    def __del__(self):
+        debug("PixmapWrapper.__del__() self.xpixmap=%s", self.xpixmap)
+        if self.xpixmap is not None:
+            XFreePixmap(get_xdisplay_for(self.display), self.xpixmap)
+            self.xpixmap = None
+
 
 
 cdef get_image(display, xpixmap, x, y, width, height):
