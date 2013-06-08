@@ -18,18 +18,23 @@ from xpra.x11.gtk_x11.error import trap, XError
 from xpra.log import Logger
 log = Logger("xpra.gtk_x11.gdk_bindings")
 
-XPRA_X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
-XPRA_X11_LOG = XPRA_X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0"
-if XPRA_X11_LOG:
+def noop(*args, **kwargs):
+    pass
+X11_DEBUG = os.environ.get("XPRA_X11_DEBUG", "0")!="0"
+if X11_DEBUG or os.environ.get("XPRA_X11_LOG", "0")!="0":
     debug = log.debug
     info = log.info
 else:
-    def noop(*args, **kwargs):
-        pass
     debug = noop
     info = noop
 warn = log.warn
 error = log.error
+XSHM_DEBUG = os.environ.get("XPRA_XSHM_DEBUG", "0")!="0"
+if XSHM_DEBUG:
+    xshm_debug = log.info
+else:
+    xshm_debug = noop
+
 
 ###################################
 # Headers, python magic
@@ -703,7 +708,14 @@ cdef class XImageWrapper:
 
     def get_pixels(self):
         if self.pixels!=NULL:
-            return PyBuffer_FromMemory(self.pixels, self.get_size())
+            return self.get_char_pixels()
+        return self.get_image_pixels()
+
+    def get_char_pixels(self):
+        assert self.pixels!=NULL
+        return PyBuffer_FromMemory(self.pixels, self.get_size())
+
+    def get_image_pixels(self):
         assert self.image!=NULL
         return PyBuffer_FromMemory(self.image.data, self.get_size())
 
@@ -730,10 +742,6 @@ cdef class XImageWrapper:
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)
 
-    def __dealloc__(self):                              #@DuplicatedSignature
-        debug("XImageWrapper.__dealloc__() self=%s", self)
-        self.free()
-
     def free(self):                                     #@DuplicatedSignature
         debug("XImageWrapper.free()")
         self.free_image()
@@ -758,16 +766,14 @@ cdef class XShmWrapper(object):
     cdef XImage *image
     cdef int width
     cdef int height
-    cdef XImageWrapper imageWrapper
+    cdef int ref_count
     cdef Bool closed
-
-    def __init__(self):
-        self.imageWrapper = None
 
     def init(self, window):
         cdef Visual *visual
         cdef int depth
         cdef size_t size
+        self.ref_count = 0
         self.closed = False
         self.shminfo.shmaddr = <char *> -1
 
@@ -775,18 +781,23 @@ cdef class XShmWrapper(object):
         visual = _get_xvisual(window.get_visual())
         depth = window.get_depth()
         self.width, self.height = window.get_size()
+        #add an extra pixel of height so we can
+        #safely read a full rowstride on the last row,
+        #even when starting at an X offset.
         self.image = XShmCreateImage(self.display, visual, depth,
                           ZPixmap, NULL, &self.shminfo,
                           self.width, self.height)
-        debug("XShmWrapper.XShmCreateImage(%sx%s-%s) %s", self.width, self.height, depth, self.image!=NULL)
+        xshm_debug("XShmWrapper.XShmCreateImage(%sx%s-%s) %s", self.width, self.height, depth, self.image!=NULL)
         if self.image==NULL:
             log.error("XShmWrapper.XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, depth)
             self.free()
             return False
         # Get the shared memory:
-        size = self.image.bytes_per_line*self.image.height
+        # (include an extra line to ensure we can read rowstride at a time,
+        #  even on the last line, without reading past the end of the buffer)
+        size = self.image.bytes_per_line * (self.image.height + 1)
         self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
-        debug("XShmWrapper.shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
+        xshm_debug("XShmWrapper.shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
             log.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed!", size, IPC_CREAT | 0777)
             self.free()
@@ -794,7 +805,7 @@ cdef class XShmWrapper(object):
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
         self.shminfo.shmaddr = self.image.data
-        debug("XShmWrapper.shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
+        xshm_debug("XShmWrapper.shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
         if self.shminfo.shmaddr == <char *> -1:
             log.error("XShmWrapper.shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
             self.free()
@@ -803,54 +814,60 @@ cdef class XShmWrapper(object):
         # set as read/write, and attach to the display:
         self.shminfo.readOnly = False
         a = XShmAttach(self.display, &self.shminfo)
-        debug("XShmWrapper.XShmAttach(..) %s", bool(a))
+        xshm_debug("XShmWrapper.XShmAttach(..) %s", bool(a))
         if not a:
             log.error("XShmWrapper.XShmAttach(..) failed!")
             self.free()
             return False
         return True
 
-    def get_image(self, xpixmap):
+    def get_image(self, xpixmap, x, y, w, h):
         assert self.image!=NULL
         if self.closed:
             return None
-        debug("XShmWrapper.get_image(%s)", xpixmap)
-        if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
-            log.warn("XShmWrapper.get_image(%s) XShmGetImage failed!", xpixmap)
+        if x+w>self.width:
+            log.warn("XShmWrapper.get_image%s width overflow, image width is %s", (xpixmap, x, y, w, h), self.width)
             return None
-        if self.imageWrapper is None:
-            self.imageWrapper = XShmImageWrapper(0, 0, self.width, self.height)
-            self.imageWrapper.set_image(self.image)
-        return self.imageWrapper
+        if y+h>self.height:
+            log.warn("XShmWrapper.get_image%s height overflow, image height is %s", (xpixmap, x, y, w, h), self.height)
+            return None
+        if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
+            log.warn("XShmWrapper.get_image%s XShmGetImage failed!", (xpixmap, x, y, w, h))
+            return None
+        self.ref_count += 1
+        imageWrapper = XShmImageWrapper(x, y, w, h)
+        imageWrapper.set_image(self.image)
+        imageWrapper.set_free_callback(self.free_image)
+        xshm_debug("XShmWrapper.get_image%s ref_count=%s, returning %s", (xpixmap, x, y, w, h), self.ref_count, imageWrapper)
+        return imageWrapper
 
     def __dealloc__(self):                              #@DuplicatedSignature
-        debug("XShmWrapper.__dealloc__() self=%s", self)
+        xshm_debug("XShmWrapper.__dealloc__() self=%s", self)
         self.cleanup()
 
     def cleanup(self):
         #ok, we want to free resources... problem is,
-        #we may have handed out an imageWrapper!
-        #and it will point to our Image xshm area.
-        #so we have to wait until *that* is freed,
-        #and rely on it telling us it's done.
-        #(by setting the callback, we also prevent __dealloc__
-        #from firing, since our class is still referenced there)
-        debug("XShmWrapper.cleanup()")
+        #we may have handed out some XShmImageWrappers
+        #and they will point to our Image XShm area.
+        #so we have to wait until *they* are freed,
+        #and rely on them telling us via the free_image callback.
+        xshm_debug("XShmWrapper.cleanup() ref_count=%s", self.ref_count)
         self.closed = True
-        if self.imageWrapper:
-            self.imageWrapper.set_del_callback(self.free)
-            self.imageWrapper = None
-        else:
+        if self.ref_count==0:
+            self.free()
+
+    def free_image(self):                               #@DuplicatedSignature
+        self.ref_count -= 1
+        xshm_debug("XShmWrapper.free_image() closed=%s, new ref_count=%s", self.closed, self.ref_count)
+        if self.closed and self.ref_count==0:
             self.free()
 
     def free(self):                                     #@DuplicatedSignature
+        assert self.ref_count==0 and self.closed
         has_shm = self.shminfo.shmaddr!=<char *> -1
-        debug("XShmWrapper.free() has_shm=%s, imageWrapper=%s", has_shm, self.imageWrapper)
+        xshm_debug("XShmWrapper.free() has_shm=%s", has_shm)
         if has_shm:
             XShmDetach(self.display, &self.shminfo)
-        #this should take care of freeing the XImage via garbage collection:
-        #see: XImageWrapper.__dealloc__(), but see also cleanup() above...
-        self.imageWrapper = None
         if has_shm:
             shmdt(self.shminfo.shmaddr)
             self.shminfo.shmaddr = <char *> -1
@@ -861,23 +878,35 @@ cdef class XShmWrapper(object):
 
 cdef class XShmImageWrapper(XImageWrapper):
 
+    cdef object free_callback
+
     def __init__(self, *args):                      #@DuplicatedSignature
-        self.del_callback = None
+        self.free_callback = None
 
-    def free(self):                                         #@DuplicatedSignature
-        debug("XShmImageWrapper.free()")
+    def __str__(self):                              #@DuplicatedSignature
+        return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
+
+    def get_image_pixels(self):                     #@DuplicatedSignature
+        cdef char *offset
+        xshm_debug("XShmImageWrapper.get_image_pixels() self=%s", self)
+        assert self.image!=NULL
+        #calculate offset (assuming 4 bytes "pixelstride"):
+        offset = self.image.data + (self.y * self.rowstride) + (4 * self.x)
+        return PyBuffer_FromMemory(offset, self.get_size())
+
+    def free(self):                                 #@DuplicatedSignature
+        xshm_debug("XShmImageWrapper.free() free_callback=%s", self.free_callback)
+        #ensure we never try to XDestroyImage:
+        self.image = NULL
         self.free_pixels()
-
-    def set_del_callback(self, callback):
-        self.del_callback = callback
-
-    def __dealloc__(self):                              #@DuplicatedSignature
-        debug("XShmImageWrapper.__dealloc__() self=%s, del_callback=%s", self, self.del_callback)
-        if self.del_callback:
-            cb = self.del_callback
-            self.del_callback = None
+        if self.free_callback:
+            cb = self.free_callback
+            self.free_callback = None
             cb()
-        self.free()
+        xshm_debug("XShmImageWrapper.free() done")
+
+    def set_free_callback(self, callback):
+        self.free_callback = callback
 
 
 class PixmapWrapper(object):
@@ -888,7 +917,7 @@ class PixmapWrapper(object):
         self.width = width
         self.height = height
 
-    def get_image(self, x, y, width, height):               #@DuplicatedSignature
+    def get_image(self, x, y, width, height):                #@DuplicatedSignature
         if self.xpixmap is None:
             log.warn("PixmapWrapper.get_pixels(%s, %s, %s, %s) xpixmap=%s", x, y, width, height, self.xpixmap)
             return  None
@@ -1293,7 +1322,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)
-        if XPRA_X11_DEBUG:
+        if X11_DEBUG:
             msg = "x_event_filter event=%s/%s window=%s", event_args, event_type_names.get(e.type, e.type), e.xany.window
             info(*msg)
         if event_args is not None:
@@ -1441,7 +1470,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                 if ex.msg==BadWindow:
                     msg = "Some window in our event disappeared before we could " \
                         + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type_names.get(e.type), event_args, pyev
-                    if XPRA_X11_DEBUG:
+                    if X11_DEBUG:
                         info(*msg)
                     else:
                         debug(*msg)
@@ -1450,7 +1479,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                     error(*msg)
             else:
                 _route_event(pyev, *event_args)
-        if XPRA_X11_DEBUG:
+        if X11_DEBUG:
             msg = "x_event_filter event=%s/%s took %sms", event_args, event_type_names.get(e.type, e.type), int(100000*(time.time()-start))/100.0
             info(*msg)
     except (KeyboardInterrupt, SystemExit):

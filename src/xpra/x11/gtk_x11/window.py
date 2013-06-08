@@ -420,22 +420,20 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             return  None
 
         #try XShm:
-        w, h = self._geometry[2:4]
-        if x==0 and y==0 and w==width and h==height:
-            try:
-                logger("get_rgb_rawdata(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
-                shm = self._composite.get_property("shm-handle")
-                logger("get_rgb_rawdata(..) XShm handle: %s, handle=%s, xpixmap=%s", shm, handle, handle.xpixmap)
-                if shm is not None:
-                    shm_image = trap.call_synced(shm.get_image, handle.xpixmap)
-                    logger("get_rgb_rawdata(..) XShm image: %s", shm_image)
-                    if shm_image:
-                        return shm_image
-            except Exception, e:
-                if type(e)==XError and e.msg=="BadMatch":
-                    logger("get_rgb_rawdata(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
-                else:
-                    log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
+        try:
+            logger("get_rgb_rawdata(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
+            shm = self._composite.get_property("shm-handle")
+            logger("get_rgb_rawdata(..) XShm handle: %s, handle=%s, xpixmap=%s", shm, handle, handle.xpixmap)
+            if shm is not None:
+                shm_image = trap.call_synced(shm.get_image, handle.xpixmap, x, y, width, height)
+                logger("get_rgb_rawdata(..) XShm image: %s", shm_image)
+                if shm_image:
+                    return shm_image
+        except Exception, e:
+            if type(e)==XError and e.msg=="BadMatch":
+                logger("get_rgb_rawdata(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+            else:
+                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
 
         try:
             w = min(handle.width, width)

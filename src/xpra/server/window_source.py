@@ -621,6 +621,7 @@ class WindowSource(object):
             debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return
         if self.is_cancelled(sequence):
+            image.free()
             return
         process_damage_time = time.time()
         data = (damage_time, process_damage_time, self.wid, image, coding, sequence, options)
@@ -629,7 +630,10 @@ class WindowSource(object):
                 self.wid, data[:6], 1000.0*(time.time()-damage_time), 1000.0*(time.time()-rgb_request_time))
         def make_data_packet_cb(*args):
             #NOTE: this function is called from the damage data thread!
-            packet = self.make_data_packet(*data)
+            try:
+                packet = self.make_data_packet(*data)
+            finally:
+                image.free()
             #NOTE: we have to send it (even if the window is cancelled by now..)
             #because the code may rely on the client having received this frame
             if packet:
@@ -803,7 +807,6 @@ class WindowSource(object):
         encoder = self._encoders.get(coding)
         assert encoder is not None, "encoder not found for %s" % coding
         data, client_options, outstride = encoder(coding, image, options)
-        del image
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and self.is_cancelled(sequence):
