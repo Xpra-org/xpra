@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 from threading import Lock
 
@@ -11,6 +12,8 @@ from xpra.net.protocol import Compressed
 from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_subsampling_divs
 from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
 from xpra.server.window_source import WindowSource, debug, log
+
+SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 
 
 class WindowVideoSource(WindowSource):
@@ -308,6 +311,8 @@ class WindowVideoSource(WindowSource):
               (see width and height masks)
         """
         #TODO: framerate is relevant, probably
+        if not SCALING:
+            return width, height
         scaling = self.scaling
         if not self.video_scaling:
             scaling = None
