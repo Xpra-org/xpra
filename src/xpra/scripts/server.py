@@ -396,7 +396,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             if os.name=="posix":
                 os.setsid()
         try:
-            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True, preexec_fn=setsid)
+            xvfb = subprocess.Popen(xvfb_cmd+[display_name], executable=xvfb_executable, close_fds=True,
+                                    stdin=subprocess.PIPE, preexec_fn=setsid)
         except OSError, e:
             sys.stderr.write("Error starting Xvfb: %s\n" % (e,))
             return  1
