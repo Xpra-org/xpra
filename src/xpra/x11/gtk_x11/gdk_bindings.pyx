@@ -818,18 +818,33 @@ cdef class XShmWrapper(object):
             return False
         return True
 
+    def check(self, window):
+        width, height = window.get_size()
+        if self.width==width and self.height==height:
+            return self
+        #size has changed!
+        #make sure the current wrapper gets garbage collected:
+        xshm_debug("XShmWrapper.check(%s) doing full re-init: window size has changed from %sx%s to %sx%s", window, self.width, self.height, width, height)
+        self.cleanup()
+        xshm = XShmWrapper(window)
+        if not xshm.init(window):
+            return None
+        return xshm
+
     def get_image(self, xpixmap, x, y, w, h):
         assert self.image!=NULL
         if self.closed:
             return None
+        if x>=self.width or y>=self.height:
+            xshm_debug("XShmWrapper.get_pixels(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, w, h, self.width, self.height)
+            return None
+        #clamp size to image size:
         if x+w>self.width:
-            log.warn("XShmWrapper.get_image%s width overflow, image width is %s", (xpixmap, x, y, w, h), self.width)
-            return None
+            w = self.width-x
         if y+h>self.height:
-            log.warn("XShmWrapper.get_image%s height overflow, image height is %s", (xpixmap, x, y, w, h), self.height)
-            return None
+            h = self.height-y
         if not XShmGetImage(self.display, xpixmap, self.image, 0, 0, 0xFFFFFFFF):
-            log.warn("XShmWrapper.get_image%s XShmGetImage failed!", (xpixmap, x, y, w, h))
+            xshm_debug("XShmWrapper.get_image%s XShmGetImage failed!", (xpixmap, x, y, w, h))
             return None
         self.ref_count += 1
         imageWrapper = XShmImageWrapper(x, y, w, h)
@@ -916,11 +931,17 @@ class PixmapWrapper(object):
 
     def get_image(self, x, y, width, height):                #@DuplicatedSignature
         if self.xpixmap is None:
-            log.warn("PixmapWrapper.get_pixels(%s, %s, %s, %s) xpixmap=%s", x, y, width, height, self.xpixmap)
+            log.warn("PixmapWrapper.get_image(%s, %s, %s, %s) xpixmap=%s", x, y, width, height, self.xpixmap)
             return  None
-        debug("PixmapWrapper.get_pixels(%s, %s, %s, %s) xpixmap=%s, width=%s, height=%s", x, y, width, height, self.xpixmap, self.width, self.height)
-        assert x+width<=self.width, "invalid width: %s (pixmap width is %s)" % (width, self.width)
-        assert y+height<=self.height, "invalid height: %s (pixmap height is %s)" % (height, self.height)
+        debug("PixmapWrapper.get_image(%s, %s, %s, %s) xpixmap=%s, width=%s, height=%s", x, y, width, height, self.xpixmap, self.width, self.height)
+        if x>=self.width or y>=self.height:
+            log.warn("PixmapWrapper.get_image(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, width, height, self.width, self.height)
+            return None
+        #clamp size to image size:
+        if x+width>self.width:
+            width = self.width-x
+        if y+height>self.height:
+            height = self.height-y
         return get_image(self.display, self.xpixmap, x, y, width, height)
 
     def __del__(self):

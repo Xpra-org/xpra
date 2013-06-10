@@ -111,6 +111,9 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             self._shm_handle = XShmWrapper()
             if not self._shm_handle.init(self._window):
                 self._shm_handle = None
+        else:
+            #may create a new XShm handle if the window size has changed:
+            self._shm_handle = self._shm_handle.check(self._window)
         return self._shm_handle
 
     def do_get_property_contents_handle(self, name):
