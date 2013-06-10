@@ -935,7 +935,7 @@ class PixmapWrapper(object):
             return  None
         debug("PixmapWrapper.get_image(%s, %s, %s, %s) xpixmap=%s, width=%s, height=%s", x, y, width, height, self.xpixmap, self.width, self.height)
         if x>=self.width or y>=self.height:
-            log.warn("PixmapWrapper.get_image(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, width, height, self.width, self.height)
+            debug("PixmapWrapper.get_image(%s, %s, %s, %s) position outside image dimensions %sx%s", x, y, width, height, self.width, self.height)
             return None
         #clamp size to image size:
         if x+width>self.width:
