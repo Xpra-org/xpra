@@ -33,6 +33,11 @@ struct dec_avcodec_ctx{
 	enum PixelFormat pixfmt;		//may get updated by swscale!
 };
 
+const char *get_avcodec_version(void)
+{
+	return LIBAVCODEC_IDENT;
+}
+
 
 const char YUV420P[] = "YUV420P";
 const char YUV422P[] = "YUV422P";

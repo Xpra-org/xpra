@@ -26,6 +26,8 @@ cdef extern from "Python.h":
 ctypedef unsigned char uint8_t
 ctypedef void dec_avcodec_ctx
 cdef extern from "dec_avcodec.h":
+    char *get_avcodec_version()
+
     char **get_supported_colorspaces()
 
     dec_avcodec_ctx *init_decoder(int width, int height, const char *colorspace)
@@ -35,6 +37,9 @@ cdef extern from "dec_avcodec.h":
     const char *get_colorspace(dec_avcodec_ctx *)
     const char *get_actual_colorspace(dec_avcodec_ctx *)
 
+
+def get_version():
+    return get_avcodec_version()
 
 #copy C list of colorspaces to a python list:
 cdef do_get_colorspaces():

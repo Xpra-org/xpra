@@ -24,6 +24,8 @@ ctypedef void csc_swscale_ctx
 cdef extern from "csc_swscale.h":
     char **get_supported_colorspaces()
 
+    char *get_swscale_version()
+
     char *get_flags_description(csc_swscale_ctx *ctx)
 
     csc_swscale_ctx *init_csc(int src_width, int src_height, const char *src_format,
@@ -32,6 +34,9 @@ cdef extern from "csc_swscale.h":
     int csc_image(csc_swscale_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3]) nogil
     void free_csc_image(uint8_t *buf[3])
 
+
+def get_version():
+    return get_swscale_version()
 
 #copy C list of colorspaces to a python list:
 cdef do_get_colorspaces():

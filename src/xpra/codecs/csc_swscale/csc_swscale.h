@@ -18,6 +18,8 @@ struct csc_swscale_ctx;
 
 const char **get_supported_colorspaces(void);
 
+const char *get_swscale_version(void);
+
 const char *get_flags_description(struct csc_swscale_ctx *ctx);
 
 /** Create a CSC context */

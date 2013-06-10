@@ -25,7 +25,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid, SIGNAMES
 from xpra.version_util import is_compatible_with, add_version_info
-from xpra.codecs.version_info import add_codec_version_info
+from xpra.codecs.version_info import add_encoder_version_info
 from xpra.os_util import set_application_name
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
@@ -738,7 +738,7 @@ class ServerBase(object):
             capabilities["aliases"] = self._reverse_aliases
         capabilities["server_type"] = "base"
         add_version_info(capabilities)
-        add_codec_version_info(capabilities)
+        add_encoder_version_info(capabilities)
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -778,7 +778,7 @@ class ServerBase(object):
         start = time.time()
         info = {}
         add_version_info(info)
-        add_codec_version_info(info)
+        add_encoder_version_info(info)
         info["server_type"] = "Python"
         info["hostname"] = socket.gethostname()
         info["max_desktop_size"] = self.get_max_screen_size()

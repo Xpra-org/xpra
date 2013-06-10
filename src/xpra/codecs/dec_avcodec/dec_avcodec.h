@@ -13,6 +13,8 @@
 #define inline __inline
 #endif
 
+const char *get_avcodec_version(void);
+
 const char **get_supported_colorspaces(void);
 
 /** Opaque structure - "context". You must have a context to decode frames. */

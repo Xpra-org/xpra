@@ -17,7 +17,7 @@ log = Logger()
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import is_compatible_with, add_version_info
-from xpra.codecs.version_info import add_codec_version_info
+from xpra.codecs.version_info import add_decoder_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES
 
@@ -149,7 +149,7 @@ class XpraClientBase(object):
     def make_hello(self, challenge_response=None):
         capabilities = {}
         add_version_info(capabilities)
-        add_codec_version_info(capabilities)
+        add_decoder_version_info(capabilities)
         if challenge_response:
             assert self.password
             capabilities["challenge_response"] = challenge_response

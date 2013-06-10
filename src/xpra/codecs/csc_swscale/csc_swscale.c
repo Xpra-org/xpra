@@ -98,6 +98,11 @@ const char **get_supported_colorspaces(void)
 	return COLORSPACES;
 }
 
+const char *get_swscale_version(void)
+{
+	return LIBSWSCALE_IDENT;
+}
+
 static const struct swscale_flag *get_swscale_flags(int speed) 
 {
 	int i;
