@@ -781,9 +781,6 @@ cdef class XShmWrapper(object):
         visual = _get_xvisual(window.get_visual())
         depth = window.get_depth()
         self.width, self.height = window.get_size()
-        #add an extra pixel of height so we can
-        #safely read a full rowstride on the last row,
-        #even when starting at an X offset.
         self.image = XShmCreateImage(self.display, visual, depth,
                           ZPixmap, NULL, &self.shminfo,
                           self.width, self.height)
