@@ -631,7 +631,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         width = maxx-minx
         height = maxy-miny
         debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
-        import Image
+        from PIL import Image                           #@UnresolvedImport
         screenshot = Image.new("RGBA", (width, height))
         for wid, x, y, img in reversed(all_regions):
             pixel_format = img.get_pixel_format()

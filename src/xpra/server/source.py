@@ -553,7 +553,7 @@ class ServerSource(object):
     def make_window_icon(self, pixel_data, pixel_format, stride, w, h):
         log("found new window icon: %sx%s, sending as png=%s", w, h, self.png_window_icons)
         if self.png_window_icons:
-            import Image
+            from PIL import Image                       #@UnresolvedImport
             img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
             MAX_SIZE = 64
             if w>MAX_SIZE or h>MAX_SIZE:

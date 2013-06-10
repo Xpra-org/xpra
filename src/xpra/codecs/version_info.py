@@ -22,7 +22,7 @@ def add_codec_version_info(capabilities):
     except:
         pass
     try:
-        import Image
+        from PIL import Image                   #@UnresolvedImport
         capabilities["encoding.PIL.version"] = Image.VERSION
     except:
         pass

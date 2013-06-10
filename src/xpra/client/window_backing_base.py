@@ -27,7 +27,7 @@ except:
 #have/use PIL?
 has_PIL = False
 try:
-    import Image
+    from PIL import Image                                           #@UnresolvedImport
     has_PIL = True
 except:
     pass
@@ -290,8 +290,13 @@ class WindowBackingBase(object):
         if self._csc_decoder is None:
             from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
             self._csc_decoder = ColorspaceConverter()
+            #use higher quality csc to compensate for lower quality source
+            #(which generally means that we downscaled via YUV422P or lower)
+            #or when upscaling the video:
+            q = options.get("quality", 50)
+            csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
             self._csc_decoder.init_context(enc_width, enc_height, pixel_format,
-                                           width, height, rgb_format, 0)
+                                           width, height, rgb_format, csc_speed)
             if DRAW_DEBUG:
                 log.info("do_video_paint new csc decoder: %s", self._csc_decoder)
         rgb = self._csc_decoder.convert_image(img)

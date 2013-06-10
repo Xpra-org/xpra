@@ -16,7 +16,7 @@ def warn(msg):
 
 from xpra.util import AdHocStruct
 try:
-    import Image                            #@UnusedImport
+    from PIL import Image                   #@UnusedImport @UnresolvedImport
     has_PIL = True
 except:
     has_PIL = False

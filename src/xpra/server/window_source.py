@@ -56,7 +56,7 @@ except:
 from xpra.os_util import StringIOClass
 
 try:
-    import Image
+    from PIL import Image                       #@UnresolvedImport
 except:
     Image = None
 
