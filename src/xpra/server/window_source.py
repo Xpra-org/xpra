@@ -806,7 +806,7 @@ class WindowSource(object):
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
         assert encoder is not None, "encoder not found for %s" % coding
-        data, client_options, outstride = encoder(coding, image, options)
+        data, client_options, outw, outh, outstride = encoder(coding, image, options)
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and self.is_cancelled(sequence):
@@ -822,7 +822,7 @@ class WindowSource(object):
             self.last_pixmap_data = w, h, coding, store, dpixels
             client_options["store"] = store
         #actual network packet:
-        packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, outstride, client_options]
+        packet = ["draw", wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options]
         end = time.time()
         #debug("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
         #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)
@@ -839,7 +839,7 @@ class WindowSource(object):
 
     def mmap_encode(self, coding, image, options):
         data = options["mmap_data"]
-        return data, {"rgb_format" : image.get_pixel_format()}, image.get_rowstride()
+        return data, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride()
 
     def warn_encoding_once(self, key, message):
         if key not in self._encoding_warnings:
@@ -887,7 +887,7 @@ class WindowSource(object):
         image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True
-        return Compressed("webp", str(enc(image, **kwargs).data)), client_options, 0
+        return Compressed("webp", str(enc(image, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0
 
     def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()
@@ -918,7 +918,7 @@ class WindowSource(object):
             return  zlib, {}, image.get_rowstride()
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, cdata), {"zlib" : level}, image.get_rowstride()
+        return Compressed(coding, cdata), {"zlib" : level}, image.get_width(), image.get_height(), image.get_rowstride()
 
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
@@ -969,7 +969,7 @@ class WindowSource(object):
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
-        return Compressed(coding, data), client_options, 0
+        return Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0
 
     def rgb_reformat(self, image):
         #need to convert to a supported format!
