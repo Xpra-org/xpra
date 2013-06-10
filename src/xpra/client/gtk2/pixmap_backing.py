@@ -40,16 +40,20 @@ class PixmapBacking(GTK2WindowBacking):
             cr.paint()
             old_w, old_h = old_backing.get_size()
             if w>old_w:
+                cr.new_path()
                 cr.move_to(old_w, 0)
                 cr.line_to(w, 0)
                 cr.line_to(w, h)
-                cr.line_to(0, h)
+                cr.line_to(old_w, h)
+                cr.close_path()
                 cr.fill()
             if h>old_h:
+                cr.new_path()
                 cr.move_to(0, old_h)
                 cr.line_to(0, h)
                 cr.line_to(w, h)
                 cr.line_to(w, old_h)
+                cr.close_path()
                 cr.fill()
             #note: we may paint the rectangle (old_w, old_h) to (w, h) twice - no big deal
         else:
