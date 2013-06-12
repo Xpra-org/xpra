@@ -913,13 +913,13 @@ class UIXpraClient(XpraClientBase):
 
         pid = metadata.get("pid", -1)
         group_leader = self.group_leader_for_pid(pid, wid)
-        ClientWindowClass = self.get_client_window_class(metadata)
+        ClientWindowClass = self.get_client_window_class(metadata, override_redirect)
         window = ClientWindowClass(self, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show_all()
 
-    def get_client_window_class(self, metadata):
+    def get_client_window_class(self, metadata, override_redirect):
         return self.ClientWindowClass
 
     def _process_new_window(self, packet):

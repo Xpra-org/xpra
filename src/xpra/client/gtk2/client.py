@@ -312,8 +312,8 @@ class XpraClient(GTKXpraClient):
         self._group_leader_wids.setdefault(group_leader, []).append(wid)
         return group_leader
 
-    def get_client_window_class(self, metadata):
-        if self.GLClientWindowClass is None or not self.opengl_enabled:
+    def get_client_window_class(self, metadata, override_redirect):
+        if self.GLClientWindowClass is None or not self.opengl_enabled or override_redirect:
             return self.ClientWindowClass
         if self.mmap_enabled or self.encoding not in ("x264", "vpx"):
             return self.ClientWindowClass

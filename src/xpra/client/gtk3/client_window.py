@@ -38,7 +38,7 @@ class ClientWindow(GTKClientWindowBase):
         gtk.Window.__init__(self)
         GTKClientWindowBase.init_window(self)
 
-    def get_client_window_class(self, metadata):
+    def get_client_window_class(self, metadata, override_redirect):
         return CairoBacking
 
 
