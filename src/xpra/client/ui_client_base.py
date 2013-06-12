@@ -80,10 +80,10 @@ class UIXpraClient(XpraClientBase):
         self.server_display = None
         self.server_randr = False
         self.server_auto_refresh_delay = 0
-        self.pixel_counter = maxdeque(maxlen=100)
-        self.server_ping_latency = maxdeque(maxlen=100)
+        self.pixel_counter = maxdeque(maxlen=200)
+        self.server_ping_latency = maxdeque(maxlen=200)
         self.server_load = None
-        self.client_ping_latency = maxdeque(maxlen=100)
+        self.client_ping_latency = maxdeque(maxlen=200)
         self._server_ok = True
         self.last_ping_echoed_time = 0
         self.server_info_request = False

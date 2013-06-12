@@ -555,9 +555,10 @@ class SessionInfo(gtk.Window):
                     regions_per_second[time_in_seconds] = regions+1
                     pixels = pixels_per_second.get(time_in_seconds, 0)
                     pixels_per_second[time_in_seconds] = pixels + size
-                for t in xrange(int(min_time), int(max_time+1)):
-                    rps.append(regions_per_second.get(t, 0))
-                    pps.append(pixels_per_second.get(t, 0))
+                if int(min_time)+1 < int(max_time):
+                    for t in xrange(int(min_time)+1, int(max_time)):
+                        rps.append(regions_per_second.get(t, 0))
+                        pps.append(pixels_per_second.get(t, 0))
             setlabels(self.decoding_labels, decoding_latency)
             setlabels(self.regions_per_second_labels, rps)
             setlabels(self.regions_sizes_labels, region_sizes, rounding=std_unit_dec)
