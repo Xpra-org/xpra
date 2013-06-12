@@ -935,7 +935,7 @@ class WindowSource(object):
         try:
             im = Image.fromstring(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
         except Exception, e:
-            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % len(image.get_size()), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
+            log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
             raise e
         buf = StringIOClass()
         client_options = {}
