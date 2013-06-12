@@ -96,6 +96,10 @@ class WindowVideoSource(WindowSource):
             self.cleanup_codecs()
         WindowSource.set_new_encoding(self, encoding)
 
+    def set_client_properties(self, properties):
+        #client may restrict csc modes for specific windows
+        self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
+        WindowSource.set_client_properties(self, properties)
 
     def cancel_damage(self):
         WindowSource.cancel_damage(self)
