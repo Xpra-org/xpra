@@ -374,8 +374,19 @@ class SessionInfo(gtk.Window):
         decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
         self.pixel_in_data.append(sum(decoded))
         #update latency values
-        self.server_latency = [1000.0*x for _,x in list(self.client.server_ping_latency)[-20:]]
-        self.client_latency = [1000.0*x for _,x in list(self.client.client_ping_latency)[-20:]]
+        #there may be more than one record for each second
+        #so we have to average them to prevent the graph from "jumping":
+        def get_ping_latency_records(src, size=20):
+            recs = {}
+            src_list = list(src)
+            while len(src_list)>0 and len(recs)<size:
+                when, value = src_list.pop()
+                iwhen = int(when)
+                cv = recs.get(iwhen, 0)
+                recs[iwhen] = (cv + 1000.0*value) / 2.0        #not very fair if more than 2 values... but this shouldn't happen anyway
+            return [recs.get(x) for x in sorted(recs.keys())]
+        self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
+        self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
         return not self.is_closed
 
     def populate_tab(self, *args):
