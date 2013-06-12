@@ -126,7 +126,7 @@ class WindowSource(object):
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
         self.supports_delta = []
-        if xor_str is not None:
+        if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
