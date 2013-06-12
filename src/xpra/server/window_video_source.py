@@ -51,8 +51,8 @@ class WindowVideoSource(WindowSource):
 
         self._video_pipeline_helper.may_init()
 
-    def add_stats(self, info, metadata, suffix=""):
-        WindowSource.add_stats(self, info, metadata, suffix)
+    def add_stats(self, info, suffix=""):
+        WindowSource.add_stats(self, info, suffix)
         prefix = "window[%s]." % self.wid
         if self._csc_encoder:
             info[prefix+"csc"+suffix] = self._csc_encoder.get_type()

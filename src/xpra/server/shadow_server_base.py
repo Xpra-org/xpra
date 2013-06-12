@@ -60,6 +60,9 @@ class RootWindowModel(object):
     def get_client_contents(self):
         return self.window
 
+    def get_property_names(self):
+        return ("title", "client-machine", "window-type", "size-hints")
+
     def get_property(self, prop):
         if prop=="title":
             return self.window.get_screen().get_display().get_name()

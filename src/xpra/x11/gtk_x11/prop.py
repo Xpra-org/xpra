@@ -94,6 +94,21 @@ class WMSizeHints(object):
         else:
             self.win_gravity = -1
 
+    def to_dict(self, include_none=False):
+        d = {}
+        for attr, metakey in [
+            ("max_size", "maximum-size"),
+            ("min_size", "minimum-size"),
+            ("base_size", "base-size"),
+            ("resize_inc", "increment"),
+            ("min_aspect_ratio", "minimum-aspect-ratio"),
+            ("max_aspect_ratio", "maximum-aspect-ratio"),
+            ]:
+            v = getattr(self, attr)
+            if v is not None or include_none:
+                d[metakey] = v
+        return d
+
     def __str__(self):
         return "WMSizeHints(%s)" % {"max_size"  : self.max_size,
                                     "min_size"  : self.min_size,

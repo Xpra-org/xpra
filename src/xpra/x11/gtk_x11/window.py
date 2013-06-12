@@ -202,10 +202,26 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
                           gobject.PARAM_READABLE),
+        "xid": (gobject.TYPE_INT,
+                "X11 window id", "",
+                -1, 65535, -1,
+                gobject.PARAM_READABLE),
+        "has-alpha": (gobject.TYPE_BOOLEAN,
+                       "Does the window use transparency", "",
+                       False,
+                       gobject.PARAM_READABLE),
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
-                       gobject.PARAM_READWRITE),
+                       gobject.PARAM_READABLE),
+        "override-redirect": (gobject.TYPE_BOOLEAN,
+                       "Is the window of type override-redirect", "",
+                       False,
+                       gobject.PARAM_READABLE),
+        "tray": (gobject.TYPE_BOOLEAN,
+                       "Is the window a system tray icon", "",
+                       False,
+                       gobject.PARAM_READABLE),
         "scaling" : (gobject.TYPE_PYOBJECT,
                        "Application requested scaling as a fraction (pair of numbers)", "",
                        gobject.PARAM_READABLE), 
@@ -238,6 +254,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
+        self.property_names = ["transient-for", "fullscreen", "window-type", "xid", "has-alpha"]
+
+    def get_property_names(self):
+        return self.property_names
 
     def managed_connect(self, detailed_signal, handler, *args):
         """ connects a signal handler and makes sure we will clean it up on unmanage() """
@@ -385,6 +405,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             window_types = [gtk.gdk.atom_intern(window_type)]
         self._internal_set_property("window-type", window_types)
         self._handle_scaling()
+        self._internal_set_property("has-alpha", self.client_window.get_depth()==32)
+        self._internal_set_property("xid", get_xwindow(self.client_window))
 
     def _handle_scaling(self):
         scaling = self.prop_get("_XPRA_SCALING", "u32", raise_xerrors=False)
@@ -410,8 +432,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         return False
 
     def has_alpha(self):
-        log.debug("has_alpha() client_window.depth=%s", self.client_window.get_depth())
-        return self.client_window.get_depth()==32
+        return self.get_property("has-alpha")
 
     def get_rgb_rawdata(self, x, y, width, height, logger=log.debug):
         handle = self._composite.get_property("contents-handle")
@@ -489,6 +510,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def __init__(self, client_window):
         BaseWindowModel.__init__(self, client_window)
+        self.property_names.append("override-redirect")
 
     def call_setup(self):
         self._read_initial_properties()
@@ -507,6 +529,10 @@ class OverrideRedirectWindowModel(BaseWindowModel):
         ch = self._composite.get_property("contents-handle")
         if ch is None:
             raise Unmanageable("failed to get damage handle")
+
+    def _read_initial_properties(self):
+        BaseWindowModel._read_initial_properties(self)
+        self._internal_set_property("override-redirect", True)
 
     def composite_configure_event(self, composite_window, event):
         BaseWindowModel.composite_configure_event(self, composite_window, event)
@@ -534,12 +560,14 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
 
     def __init__(self, client_window):
         OverrideRedirectWindowModel.__init__(self, client_window)
+        self.property_names.append("tray")
 
     def is_tray(self):
         return  True
 
     def _read_initial_properties(self):
-        pass
+        BaseWindowModel._read_initial_properties(self)
+        self._internal_set_property("tray", True)
 
     def composite_configure_event(self, composite_window, event):
         BaseWindowModel.composite_configure_event(self, composite_window, event)
@@ -669,6 +697,7 @@ class WindowModel(BaseWindowModel):
         self._input_field = True
         self.connect("notify::iconic", self._handle_iconic_update)
 
+        self.property_names += ["title", "pid", "size-hints", "class-instance", "icon", "client-machine", "modal"]
         self.call_setup()
 
     def setup(self):

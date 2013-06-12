@@ -260,14 +260,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 #code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
-                ss.new_window("new-override-redirect", wid, window, x, y, w, h, self._OR_metadata, wprops)
+                ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
             else:
                 #code more or less duplicated from send_new_window_packet:
                 self._desktop_manager.hide_window(window)
                 x, y, w, h = self._desktop_manager.window_geometry(window)
                 wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
-                ss.new_window("new-window", wid, window, x, y, w, h, self._all_metadata, wprops)
+                ss.new_window("new-window", wid, window, x, y, w, h, wprops)
         ss.send_cursor(self.cursor_data)
 
 
@@ -361,13 +361,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.or_window_geometry(wid, window, x, y, w, h)
 
-    # These are the names of WindowModel properties that, when they change,
-    # trigger updates in the xpra window metadata:
-    _all_metadata = ("title", "pid", "size-hints", "class-instance", "icon", "client-machine", "modal",
-                     "transient-for", "fullscreen", "window-type", "xid", "has-alpha")
-    _OR_metadata = ("transient-for", "fullscreen", "window-type", "xid", "has-alpha")
-
-
 
     def do_xpra_cursor_event(self, event):
         if not self.cursors:
@@ -440,11 +433,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _send_new_window_packet(self, window):
         geometry = self._desktop_manager.window_geometry(window)
-        self._do_send_new_window_packet("new-window", window, geometry, self._all_metadata)
+        self._do_send_new_window_packet("new-window", window, geometry)
 
     def _send_new_or_window_packet(self, window, options=None):
         geometry = window.get_property("geometry")
-        self._do_send_new_window_packet("new-override-redirect", window, geometry, self._OR_metadata)
+        self._do_send_new_window_packet("new-override-redirect", window, geometry)
         (_, _, w, h) = geometry
         self._damage(window, 0, 0, w, h, options=options)
 

@@ -32,13 +32,100 @@ from xpra.os_util import platform_name, StringIOClass
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
-#easier than making a whole subclass just for get-xid..
-get_xwindow = None
-try:
-    from xpra.x11.gtk_x11.gdk_bindings import get_xwindow       #@UnresolvedImport
-except:
-    pass
 
+def make_window_metadata(window, propname, generic_window_types=False, png_window_icons=False, get_transient_for=None):
+    if propname == "title":
+        title = window.get_property("title")
+        if title is None:
+            return {}
+        return {"title": title.encode("utf-8")}
+    elif propname == "pid":
+        return {"pid" : window.get_property("pid") or -1}
+    elif propname == "size-hints":
+        hints_metadata = {}
+        hints = window.get_property("size-hints")
+        if hints is not None:
+            hints_metadata = hints.to_dict()
+        return {"size-constraints": hints_metadata}
+    elif propname == "class-instance":
+        c_i = window.get_property("class-instance")
+        if c_i is None:
+            return {}
+        return {"class-instance": [x.encode("utf-8") for x in c_i]}
+    elif propname == "icon":
+        surf = window.get_property("icon")
+        if surf is None:
+            return {}
+        return {"icon": make_window_icon(surf, png_window_icons)}
+    elif propname == "client-machine":
+        client_machine = window.get_property("client-machine")
+        if client_machine is None:
+            import socket
+            client_machine = socket.gethostname()
+            if client_machine is None:
+                return {}
+        return {"client-machine": client_machine.encode("utf-8")}
+    elif propname == "transient-for":
+        wid = None
+        if get_transient_for:
+            wid = get_transient_for(window)
+        if wid:
+            return {"transient-for" : wid}
+        return {}
+    elif propname == "window-type":
+        window_types = window.get_property("window-type")
+        assert window_types is not None, "window-type is not defined for %s" % window
+        log("window_types=%s", window_types)
+        wts = []
+        for window_type in window_types:
+            s = str(window_type)
+            if generic_window_types:
+                s = s.replace("_NET_WM_WINDOW_TYPE_", "")
+            wts.append(s)
+        log("window_types=%s", wts)
+        return {"window-type" : wts}
+    elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen"):
+        return {propname : window.get_property(propname)}
+    elif propname == "xid":
+        return {"xid" : hex(window.get_property("xid") or 0)}
+    raise Exception("unhandled property name: %s" % propname)
+
+def make_window_icon(surf, png_window_icons):
+    pixel_data = surf.get_data()
+    pixel_format = surf.get_format()
+    stride = surf.get_stride()
+    w = surf.get_width()
+    h = surf.get_height()
+    log("found new window icon: %sx%s, sending as png=%s", w, h, png_window_icons)
+    if png_window_icons:
+        return make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h)
+    return make_argb32_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h)
+
+def make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h):
+    from PIL import Image                       #@UnresolvedImport
+    img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
+    MAX_SIZE = 64
+    if w>MAX_SIZE or h>MAX_SIZE:
+        #scale icon down
+        if w>=h:
+            h = int(h*MAX_SIZE/w)
+            w = MAX_SIZE
+        else:
+            w = int(w*MAX_SIZE/h)
+            h = MAX_SIZE
+        log("scaling window icon down to %sx%s", w, h)
+        img = img.resize((w,h), Image.ANTIALIAS)
+    output = StringIOClass()
+    img.save(output, 'PNG')
+    raw_data = output.getvalue()
+    output.close()
+    return w, h, "png", str(raw_data)
+
+def make_argb32_window_icon(pixel_data, pixel_format, stride, w, h):
+    import cairo
+    assert pixel_format == cairo.FORMAT_ARGB32
+    assert stride == 4 * w
+    return w, h, "premult_argb32", str(pixel_data)
 
 
 class ServerSource(object):
@@ -104,7 +191,6 @@ class ServerSource(object):
         self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
-        self.window_metdata_cache = {}
 
         self.uuid = ""
         self.hostname = ""
@@ -239,7 +325,6 @@ class ServerSource(object):
         for window_source in self.window_sources.values():
             window_source.cleanup()
         self.window_sources = {}
-        self.window_metdata_cache = {}
         if self.mmap:
             self.mmap.close()
             self.mmap = None
@@ -468,113 +553,11 @@ class ServerSource(object):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
-    # (this method just caches the results, see do_make_metadata)
     def _make_metadata(self, wid, window, propname):
-        cache = self.window_metdata_cache.setdefault(wid, {})
-        if len(cache)==0:
-            #these never change so populate them here just once
-            cache["override-redirect"] = window.is_OR()
-            cache["tray"] = window.is_tray()
-            if get_xwindow:
-                cache["xid"] = hex(get_xwindow(window.client_window))
-            cache["has-alpha"] = window.has_alpha()
-        if propname in cache:
-            return cache.copy()
-        props = self.do_make_metadata(window, propname)
-        props.update(cache)
-        return props
-
-    def do_make_metadata(self, window, propname):
-        if propname == "title":
-            title = window.get_property("title")
-            if title is None:
-                return {}
-            return {"title": title.encode("utf-8")}
-        elif propname == "modal":
-            return {"modal" : window.get_property("modal")}
-        elif propname == "pid":
-            return {"pid" : window.get_property("pid") or -1}
-        elif propname == "fullscreen":
-            return {"fullscreen" : window.get_property("fullscreen") or False}
-        elif propname == "size-hints":
-            hints_metadata = {}
-            hints = window.get_property("size-hints")
-            if hints is not None:
-                for attr, metakey in [
-                    ("max_size", "maximum-size"),
-                    ("min_size", "minimum-size"),
-                    ("base_size", "base-size"),
-                    ("resize_inc", "increment"),
-                    ("min_aspect_ratio", "minimum-aspect-ratio"),
-                    ("max_aspect_ratio", "maximum-aspect-ratio"),
-                    ]:
-                    v = getattr(hints, attr)
-                    if v is not None:
-                        hints_metadata[metakey] = v
-            return {"size-constraints": hints_metadata}
-        elif propname == "class-instance":
-            c_i = window.get_property("class-instance")
-            if c_i is None:
-                return {}
-            return {"class-instance": [x.encode("utf-8") for x in c_i]}
-        elif propname == "icon":
-            surf = window.get_property("icon")
-            if surf is None:
-                return {}
-            return {"icon": self.make_window_icon(surf.get_data(), surf.get_format(), surf.get_stride(), surf.get_width(), surf.get_height())}
-        elif propname == "client-machine":
-            client_machine = window.get_property("client-machine")
-            if client_machine is None:
-                import socket
-                client_machine = socket.gethostname()
-                if client_machine is None:
-                    return {}
-            return {"client-machine": client_machine.encode("utf-8")}
-        elif propname == "transient-for":
-            wid = self.get_transient_for(window)
-            if wid:
-                return {"transient-for" : wid}
-            return {}
-        elif propname == "window-type":
-            window_types = window.get_property("window-type")
-            assert window_types is not None, "window-type is not defined for %s" % window
-            log("window_types=%s", window_types)
-            wts = []
-            for window_type in window_types:
-                s = str(window_type)
-                if self.generic_window_types:
-                    s = s.replace("_NET_WM_WINDOW_TYPE_", "")
-                wts.append(s)
-            log("window_types=%s", wts)
-            return {"window-type" : wts}
-        raise Exception("unhandled property name: %s" % propname)
-
-
-    def make_window_icon(self, pixel_data, pixel_format, stride, w, h):
-        log("found new window icon: %sx%s, sending as png=%s", w, h, self.png_window_icons)
-        if self.png_window_icons:
-            from PIL import Image                       #@UnresolvedImport
-            img = Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
-            MAX_SIZE = 64
-            if w>MAX_SIZE or h>MAX_SIZE:
-                #scale icon down
-                if w>=h:
-                    h = int(h*MAX_SIZE/w)
-                    w = MAX_SIZE
-                else:
-                    w = int(w*MAX_SIZE/h)
-                    h = MAX_SIZE
-                log("scaling window icon down to %sx%s", w, h)
-                img = img.resize((w,h), Image.ANTIALIAS)
-            output = StringIOClass()
-            img.save(output, 'PNG')
-            raw_data = output.getvalue()
-            output.close()
-            return w, h, "png", str(raw_data)
-        import cairo
-        assert pixel_format == cairo.FORMAT_ARGB32
-        assert stride == 4 * w
-        return w, h, "premult_argb32", str(pixel_data)
+        return make_window_metadata(window, propname,
+                                        generic_window_types=self.generic_window_types,
+                                        png_window_icons=self.png_window_icons,
+                                        get_transient_for=self.get_transient_for)
 
 #
 # Keyboard magic
@@ -874,17 +857,17 @@ class ServerSource(object):
             return
         self.send("new-tray", wid, w, h)
 
-    def new_window(self, ptype, wid, window, x, y, w, h, properties, client_properties):
+    def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
         if not self.can_send_window(window):
             return
-        send_props = list(properties)
-        send_raw_icon = self.raw_window_icons and "icon" in properties
+        send_props = list(window.get_property_names())
+        send_raw_icon = self.raw_window_icons and "icon" in send_props
         if send_raw_icon:
             send_props.remove("icon")
         metadata = {}
         for propname in send_props:
             metadata.update(self._make_metadata(wid, window, propname))
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, properties, client_properties, metadata)
+        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata=%s", ptype, window, wid, x, y, w, h, client_properties, metadata)
         self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
@@ -893,7 +876,7 @@ class ServerSource(object):
         surf = window.get_property("icon")
         log("send_window_icon(%s,%s) icon=%s", window, wid, surf)
         if surf is not None:
-            w, h, pixel_format, pixel_data = self.make_window_icon(surf.get_data(), surf.get_format(), surf.get_stride(), surf.get_width(), surf.get_height())
+            w, h, pixel_format, pixel_data = make_window_icon(surf, self.png_window_icons)
             assert pixel_format in ("premult_argb32", "png")
             if pixel_format=="premult_argb32":
                 data = zlib_compress("rgb24", pixel_data)
@@ -935,8 +918,6 @@ class ServerSource(object):
         if ws:
             del self.window_sources[wid]
             ws.cleanup()
-        if wid in self.window_metdata_cache:
-            del self.window_metdata_cache[wid]
 
     def add_stats(self, info, window_ids=[], suffix=""):
         """
@@ -970,16 +951,16 @@ class ServerSource(object):
             out_latencies = []
             for wid in window_ids:
                 ws = self.window_sources.get(wid)
-                if ws:
-                    #per-window stats:
-                    metadata = self.window_metdata_cache.get(wid)
-                    ws.add_stats(info, metadata, suffix=suffix)
-                    #collect stats for global averages:
-                    for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
-                        total_pixels += pixels
-                        total_time += encoding_time
-                    in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
-                    out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
+                if ws is None:
+                    continue
+                #per-window source stats:
+                ws.add_stats(info, suffix=suffix)
+                #collect stats for global averages:
+                for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
+                    total_pixels += pixels
+                    total_time += encoding_time
+                in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
+                out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)

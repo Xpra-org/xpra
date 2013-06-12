@@ -240,23 +240,13 @@ class WindowSource(object):
         """ See cancel_damage(wid) """
         return sequence>=0 and self._damage_cancelled>=sequence
 
-    def add_stats(self, info, metadata, suffix=""):
+    def add_stats(self, info, suffix=""):
         """
             Add window specific stats
         """
         prefix = "window[%s]." % self.wid
         #no suffix for metadata (as it is the same for all clients):
         info[prefix+"dimensions"] = self.window_dimensions
-        if metadata:
-            for k,v in metadata.items():
-                if k=="icon" or v is None:
-                    continue
-                if k=="size-constraints":
-                    #unroll nested props:
-                    for sk,sv in v.items():
-                        info[prefix+sk] = sv
-                    continue
-                info[prefix+k] = v
         info[prefix+"encoding"+suffix] = self.encoding
         self.statistics.add_stats(info, prefix, suffix)
         #batch stats:

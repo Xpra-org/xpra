@@ -802,6 +802,8 @@ class ServerBase(object):
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
+        #window info:
+        self.add_windows_info(info, window_ids)
         #find the source to report on:
         n = len(server_sources)
         if n==1:
@@ -837,6 +839,28 @@ class ServerBase(object):
         except:
             log.error("error getting system info", exc_info=True)
         log("get_info took %.1fms", 1000.0*(time.time()-start))
+        return info
+
+    def add_windows_info(self, info, window_ids):
+        for wid, window in self._id_to_window.items():
+            if wid not in window_ids:
+                continue
+            for k,v in self.get_window_info(window).items():
+                wp = "window[%s]." % wid
+                info[wp + k] = v
+
+    def get_window_info(self, window):
+        from xpra.server.source import make_window_metadata
+        info = {}
+        for prop in window.get_property_names():
+            if prop=="icon" or prop is None:
+                continue
+            metadata = make_window_metadata(window, prop,
+                                            generic_window_types=True, png_window_icons=False,
+                                            get_transient_for=self.get_transient_for)
+            info.update(metadata)
+        info["override-redirect"] = window.is_OR()
+        info["tray"] = window.is_tray()
         return info
 
     def clipboard_progress(self, local_requests, remote_requests):
@@ -883,12 +907,12 @@ class ServerBase(object):
         self._id_to_window[wid] = window
         return wid
 
-    def _do_send_new_window_packet(self, ptype, window, geometry, properties):
+    def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
         x, y, w, h = geometry
         for ss in self._server_sources.values():
             wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
-            ss.new_window(ptype, wid, window, x, y, w, h, properties, wprops)
+            ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
 
     def _screen_size_changed(self, *args):
