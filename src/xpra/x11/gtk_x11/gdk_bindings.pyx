@@ -622,14 +622,16 @@ cdef char *BGRX = "BGRX"
 cdef char *ARGB = "ARGB"
 cdef char *BGRA = "BGRA"
 cdef char *RGB = "RGB"
+cdef char *RGBA = "RGBA"
 
-cdef char *RGB_FORMATS[6]
+cdef char *RGB_FORMATS[7]
 RGB_FORMATS[0] = XRGB
 RGB_FORMATS[1] = BGRX
 RGB_FORMATS[2] = ARGB
 RGB_FORMATS[3] = BGRA
 RGB_FORMATS[4] = RGB
-RGB_FORMATS[5] = NULL
+RGB_FORMATS[5] = RGBA
+RGB_FORMATS[6] = NULL
 
 cdef class XImageWrapper:
     cdef XImage *image                              #@DuplicatedSignature
@@ -723,10 +725,11 @@ cdef class XImageWrapper:
         self.rowstride = rowstride
 
     def set_pixel_format(self, pixel_format):
-        assert pixel_format in RGB_FORMATS, "invalid rgb_format: %s" % pixel_format
+        assert pixel_format is not None
         cdef int i =0
-        while RGB_FORMATS[i]!=pixel_format:
+        while RGB_FORMATS[i]!=NULL and RGB_FORMATS[i]!=pixel_format:
             i +=1
+        assert RGB_FORMATS[i]!=NULL, "invalid pixel format: %s" % pixel_format
         self.pixel_format = RGB_FORMATS[i]
 
     def set_pixels(self, pixels):
