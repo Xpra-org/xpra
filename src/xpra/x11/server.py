@@ -475,9 +475,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         assert not window.is_OR()
         self._desktop_manager.configure_window(window, x, y, width, height)
         self._desktop_manager.show_window(window)
-        self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
+        self._damage(window, 0, 0, width, height)
 
 
     def _process_unmap_window(self, proto, packet):
@@ -504,10 +504,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
         log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
         self._desktop_manager.configure_window(window, x, y, w, h)
-        if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
-            self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
+        if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
+            self._damage(window, 0, 0, w, h)
 
     def _process_move_window(self, proto, packet):
         wid, x, y = packet[1:4]
