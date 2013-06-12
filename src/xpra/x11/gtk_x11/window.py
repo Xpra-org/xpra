@@ -55,7 +55,7 @@ if gtk.pygtk_version<(2,17):
 #will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE = 2**15-1
 MAX_ASPECT = 2**15-1
-USE_XSHM = os.environ.get("XPRA_XSHM", "0")=="1"
+USE_XSHM = os.environ.get("XPRA_XSHM", "1")=="1"
 
 
 # Todo:
