@@ -228,7 +228,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        gobject.PARAM_READABLE),
         "scaling" : (gobject.TYPE_PYOBJECT,
                        "Application requested scaling as a fraction (pair of numbers)", "",
-                       gobject.PARAM_READWRITE), 
+                       gobject.PARAM_READWRITE),
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
                           gobject.PARAM_READABLE),
@@ -242,7 +242,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
-        "xpra-property-notify-event": one_arg_signal,
         "xpra-configure-event": one_arg_signal,
         }
 
@@ -521,10 +520,11 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = {
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event" : one_arg_signal,
+        "xpra-property-notify-event": one_arg_signal,
         }
 
     def __init__(self, client_window):
-        BaseWindowModel.__init__(self, client_window)
+        super(OverrideRedirectWindowModel, self).__init__(client_window)
         self.property_names.append("override-redirect")
 
     def call_setup(self):
@@ -533,7 +533,7 @@ class OverrideRedirectWindowModel(BaseWindowModel):
 
     def setup(self):
         BaseWindowModel.setup(self)
-        self.client_window.set_events(self.client_window.get_events()
+        self.client_window.set_events(self.client_window_saved_events
                                       | gtk.gdk.STRUCTURE_MASK)
         # So now if the window becomes unmapped in the future then we will
         # notice... but it might be unmapped already, and any event
@@ -684,6 +684,7 @@ class WindowModel(BaseWindowModel):
         "ownership-election": (gobject.SIGNAL_RUN_LAST,
                                gobject.TYPE_PYOBJECT, (),
                                non_none_list_accumulator),
+        "xpra-property-notify-event": one_arg_signal,
 
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
@@ -700,7 +701,7 @@ class WindowModel(BaseWindowModel):
         managed, for whatever reason.  ATM, this mostly means that the window
         died somehow before we could do anything with it."""
 
-        BaseWindowModel.__init__(self, client_window)
+        super(WindowModel, self).__init__(client_window)
         self.parking_window = parking_window
         self.corral_window = None
         self.client_window_saved_events = self.client_window.get_events()
