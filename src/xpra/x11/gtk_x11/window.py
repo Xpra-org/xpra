@@ -213,7 +213,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "fullscreen": (gobject.TYPE_BOOLEAN,
                        "Fullscreen-ness of window", "",
                        False,
-                       gobject.PARAM_READABLE),
+                       gobject.PARAM_READWRITE),
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
@@ -224,7 +224,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        gobject.PARAM_READABLE),
         "scaling" : (gobject.TYPE_PYOBJECT,
                        "Application requested scaling as a fraction (pair of numbers)", "",
-                       gobject.PARAM_READABLE), 
+                       gobject.PARAM_READWRITE), 
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
                           gobject.PARAM_READABLE),
@@ -487,7 +487,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                 _NET_WM_STATE_REMOVE = 0
                 _NET_WM_STATE_ADD = 1
                 fullscreen = event.data[0]==_NET_WM_STATE_ADD
-                log.info("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
+                log("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
                 self.set_property("fullscreen", fullscreen)
                 return
             log("do_xpra_client_message_event(%s) atom=%s", event, atom)
