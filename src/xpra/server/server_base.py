@@ -859,6 +859,11 @@ class ServerBase(object):
                                             generic_window_types=True, png_window_icons=False,
                                             get_transient_for=self.get_transient_for)
             info.update(metadata)
+        if "size-constraints" in info:
+            size_constraints = info["size-constraints"]
+            del info["size-constraints"]
+            for k,v in size_constraints.items():
+                info["size-constraints.%s" % k] = v
         info["override-redirect"] = window.is_OR()
         info["tray"] = window.is_tray()
         return info
