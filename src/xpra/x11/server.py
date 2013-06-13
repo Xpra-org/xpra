@@ -59,7 +59,7 @@ class DesktopManager(gtk.Widget):
         model.connect("ownership-election", self._elect_me)
         def new_geom(window_model, *args):
             log("new_geom(%s,%s)", window_model, args)
-        model.connect("geometry", new_geom)
+        model.connect("notify::geometry", new_geom)
         model.ownership_election()
 
     def window_geometry(self, model):
@@ -342,7 +342,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 raw_window.set_data(WINDOW_MODEL_KEY, wid)
                 window.call_setup()
                 window.connect("notify::geometry", self._or_window_geometry_changed)
-                window.connect("geometry", self._or_window_geometry_changed)
                 self._send_new_or_window_packet(window)
         except Unmanageable, e:
             if window:

@@ -37,7 +37,7 @@ from xpra.x11.gtk_x11.send_wm import (
                 send_wm_take_focus,                         #@UnresolvedImport
                 send_wm_delete_window)                      #@UnresolvedImport
 from xpra.gtk_common.gobject_util import (AutoPropGObjectMixin,
-                           one_arg_signal, no_arg_signal,
+                           one_arg_signal,
                            non_none_list_accumulator)
 from xpra.x11.gtk_x11.error import trap, XError
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -238,7 +238,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                         gobject.PARAM_READABLE),
         }
     __gsignals__ = {
-        "geometry": no_arg_signal,
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
@@ -371,7 +370,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._geometry = X11Window.geometry_with_border(xwin)
             log("BaseWindowModel.read_geometry(%s) geometry(%s)=%s", emit, hex(xwin), self._geometry)
             if emit:
-                self.emit("geometry")
+                self.notify("geometry")
         try:
             trap.call_unsynced(synced_update)
         except XError:
@@ -981,7 +980,7 @@ class WindowModel(BaseWindowModel):
         try:
             #workaround applications whose windows disappear from underneath us:
             if trap.call_synced(self.resize_corral_window):
-                self.emit("geometry")
+                self.notify("geometry")
         except XError, e:
             log.warn("failed to resize corral window: %s", e)
 

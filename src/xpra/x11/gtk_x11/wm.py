@@ -305,7 +305,7 @@ class Wm(gobject.GObject):
         def geometry_changed(model, *args):
             log("Wm.geometry_changed(%s, %s) on window %s", model, args, win)
             self.emit("window-resized", win)
-        win.connect("geometry", geometry_changed)
+        win.connect("notify::geometry", geometry_changed)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")
