@@ -622,8 +622,8 @@ class Protocol(object):
                         packet[index] = raw_data
                     raw_packets = {}
                 try:
-                    self._process_packet_cb(self, packet)
                     self.input_packetcount += 1
+                    self._process_packet_cb(self, packet)
                 except KeyboardInterrupt:
                     raise
                 except:
