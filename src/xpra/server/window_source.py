@@ -339,6 +339,8 @@ class WindowSource(object):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         now = time.time()
+        self.global_statistics.damage_events_count += 1
+        self.statistics.damage_events_count += 1
         self.statistics.last_damage_event_time = now
         ww, wh = window.get_dimensions()
         self.window_dimensions = ww, wh
@@ -816,6 +818,8 @@ class WindowSource(object):
         end = time.time()
         #debug("%sms to compress %sx%s pixels using %s with ratio=%s%%, delta=%s",
         #         dec1(end*1000.0-start*1000.0), w, h, coding, dec1(100.0*len(data)/len(rgbdata)), delta)
+        self.global_statistics.packet_count += 1
+        self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
         self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
         #record number of frames and pixels:

@@ -53,6 +53,8 @@ class WindowPerformanceStatistics(object):
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
         self.encoding_totals = {}                       #for each encoding, how many frames we sent and how many pixels in total
         self.last_damage_event_time = None
+        self.damage_events_count = 0
+        self.packet_count = 0
 
         #these values are calculated from the values above (see update_averages)
         self.target_latency = self.DEFAULT_TARGET_LATENCY
@@ -181,6 +183,8 @@ class WindowPerformanceStatistics(object):
         for encoding, totals in self.encoding_totals.items():
             info[prefix+"total_frames%s[%s]" % (suffix, encoding)] = totals[0]
             info[prefix+"total_pixels%s[%s]" % (suffix, encoding)] = totals[1]
+        info[prefix+"damage_events%s" % suffix] = self.damage_events_count
+        info[prefix+"damage_packets_sent%s" % suffix] = self.packet_count
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency

@@ -54,6 +54,8 @@ class GlobalPerformanceStatistics(object):
         self.server_ping_latency = maxdeque(NRECS)      #time it took for the client to get a ping_echo back from us:
                                                         #(event_time, elapsed_time_in_seconds)
         self.client_load = None
+        self.damage_events_count = 0
+        self.packet_count = 0
         #these values are calculated from the values above (see update_averages)
         self.min_client_latency = self.DEFAULT_LATENCY
         self.avg_client_latency = self.DEFAULT_LATENCY
@@ -130,6 +132,8 @@ class GlobalPerformanceStatistics(object):
         return factors
 
     def add_stats(self, info, suffix=""):
+        info["damage_events%s" % suffix] = self.damage_events_count
+        info["damage_packets_sent%s" % suffix] = self.packet_count
         info["output_mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
         if self.min_client_latency is not None:
             info["client_latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
