@@ -278,8 +278,8 @@ class SessionInfo(gtk.Window):
         self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graphs)
         self.latency_graph = self.add_graph_button("The time it takes to send an echo packet and get the reply", self.save_graphs)
         self.pixel_in_data = maxdeque(N_SAMPLES+4)
-        self.net_in_data = maxdeque(N_SAMPLES+4)
-        self.net_out_data = maxdeque(N_SAMPLES+4)
+        self.net_in_bytecount = maxdeque(N_SAMPLES+4)
+        self.net_out_bytecount = maxdeque(N_SAMPLES+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -371,8 +371,12 @@ class SessionInfo(gtk.Window):
         self.client.send_ping()
         self.last_populate_time = time.time()
         #record bytecount every second:
-        self.net_in_data.append(self.connection.input_bytecount)
-        self.net_out_data.append(self.connection.output_bytecount)
+        self.net_in_bytecount.append(self.connection.input_bytecount)
+        self.net_out_bytecount.append(self.connection.output_bytecount)
+        #pre-compute for graph:
+        self.net_in_scale, self.net_in_data = values_to_diff_scaled_values(list(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+        self.net_out_scale, self.net_out_data = values_to_diff_scaled_values(list(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+
         #count pixels in the last second:
         since = time.time()-1
         decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
@@ -635,10 +639,7 @@ class SessionInfo(gtk.Window):
         h = max(200, h-bh-20, rect.height-bh-20)
         w = max(360, rect.width-20)
         #bandwidth graph:
-        #Note: we skip the first record because the timing isn't right so the values aren't either..:
-        in_scale, in_data = values_to_diff_scaled_values(list(self.net_in_data)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-        out_scale, out_data = values_to_diff_scaled_values(list(self.net_out_data)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-        if in_data and out_data:
+        if self.net_in_data and self.net_out_data:
             def unit(scale):
                 if scale==1:
                     return ""
@@ -647,8 +648,8 @@ class SessionInfo(gtk.Window):
                     if value==1:
                         return str(unit)
                     return "x%s%s" % (int(value), unit)
-            labels = ["recv %sB/s" % unit(in_scale), "sent %sB/s" % unit(out_scale)]
-            datasets = [in_data, out_data]
+            labels = ["recv %sB/s" % unit(self.net_in_scale), "sent %sB/s" % unit(self.net_out_scale)]
+            datasets = [self.net_in_data, self.net_out_data]
             if SHOW_PIXEL_STATS and self.client.windows_enabled:
                 pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
                 datasets.append(in_pixels)
