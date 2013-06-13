@@ -214,6 +214,10 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
                        "Fullscreen-ness of window", "",
                        False,
                        gobject.PARAM_READWRITE),
+        "maximized": (gobject.TYPE_BOOLEAN,
+                       "Is the window maximized", "",
+                       False,
+                       gobject.PARAM_READWRITE),
         "override-redirect": (gobject.TYPE_BOOLEAN,
                        "Is the window of type override-redirect", "",
                        False,
@@ -251,10 +255,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._setup_done = False
         self._geometry = None
         self._damage_forward_handle = None
+        self._last_wm_state_serial = 0
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["transient-for", "fullscreen", "window-type", "xid", "has-alpha"]
+        self.property_names = ["transient-for", "fullscreen", "maximized", "window-type", "xid", "has-alpha"]
 
     def get_property_names(self):
         return self.property_names
@@ -482,17 +487,27 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         #   _NET_WM_DESKTOP
         #   _NET_WM_STATE (more fully)
         if event.message_type=="_NET_WM_STATE" and event.data and len(event.data)==5:
-            atom = get_pyatom(event.window, event.data[1])
-            if atom=="_NET_WM_STATE_FULLSCREEN":
-                _NET_WM_STATE_REMOVE = 0
-                _NET_WM_STATE_ADD = 1
+            atom1 = get_pyatom(event.window, event.data[1])
+            atom2 = get_pyatom(event.window, event.data[2])
+            _NET_WM_STATE_REMOVE = 0
+            _NET_WM_STATE_ADD = 1
+            if atom1=="_NET_WM_STATE_FULLSCREEN":
                 fullscreen = event.data[0]==_NET_WM_STATE_ADD
                 log("do_xpra_client_message_event(..) setting fullscreen=%s", fullscreen)
                 self.set_property("fullscreen", fullscreen)
-                return
-            log("do_xpra_client_message_event(%s) atom=%s", event, atom)
+            elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ") and \
+                 atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
+                if self._last_wm_state_serial == event.serial:
+                    #already seen!
+                    return
+                maximized = event.data[0]==_NET_WM_STATE_ADD
+                log("do_xpra_client_message_event(%s) window maximized=%s", event, maximized)
+                self.set_property("maximized", maximized)
+            else:
+                log("do_xpra_client_message_event(%s) atom=%s", event, atom1)
         else:
             log("do_xpra_client_message_event(%s)", event)
+        self._last_wm_state_serial = event.serial
 
 
 

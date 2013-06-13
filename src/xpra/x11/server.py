@@ -294,7 +294,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         window.managed_connect("unmanaged", self._lost_window)
         return wid
 
-    _window_export_properties = ("title", "size-hints", "fullscreen")
+    _window_export_properties = ("title", "size-hints", "fullscreen", "maximized")
     def _add_new_window(self, window):
         self._add_new_window_common(window)
         for prop in self._window_export_properties:

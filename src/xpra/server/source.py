@@ -84,7 +84,7 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
             wts.append(s)
         log("window_types=%s", wts)
         return {"window-type" : wts}
-    elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen"):
+    elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
         return {propname : window.get_property(propname)}
     elif propname == "xid":
         return {"xid" : hex(window.get_property("xid") or 0)}

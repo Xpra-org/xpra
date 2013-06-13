@@ -193,6 +193,13 @@ class ClientWindowBase(ClientWidgetBase):
             self._has_alpha = self._metadata.get("has-alpha", False)
             self.set_alpha()
 
+        if "maximized" in self._metadata:
+            maximized = self._metadata.get("maximized", False)
+            if maximized:
+                self.maximize()
+            else:
+                self.unmaximize()
+
         if "fullscreen" in self._metadata:
             self.set_fullscreen(self._metadata.get("fullscreen"))
 
