@@ -135,6 +135,13 @@ cdef class Encoder:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, "")
         #now see if the client has requested a different value:
         profile = options.get("x264.%s.profile" % csc_mode, profile)
+        if not profile:
+            #also using the old names:
+            old_csc_name = {"YUV420P" : "I420",
+                            "YUV422P" : "I422",
+                            "YUV444P" : "I444",
+                            }.get(csc_mode, csc_mode)
+            profile = options.get("x264.%s.profile" % csc_mode, profile)
         return profile
 
     def clean(self):                        #@DuplicatedSignature

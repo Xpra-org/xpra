@@ -456,21 +456,20 @@ class UIXpraClient(XpraClientBase):
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
-            # set the default to "high" for i420 as the python client always supports all the profiles
+            # set the default to "high10" for I420/YUV420P and I422/YUV422P
+            # as the python client always supports all the profiles
             # whereas on the server side, the default is baseline to accomodate less capable clients.
-            for csc_mode, default_profile in {"I420" : "high",
-                                              "I422" : "",
-                                              "I444" : ""}.items():
-                profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, default_profile)
+            # I444/YUV444P requires high444 so we don't bother specifying anything for that one.
+            for old_csc_name, csc_name, default_profile in (
+                        ("I420", "YUV420P", "high10"),
+                        ("I422", "YUV422P", "high10"),
+                        ("I444", "YUV444P", "")):
+                profile = os.environ.get("XPRA_X264_%s_PROFILE" % old_csc_name, default_profile)
+                profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_name, profile)
                 if profile:
-                    capabilities["encoding.x264.%s.profile" % csc_mode] = profile
-            for csc_mode in ("I422", "I444"):
-                quality = os.environ.get("XPRA_X264_%s_QUALITY" % csc_mode)
-                if quality:
-                    capabilities["encoding.x264.%s.quality" % csc_mode] = int(quality)
-                min_quality = os.environ.get("XPRA_X264_%s_MIN_QUALITY" % csc_mode)
-                if min_quality:
-                    capabilities["encoding.x264.%s.min_quality" % csc_mode] = int(min_quality)
+                    #send as both old and new names:
+                    capabilities["encoding.x264.%s.profile" % old_csc_name] = profile
+                    capabilities["encoding.x264.%s.profile" % csc_name] = profile
             log("x264 encoding options: %s", str([(k,v) for k,v in capabilities.items() if k.startswith("encoding.x264.")]))
         iq = max(self.min_quality, self.quality)
         if iq<0:
