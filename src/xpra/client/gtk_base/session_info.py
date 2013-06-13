@@ -376,14 +376,25 @@ class SessionInfo(gtk.Window):
         #update latency values
         #there may be more than one record for each second
         #so we have to average them to prevent the graph from "jumping":
-        def get_ping_latency_records(src, size=20):
+        def get_ping_latency_records(src, size=25):
             recs = {}
             src_list = list(src)
+            now = int(time.time())
             while len(src_list)>0 and len(recs)<size:
                 when, value = src_list.pop()
+                if when>=(now-1):           #ignore last second
+                    continue
                 iwhen = int(when)
-                cv = recs.get(iwhen, 0)
-                recs[iwhen] = (cv + 1000.0*value) / 2.0        #not very fair if more than 2 values... but this shouldn't happen anyway
+                cv = recs.get(iwhen)
+                v = 1000.0*value
+                if cv:
+                    v = (v+cv) / 2.0        #not very fair if more than 2 values... but this shouldn't happen anyway
+                recs[iwhen] = v
+            #ensure we always have a record for the last N seconds, even an empty one
+            for x in range(size):
+                i = now-2-x
+                if i not in recs:
+                    recs[i] = None
             return [recs.get(x) for x in sorted(recs.keys())]
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
@@ -634,7 +645,7 @@ class SessionInfo(gtk.Window):
                     l.insert(0, None)
         pixmap = make_graph_pixmap([self.server_latency, self.client_latency], labels=["server", "client"],
                                     width=w, height=h/2,
-                                    title="Latency (ms)", min_y_scale=10, rounding=50,
+                                    title="Latency (ms)", min_y_scale=10, rounding=25,
                                     start_x_offset=start_x_offset)
         self.latency_graph.set_size_request(*pixmap.get_size())
         self.latency_graph.set_from_pixmap(pixmap, None)
