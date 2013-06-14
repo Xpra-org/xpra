@@ -597,11 +597,13 @@ By default it uses a simple default 'xpra' icon.
 Sets the mmap file's gid to match the socket file's gid and sets
 the mmap file's permissions to 660.
 This is necessary to share the mmap file across user accounts.
+.TP
 \fB\-\-enable\-pings\fP
 The client and server will exchange ping and echo packets
 which are used to gather latency statistics.
 Those statistics can be seen using the "xpra info" command.
-[\fB\-\-encryption\fP=\fICIPHER\fP]
+.TP
+\fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
 prying eyes. This is only really useful with the \fB--bind-tcp\fP option.
 This option requires the use of the \fB--password-file\fP option.
