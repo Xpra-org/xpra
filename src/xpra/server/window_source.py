@@ -609,7 +609,7 @@ class WindowSource(object):
             debug("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
         rgb_request_time = time.time()
-        image = window.get_rgb_rawdata(x, y, w, h, logger=rgblog)
+        image = window.get_image(x, y, w, h, logger=rgblog)
         if image is None:
             debug("get_window_pixmap: no pixel data for window %s, wid=%s", window, self.wid)
             return

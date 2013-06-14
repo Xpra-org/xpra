@@ -591,7 +591,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             w, h = window.get_dimensions()
             debug("screenshot: size(%s)=%sx%s", window, w, h)
             try:
-                img = trap.call_synced(window.get_rgb_rawdata, 0, 0, w, h, log.info)
+                img = trap.call_synced(window.get_image, 0, 0, w, h, log.info)
             except:
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue

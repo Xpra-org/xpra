@@ -9,6 +9,7 @@ import win32con         #@UnresolvedImport
 from xpra.log import Logger
 log = Logger()
 
+from xpra.server.gtk_shadow_server_base import GTKRootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase
 
@@ -27,9 +28,13 @@ BUTTON_EVENTS = {
 class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def __init__(self):
-        ShadowServerBase.__init__(self)
+        import gtk.gdk
+        ShadowServerBase.__init__(self, gtk.gdk.get_default_root_window())
         GTKServerBase.__init__(self)
         self.keycodes = {}
+
+    def makeRootWindowModel(self):
+        return GTKRootWindowModel(self.root)
 
     def _process_mouse_common(self, proto, wid, pointer, modifiers):
         #adjust pointer position for offset in client:

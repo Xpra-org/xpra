@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
-import gobject
 import socket
 
 from xpra.log import Logger
@@ -13,22 +11,6 @@ log = Logger()
 
 from xpra.net.protocol import Compressed
 from xpra.server.batch_config import DamageBatchConfig
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
-
-
-def take_root_screenshot():
-    log("grabbing screenshot")
-    root = gtk.gdk.get_default_root_window()
-    w,h = root.get_size()
-    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
-    pixbuf = pixbuf.get_from_drawable(root, root.get_colormap(), 0, 0, 0, 0, w, h)
-    def save_to_memory(data, buf):
-        buf.append(data)
-    buf = []
-    pixbuf.save_to_callback(save_to_memory, "png", {}, buf)
-    rowstride = w*3
-    return w, h, "png", rowstride, "".join(buf)
 
 
 class RootWindowModel(object):
@@ -51,11 +33,8 @@ class RootWindowModel(object):
     def acknowledge_changes(self):
         pass
 
-    def get_rgb_rawdata(self, x, y, width, height):
-        v = get_rgb_rawdata(self.window, x, y, width, height, logger=log)
-        if v is None:
-            return None
-        return ImageWrapper(*v)
+    def get_image(self, x, y, width, height):
+        raise NotImplementedError()
 
     def get_client_contents(self):
         return self.window
@@ -90,8 +69,8 @@ class RootWindowModel(object):
 
 class ShadowServerBase(object):
 
-    def __init__(self):
-        self.root = gtk.gdk.get_default_root_window()
+    def __init__(self, root_window):
+        self.root = root_window
         self.mapped_at = None
         self.pulseaudio = False
         self.sharing = False
@@ -106,7 +85,12 @@ class ShadowServerBase(object):
         pass
 
     def start_refresh(self):
-        gobject.timeout_add(50, self.refresh)
+        self.timeout_add(50, self.refresh)
+
+    def timeout_add(self, *args):
+        #usually done via gobject
+        raise NotImplementedError("subclasses should define this method!")
+
 
     def refresh(self):
         if not self.mapped_at:
@@ -134,7 +118,7 @@ class ShadowServerBase(object):
 
     def set_best_screen_size(self):
         """ we don't change resolutions when shadowing """
-        return gtk.gdk.get_default_root_window().get_size()
+        return self.root_window_model.get_dimensions()
 
     def set_keymap(self, server_source, force=False):
         log.info("shadow server: not setting keymap")
@@ -219,6 +203,6 @@ class ShadowServerBase(object):
         self.disconnect_client(proto, "closed the only window")
 
     def make_screenshot_packet(self):
-        w, h, encoding, rowstride, data = take_root_screenshot()
+        w, h, encoding, rowstride, data = self.root_window_model.take_root_screenshot()
         assert encoding=="png"  #use fixed encoding for now
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]

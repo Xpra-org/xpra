@@ -432,39 +432,39 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def has_alpha(self):
         return self.get_property("has-alpha")
 
-    def get_rgb_rawdata(self, x, y, width, height, logger=log.debug):
+    def get_image(self, x, y, width, height, logger=log.debug):
         handle = self._composite.get_property("contents-handle")
         if handle is None:
-            logger("get_rgb_rawdata(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
+            logger("get_image(..) pixmap is None for window %s", hex(get_xwindow(self.client_window)))
             return  None
 
         #try XShm:
         try:
-            logger("get_rgb_rawdata(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
+            logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
             shm = self._composite.get_property("shm-handle")
-            logger("get_rgb_rawdata(..) XShm handle: %s, handle=%s, xpixmap=%s", shm, handle, handle.xpixmap)
+            logger("get_image(..) XShm handle: %s, handle=%s, xpixmap=%s", shm, handle, handle.xpixmap)
             if shm is not None:
                 shm_image = trap.call_synced(shm.get_image, handle.xpixmap, x, y, width, height)
-                logger("get_rgb_rawdata(..) XShm image: %s", shm_image)
+                logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
         except Exception, e:
             if type(e)==XError and e.msg=="BadMatch":
-                logger("get_rgb_rawdata(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
 
         try:
             w = min(handle.width, width)
             h = min(handle.height, height)
             if w!=width or h!=height:
-                logger("get_rgb_rawdata(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+                logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             return trap.call_synced(handle.get_image, x, y, w, h)
         except Exception, e:
             if type(e)==XError and e.msg=="BadMatch":
-                logger("get_rgb_rawdata(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_rgb_rawdata(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
             return None
 
     def do_xpra_client_message_event(self, event):

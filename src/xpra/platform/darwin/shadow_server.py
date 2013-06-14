@@ -11,6 +11,7 @@ from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow_server_base import ShadowServerBase, RootWindowModel
 from xpra.codecs.argb.argb import argb_to_rgb   #@UnresolvedImport
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.os_util import StringIOClass
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 
@@ -27,10 +28,7 @@ ALPHA = {
 
 class OSXRootWindowModel(RootWindowModel):
 
-    def OSXRootWindowModel(self, root_window):
-        RootWindowModel.__init__(root_window)
-
-    def get_rgb_rawdata(self, x, y, width, height):
+    def get_image(self, x, y, width, height):
         #region = CG.CGRectMake(0, 0, 100, 100)
         region = CG.CGRectInfinite
         image = CG.CGWindowListCreateImage(region,
@@ -44,11 +42,23 @@ class OSXRootWindowModel(RootWindowModel):
         rowstride = CG.CGImageGetBytesPerRow(image)
         alpha = CG.CGImageGetAlphaInfo(image)
         alpha_str = ALPHA.get(alpha, alpha)
-        log("OSXRootWindowModel.get_rgb_rawdata(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
+        log("OSXRootWindowModel.get_image(..) image size: %sx%s, bpc=%s, bpp=%s, rowstride=%s, alpha=%s", width, height, bpc, bpp, rowstride, alpha_str)
         prov = CG.CGImageGetDataProvider(image)
         argb = CG.CGDataProviderCopyData(prov)
         rgba = argb_to_rgb(argb)
         return ImageWrapper(0, 0, width, height, rgba, "RGB", 24, width*3)
+
+    def take_screenshot(self):
+        log("grabbing screenshot")
+        import Image
+        w, h = self.get_dimensions()
+        image = self.get_image(0, 0, w, h)
+        img = Image.fromstring("RGB", (w, h), image.get_pixels(), "raw", "RGB", image.get_rowstride())
+        buf = StringIOClass()
+        img.save(buf, "PNG")
+        data = buf.getvalue()
+        buf.close()
+        return w, h, "png", image.get_rowstride(), data
 
 
 class ShadowServer(ShadowServerBase, GTKServerBase):
