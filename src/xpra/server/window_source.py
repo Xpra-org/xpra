@@ -26,7 +26,6 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 
-import gtk.gdk
 import gobject
 import time
 
@@ -65,11 +64,13 @@ except:
 #(which isn't as good since we don't merge rectangles
 #or discard subsets, but better than carrying ugly crufty code
 #just for those outdated pygtk versions..)
+import gtk.gdk
 tmp_region = gtk.gdk.Region()
 if hasattr(tmp_region, "get_rectangles") and os.environ.get("XPRA_FAKE_OLD_PYGTK", "0")=="0":
     def new_region():
         return gtk.gdk.Region()
-    def add_rectangle(region, rectangle):
+    def add_rectangle(region, x, y, w, h):
+        rectangle = gtk.gdk.Rectangle(x, y, w, h)
         region.union_with_rect(rectangle)
     def get_rectangles(region):
         return region.get_rectangles()
@@ -348,7 +349,7 @@ class WindowSource(object):
         if self._damage_delayed:
             #use existing delayed region:
             region = self._damage_delayed[2]
-            add_rectangle(region, gtk.gdk.Rectangle(x, y, w, h))
+            add_rectangle(region, x, y, w, h)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
@@ -390,7 +391,7 @@ class WindowSource(object):
 
         #create a new delayed region:
         region = new_region()
-        add_rectangle(region, gtk.gdk.Rectangle(x, y, w, h))
+        add_rectangle(region, x, y, w, h)
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, window, region, actual_encoding, options or {}
