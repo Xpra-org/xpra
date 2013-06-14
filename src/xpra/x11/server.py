@@ -180,7 +180,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         ### Create the WM object
         self._wm = Wm("Xpra", self.clobber)
         self._wm.connect("new-window", self._new_window_signaled)
-        self._wm.connect("window-resized", self._window_resized_signaled)
         self._wm.connect("bell", self._bell_signaled)
         self._wm.connect("quit", lambda _: self.quit(True))
 
@@ -272,14 +271,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
 
-    def _window_resized_signaled(self, wm, window):
-        nw,nh = window.get_property("actual-size")
-        geom = self._desktop_manager.window_geometry(window)
-        log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", wm, window, nw, nh, geom)
-        geom[2:4] = nw,nh
-        for ss in self._server_sources.values():
-            ss.resize_window(self._window_to_id[window], window, nw, nh)
-
     def _new_window_signaled(self, wm, window):
         self._add_new_window(window)
 
@@ -303,7 +294,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
         x, y, _, _, _ = window.corral_window.get_geometry()
         log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
         self._desktop_manager.add_window(window, x, y, w, h)
+        window.connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
+
+    def _window_resized_signaled(self, window, *args):
+        nw,nh = window.get_property("actual-size")
+        geom = self._desktop_manager.window_geometry(window)
+        log("XpraServer._window_resized_signaled(%s,%s) actual-size=%sx%s, current geometry=%s", window, args, nw, nh, geom)
+        geom[2:4] = nw,nh
+        for ss in self._server_sources.values():
+            ss.resize_window(self._window_to_id[window], window, nw, nh)
 
     def _add_new_or_window(self, raw_window):
         xid = get_xwindow(raw_window)

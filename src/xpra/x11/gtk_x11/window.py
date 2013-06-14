@@ -241,13 +241,15 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "client-contents-changed": one_arg_signal,
         "unmanaged": one_arg_signal,
 
-        "xpra-configure-event": one_arg_signal,
+# this signal must be defined in the subclasses to be seen by the event stuff:
+#        "xpra-configure-event": one_arg_signal,
         }
 
     def __init__(self, client_window):
         log("new window %s - %s", hex(client_window.xid), hex(get_xwindow(client_window)))
         super(BaseWindowModel, self).__init__()
         self.client_window = client_window
+        self.client_window_saved_events = self.client_window.get_events()
         self._managed = False
         self._managed_handlers = []
         self._setup_done = False
@@ -311,7 +313,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
 
     def setup(self):
         h = self._composite.connect("contents-changed", self._forward_contents_changed)
-        self._composite.connect("xpra-configure-event", self.composite_configure_event)
         self._damage_forward_handle = h
 
     def prop_get(self, key, ptype, ignore_errors=False, raise_xerrors=False):
@@ -349,33 +350,27 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._property_handlers[name](self)
 
     def do_xpra_configure_event(self, event):
+        if self.client_window is None:
+            return
+        oldgeom = self._geometry
         self._geometry = (event.x, event.y, event.width, event.height,
                           event.border_width)
-        log.info("WindowModel.do_xpra_configure_event(%s)", event)
-
-    def composite_configure_event(self, composite_window, event):
-        log("BaseWindowModel.composite_configure_event(%s,%s)", composite_window, event)
-        if self._composite:
-            self._composite.do_xpra_configure_event(event)
+        log("BaseWindowModel.do_xpra_configure_event(%s) old geometry=%s, new geometry=%s", event, oldgeom, self._geometry)
+        if oldgeom!=self._geometry:
+            self.notify("geometry")
 
     def do_get_property_geometry(self, pspec):
         if self._geometry is None:
-            self.read_geometry(False)
+            def synced_update():
+                xwin = get_xwindow(self.client_window)
+                self._geometry = X11Window.geometry_with_border(xwin)
+                log("BaseWindowModel.synced_update() geometry(%s)=%s", hex(xwin), self._geometry)
+            try:
+                trap.call_unsynced(synced_update)
+            except XError:
+                log.error("failed to retrieve updated window geometry - maybe it's gone?", exc_info=True)
         x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
-
-    def read_geometry(self, emit):
-        def synced_update():
-            xwin = get_xwindow(self.client_window)
-            self._geometry = X11Window.geometry_with_border(xwin)
-            log("BaseWindowModel.read_geometry(%s) geometry(%s)=%s", emit, hex(xwin), self._geometry)
-            if emit:
-                self.notify("geometry")
-        try:
-            trap.call_unsynced(synced_update)
-        except XError:
-            log.error("failed to retrieve updated window geometry - maybe it's gone?", exc_info=True)
-
 
     def unmanage(self, exiting=False):
         if self._managed:
@@ -517,6 +512,7 @@ gobject.type_register(BaseWindowModel)
 # superclass sooner or later.  When someone cares, presumably.
 class OverrideRedirectWindowModel(BaseWindowModel):
     __gsignals__ = {
+        "xpra-configure-event": one_arg_signal,
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event" : one_arg_signal,
         "xpra-property-notify-event": one_arg_signal,
@@ -547,12 +543,6 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def _read_initial_properties(self):
         BaseWindowModel._read_initial_properties(self)
         self._internal_set_property("override-redirect", True)
-
-    def composite_configure_event(self, composite_window, event):
-        BaseWindowModel.composite_configure_event(self, composite_window, event)
-        if self.client_window is None:
-            return
-        self.read_geometry(True)
 
     def _guess_window_type(self, transient_for):
         return "_NET_WM_WINDOW_TYPE_NORMAL"
@@ -684,6 +674,7 @@ class WindowModel(BaseWindowModel):
                                gobject.TYPE_PYOBJECT, (),
                                non_none_list_accumulator),
         "xpra-property-notify-event": one_arg_signal,
+        "xpra-configure-event": one_arg_signal,
 
         "child-map-request-event": one_arg_signal,
         "child-configure-request-event": one_arg_signal,
@@ -703,7 +694,6 @@ class WindowModel(BaseWindowModel):
         super(WindowModel, self).__init__(client_window)
         self.parking_window = parking_window
         self.corral_window = None
-        self.client_window_saved_events = self.client_window.get_events()
         self.in_save_set = False
         self.client_reparented = False
         self.startup_unmap_serial = None
@@ -886,10 +876,6 @@ class WindowModel(BaseWindowModel):
             self.corral_window.show_unraised()
         trap.swallow_synced(X11Window.sendConfigureNotify, get_xwindow(self.client_window))
 
-    def do_xpra_configure_event(self, event):
-        WindowModel.do_xpra_configure_event(self, event)
-        self.notify("geometry")
-
     def maybe_recalculate_geometry_for(self, maybe_owner):
         if maybe_owner and self.get_property("owner") is maybe_owner:
             self._update_client_geometry()
@@ -965,9 +951,9 @@ class WindowModel(BaseWindowModel):
         self._internal_set_property("actual-size", (w, h))
         self._internal_set_property("user-friendly-size", (wvis, hvis))
 
-    def composite_configure_event(self, composite_window, event):
-        log("WindowModel.composite_configure_event(%s, %s)", composite_window, event)
-        BaseWindowModel.composite_configure_event(self, composite_window, event)
+    def do_xpra_configure_event(self, event):
+        log("WindowModel.do_xpra_configure_event(%s)", event)
+        BaseWindowModel.do_xpra_configure_event(self, event)
         gobject.idle_add(self.may_resize_corral_window)
 
     def may_resize_corral_window(self):

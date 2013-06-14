@@ -165,8 +165,6 @@ class Wm(gobject.GObject):
         # Public use:
         # A new window has shown up:
         "new-window": one_arg_signal,
-        # A window got resized:
-        "window-resized": one_arg_signal,
         # X11 bell event:
         "bell": one_arg_signal,
         # You can emit this to cause the WM to quit, or the WM may
@@ -302,10 +300,6 @@ class Wm(gobject.GObject):
         def bell_event(window_model, event):
             self.do_bell_event(event)
         win.connect("bell", bell_event)
-        def geometry_changed(model, *args):
-            log("Wm.geometry_changed(%s, %s) on window %s", model, args, win)
-            self.emit("window-resized", win)
-        win.connect("notify::geometry", geometry_changed)
         self._windows[gdkwindow] = win
         self._windows_in_order.append(gdkwindow)
         self.notify("windows")
