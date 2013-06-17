@@ -576,7 +576,11 @@ class SessionInfo(gtk.Window):
                             v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
                             if v is not None:
                                 values.append(v)
-                        return op(values)
+                        try:
+                            return op(values)
+                        except:
+                            #no values?
+                            return ""
                     return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
                 setall(self.quality_labels, all_values_from_info("quality"))
                 setall(self.speed_labels, all_values_from_info("speed"))
