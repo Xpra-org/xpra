@@ -53,7 +53,7 @@ class OSXRootWindowModel(RootWindowModel):
         import Image
         w, h = self.get_dimensions()
         image = self.get_image(0, 0, w, h)
-        img = Image.fromstring("RGB", (w, h), image.get_pixels(), "raw", "RGB", image.get_rowstride())
+        img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
         buf = StringIOClass()
         img.save(buf, "PNG")
         data = buf.getvalue()

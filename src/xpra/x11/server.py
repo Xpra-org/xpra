@@ -632,7 +632,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                      "BGRX"   : "RGB",
                      "BGRA"   : "RGBA"}.get(pixel_format, pixel_format)
             try:
-                window_image = Image.fromstring(target_format, (w, h), img.get_pixels(), "raw", pixel_format, img.get_rowstride())
+                window_image = Image.frombuffer(target_format, (w, h), img.get_pixels(), "raw", pixel_format, img.get_rowstride())
             except:
                 log.warn("failed to parse window pixels in %s format", pixel_format)
                 continue
