@@ -223,12 +223,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.gl_marker("Switching back to YUV paint state")
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
 
-    def present_fbo(self):
-        drawable = self.gl_init()
+    def present_fbo(self, drawable):
         debug("present_fbo() drawable=%s", drawable)
         self.gl_marker("Presenting FBO on screen")
-        if not drawable:
-            return
+        assert drawable
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
@@ -261,12 +259,16 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         self.unset_rgb24_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-        drawable.gl_end()
 
     def gl_expose_event(self, glarea, event):
         debug("gl_expose_event(%s, %s)", glarea, event)
-        self.present_fbo()
-
+        drawable = self.gl_init()
+        if not drawable:
+            return
+        try:
+            self.present_fbo(drawable)
+        finally:
+            drawable.gl_end()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
@@ -275,47 +277,49 @@ class GLPixmapBacking(GTK2WindowBacking):
             debug("OpenGL cannot paint rgb24, drawable is not set")
             return False
 
-        self.set_rgb24_paint_state()
+        try:
+            self.set_rgb24_paint_state()
+    
+            # Compute alignment and row length
+            row_length = 0
+            alignment = 1
+            for a in [2, 4, 8]:
+                # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
+                if (rowstride & a-1) == 0:
+                    alignment = a
+            # If number of extra bytes is greater than the alignment value,
+            # then we also have to set row_length
+            # Otherwise it remains at 0 (= width implicitely)
+            if (rowstride - width * 3) > a:
+                row_length = width + (rowstride - width * 3) / 3
+    
+            self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
+            # Upload data as temporary RGB texture
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
+    
+            # Draw textured RGB quad at the right coordinates
+            glBegin(GL_QUADS)
+            glTexCoord2i(0, 0)
+            glVertex2i(x, y)
+            glTexCoord2i(0, height)
+            glVertex2i(x, y+height)
+            glTexCoord2i(width, height)
+            glVertex2i(x+width, y+height)
+            glTexCoord2i(width, 0)
+            glVertex2i(x+width, y)
+            glEnd()
+    
+            # Present update to screen
+            self.present_fbo(drawable)
+            # present_fbo has reset state already
 
-        # Compute alignment and row length
-        row_length = 0
-        alignment = 1
-        for a in [2, 4, 8]:
-            # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
-            if (rowstride & a-1) == 0:
-                alignment = a
-        # If number of extra bytes is greater than the alignment value,
-        # then we also have to set row_length
-        # Otherwise it remains at 0 (= width implicitely)
-        if (rowstride - width * 3) > a:
-            row_length = width + (rowstride - width * 3) / 3
-
-        self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
-        # Upload data as temporary RGB texture
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
-        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-
-        # Draw textured RGB quad at the right coordinates
-        glBegin(GL_QUADS)
-        glTexCoord2i(0, 0)
-        glVertex2i(x, y)
-        glTexCoord2i(0, height)
-        glVertex2i(x, y+height)
-        glTexCoord2i(width, height)
-        glVertex2i(x+width, y+height)
-        glTexCoord2i(width, 0)
-        glVertex2i(x+width, y)
-        glEnd()
-
-        # Present update to screen
-        self.present_fbo()
-        # present_fbo has resetted state already
-
-        drawable.gl_end()
+        finally:
+            drawable.gl_end()
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
@@ -343,7 +347,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                     # Update FBO texture
                     self.render_yuv_update(x, y, x+w, y+h)
                     # Present it on screen
-                    self.present_fbo()
+                    self.present_fbo(drawable)
                 fire_paint_callbacks(callbacks, True)
             except Exception, e:
                 log.error("OpenGL paint error: %s", e, exc_info=True)
