@@ -329,13 +329,13 @@ class GLPixmapBacking(GTK2WindowBacking):
 
     def gl_paint_yuv(self, img, x, y, w, h, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
+        pixel_format = img.get_pixel_format()
+        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
         drawable = self.gl_init()
         if not drawable:
             debug("OpenGL cannot paint yuv, drawable is not set")
             fire_paint_callbacks(callbacks, False)
             return
-        pixel_format = img.get_pixel_format()
-        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
         try:
             try:
                 self.update_texture_yuv(x, y, w, h, img, pixel_format)
