@@ -93,15 +93,6 @@ class WindowBackingBase(object):
         buf = BytesIOClass(img_data)
         return Image.open(buf)
 
-    def rgb24image(self, img_data, width, height, rowstride):
-        """ can be called from any thread """
-        assert has_PIL
-        if rowstride>0:
-            assert len(img_data) == rowstride * height
-        else:
-            assert len(img_data) == width * 3 * height
-        return Image.fromstring("RGB", (width, height), img_data, 'raw', 'RGB', rowstride, 1)
-
     def process_delta(self, raw_data, width, height, rowstride, options):
         """
             Can be called from any thread, decompresses and xors the rgb raw_data,
