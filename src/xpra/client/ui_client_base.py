@@ -456,13 +456,15 @@ class UIXpraClient(XpraClientBase):
         capabilities["encoding.uses_swscale"] = not self.opengl_enabled
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
-            # set the default to "high10" for I420/YUV420P and I422/YUV422P
+            # set the default to "high10" for I420/YUV420P
             # as the python client always supports all the profiles
             # whereas on the server side, the default is baseline to accomodate less capable clients.
-            # I444/YUV444P requires high444 so we don't bother specifying anything for that one.
+            # I422/YUV422P requires high422, and 
+            # I444/YUV444P requires high444,
+            # so we don't bother specifying anything for those two.
             for old_csc_name, csc_name, default_profile in (
                         ("I420", "YUV420P", "high10"),
-                        ("I422", "YUV422P", "high10"),
+                        ("I422", "YUV422P", ""),
                         ("I444", "YUV444P", "")):
                 profile = os.environ.get("XPRA_X264_%s_PROFILE" % old_csc_name, default_profile)
                 profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_name, profile)
