@@ -8,7 +8,6 @@
 
 import os
 import time
-import gobject
 try:
     from queue import Queue         #@UnresolvedImport @UnusedImport (python3)
 except:
@@ -145,7 +144,7 @@ class ServerSource(object):
     damage_packet_queue.
     """
 
-    def __init__(self, protocol, disconnect_cb,
+    def __init__(self, protocol, disconnect_cb, timeout_add,
                  get_transient_for,
                  supports_mmap,
                  default_encoding,
@@ -153,7 +152,7 @@ class ServerSource(object):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
-        log("ServerSource%s", (protocol, disconnect_cb,
+        log("ServerSource%s", (protocol, disconnect_cb, timeout_add,
                  get_transient_for,
                  supports_mmap,
                  default_encoding,
@@ -165,6 +164,7 @@ class ServerSource(object):
         self.ordinary_packets = []
         self.protocol = protocol
         self.disconnect = disconnect_cb
+        self.timeout_add = timeout_add
         self.get_transient_for = get_transient_for
         # mmap:
         self.supports_mmap = supports_mmap
@@ -760,7 +760,7 @@ class ServerSource(object):
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
             delay = max(10, int(self.default_batch_config.delay*4))
-            gobject.timeout_add(delay, self.do_send_cursor)
+            self.timeout_add(delay, self.do_send_cursor)
 
     def do_send_cursor(self):
         self.send_cursor_pending = False
@@ -796,7 +796,7 @@ class ServerSource(object):
         def check_echo_timeout(*args):
             if self.last_ping_echoed_time<now_ms and not self.is_closed():
                 self.disconnect("client ping timeout, - waited %s seconds without a response" % timeout)
-        gobject.timeout_add(timeout*1000, check_echo_timeout)
+        self.timeout_add(timeout*1000, check_echo_timeout)
 
     def process_ping(self, time_to_echo):
         #send back the load average:
@@ -813,7 +813,7 @@ class ServerSource(object):
             cl = -1
         self.send("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
-        gobject.timeout_add(500, self.ping)
+        self.timeout_add(500, self.ping)
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]

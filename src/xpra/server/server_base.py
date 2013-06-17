@@ -635,7 +635,7 @@ class ServerBase(object):
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
         from xpra.server.source import ServerSource
-        ss = ServerSource(proto, drop_client,
+        ss = ServerSource(proto, drop_client, self.timeout_add,
                           self.get_transient_for,
                           self.supports_mmap,
                           self.default_encoding,
