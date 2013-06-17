@@ -26,7 +26,6 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 
-import gobject
 import time
 
 from xpra.log import Logger
@@ -97,13 +96,18 @@ class WindowSource(object):
 
     _encoding_warnings = set()
 
-    def __init__(self, queue_damage, queue_packet, statistics,
+    def __init__(self, idle_add, timeout_add, source_remove,
+                    queue_damage, queue_packet, statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     encoding, encodings, core_encodings, encoding_options, rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
         from xpra.server.server_base import SERVER_CORE_ENCODINGS
         self.SERVER_CORE_ENCODINGS = SERVER_CORE_ENCODINGS
+        #scheduling stuff (gobject wrapped):
+        self.idle_add = idle_add
+        self.timeout_add = timeout_add
+        self.source_remove = source_remove
 
         self.queue_damage = queue_damage                #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -223,17 +227,17 @@ class WindowSource(object):
 
     def cancel_expire_timer(self):
         if self.expire_timer:
-            gobject.source_remove(self.expire_timer)
+            self.source_remove(self.expire_timer)
             self.expire_timer = None
 
     def cancel_refresh_timer(self):
         if self.refresh_timer:
-            gobject.source_remove(self.refresh_timer)
+            self.source_remove(self.refresh_timer)
             self.refresh_timer = None
 
     def cancel_timeout_timer(self):
         if self.timeout_timer:
-            gobject.source_remove(self.timeout_timer)
+            self.source_remove(self.timeout_timer)
             self.timeout_timer = None
 
 
@@ -386,7 +390,7 @@ class WindowSource(object):
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
             self.batch_config.last_actual_delays.append((now, delay))
-            gobject.idle_add(self.process_damage_region, now, window, x, y, w, h, actual_encoding, options)
+            self.idle_add(self.process_damage_region, now, window, x, y, w, h, actual_encoding, options)
             return
 
         #create a new delayed region:
@@ -397,7 +401,7 @@ class WindowSource(object):
         self._damage_delayed = now, window, region, actual_encoding, options or {}
         debug("damage(%s, %s, %s, %s, %s) wid=%s, scheduling batching expiry for sequence %s in %.1f ms", x, y, w, h, options, self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
-        self.expire_timer = gobject.timeout_add(int(delay), self.expire_delayed_region)
+        self.expire_timer = self.timeout_add(int(delay), self.expire_delayed_region)
 
     def expire_delayed_region(self):
         """ mark the region as expired so damage_packet_acked can send it later,
@@ -412,7 +416,7 @@ class WindowSource(object):
             #when we eventually receive the pending ACKs
             #but if somehow they go missing... try with a timer:
             delayed_region_time = self._damage_delayed[0]
-            self.timeout_timer = gobject.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
+            self.timeout_timer = self.timeout_add(self.batch_config.max_delay, self.delayed_region_timeout, delayed_region_time)
 
     def delayed_region_timeout(self, delayed_region_time):
         if self._damage_delayed:
@@ -637,7 +641,7 @@ class WindowSource(object):
                 #auto-refresh:
                 if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
-                    gobject.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
+                    self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
         self.queue_damage(make_data_packet_cb)
 
     def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
@@ -695,7 +699,7 @@ class WindowSource(object):
             return
         delay = int(max(50, self.auto_refresh_delay, self.batch_config.delay*4))
         debug("schedule_auto_refresh: low quality (%s%%) with %s pixels, (re)scheduling auto refresh timer with delay %s", actual_quality, w*h, delay)
-        self.refresh_timer = gobject.timeout_add(delay, full_quality_refresh)
+        self.refresh_timer = self.timeout_add(delay, full_quality_refresh)
 
     def queue_damage_packet(self, packet, damage_time, process_damage_time):
         """
@@ -750,7 +754,7 @@ class WindowSource(object):
             #something failed client-side, so we can't rely on the delta being available
             self.last_pixmap_data = None
         if self._damage_delayed is not None and self._damage_delayed_expired:
-            gobject.idle_add(self.may_send_delayed)
+            self.idle_add(self.may_send_delayed)
 
     def make_data_packet(self, damage_time, process_damage_time, wid, image, coding, sequence, options):
         """

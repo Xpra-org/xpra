@@ -144,7 +144,7 @@ class ServerSource(object):
     damage_packet_queue.
     """
 
-    def __init__(self, protocol, disconnect_cb, timeout_add,
+    def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  get_transient_for,
                  supports_mmap,
                  default_encoding,
@@ -152,7 +152,7 @@ class ServerSource(object):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
-        log("ServerSource%s", (protocol, disconnect_cb, timeout_add,
+        log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  get_transient_for,
                  supports_mmap,
                  default_encoding,
@@ -164,7 +164,9 @@ class ServerSource(object):
         self.ordinary_packets = []
         self.protocol = protocol
         self.disconnect = disconnect_cb
+        self.idle_add = idle_add
         self.timeout_add = timeout_add
+        self.source_remove = source_remove
         self.get_transient_for = get_transient_for
         # mmap:
         self.supports_mmap = supports_mmap
@@ -1021,7 +1023,9 @@ class ServerSource(object):
         if ws is None:
             batch_config = self.default_batch_config.clone()
             batch_config.wid = wid
-            ws = WindowVideoSource(self.queue_damage, self.queue_packet, self.statistics,
+            ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
+                              self.queue_damage, self.queue_packet,
+                              self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.encoding, self.encodings, self.core_encodings, self.encoding_options, self.rgb_formats,
                               self.default_encoding_options,
