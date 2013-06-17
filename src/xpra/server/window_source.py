@@ -858,10 +858,10 @@ class WindowSource(object):
             kwargs = {}
             client_options = {}
             debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, pixel_format)
-        image = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
+        handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True
-        return Compressed("webp", str(enc(image, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0
+        return Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0
 
     def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()

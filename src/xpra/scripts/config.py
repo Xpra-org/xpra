@@ -14,88 +14,40 @@ assert python_platform
 def warn(msg):
     sys.stderr.write(msg+"\n")
 
+
+def codec_import_check(name, top_module, class_module, *classnames):
+    try:
+        __import__(top_module, {}, {}, [])
+        for classname in classnames:
+            try:
+                __import__(class_module, {}, {}, classname)
+            except Exception, e:
+                warn("cannot load %s: %s missing from %s: %s" % (name, classname, class_module, e))
+            return True
+    except ImportError, e:
+        #the required module does not exist
+        #xpra was probably built with the option: --without-${name}
+        pass
+
 from xpra.util import AdHocStruct
-try:
-    from PIL import Image                   #@UnusedImport @UnresolvedImport
-    has_PIL = True
-except:
-    has_PIL = False
+has_PIL = codec_import_check("Python Imaging Library", "PIL", "PIL", "Image")
 
-has_vpx_enc = False
-has_vpx_dec = False
+has_vpx_enc = codec_import_check("vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+has_vpx_dec = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
+has_enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
+has_csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+has_dec_avcodec = codec_import_check("avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
 try:
-    from xpra.codecs import vpx            #@UnusedImport
-    try:
-        from xpra.codecs.vpx import encoder      #@UnusedImport @UnresolvedImport @Reimport
-        has_vpx_enc = True
-    except Exception, e:
-        warn("cannot load vpx encoder: %s" % e)
-    try:
-        from xpra.codecs.vpx import decoder      #@UnusedImport @UnresolvedImport @Reimport
-        has_vpx_dec = True
-    except Exception, e:
-        warn("cannot load vpx decoder: %s" % e)
-except ImportError, e:
-    #the vpx module does not exist
-    #xpra was probably built with --without-vpx
-    pass
-
-has_enc_x264 = False
-try:
-    from xpra.codecs import enc_x264            #@UnusedImport
-    try:
-        from xpra.codecs.enc_x264 import encoder     #@UnusedImport @UnresolvedImport
-        has_enc_x264 = True
-    except Exception, e:
-        warn("cannot load x264: %s" % e)
-except ImportError, e:
-    #the x264 module does not exist
-    #xpra was probably built with --without-x264
-    pass
-
-has_csc_swscale = False
-try:
-    from xpra.codecs import csc_swscale         #@UnusedImport
-    try:
-        from xpra.codecs.csc_swscale import colorspace_converter    #@UnusedImport @UnresolvedImport
-        has_csc_swscale = True
-    except Exception, e:
-        warn("cannot load colorspace_converter: %s" % e)
-except ImportError, e:
-    pass
-
-has_dec_avcodec = False
-try:
-    from xpra.codecs import dec_avcodec         #@UnusedImport
-    try:
-        from xpra.codecs.dec_avcodec import decoder    #@UnusedImport @UnresolvedImport
-        has_dec_avcodec = True
-    except Exception, e:
-        warn("cannot load dec_avcodec: %s" % e)
-except ImportError, e:
-    pass
-
-has_webp = False
-has_webp_lossless = False
-try:
+    #python 2.6 only:
     bytearray()
-    from xpra.codecs.webm.decode import DecodeRGB      #@UnusedImport
-    from xpra.codecs.webm.encode import EncodeRGB      #@UnusedImport
-    has_webp = True
-    try:
-        from xpra.codecs.webm.encode import EncodeLosslessRGB   #@UnusedImport
-        has_webp_lossless = True
-    except Exception, e:
-        print("cannot load lossless webp: %s", e)
-except NameError, e:
-    #we need bytearray to use the bindings
-    pass
-except ImportError, e:
-    #the webm module does not exist
-    #xpra was probably built with --without-webp
-    pass
-except Exception, e:
-    warn("cannot load webp: %s" % e)
+    has_webp_enc = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
+    has_webp_dec = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
+    has_webp_enc_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+except:
+    has_webp_enc = False
+    has_webp_dec = False
+    has_webp_enc_lossless = False
+    
 
 PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
 

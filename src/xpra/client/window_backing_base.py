@@ -17,13 +17,15 @@ from xpra.os_util import BytesIOClass
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
 
 try:
-    from xpra.codecs.dec_avcodec.decoder import Decoder as x264_Decoder     #@UnresolvedImport
+    dec_avcodec = __import__("xpra.codecs.dec_avcodec.decoder", {}, {}, "Decoder")
+    x264_Decoder = getattr(dec_avcodec, "Decoder")
 except:
-    pass
+    x264_Decoder = None
 try:
-    from xpra.codecs.vpx.decoder import Decoder as vpx_Decoder       #@UnresolvedImport
+    _vpx_decoder = __import__("xpra.codecs.vpx.decoder", {}, {}, "Decoder")
+    vpx_Decoder = getattr(_vpx_decoder, "Decoder")
 except:
-    pass
+    vpx_Decoder = None
 #have/use PIL?
 has_PIL = False
 try:
