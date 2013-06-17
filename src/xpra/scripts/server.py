@@ -543,7 +543,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         log("upgrading=%s, shadowing=%s, pulseaudio=%s, pulseaudio_command=%s",
                  upgrading, shadowing, opts.pulseaudio, opts.pulseaudio_command)
         if not upgrading and not shadowing and opts.pulseaudio and len(opts.pulseaudio_command)>0:
-            pa_proc = subprocess.Popen(opts.pulseaudio_command, shell=True, close_fds=True)
+            pa_proc = subprocess.Popen(opts.pulseaudio_command, stdin=subprocess.PIPE, shell=True, close_fds=True)
             procs.append(pa_proc)
             log.info("pulseaudio server started with pid %s", pa_proc.pid)
             def check_pa_start():
@@ -572,7 +572,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         for child_cmd in opts.start_child:
             if child_cmd:
                 try:
-                    proc = subprocess.Popen(child_cmd, env=env, shell=True, close_fds=True)
+                    proc = subprocess.Popen(child_cmd, stdin=subprocess.PIPE, env=env, shell=True, close_fds=True)
                     children_pids[proc.pid] = child_cmd
                     procs.append(proc)
                 except OSError, e:
