@@ -47,6 +47,7 @@ from xpra.server.window_stats import WindowPerformanceStatistics
 from xpra.simple_stats import add_list_stats
 from xpra.server.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.stats.maths import time_weighted_average
+from xpra.server.region import new_region, add_rectangle, get_rectangles
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -57,32 +58,6 @@ try:
     from PIL import Image                       #@UnresolvedImport
 except:
     Image = None
-
-#old gtk versions lack gtk.gdk.Region().get_rectangles()
-#so for those we just keep them in a list..
-#(which isn't as good since we don't merge rectangles
-#or discard subsets, but better than carrying ugly crufty code
-#just for those outdated pygtk versions..)
-import gtk.gdk
-tmp_region = gtk.gdk.Region()
-if hasattr(tmp_region, "get_rectangles") and os.environ.get("XPRA_FAKE_OLD_PYGTK", "0")=="0":
-    def new_region():
-        return gtk.gdk.Region()
-    def add_rectangle(region, x, y, w, h):
-        rectangle = gtk.gdk.Rectangle(x, y, w, h)
-        region.union_with_rect(rectangle)
-    def get_rectangles(region):
-        return region.get_rectangles()
-else:
-    log.warn("using get_rectangles workaround for old pygtk versions")
-    def new_region():
-        return list()
-    def add_rectangle(region, rectangle):
-        if rectangle not in region:
-            region.append(rectangle)
-    def get_rectangles(region):
-        return region
-del tmp_region
 
 
 class WindowSource(object):
