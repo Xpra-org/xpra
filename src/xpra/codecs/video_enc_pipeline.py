@@ -71,6 +71,7 @@ class VideoPipelineHelper(object):
             self.init_csc_option(colorspace_converter)
         except Exception, e:
             log.warn("init_csc_options() cannot add nvcuda csc: %s" % e)
+        debug("init_csc_options() csc specs: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_module):
         in_cscs = csc_module.get_input_colorspaces()
