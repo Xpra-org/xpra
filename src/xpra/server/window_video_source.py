@@ -480,7 +480,7 @@ class WindowVideoSource(WindowSource):
         try:
             self._lock.acquire()
             if not self.check_pipeline(encoding, w, h, src_format):
-                raise Exception("failed to setup a pipeline for %s encoding!" % encoding)
+                raise Exception("failed to setup a video pipeline for %s encoding with source format %s" % (encoding, src_format))
 
             #dw and dh are the edges we don't handle here
             width = w & self.width_mask
