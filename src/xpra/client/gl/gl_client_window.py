@@ -31,11 +31,11 @@ class GLClientWindow(ClientWindow):
             return
         w, h = self.get_size()
         if ok:
-            self._backing.render_image(0, 0, w, h)
-            self.queue_draw(self._backing.glarea, 0, 0, w, h)
+            self._backing.gl_expose_event(self._backing.glarea, "spinner: fake event")
+            self.queue_draw(0, 0, w, h)
         else:
             import gtk.gdk
-            window = self.gdk_window(self._backing.glarea)
+            window = self._backing.glarea.get_window()
             context = window.cairo_create()
             self.paint_spinner(context, gtk.gdk.Rectangle(0, 0, w, h))
 
