@@ -136,6 +136,16 @@ class SoundSink(SoundPipeline):
             self.src.emit('end-of-stream')
         self.cleanup()
 
+    def get_info(self):
+        info = SoundPipeline.get_info(self)
+        if QUEUE and QUEUE_TIME>0:
+            clt = self.queue.get_property("current-level-time")
+            info["queue.used_pct"] = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
+        if VOLUME and self.volume:
+            info["mute"] = self.volume.get_property("mute")
+            info["volume"] = int(100.0*self.volume.get_property("volume"))
+        return info
+
     def add_data(self, data, metadata=None):
         debug("sound sink: adding %s bytes, metadata: %s, level=%s", len(data), metadata, int(self.queue.get_property("current-level-time")/1000000))
         if self.src:
