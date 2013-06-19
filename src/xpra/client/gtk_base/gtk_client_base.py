@@ -41,7 +41,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
-        self.session_info = None
+        self.menu_helper = None
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -68,6 +68,13 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)
+
+    def cleanup(self):
+        log("GTKXpraClient.cleanup() menu_helper=%s", self.menu_helper)
+        if self.menu_helper:
+            self.menu_helper.cleanup()
+            self.menu_helper = None
+        UIXpraClient.cleanup(self)
 
 
     def get_pixbuf(self, icon_name):

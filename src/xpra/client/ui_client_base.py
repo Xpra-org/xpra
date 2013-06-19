@@ -217,7 +217,7 @@ class UIXpraClient(XpraClientBase):
         raise Exception("override me!")
 
     def cleanup(self):
-        log("XpraClient.cleanup()")
+        log("UIXpraClient.cleanup()")
         if self.keyboard_helper:
             self.keyboard_helper.cleanup()
         if self.clipboard_helper:
@@ -241,7 +241,7 @@ class UIXpraClient(XpraClientBase):
                 pass
         self._id_to_window = {}
         self._window_to_id = {}
-        log("XpraClient.cleanup() done")
+        log("UIXpraClient.cleanup() done")
 
     def get_encodings(self):
         cenc = self.get_core_encodings()

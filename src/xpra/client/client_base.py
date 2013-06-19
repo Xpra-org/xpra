@@ -260,9 +260,6 @@ class XpraClientBase(object):
         self._protocol.start()
 
     def quit(self, exit_code=0):
-        log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
-        if self.exit_code is None:
-            self.exit_code = exit_code
         raise Exception("override me!")
 
     def warn_and_quit(self, exit_code, warning):
