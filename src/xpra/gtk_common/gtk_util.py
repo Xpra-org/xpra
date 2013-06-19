@@ -105,8 +105,12 @@ def add_close_accel(window, callback):
     window.add_accel_group(accel_group)
 
 
-def label(text="", tooltip=None):
+def label(text="", tooltip=None, font=None):
     l = gtk.Label(text)
+    if font:
+        import pango
+        fontdesc = pango.FontDescription(font)
+        l.modify_font(fontdesc)
     if tooltip:
         set_tooltip_text(l, tooltip)
     return l

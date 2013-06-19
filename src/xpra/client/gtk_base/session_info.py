@@ -223,6 +223,12 @@ class SessionInfo(gtk.Window):
         self.output_encryption_label = label()
         tb.new_row("Output Encryption", self.output_encryption_label)
 
+        self.speaker_label = label()
+        self.speaker_details = label(font="monospace 10")
+        tb.new_row("Speaker", self.speaker_label, self.speaker_details)
+        self.microphone_label = label()
+        tb.new_row("Microphone", self.microphone_label)
+
         # Details:
         tb = self.table_tab("browse.png", "Statistics", self.populate_statistics)
         tb.widget_xalign = 1.0
@@ -506,6 +512,24 @@ class SessionInfo(gtk.Window):
         self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
         self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
         self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
+
+        def get_sound_info(supported, prop):
+            if not supported:
+                return {"state" : "disabled"}
+            if prop is None:
+                return {"state" : "inactive"}
+            return prop.get_info()
+        def set_sound_info(label, details, supported, prop):
+            p = get_sound_info(supported, prop)
+            label.set_text(p.get("state", ""))
+            if details:
+                d = p.get("queue.used_pct", -1)
+                if d>=0:
+                    details.set_text(" (buffer: %s%%)" % str(d).rjust(3))
+                else:
+                    details.set_text("")
+        set_sound_info(self.speaker_label, self.speaker_details, self.client.speaker_enabled, self.client.sound_sink)
+        set_sound_info(self.microphone_label, None, self.client.microphone_enabled, self.client.sound_source)
 
         self.connection_type_label.set_text(c.info)
         self.compression_label.set_text(str(p._compression_level))
