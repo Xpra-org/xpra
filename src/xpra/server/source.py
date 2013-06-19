@@ -541,8 +541,22 @@ class ServerSource(object):
             self.sound_sink = None
         if not self.sound_sink:
             try:
+                def sound_sink_error(*args):
+                    log.warn("stopping sound input because of error")
+                    self.stop_receiving_sound()
+                def sound_sink_overrun(*args):
+                    log.warn("re-starting sound input because of overrun")
+                    def sink_clean():
+                        log("sink_clean() sound_sink=%s", self.sound_sink)
+                        if self.sound_sink:
+                            self.sound_sink.cleanup()
+                            self.sound_sink = None
+                    self.idle_add(sink_clean)
+                    #Note: the next sound packet will take care of starting a new pipeline
                 from xpra.sound.sink import SoundSink
                 self.sound_sink = SoundSink(codec=codec)
+                self.sound_sink.connect("error", sound_sink_error)
+                self.sound_sink.connect("overrun", sound_sink_overrun)
                 self.sound_sink.start()
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
