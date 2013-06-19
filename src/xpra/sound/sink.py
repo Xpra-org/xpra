@@ -31,7 +31,10 @@ GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
 
 QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_NO_LEAK))
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "80"))*1000000
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "200"))*1000000        #ns
+QUEUE_MIN_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_MIN_TIME", "50"))*1000000 #ns
+QUEUE_TIME = max(0, QUEUE_TIME)
+QUEUE_MIN_TIME = max(0, min(QUEUE_TIME, QUEUE_MIN_TIME))
 DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
 if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
@@ -49,6 +52,7 @@ class SoundSink(SoundPipeline):
 
     __generic_signals__ = [
         "underrun",
+        "overrun",
         "eos"
         ]
 
@@ -69,7 +73,11 @@ class SoundSink(SoundPipeline):
         pipeline_els.append("audioresample")
         if QUEUE:
             if QUEUE_TIME>0:
-                pipeline_els.append("queue name=queue max-size-time=%s leaky=%s" % (QUEUE_TIME, QUEUE_LEAK))
+                pipeline_els.append("queue" +
+                                    " name=queue"+
+                                    " min-threshold-time=%s" % QUEUE_MIN_TIME+
+                                    " max-size-time=%s" % QUEUE_TIME+
+                                    " leaky=%s" % QUEUE_LEAK)
             else:
                 pipeline_els.append("queue leaky=%s" % QUEUE_LEAK)
         pipeline_els.append(sink_type)
@@ -84,9 +92,10 @@ class SoundSink(SoundPipeline):
         if QUEUE:
             self.queue = self.pipeline.get_by_name("queue")
             def overrun(*args):
-                debug("sound sink queue overrun")
+                debug("sound sink queue overrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
+                self.emit("overrun")
             def underrun(*args):
-                debug("sound sink queue underrun")
+                debug("sound sink queue underrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
             self.queue.connect("overrun", overrun)
             self.queue.connect("underrun", underrun)
         else:
@@ -128,7 +137,7 @@ class SoundSink(SoundPipeline):
         self.cleanup()
 
     def add_data(self, data, metadata=None):
-        debug("sound sink: adding %s bytes, %s", len(data), metadata)
+        debug("sound sink: adding %s bytes, metadata: %s, level=%s", len(data), metadata, int(self.queue.get_property("current-level-time")/1000000))
         if self.src:
             buf = gst.Buffer(data)
             #buf.size = size

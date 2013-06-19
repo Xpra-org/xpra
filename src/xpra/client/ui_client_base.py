@@ -806,9 +806,18 @@ class UIXpraClient(XpraClientBase):
         def sound_sink_bitrate_changed(*args):
             self.emit("speaker-changed")
         def sound_sink_error(*args):
-            log.warn("stopping sound because of error")
+            log.warn("stopping speaker because of error")
             self.stop_receiving_sound()
             self.emit("speaker-changed")
+        def sound_sink_overrun(*args):
+            log.warn("re-starting speaker because of overrun")
+            def sink_clean():
+                log("sink_clean() sound_sink=%s", self.sound_sink)
+                if self.sound_sink:
+                    self.sound_sink.cleanup()
+                    self.sound_sink = None
+            self.idle_add(sink_clean)
+            #Note: the next sound packet will take care of starting a new pipeline
         try:
             log("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
@@ -816,6 +825,7 @@ class UIXpraClient(XpraClientBase):
             self.sound_sink.connect("state-changed", sound_sink_state_changed)
             self.sound_sink.connect("bitrate-changed", sound_sink_bitrate_changed)
             self.sound_sink.connect("error", sound_sink_error)
+            self.sound_sink.connect("overrun", sound_sink_overrun)
             self.sound_sink.start()
             log("%s sound sink started", codec)
             return True
