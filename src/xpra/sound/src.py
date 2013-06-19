@@ -96,6 +96,8 @@ class SoundSource(SoundPipeline):
         #            "offset"    : buf.offset,
         #            "offset_end": buf.offset_end}
         metadata = {}
+        self.buffer_count += 1
+        self.byte_count += len(buf.data)
         self.emit("new-buffer", buf.data, metadata)
 
 

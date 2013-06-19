@@ -29,6 +29,21 @@ class SoundPipeline(SignalObject):
         self.bitrate = -1
         self.pipeline = None
         self.state = "stopped"
+        self.buffer_count = 0
+        self.byte_count = 0
+
+    def get_info(self):
+        info = {"codec"             : self.codec,
+                "codec_description" : self.codec_description,
+                "state"             : self.get_state(),
+                "buffers"           : self.buffer_count,
+                "bytes"             : self.byte_count,
+                }
+        if self.codec_mode:
+            info["codec_mode"] = self.codec_mode
+        if self.bitrate>0:
+            info["speaker.bitrate"] = self.bitrate
+        return info
 
     def setup_pipeline_and_bus(self, elements):
         debug("pipeline elements=%s", elements)
@@ -57,9 +72,6 @@ class SoundPipeline(SignalObject):
         self.bitrate = new_bitrate
         log("new bitrate: %s", self.bitrate)
         #self.emit("bitrate-changed", new_bitrate)
-
-    def get_bitrate(self):
-        return self.bitrate
 
     def start(self):
         debug("SoundPipeline.start()")

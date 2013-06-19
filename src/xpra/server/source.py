@@ -739,28 +739,16 @@ class ServerSource(object):
             info["encoding.%s" % k] = v
         for k,v in self.default_encoding_options.items():
             info["encoding.%s" % k] = v
-        def get_sound_state(supported, prop):
+        def get_sound_info(supported, prop):
             if not supported:
-                return "disabled"
+                return {"state" : "disabled"}
             if prop is None:
-                return "inactive"
-            return prop.get_state()
-        state = get_sound_state(self.supports_speaker, self.sound_source)
-        info["speaker.state"] = state
-        if state=="active":
-            info["speaker.codec"] = self.sound_source.codec
-            info["speaker.codec_description"] = self.sound_source.codec_description
-            bitrate = self.sound_source.get_bitrate()
-            if bitrate>0:
-                info["speaker.bitrate"] = bitrate
-        state = get_sound_state(self.supports_microphone, self.sound_sink)
-        info["microphone.state"] = state
-        if state=="active":
-            info["microphone.codec"] = self.sound_sink.codec
-            info["microphone.codec_description"] = self.sound_sink.codec_description
-            bitrate = self.sound_sink.get_bitrate()
-            if bitrate>0:
-                info["microphone.bitrate"] = bitrate
+                return {"state" : "inactive"}
+            return prop.get_info()
+        for k,v in get_sound_info(self.supports_speaker, self.sound_source).items():
+            info["speaker.%s" % k] = v
+        for k,v in get_sound_info(self.supports_microphone, self.sound_sink).items():
+            info["microphone.%s" % k] = v
 
     def send_info_response(self, info):
         self.send("info-response", info)
