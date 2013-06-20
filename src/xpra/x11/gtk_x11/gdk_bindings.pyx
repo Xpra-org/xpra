@@ -792,7 +792,7 @@ cdef class XShmWrapper(object):
         xshm_debug("XShmWrapper.XShmCreateImage(%sx%s-%s) %s", self.width, self.height, depth, self.image!=NULL)
         if self.image==NULL:
             log.error("XShmWrapper.XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, depth)
-            self.free()
+            self.cleanup()
             return False
         # Get the shared memory:
         # (include an extra line to ensure we can read rowstride at a time,
@@ -801,8 +801,8 @@ cdef class XShmWrapper(object):
         self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
         xshm_debug("XShmWrapper.shmget(PRIVATE, %s bytes, %s) shmid=%s", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
-            log.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed!", size, IPC_CREAT | 0777)
-            self.free()
+            log.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed, bytes_per_line=%s, width=%s, height=%s", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
+            self.cleanup()
             return False
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
@@ -810,7 +810,7 @@ cdef class XShmWrapper(object):
         xshm_debug("XShmWrapper.shmat(%s, NULL, 0) %s", self.shminfo.shmid, self.shminfo.shmaddr != <char *> -1)
         if self.shminfo.shmaddr == <char *> -1:
             log.error("XShmWrapper.shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
-            self.free()
+            self.cleanup()
             return False
 
         # set as read/write, and attach to the display:
@@ -819,7 +819,7 @@ cdef class XShmWrapper(object):
         xshm_debug("XShmWrapper.XShmAttach(..) %s", bool(a))
         if not a:
             log.error("XShmWrapper.XShmAttach(..) failed!")
-            self.free()
+            self.cleanup()
             return False
         return True
 
@@ -837,7 +837,7 @@ cdef class XShmWrapper(object):
         return xshm
 
     def get_image(self, xpixmap, x, y, w, h):
-        assert self.image!=NULL
+        assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"
         if self.closed:
             return None
         if x>=self.width or y>=self.height:
@@ -880,7 +880,8 @@ cdef class XShmWrapper(object):
             self.free()
 
     def free(self):                                     #@DuplicatedSignature
-        assert self.ref_count==0 and self.closed
+        assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %s" % (self, self.ref_count)
+        assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
         xshm_debug("XShmWrapper.free() has_shm=%s", has_shm)
         if has_shm:
