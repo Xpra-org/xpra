@@ -136,7 +136,9 @@ cdef extern from "X11/Xlib.h":
     # To make it easier to translate stuff in the X header files into
     # appropriate pyrex declarations, without having to untangle the typedefs
     # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
+    # really is 64 bits on 64-bit systems.  Why? Because CARD32 was defined
+    # as a long.. and a long is now 64-bit, it was easier to do this than
+    # to change a lot of existing X11 client code)
     ctypedef CARD32 XID
 
     ctypedef int Bool
