@@ -20,22 +20,23 @@ def codec_import_check(name, top_module, class_module, *classnames):
         __import__(top_module, {}, {}, [])
         for classname in classnames:
             try:
-                __import__(class_module, {}, {}, classname)
+                return __import__(class_module, {}, {}, classname)
             except Exception, e:
                 warn("cannot load %s: %s missing from %s: %s" % (name, classname, class_module, e))
-            return True
     except ImportError, e:
         #the required module does not exist
         #xpra was probably built with the option: --without-${name}
         pass
+    return None
 codec_versions = {}
 def add_codec_version(name, top_module, fieldname, invoke=False):
     try:
         module = __import__(top_module, {}, {}, [fieldname])
         if not hasattr(module, fieldname):
             warn("cannot find %s in %s" % (fieldname, module))
+            return
         v = getattr(module, fieldname)
-        if invoke:
+        if invoke and v:
             v = v()
         global codec_versions
         codec_versions[name] = v
@@ -43,29 +44,49 @@ def add_codec_version(name, top_module, fieldname, invoke=False):
         #not present
         pass
 
-has_PIL = codec_import_check("Python Imaging Library", "PIL", "PIL", "Image")
+PIL = codec_import_check("Python Imaging Library", "PIL", "PIL", "Image")
+has_PIL = PIL is not None
 add_codec_version("PIL", "PIL.Image", "VERSION")
-has_vpx_enc = codec_import_check("vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-has_vpx_dec = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
+
+vpx_enc = codec_import_check("vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+has_vpx_enc = vpx_enc is not None
+vpx_dec = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
+has_vpx_dec = vpx_dec is not None
 add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
-has_enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
+
+enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
+has_enc_x264 = enc_x264 is not None
 add_codec_version("x264", "xpra.codecs.enc_x264.encoder", "get_version", True)
-has_csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+
+enc_nvenc = codec_import_check("nvenc encoder", "xpra.codecs.nvenc", "xpra.codecs.nvenc.encoder", "Encoder")
+has_enc_nvenc = enc_nvenc is not None
+add_codec_version("nvenc", "xpra.codecs.nvenc.encoder", "get_version", True)
+
+csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+has_csc_swscale = csc_swscale is not None
 add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
-has_dec_avcodec = codec_import_check("avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
+
+csc_nvcuda = codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
+has_csc_nvcuda = csc_nvcuda is not None
+add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
+
+dec_avcodec = codec_import_check("avcodec decoder", "xpra.codecs.dec_avcodec", "xpra.codecs.dec_avcodec.decoder", "Decoder")
+has_dec_avcodec = dec_avcodec is not None
 add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
 
 try:
     #python 2.6 only:
     bytearray()
-    has_webp_enc = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
-    has_webp_dec = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
+    webp_enc = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
+    webp_dec = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
     has_webp_enc_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
     add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
 except:
-    has_webp_enc = False
-    has_webp_dec = False
+    webp_enc = None
+    webp_dec = None
     has_webp_enc_lossless = False
+has_webp_enc = webp_enc is not None
+has_webp_dec = webp_dec is not None
 
 
 PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]
