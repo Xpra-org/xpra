@@ -20,7 +20,7 @@ log = Logger()
 
 import xpra
 from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, codec_versions, \
-        has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_webp_enc, has_webp_enc_lossless
+        has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid, SIGNAMES
@@ -35,7 +35,7 @@ SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
 for test, formats in (
                       (has_enc_vpx                      , ["vpx"]),
                       (has_enc_x264 or has_enc_nvenc    , ["x264"]),
-                      (has_webp_enc                     , ["webp"]),
+                      (has_enc_webp                     , ["webp"]),
                       (has_PIL                          , ["png", "png/L", "png/P", "jpeg"]),
                 ):
     if test:
@@ -48,7 +48,7 @@ SERVER_ENCODINGS.remove("rgb24")
 SERVER_ENCODINGS.append("rgb")
 
 HAS_LOSSLESS_ENCODINGS = []
-if has_webp_enc_lossless:
+if has_enc_webp_lossless:
     HAS_LOSSLESS_ENCODINGS.append("webp")
 
 

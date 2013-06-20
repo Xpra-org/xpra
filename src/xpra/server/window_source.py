@@ -53,11 +53,7 @@ try:
 except:
     xor_str = None
 from xpra.os_util import StringIOClass
-
-try:
-    from PIL import Image                       #@UnresolvedImport
-except:
-    Image = None
+from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL
 
 
 class WindowSource(object):
@@ -821,24 +817,14 @@ class WindowSource(object):
             self._encoding_warnings.add(key)
 
     def webp_encode(self, coding, image, options):
-        from xpra.codecs.webm.encode import EncodeRGB, EncodeBGR, EncodeRGBA, EncodeBGRA
-        try:
-            from xpra.codecs.webm.encode import EncodeLosslessRGB, EncodeLosslessBGR, EncodeLosslessRGBA, EncodeLosslessBGRA
-        except Exception, e:
-            self.warn_encoding_once(str(e), "cannot use lossless webp encoders: %s" % e)
-            #fallback for old versions of webm (you should be using the version in tree!)
-            EncodeLosslessRGB   = EncodeRGB
-            EncodeLosslessBGR   = EncodeBGR
-            EncodeLosslessRGBA  = EncodeRGBA
-            EncodeLosslessBGRA  = EncodeBGRA
-        from xpra.codecs.webm.handlers import BitmapHandler
+        BitmapHandler = webp_handlers.BitmapHandler
         handler_encs = {
-                    "RGB" : (BitmapHandler.RGB,     EncodeRGB,  EncodeLosslessRGB,  False),
-                    "BGR" : (BitmapHandler.BGR,     EncodeBGR,  EncodeLosslessBGR,  False),
-                    "RGBA": (BitmapHandler.RGBA,    EncodeRGBA, EncodeLosslessRGBA, True),
-                    "RGBX": (BitmapHandler.RGBA,    EncodeRGBA, EncodeLosslessRGBA, False),
-                    "BGRA": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, True),
-                    "BGRX": (BitmapHandler.BGRA,    EncodeBGRA, EncodeLosslessBGRA, False),
+                    "RGB" : (BitmapHandler.RGB,     "EncodeRGB",  "EncodeLosslessRGB",  False),
+                    "BGR" : (BitmapHandler.BGR,     "EncodeBGR",  "EncodeLosslessBGR",  False),
+                    "RGBA": (BitmapHandler.RGBA,    "EncodeRGBA", "EncodeLosslessRGBA", True),
+                    "RGBX": (BitmapHandler.RGBA,    "EncodeRGBA", "EncodeLosslessRGBA", False),
+                    "BGRA": (BitmapHandler.BGRA,    "EncodeBGRA", "EncodeLosslessBGRA", True),
+                    "BGRX": (BitmapHandler.BGRA,    "EncodeBGRA", "EncodeLosslessBGRA", False),
                     }
         pixel_format = image.get_pixel_format()
         h_e = handler_encs.get(pixel_format)
@@ -848,16 +834,17 @@ class WindowSource(object):
         if options:
             q = options.get("quality", q)
         q = max(1, q)
-        if q<100:
-            enc = lossy_enc
-            kwargs = {"quality" : q}
-            client_options = {"quality" : q}
-            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
-        else:
-            enc = lossless_enc
+        enc = None
+        if q==100 and has_enc_webp_lossless:
+            enc = getattr(enc_webp, lossless_enc)
             kwargs = {}
             client_options = {}
             debug("webp_encode(%s, %s) using lossless encoder=%s for %s", image, options, enc, pixel_format)
+        if enc is None:
+            enc = getattr(enc_webp, lossy_enc)
+            kwargs = {"quality" : q}
+            client_options = {"quality" : q}
+            debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
         handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
         if has_alpha:
             client_options["has_alpha"] = True
@@ -896,7 +883,7 @@ class WindowSource(object):
 
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
-        assert Image is not None, "Python PIL is not available"
+        assert PIL is not None, "Python PIL is not available"
         pixel_format = image.get_pixel_format()
         w = image.get_width()
         h = image.get_height()
@@ -910,7 +897,7 @@ class WindowSource(object):
             #it is safe to use frombuffer() here since the convert()
             #calls below will not convert and modify the data in place
             #and we save the compressed data then discard the image
-            im = Image.frombuffer(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
+            im = PIL.Image.frombuffer(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
         except Exception, e:
             log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
             raise e
@@ -934,12 +921,12 @@ class WindowSource(object):
         else:
             assert coding in ("png", "png/P", "png/L")
             if coding=="png/L":
-                im = im.convert("L", palette=Image.ADAPTIVE)
+                im = im.convert("L", palette=PIL.Image.ADAPTIVE)
             elif coding=="png/P":
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
-                im = im.convert("P", palette=Image.WEB)
+                im = im.convert("P", palette=PIL.Image.WEB)
             kwargs = im.info
             kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
@@ -963,7 +950,7 @@ class WindowSource(object):
         w = image.get_width()
         h = image.get_height()
         pixels = image.get_pixels()
-        img = Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
+        img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", pixel_format, image.get_rowstride())
         rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
         data = img.tostring("raw", target_format)
         assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))

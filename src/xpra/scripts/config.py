@@ -77,16 +77,18 @@ add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", T
 try:
     #python 2.6 only:
     bytearray()
-    webp_enc = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
-    webp_dec = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
-    has_webp_enc_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+    enc_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
+    dec_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
+    has_enc_webp_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
     add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
+    webp_handlers = codec_import_check("webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
 except:
-    webp_enc = None
-    webp_dec = None
-    has_webp_enc_lossless = False
-has_webp_enc = webp_enc is not None
-has_webp_dec = webp_dec is not None
+    enc_webp = None
+    enc_webp = None
+    has_enc_webp_lossless = False
+    webp_handlers = None
+has_enc_webp = enc_webp is not None
+has_dec_webp = dec_webp is not None
 
 
 PREFERED_ENCODING_ORDER = ["x264", "vpx", "webp", "png", "png/P", "png/L", "rgb", "jpeg"]

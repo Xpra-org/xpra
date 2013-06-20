@@ -15,7 +15,7 @@ from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
 from xpra.os_util import BytesIOClass
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
-from xpra.scripts.config import dec_avcodec, dec_vpx, PIL
+from xpra.scripts.config import dec_avcodec, dec_vpx, dec_webp, PIL
 
 #logging in the draw path is expensive:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
@@ -126,13 +126,13 @@ class WindowBackingBase(object):
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
-        from xpra.codecs.webm.decode import DecodeRGB, DecodeRGBA
+        assert dec_webp is not None
         if options.get("has_alpha", False):
-            decode = DecodeRGBA
+            decode = dec_webp.DecodeRGBA
             rowstride = width*4
             paint_rgb = self.do_paint_rgb32
         else:
-            decode = DecodeRGB
+            decode = dec_webp.DecodeRGB
             rowstride = width*3
             paint_rgb = self.do_paint_rgb24
         if DRAW_DEBUG:
