@@ -379,23 +379,24 @@ class UIXpraClient(XpraClientBase):
 
     def make_hello(self, challenge_response=None):
         capabilities = XpraClientBase.make_hello(self, challenge_response)
-        for k,v in self.get_keymap_properties().items():
-            capabilities[k] = v
         if self.readonly:
             #don't bother sending keyboard info, as it won't be used
             capabilities["keyboard"] = False
         else:
+            for k,v in self.get_keymap_properties().items():
+                capabilities[k] = v
             capabilities["xkbmap_layout"] = nn(self.keyboard_helper.xkbmap_layout)
             capabilities["xkbmap_variant"] = nn(self.keyboard_helper.xkbmap_variant)
         capabilities["modifiers"] = self.get_current_modifiers()
         root_w, root_h = self.get_root_size()
         capabilities["desktop_size"] = [root_w, root_h]
         capabilities["screen_sizes"] = self.get_screen_sizes()
-        key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
-        if key_repeat:
-            delay_ms,interval_ms = key_repeat
-            capabilities["key_repeat"] = (delay_ms,interval_ms)
-        capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync and (key_repeat is not None)
+        if self.keyboard_helper:
+            key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
+            if key_repeat:
+                delay_ms,interval_ms = key_repeat
+                capabilities["key_repeat"] = (delay_ms,interval_ms)
+            capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync and (key_repeat is not None)
         if self.mmap_enabled:
             capabilities["mmap_file"] = self.mmap_filename
             capabilities["mmap_token"] = self.mmap_token
