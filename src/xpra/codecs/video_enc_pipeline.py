@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
-from xpra.scripts.config import csc_swscale, vpx_enc, enc_x264, enc_nvenc, csc_nvcuda
+from xpra.scripts.config import csc_swscale, enc_vpx, enc_x264, enc_nvenc, csc_nvcuda
 
 
 class VideoPipelineHelper(object):
@@ -34,7 +34,7 @@ class VideoPipelineHelper(object):
 
     def init_video_encoders_options(self):
         try:
-            self.init_video_encoder_option("vpx", vpx_enc)
+            self.init_video_encoder_option("vpx", enc_vpx)
         except:
             log.warn("init_video_encoders_options() cannot add vpx encoder", exc_info=True)
         try:

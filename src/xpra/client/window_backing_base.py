@@ -15,24 +15,7 @@ from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
 from xpra.os_util import BytesIOClass
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
-
-try:
-    dec_avcodec = __import__("xpra.codecs.dec_avcodec.decoder", {}, {}, "Decoder")
-    x264_Decoder = getattr(dec_avcodec, "Decoder")
-except:
-    x264_Decoder = None
-try:
-    _vpx_decoder = __import__("xpra.codecs.vpx.decoder", {}, {}, "Decoder")
-    vpx_Decoder = getattr(_vpx_decoder, "Decoder")
-except:
-    vpx_Decoder = None
-#have/use PIL?
-has_PIL = False
-try:
-    from PIL import Image                                           #@UnresolvedImport
-    has_PIL = True
-except:
-    pass
+from xpra.scripts.config import dec_avcodec, dec_vpx, PIL
 
 #logging in the draw path is expensive:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
@@ -91,9 +74,9 @@ class WindowBackingBase(object):
 
     def jpegimage(self, img_data, width, height):
         """ can be called from any thread """
-        assert has_PIL
+        assert PIL
         buf = BytesIOClass(img_data)
-        return Image.open(buf)
+        return PIL.Image.open(buf)
 
     def process_delta(self, raw_data, width, height, rowstride, options):
         """
@@ -122,9 +105,9 @@ class WindowBackingBase(object):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
-        assert has_PIL
+        assert PIL
         buf = BytesIOClass(img_data)
-        img = Image.open(buf)
+        img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
         if img.mode in ("P", "L"):
             #TODO: use RGB for images without transparency
@@ -212,8 +195,9 @@ class WindowBackingBase(object):
         raise Exception("override me!")
 
 
-    def paint_with_video_decoder(self, factory, coding, img_data, x, y, width, height, options, callbacks):
+    def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
+        factory = getattr(decoder_module, "Decoder")
         try:
             self._decoder_lock.acquire()
             enc_width, enc_height = options.get("scaled_size", (width, height))
@@ -338,9 +322,9 @@ class WindowBackingBase(object):
                 rowstride = width * 4
             self.paint_rgb32(img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "x264":
-            self.paint_with_video_decoder(x264_Decoder, "x264", img_data, x, y, width, height, options, callbacks)
+            self.paint_with_video_decoder(dec_avcodec, "x264", img_data, x, y, width, height, options, callbacks)
         elif coding == "vpx":
-            self.paint_with_video_decoder(vpx_Decoder, "vpx", img_data, x, y, width, height, options, callbacks)
+            self.paint_with_video_decoder(dec_vpx, "vpx", img_data, x, y, width, height, options, callbacks)
         elif coding == "webp":
             self.paint_webp(img_data, x, y, width, height, options, callbacks)
         elif coding.startswith("png") or coding=="jpeg":

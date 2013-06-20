@@ -253,9 +253,9 @@ class UIXpraClient(XpraClientBase):
 
     def get_core_encodings(self):
         encodings = ["rgb24"]
-        from xpra.scripts.config import has_PIL, has_vpx_dec, has_dec_avcodec, has_webp_dec, has_csc_swscale
+        from xpra.scripts.config import has_PIL, has_dec_vpx, has_dec_avcodec, has_webp_dec, has_csc_swscale
         encs = (
-              (has_vpx_dec & has_csc_swscale        , ["vpx"]),
+              (has_dec_vpx & has_csc_swscale        , ["vpx"]),
               (has_dec_avcodec & has_csc_swscale    , ["x264"]),
               (has_webp_dec                         , ["webp"]),
               (has_PIL                              , ["png", "png/L", "png/P", "jpeg"]),
@@ -811,7 +811,6 @@ class UIXpraClient(XpraClientBase):
         def sound_sink_error(*args):
             log.warn("stopping speaker because of error")
             self.stop_receiving_sound()
-            self.emit("speaker-changed")
         def sound_sink_overrun(*args):
             log.warn("re-starting speaker because of overrun")
             if self.server_sound_sequence:

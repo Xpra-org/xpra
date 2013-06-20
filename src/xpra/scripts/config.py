@@ -48,10 +48,10 @@ PIL = codec_import_check("Python Imaging Library", "PIL", "PIL", "Image")
 has_PIL = PIL is not None
 add_codec_version("PIL", "PIL.Image", "VERSION")
 
-vpx_enc = codec_import_check("vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-has_vpx_enc = vpx_enc is not None
-vpx_dec = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
-has_vpx_dec = vpx_dec is not None
+enc_vpx = codec_import_check("vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+has_enc_vpx = enc_vpx is not None
+dec_vpx = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
+has_dec_vpx = dec_vpx is not None
 add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
 
 enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
