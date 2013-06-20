@@ -64,7 +64,7 @@ class SoundSink(SoundPipeline):
         self.sink_type = sink_type
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = []
-        pipeline_els.append("appsrc name=src")
+        pipeline_els.append("appsrc name=src max-bytes=8192")
         pipeline_els.append(parser)
         pipeline_els.append(decoder_str)
         if VOLUME:
@@ -147,7 +147,7 @@ class SoundSink(SoundPipeline):
         return info
 
     def add_data(self, data, metadata=None):
-        debug("sound sink: adding %s bytes, metadata: %s, level=%s", len(data), metadata, int(self.queue.get_property("current-level-time")/1000000))
+        debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/1000000))
         if self.src:
             buf = gst.Buffer(data)
             #buf.size = size

@@ -103,6 +103,8 @@ class UIXpraClient(XpraClientBase):
             self.microphone_codecs = get_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
         self.sound_sink = None
+        self.server_sound_sequence = False
+        self.min_sound_sequence = 0
         self.sound_source = None
         self.server_pulseaudio_id = None
         self.server_pulseaudio_server = None
@@ -669,6 +671,7 @@ class UIXpraClient(XpraClientBase):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = capabilities.get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
+        self.server_sound_sequence = capabilities.get("sound_sequence", False)
         self.server_info_request = capabilities.get("info-request", False)
         e = capabilities.get("encoding")
         if e and e!=self.encoding:
@@ -811,8 +814,13 @@ class UIXpraClient(XpraClientBase):
             self.emit("speaker-changed")
         def sound_sink_overrun(*args):
             log.warn("re-starting speaker because of overrun")
+            if self.server_sound_sequence:
+                #server supports the "sound-sequence" feature
+                #tell it to use a new one:
+                self.min_sound_sequence += 1
+                self.send("sound-control", "new-sequence", self.min_sound_sequence)
             def sink_clean():
-                log("sink_clean() sound_sink=%s", self.sound_sink)
+                log("sink_clean() sound_sink=%s, server_sound_sequence=%s", self.sound_sink, self.server_sound_sequence)
                 if self.sound_sink:
                     self.sound_sink.cleanup()
                     self.sound_sink = None
@@ -841,7 +849,11 @@ class UIXpraClient(XpraClientBase):
         if not self.speaker_enabled:
             log("speaker is now disabled - dropping packet")
             return
-        codec = packet[1]
+        codec, data, metadata = packet[1:4]
+        seq = metadata.get("sequence", -1)
+        if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
+            log("ignoring sound data with old sequence number %s", seq)
+            return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.error("sound codec change not supported! (from %s to %s)", self.sound_sink.codec, codec)
             self.sound_sink.stop()
@@ -851,8 +863,6 @@ class UIXpraClient(XpraClientBase):
                 return
         elif self.sound_sink.get_state()=="stopped":
             self.sound_sink.start()
-        data = packet[2]
-        metadata = packet[3]
         self.sound_sink.add_data(data, metadata)
 
 

@@ -178,6 +178,7 @@ class ServerSource(object):
         self.speaker_codecs = speaker_codecs
         self.supports_microphone = supports_microphone
         self.microphone_codecs = microphone_codecs
+        self.sound_source_sequence = -1
         self.sound_source = None
         self.sound_sink = None
 
@@ -518,6 +519,8 @@ class ServerSource(object):
 
     def new_sound_buffer(self, sound_source, data, metadata):
         assert self.sound_source
+        if self.sound_source_sequence>0:
+            metadata["sequence"] = self.sound_source_sequence
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def sound_control(self, action, *args):
@@ -525,6 +528,9 @@ class ServerSource(object):
             self.stop_sending_sound()
         elif action=="start":
             self.start_sending_sound()
+        elif action=="new-sequence":
+            self.sound_source_sequence = args[0]
+            log("sound_control(%s, %s) client requested new sound sequence %s", action, args, self.sound_source_sequence)
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]

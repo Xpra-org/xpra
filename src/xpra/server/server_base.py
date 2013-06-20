@@ -733,6 +733,7 @@ class ServerBase(object):
         capabilities["change-speed"] = True
         capabilities["change-min-speed"] = True
         capabilities["client_window_properties"] = True
+        capabilities["sound_sequence"] = True
         capabilities["info-request"] = True
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
