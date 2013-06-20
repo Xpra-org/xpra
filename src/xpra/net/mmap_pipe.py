@@ -10,10 +10,14 @@ log = Logger()
 debug = log.debug
 warn = log.warn
 
+"""
+Utility functions for communicating via mmap
+"""
+
 
 def init_client_mmap(token, mmap_group=None, socket_filename=None):
     """
-        Initializes and mmap area, writes the token in it and returns:
+        Initializes an mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
