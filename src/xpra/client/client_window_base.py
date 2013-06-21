@@ -26,7 +26,9 @@ else:
 
 
 class ClientWindowBase(ClientWidgetBase):
+
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
+        log.info("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
         ClientWidgetBase.__init__(self, client, wid)
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -34,6 +36,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._size = (w, h)
         self._client_properties = client_properties
         self._auto_refresh_delay = auto_refresh_delay
+        self.button_state = {}
 
         self.init_window(metadata)
         self.setup_window()
@@ -303,9 +306,17 @@ class ClientWindowBase(ClientWidgetBase):
         if self._client.readonly:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
-        self._client.send_positional(["button-action", self._id,
-                                      button, depressed,
-                                      pointer, modifiers, buttons])
+        def send_button(pressed):
+            self._client.send_positional(["button-action", self._id,
+                                          button, pressed,
+                                          pointer, modifiers, buttons])
+        pressed_state = self.button_state.get(button, False)
+        if pressed_state is False and depressed is False:
+            #we're getting a mouse-up event for this window but we never got
+            #the mouse-down event, so simulate one (needed for some dialogs on win32):
+            send_button(True)
+        self.button_state[button] = depressed
+        send_button(depressed)
 
     def do_button_press_event(self, event):
         self._button_action(event.button, event, True)
