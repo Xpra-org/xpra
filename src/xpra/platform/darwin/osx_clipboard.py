@@ -20,6 +20,9 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
 
+    def __str__(self):
+        return "OSXClipboardProtocolHelper"
+
 
 class OSXClipboardProxy(ClipboardProxy):
 

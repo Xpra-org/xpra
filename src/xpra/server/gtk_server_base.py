@@ -65,10 +65,13 @@ class GTKServerBase(ServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        add_gtk_version_info(info, gtk)
-        info["server_type"] = "Python/gtk-x11"
-        info["root_window_size"] = gtk.gdk.get_default_root_window().get_size()
-        info["randr"] = self.randr
+        gtk_vi = {}
+        add_gtk_version_info(gtk_vi, gtk)
+        for k,v in gtk_vi.items():
+            info["server."+k] = v
+        info["server.type"] = "Python/gtk-x11"
+        info["server.root_window_size"] = gtk.gdk.get_default_root_window().get_size()
+        info["features.randr"] = self.randr
         return info
 
     def get_root_window_size(self):

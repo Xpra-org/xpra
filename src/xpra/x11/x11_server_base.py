@@ -138,7 +138,7 @@ class X11ServerBase(GTKServerBase):
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
-        info["server_type"] = "Python/gtk/x11"
+        info["server.type"] = "Python/gtk/x11"
         return info
 
 

@@ -64,6 +64,9 @@ class ClipboardProtocolHelperBase(object):
         self.init_packet_handlers()
         self.init_proxies(clipboards)
 
+    def __str__(self):
+        return "ClipboardProtocolHelperBase"
+
     def cleanup(self):
         def nosend(*args):
             pass

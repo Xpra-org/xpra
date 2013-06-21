@@ -732,19 +732,19 @@ class ServerSource(object):
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
-        info["client_clipboard%s" % suffix] = self.clipboard_enabled
-        info["client_cursors%s" % suffix] = self.send_cursors
-        info["client_bell%s" % suffix] = self.send_bell
-        info["client_notifications%s" % suffix] = self.send_notifications
-        info["client_idle_time%s" % suffix] = int(time.time()-self.last_user_event)
-        info["client_hostname%s" % suffix] = self.hostname
+        info["client.features.clipboard" + suffix] = self.clipboard_enabled
+        info["client.features.cursors" + suffix] = self.send_cursors
+        info["client.features.bell" + suffix] = self.send_bell
+        info["client.features.notifications" + suffix] = self.send_notifications
+        info["client.idle_time" + suffix] = int(time.time()-self.last_user_event)
+        info["client.hostname" + suffix] = self.hostname
         for x in ("machine", "processor", "release"):
-            info["client.platform.%s%s" % (x, suffix)] = getattr(self, "client_%s" % x)
-        info["auto_refresh%s" % suffix] = self.auto_refresh_delay
-        for k,v in self.encoding_options.items():
-            info["encoding.%s" % k] = v
+            info["client.platform." + x + suffix] = getattr(self, "client_%s" % x)
+        info["client.auto_refresh" + suffix] = self.auto_refresh_delay
         for k,v in self.default_encoding_options.items():
-            info["encoding.%s" % k] = v
+            info["client.encoding.%s" % k] = v
+        for k,v in self.encoding_options.items():
+            info["client.encoding.%s" % k] = v
         def get_sound_info(supported, prop):
             if not supported:
                 return {"state" : "disabled"}
@@ -752,9 +752,9 @@ class ServerSource(object):
                 return {"state" : "inactive"}
             return prop.get_info()
         for k,v in get_sound_info(self.supports_speaker, self.sound_source).items():
-            info["speaker.%s" % k] = v
+            info["client.speaker.%s" % k] = v
         for k,v in get_sound_info(self.supports_microphone, self.sound_sink).items():
-            info["microphone.%s" % k] = v
+            info["client.microphone.%s" % k] = v
 
     def send_info_response(self, info):
         self.send("info-response", info)
@@ -935,18 +935,18 @@ class ServerSource(object):
             This is used by server.py to provide those statistics to clients
             via the 'xpra info' command.
         """
-        info["client_type%s" % suffix] = self.client_type
-        info["client_version%s" % suffix] = self.client_version or "unknown"
-        info["client_uuid%s" % suffix] = self.uuid
+        info["client.type%s" % suffix] = self.client_type
+        info["client.version%s" % suffix] = self.client_version or "unknown"
+        info["client.uuid%s" % suffix] = self.uuid
         info["keyboard%s" % suffix] = self.keyboard_config.enabled
         try:
-            info["client_connection%s" % suffix] = str(self.protocol._conn.target or self.protocol._conn.filename)
+            info["client.connection%s" % suffix] = str(self.protocol._conn.target or self.protocol._conn.filename)
         except:
             pass
-        info["client_encodings%s" % suffix] = ",".join(self.encodings)
-        info["client_core_encodings%s" % suffix] = ",".join(self.core_encodings)
-        info["damage_data_queue_size%s.current" % suffix] = self.damage_data_queue.qsize()
-        info["damage_packet_queue_size%s.current" % suffix] = len(self.damage_packet_queue)
+        info["client.encodings%s" % suffix] = ",".join(self.encodings)
+        info["client.core_encodings%s" % suffix] = ",".join(self.core_encodings)
+        info["damage.data_queue.size%s.current" % suffix] = self.damage_data_queue.qsize()
+        info["damage.packet_queue.size%s.current" % suffix] = len(self.damage_packet_queue)
         qpixels = [x[2] for x in list(self.damage_packet_queue)]
         add_list_stats(info, "damage_packet_queue_pixels%s" % suffix,  qpixels)
         if len(qpixels)>0:
@@ -974,9 +974,9 @@ class ServerSource(object):
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)
-            info["pixels_encoded_per_second%s" % suffix] = v
-            add_list_stats(info, "damage_in_latency",  in_latencies, show_percentile=[9])
-            add_list_stats(info, "damage_out_latency",  out_latencies, show_percentile=[9])
+            info["encoding.pixels_encoded_per_second%s" % suffix] = v
+            add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
+            add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
         self.default_batch_config.add_stats(info, "", suffix)
 
     def reconfigure(self, force_reload=False):

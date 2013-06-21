@@ -67,7 +67,7 @@ IPTABLES_CMD = ["sudo", "/usr/sbin/iptables"]
 TRICKLE_BIN = "/usr/bin/trickle"
 TCBENCH = "/opt/VirtualGL/bin/tcbench"
 TCBENCH_LOG = "./tcbench.log"
-XORG_BIN = "/usr/local/bin/Xorg"
+XORG_BIN = "/usr/bin/Xorg"
 VGLRUN_BIN = "/usr/bin/vglrun"
 
 #the glx tests:
@@ -649,30 +649,30 @@ def xpra_get_stats(last_record=None):
                 return v
         return default_value
     return [
-            get(["regions_per_second"]),
-            get(["pixels_per_second"]),
-            get(["pixels_encoded_per_second"]),
-            get(["pixels_decoded_per_second"]),
-            get(["batch_delay.min", "min_batch_delay"]),
-            get(["batch_delay.max", "max_batch_delay"]),
-            get(["batch_delay.avg", "avg_batch_delay"]),
-            (int(get(["input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
-            (int(get(["input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
-            (int(get(["output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
-            (int(get(["output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
-            (int(get(["output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
-            get(["client_latency.min", "min_client_latency"]),
-            get(["client_latency.max", "max_client_latency"]),
-            get(["client_latency.avg", "avg_client_latency"]),
-            get(["client_ping_latency.min"]),
-            get(["client_ping_latency.max"]),
-            get(["client_ping_latency.avg"]),
-            get(["server_ping_latency.min", "server_latency.min", "min_server_latency"]),
-            get(["server_ping_latency.max", "server_latency.max", "max_server_latency"]),
-            get(["server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
-            get(["damage_in_latency.min"]),
-            get(["damage_in_latency.max"]),
-            get(["damage_in_latency.avg"]),
+            get(["encoding.regions_per_second", "regions_per_second"]),
+            get(["encoding.pixels_per_second", "pixels_per_second"]),
+            get(["encoding.pixels_encoded_per_second", "pixels_encoded_per_second"]),
+            get(["encoding.pixels_decoded_per_second", "pixels_decoded_per_second"]),
+            get(["batch.delay.min", "batch_delay.min", "min_batch_delay"]),
+            get(["batch.delay.max", "batch_delay.max", "max_batch_delay"]),
+            get(["batch.delay.avg", "batch_delay.avg", "avg_batch_delay"]),
+            (int(get(["net.input.packetcount", "input_packetcount"], 0))-last_input_packetcount)/MEASURE_TIME,
+            (int(get(["net.input.bytecount", "input_bytecount"], 0))-last_input_bytecount)/MEASURE_TIME,
+            (int(get(["net.output.packetcount", "output_packetcount"], 0))-last_output_packetcount)/MEASURE_TIME,
+            (int(get(["net.output.bytecount", "output_bytecount"], 0))-last_output_bytecount)/MEASURE_TIME,
+            (int(get(["net.output.mmap_bytecount", "output_mmap_bytecount"], 0))-last_mmap_bytes)/MEASURE_TIME,
+            get(["client.latency.min", "client_latency.min", "min_client_latency"]),
+            get(["client.latency.max", "client_latency.max", "max_client_latency"]),
+            get(["client.latency.avg", "client_latency.avg", "avg_client_latency"]),
+            get(["client.ping_latency.min", "client_ping_latency.min"]),
+            get(["client.ping_latency.max", "client_ping_latency.max"]),
+            get(["client.ping_latency.avg", "client_ping_latency.avg"]),
+            get(["server.ping_latency.min", "server_ping_latency.min", "server_latency.min", "min_server_latency"]),
+            get(["server.ping_latency.max", "server_ping_latency.max", "server_latency.max", "max_server_latency"]),
+            get(["server.ping_latency.avg", "server_ping_latency.avg", "server_latency.avg", "avg_server_latency"]),
+            get(["damage.in_latency.min", "damage_in_latency.min"]),
+            get(["damage.in_latency.max", "damage_in_latency.max"]),
+            get(["damage.in_latency.avg", "damage_in_latency.avg"]),
            ]
 
 def get_xpra_start_server_command():

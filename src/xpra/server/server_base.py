@@ -104,6 +104,7 @@ class ServerBase(object):
         self.cursors = False
         self.default_dpi = 96
         self.dpi = 96
+        self.supports_clipboard = False
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -144,9 +145,10 @@ class ServerBase(object):
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.dpi = self.default_dpi
+        self.supports_clipboard = opts.clipboard
 
         log("starting component init")
-        self.init_clipboard(opts.clipboard, opts.clipboard_filter_file)
+        self.init_clipboard(self.supports_clipboard, opts.clipboard_filter_file)
         self.init_keyboard()
         self.init_sound(opts.speaker, opts.speaker_codec, opts.microphone, opts.microphone_codec)
         self.init_notification_forwarder(opts.notifications)
@@ -780,41 +782,43 @@ class ServerBase(object):
     def do_get_info(self, proto, server_sources, window_ids):
         start = time.time()
         info = {}
-        add_version_info(info)
+        add_version_info(info, "server.")
         for k,v in codec_versions.items():
             info["encoding.%s" % k] = v
-        info["server_type"] = "Python"
-        info["byteorder"] = sys.byteorder
+        info["server.type"] = "Python"
+        info["server.byteorder"] = sys.byteorder
+        info["server.platform"] = sys.platform
         info["python.full_version"] = sys.version
         info["python.version"] = python_platform.python_version()
-        info["pid"] = os.getpid()
+        info["server.pid"] = os.getpid()
         for x in ("uid", "gid"):
             if hasattr(os, "get%s" % x):
                 try:
-                    info[x] = getattr(os, "get%s" % x)()
+                    info["server."+x] = getattr(os, "get%s" % x)()
                 except:
                     pass
-        info["hostname"] = socket.gethostname()
-        info["max_desktop_size"] = self.get_max_screen_size()
-        info["session_name"] = self.session_name or ""
-        info["password_file"] = self.password_file or ""
-        info["randr"] = self.randr
-        info["clipboard"] = self._clipboard_helper is not None
-        info["cursors"] = self.cursors
-        info["bell"] = self.bell
-        info["notifications"] = self.notifications_forwarder is not None
-        info["pulseaudio"] = self.pulseaudio
-        info["start_time"] = int(self.start_time)
+        info["server.hostname"] = socket.gethostname()
+        info["server.max_desktop_size"] = self.get_max_screen_size()
+        info["server.start_time"] = int(self.start_time)
+        info["session.name"] = self.session_name or ""
+        info["features.password_file"] = self.password_file or ""
+        info["features.randr"] = self.randr
+        info["features.cursors"] = self.cursors
+        info["features.bell"] = self.bell
+        info["features.notifications"] = self.notifications_forwarder is not None
+        info["features.pulseaudio"] = self.pulseaudio
+        info["features.clipboard"] = self.supports_clipboard
+        if self._clipboard_helper is not None:
+            info["features.clipboard.type"] = str(self._clipboard_helper)
         info["encodings"] = ",".join(SERVER_ENCODINGS)
         info["encodings.core"] = ",".join(SERVER_CORE_ENCODINGS)
-        info["platform"] = sys.platform
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
-        info["keyboard_sync"] = self.keyboard_sync
-        info["key_repeat_delay"] = self.key_repeat_delay
-        info["key_repeat_interval"] = self.key_repeat_interval
+        info["keyboard.sync"] = self.keyboard_sync
+        info["keyboard.repeat_delay"] = self.key_repeat_delay
+        info["keyboard.repeat_interval"] = self.key_repeat_interval
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
-        info["potential_clients"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
+        info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
         #window info:
         self.add_windows_info(info, window_ids)
         #find the source to report on:

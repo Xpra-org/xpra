@@ -71,6 +71,6 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
 
     def get_info(self, proto):
         info = GTKServerBase.get_info(self, proto)
-        info["shadow"] = True
-        info["server_type"] = "Python/gtk2/win32-shadow"
+        info["features.shadow"] = True
+        info["server.type"] = "Python/gtk2/win32-shadow"
         return info

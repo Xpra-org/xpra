@@ -132,20 +132,20 @@ class GlobalPerformanceStatistics(object):
         return factors
 
     def add_stats(self, info, suffix=""):
-        info["damage_events%s" % suffix] = self.damage_events_count
-        info["damage_packets_sent%s" % suffix] = self.packet_count
-        info["output_mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
+        info["damage.events%s" % suffix] = self.damage_events_count
+        info["damage.packets_sent%s" % suffix] = self.packet_count
+        info["net.output.mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
         if self.min_client_latency is not None:
-            info["client_latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
+            info["client.latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
         qsizes = [x for _,x in list(self.damage_data_qsizes)]
-        add_list_stats(info, "damage_data_queue_size%s" % suffix,  qsizes)
+        add_list_stats(info, "damage.data_queue.size%s" % suffix,  qsizes)
         qsizes = [x for _,x in list(self.damage_packet_qsizes)]
-        add_list_stats(info, "damage_packet_queue_size%s" % suffix,  qsizes)
+        add_list_stats(info, "damage.packet_queue.size%s" % suffix,  qsizes)
         latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
-        add_list_stats(info, "client_latency%s" % suffix,  latencies)
+        add_list_stats(info, "client.latency%s" % suffix,  latencies)
 
-        add_list_stats(info, "server_ping_latency%s" % suffix, [1000.0*x for _, x in list(self.server_ping_latency)])
-        add_list_stats(info, "client_ping_latency%s" % suffix, [1000.0*x for _, x in list(self.client_ping_latency)])
+        add_list_stats(info, "server.ping_latency%s" % suffix, [1000.0*x for _, x in list(self.server_ping_latency)])
+        add_list_stats(info, "client.ping_latency%s" % suffix, [1000.0*x for _, x in list(self.client_ping_latency)])
 
         #client pixels per second:
         now = time.time()
@@ -167,10 +167,10 @@ class GlobalPerformanceStatistics(object):
         debug("total_time=%s, total_pixels=%s", total_time, total_pixels)
         if total_time>0:
             pixels_decoded_per_second = int(total_pixels *1000*1000 / total_time)
-            info["pixels_decoded_per_second%s" % suffix] = pixels_decoded_per_second
+            info["encoding.pixels_decoded_per_second%s" % suffix] = pixels_decoded_per_second
         if start_time:
             elapsed = now-start_time
             pixels_per_second = int(total_pixels/elapsed)
-            info["pixels_per_second%s" % suffix] = pixels_per_second
-            info["regions_per_second%s" % suffix] = int(len(region_sizes)/elapsed)
-            info["average_region_size%s" % suffix] = int(total_pixels/len(region_sizes))
+            info["encoding.pixels_per_second%s" % suffix] = pixels_per_second
+            info["encoding.regions_per_second%s" % suffix] = int(len(region_sizes)/elapsed)
+            info["encoding.average_region_size%s" % suffix] = int(total_pixels/len(region_sizes))

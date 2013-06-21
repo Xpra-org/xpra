@@ -178,25 +178,25 @@ class WindowPerformanceStatistics(object):
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
                         total_time += compression_time
-                add_weighted_list_stats(info, prefix+"compression_ratio_pct"+suffix, comp_ratios_pct)
-                add_weighted_list_stats(info, prefix+"compression_pixels_per_ns"+suffix, comp_times_ns)
+                add_weighted_list_stats(info, prefix+"compression.ratio_pct"+suffix, comp_ratios_pct)
+                add_weighted_list_stats(info, prefix+"compression.pixels_per_ns"+suffix, comp_times_ns)
                 if total_time>0:
-                    info[prefix+"pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
+                    info[prefix+"encoding.pixels_encoded_per_second"+suffix] = int(total_pixels / total_time)
             add_compression_stats(estats, suffix=suffix)
             for encoding in encodings_used:
                 enc_stats = [x for x in estats if x[0]==encoding]
                 add_compression_stats(enc_stats, suffix="%s[%s]" % (suffix, encoding))
 
         latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]
-        add_list_stats(info, prefix+"damage_in_latency",  latencies, show_percentile=[9])
+        add_list_stats(info, prefix+"damage.in_latency",  latencies, show_percentile=[9])
         latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
-        add_list_stats(info, prefix+"damage_out_latency",  latencies, show_percentile=[9])
+        add_list_stats(info, prefix+"damage.out_latency",  latencies, show_percentile=[9])
         #per encoding totals:
         for encoding, totals in self.encoding_totals.items():
             info[prefix+"total_frames%s[%s]" % (suffix, encoding)] = totals[0]
             info[prefix+"total_pixels%s[%s]" % (suffix, encoding)] = totals[1]
-        info[prefix+"damage_events%s" % suffix] = self.damage_events_count
-        info[prefix+"damage_packets_sent%s" % suffix] = self.packet_count
+        info[prefix+"damage.events%s" % suffix] = self.damage_events_count
+        info[prefix+"damage.packets_sent%s" % suffix] = self.packet_count
 
     def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
         """ geometric mean of the minimum (+20%) and average latency
