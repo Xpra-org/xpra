@@ -28,7 +28,7 @@ else:
 class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        log.info("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
+        log.debug("%s%s", type(self), (client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay))
         ClientWidgetBase.__init__(self, client, wid)
         self._override_redirect = override_redirect
         self.group_leader = group_leader
