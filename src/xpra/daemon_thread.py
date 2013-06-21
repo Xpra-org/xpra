@@ -5,6 +5,12 @@
 
 from threading import Thread
 
+"""
+This is only here so we can intercept the creation
+of all deamon threads and inject some code.
+This is used by the pycallgraph test wrapper.
+"""
+
 def make_daemon_thread(target, name):
     daemon_thread = Thread(target=target, name=name)
     daemon_thread.setDaemon(True)
