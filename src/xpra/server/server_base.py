@@ -367,6 +367,7 @@ class ServerBase(object):
 
     def run(self):
         log.info("xpra server version %s" % xpra.__version__)
+        log.info("running  pid %s" % os.getpid())
         def print_ready():
             log.info("xpra is ready.")
             sys.stdout.flush()
@@ -783,6 +784,15 @@ class ServerBase(object):
         for k,v in codec_versions.items():
             info["encoding.%s" % k] = v
         info["server_type"] = "Python"
+        info["byteorder"] = sys.byteorder
+        info["python.version"] = sys.version
+        info["pid"] = os.getpid()
+        for x in ("uid", "gid"):
+            if hasattr(os, "get%s" % x):
+                try:
+                    info[x] = getattr(os, "get%s" % x)()
+                except:
+                    pass
         info["hostname"] = socket.gethostname()
         info["max_desktop_size"] = self.get_max_screen_size()
         info["session_name"] = self.session_name or ""
