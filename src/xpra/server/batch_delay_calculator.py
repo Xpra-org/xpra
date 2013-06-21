@@ -75,7 +75,7 @@ def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, stat
     factors += global_statistics.get_factors(statistics.target_latency, low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
-    factors.append(queue_inspect("damage packet queue window pixels:", time_values, div=low_limit, smoothing=sqrt))
+    factors.append(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
     #now use those factors to drive the delay change:
     update_batch_delay(batch, factors)
 
@@ -110,18 +110,22 @@ def update_batch_delay(batch, factors):
         avg = tv / tw
     hist_w = tw
 
-    valid_factors = [x for x in factors if x is not None]
-    all_factors_weight = sum([w for _,_,w in valid_factors])
+    for x in factors:
+        if len(x)!=4:
+            log.warn("invalid factor line: %s" % str(x))
+    valid_factors = [x for x in factors if x is not None and len(x)==4]
+    all_factors_weight = sum([w for _,_,_,w in valid_factors])
     if all_factors_weight==0:
         log("update_batch_delay: no weights yet!")
         return
-    for _, factor, weight in valid_factors:
+    for _, _, factor, weight in valid_factors:
         target_delay = max(0, min(max_delay, current_delay*factor))
         w = max(1, hist_w)*weight/all_factors_weight
         tw += w
         tv += target_delay*w
     batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
+    batch.factors = valid_factors
     if DEBUG_DELAY>=0:
         decimal_delays = [x for _,x in list(batch.last_delays)]
         if len(decimal_delays)==0:
@@ -131,7 +135,7 @@ def update_batch_delay(batch, factors):
                 current_delay, avg, tw, hist_w, batch.delay)
         add_DEBUG_MESSAGE(*rec)
         if DEBUG_FACTORS:
-            logfactors = [("{0:+}".format(int(100.0*f-100.0)).rjust(4) + str(int(100*w)).rjust(8) + "  "+ msg) for (msg, f, w) in valid_factors]
+            logfactors = [("{0:+}".format(int(100.0*f-100.0)).rjust(4) + str(int(100*w)).rjust(8) + "  "+ msg+": "+info) for (msg, info, f, w) in valid_factors]
             add_DEBUG_MESSAGE("Factors (change - weight - description):\n "+("\n ".join([str(x) for x in logfactors])))
 
 

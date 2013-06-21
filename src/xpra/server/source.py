@@ -977,10 +977,7 @@ class ServerSource(object):
             info["pixels_encoded_per_second%s" % suffix] = v
             add_list_stats(info, "damage_in_latency",  in_latencies, show_percentile=[9])
             add_list_stats(info, "damage_out_latency",  out_latencies, show_percentile=[9])
-
-        if len(self.default_batch_config.last_delays)>0:
-            batch_delays = [x for _,x in list(self.default_batch_config.last_delays)]
-            add_list_stats(info, "batch_delay%s" % suffix, batch_delays)
+        self.default_batch_config.add_stats(info, "", suffix)
 
     def reconfigure(self, force_reload=False):
         for ws in self.window_sources.values():

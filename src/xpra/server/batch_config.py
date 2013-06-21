@@ -12,6 +12,8 @@
 NRECS = 100
 
 from xpra.deque import maxdeque
+from xpra.simple_stats import add_list_stats
+
 
 class DamageBatchConfig(object):
     """
@@ -40,6 +42,22 @@ class DamageBatchConfig(object):
         self.last_actual_delays = maxdeque(64)          #the delays we actually used (milliseconds)
         self.last_updated = 0
         self.wid = 0
+        #the metrics derived from statistics which we use for calculating the new batch delay:
+        #(see batch delay calculator)
+        self.factors = []
+
+
+    def add_stats(self, info, prefix, suffix=""):
+        if len(self.last_delays)>0:
+            batch_delays = [x for _,x in list(self.last_delays)]
+            add_list_stats(info, prefix+"batch.delay"+suffix, batch_delays)
+        if len(self.last_actual_delays)>0:
+            batch_delays = [x for _,x in list(self.last_actual_delays)]
+            add_list_stats(info, prefix+"batch.actual_delay"+suffix, batch_delays, show_percentile=[9])
+        for name, details, factor, weight in self.factors:
+            key = prefix+"batch."+name
+            info[key+suffix] = (int(100.0*factor), int(100.0*weight))
+            info[key+".info"+suffix] = details
 
     def clone(self):
         c = DamageBatchConfig()

@@ -225,17 +225,18 @@ class WindowSource(object):
         info[prefix+"dimensions"] = self.window_dimensions
         info[prefix+"encoding"+suffix] = self.encoding
         self.statistics.add_stats(info, prefix, suffix)
-        #batch stats:
-        if len(self.batch_config.last_actual_delays)>0:
-            batch_delays = [x for _,x in list(self.batch_config.last_delays)]
-            add_list_stats(info, prefix+"batch_delay"+suffix, batch_delays, show_percentile=[9])
+
+        #batch delay stats:
+        self.batch_config.add_stats(info, "", suffix)
+
+        #speed / quality:
         quality_list = [x for _, x in list(self._encoding_quality)]
         if len(quality_list)>0:
             add_list_stats(info, prefix+"quality"+suffix, quality_list, show_percentile=[9])
         speed_list = [x for _, x in list(self._encoding_speed)]
         if len(speed_list)>0:
             add_list_stats(info, prefix+"speed"+suffix, speed_list, show_percentile=[9])
-
+        self.batch_config.add_stats(info, prefix, suffix)
 
     def calculate_batch_delay(self):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)

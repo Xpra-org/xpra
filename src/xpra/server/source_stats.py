@@ -103,32 +103,32 @@ class GlobalPerformanceStatistics(object):
         factors = []
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)
-            msg = "client latency:"
+            metric = "client-latency"
             l = 0.005 + self.min_client_latency
             wm = logp(l / 0.020)
-            factors.append(calculate_for_target(msg, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            factors.append(calculate_for_target(metric, l, self.avg_client_latency, self.recent_client_latency, aim=0.8, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.client_ping_latency)>0:
-            msg = "client ping latency:"
+            metric = "client-ping-latency"
             l = 0.005 + self.min_client_ping_latency
             wm = logp(l / 0.050)
-            factors.append(calculate_for_target(msg, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            factors.append(calculate_for_target(metric, l, self.avg_client_ping_latency, self.recent_client_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         if len(self.server_ping_latency)>0:
-            msg = "server ping latency:"
+            metric = "server-ping-latency"
             l = 0.005 + self.min_server_ping_latency
             wm = logp(l / 0.050)
-            factors.append(calculate_for_target(msg, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
+            factors.append(calculate_for_target(metric, l, self.avg_server_ping_latency, self.recent_server_ping_latency, aim=0.95, slope=0.005, smoothing=sqrt, weight_multiplier=wm))
         #damage packet queue size: (includes packets from all windows)
-        factors.append(queue_inspect("damage packet queue size:", self.damage_packet_qsizes, smoothing=sqrt))
+        factors.append(queue_inspect("damage-packet-queue-size", self.damage_packet_qsizes, smoothing=sqrt))
         #damage packet queue pixels (global):
         qpix_time_values = [(event_time, value) for event_time, _, value in list(self.damage_packet_qpixels)]
-        factors.append(queue_inspect("damage packet queue pixels:", qpix_time_values, div=pixel_count, smoothing=sqrt))
+        factors.append(queue_inspect("damage-packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
         #damage data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
-        factors.append(queue_inspect("damage data queue:", self.damage_data_qsizes))
+        factors.append(queue_inspect("damage-data-queue", self.damage_data_qsizes))
         if self.mmap_size>0:
             #full: effective range is 0.0 to ~1.2
             full = 1.0-float(self.mmap_free_size)/self.mmap_size
             #aim for ~33%
-            factors.append(("mmap area %s%% full" % int(100*full), logp(3*full), (3*full)**2))
+            factors.append(("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2))
         return factors
 
     def add_stats(self, info, suffix=""):

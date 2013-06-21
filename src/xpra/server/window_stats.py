@@ -93,28 +93,30 @@ class WindowPerformanceStatistics(object):
         factors = []
         #damage "in" latency factors:
         if len(self.damage_in_latency)>0:
-            msg = "damage processing latency:"
+            metric = "damage-processing-latency"
             target_latency = 0.010 + (0.050*pixel_count/1024.0/1024.0)
-            factors.append(calculate_for_target(msg, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
+            factors.append(calculate_for_target(metric, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
             #ratio to delay (aim for double the latency so we always have packets in flight):
-            msg = "damage processing ratios %i - %i / %i" % (self.avg_damage_in_latency*1000, self.recent_damage_in_latency*1000, delay)
+            metric = "damage-processing-ratios"
             md = 1.5 * max(0.005, delay / 1000.0)
             fa = sqrt(self.avg_damage_in_latency / md)
             fr = sqrt(self.recent_damage_in_latency / md)
             weight = max(abs(fa-1.0), abs(fr-1.0))
-            factors.append((msg, (fa+fr*2)/3.0, weight))
+            info = "avg in=%i - recent in=%i / delay=%i, fa=%s, fr=%s" % (self.avg_damage_in_latency*1000, self.recent_damage_in_latency*1000, delay, fa, fr)
+            factors.append((metric, info, (fa+fr*2)/3.0, weight))
         #damage "out" latency
         if len(self.damage_out_latency)>0:
-            msg = "damage send latency:"
+            metric = "damage-out-latency"
             target_latency = 0.025 + (0.060*pixel_count/1024.0/1024.0)
-            factors.append(calculate_for_target(msg, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
+            factors.append(calculate_for_target(metric, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
         #ratio of "in" and "out" latency indicates network bottleneck:
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
             ad = max(0.001, self.avg_damage_out_latency-self.avg_damage_in_latency)
             rd = max(0.001, self.recent_damage_out_latency-self.recent_damage_in_latency)
             div = 0.040 / max(ad, rd)       #reduce weight for low latencies (matter less)
-            msg = "damage network delay: avg delay=%.3f recent delay=%.3f" % (ad, rd)
-            factors.append(calculate_for_average(msg, ad, rd, weight_div=div))
+            metric = "damage-network-delay"
+            #info: avg delay=%.3f recent delay=%.3f" % (ad, rd)
+            factors.append(calculate_for_average(metric, ad, rd, weight_div=div))
         #send speed:
         if self.avg_send_speed is not None and self.recent_send_speed is not None:
             #our calculate methods aims for lower values, so invert speed
@@ -125,17 +127,19 @@ class WindowPerformanceStatistics(object):
             #so adjust the weight accordingly:
             minspeed = float(128*1024)
             div = logp(max(self.recent_send_speed, minspeed)/minspeed)
-            msg = "network send speed: avg=%s, recent=%s (KBytes/s), div=%s" % (int(self.avg_send_speed/1024), int(self.recent_send_speed/1024), div)
-            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
+            metric = "network-send-speed"
+            #info: avg=%s, recent=%s (KBytes/s), div=%s" % (int(self.avg_send_speed/1024), int(self.recent_send_speed/1024), div)
+            factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
         #client decode time:
         if self.avg_decode_speed is not None and self.recent_decode_speed is not None:
-            msg = "client decode speed: avg=%.1f, recent=%.1f (MPixels/s)" % (self.avg_decode_speed/1000/1000, self.recent_decode_speed/1000/1000)
+            metric = "client-decode-speed"
+            #info: avg=%.1f, recent=%.1f (MPixels/s)" % (self.avg_decode_speed/1000/1000, self.recent_decode_speed/1000/1000)
             #our calculate methods aims for lower values, so invert speed
             #this is how long it takes to send 1MB:
             avg1MB = 1.0*1024*1024/self.avg_decode_speed
             recent1MB = 1.0*1024*1024/self.recent_decode_speed
             weight_div = max(0.25, self.recent_decode_speed/(4*1000*1000))
-            factors.append(calculate_for_average(msg, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
+            factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=0.0, weight_div=weight_div))
         if self.last_damage_event_time:
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high system latency
@@ -145,8 +149,9 @@ class WindowPerformanceStatistics(object):
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
             target = max(0, 1.0-mtime)
-            msg = "no damage events for %.1f ms (highest latency is %.1f)" % (1000*elapsed, 1000*self.max_latency)
-            factors.append((msg, target, weight))
+            metric = "damage-rate"
+            info = "no damage events for %.1f ms (highest latency is %.1f)" % (1000*elapsed, 1000*self.max_latency)
+            factors.append((metric, info, target, weight))
         return factors
 
     def add_stats(self, info, prefix, suffix=""):

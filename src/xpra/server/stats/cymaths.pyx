@@ -99,7 +99,7 @@ def calculate_timesize_weighted_average(data, float sizeunit=1.0):
         rw += w
     return float(tv / tw), float(rv / rw)
 
-def calculate_for_target(msg_header, float target_value, float avg_value, float recent_value, float aim=0.5, float div=1.0, float slope=0.1, smoothing=logp, float weight_multiplier=1.0):
+def calculate_for_target(metric, float target_value, float avg_value, float recent_value, float aim=0.5, float div=1.0, float slope=0.1, smoothing=logp, float weight_multiplier=1.0):
     """
         Calculates factor and weight to try to bring us closer to 'target_value'.
 
@@ -118,9 +118,10 @@ def calculate_for_target(msg_header, float target_value, float avg_value, float 
     cdef double aimed_average = target_factor*(1.0-aim) + avg_factor*aim
     factor = smoothing(aimed_average)
     weight = smoothing(max(0.0, 1.0-factor, factor-1.0)) * weight_multiplier
-    return  "%s avg=%.3f, recent=%.3f, target=%.3f, aim=%.3f, aimed avg factor=%.3f, div=%.3f, s=%s" % (msg_header, avg_value, recent_value, target_value, aim, aimed_average, div, smoothing), factor, weight
+    info = "avg=%.3f, recent=%.3f, target=%.3f, aim=%.3f, aimed avg factor=%.3f, div=%.3f, s=%s" % (avg_value, recent_value, target_value, aim, aimed_average, div, smoothing)
+    return metric, info , factor, weight
 
-def calculate_for_average(msg_header, float avg_value, float recent_value, float div=1.0, float weight_offset=0.5, float weight_div=1.0):
+def calculate_for_average(metric, float avg_value, float recent_value, float div=1.0, float weight_offset=0.5, float weight_div=1.0):
     """
         Calculates factor and weight based on how far we are from the average value.
         This is used by metrics for which we do not know the optimal target value.
@@ -129,16 +130,16 @@ def calculate_for_average(msg_header, float avg_value, float recent_value, float
     cdef double recent = recent_value/div
     cdef double factor = clogp(recent/avg)
     cdef double weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
-    return  msg_header, float(factor), float(weight)
+    return  metric, "avg=%s, recent=%s" % (avg, recent), float(factor), float(weight)
 
-def queue_inspect(msg_header, time_values, float target=1.0, float div=1.0, smoothing=logp):
+def queue_inspect(metric, time_values, float target=1.0, float div=1.0, smoothing=logp):
     """
         Given an historical list of values and a current value,
         figure out if things are getting better or worse.
     """
     #inspect a queue size history: figure out if things are better or worse than before
     if len(time_values)==0:
-        return  "%s (empty)" % msg_header, 1.0, 0.0
+        return  metric, "(empty)", 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
     weight_multiplier = sqrt(max(avg, recent) / div / target)
-    return  calculate_for_target(msg_header, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)
+    return  calculate_for_target(metric, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)
