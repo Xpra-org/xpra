@@ -785,7 +785,8 @@ class ServerBase(object):
             info["encoding.%s" % k] = v
         info["server_type"] = "Python"
         info["byteorder"] = sys.byteorder
-        info["python.version"] = sys.version
+        info["python.full_version"] = sys.version
+        info["python.version"] = python_platform.python_version()
         info["pid"] = os.getpid()
         for x in ("uid", "gid"):
             if hasattr(os, "get%s" % x):
@@ -807,7 +808,6 @@ class ServerBase(object):
         info["encodings"] = ",".join(SERVER_ENCODINGS)
         info["encodings.core"] = ",".join(SERVER_CORE_ENCODINGS)
         info["platform"] = sys.platform
-        info["python_version"] = python_platform.python_version()
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info["keyboard_sync"] = self.keyboard_sync
         info["key_repeat_delay"] = self.key_repeat_delay
