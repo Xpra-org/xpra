@@ -10,6 +10,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
+from xpra.util import nonl
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
 from xpra.net.protocol import set_scheduler
 set_scheduler(gobject)
@@ -151,7 +152,7 @@ class InfoXpraClient(CommandConnectClient):
         if props:
             for k in sorted(props.keys()):
                 v = props.get(k)
-                log.info("%s=%s", k, v)
+                log.info("%s=%s", k, nonl(v))
         self.quit(0)
 
     def make_hello(self, challenge_response=None):
