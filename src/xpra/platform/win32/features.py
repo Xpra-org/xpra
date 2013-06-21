@@ -14,3 +14,4 @@ GOT_PASSWORD_PROMPT_SUGGESTION = \
    'Perhaps you need to set up Pageant, or (less secure) use --ssh="plink -pw YOUR-PASSWORD"?\n'
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_GREEDY = True
+CLIPBOARD_NATIVE_CLASS = ("xpra.clipboard.translated_clipboard", "TranslatedClipboardProtocolHelper", {})

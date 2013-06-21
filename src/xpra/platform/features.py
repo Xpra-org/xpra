@@ -14,6 +14,7 @@ GOT_PASSWORD_PROMPT_SUGGESTION = ""
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = False
 CLIPBOARD_GREEDY = False
+CLIPBOARD_NATIVE_CLASS = None
 CAN_DAEMONIZE = False
 
 from xpra.platform import platform_import
@@ -27,4 +28,5 @@ platform_import(globals(), "features", False,
                 "GOT_PASSWORD_PROMPT_SUGGESTION",
                 "CLIPBOARDS",
                 "CLIPBOARD_WANT_TARGETS",
-                "CLIPBOARD_GREEDY")
+                "CLIPBOARD_GREEDY",
+                "CLIPBOARD_NATIVE_CLASS")

@@ -8,5 +8,6 @@ GOT_PASSWORD_PROMPT_SUGGESTION = "Perhaps you need to set up your ssh agent?\n"
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_WANT_TARGETS = True
 CLIPBOARD_GREEDY = True
+CLIPBOARD_NATIVE_CLASS = ("xpra.darwin.osx_clipboard", "OSXClipboardProtocolHelper", {})
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True

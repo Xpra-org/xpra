@@ -91,33 +91,41 @@ class XpraClient(GTKXpraClient):
     def make_tray_menu(self):
         return GTK2TrayMenu(self)
 
+
     def make_clipboard_helper(self):
-        from xpra.platform.features import CLIPBOARDS
-        if sys.platform.startswith("darwin"):
-            try:
-                from xpra.clipboard.osx_clipboard import OSXClipboardProtocolHelper
-                return self.setup_clipboard_helper(OSXClipboardProtocolHelper)
-            except ImportError, e:
-                log.error("OSX clipboard failed to load: %s", e)
-        if sys.platform.startswith("win"):
-            try:
-                from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-                return self.setup_clipboard_helper(TranslatedClipboardProtocolHelper)
-            except ImportError, e:
-                log.error("GDK translated clipboard failed to load: %s - using default fallback", e)
+        """
+            Try the various clipboard classes until we find one
+            that loads ok. (some platforms have more options than others)
+        """
+        from xpra.platform.features import CLIPBOARDS, CLIPBOARD_NATIVE_CLASS
         clipboards = [x for x in CLIPBOARDS if x in self.server_clipboards]
-        log("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s",
-            self.server_clipboards, CLIPBOARDS, clipboards)
+        log("make_clipboard_helper() server_clipboards=%s, local clipboards=%s, common=%s", self.server_clipboards, CLIPBOARDS, clipboards)
+        #first add the platform specific one, (may be None):
+        clipboard_options = []
+        if CLIPBOARD_NATIVE_CLASS:
+            clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
+        clipboard_options.append(("xpra.clipboard.gdk_clipboard", "GDKClipboardProtocolHelper", {"clipboards" : clipboards}))
+        clipboard_options.append(("xpra.clipboard.clipboard_base", "DefaultClipboardProtocolHelper", {"clipboards" : clipboards}))
+        for module_name, classname, kwargs in clipboard_options:
+            c = self.try_load_clipboard_helper(module_name, classname, kwargs)
+            if c:
+                return c
+        return None
+
+    def try_load_clipboard_helper(self, module, classname, kwargs={}):
         try:
-            from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-            return self.setup_clipboard_helper(GDKClipboardProtocolHelper, clipboards=clipboards)
-        except ImportError, e:
-            log.error("GDK clipboard failed to load: %s - using default fallback", e)
-        try:
-            from xpra.clipboard.clipboard_base import DefaultClipboardProtocolHelper
-            return self.setup_clipboard_helper(DefaultClipboardProtocolHelper, clipboards=clipboards)
-        except ImportError, e:
-            log.error("clipboard fallback failed to load: %s - no clipboard available", e)
+            m = __import__(module, {}, {}, classname)
+            if m:
+                if not hasattr(m, classname):
+                    log.warn("cannot load %s from %s, odd", classname, m)
+                    return None
+                c = getattr(m, classname)
+                if c:
+                    return self.setup_clipboard_helper(c, **kwargs)
+        except:
+            log.error("cannot load %s.%s", module, classname, exc_info=True)
+            return None
+        log.error("cannot load %s.%s", module, classname)
         return None
 
     def setup_clipboard_helper(self, helperClass, *args, **kwargs):
