@@ -57,7 +57,8 @@ class DamageBatchConfig(object):
         for name, details, factor, weight in self.factors:
             key = prefix+"batch."+name
             info[key+suffix] = (int(100.0*factor), int(100.0*weight))
-            info[key+".info"+suffix] = details
+            for k,v in details.items():
+                info[key+"."+k+suffix] = v
 
     def clone(self):
         c = DamageBatchConfig()

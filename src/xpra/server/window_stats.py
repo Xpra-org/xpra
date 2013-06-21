@@ -102,7 +102,13 @@ class WindowPerformanceStatistics(object):
             fa = sqrt(self.avg_damage_in_latency / md)
             fr = sqrt(self.recent_damage_in_latency / md)
             weight = max(abs(fa-1.0), abs(fr-1.0))
-            info = "avg in=%i - recent in=%i / delay=%i, fa=%s, fr=%s" % (self.avg_damage_in_latency*1000, self.recent_damage_in_latency*1000, delay, fa, fr)
+            info = {
+                    "avg_damage_in_latency" : int(1000.0*self.avg_damage_in_latency),
+                    "recent_damage_in_latency"  : int(1000.0*self.recent_damage_in_latency),
+                    "delay" : int(delay),
+                    "avg_factor"    : int(1000.0*fa),
+                    "recent_factor" : int(1000.0*fr)
+                    }
             factors.append((metric, info, (fa+fr*2)/3.0, weight))
         #damage "out" latency
         if len(self.damage_out_latency)>0:
@@ -150,7 +156,8 @@ class WindowPerformanceStatistics(object):
             weight = sqrt(mtime)
             target = max(0, 1.0-mtime)
             metric = "damage-rate"
-            info = "no damage events for %.1f ms (highest latency is %.1f)" % (1000*elapsed, 1000*self.max_latency)
+            info = {"elapsed"   : int(1000.0*elapsed),
+                    "max_latency"   : int(1000.0*self.max_latency)}
             factors.append((metric, info, target, weight))
         return factors
 

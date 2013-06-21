@@ -124,8 +124,8 @@ class WindowSource(object):
         self._mmap_size = mmap_size
 
         # general encoding tunables (mostly used by video encoders):
-        self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, encoding speed)
-        self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, encoding speed)
+        self._encoding_quality = maxdeque(100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
+        self._encoding_speed = maxdeque(100)     #keep track of the target encoding_speed: (event time, info, encoding speed)
         # for managing/cancelling damage requests:
         self._damage_delayed = None                     #may store a delayed region when batching in progress
         self._damage_delayed_expired = False            #when this is True, the region should have expired
@@ -230,12 +230,23 @@ class WindowSource(object):
         self.batch_config.add_stats(info, "", suffix)
 
         #speed / quality:
-        quality_list = [x for _, x in list(self._encoding_quality)]
+        def add_last_rec_info(prefix, recs):
+            #must make a list to work on (again!)
+            l = list(recs)
+            if len(l)>0:
+                _, descr, _ = l[-1]
+                for k,v in descr.items():
+                    info[prefix+"."+k] = v
+        quality_list = [x for _, _, x in list(self._encoding_quality)]
         if len(quality_list)>0:
-            add_list_stats(info, prefix+"quality"+suffix, quality_list, show_percentile=[9])
-        speed_list = [x for _, x in list(self._encoding_speed)]
+            qp = prefix+"quality"+suffix
+            add_list_stats(info, qp, quality_list, show_percentile=[9])
+            add_last_rec_info(qp, self._encoding_quality)
+        speed_list = [x for _, _, x in list(self._encoding_speed)]
         if len(speed_list)>0:
-            add_list_stats(info, prefix+"speed"+suffix, speed_list, show_percentile=[9])
+            sp = prefix+"speed"+suffix
+            add_list_stats(info, sp, speed_list, show_percentile=[9])
+            add_last_rec_info(sp, self._encoding_speed)
         self.batch_config.add_stats(info, prefix, suffix)
 
     def calculate_batch_delay(self):
@@ -245,15 +256,16 @@ class WindowSource(object):
         speed = self.default_encoding_options.get("speed", -1)
         if speed<0:
             min_speed = self.get_min_speed()
-            target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_speed)
-            #make a copy to work on
-            ves_copy = list(self._encoding_speed)
+            info, target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_speed)
+            #make a copy to work on (and discard "info")
+            ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
             ves_copy.append((time.time(), target_speed))
             speed = max(min_speed, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
             speed = min(99, speed)
         else:
+            info = {}
             speed = min(100, speed)
-        self._encoding_speed.append((time.time(), speed))
+        self._encoding_speed.append((time.time(), info, speed))
 
     def get_min_speed(self):
         return self.default_encoding_options.get("min-speed", -1)
@@ -265,21 +277,22 @@ class WindowSource(object):
             return max(ms, s)
         if len(self._encoding_speed)==0:
             return max(ms, 80)
-        return max(ms, self._encoding_speed[-1][1])
+        return max(ms, self._encoding_speed[-1][-1])
 
     def update_quality(self):
         quality = self.default_encoding_options.get("quality", -1)
         if quality<0:
             min_quality = self.default_encoding_options.get("min-quality", -1)
-            target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
-            #make a copy to work on
-            ves_copy = list(self._encoding_quality)
+            info, target_quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, min_quality)
+            #make a copy to work on (and discard "info")
+            ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
             ves_copy.append((time.time(), target_quality))
             quality = max(min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
             quality = min(99, quality)
         else:
+            info = {}
             quality = min(100, quality)
-        self._encoding_quality.append((time.time(), quality))
+        self._encoding_quality.append((time.time(), info, quality))
 
     def get_min_quality(self):
         return self.default_encoding_options.get("min-quality", -1)
@@ -291,7 +304,7 @@ class WindowSource(object):
             return max(mq, q)
         if len(self._encoding_quality)==0:
             return max(mq, 90)
-        return max(mq, self._encoding_quality[-1][1])
+        return max(mq, self._encoding_quality[-1][-1])
 
     def reconfigure(self, force_reload=False):
         self.update_quality()

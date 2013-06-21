@@ -5,47 +5,12 @@
 # later version. See the file COPYING for details.
 
 import time
-import os
-import gobject
-
 from math import sqrt
 
 from xpra.log import Logger
 log = Logger()
 
 from xpra.server.stats.maths import queue_inspect, logp
-
-
-MAX_DEBUG_MESSAGES = 1000
-DEBUG_DELAY = int(os.environ.get("XPRA_VIDEO_DEBUG", "-1"))
-DEBUG_FACTORS = os.environ.get("XPRA_FACTORS_DEBUG", "0")=="1"
-
-
-if DEBUG_DELAY>0:
-    _debug_delay_messages = []
-
-    def add_DEBUG_MESSAGE(*recs):
-        global _debug_delay_messages
-        if len(_debug_delay_messages)>=MAX_DEBUG_MESSAGES:
-            dump_debug_messages()
-        _debug_delay_messages.append(recs)
-
-    def dump_debug_messages():
-        global _debug_delay_messages
-        log.info("dump_debug_messages():")
-        for x in list(_debug_delay_messages):
-            log.info(*x)
-        _debug_delay_messages = []
-        return  True
-    gobject.timeout_add(DEBUG_DELAY*1000, dump_debug_messages)
-
-elif DEBUG_DELAY==0:
-    def add_DEBUG_MESSAGE(*recs):
-        log.info(*recs)
-
-else:
-    def add_DEBUG_MESSAGE(*recs):
-        pass
 
 
 def get_low_limit(mmap_enabled, window_dimensions):
@@ -59,6 +24,7 @@ def get_low_limit(mmap_enabled, window_dimensions):
         #mmap can accumulate much more as it is much faster
         low_limit *= 4
     return low_limit
+
 
 def calculate_batch_delay(window_dimensions, wid, batch, global_statistics, statistics):
     """
@@ -88,10 +54,8 @@ def update_batch_delay(batch, factors):
         We use a time-weighted average of previous delays as a starting value,
         then combine it with the new factors.
     """
-    last_updated = batch.last_updated
     current_delay = batch.delay
     now = time.time()
-    avg = 0
     tv, tw = 0.0, 0.0
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
     max_delay = batch.max_delay
@@ -106,8 +70,6 @@ def update_batch_delay(batch, factors):
                 d = max(0, min(max_delay, delay))
                 tv += d*w
                 tw += w
-    if tw>0:
-        avg = tv / tw
     hist_w = tw
 
     for x in factors:
@@ -126,17 +88,6 @@ def update_batch_delay(batch, factors):
     batch.delay = max(0, min(max_delay, tv / tw))
     batch.last_updated = now
     batch.factors = valid_factors
-    if DEBUG_DELAY>=0:
-        decimal_delays = [x for _,x in list(batch.last_delays)]
-        if len(decimal_delays)==0:
-            decimal_delays.append(0)
-        rec = ("update_batch_delay: wid=%s, last updated %.2f ms ago, decay=%.2fs, change factor=%.1f%%, delay min=%i, avg=%i, max=%i, cur=%.1f, w. average=%.1f, tot wgt=%.1f, hist_w=%.1f, new delay=%.1f",
-                batch.wid, 1000.0*now-1000.0*last_updated, decay, 100.0*(batch.delay/current_delay-1), min(decimal_delays), sum(decimal_delays)/len(decimal_delays), max(decimal_delays),
-                current_delay, avg, tw, hist_w, batch.delay)
-        add_DEBUG_MESSAGE(*rec)
-        if DEBUG_FACTORS:
-            logfactors = [("{0:+}".format(int(100.0*f-100.0)).rjust(4) + str(int(100*w)).rjust(8) + "  "+ msg+": "+info) for (msg, info, f, w) in valid_factors]
-            add_DEBUG_MESSAGE("Factors (change - weight - description):\n "+("\n ".join([str(x) for x in logfactors])))
 
 
 def get_target_speed(wid, window_dimensions, batch, global_statistics, statistics, min_speed):
@@ -158,11 +109,19 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, 0.0))
     ms = min(100.0, max(min_speed, 0.0))
     target_speed = ms + (100.0-ms) * target
-    if DEBUG_DELAY>=0:
-        msg = "get_target_speed: wid=%s, low_limit=%s, min speed=%s, min_damage_latency=%.3f, avg damage in latency=%.3f, target_damage_latency=%.3f, batch.delay=%.1f, dam_lat=%.3f / %.3f, dec_lat=%.3f, target speed=%i", \
-             wid, low_limit, min_speed, min_damage_latency, statistics.avg_damage_in_latency, target_damage_latency, batch.delay, dam_lat_abs, dam_lat_rel, dec_lat, int(target_speed)
-        add_DEBUG_MESSAGE(*msg)
-    return target_speed
+    info = {
+            "low_limit" : int(low_limit),
+            "min_speed" : int(min_speed),
+            "min_damage_latency"    : int(1000.0*min_damage_latency),
+            "avg_damage_latency"    : int(1000.0*statistics.avg_damage_in_latency),
+            "target_damage_latency" : int(1000.0*target_damage_latency),
+            "batch.delay"   : int(batch.delay),
+            "abs_factor"    : int(100.0*dam_lat_abs), 
+            "rel_factor"    : int(100.0*dam_lat_rel),
+            "decoding_latency_factor"   : int(100.0*dec_lat)
+            }
+    return info, target_speed
+
 
 def get_target_quality(wid, window_dimensions, batch, global_statistics, statistics, min_quality):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
@@ -190,8 +149,10 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     target = min(1.0, max(0.0, target))
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
-    if DEBUG_DELAY>=0:
-        msg = "get_target_quality: wid=%s, min quality=%s, packets_bl=%.2f, batch_q=%.2f, latency_q=%.2f, target quality=%s", \
-             wid, min_quality, packets_bl, batch_q, latency_q, int(target_quality)
-        add_DEBUG_MESSAGE(*msg)
-    return target_quality
+    info = {
+            "min_quality"   : min_quality,
+            "backlog_factor": int(100.0*packets_bl),
+            "batch_factor"  : int(100.0*batch_q),
+            "latency_factor": int(100.0*latency_q),
+            } 
+    return info, target_quality

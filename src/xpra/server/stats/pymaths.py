@@ -10,6 +10,11 @@ from math import log as mathlog, sqrt
 def logp(x):
     return mathlog(1.0+x)/2.0
 
+SMOOTHING_NAMES = {sqrt: "sqrt", logp: "logp"}
+def smn(fn):
+    return str(SMOOTHING_NAMES.get(fn, fn))
+
+
 def calculate_time_weighted_average(data):
     """
         Given a list of items of the form [(event_time, value)],
@@ -91,10 +96,15 @@ def calculate_for_target(metric, target_value, avg_value, recent_value, aim=0.5,
     weight = smoothing(max(0.0, 1.0-factor, factor-1.0)) * weight_multiplier
     #if DEBUG_DELAY:
     #    msg += " [factors: target=%.2f, average=%.2f, aim=%.2f, aimed_average=%.2f]" % (target_factor, avg_factor, aim, aimed_average)
-    return  metric, \
-            "avg=%.3f, recent=%.3f, target=%.3f, aim=%.3f, aimed avg factor=%.3f, div=%.3f, s=%s" % \
-            (avg_value, recent_value, target_value, aim, aimed_average, div, smoothing), \
-            factor, weight
+    info = {"avg"       : int(1000.0*avg_value),
+            "recent"    : int(1000.0*recent_value),
+            "target"    : int(1000.0*target_value),
+            "aim"       : int(1000.0*aim),
+            "aimed_avg" : int(1000.0*aimed_average),
+            "div"       : int(1000.0*div),
+            "smoothing" : smn(smoothing),
+            }
+    return  metric, info, factor, weight
 
 def calculate_for_average(metric, avg_value, recent_value, div=1.0, weight_offset=0.5, weight_div=1.0):
     """
@@ -105,7 +115,9 @@ def calculate_for_average(metric, avg_value, recent_value, div=1.0, weight_offse
     recent = recent_value/div
     factor = logp(recent/avg)
     weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
-    return  metric, "avg=%s, recent=%s" % (avg, recent), factor, weight
+    info = {"avg"   : int(1000.0*avg),
+            "recent": int(1000.0*recent)}
+    return  metric, info, factor, weight
 
 def queue_inspect(metric, time_values, target=1.0, div=1.0, smoothing=logp):
     """
@@ -114,7 +126,7 @@ def queue_inspect(metric, time_values, target=1.0, div=1.0, smoothing=logp):
     """
     #inspect a queue size history: figure out if things are better or worse than before
     if len(time_values)==0:
-        return  metric, "(empty)", 1.0, 0.0
+        return  metric, {}, 1.0, 0.0
     avg, recent = calculate_time_weighted_average(list(time_values))
     weight_multiplier = sqrt(max(avg, recent) / div / target)
     return  calculate_for_target(metric, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)
