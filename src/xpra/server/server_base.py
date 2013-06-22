@@ -29,7 +29,7 @@ from xpra.os_util import set_application_name
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
 MAX_CONCURRENT_CONNECTIONS = 20
-
+PLATFORM_NAME = platform_name(sys.platform, python_platform.release())
 
 SERVER_CORE_ENCODINGS = ["rgb24", "rgb32"]
 for test, formats in (
@@ -793,7 +793,7 @@ class ServerBase(object):
             info["encoding.%s.version" % k] = v
         info["server.type"] = "Python"
         info["server.byteorder"] = sys.byteorder
-        info["server.platform"] = platform_name(sys.platform, python_platform.release())
+        info["server.platform"] = PLATFORM_NAME
         info["python.full_version"] = sys.version
         info["python.version"] = python_platform.python_version()
         info["server.pid"] = os.getpid()
