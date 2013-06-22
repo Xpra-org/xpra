@@ -23,7 +23,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, pyt
         has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import get_hex_uuid, SIGNAMES
+from xpra.os_util import get_hex_uuid, platform_name, SIGNAMES
 from xpra.version_util import is_compatible_with, add_version_info
 from xpra.os_util import set_application_name
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
@@ -787,7 +787,7 @@ class ServerBase(object):
             info["encoding.%s" % k] = v
         info["server.type"] = "Python"
         info["server.byteorder"] = sys.byteorder
-        info["server.platform"] = sys.platform
+        info["server.platform"] = platform_name(sys.platform, python_platform.release())
         info["python.full_version"] = sys.version
         info["python.version"] = python_platform.python_version()
         info["server.pid"] = os.getpid()
