@@ -372,7 +372,7 @@ class ServerBase(object):
 
     def run(self):
         log.info("xpra server version %s" % xpra.__version__)
-        log.info("running  pid %s" % os.getpid())
+        log.info("running with pid %s" % os.getpid())
         def print_ready():
             log.info("xpra is ready.")
             sys.stdout.flush()
