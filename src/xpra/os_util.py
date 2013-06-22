@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
@@ -109,12 +110,29 @@ def get_machine_id():
             f = None
             try:
                 try:
-                    f = open(filename, 'rb', 'utf-8')
+                    f = open(filename, 'rb')
                     v = f.read()
                     break
                 finally:
                     if f:
                         f.close()
-            except:
+            except Exception:
                 pass
-    return  v
+    return  str(v).strip("\n\r")
+
+
+def main():
+    import logging
+    logging.basicConfig(format="%(asctime)s %(message)s")
+    logging.root.setLevel(logging.INFO)
+    from xpra.log import Logger
+    log = Logger("")
+    sp = sys.platform
+    log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
+    log.info("get_machine_id()=%s", get_machine_id())
+    log.info("get_hex_uuid()=%s", get_hex_uuid())
+    log.info("get_int_uuid()=%s", get_int_uuid())
+
+
+if __name__ == "__main__":
+    main()
