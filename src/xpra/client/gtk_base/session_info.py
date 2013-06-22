@@ -580,11 +580,13 @@ class SessionInfo(gtk.Window):
         if self.client.windows_enabled:
             if self.client.server_info_request:
                 def values_from_info(prefix, alt=None):
-                    def getv(suffix, alt=None):
+                    def getv(suffix):
                         if self.client.server_last_info is None:
                             return ""
-                        altv = self.client.server_last_info.get(alt+"."+suffix, "")
-                        return self.client.server_last_info.get(prefix+"."+suffix, "", altv)
+                        altv = ""
+                        if alt:
+                            altv = self.client.server_last_info.get(alt+"."+suffix, "")
+                        return self.client.server_last_info.get(prefix+"."+suffix, altv)
                     return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
                 setall(self.batch_labels, values_from_info("batch_delay", "batch.delay"))
                 setall(self.damage_labels, values_from_info("damage_out_latency", "damage.out_latency"))
