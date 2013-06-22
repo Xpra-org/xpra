@@ -139,6 +139,16 @@ class X11ServerBase(GTKServerBase):
     def do_get_info(self, proto, server_sources, window_ids):
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
         info["server.type"] = "Python/gtk/x11"
+        try:
+            from xpra.x11.gtk_x11.composite import CompositeHelper
+            info["server.XShm"] = CompositeHelper.XShmEnabled
+        except:
+            pass
+        return info
+
+    def get_window_info(self, window):
+        info = GTKServerBase.get_window_info(self, window)
+        info["XShm"] = window.uses_XShm()
         return info
 
 

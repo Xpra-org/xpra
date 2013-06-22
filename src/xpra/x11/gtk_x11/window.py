@@ -429,6 +429,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     def is_tray(self):
         return False
 
+    def uses_XShm(self):
+        return self._composite and self._composite.get_property("shm-handle") is not None
+
     def has_alpha(self):
         return self.get_property("has-alpha")
 

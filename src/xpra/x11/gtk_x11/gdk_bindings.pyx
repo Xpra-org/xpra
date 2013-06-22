@@ -14,6 +14,7 @@ import gtk.gdk
 from xpra.util import dump_exc, AdHocStruct
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.x11.gtk_x11.error import trap, XError
+import errno as pyerrno
 
 from xpra.log import Logger
 log = Logger("xpra.gtk_x11.gdk_bindings")
@@ -59,6 +60,9 @@ cdef extern from "sys/shm.h":
     int shmget(key_t __key, size_t __size, int __shmflg)
     void *shmat(int __shmid, const void *__shmaddr, int __shmflg)
     int shmdt (const void *__shmaddr)
+
+cdef extern from "errno.h" nogil:
+    int errno
 
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
@@ -775,6 +779,8 @@ cdef class XShmWrapper(object):
     cdef Bool closed
 
     def init(self, window):
+        #returns:
+        # (init_ok, may_retry_this_window, XShm_global_failure)
         cdef Visual *visual
         cdef int depth
         cdef size_t size
@@ -793,7 +799,9 @@ cdef class XShmWrapper(object):
         if self.image==NULL:
             log.error("XShmWrapper.XShmCreateImage(%sx%s-%s) failed!", self.width, self.height, depth)
             self.cleanup()
-            return False
+            #if we cannot create an XShm XImage, we may try again
+            #(it could be dimensions are too big?)
+            return False, True, False
         # Get the shared memory:
         # (include an extra line to ensure we can read rowstride at a time,
         #  even on the last line, without reading past the end of the buffer)
@@ -803,7 +811,9 @@ cdef class XShmWrapper(object):
         if self.shminfo.shmid < 0:
             log.error("XShmWrapper.shmget(PRIVATE, %s bytes, %s) failed, bytes_per_line=%s, width=%s, height=%s", size, IPC_CREAT | 0777, self.image.bytes_per_line, self.width, self.height)
             self.cleanup()
-            return False
+            #only try again if we get EINVAL,
+            #the other error codes probably mean this is never going to work..
+            return False, errno==pyerrno.EINVAL, errno!=pyerrno.EINVAL
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
         self.shminfo.shmaddr = self.image.data
@@ -811,7 +821,9 @@ cdef class XShmWrapper(object):
         if self.shminfo.shmaddr == <char *> -1:
             log.error("XShmWrapper.shmat(%s, NULL, 0) failed!", self.shminfo.shmid)
             self.cleanup()
-            return False
+            #we may try again with this window, or any other window:
+            #(as this really shouldn't happen at all)
+            return False, True, False
 
         # set as read/write, and attach to the display:
         self.shminfo.readOnly = False
@@ -820,21 +832,13 @@ cdef class XShmWrapper(object):
         if not a:
             log.error("XShmWrapper.XShmAttach(..) failed!")
             self.cleanup()
-            return False
-        return True
+            #we may try again with this window, or any other window:
+            #(as this really shouldn't happen at all)
+            return False, True, False
+        return True, True, False
 
-    def check(self, window):
-        width, height = window.get_size()
-        if self.width==width and self.height==height:
-            return self
-        #size has changed!
-        #make sure the current wrapper gets garbage collected:
-        xshm_debug("XShmWrapper.check(%s) doing full re-init: window size has changed from %sx%s to %sx%s", window, self.width, self.height, width, height)
-        self.cleanup()
-        xshm = XShmWrapper(window)
-        if not xshm.init(window):
-            return None
-        return xshm
+    def get_size(self):                                     #@DuplicatedSignature
+        return self.width, self.height
 
     def get_image(self, xpixmap, x, y, w, h):
         assert self.image!=NULL, "cannot retrieve image wrapper: XImage is NULL!"

@@ -23,6 +23,9 @@ log = Logger()
 
 
 class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
+
+    XShmEnabled = True
+
     __gsignals__ = {
         "contents-changed": one_arg_signal,
 
@@ -105,15 +108,26 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                 remove_event_receiver(w, self)
 
     def do_get_property_shm_handle(self, name):
-        if not self._use_shm:
+        if not self._use_shm or not CompositeHelper.XShmEnabled:
             return None
+        if self._shm_handle and self._shm_handle.get_size()!=self._window.get_size():
+            #size has changed!
+            #make sure the current wrapper gets garbage collected:
+            self._shm_handle.cleanup()
+            self._shm_handle = None
         if self._shm_handle is None:
+            #make a new one:
             self._shm_handle = XShmWrapper()
-            if not self._shm_handle.init(self._window):
+            init_ok, retry_window, xshm_failed = self._shm_handle.init(self._window)
+            if not init_ok:
+                #this handle is not valid, clear it:
                 self._shm_handle = None
-        else:
-            #may create a new XShm handle if the window size has changed:
-            self._shm_handle = self._shm_handle.check(self._window)
+            if not retry_window:
+                #and it looks like it is not worth re-trying this window:
+                self._use_shm = False
+            if xshm_failed:
+                log.warn("disabling XShm support following irrecoverable error")
+                CompositeHelper.XShmEnabled = False
         return self._shm_handle
 
     def do_get_property_contents_handle(self, name):
