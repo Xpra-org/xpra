@@ -26,7 +26,8 @@
 
 //not honoured on MS Windows:
 #define MEMALIGN 1
-//not honoured on OSX:
+//not honoured on OSX
+//*must* be a power of 2!
 #define MEMALIGN_ALIGNMENT 32
 
 /*
@@ -252,18 +253,27 @@ int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[3], const int in_st
 {
 	int out_height[3];
 	int buffer_size;
-	
+	int size[3];
+	int i;
+
 	if (!ctx || !ctx->sws_ctx)
 		return 1;
 
 	// Compute output buffer size
 	get_plane_dimensions(ctx->dst_format, ctx->dst_width, ctx->dst_height, out_stride, out_height);
-	buffer_size = (out_stride[0] * out_height[0] + out_stride[1] * out_height[1] + out_stride[2] * out_height[2]);
+	buffer_size = 0;
+	for (i = 0; i < 3; i++) {
+		//Add one extra line to height so we can read a full rowstride
+		//no matter where we start to read on the last line.
+		//MEMALIGN may be redundant here but it is very cheap
+		size[i] = ((out_stride[i] * (out_height[i] + 1)) + MEMALIGN_ALIGNMENT - 1) & ~(MEMALIGN_ALIGNMENT - 1);
+		buffer_size += size[i];
+	}
 
 	// Allocate output buffer
 	out[0] = xmemalign(buffer_size);
-	out[1] = out[0] + out_stride[0] * out_height[0];
-	out[2] = out[1] + out_stride[1] * out_height[1];
+	out[1] = out[0] + size[0];
+	out[2] = out[1] + size[1];
 
 	// Convert colorspace
 	sws_scale(ctx->sws_ctx, in, in_stride, 0, ctx->src_height, out, out_stride);
