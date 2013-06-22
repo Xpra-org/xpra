@@ -73,11 +73,11 @@ cdef class CSCImage:
         Allows us to call free_csc_image
         when this object is garbage collected
     """
-    cdef uint8_t *buf[3]
+    cdef uint8_t *buf[4]
     cdef int freed
 
     cdef set_plane(self, int plane, uint8_t *buf):
-        assert plane in (0, 1, 2)
+        assert plane in (0, 1, 2, 3)
         self.buf[plane] = buf
 
     def __dealloc__(self):
@@ -190,9 +190,9 @@ cdef class ColorspaceConverter:
         cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
         cdef const uint8_t *input_image[3]
-        cdef uint8_t *output_image[3]
-        cdef int input_stride[3]
-        cdef int output_stride[3]
+        cdef uint8_t *output_image[4]
+        cdef int input_stride[4]
+        cdef int output_stride[4]
         cdef int planes
         cdef int i                          #@DuplicatedSignature
         cdef int height
@@ -210,9 +210,13 @@ cdef class ColorspaceConverter:
         #print("convert_image(%s) input=%s, strides=%s" % (image, len(input), strides))
         assert len(input)==planes, "expected %s planes but found %s" % (planes, len(input))
         assert len(strides)==planes, "expected %s rowstrides but found %s" % (planes, len(strides))
-        for i in range(planes):
-            input_stride[i] = strides[i]
-            PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
+        for i in xrange(4):
+            if i<planes:
+                input_stride[i] = strides[i]
+                PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
+            else:
+                input_stride[i] = 0
+                input_image[i] = NULL
         start = time.time()
         with nogil:
             result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
@@ -223,7 +227,10 @@ cdef class ColorspaceConverter:
         self.frames += 1
         #now parse the output:
         csci = CSCImage()           #keep a reference to memory for cleanup
+        for i in range(4):
+            csci.set_plane(i, NULL)
         if self.dst_format.endswith("P"):
+            #planar mode, assume 3 planes:
             nplanes = 3
             divs = get_subsampling_divs(self.dst_format)
             #print("convert_image(%s) nplanes=%s, divs=%s" % (image, nplanes, divs))
@@ -247,6 +254,7 @@ cdef class ColorspaceConverter:
                 out.append(plane)
                 strides.append(stride)
         else:
+            #assume no planes, plain RGB packed pixels:
             nplanes = 0
             strides = output_stride[0]
             out = PyBuffer_FromMemory(<void *>output_image[0], self.dst_height * strides)

@@ -38,9 +38,9 @@ void free_csc(struct csc_swscale_ctx *ctx);
  * @return 0 if OK, non zero on error
  * Note: you must call free_csc_image() with the out[] array as argument when done
  */
-int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[3], const int in_stride[3], uint8_t *out[3], int out_stride[3]);
+int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[4], const int in_stride[4], uint8_t *out[4], int out_stride[4]);
 
 /**
  * Free data output by csc_image()
  */
-void free_csc_image(uint8_t *buf[3]);
+void free_csc_image(uint8_t *buf[4]);

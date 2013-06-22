@@ -249,7 +249,7 @@ void free_csc_image(uint8_t *buf[3])
 	buf[0] = buf[1] = buf[2] = NULL;
 }
 
-int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[3], const int in_stride[3], uint8_t *out[3], int out_stride[3])
+int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[4], const int in_stride[4], uint8_t *out[4], int out_stride[4])
 {
 	int out_height[3];
 	int buffer_size;
@@ -274,6 +274,7 @@ int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[3], const int in_st
 	out[0] = xmemalign(buffer_size);
 	out[1] = out[0] + size[0];
 	out[2] = out[1] + size[1];
+	out[3] = NULL;
 
 	// Convert colorspace
 	sws_scale(ctx->sws_ctx, in, in_stride, 0, ctx->src_height, out, out_stride);
