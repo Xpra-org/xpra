@@ -411,7 +411,7 @@ class ServerBase(object):
             peername = str(address)
         sockname = sock.getsockname()
         target = peername or sockname
-        log.info("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
+        log("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
         sc = SocketConnection(sock, sockname, address, target, socktype)
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
