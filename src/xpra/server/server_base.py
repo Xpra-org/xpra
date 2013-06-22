@@ -531,6 +531,8 @@ class ServerBase(object):
 
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
+        if capabilities.get("rencode") and use_rencode:
+            proto.enable_rencode()
         log("process_hello: capabilities=%s", capabilities)
         if capabilities.get("version_request", False):
             response = {"version" : xpra.__version__}
@@ -628,8 +630,6 @@ class ServerBase(object):
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
-        if capabilities.get("rencode") and use_rencode:
-            proto.enable_rencode()
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
         proto.chunked_compression = capabilities.get("chunked_compression", False)
