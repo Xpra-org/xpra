@@ -26,12 +26,14 @@ def untilConcludes(f, *a, **kw):
 
 
 class Connection(object):
-    def __init__(self, target):
+    def __init__(self, target, info):
         if type(target)==tuple:
             target = ":".join([str(x) for x in target])
         self.target = target
+        self.info = info
         self.input_bytecount = 0
         self.output_bytecount = 0
+        self.filename = None            #only used for unix domain sockets!
 
     def _write(self, *args):
         w = untilConcludes(*args)
@@ -43,19 +45,21 @@ class Connection(object):
         self.input_bytecount += len(r)
         return r
 
+    def get_info(self):
+        return self.info or ""
+
+
 # A simple, portable abstraction for a blocking, low-level
 # (os.read/os.write-style interface) two-way byte stream:
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
     def __init__(self, writeable, readable, abort_test=None, target=None, info="", close_cb=None):
-        Connection.__init__(self, target)
+        Connection.__init__(self, target, info)
         self._writeable = writeable
         self._readable = readable
         self._abort_test = abort_test
         self._close_cb = close_cb
-        self.filename = None
-        self.info = info
 
     def may_abort(self, action):
         """ if abort_test is defined, run it """
@@ -84,16 +88,13 @@ class TwoFileConnection(Connection):
 
 
 class SocketConnection(Connection):
-    def __init__(self, socket, local, remote, target):
-        Connection.__init__(self, target)
+    def __init__(self, socket, local, remote, target, info):
+        Connection.__init__(self, target, info)
         self._socket = socket
         self.local = local
         self.remote = remote
         if type(remote)==str:
             self.filename = remote
-        else:
-            self.filename = None
-        self.info = "socket"
 
     def read(self, n):
         return self._read(self._socket.recv, n)

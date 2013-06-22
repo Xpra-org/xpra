@@ -318,7 +318,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         def setup_tcp_socket(bind_to):
             try:
                 tcp_socket = create_tcp_socket(parser, bind_to)
-                sockets.append(tcp_socket)
+                sockets.append(("tcp", tcp_socket))
                 def cleanup_tcp_socket():
                     log.info("closing tcp socket %s", bind_to)
                     try:
@@ -341,7 +341,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             parser.error("You already have an xpra server running at %s\n"
                          "  (did you want 'xpra upgrade'?)"
                          % (display_name,))
-        sockets.append(create_unix_domain_socket(sockpath, opts.mmap_group))
+        sock = create_unix_domain_socket(sockpath, opts.mmap_group)
+        sockets.append(("unix-domain", sock))
         def cleanup_socket():
             log.info("removing socket %s", sockpath)
             try:

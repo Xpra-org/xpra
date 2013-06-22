@@ -52,9 +52,10 @@ class GTKServerBase(ServerBase):
         gtk.main()
         log("xpra end of gtk.main().")
 
-    def add_listen_socket(self, sock):
+    def add_listen_socket(self, socktype, sock):
         sock.listen(5)
         gobject.io_add_watch(sock, gobject.IO_IN, self._new_connection, sock)
+        self.socket_types[sock] = socktype
 
     def make_hello(self):
         capabilities = ServerBase.make_hello(self)

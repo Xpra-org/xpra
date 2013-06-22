@@ -149,7 +149,7 @@ class XpraClientBase(object):
         capabilities = {}
         add_version_info(capabilities)
         for k,v in codec_versions.items():
-            capabilities["encoding.%s" % k] = v
+            capabilities["encoding.%s.version" % k] = v
         if challenge_response:
             assert self.password
             capabilities["challenge_response"] = challenge_response

@@ -536,10 +536,10 @@ def pick_display(parser, opts, extra_args):
     else:
         parser.error("too many arguments")
 
-def _socket_connect(sock, endpoint, description):
+def _socket_connect(sock, endpoint, description, dtype):
     sock.connect(endpoint)
     sock.settimeout(None)
-    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description)
+    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
 
 def connect_or_fail(display_desc):
     try:
@@ -623,20 +623,20 @@ def connect_to(display_desc, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
                         raise Exception("cannot find function to kill subprocess")
             except Exception, e:
                 print("error trying to stop ssh tunnel process: %s" % e)
-        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info="SSH", close_cb=stop_tunnel)
+        return TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, info=dtype, close_cb=stop_tunnel)
 
     elif dtype == "unix-domain":
         sockdir = DotXpra(display_desc["socket_dir"])
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(5)
         sockfile = sockdir.socket_path(display_desc["display"])
-        return _socket_connect(sock, sockfile, display_name)
+        return _socket_connect(sock, sockfile, display_name, dtype)
 
     elif dtype == "tcp":
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
         tcp_endpoint = (display_desc["host"], display_desc["port"])
-        return _socket_connect(sock, tcp_endpoint, display_name)
+        return _socket_connect(sock, tcp_endpoint, display_name, dtype)
 
     else:
         assert False, "unsupported display type in connect: %s" % dtype

@@ -935,24 +935,25 @@ class ServerSource(object):
             This is used by server.py to provide those statistics to clients
             via the 'xpra info' command.
         """
-        info["client.type%s" % suffix] = self.client_type
-        info["client.version%s" % suffix] = self.client_version or "unknown"
-        info["client.uuid%s" % suffix] = self.uuid
-        info["keyboard%s" % suffix] = self.keyboard_config.enabled
+        info["client.type"+suffix] = self.client_type
+        info["client.version"+suffix] = self.client_version or "unknown"
+        info["client.uuid"+suffix] = self.uuid
+        info["keyboard"+suffix] = self.keyboard_config.enabled
         try:
-            info["client.connection%s" % suffix] = str(self.protocol._conn.target or self.protocol._conn.filename)
+            info["client.connection.type"+suffix] = self.protocol._conn.info
+            info["client.connection.endpoint"+suffix] = self.protocol._conn.target
         except:
-            pass
-        info["client.encodings%s" % suffix] = ",".join(self.encodings)
-        info["client.core_encodings%s" % suffix] = ",".join(self.core_encodings)
+            log.error("failed to report connection information", exc_info=True)
+        info["client.encodings"+suffix] = ",".join(self.encodings)
+        info["client.core_encodings"+suffix] = ",".join(self.core_encodings)
         info["damage.data_queue.size%s.current" % suffix] = self.damage_data_queue.qsize()
         info["damage.packet_queue.size%s.current" % suffix] = len(self.damage_packet_queue)
         qpixels = [x[2] for x in list(self.damage_packet_queue)]
-        add_list_stats(info, "damage_packet_queue_pixels%s" % suffix,  qpixels)
+        add_list_stats(info, "damage_packet_queue_pixels"+suffix,  qpixels)
         if len(qpixels)>0:
             info["damage_packet_queue_pixels%s.current" % suffix] = qpixels[-1]
 
-        self.protocol.add_stats(info, suffix=suffix)
+        self.protocol.add_stats(info, prefix="client.connection.", suffix=suffix)
         self.statistics.add_stats(info, suffix=suffix)
         if len(window_ids)>0:
             total_pixels = 0
@@ -974,7 +975,7 @@ class ServerSource(object):
             v = 0
             if total_time>0:
                 v = int(total_pixels / total_time)
-            info["encoding.pixels_encoded_per_second%s" % suffix] = v
+            info["encoding.pixels_encoded_per_second"+suffix] = v
             add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
             add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
         self.default_batch_config.add_stats(info, "", suffix)

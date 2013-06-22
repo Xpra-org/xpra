@@ -197,13 +197,13 @@ class Protocol(object):
     def get_threads(self):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread] if x is not None]
 
-    def add_stats(self, info,  suffix=""):
-        info["net.input.bytecount%s" % suffix] = self._conn.input_bytecount
-        info["net.input.packetcount%s" % suffix] = self.input_packetcount
-        info["net.input.raw_packetcount%s" % suffix] = self.input_raw_packetcount
-        info["net.output.bytecount%s" % suffix] = self._conn.output_bytecount
-        info["net.output.packetcount%s" % suffix] = self.output_packetcount
-        info["net.output.raw_packetcount%s" % suffix] = self.output_raw_packetcount
+    def add_stats(self, info, prefix="net.", suffix=""):
+        info[prefix+"input.bytecount%s" % suffix] = self._conn.input_bytecount
+        info[prefix+"input.packetcount%s" % suffix] = self.input_packetcount
+        info[prefix+"input.raw_packetcount%s" % suffix] = self.input_raw_packetcount
+        info[prefix+"output.bytecount%s" % suffix] = self._conn.output_bytecount
+        info[prefix+"output.packetcount%s" % suffix] = self.output_packetcount
+        info[prefix+"output.raw_packetcount%s" % suffix] = self.output_raw_packetcount
 
     def start(self):
         def do_start():

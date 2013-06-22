@@ -74,6 +74,9 @@ class ServerBase(object):
         self._aliases = {}
         self._reverse_aliases = {}
 
+        #maps sockets to type
+        self.socket_types = {}
+
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
 
@@ -156,8 +159,8 @@ class ServerBase(object):
         self.load_existing_windows(opts.system_tray)
 
         ### All right, we're ready to accept customers:
-        for sock in sockets:
-            self.idle_add(self.add_listen_socket, sock)
+        for socktype, sock in sockets:
+            self.idle_add(self.add_listen_socket, socktype, sock)
 
         if opts.pings:
             self.timeout_add(1000, self.send_ping)
@@ -392,12 +395,12 @@ class ServerBase(object):
             self.disconnect_client(proto, "shutting down")
         self._potential_protocols = []
 
-    def add_listen_socket(self, socket):
+    def add_listen_socket(self, socktype, socket):
         raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
+        socktype = self.socket_types.get(listener, "") 
         sock, address = listener.accept()
-        log("new_connection(%s) sock=%s, address=%s", args, sock, address)
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))
             sock.close()
@@ -406,7 +409,10 @@ class ServerBase(object):
             peername = sock.getpeername()
         except:
             peername = str(address)
-        sc = SocketConnection(sock, sock.getsockname(), address, peername)
+        sockname = sock.getsockname()
+        target = peername or sockname
+        log.info("new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", args, sock, sockname, address, peername)
+        sc = SocketConnection(sock, sockname, address, target, socktype)
         log.info("New connection received: %s", sc)
         protocol = Protocol(sc, self.process_packet)
         protocol.large_packets.append("info-response")
@@ -743,7 +749,7 @@ class ServerBase(object):
         capabilities["server_type"] = "base"
         add_version_info(capabilities)
         for k,v in codec_versions.items():
-            capabilities["encoding.%s" % k] = v
+            capabilities["encoding.%s.version" % k] = v
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -784,7 +790,7 @@ class ServerBase(object):
         info = {}
         add_version_info(info, "server.")
         for k,v in codec_versions.items():
-            info["encoding.%s" % k] = v
+            info["encoding.%s.version" % k] = v
         info["server.type"] = "Python"
         info["server.byteorder"] = sys.byteorder
         info["server.platform"] = platform_name(sys.platform, python_platform.release())
