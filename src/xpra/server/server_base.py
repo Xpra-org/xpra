@@ -789,13 +789,9 @@ class ServerBase(object):
         start = time.time()
         info = {}
         add_version_info(info, "server.")
-        for k,v in codec_versions.items():
-            info["encoding.%s.version" % k] = v
         info["server.type"] = "Python"
         info["server.byteorder"] = sys.byteorder
         info["server.platform"] = PLATFORM_NAME
-        info["python.full_version"] = sys.version
-        info["python.version"] = python_platform.python_version()
         info["server.pid"] = os.getpid()
         for x in ("uid", "gid"):
             if hasattr(os, "get%s" % x):
@@ -806,6 +802,8 @@ class ServerBase(object):
         info["server.hostname"] = socket.gethostname()
         info["server.max_desktop_size"] = self.get_max_screen_size()
         info["server.start_time"] = int(self.start_time)
+        info["python.full_version"] = sys.version
+        info["python.version"] = python_platform.python_version()
         info["session.name"] = self.session_name or ""
         info["features.password_file"] = self.password_file or ""
         info["features.randr"] = self.randr
@@ -818,6 +816,8 @@ class ServerBase(object):
             info["features.clipboard.type"] = str(self._clipboard_helper)
         info["encodings"] = ",".join(SERVER_ENCODINGS)
         info["encodings.core"] = ",".join(SERVER_CORE_ENCODINGS)
+        for k,v in codec_versions.items():
+            info["encoding.%s.version" % k] = v
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info["keyboard.sync"] = self.keyboard_sync
         info["keyboard.repeat_delay"] = self.key_repeat_delay
