@@ -42,7 +42,7 @@ class ClientTray(ClientWidgetBase):
         self.tray_widget.connect('size-changed', self.size_changed)
         self.tray_widget.set_visible(True)
         self.new_backing(w, h)
-        self.may_configure()
+        self.idle_add(self.may_configure)
 
     def is_OR(self):
         return True
@@ -53,19 +53,20 @@ class ClientTray(ClientWidgetBase):
     def get_window(self):
         return None
 
-    def may_configure(self, force=False):
+    def may_configure(self):
         #this function may be called numerous times from both init
         #and from events because the statusicon's geometry is not
         #reliable.. and later calls are more likely to be correct.
         ag = self.tray_widget.get_geometry()
         if ag:
             screen, geom, orientation = ag
-            geometry = geom.x, geom.y, geom.width, geom.height
-            if self._geometry is None or self._geometry!=geometry:
+            x, y, w, h = geom.x, geom.y, geom.width, geom.height
+            geometry = x, y, w, h
+            if self._geometry is None or self._geometry!=geometry and w>1 and h>1:
+                log("may_configure: geometry=%s, current geometry=%s", geometry, self._geometry)
                 self._geometry = geometry
                 self._screen = screen.get_number()
                 self._orientation = orientation
-                log("may_configure: geometry=%s, current geometry=%s", geometry, self._geometry)
                 self.reconfigure()
         elif self._geometry is None:
             #probably a platform that does not support geometry.. oh well
@@ -94,6 +95,8 @@ class ClientTray(ClientWidgetBase):
 
     def size_changed(self, status_icon, size):
         log("ClientTray.size_changed(%s, %s)", status_icon, size)
+        if size>1:
+            self.may_configure()
 
     def update_metadata(self, metadata):
         log("update_metadata(%s)", metadata)
@@ -144,7 +147,7 @@ class ClientTray(ClientWidgetBase):
             #    tray_icon = tray_icon.scale_simple(size, size, gtk.gdk.INTERP_HYPER)
             #log("after_draw_update_tray(%s) tray icon=%s, size=%s", success, tray_icon, size)
             self.tray_widget.set_from_pixbuf(tray_icon)
-            self.may_configure()
+            self.idle_add(self.may_configure)
         callbacks.append(after_draw_update_tray)
         self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
