@@ -945,7 +945,7 @@ class ServerSource(object):
         except:
             log.error("failed to report connection information", exc_info=True)
         info["client.encodings"+suffix] = ",".join(self.encodings)
-        info["client.core_encodings"+suffix] = ",".join(self.core_encodings)
+        info["client.encodings.core"+suffix] = ",".join(self.core_encodings)
         info["damage.data_queue.size%s.current" % suffix] = self.damage_data_queue.qsize()
         info["damage.packet_queue.size%s.current" % suffix] = len(self.damage_packet_queue)
         qpixels = [x[2] for x in list(self.damage_packet_queue)]
