@@ -184,16 +184,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "modal" in self._metadata:
             modal = self._metadata.get("modal", False)
-            tf = self.get_transient_for()
-            log.info("update_metadata(..) modal=%s, transient-for=%s, group_leader=%s", modal, tf, self.group_leader)
-            if modal and not tf and not self.has_group():
-                group = self.get_group()
-                log.info("update_metadata(..) modal window without transient-for with group=%s, group_leader=%s", group, self.group_leader)
-                wids = self._client._group_leader_wids.get(self.group_leader, [])
-                log.info("update_metadata(..) group leader wids=%s", wids)
-                if len(wids)>0:
-                    self.apply_transient_for(wids[0])
-            self.set_modal(modal or False)
+            self.set_modal(modal)
 
         #apply window-type hint if window is not mapped yet:
         if "window-type" in self._metadata and not self.is_mapped():

@@ -72,9 +72,6 @@ class XpraClient(UIXpraClient):
     def set_windows_cursor(self, gtkwindows, new_cursor):
         pass
 
-    def group_leader_for_pid(self, pid, wid):
-        return None
-
 
     def source_remove(self, *args):
         raise Exception("override me!")

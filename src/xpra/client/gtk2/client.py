@@ -41,6 +41,9 @@ class XpraClient(GTKXpraClient):
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
 
+        self._ref_to_group_leader = {}
+        self._group_leader_wids = {}
+
     def init(self, opts):
         GTKXpraClient.init(self, opts)
         if opts.window_layout:
@@ -306,19 +309,62 @@ class XpraClient(GTKXpraClient):
             log.error("Error loading OpenGL support: %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)
 
-    def group_leader_for_pid(self, pid, wid):
+    def get_group_leader(self, wid, pid, leader_xid, leader_wid):
         if sys.platform.startswith("win") or pid<=0:
             #avoid ugly "not implemented" warning on win32
             return None
-        group_leader = self._pid_to_group_leader.get(pid)
-        if not group_leader:
-            #create one:
+        group_leader_window = self._id_to_window.get(leader_wid)
+        if group_leader_window:
+            #leader is another managed window
+            log.info("found group leader window %s for wid=%s", group_leader_window, pid)
+            return group_leader_window
+        ref = leader_xid or pid
+        if not ref:
+            #no reference to use! invent a unique one for this window:
+            #(use its wid)
+            ref = "wid:%s" % wid
+        group_leader_window = self._ref_to_group_leader.get(ref)
+        if group_leader_window:
+            log.info("found existing group leader window %s using ref=%s", group_leader_window, ref)
+        else:
+            #we need to create one:
             title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
-            group_leader = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
-            self._pid_to_group_leader[pid] = group_leader
-            log("new hidden group leader window %s for pid=%s", group_leader, pid)
-        self._group_leader_wids.setdefault(group_leader, []).append(wid)
-        return group_leader
+            group_leader_window = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
+            self._ref_to_group_leader[ref] = group_leader_window
+            log.info("new hidden group leader window %s for ref=%s", group_leader_window, ref)
+        self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
+        return group_leader_window
+
+    def destroy_window(self, wid, window):
+        #override so we can cleanup the group-leader if needed:
+        group_leader = window.group_leader
+        GTKXpraClient.destroy_window(self, wid, window)
+        log.info("group leader=%s", group_leader)
+        if group_leader is None or len(self._group_leader_wids)==0:
+            return
+        wids = self._group_leader_wids.get(group_leader)
+        if wids is None:
+            #not recorded any window ids on this group leader
+            #means it is another managed window, leave it alone
+            return
+        log.info("windows for group leader %s: %s", group_leader, wids)
+        if wid in wids:
+            wids.remove(wid)
+        if len(wids)>0:
+            #still has another window pointing to it
+            return
+        #the last window has gone, we can remove the group leader,
+        #find all the references to this group leader:
+        refs = []
+        for ref, gl in self._ref_to_group_leader.items():
+            if gl==group_leader:
+                refs.append(ref)
+                break
+        for ref in refs:
+            del self._ref_to_group_leader[ref]
+        log.info("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
+        group_leader.destroy()
+
 
     def get_client_window_class(self, metadata, override_redirect):
         if self.GLClientWindowClass is None or not self.opengl_enabled or override_redirect:

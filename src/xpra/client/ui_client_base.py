@@ -60,8 +60,6 @@ class UIXpraClient(XpraClientBase):
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
-        self._pid_to_group_leader = {}
-        self._group_leader_wids = {}
         self._ui_events = 0
         self.title = ""
         self.session_name = ""
@@ -942,13 +940,19 @@ class UIXpraClient(XpraClientBase):
             auto_refresh_delay = self.auto_refresh_delay    #we do it
 
         pid = metadata.get("pid", -1)
-        group_leader = self.group_leader_for_pid(pid, wid)
-        #log.info("_process_new_common(..) group_leader_for_pid(%s, %s)=%s", pid, wid, group_leader)
+        leader_xid = metadata.get("group-leader-xid")
+        leader_wid = metadata.get("group-leader-wid")
+        group_leader_window = self.get_group_leader(wid, pid, leader_xid, leader_wid)
         ClientWindowClass = self.get_client_window_class(metadata, override_redirect)
-        window = ClientWindowClass(self, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        window = ClientWindowClass(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show_all()
+
+    def get_group_leader(self, wid, pid, leader_xid, leader_wid):
+        #subclasses that wish to implement the feature may override this method
+        return None
+
 
     def get_client_window_class(self, metadata, override_redirect):
         return self.ClientWindowClass
@@ -1108,28 +1112,13 @@ class UIXpraClient(XpraClientBase):
         if window:
             del self._id_to_window[wid]
             del self._window_to_id[window]
-            window.destroy()
-            group_leader = window.group_leader
-            log("group leader=%s", group_leader)
-            if group_leader:
-                wids = self._group_leader_wids.get(group_leader, [])
-                log("windows for group leader %s: %s", group_leader, wids)
-                if wid in wids:
-                    wids.remove(wid)
-                    if len(wids)==0:
-                        #the last window has gone, remove group leader:
-                        pid = None
-                        for p, gl in self._pid_to_group_leader.items():
-                            if gl==group_leader:
-                                pid = p
-                                break
-                        if pid:
-                            log("last window for pid %s is gone, destroying the group leader %s", pid, group_leader)
-                            del self._pid_to_group_leader[pid]
-                            group_leader.destroy()
+            self.destroy_window(wid, window)
         if len(self._id_to_window)==0:
             log.debug("last window gone, clearing key repeat")
             self.keyboard_helper.clear_repeat()
+
+    def destroy_window(self, wid, window):
+        window.destroy()
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
