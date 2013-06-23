@@ -32,7 +32,7 @@ NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
 
 
-def make_window_metadata(window, propname, generic_window_types=False, png_window_icons=False, get_transient_for=None):
+def make_window_metadata(window, propname, generic_window_types=False, png_window_icons=False, get_transient_for=None, get_window_id=None):
     if propname == "title":
         title = window.get_property("title")
         if title is None:
@@ -87,6 +87,17 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         return {propname : window.get_property(propname)}
     elif propname == "xid":
         return {"xid" : hex(window.get_property("xid") or 0)}
+    elif propname == "group-leader":
+        gl = window.get_property("group-leader")
+        if not gl or not get_window_id:
+            return  {}
+        xid, gdkwin = gl
+        p = {}
+        if xid:
+            p["group-leader-xid"] = xid
+        if gdkwin and get_window_id:
+            p["group-leader-wid"] = get_window_id(gdkwin)
+        return p
     raise Exception("unhandled property name: %s" % propname)
 
 def make_window_icon(surf, png_window_icons):
@@ -146,6 +157,7 @@ class ServerSource(object):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  get_transient_for,
+                 get_window_id,
                  supports_mmap,
                  default_encoding,
                  supports_speaker, supports_microphone,
@@ -154,6 +166,7 @@ class ServerSource(object):
                  default_speed, default_min_speed):
         log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
                  get_transient_for,
+                 get_window_id,
                  supports_mmap,
                  default_encoding,
                  supports_speaker, supports_microphone,
@@ -168,6 +181,7 @@ class ServerSource(object):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.get_transient_for = get_transient_for
+        self.get_window_id = get_window_id
         # mmap:
         self.supports_mmap = supports_mmap
         self.mmap = None
@@ -586,7 +600,8 @@ class ServerSource(object):
         return make_window_metadata(window, propname,
                                         generic_window_types=self.generic_window_types,
                                         png_window_icons=self.png_window_icons,
-                                        get_transient_for=self.get_transient_for)
+                                        get_transient_for=self.get_transient_for,
+                                        get_window_id=self.get_window_id)
 
 #
 # Keyboard magic

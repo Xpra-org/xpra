@@ -131,7 +131,11 @@ class WMHints(object):
         # FIXME: extract icon stuff too
         self.urgency = bool(flags & const["XUrgencyHint"])
         if flags & const["WindowGroupHint"]:
-            self.group_leader = window_group
+            try:
+                pywin = get_pywindow(disp, window_group)
+            except:
+                pywin = None
+            self.group_leader = (window_group, pywin)
         else:
             self.group_leader = None
         if flags & const["StateHint"]:

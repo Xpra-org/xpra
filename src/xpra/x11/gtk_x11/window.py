@@ -202,10 +202,25 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "transient-for": (gobject.TYPE_PYOBJECT,
                           "Transient for (or None)", "",
                           gobject.PARAM_READABLE),
+        "pid": (gobject.TYPE_INT,
+                "PID of owning process", "",
+                -1, 65535, -1,
+                gobject.PARAM_READABLE),
         "xid": (gobject.TYPE_INT,
                 "X11 window id", "",
                 -1, 65535, -1,
                 gobject.PARAM_READABLE),
+        "group-leader": (gobject.TYPE_PYOBJECT,
+                         "Window group leader as a pair: (xid, gdk window)", "",
+                         gobject.PARAM_READABLE),
+        "attention-requested": (gobject.TYPE_BOOLEAN,
+                                "Urgency hint from client, or us", "",
+                                False,
+                                gobject.PARAM_READWRITE),
+        "can-focus": (gobject.TYPE_BOOLEAN,
+                      "Does this window ever accept keyboard input?", "",
+                      True,
+                      gobject.PARAM_READWRITE),
         "has-alpha": (gobject.TYPE_BOOLEAN,
                        "Does the window use transparency", "",
                        False,
@@ -259,7 +274,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["transient-for", "fullscreen", "maximized", "window-type", "xid", "has-alpha"]
+        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "group-leader", "xid", "has-alpha"]
 
     def get_property_names(self):
         return self.property_names
@@ -405,6 +420,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._handle_scaling()
         self._internal_set_property("has-alpha", self.client_window.get_depth()==32)
         self._internal_set_property("xid", get_xwindow(self.client_window))
+        self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
+
 
     def _handle_scaling(self):
         scaling = self.prop_get("_XPRA_SCALING", "u32", raise_xerrors=False)
@@ -416,6 +433,27 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         else:
             self._internal_set_property("scaling", None)
     _property_handlers["_XPRA_SCALING"] = _handle_scaling
+
+    def _handle_wm_hints(self):
+        wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
+        if wm_hints is not None:
+            # GdkWindow or None
+            self._internal_set_property("group-leader", wm_hints.group_leader)
+            # FIXME: extract state and input hint
+
+            if wm_hints.urgency:
+                self.set_property("attention-requested", True)
+
+            log("wm_hints.input = %s", wm_hints.input)
+            #we only set this value once:
+            #(input_field always starts as True, and we then set it to an int)
+            if self._input_field is True and wm_hints.input is not None:
+                #keep the value as an int to differentiate from the start value:
+                self._input_field = int(wm_hints.input)
+                if bool(self._input_field):
+                    self.notify("can-focus")
+
+    _property_handlers["WM_HINTS"] = _handle_wm_hints
 
     def _guess_window_type(self, transient_for):
         if transient_for is not None:
@@ -599,10 +637,6 @@ class WindowModel(BaseWindowModel):
     __gproperties__ = {
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
-        "attention-requested": (gobject.TYPE_BOOLEAN,
-                                "Urgency hint from client, or us", "",
-                                False,
-                                gobject.PARAM_READWRITE),
         "actual-size": (gobject.TYPE_PYOBJECT,
                         "Size of client window (actual (width,height))", "",
                         gobject.PARAM_READABLE),
@@ -627,16 +661,9 @@ class WindowModel(BaseWindowModel):
         "protocols": (gobject.TYPE_PYOBJECT,
                       "Supported WM protocols", "",
                       gobject.PARAM_READABLE),
-        "pid": (gobject.TYPE_INT,
-                "PID of owning process", "",
-                -1, 65535, -1,
-                gobject.PARAM_READABLE),
         "client-machine": (gobject.TYPE_PYOBJECT,
                            "Host where client process is running", "",
                            gobject.PARAM_READABLE),
-        "group-leader": (gobject.TYPE_PYOBJECT,
-                         "Window group leader (opaque identifier)", "",
-                         gobject.PARAM_READABLE),
         # Toggling this property does not actually make the window iconified,
         # i.e. make it appear or disappear from the screen -- it merely
         # updates the various window manager properties that inform the world
@@ -645,10 +672,6 @@ class WindowModel(BaseWindowModel):
                    "ICCCM 'iconic' state -- any sort of 'not on desktop'.", "",
                    False,
                    gobject.PARAM_READWRITE),
-        "can-focus": (gobject.TYPE_BOOLEAN,
-                      "Does this window ever accept keyboard input?", "",
-                      True,
-                      gobject.PARAM_READWRITE),
         "state": (gobject.TYPE_PYOBJECT,
                   "State, as per _NET_WM_STATE", "",
                   gobject.PARAM_READABLE),
@@ -705,7 +728,7 @@ class WindowModel(BaseWindowModel):
         self._input_field = True
         self.connect("notify::iconic", self._handle_iconic_update)
 
-        self.property_names += ["title", "pid", "size-hints", "class-instance", "icon", "client-machine", "modal"]
+        self.property_names += ["title", "size-hints", "class-instance", "icon", "client-machine", "modal"]
         self.call_setup()
 
     def setup(self):
@@ -1021,27 +1044,7 @@ class WindowModel(BaseWindowModel):
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
 
-    def _handle_wm_hints(self):
-        wm_hints = self.prop_get("WM_HINTS", "wm-hints", True)
-        if wm_hints is not None:
-            # GdkWindow or None
-            self._internal_set_property("group-leader", wm_hints.group_leader)
-            # FIXME: extract state and input hint
-
-            if wm_hints.urgency:
-                self.set_property("attention-requested", True)
-
-            log("wm_hints.input = %s", wm_hints.input)
-            #we only set this value once:
-            #(input_field always starts as True, and we then set it to an int)
-            if self._input_field is True and wm_hints.input is not None:
-                #keep the value as an int to differentiate from the start value:
-                self._input_field = int(wm_hints.input)
-                if bool(self._input_field):
-                    self.notify("can-focus")
-
     _property_handlers = BaseWindowModel._property_handlers.copy()
-    _property_handlers["WM_HINTS"] = _handle_wm_hints
 
     def _handle_wm_normal_hints(self):
         size_hints = self.prop_get("WM_NORMAL_HINTS", "wm-size-hints")
@@ -1147,12 +1150,6 @@ class WindowModel(BaseWindowModel):
             protocols = []
         self._internal_set_property("protocols", protocols)
         self.notify("can-focus")
-
-        pid = pget("_NET_WM_PID", "u32")
-        if pid is not None:
-            self._internal_set_property("pid", pid)
-        else:
-            self._internal_set_property("pid", -1)
 
         client_machine = pget("WM_CLIENT_MACHINE", "latin1")
         # May be None

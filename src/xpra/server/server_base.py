@@ -646,10 +646,13 @@ class ServerBase(object):
         proto.aliases = capabilities.get("aliases", {})
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
+        def get_window_id(wid):
+            return self._window_to_id.get(wid)
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.get_transient_for,
+                          get_window_id,
                           self.supports_mmap,
                           self.default_encoding,
                           self.supports_speaker, self.supports_microphone,
@@ -1183,7 +1186,7 @@ class ServerBase(object):
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        log("handle_key(%s,%s,%s,%s,%s,%s)", wid, pressed, name, keyval, keycode, modifiers)
+        log("handle_key(%s,%s,%s,%s,%s,%s) keyboard_sync=%s", wid, pressed, name, keyval, keycode, modifiers, self.keyboard_sync)
         if pressed and (wid is not None) and (wid not in self._id_to_window):
             log("window %s is gone, ignoring key press", wid)
             return
