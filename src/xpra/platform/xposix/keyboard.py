@@ -11,9 +11,10 @@ from xpra.log import Logger
 log = Logger()
 
 try:
-    from xpra.x11.bindings import X11KeyboardBindings   #@UnresolvedImport
+    from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
+    keyboard_bindings = X11KeyboardBindings()
 except:
-    X11KeyboardBindings = None
+    keyboard_bindings = None
 
 class Keyboard(KeyboardBase):
 
@@ -30,9 +31,9 @@ class Keyboard(KeyboardBase):
         return None
 
     def get_keymap_modifiers(self):
-        if X11KeyboardBindings:
+        if keyboard_bindings:
             try:
-                mod_mappings = X11KeyboardBindings.get_modifier_mappings()
+                mod_mappings = keyboard_bindings.get_modifier_mappings()
                 if mod_mappings:
                     #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                     log.debug("modifier mappings=%s", mod_mappings)
@@ -66,9 +67,9 @@ class Keyboard(KeyboardBase):
         return  meanings, [], []
 
     def get_x11_keymap(self):
-        if X11KeyboardBindings:
+        if keyboard_bindings:
             try:
-                return X11KeyboardBindings.get_keycode_mappings()
+                return keyboard_bindings.get_keycode_mappings()
             except Exception, e:
                 log.error("failed to use raw x11 keymap: %s", e)
         return  {}
@@ -84,9 +85,9 @@ class Keyboard(KeyboardBase):
         return xkbmap_print, xkbmap_query
 
     def get_keyboard_repeat(self):
-        if X11KeyboardBindings:
+        if keyboard_bindings:
             try:
-                delay, interval = X11KeyboardBindings.get_key_repeat_rate()
+                delay, interval = keyboard_bindings.get_key_repeat_rate()
                 return delay,interval
             except Exception, e:
                 log.error("failed to get keyboard repeat rate: %s", e)
