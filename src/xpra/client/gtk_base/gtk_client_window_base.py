@@ -231,9 +231,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_map_event(self, event):
         self.debug("Got map event: %s", event)
-        gtk.Window.do_map_event(self, event)
         if self.group_leader:
             self.window.set_group(self.group_leader)
+        gtk.Window.do_map_event(self, event)
         xid = self._metadata.get("xid")
         if xid:
             self.set_xid(xid)
