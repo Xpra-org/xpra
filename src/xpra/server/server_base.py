@@ -392,7 +392,11 @@ class ServerBase(object):
             self.notifications_forwarder = None
         log("cleanup will disconnect: %s", self._potential_protocols)
         for proto in self._potential_protocols:
-            self.disconnect_client(proto, "shutting down")
+            if self._upgrading:
+                reason = "upgrading"
+            else:
+                reason = "shutting down"
+            self.disconnect_client(proto, reason)
         self._potential_protocols = []
 
     def add_listen_socket(self, socktype, socket):
