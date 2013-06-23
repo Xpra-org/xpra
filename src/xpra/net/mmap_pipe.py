@@ -5,9 +5,9 @@
 
 import os
 import ctypes
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = log.debug
+debug = debug_if_env(log, "XPRA_MMAP_DEBUG")
 warn = log.warn
 
 """
@@ -22,7 +22,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
-    log("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
+    debug("init_mmap(%s, %s, %s)", token, mmap_group, socket_filename)
     try:
         import mmap
         import tempfile
@@ -43,7 +43,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
             os.fchown(fd, -1, s.st_gid)
             os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
         mmap_size = max(4096, mmap.PAGESIZE)*32*1024   #generally 128MB
-        log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
+        debug("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         SEEK_SET = 0        #os.SEEK_SET==0 but this is not available in python2.4
         os.lseek(fd, mmap_size-1, SEEK_SET)
         assert os.write(fd, '\x00')
@@ -57,7 +57,7 @@ def init_client_mmap(token, mmap_group=None, socket_filename=None):
         return False, None, 0, None, None
 
 def clean_mmap(mmap_filename):
-    log("clean_mmap(%s)", mmap_filename)
+    debug("clean_mmap(%s)", mmap_filename)
     if mmap_filename and os.path.exists(mmap_filename):
         os.unlink(mmap_filename)
 
@@ -65,7 +65,7 @@ MAX_TOKEN_BYTES = 128
 
 def write_mmap_token(mmap_area, token, index=512):
     #write the 16 byte token one byte at a time - no endianness
-    log("mmap_token=%s", token)
+    debug("mmap_token=%s", token)
     v = token
     for i in range(0, MAX_TOKEN_BYTES):
         poke = ctypes.c_ubyte.from_buffer(mmap_area, 512+i)
@@ -97,7 +97,7 @@ def init_server_mmap(mmap_filename, mmap_token=None, new_mmap_token=None):
         if mmap_token:
             #verify the token:
             v = read_mmap_token(mmap_area)
-            log("mmap_token=%s, verification=%s", mmap_token, v)
+            debug("mmap_token=%s, verification=%s", mmap_token, v)
             if v!=mmap_token:
                 log.error("WARNING: mmap token verification failed, not using mmap area!")
                 mmap_area.close()
