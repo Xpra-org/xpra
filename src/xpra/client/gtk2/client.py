@@ -316,7 +316,7 @@ class XpraClient(GTKXpraClient):
         group_leader_window = self._id_to_window.get(leader_wid)
         if group_leader_window:
             #leader is another managed window
-            log.info("found group leader window %s for wid=%s", group_leader_window, pid)
+            log("found group leader window %s for wid=%s", group_leader_window, pid)
             return group_leader_window
         ref = leader_xid or pid
         if not ref:
@@ -325,13 +325,13 @@ class XpraClient(GTKXpraClient):
             ref = "wid:%s" % wid
         group_leader_window = self._ref_to_group_leader.get(ref)
         if group_leader_window:
-            log.info("found existing group leader window %s using ref=%s", group_leader_window, ref)
+            log("found existing group leader window %s using ref=%s", group_leader_window, ref)
         else:
             #we need to create one:
             title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
             group_leader_window = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
             self._ref_to_group_leader[ref] = group_leader_window
-            log.info("new hidden group leader window %s for ref=%s", group_leader_window, ref)
+            log("new hidden group leader window %s for ref=%s", group_leader_window, ref)
         self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
         return group_leader_window
 
@@ -339,7 +339,7 @@ class XpraClient(GTKXpraClient):
         #override so we can cleanup the group-leader if needed:
         group_leader = window.group_leader
         GTKXpraClient.destroy_window(self, wid, window)
-        log.info("group leader=%s", group_leader)
+        log("group leader=%s", group_leader)
         if group_leader is None or len(self._group_leader_wids)==0:
             return
         wids = self._group_leader_wids.get(group_leader)
@@ -347,7 +347,7 @@ class XpraClient(GTKXpraClient):
             #not recorded any window ids on this group leader
             #means it is another managed window, leave it alone
             return
-        log.info("windows for group leader %s: %s", group_leader, wids)
+        log("windows for group leader %s: %s", group_leader, wids)
         if wid in wids:
             wids.remove(wid)
         if len(wids)>0:
@@ -359,10 +359,9 @@ class XpraClient(GTKXpraClient):
         for ref, gl in self._ref_to_group_leader.items():
             if gl==group_leader:
                 refs.append(ref)
-                break
         for ref in refs:
             del self._ref_to_group_leader[ref]
-        log.info("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
+        log("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
         group_leader.destroy()
 
 

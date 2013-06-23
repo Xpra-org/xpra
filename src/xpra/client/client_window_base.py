@@ -117,7 +117,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata):
         #normalize window-type:
-        log.info("update_metadata(%s)", metadata)
+        log("update_metadata(%s)", metadata)
         window_type = metadata.get("window-type")
         if window_type is not None:
             window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "") for x in window_type]
@@ -179,7 +179,6 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "transient-for" in self._metadata:
             wid = self._metadata.get("transient-for")
-            log.info("update_metadata(..) transient-for=%s, modal=%s", wid, self.get_modal())
             self.apply_transient_for(wid)
 
         if "modal" in self._metadata:

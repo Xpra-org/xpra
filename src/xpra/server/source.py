@@ -515,7 +515,7 @@ class ServerSource(object):
             log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
 
     def startup_complete(self):
-        log.info("startup_complete()")
+        log("startup_complete()")
         if self.notify_startup_complete:
             self.send("startup-complete")
 
