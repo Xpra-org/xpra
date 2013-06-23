@@ -393,7 +393,12 @@ class UIXpraClient(XpraClientBase):
             if key_repeat:
                 delay_ms,interval_ms = key_repeat
                 capabilities["key_repeat"] = (delay_ms,interval_ms)
-            capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync and (key_repeat is not None)
+            else:
+                #cannot do keyboard_sync without a key repeat value!
+                #(maybe we could just choose one?)
+                self.keyboard_helper.keyboard_sync = False
+            capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync
+            log("keyboard capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("key")])
         if self.mmap_enabled:
             capabilities["mmap_file"] = self.mmap_filename
             capabilities["mmap_token"] = self.mmap_token
