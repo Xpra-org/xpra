@@ -80,6 +80,13 @@ class ClientWindow(GTKClientWindowBase):
             else:
                 self.set_colormap(rgba)
 
+    def set_modal(self, modal):
+        #with gtk2 setting the window as modal would prevent
+        #all other windows we manage from receiving input
+        #including other unrelated applications
+        #what we want is "window-modal"
+        self.debug("set_modal(%s) swallowed", modal)
+
     def new_backing(self, w, h):
         self._backing = self.make_new_backing(BACKING_CLASS, w, h)
 
