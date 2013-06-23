@@ -117,6 +117,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata):
         #normalize window-type:
+        log.info("update_metadata(%s)", metadata)
         window_type = metadata.get("window-type")
         if window_type is not None:
             window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "") for x in window_type]
@@ -172,16 +173,27 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_wmclass(*self._metadata.get("class-instance",
                                                  ("xpra", "Xpra")))
 
-        modal = self._metadata.get("modal", False)
-        self.set_modal(modal or False)
-
         if "icon" in self._metadata:
             width, height, coding, data = self._metadata["icon"]
             self.update_icon(width, height, coding, data)
 
         if "transient-for" in self._metadata:
             wid = self._metadata.get("transient-for")
+            log.info("update_metadata(..) transient-for=%s, modal=%s", wid, self.get_modal())
             self.apply_transient_for(wid)
+
+        if "modal" in self._metadata:
+            modal = self._metadata.get("modal", False)
+            tf = self.get_transient_for()
+            log.info("update_metadata(..) modal=%s, transient-for=%s, group_leader=%s", modal, tf, self.group_leader)
+            if modal and not tf and not self.has_group():
+                group = self.get_group()
+                log.info("update_metadata(..) modal window without transient-for with group=%s, group_leader=%s", group, self.group_leader)
+                wids = self._client._group_leader_wids.get(self.group_leader, [])
+                log.info("update_metadata(..) group leader wids=%s", wids)
+                if len(wids)>0:
+                    self.apply_transient_for(wids[0])
+            self.set_modal(modal or False)
 
         #apply window-type hint if window is not mapped yet:
         if "window-type" in self._metadata and not self.is_mapped():

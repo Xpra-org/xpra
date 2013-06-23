@@ -28,6 +28,7 @@ class GTKTrayMenuBase(object):
         self.client = client
         self.session_info = None
         self.menu = None
+        self.menu_shown = False
 
     def build(self):
         if self.menu is None:

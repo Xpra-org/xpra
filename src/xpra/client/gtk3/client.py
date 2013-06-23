@@ -36,10 +36,6 @@ class XpraClient(GTKXpraClient):
         return "gtk3"
 
 
-    def do_set_default_window_icon(self, window_icon):
-        gtk.Window.set_default_icon_from_file(window_icon)
-
-
     def do_get_pixbuf(self, icon_filename):
         return Pixbuf.new_from_file(icon_filename)
 

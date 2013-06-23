@@ -689,6 +689,9 @@ class ServerBase(object):
         # now we can set the modifiers to match the client
         self.send_windows_and_cursors(ss)
 
+        ss.startup_complete()
+
+
     def set_keyboard_repeat(self, key_repeat):
         pass
 
@@ -748,6 +751,7 @@ class ServerBase(object):
         capabilities["client_window_properties"] = True
         capabilities["sound_sequence"] = True
         capabilities["info-request"] = True
+        capabilities["notify-startup-complete"] = True
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         capabilities["server_type"] = "base"

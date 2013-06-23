@@ -21,6 +21,9 @@ class Win32Tray:
 		self.detect_win32_session_events(self.getHWND())
 		self.balloon_click_callback = None
 
+	def ready(self):
+		pass
+
 	def getHWND(self):
 		if self.tray_widget is None:
 			return	None

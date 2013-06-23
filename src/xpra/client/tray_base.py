@@ -14,9 +14,10 @@ debug = log.debug
 
 class TrayBase(object):
 
-    def __init__(self, popup_cb, activate_cb, delay_tray, tray_icon_filename):
+    def __init__(self, popup_cb, activate_cb, delay_tray):
         self.popup_cb = popup_cb
         self.activate_cb = activate_cb
+        self.delay_tray = delay_tray
         self.tray_widget = None
 
     def get_tray_tooltip(self):
@@ -40,7 +41,8 @@ class TrayBase(object):
         return  None
 
     def ready(self):
-        pass
+        if not self.delay_tray:
+            self.show()
 
     def show(self):
         raise Exception("override me!")

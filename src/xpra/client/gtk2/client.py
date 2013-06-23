@@ -70,9 +70,9 @@ class XpraClient(GTKXpraClient):
                 encodings.append(x)
         return encodings
 
-
-    def do_set_default_window_icon(self, window_icon):
-        gtk.window_set_default_icon_from_file(window_icon)
+    def _startup_complete(self, *args):
+        GTKXpraClient._startup_complete(self, *args)
+        gtk.gdk.notify_startup_complete()
 
 
     def do_get_pixbuf(self, icon_filename):

@@ -23,7 +23,7 @@ log = Logger()
 class GTKStatusIconTray(TrayBase):
 
     def __init__(self, popup_cb, activate_cb, delay_tray, tray_icon_filename, tooltip=None):
-        TrayBase.__init__(self, popup_cb, activate_cb, delay_tray, tray_icon_filename)
+        TrayBase.__init__(self, popup_cb, activate_cb, delay_tray)
         self.tray_widget = gtk.StatusIcon()
         set_tooltip_text(self.tray_widget, tooltip or "Xpra")
         self.tray_widget.connect('popup-menu', popup_cb)
@@ -34,8 +34,6 @@ class GTKStatusIconTray(TrayBase):
         if delay_tray:
             self.hide()
             self.client.connect("first-ui-received", self.show)
-        else:
-            self.show()
 
     def hide(self, *args):
         self.tray_widget.set_visible(False)

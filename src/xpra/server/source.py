@@ -221,6 +221,7 @@ class ServerSource(object):
         self.raw_window_icons = False
         self.system_tray = False
         self.generic_window_types = False
+        self.notify_startup_complete = False
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -401,6 +402,7 @@ class ServerSource(object):
         self.raw_window_icons = capabilities.get("raw_window_icons", False)
         self.system_tray = capabilities.get("system_tray", False)
         self.generic_window_types = capabilities.get("generic_window_types", False)
+        self.notify_startup_complete = capabilities.get("notify-startup-complete", False)
 
         #sound stuff:
         self.pulseaudio_id = capabilities.get("sound.pulseaudio.id")
@@ -497,6 +499,11 @@ class ServerSource(object):
         else:
             others = [x for x in self.core_encodings if x in SERVER_CORE_ENCODINGS and x!=self.encoding]
             log.info("using %s as primary encoding, also available: %s", self.encoding, ", ".join(others))
+
+    def startup_complete(self):
+        log.info("startup_complete()")
+        if self.notify_startup_complete:
+            self.send("startup-complete")
 
     def start_sending_sound(self):
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"

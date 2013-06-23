@@ -356,9 +356,6 @@ class UIXpraClient(XpraClientBase):
             except Exception, e:
                 log.error("failed to set window icon %s: %s", window_icon, e)
 
-    def do_set_default_window_icon(self, window_icon):
-        raise Exception("override me!")
-
 
     def send_focus(self, wid):
         self.send("focus", wid, self.get_current_modifiers())
@@ -439,6 +436,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["xsettings-tuple"] = True
         capabilities["generic_window_types"] = True
         capabilities["server-window-resize"] = True
+        capabilities["notify-startup-complete"] = True
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = self.get_encodings()
@@ -729,8 +727,14 @@ class UIXpraClient(XpraClientBase):
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
+        if not capabilities.get("notify-startup-complete", False):
+            #we won't get notified, so assume it is now:
+            self._startup_complete()
+
+    def _startup_complete(self, *args):
+        log.info("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
         if self.tray:
-            self.tray.ready()
+            self.tray.startup_complete()
 
 
     def start_sending_sound(self):
@@ -934,6 +938,7 @@ class UIXpraClient(XpraClientBase):
 
         pid = metadata.get("pid", -1)
         group_leader = self.group_leader_for_pid(pid, wid)
+        #log.info("_process_new_common(..) group_leader_for_pid(%s, %s)=%s", pid, wid, group_leader)
         ClientWindowClass = self.get_client_window_class(metadata, override_redirect)
         window = ClientWindowClass(self, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
@@ -1146,6 +1151,7 @@ class UIXpraClient(XpraClientBase):
         XpraClientBase.init_packet_handlers(self)
         for k,v in {
             "hello":                self._process_hello,
+            "startup-complete":     self._startup_complete,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
