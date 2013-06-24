@@ -732,7 +732,7 @@ class WindowModel(BaseWindowModel):
         self._input_field = True
         self.connect("notify::iconic", self._handle_iconic_update)
 
-        self.property_names += ["title", "size-hints", "class-instance", "icon", "client-machine", "modal"]
+        self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal"]
         self.call_setup()
 
     def setup(self):

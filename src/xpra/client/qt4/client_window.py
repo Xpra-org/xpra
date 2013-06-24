@@ -78,6 +78,10 @@ class ClientWindow(QWidget, ClientWindowBase):
     def set_title(self, title):
         self.setWindowTitle(title)
 
+    def set_icon_name(self, name):
+        pass
+        #self.setWindowIconText() ?
+
     def set_role(self, role):
         self.setWindowRole(role)
 

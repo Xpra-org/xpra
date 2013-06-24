@@ -125,21 +125,26 @@ class ClientWindowBase(ClientWidgetBase):
 
         self._metadata.update(metadata)
 
-        title = u(self._client.title)
-        if title.find("@")>=0:
-            #perform metadata variable substitutions:
-            default_values = {"title" : u("<untitled window>"),
-                              "client-machine" : u("<unknown machine>")}
-            def metadata_replace(match):
-                atvar = match.group(0)          #ie: '@title@'
-                var = atvar[1:len(atvar)-1]     #ie: 'title'
-                default_value = default_values.get(var, u("<unknown %s>") % var)
-                value = self._metadata.get(var, default_value)
-                if sys.version<'3':
-                    value = value.decode("utf-8")
-                return value
-            title = re.sub("@[\w\-]*@", metadata_replace, title)
-        self.set_title(title)
+        if "title" in self._metadata:
+            title = u(self._client.title)
+            if title.find("@")>=0:
+                #perform metadata variable substitutions:
+                default_values = {"title" : u("<untitled window>"),
+                                  "client-machine" : u("<unknown machine>")}
+                def metadata_replace(match):
+                    atvar = match.group(0)          #ie: '@title@'
+                    var = atvar[1:len(atvar)-1]     #ie: 'title'
+                    default_value = default_values.get(var, u("<unknown %s>") % var)
+                    value = self._metadata.get(var, default_value)
+                    if sys.version<'3':
+                        value = value.decode("utf-8")
+                    return value
+                title = re.sub("@[\w\-]*@", metadata_replace, title)
+            self.set_title(title)
+
+        if "icon-title" in self._metadata:
+            icon_title = self._metadata.get("icon-title")
+            self.set_icon_name(icon_title)
 
         if "size-constraints" in self._metadata:
             size_metadata = self._metadata["size-constraints"]

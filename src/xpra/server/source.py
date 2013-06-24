@@ -33,11 +33,11 @@ debug = log.debug
 
 
 def make_window_metadata(window, propname, generic_window_types=False, png_window_icons=False, get_transient_for=None, get_window_id=None):
-    if propname == "title":
-        title = window.get_property("title")
-        if title is None:
-            return {}
-        return {"title": title.encode("utf-8")}
+    if propname in ("title", "icon-title"):
+        v = window.get_property(propname)
+        if v is None:
+            return {propname: ""}
+        return {propname: v.encode("utf-8")}
     elif propname == "pid":
         return {"pid" : window.get_property("pid") or -1}
     elif propname == "size-hints":
