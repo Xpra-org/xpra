@@ -26,7 +26,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import sys
+import sys, os
 from ctypes import cdll as loader
 
 
@@ -41,15 +41,15 @@ PIXEL_ALPHA_SZ = 4
 if sys.platform == "win32":
     _LIBRARY_NAMES = ["libwebp_a.dll"]
 
-elif sys.platform == "linux2":
-    _LIBRARY_NAMES = ["libwebp.so", "libwebp.so.2", "libwebp.so.4"]
-
 elif sys.platform == "darwin":
     _LIBRARY_NAMES = ["libwebp.dylib"]
 
+elif os.name == "posix":
+    _LIBRARY_NAMES = ["libwebp.so.2", "libwebp.so.4"]
+
 else:
     raise ImportError(
-        "Test non implemented under {0}".format(sys.platform))
+        "Test non implemented under %s / %s" % (os.name, sys.platform))
 
 # Load library
 _LIBRARY = None
