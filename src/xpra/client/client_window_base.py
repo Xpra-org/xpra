@@ -190,6 +190,10 @@ class ClientWindowBase(ClientWidgetBase):
             window_types = self._metadata.get("window-type")
             self.set_window_type(window_types)
 
+        if "role" in self._metadata:
+            role = self._metadata.get("role")
+            self.set_role(role)
+
         if "xid" in self._metadata:
             xid = self._metadata.get("xid")
             self.set_xid(xid)
@@ -287,6 +291,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def _unfocus(self):
+        self.debug("_unfocus() wid=%s", self._id)
         if self._client._focused==self._id:
             self._client.update_focus(self._id, False)
 

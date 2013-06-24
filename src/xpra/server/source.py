@@ -85,6 +85,11 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         return {"window-type" : wts}
     elif propname in ("has-alpha", "override-redirect", "tray", "modal", "fullscreen", "maximized"):
         return {propname : window.get_property(propname)}
+    elif propname in ("role"):
+        v = window.get_property(propname)
+        if v is None:
+            return {}
+        return {propname : v}
     elif propname == "xid":
         return {"xid" : hex(window.get_property("xid") or 0)}
     elif propname == "group-leader":

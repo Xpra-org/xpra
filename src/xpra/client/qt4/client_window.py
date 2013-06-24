@@ -78,6 +78,9 @@ class ClientWindow(QWidget, ClientWindowBase):
     def set_title(self, title):
         self.setWindowTitle(title)
 
+    def set_role(self, role):
+        self.setWindowRole(role)
+
     def set_type_hint(self, hint):
         debug("set_type_hint(%s)", hex(hint))
         if self._override_redirect:

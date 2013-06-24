@@ -244,6 +244,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         "scaling" : (gobject.TYPE_PYOBJECT,
                        "Application requested scaling as a fraction (pair of numbers)", "",
                        gobject.PARAM_READWRITE),
+        "role" : (gobject.TYPE_PYOBJECT,
+                          "The window's role (ICCCM session management)", "",
+                          gobject.PARAM_READABLE),
         "modal": (gobject.TYPE_PYOBJECT,
                           "Modal (boolean)", "",
                           gobject.PARAM_READABLE),
@@ -274,7 +277,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("client-window", client_window)
         use_xshm = USE_XSHM and (not self.is_OR() and not self.is_tray())
         self._composite = CompositeHelper(self.client_window, False, use_xshm)
-        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "group-leader", "xid", "has-alpha"]
+        self.property_names = ["pid", "transient-for", "fullscreen", "maximized", "window-type", "role", "group-leader", "xid", "has-alpha"]
 
     def get_property_names(self):
         return self.property_names
@@ -406,8 +409,8 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._composite = None
 
     def _read_initial_properties(self):
-        def pget(key, ptype):
-            return self.prop_get(key, ptype, raise_xerrors=True)
+        def pget(key, ptype, raise_xerrors=True):
+            return self.prop_get(key, ptype, raise_xerrors=raise_xerrors)
         transient_for = pget("WM_TRANSIENT_FOR", "window")
         # May be None
         self._internal_set_property("transient-for", transient_for)
@@ -421,6 +424,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._internal_set_property("has-alpha", self.client_window.get_depth()==32)
         self._internal_set_property("xid", get_xwindow(self.client_window))
         self._internal_set_property("pid", pget("_NET_WM_PID", "u32") or -1)
+        self._internal_set_property("role", pget("WM_WINDOW_ROLE", "latin1"))
 
 
     def _handle_scaling(self):
