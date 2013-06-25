@@ -348,6 +348,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 #if window is set, we failed after instantiating it,
                 #so we need to fail it manually:
                 window.setup_failed(e)
+                if window in self._window_to_id:
+                    self._lost_window(window, False)
             else:
                 log.warn("cannot add %s: %s", hex(xid), e)
             #from now on, we return to the gtk main loop,
