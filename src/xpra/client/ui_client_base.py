@@ -132,6 +132,7 @@ class UIXpraClient(XpraClientBase):
         self.change_speed = False
         self.readonly = False
         self.windows_enabled = True
+        self.X11_OR_focus = False
         self.pings = False
 
         self.client_supports_notifications = False
@@ -337,6 +338,7 @@ class UIXpraClient(XpraClientBase):
         if self.readonly or self.keyboard_helper is None:
             return
         wid = self._window_to_id[window]
+        log("handle_key_action(%s, %s) wid=%s", window, key_event, wid)
         self.keyboard_helper.handle_key_action(window, wid, key_event)
 
     def mask_to_names(self, mask):
@@ -356,16 +358,22 @@ class UIXpraClient(XpraClientBase):
 
 
     def send_focus(self, wid):
+        log("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
 
     def update_focus(self, wid, gotit):
-        log("update_focus(%s,%s) _focused=%s", wid, gotit, self._focused)
+        log("update_focus(%s, %s) _focused=%s", wid, gotit, self._focused)
         if gotit and self._focused is not wid:
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
             self.send_focus(wid)
             self._focused = wid
-        if not gotit and self._focused is wid:
+        if not gotit:
+            if self._focused!=wid:
+                #if this window lost focus, it must have had it!
+                #(catch up - makes things like OR windows work:
+                # their parent receives the focus-out event)
+                self.send_focus(wid)
             if self.keyboard_helper:
                 self.keyboard_helper.clear_repeat()
             self.send_focus(0)
@@ -629,6 +637,7 @@ class UIXpraClient(XpraClientBase):
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
         set_application_name(self.session_name)
+        self.X11_OR_focus = capabilities.get("X11.OR_focus", False)
         self.window_configure = capabilities.get("window_configure", False)
         self.server_supports_notifications = capabilities.get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications

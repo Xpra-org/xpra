@@ -193,6 +193,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         trap.swallow_synced(get_default_cursor)
         self._wm.enableCursors(True)
 
+    def make_hello(self):
+        capabilities = X11ServerBase.make_hello(self)
+        capabilities["X11.OR_focus"] = True     #workaround for OR focus - added in 0.10
+        return capabilities
+
+
     def set_workarea(self, workarea):
         self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
 
@@ -411,25 +417,42 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _focus(self, server_source, wid, modifiers):
-        log("_focus(%s,%s) has_focus=%s", wid, modifiers, self._has_focus)
-        if self._has_focus != wid:
-            def reset_focus():
-                self._clear_keys_pressed()
-                # FIXME: kind of a hack:
-                self._has_focus = 0
-                self._wm.get_property("toplevel").reset_x_focus()
+        log("_focus(%s, %s, %s) has_focus=%s", server_source, wid, modifiers, self._has_focus)
+        if self._has_focus==wid:
+            #nothing to do!
+            return
+        #first see if we need to deal with OR losing focus:
+        has_focus = self._id_to_window.get(self._has_focus)
+        if has_focus and has_focus.is_OR():
+            #OR window had focus, hide it
+            #(that's usually enough to make things work!)
+            gdkwin = has_focus.get_property("client-window")
+            log("focus(%s, %s, %s) hiding and unmanaging OR window %s", server_source, wid, modifiers, has_focus)
+            gdkwin.hide()
+            has_focus.unmanage()
 
-            if wid == 0:
-                return reset_focus()
-            window = self._id_to_window.get(wid)
-            if not window:
-                return reset_focus()
-            #no idea why we can't call this straight away!
-            #but with win32 clients, it would often fail!???
-            gobject.idle_add(window.give_client_focus)
-            if server_source and modifiers is not None:
-                server_source.make_keymask_match(modifiers)
-            self._has_focus = wid
+        def reset_focus():
+            log("reset_focus() %s / %s had focus", self._has_focus, has_focus)
+            self._clear_keys_pressed()
+            # FIXME: kind of a hack:
+            self._has_focus = 0
+            self._wm.get_property("toplevel").reset_x_focus()
+
+        if wid == 0:
+            #wid==0 means root window
+            return reset_focus()
+        window = self._id_to_window.get(wid)
+        if not window:
+            #not found! (go back to root)
+            return reset_focus()
+        log("focus(%s, %s, %s) giving focus to %s", server_source, wid, modifiers, window)
+        if not window.is_OR():
+            #note: OR windows "always" have focus
+            #we're only here to record it
+            window.give_client_focus()
+        if server_source and modifiers is not None:
+            server_source.make_keymask_match(modifiers)
+        self._has_focus = wid
 
 
     def _send_new_window_packet(self, window):

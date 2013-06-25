@@ -230,14 +230,22 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def do_map_event(self, event):
-        self.debug("Got map event: %s", event)
+        self.debug("Got map event: %s - OR=%s", event, self._override_redirect)
         if self.group_leader:
             self.window.set_group(self.group_leader)
         gtk.Window.do_map_event(self, event)
+        self._been_mapped = True
         xid = self._metadata.get("xid")
         if xid:
             self.set_xid(xid)
-        if not self._override_redirect:
+        if self._override_redirect:
+            if self._client.X11_OR_focus:
+                #claim focus since server supports "OR focus"
+                self._client.update_focus(self._id, True)
+            else:
+                #older servers
+                self._focus_change("initial")
+        else:
             x, y, w, h = self.get_window_geometry()
             if not self._been_mapped:
                 workspace = self.set_workspace()
@@ -253,8 +261,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
-        self._been_mapped = True
-        self.idle_add(self._focus_change)
+            self.idle_add(self._focus_change, "initial")
 
     def do_configure_event(self, event):
         self.debug("Got configure event: %s", event)
@@ -360,7 +367,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _focus_change(self, *args):
-        self.debug("_focus_change(%s)", args)
-        if self._been_mapped:
-            self._client.update_focus(self._id, self.get_property("has-toplevel-focus"))
+        htf = self.get_property("has-toplevel-focus")
+        self.debug("_focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", args, htf, self._been_mapped)
+        if self._been_mapped and (not self._override_redirect or self._client.X11_OR_focus):
+            self._client.update_focus(self._id, htf)
 
