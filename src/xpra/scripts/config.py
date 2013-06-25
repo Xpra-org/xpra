@@ -74,19 +74,20 @@ dec_avcodec = codec_import_check("avcodec decoder", "xpra.codecs.dec_avcodec", "
 has_dec_avcodec = dec_avcodec is not None
 add_codec_version("avcodec", "xpra.codecs.dec_avcodec.decoder", "get_version", True)
 
+enc_webp, enc_webp, has_enc_webp_lossless, webp_handlers = None, None, False, None
 try:
-    #python 2.6 only:
+    #python >=2.6 only and required for webp to work:
     bytearray()
-    enc_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
-    dec_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
-    has_enc_webp_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
-    add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
-    webp_handlers = codec_import_check("webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
+    try:
+        enc_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
+        dec_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
+        has_enc_webp_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+        add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
+        webp_handlers = codec_import_check("webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
+    except Exception, e:
+        warn("cannot load webp: " % e)
 except:
-    enc_webp = None
-    enc_webp = None
-    has_enc_webp_lossless = False
-    webp_handlers = None
+    pass
 has_enc_webp = enc_webp is not None
 has_dec_webp = dec_webp is not None
 
