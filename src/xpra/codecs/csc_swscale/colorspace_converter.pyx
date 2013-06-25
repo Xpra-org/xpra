@@ -189,7 +189,7 @@ cdef class ColorspaceConverter:
     def convert_image(self, image):
         cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
-        cdef const uint8_t *input_image[3]
+        cdef const uint8_t *input_image[4]
         cdef uint8_t *output_image[4]
         cdef int input_stride[4]
         cdef int output_stride[4]
