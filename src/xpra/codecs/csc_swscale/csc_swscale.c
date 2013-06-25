@@ -117,24 +117,24 @@ static const struct swscale_flag *get_swscale_flags(int speed)
 /* string format name <-> swscale format correspondence */
 static const struct {
 	enum PixelFormat sws_pixfmt; 
-	float width_mult[3]; // width-to-stride multiplier for each plane
-	float height_mult[3]; // height-to-plane-height multiplier for each plane
+	float width_mult[4];	// width-to-stride multiplier for each plane
+	float height_mult[4];	// height-to-plane-height multiplier for each plane
 	const char *str;
 } sws_formats[] = {
-	{ PIX_FMT_RGB24,   { 3, 0, 0 },     { 1, 0, 0 },     RGB  },
-	{ PIX_FMT_BGR24,   { 3, 0, 0 },     { 1, 0, 0 },     BGR  },
+	{ PIX_FMT_RGB24,   { 3, 0, 0, 0 },     { 1, 0, 0, 0 },     RGB  },
+	{ PIX_FMT_BGR24,   { 3, 0, 0, 0 },     { 1, 0, 0, 0 },     BGR  },
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(52, 14, 100)
-	{ PIX_FMT_0RGB,    { 4, 0, 0 },     { 1, 0, 0 },     XRGB },
-	{ PIX_FMT_BGR0,    { 4, 0, 0 },     { 1, 0, 0 },     BGRX },
+	{ PIX_FMT_0RGB,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     XRGB },
+	{ PIX_FMT_BGR0,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     BGRX },
 #else
-	{ PIX_FMT_ARGB,    { 4, 0, 0 },     { 1, 0, 0 },     XRGB },
-	{ PIX_FMT_BGRA,    { 4, 0, 0 },     { 1, 0, 0 },     BGRX },
+	{ PIX_FMT_ARGB,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     XRGB },
+	{ PIX_FMT_BGRA,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     BGRX },
 #endif
-	{ PIX_FMT_ARGB,    { 4, 0, 0 },     { 1, 0, 0 },     ARGB },
-	{ PIX_FMT_BGRA,    { 4, 0, 0 },     { 1, 0, 0 },     BGRA },
-	{ PIX_FMT_YUV420P, { 1, 0.5, 0.5 }, { 1, 0.5, 0.5 }, YUV420P },
-	{ PIX_FMT_YUV422P, { 1, 0.5, 0.5 }, { 1, 1, 1 },     YUV422P },
-	{ PIX_FMT_YUV444P, { 1, 1, 1 },     { 1, 1, 1 },     YUV444P },
+	{ PIX_FMT_ARGB,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     ARGB },
+	{ PIX_FMT_BGRA,    { 4, 0, 0, 0 },     { 1, 0, 0, 0 },     BGRA },
+	{ PIX_FMT_YUV420P, { 1, 0.5, 0.5, 0 }, { 1, 0.5, 0.5, 0 }, YUV420P },
+	{ PIX_FMT_YUV422P, { 1, 0.5, 0.5, 0 }, { 1, 1, 1, 0 },     YUV422P },
+	{ PIX_FMT_YUV444P, { 1, 1, 1, 0 },     { 1, 1, 1, 0 },     YUV444P },
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(51, 21, 0)
 	{ PIX_FMT_GBRP,    { 1, 1, 1 },		{ 1, 1, 1 },     GBRP },
 #endif
@@ -153,7 +153,7 @@ static enum PixelFormat get_swscale_format(const char *str)
 	return PIX_FMT_NONE;
 }
 
-static int get_plane_dimensions(enum PixelFormat fmt, int width, int height, int stride[3], int plane_height[3])
+static int get_plane_dimensions(enum PixelFormat fmt, int width, int height, int stride[4], int plane_height[4])
 {
 	unsigned int i;
 	int found = -1;
@@ -170,7 +170,7 @@ static int get_plane_dimensions(enum PixelFormat fmt, int width, int height, int
 	found = i;
 
 #define ALIGN4(X) (((int)(X)+3)&~3)
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 4; i++) {
 		stride[i] = ALIGN4(width * sws_formats[found].width_mult[i]);
 		plane_height[i] = height * sws_formats[found].height_mult[i];
 	}
@@ -251,9 +251,9 @@ void free_csc_image(uint8_t *buf[3])
 
 int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[4], const int in_stride[4], uint8_t *out[4], int out_stride[4])
 {
-	int out_height[3];
+	int out_height[4];
 	int buffer_size;
-	int size[3];
+	int size[4];
 	int i;
 
 	if (!ctx || !ctx->sws_ctx)
@@ -262,7 +262,7 @@ int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[4], const int in_st
 	// Compute output buffer size
 	get_plane_dimensions(ctx->dst_format, ctx->dst_width, ctx->dst_height, out_stride, out_height);
 	buffer_size = 0;
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 4; i++) {
 		//Add one extra line to height so we can read a full rowstride
 		//no matter where we start to read on the last line.
 		//MEMALIGN may be redundant here but it is very cheap
@@ -274,7 +274,7 @@ int csc_image(struct csc_swscale_ctx *ctx, const uint8_t *in[4], const int in_st
 	out[0] = xmemalign(buffer_size);
 	out[1] = out[0] + size[0];
 	out[2] = out[1] + size[1];
-	out[3] = NULL;
+	out[3] = out[2] + size[2];
 
 	// Convert colorspace
 	sws_scale(ctx->sws_ctx, in, in_stride, 0, ctx->src_height, out, out_stride);
