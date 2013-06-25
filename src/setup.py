@@ -732,10 +732,10 @@ if WIN32:
         #add the webp DLL to the output:
         #And since 0.2.1, you have to compile the DLL yourself..
         #the path after installing may look like this:
-        #webm_DLL = "C:\\libwebp-0.2.1-windows-x86\\bin\\libwebp.dll"
+        #webp_DLL = "C:\\libwebp-0.3.1-windows-x86\\bin\\libwebp.dll"
         #but we use something more generic, without the version numbers:
-        webm_DLL = "C:\\libwebp-windows-x86\\bin\\libwebp.dll"
-        data_files.append(('', [webm_DLL]))
+        webp_DLL = "C:\\libwebp-windows-x86\\bin\\libwebp.dll"
+        data_files.append(('', [webp_DLL]))
         #and its license:
         data_files.append(('webm', ["xpra/codecs/webm/LICENSE"]))
 

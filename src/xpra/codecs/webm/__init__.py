@@ -39,7 +39,7 @@ PIXEL_ALPHA_SZ = 4
 
 # Per-OS setup
 if sys.platform == "win32":
-    _LIBRARY_NAMES = ["libwebp_a.dll"]
+    _LIBRARY_NAMES = ["libwebp.dll"]
 
 elif sys.platform == "darwin":
     _LIBRARY_NAMES = ["libwebp.dylib"]
