@@ -515,6 +515,8 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                             cmd = VGLRUN_BIN + test_command
                         elif type(test_command)==list:
                             cmd = [VGLRUN_BIN] + test_command
+                        elif type(test_command)==tuple:
+                            cmd = [VGLRUN_BIN] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:
