@@ -833,6 +833,8 @@ class ServerBase(object):
         info["keyboard.sync"] = self.keyboard_sync
         info["keyboard.repeat_delay"] = self.key_repeat_delay
         info["keyboard.repeat_interval"] = self.key_repeat_interval
+        info["keyboard.keys_pressed"] = self.keys_pressed.values()
+        info["keyboard.modifiers"] = self.xkbmap_mod_meanings
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
