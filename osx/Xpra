@@ -1,5 +1,6 @@
 #!/bin/sh
 
+exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd)
 
 tmp=`dirname "$full_path"`
@@ -74,4 +75,4 @@ while (($#)); do
 done
 args="$args]"
 
-exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path\";from xpra.scripts.main import main;main('xpra', $args)"
+exec "$PYTHON" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;main('xpra', $args)"

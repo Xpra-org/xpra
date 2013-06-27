@@ -1,5 +1,6 @@
 #!/bin/sh
 
+exe_name=$(basename $0)
 #ie: $0=/Users/MacAdmin/Desktop/Xpra.app/Contents/MacOS/Xpra_Launcher
 #ie: $0=./Xpra.app/Contents/MacOS/Xpra_Launcher
 full_path=$(cd "$(dirname "$0")"; pwd)
@@ -79,4 +80,4 @@ while (($#)); do
 done
 args="$args]"
 
-exec "$PYTHON" -c "import sys;sys.argv[0]=\"${full_path}/Xpra_Launcher\";from xpra.client.gtk_base.client_launcher import main;main()"
+exec "$PYTHON" -c "import sys;sys.argv[0]=\"${full_path}/$exe_name\";from xpra.client.gtk_base.client_launcher import main;main()"

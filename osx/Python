@@ -1,15 +1,8 @@
 #!/bin/sh
 
-EXEC="exec"
+full_path=$(cd "$(dirname "$0")"; pwd)
 
-name="`basename $0`"
-if [[ "$0" == `pwd`* ]] || [[ "$0" == "//"* ]] || [[ "$0" == /Applications/* ]] || [[ "$0" == /Volumes/* ]] || [[ "$0" == /Users/* ]]; then
-	full_path="$0"
-else
-	full_path="`pwd`/$0"
-fi
 tmp=`dirname "$full_path"`
-tmp=`dirname "$tmp"`
 bundle=`dirname "$tmp"`
 bundle_contents="$bundle"/Contents
 bundle_res="$bundle_contents"/Resources
@@ -36,7 +29,9 @@ export GST_PLUGIN_PATH="$bundle_lib/gstreamer-0.10"
 export GST_PLUGIN_SCANNER="$bundle_contents/Helpers/gst-plugin-scanner"
 
 #Set $PYTHON to point inside the bundle
-export PYTHON="$bundle_bin/python"
+#This is not the real "python" but a copy of it named "xpra"
+#This is hacked together in make-app.sh
+export PYTHON="$bundle_bin/Xpra"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
@@ -62,20 +57,13 @@ else
 fi
 
 if test -f "$bundle_lib/charset.alias"; then
-	export CHARSETALIASDIR="$bundle_lib"
+    export CHARSETALIASDIR="$bundle_lib"
 fi
 
 # Extra arguments can be added in environment.sh.
 EXTRA_ARGS=
 if test -f "$bundle_res/environment.sh"; then
-	source "$bundle_res/environment.sh"
+  source "$bundle_res/environment.sh"
 fi
 
-# Strip out the argument added by the OS.
-if [ "x`echo "x$1" | sed -e "s/^x-psn_.*//"`" == "x" ]; then
-	shift 1
-fi
-
-#Note that we're calling $PYTHON here to override the version in
-#pygtk-demo's shebang.
-$EXEC "$PYTHON" "$@"
+exec "$PYTHON" $@
