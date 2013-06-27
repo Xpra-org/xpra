@@ -831,10 +831,15 @@ class ServerBase(object):
             info["encoding.%s.version" % k] = v
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
         info["keyboard.sync"] = self.keyboard_sync
-        info["keyboard.repeat_delay"] = self.key_repeat_delay
-        info["keyboard.repeat_interval"] = self.key_repeat_interval
+        info["keyboard.repeat.delay"] = self.key_repeat_delay
+        info["keyboard.repeat.interval"] = self.key_repeat_interval
         info["keyboard.keys_pressed"] = self.keys_pressed.values()
         info["keyboard.modifiers"] = self.xkbmap_mod_meanings
+        if self.keyboard_config:
+            for k,v in self.keyboard_config.get_info().items():
+                if v is not None:
+                    info["keyboard."+k] = v
+
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])

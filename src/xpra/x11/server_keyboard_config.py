@@ -57,6 +57,19 @@ class KeyboardConfig(object):
         self.modifiers_filter = None
         self.is_native_keymap = True
 
+    def get_info(self):
+        info = {}
+        for x in ("print", "keycodes", "x11_keycodes", "layout", "variant"):
+            v = getattr(self, "xkbmap_"+x)
+            if v:
+                info[x] = v
+        for x in ("meanings", "managed", "pointermissing"):
+            v = getattr(self, "xkbmap_mod_"+x)
+            if v:
+                info["modifiers."+x] = v
+        return info
+
+
     def get_hash(self):
         try:
             import hashlib

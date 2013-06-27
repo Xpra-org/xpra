@@ -198,10 +198,28 @@ class XpraServer(gobject.GObject, X11ServerBase):
         capabilities["X11.OR_focus"] = True     #workaround for OR focus - added in 0.10
         return capabilities
 
+
+    def do_get_info(self, proto, server_sources, window_ids):
+        info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
+        log("do_get_info: adding cursor=%s", self.cursor_data)
+        if self.cursor_data is None:
+            info["cursor"] = "None"
+            return info
+        #pixels:
+        info["cursor.is_default"] = bool(self.default_cursor_data and self.cursor_data[7]==self.default_cursor_data[7])
+        i = 0
+        for x in ("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name"):
+            if x:
+                v = self.cursor_data[i] or ""
+                info["cursor." + x] = v
+            i += 1
+        return info
+
     def get_window_info(self, window):
         info = X11ServerBase.get_window_info(self, window)
         info["focused"] = self._window_to_id.get(window, -1)==self._has_focus
         return info
+
 
     def set_workarea(self, workarea):
         self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
