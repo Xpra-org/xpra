@@ -101,7 +101,9 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         if xid:
             p["group-leader-xid"] = xid
         if gdkwin and get_window_id:
-            p["group-leader-wid"] = get_window_id(gdkwin)
+            glwid = get_window_id(gdkwin)
+            if glwid:
+                p["group-leader-wid"] = glwid
         return p
     raise Exception("unhandled property name: %s" % propname)
 
