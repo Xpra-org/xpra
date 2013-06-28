@@ -49,25 +49,42 @@ class KeyboardConfig(object):
         #this is shared between clients!
         self.keys_pressed = {}
         #these are derived by calling set_keymap:
-        self.keynames_for_mod = None
+        self.keynames_for_mod = {}
         self.keycode_translation = {}
         self.keycodes_for_modifier_keynames = {}
         self.modifier_client_keycodes = {}
         self.compute_modifier_map()
-        self.modifiers_filter = None
+        self.modifiers_filter = []
         self.is_native_keymap = True
 
     def get_info(self):
         info = {"enabled"   : self.enabled,
-                "native"    : self.is_native_keymap}
+                "native"    : self.is_native_keymap,
+                "keycode_translation"       : self.keycode_translation,
+                "modifiers.filter"          : self.modifiers_filter,
+                }
+        #modifiers:
+        if self.modifier_client_keycodes:
+            for mod, keys in self.modifier_client_keycodes.items():
+                info["modifier." + mod + ".client_keys"] = keys
+        if self.keynames_for_mod:
+            for mod, keys in self.keynames_for_mod.items():
+                info["modifier." + mod + ".keys"] = tuple(keys)
+        if self.keycodes_for_modifier_keynames:
+            for mod, keys in self.keycodes_for_modifier_keynames.items():
+                info["modifier." + mod + ".keycodes"] = tuple(keys)
+        if self.xkbmap_mod_meanings:
+            for mod, mod_name in self.xkbmap_mod_meanings.items():
+                info["modifier." + mod ] = mod_name
         for x in ("print", "keycodes", "x11_keycodes", "layout", "variant"):
             v = getattr(self, "xkbmap_"+x)
             if v:
                 info[x] = v
-        for x in ("meanings", "managed", "pointermissing"):
+        for x in ("managed", "pointermissing"):
             v = getattr(self, "xkbmap_mod_"+x)
             if v:
                 info["modifiers."+x] = v
+        log("keyboard info: %s", "\n".join(["%s=%s" % (k,v) for k,v in info.items()]))
         return info
 
 
@@ -224,7 +241,7 @@ class KeyboardConfig(object):
             return False
 
         def filter_modifiers(mods):
-            if self.modifiers_filter is None:
+            if len(self.modifiers_filter)==0:
                 return mods
             return [x for x in mods if x in self.modifiers_filter]
 
