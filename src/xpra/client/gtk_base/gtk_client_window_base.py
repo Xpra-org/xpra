@@ -70,6 +70,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if transient_for is not None and transient_for.window is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
         self.connect("notify::has-toplevel-focus", self._focus_change)
+        self.connect("focus-in-event", self._focus_change)
+        self.connect("focus-out-event", self._focus_change)
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
@@ -371,4 +373,3 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.debug("_focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", args, htf, self._been_mapped)
         if self._been_mapped and (not self._override_redirect or self._client.X11_OR_focus):
             self._client.update_focus(self._id, htf)
-
