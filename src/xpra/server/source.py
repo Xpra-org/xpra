@@ -767,10 +767,10 @@ class ServerSource(object):
                 if v is not None:
                     info["client." + k + suffix] = v
             except:
-                pass 
+                log.warn("cannot add attribute %s / %s", k, name, exc_info=True)
         info["client.version"+suffix] = self.client_version or "unknown"
         for x in ("type", "platform", "release", "machine", "processor"):
-            addattr("client_" + x, x)
+            addattr(x, "client_" + x)
         info["client.platform_name"+suffix] = platform_name(self.client_platform, self.client_release)
         info["client.uuid"+suffix] = self.uuid
         info["client.idle_time" + suffix] = int(time.time()-self.last_user_event)
