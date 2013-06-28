@@ -761,15 +761,37 @@ class ServerSource(object):
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
-        info["client.features.clipboard" + suffix] = self.clipboard_enabled
-        info["client.features.cursors" + suffix] = self.send_cursors
-        info["client.features.bell" + suffix] = self.send_bell
-        info["client.features.notifications" + suffix] = self.send_notifications
+        def addattr(k, name):
+            try:
+                v = getattr(self, name)
+                if v is not None:
+                    info["client." + k + suffix] = v
+            except:
+                pass 
+        info["client.version"+suffix] = self.client_version or "unknown"
+        for x in ("type", "platform", "release", "machine", "processor"):
+            addattr("client_" + x, x)
+        info["client.platform_name"+suffix] = platform_name(self.client_platform, self.client_release)
+        info["client.uuid"+suffix] = self.uuid
         info["client.idle_time" + suffix] = int(time.time()-self.last_user_event)
         info["client.hostname" + suffix] = self.hostname
-        for x in ("machine", "processor", "release"):
-            info["client.platform." + x + suffix] = getattr(self, "client_%s" % x)
         info["client.auto_refresh" + suffix] = self.auto_refresh_delay
+        info["client.desktop_size" + suffix] = self.desktop_size or ""
+        info["client.screen_sizes" + suffix] = self.screen_sizes
+        for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
+                     "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
+                     "notify_startup_complete"):
+            addattr("features."+prop, prop)
+        for prop, name in {"clipboard_enabled"  : "clipboard",
+                           "send_windows"       : "windows",
+                           "send_cursors"       : "cursors",
+                           "send_notifications" : "notifications",
+                           "send_bell"          : "bell"}.items():
+            addattr("features."+name, prop)
+        #encoding:
+        info["client.encodings"+suffix] = ",".join(self.encodings)
+        info["client.encodings.core"+suffix] = ",".join(self.core_encodings)
+        info["client.encoding.default"] = self.default_encoding or ""
         for k,v in self.default_encoding_options.items():
             info["client.encoding.%s" % k] = v
         for k,v in self.encoding_options.items():
@@ -780,6 +802,9 @@ class ServerSource(object):
             if prop is None:
                 return {"state" : "inactive"}
             return prop.get_info()
+        #sound:
+        for prop in ("pulseaudio_id", "pulseaudio_server"):
+            addattr(prop, prop)
         for k,v in get_sound_info(self.supports_speaker, self.sound_source).items():
             info["client.speaker.%s" % k] = v
         for k,v in get_sound_info(self.supports_microphone, self.sound_sink).items():
@@ -964,17 +989,6 @@ class ServerSource(object):
             This is used by server.py to provide those statistics to clients
             via the 'xpra info' command.
         """
-        info["client.type"+suffix] = self.client_type
-        info["client.version"+suffix] = self.client_version or "unknown"
-        info["client.uuid"+suffix] = self.uuid
-        info["keyboard"+suffix] = self.keyboard_config.enabled
-        try:
-            info["client.connection.type"+suffix] = self.protocol._conn.info
-            info["client.connection.endpoint"+suffix] = self.protocol._conn.target
-        except:
-            log.error("failed to report connection information", exc_info=True)
-        info["client.encodings"+suffix] = ",".join(self.encodings)
-        info["client.encodings.core"+suffix] = ",".join(self.core_encodings)
         info["damage.data_queue.size%s.current" % suffix] = self.damage_data_queue.qsize()
         info["damage.packet_queue.size%s.current" % suffix] = len(self.damage_packet_queue)
         qpixels = [x[2] for x in list(self.damage_packet_queue)]

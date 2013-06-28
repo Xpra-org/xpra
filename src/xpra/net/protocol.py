@@ -198,12 +198,29 @@ class Protocol(object):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread] if x is not None]
 
     def add_stats(self, info, prefix="net.", suffix=""):
-        info[prefix+"input.bytecount%s" % suffix] = self._conn.input_bytecount
-        info[prefix+"input.packetcount%s" % suffix] = self.input_packetcount
-        info[prefix+"input.raw_packetcount%s" % suffix] = self.input_raw_packetcount
-        info[prefix+"output.bytecount%s" % suffix] = self._conn.output_bytecount
-        info[prefix+"output.packetcount%s" % suffix] = self.output_packetcount
-        info[prefix+"output.raw_packetcount%s" % suffix] = self.output_raw_packetcount
+        info[prefix+"input.bytecount" + suffix] = self._conn.input_bytecount
+        info[prefix+"input.packetcount" + suffix] = self.input_packetcount
+        info[prefix+"input.raw_packetcount" + suffix] = self.input_raw_packetcount
+        info[prefix+"output.bytecount" + suffix] = self._conn.output_bytecount
+        info[prefix+"output.packetcount" + suffix] = self.output_packetcount
+        info[prefix+"output.raw_packetcount" + suffix] = self.output_raw_packetcount
+        info[prefix+"chunked_compression" + suffix] = self.chunked_compression
+        info[prefix+"large_packets" + suffix] = self.large_packets
+        info[prefix+"input_cipher" + suffix] = self.cipher_in_name or ""
+        info[prefix+"output_cipher" + suffix] = self.cipher_out_name or ""
+        info[prefix+"compression_level" + suffix] = self._compression_level
+        info[prefix+"max_packet_size" + suffix] = self.max_packet_size
+        info[prefix+"aliases" + suffix] = self.aliases
+        try:
+            info[prefix+"encoder" + suffix] = self._encoder.__name__
+        except:
+            pass
+        if self._conn:
+            try:
+                info["type"+suffix] = self._conn.info
+                info["endpoint"+suffix] = self._conn.target
+            except:
+                log.error("failed to report connection information", exc_info=True)
 
     def start(self):
         def do_start():

@@ -813,6 +813,11 @@ class ServerBase(object):
         info["server.hostname"] = socket.gethostname()
         info["server.max_desktop_size"] = self.get_max_screen_size()
         info["server.start_time"] = int(self.start_time)
+        try:
+            import Crypto
+            info["server.pycrypto.version"] = Crypto.__version__
+        except:
+            pass
         info["python.full_version"] = sys.version
         info["python.version"] = python_platform.python_version()
         info["session.name"] = self.session_name or ""

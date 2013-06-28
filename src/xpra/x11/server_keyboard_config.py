@@ -58,7 +58,8 @@ class KeyboardConfig(object):
         self.is_native_keymap = True
 
     def get_info(self):
-        info = {}
+        info = {"enabled"   : self.enabled,
+                "native"    : self.is_native_keymap}
         for x in ("print", "keycodes", "x11_keycodes", "layout", "variant"):
             v = getattr(self, "xkbmap_"+x)
             if v:

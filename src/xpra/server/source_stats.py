@@ -134,7 +134,7 @@ class GlobalPerformanceStatistics(object):
     def add_stats(self, info, suffix=""):
         info["damage.events%s" % suffix] = self.damage_events_count
         info["damage.packets_sent%s" % suffix] = self.packet_count
-        info["net.output.mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
+        info["client.connection.mmap_bytecount%s" % suffix] = self.mmap_bytes_sent
         if self.min_client_latency is not None:
             info["client.latency%s.absmin" % suffix] = int(self.min_client_latency*1000)
         qsizes = [x for _,x in list(self.damage_data_qsizes)]
