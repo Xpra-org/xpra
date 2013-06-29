@@ -42,9 +42,8 @@ for test, formats in (
         for enc in formats:
             if enc not in SERVER_CORE_ENCODINGS:
                 SERVER_CORE_ENCODINGS.append(enc)
-SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", )]
+SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", "rgb24")]
 #renamed rgb24 to rgb in public encodings:
-SERVER_ENCODINGS.remove("rgb24")
 SERVER_ENCODINGS.append("rgb")
 
 HAS_LOSSLESS_ENCODINGS = []
@@ -108,6 +107,7 @@ class ServerBase(object):
         self.default_dpi = 96
         self.dpi = 96
         self.supports_clipboard = False
+        self.generic_rgb_encodings = False
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -648,6 +648,7 @@ class ServerBase(object):
             self.disconnect_client(proto, reason)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
+        self.generic_rgb_encodings = capabilities.get("generic-rgb-encodings", False)
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -723,7 +724,11 @@ class ServerBase(object):
         capabilities["version"] = xpra.__version__
         capabilities["platform"] = sys.platform
         capabilities["python_version"] = python_platform.python_version()
-        capabilities["encodings"] = SERVER_ENCODINGS
+        encs = SERVER_ENCODINGS[:]
+        if not self.generic_rgb_encodings:
+            encs.append("rgb24")
+            encs.append("rgb32")
+        capabilities["encodings"] = encs
         capabilities["encodings.core"] = SERVER_CORE_ENCODINGS
         capabilities["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
         capabilities["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]

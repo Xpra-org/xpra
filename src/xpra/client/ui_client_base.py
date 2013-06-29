@@ -448,6 +448,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["generic_window_types"] = True
         capabilities["server-window-resize"] = True
         capabilities["notify-startup-complete"] = True
+        capabilities["generic-rgb-encodings"] = True
         if self.encoding:
             capabilities["encoding"] = self.encoding
         capabilities["encodings"] = self.get_encodings()
