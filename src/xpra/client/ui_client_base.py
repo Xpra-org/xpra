@@ -8,6 +8,7 @@
 import os
 import time
 import ctypes
+import thread
 try:
     from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
 except ImportError:
@@ -219,6 +220,7 @@ class UIXpraClient(XpraClientBase):
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
+        XpraClientBase.cleanup(self)
         if self.keyboard_helper:
             self.keyboard_helper.cleanup()
         if self.clipboard_helper:
@@ -227,11 +229,11 @@ class UIXpraClient(XpraClientBase):
             self.tray.cleanup()
         if self.notifier:
             self.notifier.cleanup()
-        if self.sound_sink:
-            self.stop_receiving_sound()
         if self.sound_source:
-            self.stop_sending_sound()
-        XpraClientBase.cleanup(self)
+            thread.start_new_thread(self.stop_sending_sound, ())
+        if self.sound_sink:
+            thread.start_new_thread(self.stop_receiving_sound, ())
+        time.sleep(0.1)
         self.clean_mmap()
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
