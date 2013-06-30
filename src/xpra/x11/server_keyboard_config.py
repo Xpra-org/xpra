@@ -69,7 +69,7 @@ class KeyboardConfig(object):
                     client_keycode, keysym = ks
                     info["keysym." + str(keysym)+"."+str(client_keycode)] = keycode
                 else:
-                    info["keysym." + str(keysym)] = keycode
+                    info["keysym." + str(ks)] = keycode
         if self.xkbmap_keycodes:
             for kc, spec in self.keycode_translation.items():
                 if type(kc)==tuple:
