@@ -24,6 +24,33 @@ v0.10.0 (2013-05-27)
 	-- simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
 
 
+v0.9.6 (2013-06-30)
+======================
+	-- fix client exit lockups on MS Windows
+	-- fix lost clicks on some popup menus (mostly with MS Windows clients)
+	-- fix client workarea size change detection
+	-- fix reading of unique "machine-id" on posix
+	-- fix window reference leak for windows we fail to manage
+	-- fix compatibility with pillow (PIL fork)
+	-- fix session-info window graphs jumping (smoother motion)
+	-- fix webp loading code for non-Linux posix systems
+	-- fix window group-leader attribute setting
+	-- fix man page indentation
+	-- fix variable test vs use (correctness only)
+	-- static binary builds updates: Python 2.7.5, flac 1.3, PyOpenGL 3.1, numpy 1.7.1, webp 0.3.1, libav 9.7
+	-- static binary builds switched to using pillow instead of PIL
+	-- forward compatibility with future "xpra info" namespace changes
+
+
+v0.9.5 (2013-06-06)
+======================
+	-- fix auto-refresh: don't refresh unnecessarily
+	-- fix wrong initial timeout when ssh takes a long time to connect
+	-- fix client monitor/resolution size change detection
+	-- fix attributes reported to clients when encoding overrides are used
+	-- Gentoo ebuild uses virtual to allow one to choose pillow or PIL
+
+
 v0.9.4 (2013-05-27)
 ======================
 	-- revert cursor scaling fix which broke other applications
