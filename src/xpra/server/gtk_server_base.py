@@ -91,7 +91,7 @@ class GTKServerBase(ServerBase):
         workarea = gtk.gdk.Rectangle(0, 0, root_w, root_h)
         for ss in self._server_sources.values():
             screen_sizes = ss.screen_sizes
-            log("screen_sizes(%s)=%s", ss, screen_sizes)
+            log("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
             if not screen_sizes:
                 continue
             for display in screen_sizes:
@@ -99,10 +99,10 @@ class GTKServerBase(ServerBase):
                 if not display or type(display) not in (list, tuple):
                     continue
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
-                if len(display)>10:
+                if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
                     display_workarea = gtk.gdk.Rectangle(work_x, work_y, work_w, work_h)
-                    log("found workarea % for display %s", display_workarea, display[0])
+                    log("calculate_workarea() found %s for display %s", display_workarea, display[0])
                     workarea = workarea.intersect(display_workarea)
         #sanity checks:
         if workarea.width==0 or workarea.height==0:
