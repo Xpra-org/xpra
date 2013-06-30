@@ -777,7 +777,27 @@ class ServerSource(object):
         info["client.hostname" + suffix] = self.hostname
         info["client.auto_refresh" + suffix] = self.auto_refresh_delay
         info["client.desktop_size" + suffix] = self.desktop_size or ""
-        info["client.screen_sizes" + suffix] = self.screen_sizes
+        if self.screen_sizes:
+            info["client.screens" + suffix] = len(self.screen_sizes)
+            i = 0
+            for x in self.screen_sizes:
+                info[("client.screen[%s].display" % i) + suffix] = x[0]
+                if len(x)>=3:
+                    info[("client.screen[%s].size" % i) + suffix] = x[1], x[2]
+                if len(x)>=5:
+                    info[("client.screen[%s].size_mm" % i) + suffix] = x[3], x[4]
+                if len(x)>=6:
+                    monitors = x[5]
+                    j = 0
+                    for monitor in monitors:
+                        if len(monitor)>=7:
+                            info[("client.screen[%s].monitor[%s].name" % (i, j)) + suffix] = monitor[0]
+                            info[("client.screen[%s].monitor[%s].geometry" % (i, j)) + suffix] = monitor[1:5]
+                            info[("client.screen[%s].monitor[%s].size_mm" % (i, j)) + suffix] = monitor[5:7]
+                        j += 1
+                if len(x)>=10:
+                    info[("client.screen[%s].workarea" % i) + suffix] = x[6:10]
+                i += 1
         for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
                      "notify_startup_complete"):
