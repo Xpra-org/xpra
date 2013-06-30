@@ -190,13 +190,19 @@ class XpraClient(GTKXpraClient):
                 i += 1
 
     def _screen_size_changed(self, *args):
-        def update_size():
+        def update_size(current=None):
             root_w, root_h = self.get_root_size()
             ss = self.get_screen_sizes()
+            log("update_size(%s) sizes=%s", current, ss)
+            if current is not None and current==ss:
+                #unchanged
+                return
             log.info("sending updated screen size to server: %sx%s, screen sizes: %s", root_w, root_h, ss)
             self.send("desktop_size", root_w, root_h, ss)
             #update the max packet size (may have gone up):
             self.set_max_packet_size()
+            #check again soon:
+            gobject.timeout_add(1000, update_size, ss)
         #update via idle_add so the data is actually up to date when we query it!
         self.idle_add(update_size)
 
@@ -237,7 +243,7 @@ class XpraClient(GTKXpraClient):
                         work_x, work_y, work_width, work_height)
             screen_sizes.append(item)
             i += 1
-        log("get_screen_sizes()=%s", screen_sizes)
+        log.info("get_screen_sizes()=%s", screen_sizes)
         return screen_sizes
 
 
