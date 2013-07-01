@@ -11,6 +11,9 @@ import time
 from xpra.log import Logger
 log = Logger()
 
+#For reference, argb to pixbuf done in pixman:
+#http://cgit.freedesktop.org/pixman/tree/demos/gtk-utils.c?id=87ecec8d72be4106358e843a1e7a907b0e814f7f
+
 def get_rgb_rawdata(pixmap, x, y, width, height, logger=None):
     """
         Extracts pixels from the given pixmap
