@@ -134,6 +134,10 @@ class ClientWindow(GTKClientWindowBase):
             self.debug("do_expose_event(%s) area=%s", event, event.area)
         if not (self.flags() & gtk.MAPPED) or self._backing is None:
             return
+        w,h = self.window.get_size()
+        if w>=32768 or h>=32768:
+            self.error("cannot paint on window which is too large: %sx%s !", w, h)
+            return
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
