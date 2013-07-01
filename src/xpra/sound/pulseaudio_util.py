@@ -91,14 +91,23 @@ def has_pa():
 	return has_pulseaudio
 
 
-def get_pactl_server():
+def get_pactl_stat_line(prefix):
+	if not has_pa():
+		return ""
 	code, out = pactl_output("stat")
 	if code!=0:
 		return	""
 	for line in out.splitlines():
-		if line.startswith("Server String: "):
-			return line[len("Server String: "):]
+		if line.startswith(prefix):
+			return line[len(prefix):].strip()
 	return ""
+
+def get_default_sink():
+	return get_pactl_stat_line("Default Sink:")
+
+def get_pactl_server():
+	return get_pactl_stat_line("Server String:")
+
 
 def get_pulse_server(may_start_it=True):
 	xp = get_x11_property("PULSE_SERVER")
