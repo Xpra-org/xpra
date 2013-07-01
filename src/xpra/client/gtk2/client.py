@@ -243,7 +243,7 @@ class XpraClient(GTKXpraClient):
                         work_x, work_y, work_width, work_height)
             screen_sizes.append(item)
             i += 1
-        log.info("get_screen_sizes()=%s", screen_sizes)
+        log("get_screen_sizes()=%s", screen_sizes)
         return screen_sizes
 
 
