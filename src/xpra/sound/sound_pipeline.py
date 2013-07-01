@@ -89,9 +89,10 @@ class SoundPipeline(SignalObject):
         debug("SoundPipeline.cleanup()")
         SignalObject.cleanup(self)
         self.stop()
-        self.bus.remove_signal_watch()
-        if self.bus_message_handler_id:
-            self.bus.disconnect(self.bus_message_handler_id)
+        if self.bus:
+            self.bus.remove_signal_watch()
+            if self.bus_message_handler_id:
+                self.bus.disconnect(self.bus_message_handler_id)
         self.bus = None
         self.pipeline = None
         self.codec = None
