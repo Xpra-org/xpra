@@ -23,7 +23,7 @@ from xpra.platform.paths import get_default_socket_dir
 from xpra.platform import init as platform_init
 from xpra.net.bytestreams import TwoFileConnection, SocketConnection
 from xpra.scripts.config import OPTION_TYPES, ENCRYPTION_CIPHERS, \
-    make_defaults_struct, show_codec_help, parse_bool, validate_config, encodings_help
+    make_defaults_struct, show_codec_help, parse_bool, print_bool, validate_config, encodings_help
 
 
 def warn(msg):
@@ -242,7 +242,7 @@ When unspecified, all the available codecs are allowed and the first one is used
     parser.add_option_group(group)
     group.add_option("--opengl", action="store",
                       dest="opengl", default=defaults.opengl,
-                      help="Use OpenGL accelerated rendering, options: yes,no,auto. Default: %default.")
+                      help="Use OpenGL accelerated rendering, options: yes,no,auto. Default: %s." % print_bool("opengl", defaults.opengl))
     group.add_option("--no-windows", action="store_false",
                       dest="windows", default=defaults.windows,
                       help="Tells the server not to send any window data, only notifications and bell events will be forwarded (if enabled).")

@@ -515,6 +515,13 @@ def parse_bool(k, v):
     else:
         warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
 
+def print_bool(k, v):
+    if type(v)==type(None):
+        return 'auto'
+    if type(v)==bool:
+        return v and 'yes' or 'no'
+    warn("Warning: cannot print value '%s' for '%s' as a boolean" % (v, k))
+
 def parse_number(numtype, k, v, auto=-1):
     if type(v)==str:
         v = v.lower()
