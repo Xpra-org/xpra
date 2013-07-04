@@ -166,7 +166,7 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
             log.info("using test sound source")
         else:
             from xpra.sound.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink
-            from xpra.sound.pulseaudio_util import get_pulse_server, get_pulse_id
+            from xpra.sound.pulseaudio_util import get_pulse_server, get_pulse_id, set_source_mute
             if not has_pa():
                 log.error("pulseaudio not supported - sound disabled")
                 return    None
@@ -196,6 +196,8 @@ def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_serve
                     monitor_device = default_monitor
                 else:
                     log.warn("using first device: %s", monitor_devices.items()[0][1])
+            #make sure it is not muted:
+            set_source_mute(monitor_device, mute=False)
             sound_source = SoundSource("pulsesrc", {"device" : monitor_device}, codec, {})
             log.info("starting sound using pulseaudio device %s", monitor_device)
         return sound_source

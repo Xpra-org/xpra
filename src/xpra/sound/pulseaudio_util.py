@@ -44,12 +44,12 @@ def get_pactl_bin():
 			pactl_bin = which("pactl")
 	return pactl_bin
 
-def pactl_output(pactl_cmd):
+def pactl_output(*pactl_args):
 	pactl_bin = get_pactl_bin()
 	if not pactl_bin:
 		return -1, None
 	#ie: "pactl list"
-	cmd = [pactl_bin, pactl_cmd]
+	cmd = [pactl_bin] + list(pactl_args)
 	try:
 		code, out, _ = safe_exec(cmd)
 		return  code, out
@@ -90,6 +90,11 @@ def has_pa():
 		has_pulseaudio = has_pa_x11_property() or is_pa_installed()
 	return has_pulseaudio
 
+
+def set_source_mute(device, mute=False):
+	code, out = pactl_output("set-source-mute", device, str(int(mute)))
+	log("set_source_mute: output=%s", out)
+	return code==0
 
 def get_pactl_stat_line(prefix):
 	if not has_pa():
