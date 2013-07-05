@@ -11,10 +11,10 @@ log = Logger()
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
+from xpra.server.shadow_server_base import RootWindowModel
 
 
-
-class GTKRootWindowModel(object):
+class GTKRootWindowModel(RootWindowModel):
 
     def get_image(self, x, y, width, height):
         v = get_rgb_rawdata(self.window, x, y, width, height, logger=log)
