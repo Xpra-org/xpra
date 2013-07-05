@@ -449,12 +449,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #first see if we need to deal with OR losing focus:
         has_focus = self._id_to_window.get(self._has_focus)
         if has_focus and has_focus.is_OR():
-            #OR window had focus, hide it
-            #(that's usually enough to make things work!)
-            gdkwin = has_focus.get_property("client-window")
-            log("focus(%s, %s, %s) hiding and unmanaging OR window %s", server_source, wid, modifiers, has_focus)
-            gdkwin.hide()
-            has_focus.unmanage()
+            #OR window had focus - deal with grabs here?
+            pass
 
         def reset_focus():
             log("reset_focus() %s / %s had focus", self._has_focus, has_focus)
