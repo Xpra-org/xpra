@@ -271,7 +271,7 @@ class WindowVideoSource(WindowSource):
         else:
             sscore = 100-abs(speed-self.get_current_speed())
 
-        #score for "edge resistance":
+        #score for "edge resistance" via setup cost:
         ecsc_score = 100
         if csc_spec:
             #OR the masks so we have a chance of making it work
@@ -283,9 +283,13 @@ class WindowVideoSource(WindowSource):
                type(self._csc_encoder)!=csc_spec.codec_class or \
                self._csc_encoder.get_src_width()!=csc_width or self._csc_encoder.get_src_height()!=csc_height:
                 #if we have to change csc, account for new csc setup cost:
-                ecsc_score = 100 - csc_spec.setup_cost
+                ecsc_score = max(0, 80 - csc_spec.setup_cost*80.0/100.0)
+            else:
+                ecsc_score = 80
             enc_width, enc_height = self.get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height)
         else:
+            #not using csc at all!
+            ecsc_score = 100
             width_mask = encoder_spec.width_mask
             height_mask = encoder_spec.height_mask
             enc_width = width & width_mask
