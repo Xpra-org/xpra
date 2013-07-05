@@ -218,6 +218,7 @@ class ServerSource(object):
 
         self.uuid = ""
         self.hostname = ""
+        self.connection_time = time.time()
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -777,6 +778,10 @@ class ServerSource(object):
         info["client.hostname" + suffix] = self.hostname
         info["client.auto_refresh" + suffix] = self.auto_refresh_delay
         info["client.desktop_size" + suffix] = self.desktop_size or ""
+        info["client.connection_time" + suffix] = int(self.connection_time)
+        info["client.elapsed_time" + suffix] = int(time.time()-self.connection_time)
+        #= time.time()
+        #self.start_time = time.time()
         if self.screen_sizes:
             info["client.screens" + suffix] = len(self.screen_sizes)
             i = 0
