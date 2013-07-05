@@ -8,6 +8,11 @@ import sys
 from xpra.platform.win32 import set_redirect_output
 set_redirect_output(False)
 
+try:
+    import win32api                     #@UnresolvedImport
+    win32api.SetConsoleTitle("Xpra")
+except:
+    pass
 from xpra.scripts.main import main
 code = main("Xpra.exe", sys.argv)
 sys.exit(code)
