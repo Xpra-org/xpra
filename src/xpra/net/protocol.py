@@ -195,7 +195,7 @@ class Protocol(object):
         return "Protocol(%s)" % self._conn
 
     def get_threads(self):
-        return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread] if x is not None]
+        return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
 
     def add_stats(self, info, prefix="net.", suffix=""):
         info[prefix+"input.bytecount" + suffix] = self._conn.input_bytecount
