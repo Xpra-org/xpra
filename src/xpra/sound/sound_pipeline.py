@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
+
 from xpra.signal_object import SignalObject
 from xpra.sound.gstreamer_util import gst
 from xpra.log import Logger, debug_if_env
@@ -28,6 +30,7 @@ class SoundPipeline(SignalObject):
         self.bus_message_handler_id = None
         self.bitrate = -1
         self.pipeline = None
+        self.start_time = 0
         self.state = "stopped"
         self.buffer_count = 0
         self.byte_count = 0
@@ -49,6 +52,7 @@ class SoundPipeline(SignalObject):
         debug("pipeline elements=%s", elements)
         pipeline_str = " ! ".join([x for x in elements if x is not None])
         debug("pipeline=%s", pipeline_str)
+        self.start_time = time.time()
         self.pipeline = gst.parse_launch(pipeline_str)
         self.bus = self.pipeline.get_bus()
         self.bus_message_handler_id = self.bus.connect("message", self.on_message)

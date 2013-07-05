@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import sys, os, time
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
@@ -30,8 +30,8 @@ GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
 
-QUEUE_LEAK = int(os.environ.get("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_NO_LEAK))
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "200"))*1000000        #ns
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "400"))*1000000        #ns
+QUEUE_START_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_START_TIME", "200"))*1000000        #ns
 QUEUE_MIN_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_MIN_TIME", "50"))*1000000 #ns
 QUEUE_TIME = max(0, QUEUE_TIME)
 QUEUE_MIN_TIME = max(0, min(QUEUE_TIME, QUEUE_MIN_TIME))
@@ -64,7 +64,7 @@ class SoundSink(SoundPipeline):
         self.sink_type = sink_type
         decoder_str = plugin_str(decoder, decoder_options)
         pipeline_els = []
-        pipeline_els.append("appsrc name=src max-bytes=8192")
+        pipeline_els.append("appsrc name=src max-bytes=512")
         pipeline_els.append(parser)
         pipeline_els.append(decoder_str)
         if VOLUME:
@@ -76,10 +76,10 @@ class SoundSink(SoundPipeline):
                 pipeline_els.append("queue" +
                                     " name=queue"+
                                     " min-threshold-time=%s" % QUEUE_MIN_TIME+
-                                    " max-size-time=%s" % QUEUE_TIME+
-                                    " leaky=%s" % QUEUE_LEAK)
+                                    " max-size-time=%s" % QUEUE_START_TIME+
+                                    " leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
             else:
-                pipeline_els.append("queue leaky=%s" % QUEUE_LEAK)
+                pipeline_els.append("queue leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
         pipeline_els.append(sink_type)
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
@@ -93,6 +93,13 @@ class SoundSink(SoundPipeline):
             self.queue = self.pipeline.get_by_name("queue")
             def overrun(*args):
                 debug("sound sink queue overrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
+                #no overruns for the first 2 seconds:
+                if time.time()-self.start_time<2.0:
+                    return
+                #if we haven't done so yet, just bump the max-size-time
+                if int(self.queue.get_property("max-size-time")) < QUEUE_TIME:
+                    self.queue.set_property("max-size-time", QUEUE_TIME)
+                    return
                 self.emit("overrun")
             def underrun(*args):
                 debug("sound sink queue underrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
