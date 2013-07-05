@@ -77,7 +77,7 @@ class WindowVideoSource(WindowSource):
                 info[prefix+("pipeline_option[%s].score" % i)+suffix] = score 
                 info[prefix+("pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
                 info[prefix+("pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
-                info[prefix+("pipeline_option[%s].encoder" % i)+suffix] = str(encoder_spec)
+                info[prefix+("pipeline_option[%s].encoder" % i)+suffix] = repr(encoder_spec)
                 i += 1
 
     def cleanup(self):
