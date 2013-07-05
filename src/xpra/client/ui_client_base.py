@@ -438,7 +438,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["encoding.video_scaling"] = True
         capabilities["encoding.transparency"] = self.has_transparency()
         #TODO: check for csc support (swscale only?)
-        capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA")
+        capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA", "BGRX")
         capabilities["rgb24zlib"] = True
         capabilities["encoding.rgb24zlib"] = True
         capabilities["named_cursors"] = False
