@@ -436,6 +436,7 @@ class UIXpraClient(XpraClientBase):
         capabilities["encoding.csc_atoms"] = True
         #TODO: check for csc support (swscale only?)
         capabilities["encoding.video_scaling"] = True
+        capabilities["encoding.transparency"] = self.has_transparency()
         #TODO: check for csc support (swscale only?)
         capabilities["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P", "BGRA")
         capabilities["rgb24zlib"] = True
@@ -514,6 +515,9 @@ class UIXpraClient(XpraClientBase):
                     log.error("invalid environment value for %s: %s", bprop, evalue)
         log("batch props=%s", [("%s=%s" % (k,v)) for k,v in capabilities.items() if k.startswith("batch.")])
         return capabilities
+
+    def has_transparency(self):
+        return False
 
 
     def server_ok(self):

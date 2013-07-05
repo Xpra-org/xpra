@@ -101,6 +101,7 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
+        self.supports_transparency = encoding_options.get("transparency", False)
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -504,7 +505,7 @@ class WindowSource(object):
             coding = self.find_common_lossless_encoder(has_alpha, current_encoding, ww*wh)
             debug("do_get_best_encoding(..) temporarily switching to %s encoder for %s pixels: %s", coding, pixel_count, reason)
             return  coding
-        if has_alpha:
+        if has_alpha and self.supports_transparency:
             if current_encoding in ("png", "rgb32", "webp"):
                 return current_encoding
             if current_encoding=="rgb":
@@ -563,7 +564,7 @@ class WindowSource(object):
         return current_encoding
 
     def find_common_lossless_encoder(self, has_alpha, fallback, pixel_count):
-        if has_alpha:
+        if has_alpha and self.supports_transparency:
             rgb_fmt = "rgb32"
         else:
             rgb_fmt = "rgb24"
@@ -907,6 +908,9 @@ class WindowSource(object):
                "RGBA"   : "RGBA",
                "BGRA"   : "RGBA",
                }.get(pixel_format, pixel_format)
+        #remove transparency if not handled by the client:
+        if coding.startswith("png") and not self.supports_transparency and rgb=="RGBA":
+            rgb = "RGB"
         try:
             #it is safe to use frombuffer() here since the convert()
             #calls below will not convert and modify the data in place
