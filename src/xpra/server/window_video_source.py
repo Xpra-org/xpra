@@ -49,6 +49,8 @@ class WindowVideoSource(WindowSource):
         self._video_encoder = None
         self._lock = Lock()               #to ensure we serialize access to the encoder and its internals
 
+        self.last_pipeline_params = None
+        self.last_pipeline_scores = []
         self._video_pipeline_helper.may_init()
 
     def add_stats(self, info, suffix=""):
@@ -64,6 +66,19 @@ class WindowVideoSource(WindowSource):
             vi = self._video_encoder.get_info()
             for k,v in vi.items():
                 info[prefix+"encoder."+k+suffix] = v
+        if self.last_pipeline_params:
+            encoding, width, height, src_format = self.last_pipeline_params
+            info[prefix+"pipeline_param.encoding"+suffix] = encoding
+            info[prefix+"pipeline_param.dimensions"+suffix] = width, height
+            info[prefix+"pipeline_param.src_format"+suffix] = src_format
+        if self.last_pipeline_scores:
+            i = 0
+            for score, csc_spec, enc_in_format, encoder_spec in self.last_pipeline_scores:
+                info[prefix+("pipeline_option[%s].score" % i)+suffix] = score 
+                info[prefix+("pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
+                info[prefix+("pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
+                info[prefix+("pipeline_option[%s].encoder" % i)+suffix] = str(encoder_spec)
+                i += 1
 
     def cleanup(self):
         WindowSource.cleanup(self)
@@ -363,8 +378,9 @@ class WindowVideoSource(WindowSource):
         if self._video_encoder:
             self.do_video_encoder_cleanup()
         #and make a new one:
-        scores = self.get_video_pipeline_options(encoding, width, height, src_format)
-        return self.setup_pipeline(scores, width, height, src_format)
+        self.last_pipeline_params = encoding, width, height, src_format
+        self.last_pipeline_scores = self.get_video_pipeline_options(encoding, width, height, src_format)
+        return self.setup_pipeline(self.last_pipeline_scores, width, height, src_format)
 
     def do_check_pipeline(self, encoding, width, height, src_format):
         """

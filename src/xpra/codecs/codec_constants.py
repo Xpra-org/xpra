@@ -73,4 +73,7 @@ class codec_spec(object):
         return "codec_spec(%s)" % self.__dict__
 
     def __repr__(self):
-        return "codec_spec(%s)" % self.codec_class
+        try:
+            return "codec_spec(%s.%s)" % (self.codec_class.__module__, self.codec_class.__name__)
+        except:
+            return "codec_spec(%s)" % self.codec_class
