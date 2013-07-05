@@ -10,6 +10,7 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
+import re
 from xpra.util import nonl
 from xpra.client.client_base import XpraClientBase, DEFAULT_TIMEOUT, EXIT_TIMEOUT, EXIT_OK
 from xpra.net.protocol import set_scheduler
@@ -150,7 +151,12 @@ class InfoXpraClient(CommandConnectClient):
         log.debug("process_hello: %s", packet)
         props = packet[1]
         if props:
-            for k in sorted(props.keys()):
+            def sorted_nicely(l): 
+                """ Sort the given iterable in the way that humans expect."""
+                convert = lambda text: int(text) if text.isdigit() else text
+                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+                return sorted(l, key = alphanum_key)
+            for k in sorted_nicely(props.keys()):
                 v = props.get(k)
                 log.info("%s=%s", k, nonl(v))
         self.quit(0)
