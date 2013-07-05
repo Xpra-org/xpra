@@ -390,6 +390,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         x, y, w, h, b = self._geometry
         return (x, y, w + 2*b, h + 2*b)
 
+    def get_position(self):
+        return self.do_get_property_geometry(None)[:2]
+
     def unmanage(self, exiting=False):
         if self._managed:
             self.emit("unmanaged", exiting)

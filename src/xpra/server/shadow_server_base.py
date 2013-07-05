@@ -66,6 +66,9 @@ class RootWindowModel(object):
     def get_dimensions(self):
         return self.window.get_size()
 
+    def get_position(self):
+        return 0, 0
+
 
 class ShadowServerBase(object):
 

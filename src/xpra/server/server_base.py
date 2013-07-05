@@ -917,6 +917,8 @@ class ServerBase(object):
                 info["size-constraints.%s" % k] = v
         info["override-redirect"] = window.is_OR()
         info["tray"] = window.is_tray()
+        info["size"] = window.get_dimensions()
+        info["position"] = window.get_position()
         return info
 
     def clipboard_progress(self, local_requests, remote_requests):
