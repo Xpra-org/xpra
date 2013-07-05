@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os
 import gobject
 import gtk
@@ -71,6 +72,8 @@ class ClientWindow(GTKClientWindowBase):
         GTKClientWindowBase.init_window(self, metadata)
 
     def set_alpha(self):
+        if sys.platform.startswith("win"):
+            return
         self.debug("set_alpha()")
         if self._has_alpha:
             screen = self.get_screen()
