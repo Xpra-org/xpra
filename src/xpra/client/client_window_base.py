@@ -41,14 +41,8 @@ class ClientWindowBase(ClientWidgetBase):
         self.init_window(metadata)
         self.setup_window()
 
-    def adjust_for_offset(self):
-        oL, oT, oR, oB = self._offset
-        self._size = self._size[0]+oL+oR, self._size[1]+oT+oB
-        self._pos = max(0, self._pos[0]-oL), max(0, self._pos[1]-oT)
-
     def init_window(self, metadata):
         self._can_set_workspace = False
-        self._offset = 0, 0, 0, 0
         self._backing = None
         self._metadata = {}
         self._refresh_timer = None
@@ -61,17 +55,6 @@ class ClientWindowBase(ClientWidgetBase):
 
     def setup_window(self):
         self.new_backing(*self._size)
-
-    def toggle_offset(self, new_offset):
-        if self._override_redirect:
-            return
-        if self._offset==(0, 0, 0, 0):
-            self._offset = new_offset
-        else:
-            self._offset = (0, 0, 0, 0)
-        self.adjust_for_offset()
-        self.resize(*self._size)
-        self.queue_draw(0, 0, *self._size)
 
 
     def update_icon(self, width, height, coding, data):
@@ -257,8 +240,7 @@ class ClientWindowBase(ClientWidgetBase):
             if DRAW_DEBUG:
                 self.info("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
             if success and self._backing and self._backing.draw_needs_refresh:
-                ol, ot = self._offset[:2]
-                self.queue_draw(x+ol, y+ot, width, height)
+                self.queue_draw(x, y, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
             if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
                 self.source_remove(self._refresh_timer)

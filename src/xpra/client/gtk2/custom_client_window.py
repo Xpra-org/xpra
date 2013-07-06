@@ -60,9 +60,4 @@ class CustomClientWindow(TopBarClientWindow):
         menu_button.show_all()
         b.add(menu_button)
 
-    def do_expose_event(self, event):
-        self.capture_log = False
-        TopBarClientWindow.do_expose_event(self, event)
-        self.capture_log = True
-
 gobject.type_register(CustomClientWindow)

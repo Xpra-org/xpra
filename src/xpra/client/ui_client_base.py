@@ -963,7 +963,7 @@ class UIXpraClient(XpraClientBase):
         window = ClientWindowClass(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
-        window.show_all()
+        window.show()
 
     def get_group_leader(self, wid, pid, leader_xid, leader_wid):
         #subclasses that wish to implement the feature may override this method
