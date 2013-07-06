@@ -208,7 +208,7 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--min-quality", action="store",
                       metavar="MIN-LEVEL",
                       dest="min_quality", type="int", default=defaults.min_quality,
-                      help="Sets the minimum x264 encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
+                      help="Sets the minimum encoding quality allowed in automatic quality setting (from 1 to 100, 0 to leave unset). Default: %default.")
     group.add_option("--quality", action="store",
                       metavar="LEVEL",
                       dest="quality", type="int", default=defaults.quality,
@@ -216,11 +216,11 @@ When unspecified, all the available codecs are allowed and the first one is used
     group.add_option("--min-speed", action="store",
                       metavar="SPEED",
                       dest="min_speed", type="int", default=defaults.min_speed,
-                      help="Sets the minimum x264 encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
+                      help="Sets the minimum encoding speed allowed in automatic speed setting (1-100, 0 to leave unset). Default: %default.")
     group.add_option("--speed", action="store",
                       metavar="SPEED",
                       dest="speed", type="int", default=defaults.speed,
-                      help="Use x264 image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
+                      help="Use image compression with the given encoding speed (1-100, 0 to use automatic setting). Default: %default.")
     group.add_option("--auto-refresh-delay", action="store",
                       dest="auto_refresh_delay", type="float", default=defaults.auto_refresh_delay,
                       metavar="DELAY",
