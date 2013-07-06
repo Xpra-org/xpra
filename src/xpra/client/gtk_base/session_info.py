@@ -103,7 +103,8 @@ class SessionInfo(gtk.Window):
         tb.new_row("Xpra", label(__version__), label(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
-            from xpra.build_info import BUILD_DATE as cl_date, REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch
+            from xpra.build_info import BUILD_DATE as cl_date
+            from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch
         except:
             pass
         tb.new_row("Revision", label(cl_rev), label(self.client._remote_revision or "unknown"))

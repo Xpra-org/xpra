@@ -35,7 +35,8 @@ def add_version_info(props, version_prefix=""):
     props[version_prefix+"version"] = local_version
     props["python.version"] = sys.version_info[:3]
     try:
-        from xpra.build_info import LOCAL_MODIFICATIONS, BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU, REVISION
+        from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
+        from xpra.build_info import BUILD_DATE, BUILT_BY, BUILT_ON, BUILD_BIT, BUILD_CPU
         props["build.local_modifications"] = LOCAL_MODIFICATIONS
         props["build.date"] = BUILD_DATE
         props["build.by"] = BUILT_BY

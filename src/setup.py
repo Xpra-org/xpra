@@ -457,8 +457,12 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
 
 if "clean" not in sys.argv:
     # Add build info to build_info.py file:
-    import add_build_info
-    add_build_info.main()
+    from add_build_info import record_build_info
+    record_build_info()
+
+if "sdist" in sys.argv:
+    from add_build_info import record_src_info
+    record_src_info()
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #take shortcut to skip cython/pkgconfig steps:

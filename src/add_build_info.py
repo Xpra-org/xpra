@@ -15,6 +15,99 @@ import re
 import sys
 
 
+def save_properties(props, filename):
+    if os.path.exists(filename):
+        try:
+            os.unlink(filename)
+        except:
+            print("WARNING: failed to delete %s" % filename)
+    f = open(filename, mode='w')
+    for name,value in props.items():
+        s = str(value).replace("'", "\\'")
+        f.write("%s='%s'\n" % (name, s))
+    f.close()
+    print("updated %s with %s" % (filename, props))
+
+def get_properties(filename):
+    props = dict()
+    if os.path.exists(filename):
+        try:
+            f = open(filename, "rU")
+            for line in f:
+                s = line.strip()
+                if len(s)==0:
+                    continue
+                if s[0] in ('!', '#'):
+                    continue
+                parts = s.split("=", 1)
+                name = parts[0]
+                value = parts[1]
+                if value[0]!="'" or value[-1]!="'":
+                    continue
+                props[name]= value[1:-1]
+        finally:
+            f.close()
+    return props
+
+
+def get_cpuinfo():
+    if platform.uname()[5]:
+        return platform.uname()[5]
+    try:
+        if os.path.exists("/proc/cpuinfo"):
+            f = open("/proc/cpuinfo", "rU")
+            for line in f:
+                if line.startswith("model name"):
+                    return line.split(": ")[1].replace("\n", "").replace("\r", "")
+            f.close()
+    finally:
+        pass
+    return "unknown"
+
+def get_compiler_info():
+    if sys.platform.startswith("win"):
+        cmd = "cl"
+    else:
+        cmd = "gcc --version"
+    proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    stdout, _ = proc.communicate()
+    #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
+    #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
+    #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
+    if proc.returncode!=0:
+        print("'%s' failed with return code %s" % (cmd, proc.returncode))
+        return  ""
+    if not stdout:
+        print("could not get GCC version information")
+        return  ""
+    out = stdout.decode('utf-8')
+    return out.splitlines()[0]
+
+def set_prop(props, key, value):
+    if value!="unknown" or props.get(key) is None:
+        props[key] = value
+
+
+def record_build_info(is_build=True):
+    BUILD_INFO_FILE = "./xpra/build_info.py"
+
+    props = get_properties(BUILD_INFO_FILE)
+    if is_build:
+        set_prop(props, "BUILT_BY", getpass.getuser())
+        set_prop(props, "BUILT_ON", socket.gethostname())
+        set_prop(props, "BUILD_DATE", date.today().isoformat())
+        set_prop(props, "BUILD_CPU", get_cpuinfo())
+        set_prop(props, "BUILD_BIT", platform.architecture()[0])
+        try:
+            from Cython import __version__ as cython_version
+        except:
+            cython_version = "unknown"
+        set_prop(props, "CYTHON_VERSION", cython_version)
+        set_prop(props, "COMPILER_INFO", get_compiler_info())
+        set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
+    save_properties(props, BUILD_INFO_FILE)
+
+
 def load_ignored_changed_files():
     ignored = []
     f = None
@@ -100,101 +193,12 @@ def get_svn_props():
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
-BUILD_INFO_FILE = "./xpra/build_info.py"
-
-def save_properties_to_file(props):
-    if os.path.exists(BUILD_INFO_FILE):
-        try:
-            os.unlink(BUILD_INFO_FILE)
-        except:
-            print("WARNING: failed to delete %s" % BUILD_INFO_FILE)
-    f = open(BUILD_INFO_FILE, mode='w')
-    for name,value in props.items():
-        s = str(value).replace("'", "\\'")
-        f.write("%s='%s'\n" % (name, s))
-    f.close()
-    print("updated build_info.py with %s" % props)
-
-def get_existing_properties():
-    props = dict()
-    if os.path.exists(BUILD_INFO_FILE):
-        try:
-            f = open(BUILD_INFO_FILE, "rU")
-            for line in f:
-                s = line.strip()
-                if len(s)==0:
-                    continue
-                if s[0] in ('!', '#'):
-                    continue
-                parts = s.split("=", 1)
-                name = parts[0]
-                value = parts[1]
-                if value[0]!="'" or value[-1]!="'":
-                    continue
-                props[name]= value[1:-1]
-        finally:
-            f.close()
-    return props
-
-def get_cpuinfo():
-    if platform.uname()[5]:
-        return platform.uname()[5]
-    try:
-        if os.path.exists("/proc/cpuinfo"):
-            f = open("/proc/cpuinfo", "rU")
-            for line in f:
-                if line.startswith("model name"):
-                    return line.split(": ")[1].replace("\n", "").replace("\r", "")
-            f.close()
-    finally:
-        pass
-    return "unknown"
-
-def get_compiler_info():
-    if sys.platform.startswith("win"):
-        cmd = "cl"
-    else:
-        cmd = "gcc --version"
-    proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    stdout, _ = proc.communicate()
-    #print("get_compiler_info() %s returned %s" % (cmd, proc.returncode))
-    #print("get_compiler_info() stdout(%s)=%s" % (cmd, stdout))
-    #print("get_compiler_info() stderr(%s)=%s" % (cmd, stderr))
-    if proc.returncode!=0:
-        print("'%s' failed with return code %s" % (cmd, proc.returncode))
-        return  ""
-    if not stdout:
-        print("could not get GCC version information")
-        return  ""
-    out = stdout.decode('utf-8')
-    return out.splitlines()[0]
-
-
-def record_info(is_build=True):
-    def set_prop(props, key, value):
-        if value!="unknown" or props.get(key) is None:
-            props[key] = value
-
-    props = get_existing_properties()
-    if is_build:
-        set_prop(props, "BUILT_BY", getpass.getuser())
-        set_prop(props, "BUILT_ON", socket.gethostname())
-        set_prop(props, "BUILD_DATE", date.today().isoformat())
-        set_prop(props, "BUILD_CPU", get_cpuinfo())
-        set_prop(props, "BUILD_BIT", platform.architecture()[0])
-        try:
-            from Cython import __version__ as cython_version
-        except:
-            cython_version = "unknown"
-        set_prop(props, "CYTHON_VERSION", cython_version)
-        set_prop(props, "COMPILER_INFO", get_compiler_info())
-    set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
-    for k,v in get_svn_props().items():
-        set_prop(props, k, v)
-    save_properties_to_file(props)
+def record_src_info():
+    SRC_INFO_FILE = "./xpra/src_info.py"
+    save_properties(get_svn_props(), SRC_INFO_FILE)
 
 def main():
-    record_info(True)
+    record_build_info(True)
 
 
 if __name__ == "__main__":

@@ -227,8 +227,8 @@ def show_codec_help(is_server, speaker_codecs, microphone_codecs):
 def get_build_info():
     info = []
     try:
-        from xpra.build_info import (BUILT_BY, BUILT_ON, BUILD_DATE, REVISION,
-                                LOCAL_MODIFICATIONS, CYTHON_VERSION, COMPILER_INFO)
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_INFO
         info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
         if BUILD_DATE:
             info.append(BUILD_DATE)
@@ -247,7 +247,7 @@ def get_build_info():
         if COMPILER_INFO!="unknown":
             info.append(COMPILER_INFO)
     except Exception, e:
-        warn("Error: could not find the build information: %s" % e)
+        warn("Error: could not find the source or build information: %s" % e)
     return info
 
 
