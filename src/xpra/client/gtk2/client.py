@@ -313,16 +313,19 @@ class XpraClient(GTKXpraClient):
         self.opengl_props["info"] = ""
         try:
             try:
-                from xpra.client import gl     #@UnusedImport
-                from xpra.client.gl.gl_check import check_support
-                w, h = self.get_root_size()
-                min_texture_size = max(w, h)
-                self.opengl_props = check_support(min_texture_size, force_enable=(enable_opengl is True))
-
-                from xpra.client.gl.gl_client_window import GLClientWindow
-                self.GLClientWindowClass = GLClientWindow
-                self.client_supports_opengl = True
-                self.opengl_enabled = True
+                __import__("xpra.client.gl", {}, {}, [])
+                try:
+                    gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
+                    w, h = self.get_root_size()
+                    min_texture_size = max(w, h)
+                    self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
+    
+                    gl_client_window = __import__("xpra.client.gl.gl_client_window", {}, {}, ["GLClientWindow"])
+                    self.GLClientWindowClass = gl_client_window.GLClientWindow
+                    self.client_supports_opengl = True
+                    self.opengl_enabled = True
+                except:
+                    log.error("OpenGL setup failure:", exc_info=True)
             except ImportError, e:
                 log.info("OpenGL support not enabled: %s", e)
                 self.opengl_props["info"] = str(e)
@@ -401,7 +404,7 @@ class XpraClient(GTKXpraClient):
     def toggle_opengl(self, *args):
         assert self.window_unmap, "server support for 'window_unmap' is required for toggling opengl at runtime"
         self.opengl_enabled = not self.opengl_enabled
-        log.info("opengl_toggled: %s", self.opengl_enabled)
+        log("opengl_toggled: %s", self.opengl_enabled)
         def fake_send(*args):
             log("fake_send(%s)", args)
         #now replace all the windows with new ones:
@@ -434,6 +437,6 @@ class XpraClient(GTKXpraClient):
                 pass
             #create the new window, which should honour the new state of the opengl_enabled flag:
             self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
-        log.info("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
+        log("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
 
 gobject.type_register(XpraClient)
