@@ -999,6 +999,12 @@ class ServerSource(object):
         if ws:
             ws.cancel_damage()
 
+    def unmap_window(self, wid, window):
+        ws = self.window_sources.get(wid)
+        if ws:
+            ws.unmap()
+
+
     def remove_window(self, wid, window):
         """ The given window is gone, ensure we free all the related resources """
         if not self.can_send_window(window):

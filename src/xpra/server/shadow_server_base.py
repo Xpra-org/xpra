@@ -174,7 +174,8 @@ class ShadowServerBase(object):
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
         window = self._process_window_common(wid)
-        self._cancel_damage(wid, window)
+        for ss in self._server_sources.values():
+            ss.unmap_window(wid, window)
         self.mapped_at = None
 
     def _process_configure_window(self, proto, packet):

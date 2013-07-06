@@ -159,7 +159,7 @@ class ClientWindow(QWidget, ClientWindowBase):
         h = max(1, h)
         assert self._client.window_configure
         debug("configure-window for wid=%s, geometry=%s, client props=%s", self._id, (x, y, w, h), self._client_properties)
-        self._client.send("configure-window", self._id, x, y, w, h, self._client_properties)
+        self.send("configure-window", self._id, x, y, w, h, self._client_properties)
 
 
     def keyPressEvent(self, event):

@@ -116,6 +116,10 @@ class WindowVideoSource(WindowSource):
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
         WindowSource.set_client_properties(self, properties)
 
+    def unmap(self):
+        WindowSource.cancel_damage(self)
+        self.cleanup_codecs()
+
     def cancel_damage(self):
         WindowSource.cancel_damage(self)
         if self._last_sequence_queued<self._sequence:

@@ -751,6 +751,7 @@ class ServerBase(object):
         if has_rencode:
             capabilities["rencode.version"] = rencode_version
         capabilities["window_configure"] = True
+        capabilities["window_unmap"] = True
         capabilities["xsettings-tuple"] = True
         capabilities["change-quality"] = True
         capabilities["change-min-quality"] = True

@@ -125,6 +125,7 @@ class UIXpraClient(XpraClientBase):
         self.toggle_cursors_bell_notify = False
         self.toggle_keyboard_sync = False
         self.window_configure = False
+        self.window_unmap = False
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
@@ -136,6 +137,7 @@ class UIXpraClient(XpraClientBase):
         self.X11_OR_focus = False
         self.pings = False
 
+        self.client_supports_opengl = False
         self.client_supports_notifications = False
         self.client_supports_system_tray = False
         self.client_supports_clipboard = False
@@ -322,6 +324,7 @@ class UIXpraClient(XpraClientBase):
 
     def init_opengl(self, enable_opengl):
         self.opengl_enabled = False
+        self.client_supports_opengl = False
         self.opengl_props = {"info" : "not supported"}
 
 
@@ -469,7 +472,7 @@ class UIXpraClient(XpraClientBase):
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
-        capabilities["encoding.uses_swscale"] = not self.opengl_enabled
+        capabilities["encoding.uses_swscale"] = True    #used to be False for opengl, but we may still use swscale then..
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for I420/YUV420P
@@ -646,6 +649,7 @@ class UIXpraClient(XpraClientBase):
         set_application_name(self.session_name)
         self.X11_OR_focus = capabilities.get("X11.OR_focus", False)
         self.window_configure = capabilities.get("window_configure", False)
+        self.window_unmap = capabilities.get("window_unmap", False)
         self.server_supports_notifications = capabilities.get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
         self.server_supports_cursors = capabilities.get("cursors", True)    #added in 0.5, default to True!
@@ -954,7 +958,9 @@ class UIXpraClient(XpraClientBase):
             auto_refresh_delay = 0                          #server takes care of it
         else:
             auto_refresh_delay = self.auto_refresh_delay    #we do it
+        self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
 
+    def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         pid = metadata.get("pid", -1)
         leader_xid = metadata.get("group-leader-xid")
         leader_wid = metadata.get("group-leader-wid")
@@ -964,6 +970,7 @@ class UIXpraClient(XpraClientBase):
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()
+        return window
 
     def get_group_leader(self, wid, pid, leader_xid, leader_wid):
         #subclasses that wish to implement the feature may override this method

@@ -273,7 +273,7 @@ class SessionInfo(gtk.Window):
             tb.new_row("Transient Windows", self.transient_managed_label),
             self.trays_managed_label = label()
             tb.new_row("Trays Managed", self.trays_managed_label),
-            if self.client.opengl_enabled:
+            if self.client.client_supports_opengl:
                 self.opengl_label = label()
                 tb.new_row("OpenGL Windows", self.opengl_label),
 
@@ -436,7 +436,7 @@ class SessionInfo(gtk.Window):
                 size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
-        self.bool_icon(self.server_opengl_icon, self.client.opengl_enabled)
+        self.bool_icon(self.server_opengl_icon, self.client.client_supports_opengl)
         buffering = "n/a"
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
@@ -656,7 +656,7 @@ class SessionInfo(gtk.Window):
             self.windows_managed_label.set_text(str(windows))
             self.transient_managed_label.set_text(str(transient))
             self.trays_managed_label.set_text(str(trays))
-            if self.client.opengl_enabled:
+            if self.client.client_supports_opengl:
                 self.opengl_label.set_text(str(gl))
         return True
 

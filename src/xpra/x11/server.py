@@ -532,7 +532,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("cannot map window %s: already removed!", wid)
             return
         assert not window.is_OR()
-        self._cancel_damage(wid, window)
+        for ss in self._server_sources.values():
+            ss.unmap_window(wid, window)
         self._desktop_manager.hide_window(window)
 
     def _process_configure_window(self, proto, packet):

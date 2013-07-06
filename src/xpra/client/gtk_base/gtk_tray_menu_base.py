@@ -66,6 +66,8 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_notificationsmenuitem())
         if not self.client.readonly:
             menu.append(self.make_clipboardmenuitem())
+        if self.client.opengl_enabled:
+            menu.append(self.make_openglmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
         menu.append(self.make_qualitymenuitem())
@@ -324,6 +326,21 @@ class GTKTrayMenuBase(object):
             set_keyboard_sync_tooltip()
         self.client.connect("handshake-complete", set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
+
+    def make_openglmenuitem(self):
+        gl = self.checkitem("OpenGL")
+        def gl_set(*args):
+            log("gl_set(%s) opengl_enabled=%s, window_unmap=%s", args, self.client.opengl_enabled, self.client.window_unmap)
+            gl.set_active(self.client.opengl_enabled)
+            gl.set_sensitive(self.client.window_unmap)
+            if not self.client.window_unmap:
+                set_tooltip_text(gl, "no server support for runtime switching")
+                return
+            def opengl_toggled(*args):
+                self.client.toggle_opengl()
+            gl.connect("toggled", opengl_toggled)
+        self.client.connect("handshake-complete", gl_set)
+        return gl
 
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)

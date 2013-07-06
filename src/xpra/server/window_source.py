@@ -179,6 +179,11 @@ class WindowSource(object):
         self.maximized = properties.get("maximized", False)
 
 
+    def unmap(self):
+        self.cancel_damage()
+        self.statistics.reset()
+
+
     def cancel_damage(self):
         """
         Use this method to cancel all currently pending and ongoing

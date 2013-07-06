@@ -57,6 +57,10 @@ class ClientWindowBase(ClientWidgetBase):
         self.new_backing(*self._size)
 
 
+    def send(self, *args):
+        self._client.send(*args)
+
+
     def update_icon(self, width, height, coding, data):
         raise Exception("override me!")
 

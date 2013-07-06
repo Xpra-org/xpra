@@ -260,7 +260,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if workspace>=0:
                 self._client_properties["workspace"] = workspace
             self.debug("map-window for wid=%s with client props=%s", self._id, self._client_properties)
-            self._client.send("map-window", self._id, x, y, w, h, self._client_properties)
+            self.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
             self.idle_add(self._focus_change, "initial")
@@ -289,12 +289,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if workspace>=0:
                     self._client_properties["workspace"] = workspace
             self.debug("configure-window for wid=%s with client props=%s", self._id, self._client_properties)
-            self._client.send("configure-window", self._id, x, y, w, h, self._client_properties)
+            self.send("configure-window", self._id, x, y, w, h, self._client_properties)
         if dx!=0 or dy!=0:
             #window has moved
             if not self._client.window_configure:
                 #if we don't handle the move via configure:
-                self._client.send("move-window", self._id, x, y)
+                self.send("move-window", self._id, x, y)
             #move any OR window with their parent:
             for window in self._override_redirect_windows:
                 x, y = window.get_position()
@@ -303,11 +303,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._size = (w, h)
             self.new_backing(w, h)
             if not self._client.window_configure:
-                self._client.send("resize-window", self._id, w, h)
+                self.send("resize-window", self._id, w, h)
 
     def move_resize(self, x, y, w, h):
         assert self._override_redirect
-        assert self._offset == (0, 0, 0, 0)
         w = max(1, w)
         h = max(1, h)
         self.window.move_resize(x, y, w, h)
@@ -328,10 +327,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_unmap_event(self, event):
         self._unfocus()
         if not self._override_redirect:
-            self._client.send("unmap-window", self._id)
+            self.send("unmap-window", self._id)
 
     def do_delete_event(self, event):
-        self._client.send("close-window", self._id)
+        self.send("close-window", self._id)
         return True
 
 
