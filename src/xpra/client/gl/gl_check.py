@@ -14,7 +14,7 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 #warnings seem unavoidable on win32, so silence them
 #(other platforms should fix their packages instead)
-SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win")
+SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.startswith("darwin")
 
 BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
 
