@@ -27,6 +27,7 @@ from xpra.scripts.config import HAS_SOUND
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass
+from xpra.util import alnum
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
@@ -438,7 +439,7 @@ class ServerSource(object):
         log("client uuid %s", self.uuid)
         msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
         if self.hostname:
-            msg += " connected from '%s'" % self.hostname
+            msg += " connected from '%s'" % alnum(self.hostname)
         log.info(msg)
 
         #keyboard:

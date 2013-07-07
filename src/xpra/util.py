@@ -17,6 +17,9 @@ class AdHocStruct(object):
         return ("<%s object, contents: %r>"
                 % (type(self).__name__, self.__dict__))
 
+def alnum(_str):
+    return filter(str.isalnum, _str)
+
 def nn(x):
     if x is None:
         return  ""
