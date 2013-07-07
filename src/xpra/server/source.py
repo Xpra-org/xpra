@@ -216,6 +216,8 @@ class ServerSource(object):
         self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
+        self.suspended = False 
+        self.resume_sound = False
 
         self.uuid = ""
         self.hostname = ""
@@ -360,6 +362,31 @@ class ServerSource(object):
         if self.protocol:
             self.protocol.close()
             self.protocol = None
+
+    def suspend(self, ui, wd):
+        if ui:
+            self.suspended = True
+        if self.sound_source is None:
+            self.resume_sound = False
+        else:
+            self.resume_sound = True
+            self.stop_sending_sound()
+        for wid in wd.keys():
+            ws = self.window_sources.get(wid)
+            if ws:
+                ws.suspend()
+
+    def resume(self, ui, wd):
+        if not ui:
+            self.suspended = False
+        for wid, window in wd.items():
+            ws = self.window_sources.get(wid)
+            if ws:
+                ws.resume(window)
+        if self.resume_sound:
+            self.start_sending_sound()
+        self.do_send_cursor()
+
 
     def user_event(self):
         self.last_user_event = time.time()
@@ -529,6 +556,7 @@ class ServerSource(object):
             self.send("startup-complete")
 
     def start_sending_sound(self):
+        assert not self.suspended, "cannot start sound when UI is suspended"
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"
         assert self.sound_source is None, "a sound source already exists"
         assert self.sound_receive, "cannot send sound: support is not enabled on the client"
@@ -549,6 +577,8 @@ class ServerSource(object):
 
     def new_sound_buffer(self, sound_source, data, metadata):
         assert self.sound_source
+        if self.suspended:
+            return
         if self.sound_source_sequence>0:
             metadata["sequence"] = self.sound_source_sequence
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
@@ -781,6 +811,7 @@ class ServerSource(object):
         info["client.desktop_size" + suffix] = self.desktop_size or ""
         info["client.connection_time" + suffix] = int(self.connection_time)
         info["client.elapsed_time" + suffix] = int(time.time()-self.connection_time)
+        info["client.suspended" + suffix] = self.suspended
         #= time.time()
         #self.start_time = time.time()
         if self.screen_sizes:
@@ -840,11 +871,12 @@ class ServerSource(object):
         self.send("info-response", info)
 
     def send_clipboard(self, packet):
-        if self.clipboard_enabled:
-            self.send(*packet)
+        if not self.clipboard_enabled or self.suspended:
+            return
+        self.send(*packet)
 
     def send_cursor(self, cursor_data):
-        if not self.send_cursors:
+        if not self.send_cursors or self.suspended:
             return
         self.cursor_data = cursor_data
         if not self.send_cursor_pending:
@@ -863,16 +895,19 @@ class ServerSource(object):
             self.send("cursor", "")
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        if self.send_bell:
-            self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        if not self.send_bell or self.suspended:
+            return
+        self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
-        if self.send_notifications:
-            self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+        if not self.send_notifications or self.suspended:
+            return
+        self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
 
     def notify_close(self, nid):
-        if self.send_notifications:
-            self.send("notify_close", nid)
+        if not self.send_notifications or self.suspended:
+            return
+        self.send("notify_close", nid)
 
     def set_deflate(self, level):
         self.send("set_deflate", level)

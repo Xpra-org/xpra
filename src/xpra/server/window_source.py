@@ -107,6 +107,7 @@ class WindowSource(object):
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
         self.last_pixmap_data = None
         self.batch_config = batch_config
+        self.suspended = False
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.refresh_timer = None
@@ -153,6 +154,19 @@ class WindowSource(object):
         self._damage_cancelled = float("inf")
         self.statistics.reset()
         debug("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
+
+    def suspend(self):
+        self.cancel_damage()
+        self.statistics.reset()
+        self.suspended = True
+
+    def resume(self, window):
+        self.cancel_damage()
+        self.statistics.reset()
+        self.suspended = False
+        w, h = window.get_dimensions()
+        self.damage(window, 0, 0, w, h, {"quality" : 100})
+
 
     def set_new_encoding(self, encoding):
         """ Changes the encoder for the given 'window_ids',
@@ -230,6 +244,7 @@ class WindowSource(object):
         #no suffix for metadata (as it is the same for all clients):
         info[prefix+"dimensions"] = self.window_dimensions
         info[prefix+"encoding"+suffix] = self.encoding
+        info[prefix+"suspended"+suffix] = self.suspended
         self.statistics.add_stats(info, prefix, suffix)
 
         #batch delay stats:
@@ -259,6 +274,8 @@ class WindowSource(object):
         calculate_batch_delay(self.window_dimensions, self.wid, self.batch_config, self.global_statistics, self.statistics)
 
     def update_speed(self):
+        if self.suspended:
+            return
         speed = self.default_encoding_options.get("speed", -1)
         if speed<0:
             min_speed = self.get_min_speed()
@@ -286,6 +303,8 @@ class WindowSource(object):
         return max(ms, self._encoding_speed[-1][-1])
 
     def update_quality(self):
+        if self.suspended:
+            return
         quality = self.default_encoding_options.get("quality", -1)
         if quality<0:
             min_quality = self.default_encoding_options.get("min-quality", -1)
@@ -330,6 +349,8 @@ class WindowSource(object):
             force the current options to override the old ones,
             otherwise they are only merged.
         """
+        if self.suspended:
+            return
         if w==0 or h==0:
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
@@ -760,7 +781,7 @@ class WindowSource(object):
             * 'x264' and 'vpx' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode' and the 'Compressed' wrapper to tell the network layer it is already zlibbed
         """
-        if self.is_cancelled(sequence):
+        if self.is_cancelled(sequence) or self.suspended:
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         x, y, w, h, _ = image.get_geometry()
@@ -797,7 +818,7 @@ class WindowSource(object):
         data, client_options, outw, outh, outstride = encoder(coding, image, options)
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and self.is_cancelled(sequence):
+        if coding!="mmap" and (self.is_cancelled(sequence)  or self.suspended):
             debug("make_data_packet: dropping data packet for window %s with sequence=%s", wid, sequence)
             return  None
         if data is None:

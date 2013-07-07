@@ -650,6 +650,7 @@ class UIXpraClient(XpraClientBase):
         self.X11_OR_focus = capabilities.get("X11.OR_focus", False)
         self.window_configure = capabilities.get("window_configure", False)
         self.window_unmap = capabilities.get("window_unmap", False)
+        self.suspend_resume = capabilities.get("suspend-resume", False)
         self.server_supports_notifications = capabilities.get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
         self.server_supports_cursors = capabilities.get("cursors", True)    #added in 0.5, default to True!

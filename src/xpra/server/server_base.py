@@ -321,6 +321,8 @@ class ServerBase(object):
             "set_deflate":                          self._process_set_deflate,
             "desktop_size":                         self._process_desktop_size,
             "encoding":                             self._process_encoding,
+            "suspend":                              self._process_suspend,
+            "resume":                               self._process_resume,
             #sound:
             "sound-control":                        self._process_sound_control,
             "sound-data":                           self._process_sound_data,
@@ -761,6 +763,7 @@ class ServerBase(object):
         capabilities["sound_sequence"] = True
         capabilities["info-request"] = True
         capabilities["notify-startup-complete"] = True
+        capabilities["suspend-resume"] = True
         if self._reverse_aliases:
             capabilities["aliases"] = self._reverse_aliases
         capabilities["server_type"] = "base"
@@ -1050,6 +1053,30 @@ class ServerBase(object):
         ss.set_encoding(encoding, wids)
         self.refresh_windows(proto, wid_windows)
 
+
+    def _get_window_dict(self, wids):
+        wd = {}
+        for wid in wids:
+            window = self._id_to_window.get(wid)
+            if window:
+                wd[wid] = window
+        return wd
+
+    def _process_suspend(self, proto, packet):
+        log("suspend(%s)", packet[1:])
+        ui = packet[1]
+        wd = self._get_window_dict(packet[2])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.suspend(ui, wd)
+
+    def _process_resume(self, proto, packet):
+        log("resume(%s)", packet[1:])
+        ui = packet[1]
+        wd = self._get_window_dict(packet[2])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.resume(ui, wd)
 
     def send_ping(self):
         for ss in self._server_sources.values():
