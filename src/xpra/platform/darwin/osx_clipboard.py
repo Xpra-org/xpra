@@ -6,7 +6,7 @@
 import gobject
 
 from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, ClipboardProxy, debug
+from xpra.clipboard.clipboard_base import ClipboardProxy, debug
 
 
 class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
@@ -15,7 +15,7 @@ class OSXClipboardProtocolHelper(GDKClipboardProtocolHelper):
     """
 
     def __init__(self, send_packet_cb, progress_cb=None):
-        ClipboardProtocolHelperBase.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD"])
+        GDKClipboardProtocolHelper.__init__(self, send_packet_cb, progress_cb, ["CLIPBOARD"])
 
     def make_proxy(self, clipboard):
         return OSXClipboardProxy(clipboard)
