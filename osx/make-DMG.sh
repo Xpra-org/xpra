@@ -10,7 +10,7 @@ fi
 
 export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`python -c "from xpra import build_info;import sys;sys.stdout.write(build_info.REVISION)"`
+REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(src_info.REVISION)"`
 DMG_NAME="Xpra-$VERSION-r$REVISION.dmg"
 echo "Creating $DMG_NAME"
 

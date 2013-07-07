@@ -7,9 +7,10 @@ fi
 DIR=xpra-${VERSION}
 rm -fr "${DIR}"
 rm -f "src/xpra/build_info.py"
-#record current svn info into xpra/build_info.py:
+rm -f "src/xpra/src_info.py"
+#record current svn info into xpra/src_info.py:
 pushd src
-PYTHONPATH="." python -c "from add_build_info import record_info;record_info(False)"
+PYTHONPATH="." python -c "from add_build_info import record_src_info;record_src_info()"
 svn info > ./svn-info
 svnversion > ./svn-version
 popd
