@@ -79,6 +79,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.move(*self._pos)
         self.set_default_size(*self._size)
 
+    def show(self):
+        if self.group_leader:
+            if not self.is_realized():
+                self.realize()
+            self.window.set_group(self.group_leader)
+        gtk.Window.show(self)
+
+
     def window_state_updated(self, widget, event):
         self._fullscreen = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN)
         maximized = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_MAXIMIZED)
@@ -179,6 +187,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.set_transient_for(window)
 
     def update_icon(self, width, height, coding, data):
+        self.debug("update_icon(%s, %s, %s, %s bytes)", width, height, coding, len(data))
         if coding == "premult_argb32":
             cairo_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
             cairo_surf.get_data()[:] = data
@@ -233,8 +242,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def do_map_event(self, event):
         self.debug("Got map event: %s - OR=%s", event, self._override_redirect)
-        if self.group_leader:
-            self.window.set_group(self.group_leader)
         gtk.Window.do_map_event(self, event)
         self._been_mapped = True
         xid = self._metadata.get("xid")
