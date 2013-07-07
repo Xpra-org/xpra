@@ -556,7 +556,9 @@ class ServerSource(object):
             self.send("startup-complete")
 
     def start_sending_sound(self):
-        assert not self.suspended, "cannot start sound when UI is suspended"
+        if self.suspended:
+            log.warn("not starting sound as we are suspended")
+            return
         assert self.supports_speaker, "cannot send sound: support not enabled on the server"
         assert self.sound_source is None, "a sound source already exists"
         assert self.sound_receive, "cannot send sound: support is not enabled on the client"
