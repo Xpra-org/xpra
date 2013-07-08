@@ -153,6 +153,27 @@ find ./image -name "*.la" -exec rm -f {} \;
 
 echo
 echo "*******************************************************************************"
+echo "De-duplicate dylibs"
+pushd $LIBDIR
+for x in `ls *dylib | sed 's+[0-9\.]*\.dylib++g' | sed 's+-$++g' | sort -u`; do
+	COUNT=`ls *dylib | grep $x | wc -l`
+	if [ "${COUNT}" -gt "1" ]; then
+		FIRST=`ls $x* | sort -n | head -n 1`
+		for f in `ls $x* | grep -v $FIRST`; do
+			cmp -s $f $FIRST
+			if [ "$?" == "0" ]; then
+				echo "(re)symlinking $f to $FIRST"
+				rm $f
+				ln -sf $FIRST $f
+			fi
+		done
+	fi
+done
+popd
+
+
+echo
+echo "*******************************************************************************"
 echo "copying application image to Desktop"
 rsync -rplogt "${IMAGE_DIR}" ~/Desktop/
 echo "Done"
