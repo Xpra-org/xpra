@@ -643,17 +643,21 @@ if WIN32:
                     {'script': 'xpra/client/gtk_base/client_launcher.py',   'icon_resources': [(1, "win32/xpra.ico")],      "dest_base": "Xpra-Launcher",},
               ]
     #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
-    setup_options["console"] = [
+    console = [
                     {'script': 'win32/xpra_cmd.py',                     'icon_resources': [(1, "win32/xpra_txt.ico")],  "dest_base": "Xpra_cmd",},
-                    {'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",},
                     {'script': 'xpra/sound/gstreamer_util.py',          'icon_resources': [(1, "win32/gstreamer.ico")], "dest_base": "GStreamer_info",},
                     {'script': 'xpra/sound/src.py',                     'icon_resources': [(1, "win32/microphone.ico")],"dest_base": "Sound_Record",},
                     {'script': 'xpra/sound/sink.py',                    'icon_resources': [(1, "win32/speaker.ico")],   "dest_base": "Sound_Play",},
               ]
+    if opengl_ENABLED:
+        console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
+    setup_options["console"] = console
+    
     py2exe_include("cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",
                         "PIL",
+                        "ctypes", "platform",
                         "win32con", "win32gui", "win32process", "win32api")
     dll_excludes = ["w9xpopen.exe","tcl85.dll", "tk85.dll"]
     py2exe_exclude(
@@ -665,6 +669,8 @@ if WIN32:
                         "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
                         #not used on win32:
                         "mmap",
+                        #we handle GL separately below:
+                        "OpenGL", "OpenGL_accelerate",
                         #this is a mac osx thing:
                         "ctypes.macholib",
                         #not used:
@@ -688,8 +694,6 @@ if WIN32:
         py2exe_exclude("pygst", "gst", "gst.extend")
 
     if opengl_ENABLED:
-        py2exe_include("ctypes", "platform")
-        py2exe_exclude("OpenGL", "OpenGL_accelerate")
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
