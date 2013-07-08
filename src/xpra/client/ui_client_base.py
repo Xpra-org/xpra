@@ -223,14 +223,18 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
-        if self.keyboard_helper:
-            self.keyboard_helper.cleanup()
-        if self.clipboard_helper:
-            self.clipboard_helper.cleanup()
-        if self.tray:
-            self.tray.cleanup()
-        if self.notifier:
-            self.notifier.cleanup()
+        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier):
+            if x is None:
+                continue
+            if not hasattr(x, "cleanup"):
+                log.warn("missing a cleanup method on %s: %s", type(x), x)
+                continue
+            cleanup = getattr(x, "cleanup")
+            log("UIXpraClient.cleanup() calling %s.cleanup() : %s", type(x), cleanup)
+            try:
+                cleanup()
+            except:
+                log.error("error on %s cleanup", type(x), exc_info=True)
         if self.sound_source:
             thread.start_new_thread(self.stop_sending_sound, ())
         if self.sound_sink:
