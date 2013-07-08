@@ -30,8 +30,8 @@ GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
 
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "400"))*1000000        #ns
-QUEUE_START_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_START_TIME", "200"))*1000000        #ns
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "450"))*1000000        #ns
+QUEUE_START_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_START_TIME", "250"))*1000000        #ns
 QUEUE_MIN_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_MIN_TIME", "50"))*1000000 #ns
 QUEUE_TIME = max(0, QUEUE_TIME)
 QUEUE_MIN_TIME = max(0, min(QUEUE_TIME, QUEUE_MIN_TIME))
@@ -157,6 +157,13 @@ class SoundSink(SoundPipeline):
         debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/1000000))
         if self.src:
             buf = gst.Buffer(data)
+            if metadata:
+                ts = metadata.get("timestamp")
+                if ts is not None:
+                    buf.timestamp = ts
+                d = metadata.get("duration")
+                if d is not None:
+                    buf.duration = d
             #buf.size = size
             #buf.timestamp = timestamp
             #buf.duration = duration
