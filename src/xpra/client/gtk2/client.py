@@ -121,6 +121,7 @@ class XpraClient(GTKXpraClient):
             clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
         clipboard_options.append(("xpra.clipboard.gdk_clipboard", "GDKClipboardProtocolHelper", {"clipboards" : clipboards}))
         clipboard_options.append(("xpra.clipboard.clipboard_base", "DefaultClipboardProtocolHelper", {"clipboards" : clipboards}))
+        log("make_clipboard_helper() clipboard_options=%s", clipboard_options)
         for module_name, classname, kwargs in clipboard_options:
             c = self.try_load_clipboard_helper(module_name, classname, kwargs)
             if c:
@@ -144,6 +145,7 @@ class XpraClient(GTKXpraClient):
         return None
 
     def setup_clipboard_helper(self, helperClass, *args, **kwargs):
+        log("setup_clipboard_helper(%s, %s, %s)", helperClass, args, kwargs)
         def clipboard_send(*parts):
             if self.clipboard_enabled:
                 self.send(*parts)
