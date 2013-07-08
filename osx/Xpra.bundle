@@ -34,6 +34,12 @@
 		${prefix}/lib/libgtk-quartz-2.0.0.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libgtkglext-quartz-1.0.0.dylib
+	</binary>
+	<binary>
+		${prefix}/lib/libgdkglext-quartz-1.0.0.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libgtkmacintegration.2.dylib
 	</binary>
 	<binary>
