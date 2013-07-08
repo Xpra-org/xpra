@@ -284,6 +284,27 @@ def add_to_keywords(kw, key, *args):
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 
+GCC_VERSION = []
+def get_gcc_version():
+    global GCC_VERSION
+    if len(GCC_VERSION)==0:
+        cmd = [os.environ.get("CC", "gcc"), "-v"]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output, _ = proc.communicate()
+        status = proc.wait()
+        if status==0:
+            V_LINE = "gcc version "
+            for line in output.decode("utf8").splitlines():
+                if line.startswith(V_LINE):
+                    v_str = line[len(V_LINE):].split(" ")[0]
+                    for p in v_str.split("."):
+                        try:
+                            GCC_VERSION.append(int(p))
+                        except:
+                            break
+                    print("found gcc version: %s" % str(GCC_VERSION))
+                    break
+    return GCC_VERSION
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
@@ -334,7 +355,11 @@ def pkgconfig(*packages_options, **ekw):
         add_to_keywords(kw, 'extra_link_args', "-Wall")
     if strict_ENABLED:
         #these are almost certainly real errors since our code is "clean":
-        add_to_keywords(kw, 'extra_compile_args', "-Werror=implicit-function-declaration")
+        if get_gcc_version()>=4.4:
+            eifd = "-Werror=implicit-function-declaration"
+        else:
+            eifd = "-Werror-implicit-function-declaration"
+        add_to_keywords(kw, 'extra_compile_args', eifd)
     if PIC_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
