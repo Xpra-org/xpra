@@ -1157,12 +1157,8 @@ class ServerBase(object):
 
 
     def _process_server_settings(self, proto, packet):
-        self.update_server_settings(packet[1])
-
-    def update_server_settings(self, settings):
-        old_settings = dict(self._settings)
-        log("server_settings: old=%s, updating with=%s", old_settings, settings)
-        self._settings.update(settings)
+        #only used by x11 servers
+        pass
 
 
     def _set_client_properties(self, proto, wid, window, new_client_properties):

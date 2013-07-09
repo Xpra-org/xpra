@@ -29,7 +29,7 @@ XSETTINGS_TYPE = "xsettings-settings"
 
 
 class XSettingsManager(object):
-    def __init__(self, settings_blob, screen_number=0):
+    def __init__(self, screen_number=0):
         selection = "_XSETTINGS_S%s" % screen_number
         self._manager = ManagerSelection(gtk.gdk.display_get_default(), selection)
         # Technically I suppose ICCCM says we should use FORCE, but it's not
@@ -39,11 +39,10 @@ class XSettingsManager(object):
         # ourselves, we probably don't clean up the window properly.)
         self._manager.acquire(self._manager.FORCE_AND_RETURN)
         self._window = self._manager.window()
-        self._set_blob_in_place(settings_blob)
 
     # This is factored out as a separate function to make it easier to test
     # XSettingsWatcher:
-    def _set_blob_in_place(self, settings_blob):
+    def set_blob_in_place(self, settings_blob):
         if type(settings_blob)!=tuple:
             log.warn("discarding xsettings because of incompatible format: %s", type(settings_blob))
             return

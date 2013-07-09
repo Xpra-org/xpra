@@ -35,9 +35,6 @@ class GTKServerBase(ServerBase):
         self.timeout_add = gobject.timeout_add
         self.source_remove = gobject.source_remove
         ServerBase.__init__(self)
-        ### Misc. state:
-        self._settings = {}
-        self._xsettings_manager = None
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:

@@ -82,6 +82,8 @@ class X11ServerBase(GTKServerBase):
                 screen.connect("size-changed", self._screen_size_changed)
                 i += 1
         log("randr enabled: %s", self.randr)
+        self._settings = {}
+        self._xsettings_manager = None
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
@@ -256,8 +258,11 @@ class X11ServerBase(GTKServerBase):
         return  root_w, root_h
 
 
+    def _process_server_settings(self, proto, packet):
+        self.update_server_settings(packet[1])
+
+
     def update_server_settings(self, settings):
-        GTKServerBase.update_server_settings(self, settings)
         old_settings = dict(self._settings)
         log("server_settings: old=%s, updating with=%s", old_settings, settings)
         self._settings.update(settings)
@@ -293,7 +298,9 @@ class X11ServerBase(GTKServerBase):
                     log("server_settings: setting %s to %s", p, v)
                     prop_set(root, p, "latin1", v.decode("utf-8"))
                 if k == "xsettings-blob":
-                    self._xsettings_manager = XSettingsManager(v)
+                    if self._xsettings_manager is None:
+                        self._xsettings_manager = XSettingsManager()
+                    self._xsettings_manager.set_blob_in_place(v)
                 elif k == "resource-manager":
                     root_set("RESOURCE_MANAGER")
                 elif self.pulseaudio:
