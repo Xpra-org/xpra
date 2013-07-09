@@ -179,8 +179,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Define empty FBO texture and set rendering to FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0)
-
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
