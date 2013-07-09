@@ -87,13 +87,17 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         props["extensions"] = extensions
 
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
-        for d,s in {"vendor":GL_VENDOR, "renderer":GL_RENDERER,
-                    "shading language version":GL_SHADING_LANGUAGE_VERSION}.items():
+        for d,s,fatal in (("vendor",     GL_VENDOR,      True),
+                          ("renderer",   GL_RENDERER,    True),
+                          ("shading language version", GL_SHADING_LANGUAGE_VERSION, False)):
             try:
                 v = glGetString(s)
                 log("%s: %s", d, v)
             except:
-                gl_check_error("OpenGL property '%s' is missing" % d)
+                if fatal:
+                    gl_check_error("OpenGL property '%s' is missing" % d)
+                else:
+                    log.warn("OpenGL property '%s' is missing" % d)
                 v = ""
             props[d] = v
 
