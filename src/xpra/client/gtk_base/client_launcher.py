@@ -467,7 +467,8 @@ class ApplicationWindow:
 		props = read_config(filename)
 		options = validate_config(props)
 		for k,v in options.items():
-			setattr(self.config, k, v)
+			fn = k.replace("-", "_")
+			setattr(self.config, fn, v)
 
 
 def main():
