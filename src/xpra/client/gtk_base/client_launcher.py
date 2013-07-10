@@ -59,30 +59,6 @@ def set_history_from_active(optionmenu):
 	if i>0:
 		optionmenu.set_history(i)
 
-def set_active_from_label(optionmenu, label):
-	return
-	i = 0
-	menu = optionmenu.get_menu()
-	for x in menu.get_children():
-		if hasattr(x, "get_label") and x.get_label()==label:
-			break
-		i += 1
-	if i<len(menu.get_children()):
-		optionmenu.set_history(i)
-
-def get_active_label(optionmenu):
-	menu = optionmenu.get_menu()
-	h = optionmenu.get_history()
-	log.info("get_active_label(%s) menu=%s, h=%s", optionmenu, menu, h)
-	if h<0 or h>=len(menu.get_children()):
-		return ""
-	item = menu.get_children()[h]
-	log.info("get_active_label(..) item=%s", item)
-	if not hasattr(item, "get_label"):
-		return ""
-	log.info("get_active_label(..) label=%s", item.get_label())
-	return item.get_label()
-
 
 class ApplicationWindow:
 
