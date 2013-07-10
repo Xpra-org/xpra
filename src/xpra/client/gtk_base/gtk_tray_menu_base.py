@@ -21,6 +21,153 @@ log = Logger()
 SHOW_COMPRESSION_MENU = False
 STARTSTOP_SOUND_MENU = os.environ.get("XPRA_SHOW_SOUND_MENU", "1")=="1"
 
+LOSSLESS = "Lossless"
+QUALITY_OPTIONS_COMMON = {
+                50      : "Average",
+                30      : "Low",
+                }
+MIN_QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
+MIN_QUALITY_OPTIONS[0] = "None"
+QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
+QUALITY_OPTIONS[0]  = "Auto"
+QUALITY_OPTIONS[1]  = "Lowest"
+QUALITY_OPTIONS[90]  = "Best"
+QUALITY_OPTIONS[100]  = LOSSLESS
+
+
+SPEED_OPTIONS_COMMON = {
+                70      : "Low Latency",
+                30      : "Low Bandwidth",
+                }
+MIN_SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
+MIN_SPEED_OPTIONS[0] = "None"
+SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
+SPEED_OPTIONS[0]    = "Auto"
+SPEED_OPTIONS[1]    = "Lowest Bandwidth"
+SPEED_OPTIONS[100]  = "Lowest Latency"
+
+
+def make_min_auto_menu(title, min_options, options, get_current_min_value, get_current_value, set_min_value_cb, set_value_cb):
+    #note: we must keep references to the parameters on the submenu
+    #(closures and gtk callbacks don't mix so well!)
+    submenu = gtk.Menu()
+    submenu.get_current_min_value = get_current_min_value
+    submenu.get_current_value = get_current_value
+    submenu.set_min_value_cb = set_min_value_cb
+    submenu.set_value_cb = set_value_cb
+    fstitle = gtk.MenuItem("Fixed %s:" % title)
+    fstitle.set_sensitive(False)
+    submenu.append(fstitle)
+    submenu.menu_items = {}
+    submenu.min_menu_items = {}
+    def populate_menu(options, value, set_fn):
+        found_match = False
+        items = {}
+        for s in sorted(options.keys()):
+            t = options.get(s)
+            qi = CheckMenuItem(t)
+            qi.set_draw_as_radio(True)
+            candidate_match = s>=max(0, value)
+            qi.set_active(not found_match and candidate_match)
+            found_match |= candidate_match
+            qi.connect('activate', set_fn, submenu)
+            if s>0:
+                set_tooltip_text(qi, "%s%%" % s)
+            submenu.append(qi)
+            items[s] = qi
+        return items
+    def set_value(item, ss):
+        if not item.get_active():
+            return
+        #user select a new value from the menu:
+        s = -1
+        for ts,tl in options.items():
+            if tl==item.get_label():
+                s = ts
+                break
+        if s>=0 and s!=ss.get_current_value():
+            log("setting %s to %s", title, s)
+            ss.set_value_cb(s)
+            #deselect other items:
+            for x in ss.menu_items.values():
+                if x!=item:
+                    x.set_active(False)
+            #min is only relevant in auto-mode:
+            if s!=0:
+                for v,x in ss.min_menu_items.items():
+                    x.set_active(v==0)
+    submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
+    submenu.append(gtk.SeparatorMenuItem())
+    mstitle = gtk.MenuItem("Minimum %s:" % title)
+    mstitle.set_sensitive(False)
+    submenu.append(mstitle)
+    def set_min_value(item, ss):
+        if not item.get_active():
+            return
+        #user selected a new min-value from the menu:
+        s = -1
+        for ts,tl in min_options.items():
+            if tl==item.get_label():
+                s = ts
+                break
+        if s>=0 and s!=ss.get_current_min_value():
+            log("setting min-%s to %s", title, s)
+            ss.set_min_value_cb(s)
+            #deselect other min items:
+            for x in ss.min_menu_items.values():
+                if x!=item:
+                    x.set_active(False)
+            #min requires auto-mode:
+            for x in ss.menu_items.values():
+                if x.get_label()=="Auto":
+                    if not x.get_active():
+                        x.activate()
+                else:
+                    x.set_active(False)
+    mv = -1
+    if get_current_value()<=0:
+        mv = get_current_min_value()
+    submenu.min_menu_items.update(populate_menu(min_options, mv, set_min_value))
+    submenu.show_all()
+    return submenu
+
+def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings):
+    encodings_submenu = gtk.Menu()
+    encodings_submenu.get_current_encoding = get_current_encoding
+    encodings_submenu.set_encoding = set_encoding
+    encodings_submenu.encodings = encodings
+    encodings_submenu.server_encodings = server_encodings
+    encodings_submenu.index_to_encoding = {}
+    encodings_submenu.encoding_to_index = {}
+    NAME_TO_ENCODING = {}
+    i = 0
+    for encoding in encodings:
+        name = ENCODINGS_TO_NAME.get(encoding, encoding)
+        descr = ENCODINGS_HELP.get(encoding)
+        NAME_TO_ENCODING[name] = encoding
+        encoding_item = CheckMenuItem(name)
+        if descr:
+            if encoding not in server_encodings:
+                descr += "\n(not available on this server)"
+            set_tooltip_text(encoding_item, descr)
+        def encoding_changed(item):
+            item = ensure_item_selected(encodings_submenu, item)
+            enc = NAME_TO_ENCODING.get(item.get_label())
+            if enc is not None and encodings_submenu.get_current_encoding()!=enc:
+                log("setting encoding to %s", enc)
+                encodings_submenu.set_encoding(enc)
+        log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
+        encoding_item.set_active(encoding==get_current_encoding())
+        encoding_item.set_sensitive(encoding in server_encodings)
+        encoding_item.set_draw_as_radio(True)
+        encoding_item.connect("toggled", encoding_changed)
+        encodings_submenu.append(encoding_item)
+        encodings_submenu.index_to_encoding[i] = encoding
+        encodings_submenu.encoding_to_index[encoding] = i
+        i += 1
+    encodings_submenu.show_all()
+    return encodings_submenu
+
 
 class GTKTrayMenuBase(object):
 
@@ -153,14 +300,14 @@ class GTKTrayMenuBase(object):
     def make_sessioninfomenuitem(self):
         title = "Session Info"
         if self.client.session_name and self.client.session_name!="Xpra session":
-            title = self.client.session_name
+            title = "Info: %s"  % self.client.session_name
         return  self.handshake_menuitem(title, "statistics.png", None, self.show_session_info)
 
     def make_bellmenuitem(self):
         def bell_toggled(*args):
             self.client.bell_enabled = self.bell_menuitem.get_active()
             self.client.send_bell_enabled()
-            log.debug("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
+            log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
         self.bell_menuitem = self.checkitem("Bell", bell_toggled)
         self.bell_menuitem.set_sensitive(False)
         def set_bell_menuitem(*args):
@@ -181,7 +328,7 @@ class GTKTrayMenuBase(object):
             self.client.send_cursors_enabled()
             if not self.client.cursors_enabled:
                 self.client.reset_cursor()
-            log.debug("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
+            log("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
         self.cursors_menuitem.set_sensitive(False)
         def set_cursors_menuitem(*args):
@@ -200,7 +347,7 @@ class GTKTrayMenuBase(object):
         def notifications_toggled(*args):
             self.client.notifications_enabled = self.notifications_menuitem.get_active()
             self.client.send_notify_enabled()
-            log.debug("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
+            log("notifications_toggled(%s) notifications_enabled=%s", args, self.client.notifications_enabled)
         self.notifications_menuitem = self.checkitem("Notifications", notifications_toggled)
         self.notifications_menuitem.set_sensitive(False)
         def set_notifications_menuitem(*args):
@@ -218,7 +365,7 @@ class GTKTrayMenuBase(object):
     def make_clipboard_togglemenuitem(self):
         def clipboard_toggled(*args):
             new_state = self.clipboard_menuitem.get_active()
-            log.debug("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
+            log("clipboard_toggled(%s) clipboard_enabled=%s, new_state=%s", args, self.client.clipboard_enabled, new_state)
             if self.client.clipboard_enabled!=new_state:
                 self.client.clipboard_enabled = new_state
                 self.client.emit("clipboard-toggled")
@@ -315,7 +462,7 @@ class GTKTrayMenuBase(object):
                 set_tooltip_text(self.keyboard_sync_menuitem, "Enable keyboard state synchronization")
         def keyboard_sync_toggled(*args):
             self.client.keyboard_sync = self.keyboard_sync_menuitem.get_active()
-            log.debug("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
+            log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, self.client.keyboard_sync)
             set_keyboard_sync_tooltip()
             self.client.emit("keyboard-sync-toggled")
         self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization", keyboard_sync_toggled)
@@ -357,11 +504,19 @@ class GTKTrayMenuBase(object):
         return encodings
 
     def make_encodingssubmenu(self, handshake_complete=True):
-        encodings_submenu = gtk.Menu()
+        encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+        server_encodings = self.client.server_capabilities.get("encodings", [])
+        encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)
         self.popup_menu_workaround(encodings_submenu)
-        self.populate_encodingssubmenu(encodings_submenu)
-        encodings_submenu.show_all()
         return encodings_submenu
+
+    def get_current_encoding(self):
+        return self.client.encoding
+    def set_current_encoding(self, enc):
+        self.client.encoding = enc
+        #these menus may need updating now:
+        self.set_qualitymenu()
+        self.set_speedmenu()
 
     def reset_encoding_options(self, encodings_menu):
         server_encodings = self.client.server_capabilities.get("encodings", [])
@@ -373,35 +528,9 @@ class GTKTrayMenuBase(object):
                     x.set_active(active)
                 x.set_sensitive(encoding in server_encodings)
 
-    def populate_encodingssubmenu(self, encodings_submenu):
-        server_encodings = self.client.server_capabilities.get("encodings", [])
-        encs = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
-        NAME_TO_ENCODING = {}
-        for encoding in encs:
-            name = ENCODINGS_TO_NAME.get(encoding, encoding)
-            descr = ENCODINGS_HELP.get(encoding)
-            NAME_TO_ENCODING[name] = encoding
-            encoding_item = CheckMenuItem(name)
-            if descr:
-                if encoding not in server_encodings:
-                    descr += "\n(not available on this server)"
-                set_tooltip_text(encoding_item, descr)
-            def encoding_changed(item):
-                item = ensure_item_selected(encodings_submenu, item)
-                enc = NAME_TO_ENCODING.get(item.get_label())
-                if enc is not None and self.client.encoding!=enc:
-                    self.client.set_encoding(enc)
-                    log.debug("setting encoding to %s", enc)
-                    self.set_qualitymenu()
-                    self.set_speedmenu()
-            encoding_item.set_active(encoding==self.client.encoding)
-            encoding_item.set_sensitive(encoding in server_encodings)
-            encoding_item.set_draw_as_radio(True)
-            encoding_item.connect("toggled", encoding_changed)
-            encodings_submenu.append(encoding_item)
 
     def make_qualitymenuitem(self):
-        self.quality = self.menuitem("Min Quality", "slider.png", "Minimum picture quality", None)
+        self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)
         self.quality.set_sensitive(False)
         def may_enable_qualitymenu(*args):
             self.quality.set_submenu(self.make_qualitysubmenu())
@@ -409,43 +538,28 @@ class GTKTrayMenuBase(object):
         self.client.connect("handshake-complete", may_enable_qualitymenu)
         return self.quality
 
-    LOSSLESS = "lossless"
-    QUALITY_OPTIONS = {20   : "20%",
-                       50   : "50%",
-                       80   : "80%",
-                       95   : "95%",
-                       100  : LOSSLESS,
-                       }
-
     def make_qualitysubmenu(self):
+        quality_submenu = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
+                                           self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
         #WARNING: this changes "min-quality", not "quality" (or at least it tries to..)
-        self.quality_submenu = gtk.Menu()
-        self.popup_menu_workaround(self.quality_submenu)
-        quality_options = self.QUALITY_OPTIONS.copy()
-        if self.client.min_quality>0 and self.client.min_quality not in quality_options:
-            """ add the current value to the list of options """
-            q = self.client.min_quality
-            quality_options[q] = "%s%%" % q
-        def set_quality(item):
-            item = ensure_item_selected(self.quality_submenu, item)
-            q = -1
-            for v, text in quality_options.items():
-                if text==item.get_label():
-                    q = v
-                    break
-            if q>0 and q!=self.client.min_quality:
-                log.debug("setting minimum picture quality to %s", q)
-                self.client.min_quality = q
-                self.client.send_min_quality()
-        for q in sorted(quality_options):
-            label = quality_options.get(q)
-            qi = CheckMenuItem(label)
-            qi.set_draw_as_radio(True)
-            qi.set_active(q==self.client.min_quality)
-            qi.connect('activate', set_quality)
-            self.quality_submenu.append(qi)
-        self.quality_submenu.show_all()
-        return self.quality_submenu
+        self.popup_menu_workaround(quality_submenu)
+        quality_submenu.show_all()
+        return quality_submenu
+
+    def get_min_quality(self):
+        return self.client.min_quality
+    def get_quality(self):
+        return self.client.quality
+    def set_min_quality(self, q):
+        self.client.min_quality = q
+        self.client.quality = 0
+        self.client.send_min_quality()
+        self.client.send_quality()
+    def set_quality(self, q):
+        self.client.min_quality = 0
+        self.client.quality = q
+        self.client.send_min_quality()
+        self.client.send_quality()
 
     def set_qualitymenu(self, *args):
         if self.quality:
@@ -456,9 +570,10 @@ class GTKTrayMenuBase(object):
                 return
             set_tooltip_text(self.quality, "Minimum picture quality")
             #now check if lossless is supported:
-            can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
-            for cmi in self.quality_submenu.get_children():
-                cmi.set_sensitive(cmi.get_label()!=self.LOSSLESS or can_lossless)
+            if self.quality.get_submenu():
+                can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
+                for q,item in self.quality.get_submenu().menu_items.items():
+                    item.set_sensitive(q<100 or can_lossless)
 
 
     def make_speedmenuitem(self):
@@ -471,99 +586,26 @@ class GTKTrayMenuBase(object):
         return self.speed
 
     def make_speedsubmenu(self):
-        speed_submenu = gtk.Menu()
+        speed_submenu = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+                                           self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
         self.popup_menu_workaround(speed_submenu)
-        fstitle = gtk.MenuItem("Fixed Speed:")
-        fstitle.set_sensitive(False)
-        speed_submenu.append(fstitle)
-        speed_options_common = {
-                "Low Latency"              : 70,
-                "Low Bandwidth"            : 30
-                }
-        self.min_speed_options = speed_options_common.copy()
-        self.min_speed_options["None"] = 0
-        self.speed_options = speed_options_common.copy()
-        self.speed_options["Auto"] = 0
-        self.speed_options["Lowest Latency"] = 100
-        self.speed_options["Lowest Bandwidth"] = 1
-        def populate_speed_menu(speed_options, current_speed, set_cb):
-            option_to_text = {}
-            for k,v in speed_options.items():
-                option_to_text[v] = k
-            found_match = False
-            items = {}
-            for s in sorted(speed_options.values()):
-                t = option_to_text.get(s)
-                qi = CheckMenuItem(t)
-                qi.set_draw_as_radio(True)
-                candidate_match = s>=current_speed
-                qi.set_active(not found_match and candidate_match)
-                found_match |= candidate_match
-                qi.connect('activate', set_cb)
-                if s>0:
-                    set_tooltip_text(qi, "%s%%" % s)
-                speed_submenu.append(qi)
-                items[s] = qi
-            return items
-        self.speed_menu_items = populate_speed_menu(self.speed_options, max(0, self.client.speed), set_cb=self.set_speed)
-        speed_submenu.append(gtk.SeparatorMenuItem())
-        mstitle = gtk.MenuItem("Minimum Speed:")
-        mstitle.set_sensitive(False)
-        speed_submenu.append(mstitle)
-        self.min_speed_menu_items = populate_speed_menu(self.min_speed_options, max(0, self.client.min_speed), set_cb=self.set_min_speed)
-        speed_submenu.show_all()
         return speed_submenu
 
-    def set_min_speed(self, item):
-        if not item.get_active():
-            return
-        #user selected a new min-speed from the menu:
-        s = -1
-        try:
-            s = self.min_speed_options.get(item.get_label())
-        except:
-            pass
-        if s!=self.client.min_speed:
-            log("setting encoding min-speed to %s", s)
-            self.client.min_speed = s
-            self.client.send_min_speed()
-            self.client.speed = 0
-            self.client.send_speed()
-            #deselect other min-speed items:
-            for x in self.min_speed_menu_items.values():
-                if x!=item:
-                    x.set_active(False)
-            #min-speed requires auto-mode:
-            for x in self.speed_menu_items.values():
-                if x.get_label()=="Auto":
-                    if not x.get_active():
-                        x.activate()
-                else:
-                    x.set_active(False)
+    def get_min_speed(self):
+        return self.client.min_speed
+    def get_speed(self):
+        return self.client.speed
+    def set_min_speed(self, s):
+        self.client.min_speed = s
+        self.client.speed = 0
+        self.client.send_min_speed()
+        self.client.send_speed()
+    def set_speed(self, s):
+        self.client.min_speed = 0
+        self.client.speed = s
+        self.client.send_min_speed()
+        self.client.send_speed()
 
-    def set_speed(self, item):
-        if not item.get_active():
-            return
-        #user select a new speed from the menu:
-        s = -1
-        try:
-            s = self.speed_options.get(item.get_label())
-        except:
-            pass
-        if s!=self.client.speed:
-            log("setting encoding speed to %s", s)
-            self.client.min_speed = 0
-            self.client.send_min_speed()
-            self.client.speed = s
-            self.client.send_speed()
-            #deselect other speed items:
-            for x in self.speed_menu_items.values():
-                if x!=item:
-                    x.set_active(False)
-            #min-speed is only relevant in auto-mode:
-            if s!=0:
-                for x in self.min_speed_menu_items.values():
-                    x.set_active(False)
 
     def set_speedmenu(self, *args):
         if self.speed:
@@ -671,7 +713,7 @@ class GTKTrayMenuBase(object):
                 layout = item.keyboard_layout
                 variant = item.keyboard_variant
                 if layout!=self.client.xkbmap_layout or variant!=self.client.xkbmap_variant:
-                    log.debug("keyboard layout selected: %s / %s", layout, variant)
+                    log("keyboard layout selected: %s / %s", layout, variant)
                     self.client.xkbmap_layout = layout
                     self.client.xkbmap_variant = variant
                     self.client.send_layout()
@@ -738,7 +780,7 @@ class GTKTrayMenuBase(object):
             item = ensure_item_selected(self.compression_submenu, item)
             c = int(item.get_label().replace("None", "0"))
             if c!=self.client.compression_level:
-                log.debug("setting compression level to %s", c)
+                log("setting compression level to %s", c)
                 self.client.set_deflate_level(c)
         for i in range(0, 10):
             c = CheckMenuItem(str(compression_options.get(i, i)))
@@ -755,7 +797,7 @@ class GTKTrayMenuBase(object):
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):
-            log.debug("force refresh")
+            log("force refresh")
             self.client.send_refresh_all()
         return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
 
@@ -787,11 +829,11 @@ class GTKTrayMenuBase(object):
             This code must be added to all the sub-menus of the popup menu too!
         """
         def enter_menu(*args):
-            log.debug("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
+            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
             self.mouse_in_tray_menu_counter += 1
             self.mouse_in_tray_menu = True
         def leave_menu(*args):
-            log.debug("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
+            log("mouse_in_tray_menu=%s", self.mouse_in_tray_menu)
             self.mouse_in_tray_menu_counter += 1
             self.mouse_in_tray_menu = False
             def check_menu_left(expected_counter):
@@ -803,6 +845,6 @@ class GTKTrayMenuBase(object):
             gobject.timeout_add(500, check_menu_left, self.mouse_in_tray_menu_counter)
         self.mouse_in_tray_menu_counter = 0
         self.mouse_in_tray_menu = False
-        log.debug("popup_menu_workaround: adding events callbacks")
+        log("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)

@@ -30,9 +30,10 @@ import pango
 
 from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
-from xpra.scripts.config import read_config, make_defaults_struct, validate_config
+from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
 from xpra.os_util import set_prgname
+from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.scripts.main import connect_to, make_client
@@ -42,17 +43,45 @@ from xpra.log import Logger
 log = Logger()
 
 
-LOSSY_5 = "lowest quality"
-LOSSY_20 = "low quality"
-LOSSY_50 = "average quality"
-LOSSY_90 = "best lossy quality"
+def get_active_item_index(optionmenu):
+	i = 0
+	menu = optionmenu.get_menu()
+	for x in menu.get_children():
+		if hasattr(x, "get_active") and x.get_active():
+			return i
+		i += 1
+	return -1
 
-XPRA_COMPRESSION_OPTIONS = [LOSSY_5, LOSSY_20, LOSSY_50, LOSSY_90]
-XPRA_COMPRESSION_OPTIONS_DICT = {LOSSY_5 : 5,
-						LOSSY_20 : 20,
-						LOSSY_50 : 50,
-						LOSSY_90 : 90
-						}
+def set_history_from_active(optionmenu):
+	#Used for OptionMenu combo:
+	#sets the first active menu entry as the "history" value (the selected item)
+	i = get_active_item_index(optionmenu)
+	if i>0:
+		optionmenu.set_history(i)
+
+def set_active_from_label(optionmenu, label):
+	return
+	i = 0
+	menu = optionmenu.get_menu()
+	for x in menu.get_children():
+		if hasattr(x, "get_label") and x.get_label()==label:
+			break
+		i += 1
+	if i<len(menu.get_children()):
+		optionmenu.set_history(i)
+
+def get_active_label(optionmenu):
+	menu = optionmenu.get_menu()
+	h = optionmenu.get_history()
+	log.info("get_active_label(%s) menu=%s, h=%s", optionmenu, menu, h)
+	if h<0 or h>=len(menu.get_children()):
+		return ""
+	item = menu.get_children()[h]
+	log.info("get_active_label(..) item=%s", item)
+	if not hasattr(item, "get_label"):
+		return ""
+	log.info("get_active_label(..) label=%s", item.get_label())
+	return item.get_label()
 
 
 class ApplicationWindow:
@@ -113,26 +142,61 @@ class ApplicationWindow:
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
 		hbox.pack_start(gtk.Label("Encoding: "))
-		self.encoding_combo = gtk.combo_box_new_text()
-		self.encoding_combo.get_model().clear()
-		for option in self.client.get_encodings():
-			self.encoding_combo.append_text(option)
+		self.encoding_combo = gtk.OptionMenu()
+		def get_current_encoding():
+			return self.config.encoding
+		def set_new_encoding(e):
+			self.config.encoding = e
+		encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+		server_encodings = encodings
+		es = make_encodingsmenu(get_current_encoding, set_new_encoding, encodings, server_encodings)
+		self.encoding_combo.set_menu(es)
+		set_history_from_active(self.encoding_combo)
 		hbox.pack_start(self.encoding_combo)
 		vbox.pack_start(hbox)
+		self.encoding_combo.connect("changed", self.encoding_changed)
 
-		# JPEG:
+		# Quality
 		hbox = gtk.HBox(False, 20)
 		hbox.set_spacing(20)
-		self.jpeg_label = gtk.Label("Compression: ")
-		hbox.pack_start(self.jpeg_label)
-		self.quality_combo = gtk.combo_box_new_text()
-		self.quality_combo.get_model().clear()
-		for option in XPRA_COMPRESSION_OPTIONS:
-			self.quality_combo.append_text(option)
-		self.quality_combo.set_active(2)
+		self.quality_label = gtk.Label("Quality: ")
+		hbox.pack_start(self.quality_label)
+		self.quality_combo = gtk.OptionMenu()
+		def set_min_quality(q):
+			self.config.min_quality = q
+		def set_quality(q):
+			self.config.quality = q
+		def get_min_quality():
+			return self.config.min_quality
+		def get_quality():
+			return self.config.quality
+		sq = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
+								   get_min_quality, get_quality, set_min_quality, set_quality)
+		self.quality_combo.set_menu(sq)
+		set_history_from_active(self.quality_combo)
 		hbox.pack_start(self.quality_combo)
 		vbox.pack_start(hbox)
-		self.encoding_combo.connect("changed", self.encoding_changed)
+
+		# Speed
+		hbox = gtk.HBox(False, 20)
+		hbox.set_spacing(20)
+		self.speed_label = gtk.Label("Speed: ")
+		hbox.pack_start(self.speed_label)
+		self.speed_combo = gtk.OptionMenu()
+		def set_min_speed(s):
+			self.config.min_speed = s
+		def set_speed(s):
+			self.config.speed = s
+		def get_min_speed():
+			return self.config.min_speed
+		def get_speed():
+			return self.config.speed
+		ss = make_min_auto_menu("Speed", MIN_SPEED_OPTIONS, SPEED_OPTIONS,
+								   get_min_speed, get_speed, set_min_speed, set_speed)
+		self.speed_combo.set_menu(ss)
+		set_history_from_active(self.speed_combo)
+		hbox.pack_start(self.speed_combo)
+		vbox.pack_start(hbox)
 
 		# Username@Host:Port
 		hbox = gtk.HBox(False, 0)
@@ -140,10 +204,12 @@ class ApplicationWindow:
 		self.username_entry = gtk.Entry(max=128)
 		self.username_entry.set_width_chars(16)
 		self.username_entry.connect("changed", self.validate)
+		set_tooltip_text(self.username_entry, "SSH username")
 		self.username_label = gtk.Label("@")
 		self.host_entry = gtk.Entry(max=128)
 		self.host_entry.set_width_chars(24)
 		self.host_entry.connect("changed", self.validate)
+		set_tooltip_text(self.host_entry, "hostname")
 		self.port_entry = gtk.Entry(max=5)
 		self.port_entry.set_width_chars(5)
 		self.port_entry.connect("changed", self.validate)
@@ -180,6 +246,16 @@ class ApplicationWindow:
 		# Buttons:
 		hbox = gtk.HBox(False, 20)
 		vbox.pack_start(hbox)
+		#Save:
+		self.save_btn = gtk.Button("Save")
+		set_tooltip_text(self.save_btn, "Save settings to a session file")
+		self.save_btn.connect("clicked", self.save_clicked)
+		hbox.pack_start(self.save_btn)
+		#Load:
+		self.load_btn = gtk.Button("Load")
+		set_tooltip_text(self.load_btn, "Load settings from a session file")
+		self.load_btn.connect("clicked", self.load_clicked)
+		hbox.pack_start(self.load_btn)
 		# Connect button:
 		self.button = gtk.Button("Connect")
 		self.button.connect("clicked", self.connect_clicked)
@@ -237,9 +313,13 @@ class ApplicationWindow:
 		ssh = self.mode_combo.get_active_text()=="SSH"
 		self.port_entry.set_text("")
 		if ssh:
+			set_tooltip_text(self.port_entry, "Display number")
+			set_tooltip_text(self.password_entry, "SSH Password")
 			self.username_entry.show()
 			self.username_label.show()
 		else:
+			set_tooltip_text(self.port_entry, "port number")
+			set_tooltip_text(self.password_entry, "Session Password")
 			self.username_entry.hide()
 			self.username_label.hide()
 			if self.config.port>0:
@@ -254,14 +334,20 @@ class ApplicationWindow:
 			self.password_entry.hide()
 		self.validate()
 
+	def get_selected_encoding(self, *args):
+		index = get_active_item_index(self.encoding_combo)
+		return self.encoding_combo.get_menu().index_to_encoding.get(index)
+
 	def encoding_changed(self, *args):
-		uses_quality_option = self.encoding_combo.get_active_text() in ["jpeg", "webp", "x264"]
+		encoding = self.get_selected_encoding()
+		log("encoding_changed(%s) encoding=%s", args, encoding)
+		uses_quality_option = encoding in ["jpeg", "webp", "x264"]
 		if uses_quality_option:
 			self.quality_combo.show()
-			self.jpeg_label.show()
+			self.quality_label.show()
 		else:
 			self.quality_combo.hide()
-			self.jpeg_label.hide()
+			self.quality_label.hide()
 
 	def reset_errors(self):
 		self.set_sensitive(True)
@@ -425,8 +511,7 @@ class ApplicationWindow:
 		self.config.host = self.host_entry.get_text()
 		self.config.port = self.port_entry.get_text()
 		self.config.username = self.username_entry.get_text()
-		self.config.encoding = self.encoding_combo.get_active_text()
-		self.config.quality = XPRA_COMPRESSION_OPTIONS_DICT.get(self.quality_combo.get_active_text())
+		self.config.encoding = self.get_selected_encoding()
 		mode_enc = self.mode_combo.get_active_text()
 		if mode_enc.startswith("TCP"):
 			self.config.mode = "tcp"
@@ -445,7 +530,9 @@ class ApplicationWindow:
 		else:
 			self.mode_combo.set_active(2)
 		if self.config.encoding:
-			self.encoding_combo.set_active(self.client.get_encodings().index(self.config.encoding))
+			index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
+			if index>0:
+				self.encoding_combo.set_history(index)
 		self.username_entry.set_text(self.config.username)
 		self.password_entry.set_text(self.config.password)
 		self.host_entry.set_text(self.config.host)
@@ -469,6 +556,38 @@ class ApplicationWindow:
 		for k,v in options.items():
 			fn = k.replace("-", "_")
 			setattr(self.config, fn, v)
+
+	def choose_session_file(self, title, action, action_button, callback):
+		log("choose_session_file(%s, %s)", title, callback)
+		chooser = gtk.FileChooserDialog(title,
+									parent=self.window, action=action,
+									buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, action_button, gtk.RESPONSE_OK))
+		chooser.set_select_multiple(False)
+		chooser.set_default_response(gtk.RESPONSE_OK)
+		file_filter = gtk.FileFilter()
+		file_filter.set_name("Xpra")
+		file_filter.add_pattern("*.xpra")
+		chooser.add_filter(file_filter)
+		response = chooser.run()
+		filenames = chooser.get_filenames()
+		chooser.hide()
+		chooser.destroy()
+		if response!=gtk.RESPONSE_OK or len(filenames)!=1:
+			return
+		filename = filenames[0]
+		callback(filename)
+
+	def save_clicked(self, *args):
+		def do_save(filename):
+			save_config(filename, self.config, ["username", "password", "host", "port", "mode",
+											"encoding", "quality", "min-quality", "speed", "min-speed"])
+		self.choose_session_file("Save session settings to file", gtk.FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
+
+	def load_clicked(self, *args):
+		def do_load(filename):
+			self.update_options_from_file(filename)
+			self.update_gui_from_config()
+		self.choose_session_file("Load session settings from file", gtk.FILE_CHOOSER_ACTION_OPEN, gtk.STOCK_OPEN, do_load)
 
 
 def main():
