@@ -251,6 +251,15 @@ def get_build_info():
     return info
 
 
+def save_config(conf_file, config, keys):
+    f = open(conf_file, "w")
+    for key in keys:
+        assert key in OPTION_TYPES, "invalid configuration key: %s" % key
+        fn = key.replace("-", "_")
+        v = getattr(config, fn)
+        f.write("%s=%s%s" % (key, v, os.linesep))
+    f.close()
+
 def read_config(conf_file):
     """
         Parses a config file into a dict of strings.
