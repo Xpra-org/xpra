@@ -780,7 +780,7 @@ def run_proxy(parser, opts, script_file, args, start_server=False):
     from xpra.server.proxy import XpraProxy
     assert "gtk" not in sys.modules
     if start_server:
-        assert len(args)==1
+        assert len(args)==1, "proxy-start: expected 1 argument but got %s" % len(args)
         display_name = args[0]
         #we must use a subprocess to avoid messing things up - yuk
         cmd = [script_file, "start"]+args
