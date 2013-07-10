@@ -42,7 +42,7 @@ class DotXpra(object):
             local_display_name = local_display_name[:local_display_name.rindex(".")]
         assert local_display_name.startswith(":")
         for char in local_display_name[1:]:
-            assert char in "0123456789"
+            assert char in "0123456789", "invalid character in display name: %s" % char
         return local_display_name
 
     def make_path(self, local_display_name, dirpath ):
