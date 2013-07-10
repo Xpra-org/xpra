@@ -820,6 +820,10 @@ class ServerSource(object):
             info["client.screens" + suffix] = len(self.screen_sizes)
             i = 0
             for x in self.screen_sizes:
+                if type(x) not in (tuple, list):
+                    #legacy clients:
+                    info[("client.screen[%s]=" % i) + suffix] = str(x)
+                    continue
                 info[("client.screen[%s].display" % i) + suffix] = x[0]
                 if len(x)>=3:
                     info[("client.screen[%s].size" % i) + suffix] = x[1], x[2]
