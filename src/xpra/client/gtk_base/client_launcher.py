@@ -89,6 +89,9 @@ class ApplicationWindow:
 	def	__init__(self):
 		# Default connection options
 		self.config = make_defaults_struct()
+		#what we save by default:
+		self.config_keys = ["username", "password", "host", "port", "mode",
+								"encoding", "quality", "min-quality", "speed", "min-speed"]
 		self.config.client_toolkit = "gtk2"
 		self.client = make_client(Exception, self.config)
 
@@ -556,6 +559,7 @@ class ApplicationWindow:
 		for k,v in options.items():
 			fn = k.replace("-", "_")
 			setattr(self.config, fn, v)
+		self.config_keys = props.keys()
 
 	def choose_session_file(self, title, action, action_button, callback):
 		log("choose_session_file(%s, %s)", title, callback)
@@ -579,8 +583,7 @@ class ApplicationWindow:
 
 	def save_clicked(self, *args):
 		def do_save(filename):
-			save_config(filename, self.config, ["username", "password", "host", "port", "mode",
-											"encoding", "quality", "min-quality", "speed", "min-speed"])
+			save_config(filename, self.config, self.config_keys)
 		self.choose_session_file("Save session settings to file", gtk.FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
 	def load_clicked(self, *args):
