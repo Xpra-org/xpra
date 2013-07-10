@@ -6,19 +6,23 @@ import gtk
 from xpra.x11.xsettings import XSettingsManager, XSettingsWatcher
 
 class TestXSettings(TestWithSession):
+
     def test_basic_set_get(self):
         blob = "asdfwheeeee"
-        manager = XSettingsManager(blob)
+        manager = XSettingsManager()
+        manager.set_blob_in_place(blob)
         watcher = XSettingsWatcher()
         assert watcher.get_settings_blob() == blob
 
     def test_watching(self):
         blob1 = "blob1"
-        manager1 = XSettingsManager(blob1)
+        manager1 = XSettingsManager()
+        manager1.set_blob_in_place(blob1)
         watcher = XSettingsWatcher()
         assert watcher.get_settings_blob() == blob1
         blob2 = "blob2"
-        manager2 = XSettingsManager(blob2)
+        manager2 = XSettingsManager()
+        manager2.set_blob_in_place(blob2)
         assert_mainloop_emits(watcher, "xsettings-changed")
         assert watcher.get_settings_blob() == blob2
         # It's likely that (due to how the GTK+ clipboard code works
@@ -29,12 +33,13 @@ class TestXSettings(TestWithSession):
         # Test where the property change but no manager change message
         # is sent:
         blob3 = "blob3"
-        manager2._set_blob_in_place(blob3)
+        manager2.set_blob_in_place(blob3)
         assert_mainloop_emits(watcher, "xsettings-changed")
         assert watcher.get_settings_blob() == blob3
         # Test where the property does not change, but a manager change
         # message is sent:
-        manager3 = XSettingsManager(blob3)
+        manager3 = XSettingsManager()
+        manager3.set_blob_in_place(blob3)
         assert_mainloop_emits(watcher, "xsettings-changed")
         assert watcher.get_settings_blob() == blob3
 
