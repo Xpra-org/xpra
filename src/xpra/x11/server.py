@@ -193,11 +193,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         trap.swallow_synced(get_default_cursor)
         self._wm.enableCursors(True)
 
-    def make_hello(self):
-        capabilities = X11ServerBase.make_hello(self)
-        capabilities["X11.OR_focus"] = True     #workaround for OR focus - added in 0.10
-        return capabilities
-
 
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
@@ -446,14 +441,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._has_focus==wid:
             #nothing to do!
             return
-        #first see if we need to deal with OR losing focus:
-        has_focus = self._id_to_window.get(self._has_focus)
-        if has_focus and has_focus.is_OR():
-            #OR window had focus - deal with grabs here?
-            pass
-
+        had_focus = self._id_to_window.get(self._has_focus)
         def reset_focus():
-            log("reset_focus() %s / %s had focus", self._has_focus, has_focus)
+            log("reset_focus() %s / %s had focus", self._has_focus, had_focus)
             self._clear_keys_pressed()
             # FIXME: kind of a hack:
             self._has_focus = 0
@@ -466,11 +456,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window:
             #not found! (go back to root)
             return reset_focus()
+        if window.is_OR():
+            log.warn("focus(..) cannot focus OR window: %s", window)
+            return
         log("focus(%s, %s, %s) giving focus to %s", server_source, wid, modifiers, window)
-        if not window.is_OR():
-            #note: OR windows "always" have focus
-            #we're only here to record it
-            window.give_client_focus()
+        window.give_client_focus()
         if server_source and modifiers is not None:
             server_source.make_keymask_match(modifiers)
         self._has_focus = wid

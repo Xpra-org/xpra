@@ -69,9 +69,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             type_hint = self.get_type_hint()
             if transient_for is not None and transient_for.window is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
-        self.connect("notify::has-toplevel-focus", self._focus_change)
-        self.connect("focus-in-event", self._focus_change)
-        self.connect("focus-out-event", self._focus_change)
+        if not self._override_redirect:
+            self.connect("notify::has-toplevel-focus", self._focus_change)
+            def focus_in(*args):
+                self._focus_change("focus-in-event")
+            def focus_out(*args):
+                self._focus_change("focus-out-event")
+            self.connect("focus-in-event", focus_in)
+            self.connect("focus-out-event", focus_out)
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
@@ -247,14 +252,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         xid = self._metadata.get("xid")
         if xid:
             self.set_xid(xid)
-        if self._override_redirect:
-            if self._client.X11_OR_focus:
-                #claim focus since server supports "OR focus"
-                self._client.update_focus(self._id, True)
-            else:
-                #older servers
-                self._focus_change("initial")
-        else:
+        if not self._override_redirect:
             x, y, w, h = self.get_window_geometry()
             if not self._been_mapped:
                 workspace = self.set_workspace()
@@ -270,7 +268,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
-            self.idle_add(self._focus_change, "initial")
+        self.idle_add(self._focus_change, "initial")
 
     def do_configure_event(self, event):
         self.debug("Got configure event: %s", event)
@@ -375,7 +373,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _focus_change(self, *args):
+        assert not self._override_redirect
         htf = self.get_property("has-toplevel-focus")
-        self.debug("_focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", args, htf, self._been_mapped)
-        if self._been_mapped and (not self._override_redirect or self._client.X11_OR_focus):
+        self.debug("_focus_change(%s) wid=%s, has-toplevel-focus=%s, _been_mapped=%s", args, self._id, htf, self._been_mapped)
+        if self._been_mapped:
             self._client.update_focus(self._id, htf)

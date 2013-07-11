@@ -134,7 +134,6 @@ class UIXpraClient(XpraClientBase):
         self.change_speed = False
         self.readonly = False
         self.windows_enabled = True
-        self.X11_OR_focus = False
         self.pings = False
 
         self.client_supports_opengl = False
@@ -651,7 +650,6 @@ class UIXpraClient(XpraClientBase):
         if not self.session_name:
             self.session_name = capabilities.get("session_name", "Xpra")
         set_application_name(self.session_name)
-        self.X11_OR_focus = capabilities.get("X11.OR_focus", False)
         self.window_configure = capabilities.get("window_configure", False)
         self.window_unmap = capabilities.get("window_unmap", False)
         self.suspend_resume = capabilities.get("suspend-resume", False)
