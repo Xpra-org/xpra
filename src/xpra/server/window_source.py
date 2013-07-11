@@ -963,7 +963,7 @@ class WindowSource(object):
             im.save(buf, "JPEG", **kwargs)
             client_options["quality"] = q
         else:
-            assert coding in ("png", "png/P", "png/L")
+            assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
             if coding=="png/L":
                 im = im.convert("L", palette=PIL.Image.ADAPTIVE)
             elif coding=="png/P":
