@@ -201,13 +201,13 @@ class Protocol(object):
         info[prefix+"input.bytecount" + suffix] = self._conn.input_bytecount
         info[prefix+"input.packetcount" + suffix] = self.input_packetcount
         info[prefix+"input.raw_packetcount" + suffix] = self.input_raw_packetcount
+        info[prefix+"input.cipher" + suffix] = self.cipher_in_name or ""
         info[prefix+"output.bytecount" + suffix] = self._conn.output_bytecount
         info[prefix+"output.packetcount" + suffix] = self.output_packetcount
         info[prefix+"output.raw_packetcount" + suffix] = self.output_raw_packetcount
+        info[prefix+"output.cipher" + suffix] = self.cipher_out_name or ""
         info[prefix+"chunked_compression" + suffix] = self.chunked_compression
         info[prefix+"large_packets" + suffix] = self.large_packets
-        info[prefix+"input_cipher" + suffix] = self.cipher_in_name or ""
-        info[prefix+"output_cipher" + suffix] = self.cipher_out_name or ""
         info[prefix+"compression_level" + suffix] = self._compression_level
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
         for k,v in self.aliases.items():
