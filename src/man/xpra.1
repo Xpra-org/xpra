@@ -488,11 +488,12 @@ set to automatic mode.
 .TP
 \fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically
-refreshed using a high quality picture setting (95%).
+refreshed using a lossless frame.
 The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 1 second.
 This option is only relevant when using a lossy encoding
-(\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP).
+(\fBjpeg\fP, \fBwebp\fP, \fBx264\fP or \fBvpx\fP) with a quality
+lower than 95%.
 .TP
 \fB\-\-key\-shortcut\fP=\fIkey:action\fP
 Can be specified multiple times to add multiple key shortcuts.
