@@ -355,8 +355,6 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
     ################################
 
     def do_xpra_property_notify_event(self, event):
-        if event.delivered_to is self.corral_window:
-            return
         assert event.window is self.client_window
         self._handle_property_change(str(event.atom))
 
@@ -811,6 +809,11 @@ class WindowModel(BaseWindowModel):
             return
         event.window_model = self
         self.emit("bell", event)
+
+    def do_xpra_property_notify_event(self, event):
+        if event.delivered_to is self.corral_window:
+            return
+        BaseWindowModel.do_xpra_property_notify_event(self, event)
 
     def do_child_map_request_event(self, event):
         # If we get a MapRequest then it might mean that someone tried to map
