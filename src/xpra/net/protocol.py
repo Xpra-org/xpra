@@ -210,7 +210,8 @@ class Protocol(object):
         info[prefix+"output_cipher" + suffix] = self.cipher_out_name or ""
         info[prefix+"compression_level" + suffix] = self._compression_level
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
-        info[prefix+"aliases" + suffix] = self.aliases
+        for k,v in self.aliases.items():
+            info[prefix+"alias." + k + suffix] = v
         try:
             info[prefix+"encoder" + suffix] = self._encoder.__name__
         except:
