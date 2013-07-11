@@ -941,7 +941,6 @@ class WindowSource(object):
             #and we save the compressed data then discard the image
             im = PIL.Image.frombuffer(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
             if coding.startswith("png") and not self.supports_transparency and rgb=="RGBA":
-                log.info("removing alpha")
                 im = im.convert("RGB")
         except Exception, e:
             log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
