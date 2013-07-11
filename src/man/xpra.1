@@ -311,7 +311,6 @@ This specifies the image encoding to use,
 there are a number of encodings supported:
 \fBjpeg\fP, \fBpng\fP, \fBwebp\fP, \fBrgb\fP, \fBvpx\fP and \fBx264\fP
 (some may not be available in your environment).
-The default is generally \fBpng\fP, if available.
 \fBpng\fP is compressed and lossless.
 \fBrgb\fP is a raw pixel format compressed with zlib,
 the compression ratio is poor, but it is fast.
@@ -321,12 +320,12 @@ generally better than jpeg.
 \fBvpx\fP and \fBx264\fP are both lossy and are
 very efficient with graphics or high framerate applications,
 \fBx264\fP is also very usable with text.
+The default encoding will depend on what options are available on both
+the server and the client.
 
-When specifying this option on the server, it will act as default
-for clients that do not specify which encoding they want to use.
-
+\fBrgb\fP is always available (builtin).
 \fBjpeg\fP and \fBpng\fP require the Python Imaging Library.
-\fBvpx\fP and \fBx264\fP require their respective shared libraries.
+\fBvpx\fP, \fBwebp\fP and \fBx264\fP require their respective shared libraries.
 .TP
 \fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Use OpenGL accelerated rendering on the client.
