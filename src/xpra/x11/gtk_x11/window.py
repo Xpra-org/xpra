@@ -938,8 +938,8 @@ class WindowModel(BaseWindowModel):
                 except:
                     w,h = None,None
                 if (w is None or h is None) or w>=MAX_WINDOW_SIZE or h>=MAX_WINDOW_SIZE:
-                    log.warn("clearing invalid size hint value for %s: %s", attr, v)
-                    setattr(size_hints, attr, (-1,-1))
+                    log("clearing invalid size hint value for %s: %s", attr, v)
+                    setattr(size_hints, attr, None)
         #if max-size is smaller than min-size (bogus), clamp it..
         mins = size_hints.min_size
         maxs = size_hints.max_size
