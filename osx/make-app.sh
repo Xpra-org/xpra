@@ -11,6 +11,8 @@ echo
 echo "*******************************************************************************"
 echo "Building and installing"
 pushd ../src
+
+python -c "from add_build_info import record_src_info;record_src_info()"
 ./setup.py clean
 ./setup.py install
 if [ "$?" != "0" ]; then
