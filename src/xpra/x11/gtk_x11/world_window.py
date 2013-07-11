@@ -155,16 +155,16 @@ class WorldWindow(gtk.Window):
         # input focus to a GDK window is to send it WM_TAKE_FOCUS.  So this is
         # sending a WM_TAKE_FOCUS to our own window, which will go to the X
         # server and then come back to our own process, which will then issue
-        # an XSetInputFocus on itself.  Note not swallowing errors here, this
-        # should always succeed.
+        # an XSetInputFocus on itself.
         now = gtk.gdk.x11_get_server_time(self.window)
         send_wm_take_focus(self.window, now)
 
     def reset_x_focus(self):
-        focus = self.get_focus()
-        log("widget with focus: %s", focus)
-        self._take_focus()
-        trap.swallow_synced(root_set, "_NET_ACTIVE_WINDOW", "u32", const["XNone"])
+        log("widget with focus: %s", self.get_focus())
+        def do_reset_x_focus():
+            self._take_focus()
+            root_set("_NET_ACTIVE_WINDOW", "u32", const["XNone"])
+        trap.swallow_synced(do_reset_x_focus)
 
     def _after_set_focus(self, *args):
         # GTK focus has changed.  See comment in __init__ for why this isn't a
