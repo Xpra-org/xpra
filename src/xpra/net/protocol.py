@@ -218,8 +218,8 @@ class Protocol(object):
             pass
         if self._conn:
             try:
-                info["type"+suffix] = self._conn.info
-                info["endpoint"+suffix] = self._conn.target
+                info[prefix+"type"+suffix] = self._conn.info
+                info[prefix+"endpoint"+suffix] = self._conn.target
             except:
                 log.error("failed to report connection information", exc_info=True)
 
