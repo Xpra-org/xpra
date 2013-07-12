@@ -1088,7 +1088,7 @@ class ServerSource(object):
                 #per-window source stats:
                 ws.add_stats(info, suffix=suffix)
                 #collect stats for global averages:
-                for _, pixels, _, encoding_time in list(ws.statistics.encoding_stats):
+                for _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
                     total_pixels += pixels
                     total_time += encoding_time
                 in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]

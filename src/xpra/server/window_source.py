@@ -817,7 +817,7 @@ class WindowSource(object):
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
         assert encoder is not None, "encoder not found for %s" % coding
-        data, client_options, outw, outh, outstride = encoder(coding, image, options)
+        data, client_options, outw, outh, outstride, bpp = encoder(coding, image, options)
         #check cancellation list again since the code above may take some time:
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence)  or self.suspended):
@@ -840,7 +840,7 @@ class WindowSource(object):
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
-        self.statistics.encoding_stats.append((coding, w*h, len(data), end-start))
+        self.statistics.encoding_stats.append((coding, w*h, bpp, len(data), end-start))
         #record number of frames and pixels:
         totals = self.statistics.encoding_totals.setdefault(coding, [0, 0])
         totals[0] = totals[0] + 1
@@ -852,7 +852,7 @@ class WindowSource(object):
 
     def mmap_encode(self, coding, image, options):
         data = options["mmap_data"]
-        return data, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride()
+        return data, {"rgb_format" : image.get_pixel_format()}, image.get_width(), image.get_height(), image.get_rowstride(), 32
 
     def warn_encoding_once(self, key, message):
         if key not in self._encoding_warnings:
@@ -889,9 +889,11 @@ class WindowSource(object):
             client_options = {"quality" : q}
             debug("webp_encode(%s, %s) using lossy encoder=%s with quality=%s for %s", image, options, enc, q, pixel_format)
         handler = BitmapHandler(image.get_pixels(), bh, image.get_width(), image.get_height(), image.get_rowstride())
+        bpp = 24
         if has_alpha:
             client_options["has_alpha"] = True
-        return Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0
+            bpp = 32
+        return Compressed("webp", str(enc(handler, **kwargs).data)), client_options, image.get_width(), image.get_height(), 0, bpp
 
     def rgb_encode(self, coding, image, options):
         pixel_format = image.get_pixel_format()
@@ -917,12 +919,16 @@ class WindowSource(object):
                 level = 0
                 zlib = str(pixels)
                 cdata = zlib
+        if pixel_format.upper().find("A")>=0:
+            bpp = 32
+        else:
+            bpp = 24
         debug("rgb_encode using level=%s, compressed %sx%s in %s/%s: %s bytes down to %s", level, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cdata))
         if not self.encoding_client_options or not self.supports_rgb24zlib:
-            return  zlib, {}, image.get_rowstride()
+            return  zlib, {}, image.get_rowstride(), bpp
         #wrap it using "Compressed" so the network layer receiving it
         #won't decompress it (leave it to the client's draw thread)
-        return Compressed(coding, cdata), {"zlib" : level}, image.get_width(), image.get_height(), image.get_rowstride()
+        return Compressed(coding, cdata), {"zlib" : level}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
 
     def PIL_encode(self, coding, image, options):
         assert coding in self.SERVER_CORE_ENCODINGS
@@ -936,6 +942,7 @@ class WindowSource(object):
                "RGBA"   : "RGBA",
                "BGRA"   : "RGBA",
                }.get(pixel_format, pixel_format)
+        bpp = 32
         #remove transparency if not handled by the client:
         try:
             #it is safe to use frombuffer() here since the convert()
@@ -944,6 +951,7 @@ class WindowSource(object):
             im = PIL.Image.frombuffer(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
             if coding.startswith("png") and not self.supports_transparency and rgb=="RGBA":
                 im = im.convert("RGB")
+                bpp = 24
         except Exception, e:
             log.error("PIL_encode(%s) converting to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride(), options), rgb, exc_info=True)
             raise e
@@ -968,18 +976,20 @@ class WindowSource(object):
             assert coding in ("png", "png/P", "png/L"), "unsupported png encoding: %s" % coding
             if coding=="png/L":
                 im = im.convert("L", palette=PIL.Image.ADAPTIVE)
+                bpp = 8
             elif coding=="png/P":
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
                 im = im.convert("P", palette=PIL.Image.WEB)
+                bpp = 8
             kwargs = im.info
             kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
         buf.close()
-        return Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0
+        return Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
     def rgb_reformat(self, image):
         #need to convert to a supported format!

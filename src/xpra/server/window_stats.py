@@ -40,7 +40,7 @@ class WindowPerformanceStatistics(object):
     def reset(self):
         self.client_decode_time = maxdeque(NRECS)       #records how long it took the client to decode frames:
                                                         #(ack_time, no of pixels, decoding_time*1000*1000)
-        self.encoding_stats = maxdeque(NRECS)           #encoding: (coding, pixels, compressed_size, encoding_time)
+        self.encoding_stats = maxdeque(NRECS)           #encoding: (coding, pixels, bpp, compressed_size, encoding_time)
         # statistics:
         self.damage_in_latency = maxdeque(NRECS)        #records how long it took for a damage request to be sent
                                                         #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
@@ -171,9 +171,9 @@ class WindowPerformanceStatistics(object):
                 comp_times_ns = []
                 total_pixels = 0
                 total_time = 0.0
-                for _, pixels, compressed_size, compression_time in enc_stats:
+                for _, pixels, bpp, compressed_size, compression_time in enc_stats:
                     if compressed_size>0 and pixels>0:
-                        osize = pixels*3
+                        osize = pixels*bpp/8
                         comp_ratios_pct.append((100.0*compressed_size/osize, pixels))
                         comp_times_ns.append((1000.0*1000*1000*compression_time/pixels, pixels))
                         total_pixels += pixels
