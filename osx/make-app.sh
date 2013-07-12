@@ -111,6 +111,9 @@ rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
 PYGTK_LIBDIR="$LIBDIR/pygtk/2.0/"
 rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
 rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
+#opengl: just take everything:
+rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
+
 #gst bits expect to find dylibs in Frameworks!?
 pushd ${CONTENTS_DIR}
 ln -sf Resources/lib Frameworks
