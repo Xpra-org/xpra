@@ -268,7 +268,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.send("map-window", self._id, x, y, w, h, self._client_properties)
             self._pos = (x, y)
             self._size = (w, h)
-        self.idle_add(self._focus_change, "initial")
+            self.idle_add(self._focus_change, "initial")
 
     def do_configure_event(self, event):
         self.debug("Got configure event: %s", event)
