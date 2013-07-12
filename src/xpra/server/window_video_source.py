@@ -57,9 +57,10 @@ class WindowVideoSource(WindowSource):
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
         prefix = "window[%s]." % self.wid
-        info[prefix+"client_features.uses_swscale"] = self.uses_swscale
-        info[prefix+"client_features.uses_csc_atoms"] = self.uses_csc_atoms
-        info[prefix+"client_features.supports_scaling"] = self.video_scaling
+        info[prefix+"client.csc_modes"] = self.csc_modes
+        info[prefix+"client.uses_swscale"] = self.uses_swscale
+        info[prefix+"client.uses_csc_atoms"] = self.uses_csc_atoms
+        info[prefix+"client.supports_scaling"] = self.video_scaling
         info[prefix+"scaling"] = self.actual_scaling or (1, 1)
         if self._csc_encoder:
             info[prefix+"csc"+suffix] = self._csc_encoder.get_type()
@@ -121,6 +122,7 @@ class WindowVideoSource(WindowSource):
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
         self.video_scaling = properties.get("encoding.video_scaling", False)
         WindowSource.set_client_properties(self, properties)
+        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s", properties, self.csc_modes, self.video_scaling)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
