@@ -66,4 +66,4 @@ if test -f "$bundle_res/environment.sh"; then
   source "$bundle_res/environment.sh"
 fi
 
-exec "$PYTHON" $@
+exec "$PYTHON" "$@"
