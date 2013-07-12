@@ -387,10 +387,7 @@ class ServerBase(object):
 
     def cleanup(self, *args):
         if self.notifications_forwarder:
-            try:
-                self.notifications_forwarder.release()
-            except Exception, e:
-                log.error("failed to release dbus notification forwarder: %s", e)
+            thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None
         log("cleanup will disconnect: %s", self._potential_protocols)
         for proto in self._potential_protocols:
