@@ -758,7 +758,7 @@ class UIXpraClient(XpraClientBase):
             self._startup_complete()
 
     def _startup_complete(self, *args):
-        log.info("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
+        log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
         if self.tray:
             self.tray.ready()
 
