@@ -150,11 +150,11 @@ def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_enc
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"
             set_tooltip_text(encoding_item, descr)
-        def encoding_changed(item):
-            item = ensure_item_selected(encodings_submenu, item)
+        def encoding_changed(oitem):
+            item = ensure_item_selected(encodings_submenu, oitem)
             enc = NAME_TO_ENCODING.get(item.get_label())
+            log("encoding_changed(%s) item=%s, enc=%s, current=%s", oitem, item, enc, encodings_submenu.get_current_encoding())
             if enc is not None and encodings_submenu.get_current_encoding()!=enc:
-                log("setting encoding to %s", enc)
                 encodings_submenu.set_encoding(enc)
         log("make_encodingsmenu(..) encoding=%s, current=%s, active=%s", encoding, get_current_encoding(), encoding==get_current_encoding())
         encoding_item.set_active(encoding==get_current_encoding())
@@ -513,7 +513,7 @@ class GTKTrayMenuBase(object):
     def get_current_encoding(self):
         return self.client.encoding
     def set_current_encoding(self, enc):
-        self.client.encoding = enc
+        self.client.set_encoding(enc)
         #these menus may need updating now:
         self.set_qualitymenu()
         self.set_speedmenu()

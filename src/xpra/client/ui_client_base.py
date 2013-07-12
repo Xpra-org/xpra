@@ -932,7 +932,8 @@ class UIXpraClient(XpraClientBase):
 
 
     def set_encoding(self, encoding):
-        assert encoding in self.get_encodings()
+        log("set_encoding(%s)", encoding)
+        assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
         server_encodings = self.server_capabilities.get("encodings", [])
         assert encoding in server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, server_encodings)
         self.encoding = encoding

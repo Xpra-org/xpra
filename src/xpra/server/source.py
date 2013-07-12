@@ -766,6 +766,10 @@ class ServerSource(object):
             wss = [self.window_sources.get(wid) for wid in window_ids]
         else:
             wss = self.window_sources.values()
+        #if we're updating all the windows, reset global stats too:
+        if set(wss).issuperset(self.window_sources.values()):
+            log("resetting global stats")
+            self.statistics.reset()
         for ws in wss:
             if ws is not None:
                 ws.set_new_encoding(encoding)
