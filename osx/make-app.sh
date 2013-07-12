@@ -12,6 +12,7 @@ echo "**************************************************************************
 echo "Building and installing"
 pushd ../src
 
+svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
 ./setup.py clean
 ./setup.py install
