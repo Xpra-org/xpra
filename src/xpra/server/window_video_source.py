@@ -44,6 +44,7 @@ class WindowVideoSource(WindowSource):
 
         self.width_mask = 0xFFFF
         self.height_mask = 0xFFFF
+        self.actual_scaling = None
 
         self._csc_encoder = None
         self._video_encoder = None
@@ -56,6 +57,10 @@ class WindowVideoSource(WindowSource):
     def add_stats(self, info, suffix=""):
         WindowSource.add_stats(self, info, suffix)
         prefix = "window[%s]." % self.wid
+        info[prefix+"client_features.uses_swscale"] = self.uses_swscale
+        info[prefix+"client_features.uses_csc_atoms"] = self.uses_csc_atoms
+        info[prefix+"client_features.supports_scaling"] = self.video_scaling
+        info[prefix+"scaling"] = self.actual_scaling or (1, 1)
         if self._csc_encoder:
             info[prefix+"csc"+suffix] = self._csc_encoder.get_type()
             ci = self._csc_encoder.get_info()
@@ -114,6 +119,7 @@ class WindowVideoSource(WindowSource):
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
+        self.video_scaling = properties.get("encoding.video_scaling", False)
         WindowSource.set_client_properties(self, properties)
 
     def unmap(self):
@@ -340,21 +346,23 @@ class WindowVideoSource(WindowSource):
         #TODO: framerate is relevant, probably
         if not SCALING:
             return width, height
-        scaling = self.scaling
+        self.actual_scaling = self.scaling
         if not self.video_scaling:
-            scaling = None
-        if scaling is None:
+            #not supported by client!
+            self.actual_scaling = None
+        elif self.actual_scaling is None:
+            #no scaling window attribute defined, so use heuristics to enable:
             quality = self.get_current_quality()
             speed = self.get_current_speed()
             if width*height>=1024*1024 and quality<30 and speed>90:
-                scaling = 2,3
+                self.actual_scaling = 2,3
             elif self.maximized and quality<50 and speed>80:
-                scaling = 2,3
+                self.actual_scaling = 2,3
             elif self.fullscreen and quality<60 and speed>70:
-                scaling = 1,2
-        if scaling is None:
+                self.actual_scaling = 1,2
+        if self.actual_scaling is None:
             return width, height
-        v, u = scaling
+        v, u = self.actual_scaling
         if v/u>1.0:         #never upscale before encoding!
             return width, height
         if float(v)/float(u)<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)

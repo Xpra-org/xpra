@@ -245,6 +245,8 @@ class WindowSource(object):
         info[prefix+"dimensions"] = self.window_dimensions
         info[prefix+"encoding"+suffix] = self.encoding
         info[prefix+"suspended"+suffix] = self.suspended
+        info[prefix+"property.scaling"+suffix] = self.scaling
+        info[prefix+"property.fullscreen"+suffix] = self.fullscreen
         self.statistics.add_stats(info, prefix, suffix)
 
         #batch delay stats:

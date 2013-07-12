@@ -20,6 +20,7 @@ class GLClientWindow(ClientWindow):
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         #tell the server that we don't want RGB data by specifying only YUV modes:
         self._client_properties["encoding.csc_modes"] = ("YUV420P", "YUV422P", "YUV444P")
+        self._client_properties["encoding.video_scaling"] = False
         self.set_reallocate_redraws(True)
         self.add(self._backing.glarea)
 
