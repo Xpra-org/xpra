@@ -53,7 +53,6 @@ class DesktopManager(gtk.Widget):
         s = AdHocStruct()
         s.shown = False
         s.geom = [x, y, w, h]
-        s.window = None
         self._models[model] = s
         model.connect("unmanaged", self._unmanaged)
         model.connect("ownership-election", self._elect_me)
@@ -92,14 +91,6 @@ class DesktopManager(gtk.Widget):
     def visible(self, model):
         return self._models[model].shown
 
-    def raise_window(self, model):
-        if model.is_OR():
-            model.get_property("client-window").raise_()
-        else:
-            window = self._models[model].window
-            if window is not None:
-                window.raise_()
-
     ## For communicating with WindowModels:
 
     def _unmanaged(self, model, wm_exiting):
@@ -113,7 +104,6 @@ class DesktopManager(gtk.Widget):
 
     def take_window(self, model, window):
         window.reparent(self.window, 0, 0)
-        self._models[model].window = window
 
     def window_size(self, model):
         w, h = self._models[model].geom[2:4]
@@ -583,7 +573,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             log("_process_mouse_common() invalid window id: %s", wid)
             return
         def raise_and_move():
-            self._desktop_manager.raise_window(window)
+            window.raise_window()
             self._move_pointer(pointer)
         trap.swallow_synced(raise_and_move)
 

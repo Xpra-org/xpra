@@ -603,6 +603,10 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def is_OR(self):
         return  True
 
+    def raise_window(self):
+        self.client_window.raise_()
+
+
 gobject.type_register(OverrideRedirectWindowModel)
 
 
@@ -798,6 +802,9 @@ class WindowModel(BaseWindowModel):
 
     def is_OR(self):
         return  False
+
+    def raise_window(self):
+        self.corral_window.raise_()
 
     def get_dimensions(self):
         return  self.get_property("actual-size")
