@@ -212,7 +212,8 @@ class ServerSource(object):
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.encoding_options = {}
-        self.default_batch_config = DamageBatchConfig()
+        self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
+        self.global_batch_config = self.default_batch_config.clone()      #global batch config
         self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
@@ -336,8 +337,8 @@ class ServerSource(object):
                 wdimsum += weight
             if wdimsum>0:
                 delay = wdelay / wdimsum
-                self.default_batch_config.last_delays.append((now, delay))
-                self.default_batch_config.delay = delay
+                self.global_batch_config.last_delays.append((now, delay))
+                self.global_batch_config.delay = delay
             self.calculate_event.clear()
             if wait_time>0:
                 #wait before trying to run again:
@@ -418,7 +419,6 @@ class ServerSource(object):
                 v = min(maxv, v)
             assert v is not None
             return v
-        self.default_batch_config = DamageBatchConfig()
         self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
         self.default_batch_config.min_delay = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
         self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
@@ -770,6 +770,7 @@ class ServerSource(object):
         if set(wss).issuperset(self.window_sources.values()):
             log("resetting global stats")
             self.statistics.reset()
+            self.global_batch_config = self.default_batch_config.clone()
         for ws in wss:
             if ws is not None:
                 ws.set_new_encoding(encoding)
@@ -891,7 +892,7 @@ class ServerSource(object):
         self.cursor_data = cursor_data
         if not self.send_cursor_pending:
             self.send_cursor_pending = True
-            delay = max(10, int(self.default_batch_config.delay*4))
+            delay = max(10, int(self.global_batch_config.delay*4))
             self.timeout_add(delay, self.do_send_cursor)
 
     def do_send_cursor(self):
@@ -1098,7 +1099,7 @@ class ServerSource(object):
             info["encoding.pixels_encoded_per_second"+suffix] = v
             add_list_stats(info, "damage.in_latency",  in_latencies, show_percentile=[9])
             add_list_stats(info, "damage.out_latency",  out_latencies, show_percentile=[9])
-        self.default_batch_config.add_stats(info, "", suffix)
+        self.global_batch_config.add_stats(info, "", suffix)
 
     def reconfigure(self, force_reload=False):
         for ws in self.window_sources.values():
@@ -1147,7 +1148,7 @@ class ServerSource(object):
     def make_window_source(self, wid, window):
         ws = self.window_sources.get(wid)
         if ws is None:
-            batch_config = self.default_batch_config.clone()
+            batch_config = self.global_batch_config.clone()
             batch_config.wid = wid
             ws = WindowVideoSource(self.idle_add, self.timeout_add, self.source_remove,
                               self.queue_damage, self.queue_packet,
