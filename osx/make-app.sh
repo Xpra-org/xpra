@@ -103,6 +103,12 @@ rsync -rplog $XDG_DATA_DIRS/xpra/* ${RSCDIR}/share/xpra/
 
 echo
 echo "*******************************************************************************"
+echo "include all codecs found: "
+find $PYTHON_PACKAGES/xpra/codecs/* -type d -maxdepth 0 -exec basename {} \;
+rsync -rpl $PYTHON_PACKAGES/xpra/codecs/* $LIBDIR/python/xpra/codecs/
+
+echo
+echo "*******************************************************************************"
 echo "Hacks"
 #HACKS
 #no idea why I have to do this by hand
