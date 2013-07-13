@@ -81,6 +81,14 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
             s = str(window_type)
             if generic_window_types:
                 s = s.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "")
+            else:
+                #for older clients: ensure values do have the prefix.
+                #(shadow servers expose their root window as "NORMAL",
+                #we handle all the legitimate values here for correctness):
+                if s in ("NORMAL", "DIALOG", "MENU", "TOOLBAR", "SPLASH",
+                         "UTILITY", "DOCK", "DESKTOP", "DROPDOWN_MENU",
+                         "POPUP_MENU", "TOOLTIP", "NOTIFICATION", "COMBO", "DND"):
+                    s = "_NET_WM_WINDOW_TYPE_"+s
             wts.append(s)
         log("window_types=%s", wts)
         return {"window-type" : wts}
