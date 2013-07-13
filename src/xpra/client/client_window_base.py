@@ -107,7 +107,8 @@ class ClientWindowBase(ClientWidgetBase):
         log("update_metadata(%s)", metadata)
         window_type = metadata.get("window-type")
         if window_type is not None:
-            window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "") for x in window_type]
+            #normalize the window type for servers that don't do "generic_window_types"
+            window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for x in window_type]
             metadata["window-type"] = window_type
 
         self._metadata.update(metadata)
@@ -212,8 +213,11 @@ class ClientWindowBase(ClientWidgetBase):
             hint = self.NAME_TO_HINT.get(window_type)
             if hint:
                 hints |= hint
-        self.debug("setting window type to %s - %s", window_type, hint)
-        self.set_type_hint(hint)
+            else:
+                self.debug("ignoring unknown window type hint: %s", window_type)
+        self.debug("setting window type to %s - %s", window_types, hints)
+        if hints:
+            self.set_type_hint(hints)
 
     def set_fullscreen(self, fullscreen):
         pass

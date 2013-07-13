@@ -80,7 +80,7 @@ def make_window_metadata(window, propname, generic_window_types=False, png_windo
         for window_type in window_types:
             s = str(window_type)
             if generic_window_types:
-                s = s.replace("_NET_WM_WINDOW_TYPE_", "")
+                s = s.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "")
             wts.append(s)
         log("window_types=%s", wts)
         return {"window-type" : wts}
