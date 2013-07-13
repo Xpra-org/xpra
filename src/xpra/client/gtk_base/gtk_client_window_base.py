@@ -71,12 +71,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 transient_for._override_redirect_windows.append(self)
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
-            def focus_in(*args):
-                self._focus_change("focus-in-event")
-            def focus_out(*args):
-                self._focus_change("focus-out-event")
-            self.connect("focus-in-event", focus_in)
-            self.connect("focus-out-event", focus_out)
+        def focus_in(*args):
+            self.debug("focus-in-event for wid=%s", self._id)
+        def focus_out(*args):
+            self.debug("focus-out-event for wid=%s", self._id)
+        self.connect("focus-in-event", focus_in)
+        self.connect("focus-out-event", focus_out)
         if self._can_set_workspace:
             self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
