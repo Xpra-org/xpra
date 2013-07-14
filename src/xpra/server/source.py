@@ -373,6 +373,8 @@ class ServerSource(object):
             self.protocol = None
 
     def suspend(self, ui, wd):
+        log.debug("suspend(%s, %s) suspended=%s, resume_sound=%s, sound_source=%s",
+                  ui, wd, self.suspended, self.resume_sound, self.sound_source)
         if ui:
             self.suspended = True
         if self.sound_source is None:
@@ -386,6 +388,8 @@ class ServerSource(object):
                 ws.suspend()
 
     def resume(self, ui, wd):
+        log.debug("resume(%s, %s) suspended=%s, resume_sound=%s, sound_source=%s",
+                  ui, wd, self.suspended, self.resume_sound, self.sound_source)
         if not ui:
             self.suspended = False
         for wid, window in wd.items():
