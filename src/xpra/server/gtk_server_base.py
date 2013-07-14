@@ -45,9 +45,9 @@ class GTKServerBase(ServerBase):
 
     def do_run(self):
         gtk_main_quit_on_fatal_exceptions_enable()
-        log("calling gtk.main")
+        log("calling gtk.main()")
         gtk.main()
-        log("xpra end of gtk.main().")
+        log("end of gtk.main()")
 
     def add_listen_socket(self, socktype, sock):
         sock.listen(5)
