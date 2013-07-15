@@ -728,10 +728,14 @@ def make_client(error_cb, opts):
         pass
     try:
         from PyQt4 import QtCore, QtGui     #@UnresolvedImport @UnusedImport
-        import xpra.client.qt4              #@UnusedImport
-        toolkits["qt4"] = "xpra.client.qt4.client"
-    except Exception, e:
-        print("failed to load qt client: %s", e)
+        try:
+            import xpra.client.qt4              #@UnusedImport
+            toolkits["qt4"] = "xpra.client.qt4.client"
+        except Exception, e:
+            print("failed to load qt client: %s", e)
+            pass
+    except ImportError, e:
+        #qt not installed
         pass
     if ct=="help":
         error_cb("The following client toolkits are available: %s" % (", ".join(toolkits.keys())))
