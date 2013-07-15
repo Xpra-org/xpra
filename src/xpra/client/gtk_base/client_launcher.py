@@ -70,6 +70,7 @@ class ApplicationWindow:
 								"encoding", "quality", "min-quality", "speed", "min-speed"]
 		self.config.client_toolkit = "gtk2"
 		self.client = make_client(Exception, self.config)
+		self.exit_code = None
 
 	def create_window(self):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -413,6 +414,7 @@ class ApplicationWindow:
 		self.set_info_color(True)
 
 	def do_connect_builtin(self, params):
+		self.exit_code = None
 		self.set_info_text("Connecting.")
 		self.set_sensitive(False)
 		try:
@@ -437,26 +439,43 @@ class ApplicationWindow:
 				self.client.password = self.config.password
 			#override exit code:
 			warn_and_quit_save = self.client.warn_and_quit
+			quit_save = self.client.quit
+			def do_quit(*args):
+				self.client.warn_and_quit = warn_and_quit_save
+				self.client.quit = quit_save
+				self.destroy()
+				gtk.main_quit()
 			def warn_and_quit_override(exit_code, warning):
+				log("warn_and_quit_override(%s, %s)", exit_code, warning)
+				if self.exit_code == None:
+					self.exit_code = exit_code
 				self.client.cleanup()
 				password_warning = warning.find("invalid password")>=0
 				if password_warning:
 					self.password_warning()
 				err = exit_code!=0 or password_warning
-				log("warn_and_quit_override(%s, %s)", exit_code, warning)
 				self.set_info_color(err)
 				self.set_info_text(warning)
 				if err:
 					def ignore_further_quit_events(*args):
 						pass
 					self.client.warn_and_quit = ignore_further_quit_events
+					self.client.quit = ignore_further_quit_events
 					self.set_sensitive(True)
 					gobject.idle_add(self.window.show)
 				else:
-					self.client.warn_and_quit = warn_and_quit_save
-					self.destroy()
-					gtk.main_quit()
+					do_quit()
+
+			def quit_override(exit_code):
+				log("quit_override(%s)", exit_code)
+				if self.exit_code == None:
+					self.exit_code = exit_code
+				self.client.cleanup()
+				if self.exit_code==0:
+					do_quit()
+
 			self.client.warn_and_quit = warn_and_quit_override
+			self.client.quit = quit_override
 			self.client.run()
 		gobject.idle_add(start_XpraClient)
 
