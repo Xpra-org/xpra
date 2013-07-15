@@ -3,8 +3,12 @@ xpra/x11/bindings/*.pxi
 xpra/x11/gtk_x11/*.c
 xpra/x11/gtk_x11/*.pxi
 xpra/gtk_common/gdk_atoms.c
-xpra/codecs/x264/codec.c
-xpra/codecs/vpx/codec.c
+xpra/codecs/argb/argb.c
+xpra/codecs/csc_swscale/colorspace_converter.c
+xpra/codecs/dec_avcodec/decoder.c
+xpra/codecs/enc_x264/encoder.c
+xpra/codecs/vpx/encoder.c
+xpra/codecs/vpx/decoder.c
 xpra/codecs/xor/cyxor.c
 xpra/net/rencode/rencode.c
-etc/xpra/xpra.conf
+xpra/server/stats/cymaths.c
