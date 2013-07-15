@@ -610,18 +610,18 @@ class UIXpraClient(XpraClientBase):
             self.send("info-request", [self.uuid], self._id_to_window.keys())
 
 
+    def send_quality(self):
+        q = self.quality
+        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
+        if self.change_quality:
+            self.send("quality", q)
+
     def send_min_quality(self):
         q = self.min_quality
         assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
         if self.change_min_quality:
             #v0.8 onwards: set min
             self.send("min-quality", q)
-        elif self.change_quality:
-            #v0.7 and earlier, can only set fixed quality..
-            self.send("quality", q)
-        else:
-            #this is really old..
-            self.send("jpeg-quality", q)
 
     def send_speed(self):
         assert self.change_speed

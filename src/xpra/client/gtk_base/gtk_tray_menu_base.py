@@ -540,7 +540,7 @@ class GTKTrayMenuBase(object):
 
     def make_qualitysubmenu(self):
         quality_submenu = make_min_auto_menu("Quality", MIN_QUALITY_OPTIONS, QUALITY_OPTIONS,
-                                           self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
+                                           self.get_min_quality, self.get_quality, self.set_min_quality, self.set_quality)
         #WARNING: this changes "min-quality", not "quality" (or at least it tries to..)
         self.popup_menu_workaround(quality_submenu)
         quality_submenu.show_all()

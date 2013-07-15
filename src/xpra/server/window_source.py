@@ -28,8 +28,9 @@ MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 
 import time
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
 
 XPRA_DAMAGE_DEBUG = os.environ.get("XPRA_DAMAGE_DEBUG", "0")!="0"
 if XPRA_DAMAGE_DEBUG:
@@ -298,6 +299,7 @@ class WindowSource(object):
         else:
             info = {}
             speed = min(100, speed)
+        elog("update_speed() info=%s, speed=%s", info, speed)
         self._encoding_speed.append((time.time(), info, speed))
 
     def get_min_speed(self):
@@ -327,6 +329,7 @@ class WindowSource(object):
         else:
             info = {}
             quality = min(100, quality)
+        elog("update_quality() info=%s, quality=%s", info, quality)
         self._encoding_quality.append((time.time(), info, quality))
 
     def get_min_quality(self):

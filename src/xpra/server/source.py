@@ -1119,7 +1119,7 @@ class ServerSource(object):
 
     def set_min_quality(self, min_quality):
         self.default_encoding_options["min-quality"] = min_quality
-        debug("set_min_quality(%s) default_encoding_options=%s", min_quality, self.default_encoding_options)
+        elog("set_min_quality(%s) default_encoding_options=%s", min_quality, self.default_encoding_options)
         self.reconfigure()
 
     def set_quality(self, quality):
@@ -1128,12 +1128,12 @@ class ServerSource(object):
                 del self.default_encoding_options["quality"]
         else:
             self.default_encoding_options["quality"] = max(quality, self.default_encoding_options.get("min-quality", 0))
-        debug("set_quality(%s) default_encoding_options=%s", quality, self.default_encoding_options)
+        elog("set_quality(%s) default_encoding_options=%s", quality, self.default_encoding_options)
         self.reconfigure()
 
     def set_min_speed(self, min_speed):
         self.default_encoding_options["min-speed"] = min_speed
-        debug("set_min_speed(%s) default_encoding_options=%s", min_speed, self.default_encoding_options)
+        elog("set_min_speed(%s) default_encoding_options=%s", min_speed, self.default_encoding_options)
         self.reconfigure()
 
     def set_speed(self, speed):
@@ -1143,7 +1143,7 @@ class ServerSource(object):
                 del self.default_encoding_options["speed"]
         else:
             self.default_encoding_options["speed"] = max(speed, self.default_encoding_options.get("min-speed", 0))
-        debug("set_speed(%s) prev_speed=%s, default_encoding_options=%s", speed, prev_speed, self.default_encoding_options)
+        elog("set_speed(%s) prev_speed=%s, default_encoding_options=%s", speed, prev_speed, self.default_encoding_options)
         self.reconfigure(force_reload=(speed>99 and prev_speed<=99) or (speed<=99 and prev_speed>99))
 
     def refresh(self, wid, window, opts):
