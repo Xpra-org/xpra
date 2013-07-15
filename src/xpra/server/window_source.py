@@ -969,7 +969,8 @@ class WindowSource(object):
             q = int(min(99, max(1, q)))
             kwargs = im.info
             kwargs["quality"] = q
-            kwargs["optimize"] = optimize
+            if optimize:
+                kwargs["optimize"] = optimize
             im.save(buf, "JPEG", **kwargs)
             client_options["quality"] = q
         else:
@@ -984,7 +985,8 @@ class WindowSource(object):
                 im = im.convert("P", palette=PIL.Image.WEB)
                 bpp = 8
             kwargs = im.info
-            kwargs["optimize"] = optimize
+            if optimize:
+                kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
         data = buf.getvalue()
