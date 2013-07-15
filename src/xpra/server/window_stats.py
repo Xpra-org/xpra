@@ -22,7 +22,7 @@ from xpra.deque import maxdeque
 from xpra.simple_stats import add_list_stats, add_weighted_list_stats
 from xpra.server.stats.maths import logp, \
     calculate_time_weighted_average, calculate_timesize_weighted_average, \
-    calculate_for_target, calculate_for_average
+    calculate_for_average
 
 
 class WindowPerformanceStatistics(object):
@@ -52,6 +52,8 @@ class WindowPerformanceStatistics(object):
                                                         #so we can calculate the "client_latency" when the client sends
                                                         #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
         self.encoding_totals = {}                       #for each encoding, how many frames we sent and how many pixels in total
+        self.encoding_pending = {}                      #damage regions waiting to be picked up by the encoding thread:
+                                                        #for each sequence no: (damage_time, w, h)
         self.last_damage_event_time = None
         self.damage_events_count = 0
         self.packet_count = 0
@@ -91,31 +93,8 @@ class WindowPerformanceStatistics(object):
 
     def get_factors(self, pixel_count, delay):
         factors = []
-        #damage "in" latency factors:
-        if len(self.damage_in_latency)>0:
-            metric = "damage-processing-latency"
-            target_latency = 0.010 + (0.050*pixel_count/1024.0/1024.0)
-            factors.append(calculate_for_target(metric, target_latency, self.avg_damage_in_latency, self.recent_damage_in_latency, aim=0.8, slope=0.005, smoothing=sqrt))
-            #ratio to delay (aim for double the latency so we always have packets in flight):
-            metric = "damage-processing-ratios"
-            md = 1.5 * max(0.005, delay / 1000.0)
-            fa = sqrt(self.avg_damage_in_latency / md)
-            fr = sqrt(self.recent_damage_in_latency / md)
-            weight = max(abs(fa-1.0), abs(fr-1.0))
-            info = {
-                    "avg_damage_in_latency" : int(1000.0*self.avg_damage_in_latency),
-                    "recent_damage_in_latency"  : int(1000.0*self.recent_damage_in_latency),
-                    "delay" : int(delay),
-                    "avg_factor"    : int(1000.0*fa),
-                    "recent_factor" : int(1000.0*fr)
-                    }
-            factors.append((metric, info, (fa+fr*2)/3.0, weight))
-        #damage "out" latency
-        if len(self.damage_out_latency)>0:
-            metric = "damage-out-latency"
-            target_latency = 0.025 + (0.060*pixel_count/1024.0/1024.0)
-            factors.append(calculate_for_target(metric, target_latency, self.avg_damage_out_latency, self.recent_damage_out_latency, aim=0.8, slope=0.010, smoothing=sqrt))
         #ratio of "in" and "out" latency indicates network bottleneck:
+        #(the difference between the two is the time it takes to send)
         if len(self.damage_in_latency)>0 and len(self.damage_out_latency)>0:
             ad = max(0.001, self.avg_damage_out_latency-self.avg_damage_in_latency)
             rd = max(0.001, self.recent_damage_out_latency-self.recent_damage_in_latency)
@@ -213,7 +192,7 @@ class WindowPerformanceStatistics(object):
         max_latency = 2.0*min_latency
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
 
-    def get_backlog(self):
+    def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
             sent_before = time.time()-self.target_latency
@@ -228,10 +207,10 @@ class WindowPerformanceStatistics(object):
                     packets_backlog += 1
                     pixels_backlog += pixels
                     bytes_backlog += (end_bytes - start_bytes)
-            log.debug("get_backlog missing acks: %s", drop_missing_acks)
+            log.debug("get_client_backlog missing acks: %s", drop_missing_acks)
             #this should never happen...
             if len(drop_missing_acks)>0:
-                log.error("get_backlog found some damage acks that have been pending for too long, expiring them: %s", drop_missing_acks)
+                log.error("get_client_backlog found some damage acks that have been pending for too long, expiring them: %s", drop_missing_acks)
                 for sequence in drop_missing_acks:
                     try:
                         del self.damage_ack_pending[sequence]
@@ -247,3 +226,10 @@ class WindowPerformanceStatistics(object):
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
         return packets_backlog
+
+    def get_pixels_encoding_backlog(self):
+        pixels, count = 0, 0
+        for _, w, h in self.encoding_pending.values():
+            pixels += w*h
+            count += 1
+        return pixels, count

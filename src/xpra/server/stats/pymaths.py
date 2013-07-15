@@ -103,6 +103,7 @@ def calculate_for_target(metric, target_value, avg_value, recent_value, aim=0.5,
             "aimed_avg" : int(1000.0*aimed_average),
             "div"       : int(1000.0*div),
             "smoothing" : smn(smoothing),
+            "weight_multiplier" : int(1000.0*weight_multiplier),
             }
     return  metric, info, factor, weight
 

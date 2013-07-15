@@ -214,7 +214,15 @@ class WindowSource(object):
         self._damage_delayed = None
         self._damage_delayed_expired = False
         self.last_pixmap_data = None
-
+        #make sure we don't account for those as they will get dropped
+        #(generally before encoding - only one may still get encoded):
+        for sequence in self.statistics.encoding_pending.keys():
+            if self._damage_cancelled>=sequence:
+                try:
+                    del self.statistics.encoding_pending[sequence]
+                except KeyError:
+                    #may have been processed whilst we checked
+                    pass
 
     def cancel_expire_timer(self):
         if self.expire_timer:
@@ -393,7 +401,13 @@ class WindowSource(object):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         packets_backlog = self.statistics.get_packets_backlog()
-        if packets_backlog==0 and not self.batch_config.always and delay<self.batch_config.min_delay:
+        pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
+        #only send without batching when things are going well:
+        # - no packets packlog from the client
+        # - the amount of pixels waiting to be encoded is less than one full frame refresh
+        # - no more than 10 regions waiting to be encoded
+        if (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10) and \
+            not self.batch_config.always and delay<self.batch_config.min_delay:
             #send without batching:
             debug("damage(%s, %s, %s, %s, %s) wid=%s, sending now with sequence %s", x, y, w, h, options, self.wid, self._sequence)
             actual_encoding = options.get("encoding")
@@ -459,6 +473,23 @@ class WindowSource(object):
             else:
                 log.warn("send_delayed for wid %s, elapsed time %.1f is above limit of %.1f - sending now", self.wid, actual_delay, self.batch_config.max_delay)
         else:
+            #if we're here, there is no packet backlog, and therefore
+            #may_send_delayed() may not be called again by an ACK packet,
+            #so we must either process the region now or set a timer to
+            #check again later:
+            def check_again():
+                delay = int(max(10, actual_delay/10.0))
+                self.timeout_add(delay, self.may_send_delayed)
+                return False
+            pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
+            ww, wh = self.window_dimensions
+            if pixels_encoding_backlog>=(ww*wh):
+                debug("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s", self.wid, ww*wh)
+                return check_again()
+            elif enc_backlog_count>10:
+                debug("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s", self.wid, enc_backlog_count)
+                return check_again()
+            #no backlog, so ok to send:
             debug("send_delayed for wid %s, batch delay is %.1f, elapsed time is %.1f ms", self.wid, self.batch_config.delay, actual_delay)
         self.batch_config.last_actual_delays.append((now, actual_delay))
         self.do_send_delayed_region()
@@ -645,6 +676,11 @@ class WindowSource(object):
                 packet = self.make_data_packet(*data)
             finally:
                 image.free()
+                try:
+                    del self.statistics.encoding_pending[sequence]
+                except KeyError:
+                    #may have been cancelled whilst we processed it
+                    pass
             #NOTE: we have to send it (even if the window is cancelled by now..)
             #because the code may rely on the client having received this frame
             if packet:
@@ -656,6 +692,7 @@ class WindowSource(object):
                 if window.is_managed() and self.auto_refresh_delay>0 and not self.is_cancelled(sequence):
                     client_options = packet[10]     #info about this packet from the encoder
                     self.idle_add(self.schedule_auto_refresh, window, w, h, coding, options, client_options)
+        self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         self.queue_damage(make_data_packet_cb)
 
     def schedule_auto_refresh(self, window, w, h, coding, damage_options, client_options):
