@@ -1,20 +1,17 @@
-xpra (0.10.0-2) UNRELEASED; urgency=low
-  * bump version to make it easier to test codec refactoring
-
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 03 Jun 2013 17:04:56 +0700
-
-xpra (0.10.0-1) UNRELEASED; urgency=low
+xpra (0.10.0-3) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) transfers
   * performance: zero-copy window pixels to picture encoders
   * support for speed tuning (latency vs bandwidth) with more encodings
   * support for grayscale and palette based png encoding
   * support for window transparency
+  * OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
   * register as a generic URL handler
   * fullscreen toggle support
   * stricter Cython code
+  * better handling of sound buffering and overruns
   * initial support for Qt based client
   * support for different window layouts with custom widgets
-  * basic support of OSX shadow servers
+  * experimental support of OSX shadow servers
   * don't try to synchronize with clipboards that do not exist
   * refactoring: move features and components to sub-modules
   * refactoring: split X11 bindings from pure gtk code
@@ -27,7 +24,31 @@ xpra (0.10.0-1) UNRELEASED; urgency=low
   * export compiler information with build (Cython, C compiler, etc)
   * simplify non-UI subcommands and their packets ("info", "version", etc)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 May 2013 11:17:15 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 15 Jul 2013 11:01:28 +0700
+
+xpra (0.9.6-1) UNRELEASED; urgency=low
+  * fix lost clicks on some popup menus (mostly with MS Windows clients)
+  * fix client workarea size change detection
+  * fix reading of unique "machine-id" on posix
+  * fix window reference leak for windows we fail to manage
+  * fix compatibility with pillow (PIL fork)
+  * fix session-info window graphs jumping (smoother motion)
+  * fix webp loading code for non-Linux posix systems
+  * fix window group-leader attribute setting
+  * fix man page indentation
+  * fix variable test vs use (correctness only)
+  * forward compatibility with future "xpra info" namespace changes
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 30 Jun 2013 16:33:26 +0700
+
+xpra (0.9.5-1) UNRELEASED; urgency=low
+  * fix auto-refresh: don't refresh unnecessarily
+  * fix wrong initial timeout when ssh takes a long time to connect
+  * fix client monitor/resolution size change detection
+  * fix attributes reported to clients when encoding overrides are used
+  * Gentoo ebuild uses virtual to allow one to choose pillow or PIL
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 06 Jun 2013 15:33:54 +0700
 
 xpra (0.9.4-1) UNRELEASED; urgency=low
   * revert cursor scaling fix which broke other applications

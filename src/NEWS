@@ -1,4 +1,4 @@
-v0.10.0 (2013-05-27)
+v0.10.0 (2013-07-15)
 ======================
 	-- performance: X11 shared memory (XShm) transfers
 	-- performance: zero-copy window pixels to picture encoders
@@ -9,10 +9,13 @@ v0.10.0 (2013-05-27)
 	-- support webp lossless
 	-- support x264's "ultrafast" preset
 	-- support forwarding of group-leader application window information
+	-- OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
 	-- register as a generic URL handler
 	-- fullscreen toggle support
 	-- stricter Cython code
-	-- initial support for a Qt based client
+	-- better handling of sound buffering and overruns
+	-- better OSX support, handle UI stalls more gracefully
+	-- experimental support for a Qt based client
 	-- support for different window layouts with custom widgets
 	-- basic support of OSX shadow servers
 	-- don't try to synchronize with clipboards that do not exist (for shadow servers mostly)

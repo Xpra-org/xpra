@@ -149,16 +149,19 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon May 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
+* Mon Jul 15 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
 - performance: X11 shared memory (XShm) transfers
 - performance: zero-copy window pixels to picture encoders
 - support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
 - support for grayscale and palette based png encoding
 - support for window transparency
+- support direct BGRA x264 encoding (for non OpenGL client windows)
+- OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
 - register as a generic URL handler
 - fullscreen toggle support
 - stricter Cython code
-- initial support for Qt based client
+- better handling of sound buffering and overruns
+- experimental support for Qt based client
 - support for different window layouts with custom widgets
 - basic support of OSX shadow servers
 - don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
@@ -172,6 +175,25 @@ So basically it's screen for remote X apps.
 - export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
 - export compiler information with build (Cython, C compiler, etc)
 - simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
+
+* Sun Jun 30 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.6-1
+- fix lost clicks on some popup menus (mostly with MS Windows clients)
+- fix client workarea size change detection
+- fix reading of unique "machine-id" on posix
+- fix window reference leak for windows we fail to manage
+- fix compatibility with pillow (PIL fork)
+- fix session-info window graphs jumping (smoother motion)
+- fix webp loading code for non-Linux posix systems
+- fix window group-leader attribute setting
+- fix man page indentation
+- fix variable test vs use (correctness only)
+
+* Thu Jun 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.5-1
+- fix auto-refresh: don't refresh unnecessarily
+- fix wrong initial timeout when ssh takes a long time to connect
+- fix client monitor/resolution size change detection
+- fix attributes reported to clients when encoding overrides are used
+- Gentoo ebuild uses virtual to allow one to choose pillow or PIL
 
 * Mon May 27 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.4-1
 - revert cursor scaling fix which broke other applications
