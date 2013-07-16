@@ -833,6 +833,13 @@ class UIXpraClient(XpraClientBase):
         self.emit("speaker-changed")
         log("XpraClient.stop_receiving_sound() done")
 
+    def bump_sound_sequence(self):
+        if self.server_sound_sequence:
+            #server supports the "sound-sequence" feature
+            #tell it to use a new one:
+            self.min_sound_sequence += 1
+            self.send("sound-control", "new-sequence", self.min_sound_sequence)
+
     def start_sound_sink(self, codec):
         assert self.sound_sink is None
         def sound_sink_state_changed(*args):
@@ -844,11 +851,7 @@ class UIXpraClient(XpraClientBase):
             self.stop_receiving_sound()
         def sound_sink_overrun(*args):
             log.warn("re-starting speaker because of overrun")
-            if self.server_sound_sequence:
-                #server supports the "sound-sequence" feature
-                #tell it to use a new one:
-                self.min_sound_sequence += 1
-                self.send("sound-control", "new-sequence", self.min_sound_sequence)
+            self.bump_sound_sequence()
             def sink_clean():
                 log("sink_clean() sound_sink=%s, server_sound_sequence=%s", self.sound_sink, self.server_sound_sequence)
                 if self.sound_sink:
