@@ -1,4 +1,4 @@
-v0.10.0 (2013-07-15)
+v0.10.0 (2013-07-16)
 ======================
 	-- performance: X11 shared memory (XShm) transfers
 	-- performance: zero-copy window pixels to picture encoders
@@ -9,6 +9,7 @@ v0.10.0 (2013-07-15)
 	-- support webp lossless
 	-- support x264's "ultrafast" preset
 	-- support forwarding of group-leader application window information
+	-- prevent slow encoding from creating backlogs
 	-- OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
 	-- register as a generic URL handler
 	-- fullscreen toggle support
@@ -30,6 +31,14 @@ v0.10.0 (2013-07-15)
 	-- export compiler information with build (Cython, C compiler, etc)
 	-- export much more debugging information about system state and statistics
 	-- simplify non-UI subcommands and their packets, also use rencode ("xpra info", "xpra version", etc)
+
+
+v0.9.7 (2013-07-16)
+======================
+	-- fix error in sound cleanup code
+	-- fix network threads accounting
+	-- fix missing window icons
+	-- fix client availibility of remote session start feature
 
 
 v0.9.6 (2013-06-30)

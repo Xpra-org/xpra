@@ -149,21 +149,24 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Jul 15 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
+* Tue Jul 16 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
 - performance: X11 shared memory (XShm) transfers
 - performance: zero-copy window pixels to picture encoders
+- performance: use cuda for colourspace conversion if available
 - support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
 - support for grayscale and palette based png encoding
 - support for window transparency
-- support direct BGRA x264 encoding (for non OpenGL client windows)
+- support webp lossless
+- support x264's "ultrafast" preset
+- support forwarding of group-leader application window information
+- prevent slow encoding from creating backlogs
 - OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
 - register as a generic URL handler
 - fullscreen toggle support
 - stricter Cython code
 - better handling of sound buffering and overruns
-- experimental support for Qt based client
+- experimental support for a Qt based client
 - support for different window layouts with custom widgets
-- basic support of OSX shadow servers
 - don't try to synchronize with clipboards that do not exist (for shadow servers mostly)
 - refactoring: move features and components to sub-modules
 - refactoring: split X11 bindings from pure gtk code
@@ -174,7 +177,14 @@ So basically it's screen for remote X apps.
 - refactoring: move wimpiggy inside xpra, delete parti
 - export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
 - export compiler information with build (Cython, C compiler, etc)
-- simplify non-UI subcommands and their packets ("xpra info", "xpra version", etc)
+- export much more debugging information about system state and statistics
+- simplify non-UI subcommands and their packets, also use rencode ("xpra info", "xpra version", etc)
+
+* Tue Jul 16 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.7-1
+- fix error in sound cleanup code
+- fix network threads accounting
+- fix missing window icons
+- fix client availibility of remote session start feature
 
 * Sun Jun 30 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.6-1
 - fix lost clicks on some popup menus (mostly with MS Windows clients)
