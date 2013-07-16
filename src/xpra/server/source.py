@@ -390,7 +390,7 @@ class ServerSource(object):
     def resume(self, ui, wd):
         log.debug("resume(%s, %s) suspended=%s, resume_sound=%s, sound_source=%s",
                   ui, wd, self.suspended, self.resume_sound, self.sound_source)
-        if not ui:
+        if ui:
             self.suspended = False
         for wid, window in wd.items():
             ws = self.window_sources.get(wid)
