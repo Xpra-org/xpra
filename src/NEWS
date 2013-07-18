@@ -38,7 +38,7 @@ v0.9.7 (2013-07-16)
 	-- fix error in sound cleanup code
 	-- fix network threads accounting
 	-- fix missing window icons
-	-- fix client availibility of remote session start feature
+	-- fix client availability of remote session start feature
 
 
 v0.9.6 (2013-06-30)
@@ -271,7 +271,7 @@ v0.8.0 (2013-01-31)
 v0.7.8 (2013-01-15)
 ======================
 	-- fix xsettings integer parsing
-	-- fix 'quality' command line option availibility check
+	-- fix 'quality' command line option availability check
 	-- workaround Ubuntu's global menus
 	-- better compatibility with old servers: don't send new xsettings format
 	-- avoid logging for normal "clipboard is disabled" case
