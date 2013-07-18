@@ -18,17 +18,17 @@ def is_compatible_with(remote_version):
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return True
-    if rv[:2]<=[0, 2]:
+    if rv[:2]<=(0, 2):
         #0.3 is the oldest version we support
         log("remote version %s is too old, sorry", remote_version)
         return  False
+    if rv[0:3]<=(0, 7, 8):
+        log("WARNING: the remote version %s is old and broken, upgrade to the latest stable version", remote_version)
+        return True
     if rv[0]>0:
-        log("newer version %s may work, we'll see..", remote_version)
+        log("newer remote version %s may work, we'll see..", remote_version)
         return  True
-    if (rv[1]==3 and rv[2]<8) or (rv[1]==4 and rv[2]<5) or (rv[1]==5 and rv[2]<3):
-        #versions before 0.3.8, 0.4.5 and 0.5.3 have a nasty problem:
-        log("remote version %s is old and broken, use the latest stable version", remote_version)
-    log("local version %s should be compatible with newer remote version: %s", local_version, remote_version)
+    log("local version %s should be compatible with remote version: %s", local_version, remote_version)
     return True
 
 def add_version_info(props, version_prefix=""):
