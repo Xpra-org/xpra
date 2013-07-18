@@ -176,6 +176,12 @@ class XpraClientBase(object):
             capabilities["rencode.version"] = rencode_version
         capabilities["hostname"] = socket.gethostname()
         capabilities["uuid"] = self.uuid
+        try:
+            from xpra.platform.info import get_username, get_name
+            capabilities["username"] = get_username()
+            capabilities["name"] = get_name()
+        except:
+            log.error("failed to get username/name", exc_info=True)
         capabilities["randr_notify"] = False    #only client.py cares about this
         capabilities["windows"] = False         #only client.py cares about this
         if self._reverse_aliases:

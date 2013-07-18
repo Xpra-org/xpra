@@ -230,6 +230,8 @@ class ServerSource(object):
 
         self.uuid = ""
         self.hostname = ""
+        self.username = ""
+        self.name = ""
         self.connection_time = time.time()
         # client capabilities/options:
         self.client_type = None
@@ -442,6 +444,8 @@ class ServerSource(object):
         #client uuid:
         self.uuid = capabilities.get("uuid", "")
         self.hostname = capabilities.get("hostname", "")
+        self.username = capabilities.get("username", "")
+        self.name = capabilities.get("name", "")
         self.client_type = capabilities.get("client_type", "PyGTK")
         self.client_platform = capabilities.get("platform", "")
         self.client_machine = capabilities.get("platform.machine", "")
@@ -479,6 +483,10 @@ class ServerSource(object):
         msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
         if self.hostname:
             msg += " connected from '%s'" % alnum(self.hostname)
+        if self.username:
+            msg += " as %s" % self.username
+            if self.name:
+                msg += " (%s)" % self.name
         log.info(msg)
 
         #keyboard:
