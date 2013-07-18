@@ -484,9 +484,9 @@ class ServerSource(object):
         if self.hostname:
             msg += " connected from '%s'" % alnum(self.hostname)
         if self.username:
-            msg += " as %s" % self.username
+            msg += " as '%s'" % alnum(self.username)
             if self.name:
-                msg += " (%s)" % self.name
+                msg += " ('%s')" % alnum(self.name)
         log.info(msg)
 
         #keyboard:
