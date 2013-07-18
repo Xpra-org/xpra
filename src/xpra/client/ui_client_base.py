@@ -838,7 +838,8 @@ class UIXpraClient(XpraClientBase):
             #server supports the "sound-sequence" feature
             #tell it to use a new one:
             self.min_sound_sequence += 1
-            self.send("sound-control", "new-sequence", self.min_sound_sequence)
+            #via idle add so this will wait for UI thread to catch up if needed:
+            self.idle_add(self.send, "sound-control", "new-sequence", self.min_sound_sequence)
 
     def start_sound_sink(self, codec):
         assert self.sound_sink is None
@@ -851,14 +852,20 @@ class UIXpraClient(XpraClientBase):
             self.stop_receiving_sound()
         def sound_sink_overrun(*args):
             log.warn("re-starting speaker because of overrun")
-            self.bump_sound_sequence()
-            def sink_clean():
-                log("sink_clean() sound_sink=%s, server_sound_sequence=%s", self.sound_sink, self.server_sound_sequence)
-                if self.sound_sink:
-                    self.sound_sink.cleanup()
-                    self.sound_sink = None
-            self.idle_add(sink_clean)
-            #Note: the next sound packet will take care of starting a new pipeline
+            if self.server_sound_sequence:
+                #this should be enough to recover:
+                self.bump_sound_sequence()
+            else:
+                #for older servers: teardown and start again
+                #note: this may not work on all platforms...
+                def sink_clean():
+                    log("sink_clean() sound_sink=%s, server_sound_sequence=%s", self.sound_sink, self.server_sound_sequence)
+                    sink = self.sound_sink
+                    if sink:
+                        self.sound_sink = None
+                        sink.cleanup()
+                self.idle_add(sink_clean)
+                #Note: the next sound packet will take care of starting a new pipeline
         try:
             log("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
