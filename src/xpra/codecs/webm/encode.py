@@ -53,21 +53,28 @@ _LIBRARY.WebPEncodeBGR.argtypes = LOSSY_ARGS
 _LIBRARY.WebPEncodeRGBA.argtypes = LOSSY_ARGS
 _LIBRARY.WebPEncodeBGRA.argtypes = LOSSY_ARGS
 
-LOSSLESS_ARGS = [c_void_p, c_int, c_int, c_int, c_void_p]
-_LIBRARY.WebPEncodeLosslessRGB.argtypes = LOSSLESS_ARGS 
-_LIBRARY.WebPEncodeLosslessBGR.argtypes = LOSSLESS_ARGS
-_LIBRARY.WebPEncodeLosslessRGBA.argtypes = LOSSLESS_ARGS
-_LIBRARY.WebPEncodeLosslessBGRA.argtypes = LOSSLESS_ARGS
+HAS_LOSSLESS = False
+try:
+    LOSSLESS_ARGS = [c_void_p, c_int, c_int, c_int, c_void_p]
+    _LIBRARY.WebPEncodeLosslessRGB.argtypes = LOSSLESS_ARGS 
+    _LIBRARY.WebPEncodeLosslessBGR.argtypes = LOSSLESS_ARGS
+    _LIBRARY.WebPEncodeLosslessRGBA.argtypes = LOSSLESS_ARGS
+    _LIBRARY.WebPEncodeLosslessBGRA.argtypes = LOSSLESS_ARGS
+    
+    # Set return types
+    _LIBRARY.WebPEncodeRGB.restype = c_int
+    _LIBRARY.WebPEncodeBGR.restype = c_int
+    _LIBRARY.WebPEncodeRGBA.restype = c_int
+    _LIBRARY.WebPEncodeBGRA.restype = c_int
+    _LIBRARY.WebPEncodeLosslessRGB.restype = c_int 
+    _LIBRARY.WebPEncodeLosslessBGR.restype = c_int
+    _LIBRARY.WebPEncodeLosslessRGBA.restype = c_int
+    _LIBRARY.WebPEncodeLosslessBGRA.restype = c_int
 
-# Set return types
-_LIBRARY.WebPEncodeRGB.restype = c_int
-_LIBRARY.WebPEncodeBGR.restype = c_int
-_LIBRARY.WebPEncodeRGBA.restype = c_int
-_LIBRARY.WebPEncodeBGRA.restype = c_int
-_LIBRARY.WebPEncodeLosslessRGB.restype = c_int 
-_LIBRARY.WebPEncodeLosslessBGR.restype = c_int
-_LIBRARY.WebPEncodeLosslessRGBA.restype = c_int
-_LIBRARY.WebPEncodeLosslessBGRA.restype = c_int
+    HAS_LOSSLESS = True
+except AttributeError:
+    #lossless is missing!
+    pass
 
 
 def _lossy(func, image, quality):
@@ -116,6 +123,7 @@ def _lossless(func, image):
     :type function: function
     :type image: BitmapHandler
     """
+    assert HAS_LOSSLESS, "this version of the webp library does not support lossless modes!"
     # Call encode function
     data = str(image.bitmap)
     width = c_int(image.width)
@@ -190,6 +198,7 @@ def EncodeBGR(image, quality=100):
     :type quality: float
     """
     return _lossy(_LIBRARY.WebPEncodeBGR, image, quality)
+
 
 def EncodeLosslessRGB(image):
     """

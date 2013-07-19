@@ -79,14 +79,21 @@ try:
     #python >=2.6 only and required for webp to work:
     bytearray()
     try:
+        #these symbols are all available upstream as of libwebp 0.2:
         enc_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeRGB", "EncodeRGBA", "EncodeBGR", "EncodeBGRA")
         dec_webp = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.decode", "DecodeRGB", "DecodeRGBA", "DecodeBGR", "DecodeBGRA")
-        has_enc_webp_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+        #these symbols were added in libwebp 0.4, and we added HAS_LOSSLESS to the wrapper:
+        _enc_webp_lossless = codec_import_check("webp encoder", "xpra.codecs.webm", "xpra.codecs.webm.encode", "HAS_LOSSLESS", "EncodeLosslessRGB", "EncodeLosslessRGBA", "EncodeLosslessBGRA", "EncodeLosslessBGR")
+        if _enc_webp_lossless:
+            #the fact that the python functions are defined is not enough
+            #we need to check if the underlying C functions actually exist:
+            has_enc_webp_lossless = _enc_webp_lossless.HAS_LOSSLESS
         add_codec_version("webp", "xpra.codecs.webm", "__VERSION__")
         webp_handlers = codec_import_check("webp bitmap handler", "xpra.codecs.webm", "xpra.codecs.webm.handlers", "BitmapHandler")
     except Exception, e:
         warn("cannot load webp: " % e)
 except:
+    #no bytearray, no webp
     pass
 has_enc_webp = enc_webp is not None
 has_dec_webp = dec_webp is not None
