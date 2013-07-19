@@ -179,6 +179,9 @@ XCOPY /I /Y /S /Q "%GTK%\bin\*.dll" dist\
 ECHO ****** Adding TortoisePlink
 ECHO "%TORTOISESVN%\bin\TortoisePlink.exe"
 ECHO "%TORTOISESVN%\Putty-License.txt"
+REM "These are the versions currently used by TortoisePlink.exe: VC 2012 redist.."
+COPY /B /Y /V "C:\WINDOWS\system32\msvcr110.dll" dist\
+COPY /B /Y /V "C:\WINDOWS\system32\msvcp110.dll" dist\
 COPY /B /Y /V "%TORTOISESVN%\bin\TortoisePlink.exe" dist\Plink.exe
 COPY /B /Y /V "%TORTOISESVN%\Putty-LICENSE.txt" dist\
 
