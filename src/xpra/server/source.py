@@ -877,8 +877,8 @@ class ServerSource(object):
                            "send_bell"          : "bell"}.items():
             addattr("features."+name, prop)
         #encoding:
-        info["client.encodings"+suffix] = ",".join(self.encodings)
-        info["client.encodings.core"+suffix] = ",".join(self.core_encodings)
+        info["client.encodings"+suffix] = self.encodings
+        info["client.encodings.core"+suffix] = self.core_encodings
         info["client.encoding.default"] = self.default_encoding or ""
         for k,v in self.default_encoding_options.items():
             info["client.encoding.%s" % k] = v

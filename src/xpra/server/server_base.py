@@ -842,7 +842,7 @@ class ServerBase(object):
         info["features.clipboard"] = self.supports_clipboard
         if self._clipboard_helper is not None:
             info["features.clipboard.type"] = str(self._clipboard_helper)
-        info["encodings"] = ",".join(SERVER_ENCODINGS)
+        info["encodings"] = SERVER_ENCODINGS
         self.add_encoding_info(info)
         for k,v in codec_versions.items():
             info["encoding.%s.version" % k] = v
