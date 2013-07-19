@@ -142,9 +142,13 @@ def plugin_str(plugin, options):
     return s
 
 def add_gst_capabilities(capabilities, receive=True, send=True,
-                        receive_codecs=[], send_codecs=[]):
-    capabilities["gst_version"] = gst_version
-    capabilities["pygst_version"] = pygst_version
+                        receive_codecs=[], send_codecs=[], new_namespace=False):
+    if new_namespace:
+        capabilities["sound.gst.version"] = gst_version
+        capabilities["sound.pygst.version"] = pygst_version
+    else:
+        capabilities["gst_version"] = gst_version
+        capabilities["pygst_version"] = pygst_version
     capabilities["sound.decoders"] = receive_codecs
     capabilities["sound.encoders"] = send_codecs
     capabilities["sound.receive"] = receive and len(receive_codecs)>0

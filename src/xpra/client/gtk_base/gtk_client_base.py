@@ -162,7 +162,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_hello(self, challenge_response=None):
         capabilities = UIXpraClient.make_hello(self, challenge_response)
         capabilities["named_cursors"] = len(cursor_names)>0
-        add_gtk_version_info(capabilities, gtk)
+        add_gtk_version_info(capabilities, gtk, "", True)
         return capabilities
 
 

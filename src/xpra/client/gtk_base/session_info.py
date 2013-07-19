@@ -107,15 +107,21 @@ class SessionInfo(gtk.Window):
             from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch
         except:
             pass
-        tb.new_row("Revision", label(cl_rev), label(self.client._remote_revision or "unknown"))
-        tb.new_row("Local Changes", label(cl_ch), label(scaps.get("local_modifications", "unknown")))
-        tb.new_row("Build date", label(cl_date), label(scaps.get("build_date", "unknown")))
         def make_version_str(version):
             if version and type(version) in (tuple, list):
                 version = ".".join([str(x) for x in version])
             return version or "unknown"
-        def server_version_info(prop_name):
-            return make_version_str(scaps.get(prop_name))
+        def server_info(*prop_names):
+            for x in prop_names:
+                v = scaps.get(x)
+                if v is not None:
+                    return v
+            return None
+        def server_version_info(*prop_names):
+            return make_version_str(server_info(*prop_names))
+        tb.new_row("Revision", label(cl_rev), label(make_version_str(self.client._remote_revision)))
+        tb.new_row("Local Changes", label(cl_ch), label(server_version_info("build.local_modifications", "local_modifications")))
+        tb.new_row("Build date", label(cl_date), label(server_info("build_date", "build.date")))
         def client_version_info(prop_name):
             info = "unknown"
             if hasattr(gtk, prop_name):
@@ -126,17 +132,17 @@ class SessionInfo(gtk.Window):
             tb.new_row("Client GDK", label(gdk._version))
             tb.new_row("GTK", label(gtk._version), label(server_version_info("gtk_version")))
         else:
-            tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk_version")))
-            tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk_version")))
-        tb.new_row("Python", label(platform.python_version()), label(server_version_info("python_version")))
+            tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
+            tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
+        tb.new_row("Python", label(platform.python_version()), label(server_version_info("python.version", "python_version")))
         cl_gst_v, cl_pygst_v = "", ""
         if HAS_SOUND:
             try:
                 from xpra.sound.gstreamer_util import gst_version as cl_gst_v, pygst_version as cl_pygst_v
             except:
                 pass
-        tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("gst_version")))
-        tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("pygst_version")))
+        tb.new_row("GStreamer", label(make_version_str(cl_gst_v)), label(server_version_info("sound.gst.version", "gst_version")))
+        tb.new_row("pygst", label(make_version_str(cl_pygst_v)), label(server_version_info("sound.pygst.version", "pygst_version")))
         tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label("n/a"))
         tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label("n/a"))
         tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))

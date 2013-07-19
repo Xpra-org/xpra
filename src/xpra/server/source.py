@@ -255,6 +255,7 @@ class ServerSource(object):
         self.desktop_size = None
         self.screen_sizes = []
         self.raw_window_icons = False
+        self.namespace = False
         self.system_tray = False
         self.generic_window_types = False
         self.notify_startup_complete = False
@@ -469,6 +470,7 @@ class ServerSource(object):
         self.system_tray = capabilities.get("system_tray", False)
         self.generic_window_types = capabilities.get("generic_window_types", False)
         self.notify_startup_complete = capabilities.get("notify-startup-complete", False)
+        self.namespace = capabilities.get("namespace", False)
 
         #sound stuff:
         self.pulseaudio_id = capabilities.get("sound.pulseaudio.id")
@@ -806,7 +808,8 @@ class ServerSource(object):
                 from xpra.sound.gstreamer_util import add_gst_capabilities
                 add_gst_capabilities(capabilities,
                                      receive=self.supports_microphone, send=self.supports_speaker,
-                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs,
+                                     new_namespace=self.namespace)
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
@@ -868,7 +871,7 @@ class ServerSource(object):
                 i += 1
         for prop in ("png_window_icons", "named_cursors", "server_window_resize", "share", "randr_notify",
                      "clipboard_notifications", "raw_window_icons", "system_tray", "generic_window_types",
-                     "notify_startup_complete"):
+                     "notify_startup_complete", "namespace"):
             addattr("features."+prop, prop)
         for prop, name in {"clipboard_enabled"  : "clipboard",
                            "send_windows"       : "windows",

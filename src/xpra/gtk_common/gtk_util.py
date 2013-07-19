@@ -15,13 +15,19 @@ from xpra.log import Logger
 log = Logger()
 
 
-def add_gtk_version_info(props, gtk):
+def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
+    gtkprops = {}
     if hasattr(gtk, "pygtk_version"):
-        props["pygtk_version"] = gtk.pygtk_version
+        gtkprops["pygtk_version"] = gtk.pygtk_version
     if hasattr(gtk, "gtk_version"):
-        props["gtk_version"] = gtk.gtk_version
+        gtkprops["gtk_version"] = gtk.gtk_version
     elif hasattr(gtk, "_version"):
-        props["gtk_version"] = gtk._version
+        gtkprops["gtk_version"] = gtk._version
+    #update props given:
+    for k,v in gtkprops.items():
+        if new_namespace:
+            k = k.replace("_", ".")
+        props[prefix+k] = v
 
 
 def scaled_image(pixbuf, icon_size):

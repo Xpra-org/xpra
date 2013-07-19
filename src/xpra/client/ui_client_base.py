@@ -505,7 +505,7 @@ class UIXpraClient(XpraClientBase):
                 add_pulseaudio_capabilities(capabilities)
                 from xpra.sound.gstreamer_util import add_gst_capabilities
                 add_gst_capabilities(capabilities, receive=self.speaker_allowed, send=self.microphone_allowed,
-                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs)
+                                     receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs, new_namespace=True)
                 log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e, exc_info=True)

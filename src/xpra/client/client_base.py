@@ -169,6 +169,7 @@ class XpraClientBase(object):
         capabilities["platform.machine"] = python_platform.machine()
         capabilities["platform.processor"] = python_platform.processor()
         capabilities["client_type"] = self.client_type()
+        capabilities["namespace"] = True
         capabilities["raw_packets"] = True
         capabilities["chunked_compression"] = True
         capabilities["rencode"] = has_rencode
