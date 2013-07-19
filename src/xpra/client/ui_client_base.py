@@ -853,8 +853,24 @@ class UIXpraClient(XpraClientBase):
         def sound_sink_overrun(*args):
             log.warn("re-starting speaker because of overrun")
             if self.server_sound_sequence:
-                #this should be enough to recover:
-                self.bump_sound_sequence()
+                #start refusing all the sound packets with the current sequence no:
+                self.min_sound_sequence += 1
+                #tell the server to stop sending:
+                self.send("sound-control", "stop")
+                #tell the server to start again once the queue has drained:
+                self.sink_underrun_signal = None
+                def sink_underrun(*args):
+                    log("sink_underrun(%s)", args)
+                    #don't fire this signal again:
+                    self.sound_sink.remove_listener("underrun", self.sink_underrun_signal)
+                    self.sink_underrun_signal = None
+                    #reset start_time and queue size:
+                    self.sound_sink.reset_queue()
+                    #tell the server to bump the sequence no:
+                    self.send("sound-control", "new-sequence", self.min_sound_sequence)
+                    #now safe to start again:
+                    self.send("sound-control", "start")
+                self.sink_underrun_signal = self.sound_sink.connect("underrun", sink_underrun)
             else:
                 #for older servers: teardown and start again
                 #note: this may not work on all platforms...

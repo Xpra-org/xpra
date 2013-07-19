@@ -41,7 +41,6 @@ if DEFAULT_SINK not in SINKS:
     DEFAULT_SINK = SINKS[0]
 
 VOLUME = True
-QUEUE = True
 
 
 def sink_has_device_attribute(sink):
@@ -71,15 +70,14 @@ class SoundSink(SoundPipeline):
             pipeline_els.append("volume name=volume")
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        if QUEUE:
-            if QUEUE_TIME>0:
-                pipeline_els.append("queue" +
-                                    " name=queue"+
-                                    " min-threshold-time=%s" % QUEUE_MIN_TIME+
-                                    " max-size-time=%s" % QUEUE_START_TIME+
-                                    " leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
-            else:
-                pipeline_els.append("queue leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
+        if QUEUE_TIME>0:
+            pipeline_els.append("queue" +
+                                " name=queue"+
+                                " min-threshold-time=%s" % QUEUE_MIN_TIME+
+                                " max-size-time=%s" % QUEUE_START_TIME+
+                                " leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
+        else:
+            pipeline_els.append("queue leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
         pipeline_els.append(sink_type)
         self.setup_pipeline_and_bus(pipeline_els)
         self.volume = self.pipeline.get_by_name("volume")
@@ -89,26 +87,33 @@ class SoundSink(SoundPipeline):
         self.src.set_property('block', False)
         self.src.set_property('format', 4)
         self.src.set_property('is-live', True)
-        if QUEUE:
-            self.queue = self.pipeline.get_by_name("queue")
-            def overrun(*args):
-                debug("sound sink queue overrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
-                #no overruns for the first 2 seconds:
-                if time.time()-self.start_time<2.0:
-                    return
-                #if we haven't done so yet, just bump the max-size-time
-                if int(self.queue.get_property("max-size-time")) < QUEUE_TIME:
-                    self.queue.set_property("max-size-time", QUEUE_TIME)
-                    return
-                self.emit("overrun")
-            def underrun(*args):
-                debug("sound sink queue underrun: level=%s", int(self.queue.get_property("current-level-time")/1000000))
-            self.queue.connect("overrun", overrun)
-            self.queue.connect("underrun", underrun)
-        else:
-            self.queue = None
+        self.queue = self.pipeline.get_by_name("queue")
+        self.queue.connect("overrun", self.queue_overrun)
+        self.queue.connect("underrun", self.queue_underrun)
         self.src.connect("need-data", self.need_data)
         self.src.connect("enough-data", self.on_enough_data)
+
+    def reset_queue(self):
+        #reset the start_time and go back to original queue size
+        self.start_time = time.time()
+        self.queue.set_property("max-size-time", QUEUE_START_TIME)
+
+    def queue_underrun(self, *args):
+        ltime = int(self.queue.get_property("current-level-time")/1000000)
+        debug("sound sink queue underrun: level=%s", ltime)
+        self.emit("underrun", ltime)
+
+    def queue_overrun(self, *args):
+        ltime = int(self.queue.get_property("current-level-time")/1000000)
+        debug("sound sink queue overrun: level=%s", ltime)
+        #no overruns for the first 2 seconds:
+        if time.time()-self.start_time<2.0:
+            return
+        #if we haven't done so yet, just bump the max-size-time
+        if int(self.queue.get_property("max-size-time")) < QUEUE_TIME:
+            self.queue.set_property("max-size-time", QUEUE_TIME)
+            return
+        self.emit("overrun", ltime)
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
@@ -145,7 +150,7 @@ class SoundSink(SoundPipeline):
 
     def get_info(self):
         info = SoundPipeline.get_info(self)
-        if QUEUE and QUEUE_TIME>0:
+        if QUEUE_TIME>0:
             clt = self.queue.get_property("current-level-time")
             info["queue.used_pct"] = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
         if VOLUME and self.volume:
