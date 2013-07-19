@@ -443,7 +443,7 @@ class XpraClient(GTKXpraClient):
             return self.ClientWindowClass
         if self.mmap_enabled or self.encoding not in ("x264", "vpx"):
             return self.ClientWindowClass
-        if "NORMAL" not in window_types:
+        if ("NORMAL" not in window_types) and ("_NET_WM_WINDOW_TYPE_NORMAL" not in window_types):
             return self.ClientWindowClass
         return self.GLClientWindowClass
 
