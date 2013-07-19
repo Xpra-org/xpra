@@ -46,9 +46,11 @@ SERVER_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if x not in ("rgb32", "rgb2
 #renamed rgb24 to rgb in public encodings:
 SERVER_ENCODINGS.append("rgb")
 
-HAS_LOSSLESS_ENCODINGS = []
+SERVER_LOSSLESS_ENCODINGS = [x for x in SERVER_CORE_ENCODINGS if (x.startswith("png") or x.startswith("rgb"))]
+HAS_LOSSLESS_MODE_ENCODINGS = []
 if has_enc_webp_lossless:
-    HAS_LOSSLESS_ENCODINGS.append("webp")
+    HAS_LOSSLESS_MODE_ENCODINGS.append("webp")
+    SERVER_LOSSLESS_ENCODINGS.append("webp")
 
 
 DEFAULT_ENCODING = [x for x in PREFERED_ENCODING_ORDER if x in SERVER_ENCODINGS][0]
@@ -728,10 +730,7 @@ class ServerBase(object):
             encs.append("rgb24")
             encs.append("rgb32")
         capabilities["encodings"] = encs
-        capabilities["encodings.core"] = SERVER_CORE_ENCODINGS
-        capabilities["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
-        capabilities["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]
-        capabilities["encodings.with_lossless_mode"] = HAS_LOSSLESS_ENCODINGS
+        self.add_encoding_info(capabilities)
         capabilities["clipboards"] = self._clipboards
         if self.session_name:
             capabilities["session_name"] = self.session_name
@@ -768,6 +767,13 @@ class ServerBase(object):
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         return capabilities
+
+    def add_encoding_info(self, d):
+        d["encodings.core"] = SERVER_CORE_ENCODINGS
+        d["encodings.lossless"] = SERVER_LOSSLESS_ENCODINGS
+        d["encodings.with_speed"] = [x for x in SERVER_ENCODINGS if x in ("png", "png/P", "png/L", "jpeg", "x264", "rgb")]
+        d["encodings.with_quality"] = [x for x in SERVER_ENCODINGS if x in ("jpeg", "webp", "x264")]
+        d["encodings.with_lossless_mode"] = HAS_LOSSLESS_MODE_ENCODINGS
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello()
@@ -837,7 +843,7 @@ class ServerBase(object):
         if self._clipboard_helper is not None:
             info["features.clipboard.type"] = str(self._clipboard_helper)
         info["encodings"] = ",".join(SERVER_ENCODINGS)
-        info["encodings.core"] = ",".join(SERVER_CORE_ENCODINGS)
+        self.add_encoding_info(info)
         for k,v in codec_versions.items():
             info["encoding.%s.version" % k] = v
         info["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
