@@ -469,7 +469,7 @@ class ServerBase(object):
             protocol.flush_then_close(["disconnect", reason])
             self.cleanup_source(protocol)
         if len(self._server_sources)==0:
-            self.no_more_clients()
+            self.idle_add(self.no_more_clients)
         log.info("Connection lost")
 
     def no_more_clients(self):
