@@ -293,7 +293,6 @@ class ServerBase(object):
             "set-cursors":                          self._process_set_cursors,
             "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
-            "info-request":                         self._process_info_request,
                                           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -329,6 +328,7 @@ class ServerBase(object):
             "sound-control":                        self._process_sound_control,
             "sound-data":                           self._process_sound_data,
             #requests:
+            "info-request":                         self._process_info_request,
             "shutdown-server":                      self._process_shutdown_server,
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
@@ -621,7 +621,7 @@ class ServerBase(object):
             return
         if info_req:
             log.info("processing info request from %s", proto._conn)
-            thread.start_new_thread(self.send_hello_info, (proto,))
+            self.send_hello_info(proto)
             return
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
@@ -791,21 +791,34 @@ class ServerBase(object):
         server_source.hello(capabilities)
 
     def send_hello_info(self, proto):
-        proto.send_now(("hello", self.get_info(proto)))
-        self.timeout_add(5*1000, self.send_disconnect, proto, "info sent")
+        def send_info(info):
+            proto.send_now(("hello", self.get_info(proto)))
+        self.get_all_info(send_info, proto, self._server_sources.values(), self._id_to_window.keys())
 
     def _process_info_request(self, proto, packet):
         client_uuids, wids = packet[1:3]
+        ss = self._server_sources.get(proto)
+        assert ss, "cannot find server source for %s" % proto
         sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         log("info-request: sources=%s, wids=%s", sources, wids)
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        try:
-            info = self.do_get_info(proto, sources, wids)
-            ss.send_info_response(info)
-        except Exception, e:
-            log.error("error during info request: %s", e, exc_info=True)
+        self.get_all_info(ss.send_info_response, proto, sources, wids)
+
+    def get_all_info(self, callback, proto, sources, wids):
+        ui_info = self.get_ui_info(proto)
+        def in_thread(*args):
+            try:
+                info = self.get_info(proto)
+                ui_info.update(info)
+            except Exception, e:
+                log.error("error during info collection: %s", e, exc_info=True)
+            callback(ui_info)
+        thread.start_new_thread(in_thread, ())
+
+    def get_ui_info(self, proto):
+        """ info that must be collected from the UI thread
+            (ie: things that query the display)
+        """
+        return {"server.max_desktop_size" : self.get_max_screen_size()}
 
     def get_info(self, proto):
         return self.do_get_info(proto, self._server_sources.values(), self._id_to_window.keys())
@@ -825,7 +838,6 @@ class ServerBase(object):
                 except:
                     pass
         info["server.hostname"] = socket.gethostname()
-        info["server.max_desktop_size"] = self.get_max_screen_size()
         info["server.start_time"] = int(self.start_time)
         try:
             import Crypto
