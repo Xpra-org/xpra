@@ -332,14 +332,12 @@ class GLPixmapBacking(GTK2WindowBacking):
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #we need to run in UI thread from here on!
-        #debug("paint_yuv(..) will call via idle_add")
-        assert enc_width==width and enc_height==height, "scaling not implemented for OpenGL!"
         #ideally, the decoder would manage buffers properly...
         #instead of relying on us making a copy before leaving the decoding thread
         img.clone_pixel_data()
-        gobject.idle_add(self.gl_paint_yuv, img, x, y, width, height, callbacks)
+        gobject.idle_add(self.gl_paint_yuv, img, x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_yuv(self, img, x, y, w, h, callbacks):
+    def gl_paint_yuv(self, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         pixel_format = img.get_pixel_format()
         assert pixel_format in ("YUV420P", "YUV422P", "YUV444P"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
@@ -350,10 +348,10 @@ class GLPixmapBacking(GTK2WindowBacking):
             return
         try:
             try:
-                self.update_texture_yuv(x, y, w, h, img, pixel_format)
+                self.update_texture_yuv(x, y, enc_width, enc_height, img, pixel_format)
                 if self.paint_screen:
                     # Update FBO texture
-                    self.render_yuv_update(x, y, x+w, y+h)
+                    self.render_yuv_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
                     # Present it on screen
                     self.present_fbo(drawable)
                 fire_paint_callbacks(callbacks, True)
@@ -428,11 +426,12 @@ class GLPixmapBacking(GTK2WindowBacking):
                 if height/div_h != U_height:
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
 
-    def render_yuv_update(self, rx, ry, rw, rh):
-        debug("render_yuv_update %sx%s at %sx%s pixel_format=%s", rw, rh, rx, ry, self.pixel_format)
+    def render_yuv_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
+        log("render_yuv_update%s pixel_format=%s", (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P"):
             #not ready to render yet
             return
+        assert rx==0 and ry==0
         self.gl_marker("Painting YUV update")
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -450,5 +449,5 @@ class GLPixmapBacking(GTK2WindowBacking):
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 (div_w, div_h) = divs[index]
                 glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
-            glVertex2i(ax, ay)
+            glVertex2i(int(ax*x_scale), int(ay*y_scale))
         glEnd()
