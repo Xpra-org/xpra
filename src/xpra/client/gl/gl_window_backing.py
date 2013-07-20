@@ -348,7 +348,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             return
         try:
             try:
-                self.update_texture_yuv(x, y, enc_width, enc_height, img, pixel_format)
+                self.update_texture_yuv(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
                 if self.paint_screen:
                     # Update FBO texture
                     self.render_yuv_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
@@ -361,7 +361,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
-    def update_texture_yuv(self, x, y, width, height, img, pixel_format):
+    def update_texture_yuv(self, x, y, width, height, img, pixel_format, scaling=False):
         assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
         debug("update_texture_yuv(%s)", (x, y, width, height, img, pixel_format))
@@ -381,7 +381,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
                 glEnable(GL_TEXTURE_RECTANGLE_ARB)
                 mag_filter = GL_NEAREST
-                if div_w > 1 or div_h > 1:
+                if scaling or (div_w > 1 or div_h > 1):
                     mag_filter = GL_LINEAR
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
