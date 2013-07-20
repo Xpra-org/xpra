@@ -381,6 +381,11 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if not clobber and not shadowing:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+        if not os.path.exists(xauthority):
+            try:
+                open(xauthority, 'wa').close()
+            except Exception, e:
+                sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
         subs = {"XAUTHORITY" : xauthority,
                 "USER" : os.environ.get("USER", "unknown-user"),
                 "HOME" : os.environ.get("HOME", os.getcwd()),
