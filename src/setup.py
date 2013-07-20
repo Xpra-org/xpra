@@ -308,48 +308,49 @@ def get_gcc_version():
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
-    package_names = []
-    #find out which package name to use from potentially many options
-    #and bail out early with a meaningful error if we can't find any valid options
-    for package_options in packages_options:
-        #for this package options, find the ones that work
-        valid_option = None
-        if type(package_options)==str:
-            options = [package_options]     #got given just one string
-        else:
-            assert type(package_options)==list
-            options = package_options       #got given a list of options
-        for option in options:
-            cmd = ["pkg-config", "--exists", option]
-            proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            status = proc.wait()
-            if status==0:
-                valid_option = option
-                break
-        if not valid_option:
-            sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
-        package_names.append(valid_option)
-    if packages_options!=package_names:
-        print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
-    flag_map = {'-I': 'include_dirs',
-                '-L': 'library_dirs',
-                '-l': 'libraries'}
-    cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (output, _) = proc.communicate()
-    status = proc.wait()
-    if status!=0:
-        sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
     kw = dict(ekw)
-    if sys.version>='3':
-        output = output.decode('utf-8')
-    for token in output.split():
-        if token[:2] in flag_map:
-            add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
-        else: # throw others to extra_link_args
-            add_to_keywords(kw, 'extra_link_args', token)
-        for k, v in kw.items(): # remove duplicates
-            kw[k] = list(set(v))
+    if len(packages_options)>0:
+        package_names = []
+        #find out which package name to use from potentially many options
+        #and bail out early with a meaningful error if we can't find any valid options
+        for package_options in packages_options:
+            #for this package options, find the ones that work
+            valid_option = None
+            if type(package_options)==str:
+                options = [package_options]     #got given just one string
+            else:
+                assert type(package_options)==list
+                options = package_options       #got given a list of options
+            for option in options:
+                cmd = ["pkg-config", "--exists", option]
+                proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                status = proc.wait()
+                if status==0:
+                    valid_option = option
+                    break
+            if not valid_option:
+                sys.exit("ERROR: cannot find a valid pkg-config package for %s" % (options,))
+            package_names.append(valid_option)
+        if packages_options!=package_names:
+            print("pkgconfig(%s,%s) using package names=%s" % (packages_options, ekw, package_names))
+        flag_map = {'-I': 'include_dirs',
+                    '-L': 'library_dirs',
+                    '-l': 'libraries'}
+        cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, _) = proc.communicate()
+        status = proc.wait()
+        if status!=0:
+            sys.exit("ERROR: call to pkg-config ('%s') failed" % " ".join(cmd))
+        if sys.version>='3':
+            output = output.decode('utf-8')
+        for token in output.split():
+            if token[:2] in flag_map:
+                add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+            else: # throw others to extra_link_args
+                add_to_keywords(kw, 'extra_link_args', token)
+            for k, v in kw.items(): # remove duplicates
+                kw[k] = list(set(v))
     if warn_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
         add_to_keywords(kw, 'extra_link_args', "-Wall")
@@ -974,11 +975,13 @@ if clipboard_ENABLED:
 
 if cyxor_ENABLED:
     cython_add(Extension("xpra.codecs.xor.cyxor",
-                ["xpra/codecs/xor/cyxor.pyx"]))
+                ["xpra/codecs/xor/cyxor.pyx"],
+                **pkgconfig()))
 
 if cymaths_ENABLED:
     cython_add(Extension("xpra.server.stats.cymaths",
-                ["xpra/server/stats/cymaths.pyx"]))
+                ["xpra/server/stats/cymaths.pyx"],
+                **pkgconfig()))
 
 
 
@@ -1029,14 +1032,14 @@ if vpx_ENABLED:
 
 toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
-    extra_compile_args = []
+    rencode_pkgconfig = pkgconfig()
     if not WIN32:
-        extra_compile_args.append("-O3")
+        add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "-O3")
     else:
-        extra_compile_args.append("/Ox")
+        add_to_keywords(rencode_pkgconfig, 'extra_compile_args', "/Ox")
     cython_add(Extension("xpra.net.rencode._rencode",
                 ["xpra/net/rencode/rencode.pyx"],
-                extra_compile_args=extra_compile_args))
+                **rencode_pkgconfig))
 
 
 
