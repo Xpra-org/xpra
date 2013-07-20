@@ -14,6 +14,15 @@ from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
 from xpra.server.window_source import WindowSource, debug, log
 
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
+SCALING_HARDCODED = None
+_SCALING_HARDCODED = os.environ.get("XPRA_SCALING_HARDCODED", "")
+if _SCALING_HARDCODED:
+    _values = _SCALING_HARDCODED.split(":")
+    _values = [int(x) for x in _values]
+    if len(_values)==1:
+        SCALING_HARDCODED = 1, _values[0]
+    else:
+        SCALING_HARDCODED = _values[:2]
 
 
 class WindowVideoSource(WindowSource):
@@ -352,6 +361,9 @@ class WindowVideoSource(WindowSource):
         if not self.video_scaling:
             #not supported by client!
             self.actual_scaling = None
+        elif SCALING_HARDCODED:
+            self.actual_scaling = SCALING_HARDCODED
+            debug("using hardcoded scaling: %s", self.actual_scaling)
         elif self.actual_scaling is None:
             #no scaling window attribute defined, so use heuristics to enable:
             quality = self.get_current_quality()
