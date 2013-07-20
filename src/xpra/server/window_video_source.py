@@ -129,7 +129,7 @@ class WindowVideoSource(WindowSource):
     def set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
-        self.video_scaling = properties.get("encoding.video_scaling", False)
+        self.video_scaling = properties.get("encoding.video_scaling", self.video_scaling)
         WindowSource.set_client_properties(self, properties)
         log("set_client_properties(%s) csc_modes=%s, video_scaling=%s", properties, self.csc_modes, self.video_scaling)
 
@@ -355,6 +355,7 @@ class WindowVideoSource(WindowSource):
               (see width and height masks)
         """
         #TODO: framerate is relevant, probably
+        #log("get_encoder_dimensions%s", (csc_spec, encoder_spec, width, height))
         if not SCALING:
             return width, height
         self.actual_scaling = self.scaling
