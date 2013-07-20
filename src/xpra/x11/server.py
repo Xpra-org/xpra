@@ -187,15 +187,17 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def do_get_info(self, proto, server_sources, window_ids):
         info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
         log("do_get_info: adding cursor=%s", self.cursor_data)
-        if self.cursor_data is None:
+        #copy to prevent race:
+        cd = self.cursor_data
+        if cd is None:
             info["cursor"] = "None"
             return info
         #pixels:
-        info["cursor.is_default"] = bool(self.default_cursor_data and self.cursor_data[7]==self.default_cursor_data[7])
+        info["cursor.is_default"] = bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])
         i = 0
         for x in ("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name"):
             if x:
-                v = self.cursor_data[i] or ""
+                v = cd[i] or ""
                 info["cursor." + x] = v
             i += 1
         return info
