@@ -366,6 +366,8 @@ def pkgconfig(*packages_options, **ekw):
         add_to_keywords(kw, 'extra_compile_args', '-g')
     if debug_ENABLED:
         kw['pyrex_gdb'] = True
+        if get_gcc_version()>=4.8:
+            add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
     #add_to_keywords(kw, 'include_dirs', '.')
     print("pkgconfig(%s,%s)=%s" % (packages_options, ekw, kw))
     return kw
