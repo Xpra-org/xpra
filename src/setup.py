@@ -410,6 +410,19 @@ def get_xorg_conf_and_script():
     else:
         print("Xdummy support unspecified, will try to detect")
 
+    cmd = ["lsb_release", "-cs"]
+    try:
+        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, _ = proc.communicate()
+        release = out.replace("\n", "")
+        print("Found OS release: %s" % release)
+        if release=="raring":
+            #yet another instance of Ubuntu breaking something
+            print("Warning: Ubuntu 'raring' breaks Xorg/Xdummy usage - using Xvfb fallback")
+            return  Xvfb()
+    except Exception, e:
+        print("failed to detect OS release using %s: e" % (" ".join(cmd), e))
+
     #do live detection
     cmd = ["Xorg", "-version"]
     print("detecting Xorg version using: %s" % str(cmd))
