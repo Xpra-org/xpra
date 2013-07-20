@@ -24,7 +24,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, pyt
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import get_hex_uuid, platform_name, SIGNAMES
-from xpra.version_util import is_compatible_with, add_version_info
+from xpra.version_util import version_compat_check, add_version_info
 from xpra.os_util import set_application_name
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
@@ -553,7 +553,9 @@ class ServerBase(object):
         if not self.sanity_checks(proto, capabilities):
             return
         remote_version = capabilities.get("version")
-        if not is_compatible_with(remote_version):
+        verr = version_compat_check(remote_version)
+        if verr is not None:
+            self.disconnect_client(proto, "incompatible version: %s" % verr)
             proto.close()
             return
 
