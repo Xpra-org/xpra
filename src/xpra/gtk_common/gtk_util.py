@@ -14,17 +14,19 @@ gobject = import_gobject()
 from xpra.log import Logger
 log = Logger()
 
+GTK_VERSION_INFO = {}
+if hasattr(gtk, "pygtk_version"):
+    GTK_VERSION_INFO["pygtk_version"] = gtk.pygtk_version
+if hasattr(gtk, "gtk_version"):
+    GTK_VERSION_INFO["gtk_version"] = gtk.gtk_version
+elif hasattr(gtk, "_version"):
+    GTK_VERSION_INFO["gtk_version"] = gtk._version
+
 
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
-    gtkprops = {}
-    if hasattr(gtk, "pygtk_version"):
-        gtkprops["pygtk_version"] = gtk.pygtk_version
-    if hasattr(gtk, "gtk_version"):
-        gtkprops["gtk_version"] = gtk.gtk_version
-    elif hasattr(gtk, "_version"):
-        gtkprops["gtk_version"] = gtk._version
     #update props given:
-    for k,v in gtkprops.items():
+    global GTK_VERSION_INFO
+    for k,v in GTK_VERSION_INFO.items():
         if new_namespace:
             k = k.replace("_", ".")
         props[prefix+k] = v
