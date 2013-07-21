@@ -122,7 +122,7 @@ packed_to_planar_func get_conversion_function_444(enum colorspace src, enum colo
 		return NULL;
 
 	if (src >= ARRAY_SIZE(NPP_dst_YUV444P)) {
-		fprintf(stderr, "Source colorspace %d not supported for YUV444P destination\n");
+		fprintf(stderr, "Source colorspace %d not supported for YUV444P destination\n", src);
 		return NULL;
 	}
 
@@ -142,7 +142,7 @@ packed_to_subsampled_planar_func get_conversion_function_subsampled(enum colorsp
 	} else if (dst == YUV422P) {
 		get_func(NPP_dst_YUV422P);
 	} else {
-		fprintf(stderr, "Destination colorspace %d not supported as subsampled dest.\n");
+		fprintf(stderr, "Destination colorspace %d not supported as subsampled dest.\n", dst);
 		return NULL;
 	}
 }
