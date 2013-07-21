@@ -30,7 +30,7 @@ cdef extern from "csc_nvcuda.h":
     void free_csc_image(uint8_t *buf[3])
 
 
-COLORSPACES_SRC = [ "RGB", "RGBA", "BGR" ]
+COLORSPACES_SRC = [ "RGB", "RGBA", "BGR", "BGRX" ]
 COLORSPACES_DST = [ "YUV420P", "YUV422P", "YUV444P" ]
 
 
