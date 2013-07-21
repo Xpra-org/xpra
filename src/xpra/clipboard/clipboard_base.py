@@ -72,7 +72,7 @@ class ClipboardProtocolHelperBase(object):
                 "max_size"  : self.max_clipboard_packet_size,
                 "filters"   : [x.pattern for x in self.filter_res],
                 "requests"  : self._clipboard_request_counter,
-                "pending"   : self._clipboard_outstanding_requests,
+                "pending"   : self._clipboard_outstanding_requests.keys(),
                 "want_targets"  : self._want_targets,
                 }
         for clipboard, proxy in self._clipboard_proxies.items():
