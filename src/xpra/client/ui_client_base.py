@@ -23,7 +23,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
-from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs
+from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
@@ -438,6 +438,8 @@ class UIXpraClient(XpraClientBase):
         capabilities["notifications"] = self.client_supports_notifications
         capabilities["cursors"] = self.client_supports_cursors
         capabilities["bell"] = self.client_supports_bell
+        for k,v in codec_versions.items():
+            capabilities["encoding.%s.version" % k] = v
         capabilities["encoding.client_options"] = True
         capabilities["encoding_client_options"] = True
         capabilities["encoding.csc_atoms"] = True
