@@ -110,7 +110,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.offscreen_fbo = None
 
     def __str__(self):
-        return "GLPixmapBacking(%s)" % (self.size, self.pixel_format)
+        return "GLPixmapBacking(%s)" % str(self.size, self.pixel_format)
 
     def init(self, w, h):
         #re-init gl projection with new dimensions
