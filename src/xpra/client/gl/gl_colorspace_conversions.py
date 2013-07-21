@@ -93,9 +93,9 @@ TEMP R1;
 TEX R0.x, fragment.texcoord[2], texture[2], RECT;
 TEX R1.x, fragment.texcoord[1], texture[1], RECT;
 MOV result.color.w, fragment.color.primary;
-MOV result.color.z, R0.x;
-MOV result.color.y, R1.x;
-TEX result.color.x, fragment.texcoord[0], texture[0], RECT;
+MOV result.color.x, R0.x;
+MOV result.color.z, R1.x;
+TEX result.color.y, fragment.texcoord[0], texture[0], RECT;
 END
 # 6 instructions, 2 R-regs
 """
