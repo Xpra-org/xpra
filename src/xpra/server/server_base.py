@@ -844,8 +844,7 @@ class ServerBase(object):
             info["server.pycrypto.version"] = Crypto.__version__
         except:
             pass
-        info["python.full_version"] = sys.version
-        info["python.version"] = python_platform.python_version()
+        info["server.python.full_version"] = sys.version
         info["session.name"] = self.session_name or ""
         info["features.password_file"] = self.password_file or ""
         info["features.randr"] = self.randr

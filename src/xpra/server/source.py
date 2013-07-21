@@ -23,7 +23,7 @@ from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_video_source import WindowVideoSource
 from xpra.server.batch_config import DamageBatchConfig
 from xpra.simple_stats import add_list_stats, std_unit
-from xpra.scripts.config import HAS_SOUND
+from xpra.scripts.config import HAS_SOUND, python_platform
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass
@@ -823,6 +823,11 @@ class ServerSource(object):
         self.send("hello", capabilities)
 
     def add_info(self, info, suffix=""):
+        if self.namespace:
+            k = "server.python.version"
+        else:
+            k = "python_version"
+        info[k] = python_platform.python_version()
         def addattr(k, name):
             try:
                 v = getattr(self, name)

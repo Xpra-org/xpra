@@ -134,7 +134,7 @@ class SessionInfo(gtk.Window):
         else:
             tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
-        tb.new_row("Python", label(platform.python_version()), label(server_version_info("python.version", "python_version")))
+        tb.new_row("Python", label(platform.python_version()), label(server_version_info("server.python.version", "python_version")))
         cl_gst_v, cl_pygst_v = "", ""
         if HAS_SOUND:
             try:
