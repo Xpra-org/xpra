@@ -4,8 +4,6 @@
 # later version. See the file COPYING for details.
 
 from xpra import __version__ as local_version
-import sys
-
 from xpra.log import Logger
 log = Logger()
 
