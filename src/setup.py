@@ -424,7 +424,7 @@ def get_xorg_conf_and_script():
             print("Warning: Ubuntu 'raring' breaks Xorg/Xdummy usage - using Xvfb fallback")
             return  Xvfb()
     except Exception, e:
-        print("failed to detect OS release using %s: e" % (" ".join(cmd), e))
+        print("failed to detect OS release using %s: %s" % (" ".join(cmd), e))
 
     #do live detection
     cmd = ["Xorg", "-version"]
