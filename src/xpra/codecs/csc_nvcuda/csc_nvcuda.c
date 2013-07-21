@@ -20,7 +20,7 @@
 
 #include "csc_nvcuda.h"
 
-#define USE_TIMER
+//#define USE_TIMER
 #ifdef USE_TIMER
 #include "../timer.h"
 #else
@@ -61,15 +61,6 @@ static const struct {
 		{ YUV422P, "YUV422P" },
 		{ YUV444P, "YUV444P" },
 };
-/*	{ PIX_FMT_RGB24,   { 3, 0, 0 },     { 1, 0, 0 },     "RGB"  },
-	{ PIX_FMT_0RGB,    { 4, 0, 0 },     { 1, 0, 0 },     "XRGB" },
-	{ PIX_FMT_BGR0,    { 4, 0, 0 },     { 1, 0, 0 },     "BGRX" },
-	{ PIX_FMT_ARGB,    { 4, 0, 0 },     { 1, 0, 0 },     "ARGB" },
-	{ PIX_FMT_BGRA,    { 4, 0, 0 },     { 1, 0, 0 },     "BGRA" },
-	{ PIX_FMT_YUV420P, { 1, 0.5, 0.5 }, { 1, 0.5, 0.5 }, "YUV420P" },
-	{ PIX_FMT_YUV422P, { 1, 0.5, 0.5 }, { 1, 1, 1 },     "YUV422P" },
-	{ PIX_FMT_YUV444P, { 1, 1, 1 },     { 1, 1, 1 },     "YUV444P" }
-*/
 
 
 /* Representing the functions in a single table would be quite difficult.
