@@ -3,7 +3,7 @@
 # *      Michael Dominic K. <mdk@mdk.am>
 #http://www.mdk.org.pl/2007/11/17/gl-colorspace-conversions
 
-GL_COLORSPACE_CONVERSIONS = """!!ARBfp1.0
+YUV2RGB_shader = """!!ARBfp1.0
 # cgc version 3.1.0010, build date Feb 10 2012
 # command line args: -profile arbfp1
 # source file: yuv.cg
@@ -40,4 +40,7 @@ GL_COLORSPACE_CONVERSIONS = """!!ARBfp1.0
     MOV result.color.w, fragment.color.primary;
     END
 # 10 instructions, 2 R-regs
+"""
+
+RGBP2RGB_shader = """
 """

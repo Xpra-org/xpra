@@ -17,7 +17,7 @@ debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.gl.gl_check import get_DISPLAY_MODE
-from xpra.client.gl.gl_colorspace_conversions import GL_COLORSPACE_CONVERSIONS
+from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
 from xpra.client.gtk2.window_backing import GTK2WindowBacking, fire_paint_callbacks
 from OpenGL.GL import GL_PROJECTION, GL_MODELVIEW, \
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT, \
@@ -99,7 +99,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.glarea.show()
         self.glarea.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
-        self.yuv_shader = None
+        self.shaders = None
         self.pixel_format = None
         self.size = 0, 0
         self.texture_size = 0, 0
@@ -181,6 +181,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Default state is good for YUV painting:
             #  - fragment program enabled
+            #  - YUV fragment program bound 
             #  - render to offscreen FBO
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
@@ -195,6 +196,21 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
+
+            # Create and assign fragment programs
+            if not self.shaders:
+                self.shaders = [ 1, 2 ]
+                glGenProgramsARB(2, self.shaders)
+                for progid, progstr in ((0, YUV2RGB_shader), (1, RGBP2RGB_shader)):
+                    glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
+                    glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
+                    err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
+                    if err:
+                        #FIXME: maybe we should do something else here?
+                        log.error(err)
+
+            # Bind program 0 for YUV painting by default
+            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
 
             self.gl_setup = True
         return drawable
@@ -390,18 +406,6 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width/div_w, height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
-            debug("Assigning fragment program")
-            glEnable(GL_FRAGMENT_PROGRAM_ARB)
-            if not self.yuv_shader:
-                self.yuv_shader = [ 1 ]
-                glGenProgramsARB(1, self.yuv_shader)
-                glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
-                prog = GL_COLORSPACE_CONVERSIONS
-                glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(prog), prog)
-                err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
-                if err:
-                    #FIXME: maybe we should do something else here?
-                    log.error(err)
 
         debug("Updating YUV textures: %sx%s %s", width, height, pixel_format)
         self.gl_marker("Updating YUV textures: %sx%s %s" % (width, height, pixel_format))
@@ -438,7 +442,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.gl_marker("Painting YUV update")
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.yuv_shader[0])
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
