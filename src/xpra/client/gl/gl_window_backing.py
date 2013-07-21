@@ -354,23 +354,23 @@ class GLPixmapBacking(GTK2WindowBacking):
         #ideally, the decoder would manage buffers properly...
         #instead of relying on us making a copy before leaving the decoding thread
         img.clone_pixel_data()
-        gobject.idle_add(self.gl_paint_yuv, img, x, y, enc_width, enc_height, width, height, callbacks)
+        gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_yuv(self, img, x, y, enc_width, enc_height, width, height, callbacks):
+    def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         pixel_format = img.get_pixel_format()
-        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
+        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
         drawable = self.gl_init()
         if not drawable:
-            debug("OpenGL cannot paint yuv, drawable is not set")
+            debug("OpenGL cannot paint planar, drawable is not set")
             fire_paint_callbacks(callbacks, False)
             return
         try:
             try:
-                self.update_texture_yuv(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
+                self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
                 if self.paint_screen:
                     # Update FBO texture
-                    self.render_yuv_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
+                    self.render_planar_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
                     # Present it on screen
                     self.present_fbo(drawable)
                 fire_paint_callbacks(callbacks, True)
@@ -380,17 +380,17 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
-    def update_texture_yuv(self, x, y, width, height, img, pixel_format, scaling=False):
+    def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
-        debug("update_texture_yuv(%s)", (x, y, width, height, img, pixel_format))
+        debug("update_planar_textures(%s)", (x, y, width, height, img, pixel_format))
 
+        divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
-            divs = get_subsampling_divs(pixel_format)
-            debug("GL creating new YUV textures for pixel format %s using divs=%s", pixel_format, divs)
-            self.gl_marker("Creating new YUV textures")
+            debug("GL creating new planar textures for pixel format %s using divs=%s", pixel_format, divs)
+            self.gl_marker("Creating new planar textures, pixel format %s" % (pixel_format))
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -407,9 +407,8 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width/div_w, height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
 
-        debug("Updating YUV textures: %sx%s %s", width, height, pixel_format)
-        self.gl_marker("Updating YUV textures: %sx%s %s" % (width, height, pixel_format))
-        divs = get_subsampling_divs(pixel_format)
+        debug("Updating planar textures: %sx%s %s", width, height, pixel_format)
+        self.gl_marker("Updating planar textures: %sx%s %s" % (width, height, pixel_format))
         U_width = 0
         U_height = 0
         rowstrides = img.get_rowstride()
@@ -433,13 +432,13 @@ class GLPixmapBacking(GTK2WindowBacking):
                 if height/div_h != U_height:
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
 
-    def render_yuv_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
-        log("render_yuv_update%s pixel_format=%s", (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P"):
+    def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
+        debug("render_planar_update%s pixel_format=%s", (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "BGRP"):
             #not ready to render yet
             return
         assert rx==0 and ry==0
-        self.gl_marker("Painting YUV update")
+        self.gl_marker("Painting planar update, format %s" % (self.pixel_format))
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
@@ -447,7 +446,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
-        debug("render_yuv_update texture_size=%s, size=%s", self.texture_size, self.size)
+        debug("render_planar_update texture_size=%s, size=%s", self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             ax = min(tw, x)
