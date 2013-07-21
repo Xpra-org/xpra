@@ -181,7 +181,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Default state is good for YUV painting:
             #  - fragment program enabled
-            #  - YUV fragment program bound 
+            #  - YUV fragment program bound
             #  - render to offscreen FBO
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
@@ -249,6 +249,16 @@ class GLPixmapBacking(GTK2WindowBacking):
         # Reset state to our default
         self.gl_marker("Switching back to YUV paint state")
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
+
+    def set_rgbP_paint_state(self):
+        # Set GL state for planar RGB:
+        #   change fragment program
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[1])
+
+    def unset_rgbP_paint_state(self):
+        # Reset state to our default (YUV painting):
+        #   change fragment program
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
 
     def present_fbo(self, drawable):
         debug("present_fbo() drawable=%s", drawable)
@@ -438,6 +448,8 @@ class GLPixmapBacking(GTK2WindowBacking):
             #not ready to render yet
             return
         assert rx==0 and ry==0
+        if self.pixel_format == "BGRP":
+            self.set_rgbP_paint_state()
         self.gl_marker("Painting planar update, format %s" % (self.pixel_format))
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -456,3 +468,5 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
             glVertex2i(int(ax*x_scale), int(ay*y_scale))
         glEnd()
+        if self.pixel_format == "BGRP":
+            self.unset_rgbP_paint_state()

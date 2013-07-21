@@ -41,6 +41,61 @@ YUV2RGB_shader = """!!ARBfp1.0
     END
 # 10 instructions, 2 R-regs
 """
+# The following fragprog is a derived work of the above.
+# Source Cg is :
+#
+#struct pixel_in {
+#    float2 texcoord1 : TEXCOORD0;
+#    float2 texcoord2 : TEXCOORD1;
+#    float2 texcoord3 : TEXCOORD2;
+#    uniform samplerRECT texture1 : TEXUNIT0;
+#    uniform samplerRECT texture2 : TEXUNIT1;
+#    uniform samplerRECT texture3 : TEXUNIT2;
+#    float4 color : COLOR0;
+#};
+#
+#struct pixel_out {
+#    float4 color : COLOR0;
+#};
+#
+#pixel_out
+#main (pixel_in IN)
+#{
+#    pixel_out OUT;
+#
+#    OUT.color.r = texRECT(IN.texture1, IN.texcoord1).r;
+#    OUT.color.g = texRECT(IN.texture2, IN.texcoord2).r;
+#    OUT.color.b = texRECT(IN.texture3, IN.texcoord3).r;
+#        OUT.color.a = IN.color.a;
+#
+#    return OUT;
+#}
 
-RGBP2RGB_shader = """
+RGBP2RGB_shader = """!!ARBfp1.0
+# cgc version 3.1.0013, build date Apr 24 2012
+# command line args: -profile arbfp1
+# source file: a.cg
+#vendor NVIDIA Corporation
+#version 3.1.0.13
+#profile arbfp1
+#program main
+#semantic main.IN
+#var float2 IN.texcoord1 : $vin.TEXCOORD0 : TEX0 : 0 : 1
+#var float2 IN.texcoord2 : $vin.TEXCOORD1 : TEX1 : 0 : 1
+#var float2 IN.texcoord3 : $vin.TEXCOORD2 : TEX2 : 0 : 1
+#var samplerRECT IN.texture1 : TEXUNIT0 : texunit 0 : 0 : 1
+#var samplerRECT IN.texture2 : TEXUNIT1 : texunit 1 : 0 : 1
+#var samplerRECT IN.texture3 : TEXUNIT2 : texunit 2 : 0 : 1
+#var float4 IN.color : $vin.COLOR0 : COL0 : 0 : 1
+#var float4 main.color : $vout.COLOR0 : COL : -1 : 1
+TEMP R0;
+TEMP R1;
+TEX R0.x, fragment.texcoord[2], texture[2], RECT;
+TEX R1.x, fragment.texcoord[1], texture[1], RECT;
+MOV result.color.w, fragment.color.primary;
+MOV result.color.z, R0.x;
+MOV result.color.y, R1.x;
+TEX result.color.x, fragment.texcoord[0], texture[0], RECT;
+END
+# 6 instructions, 2 R-regs
 """
