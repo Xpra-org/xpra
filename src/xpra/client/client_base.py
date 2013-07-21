@@ -148,6 +148,7 @@ class XpraClientBase(object):
     def make_hello(self, challenge_response=None):
         capabilities = {}
         add_version_info(capabilities)
+        capabilities["python.version"] = sys.version_info[:3]
         for k,v in codec_versions.items():
             capabilities["encoding.%s.version" % k] = v
         if challenge_response:
