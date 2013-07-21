@@ -56,6 +56,7 @@ static const struct {
 		{ RGB,     "RGB"     },
 		{ RGBA,    "RGBA"    },
 		{ BGR,     "BGR"     },
+		{ BGRA,	   "BGRX"    },
 		{ YUV420P, "YUV420P" },
 		{ YUV422P, "YUV422P" },
 		{ YUV444P, "YUV444P" },
