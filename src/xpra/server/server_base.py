@@ -804,7 +804,7 @@ class ServerBase(object):
         self.get_all_info(ss.send_info_response, proto, sources, wids)
 
     def get_all_info(self, callback, proto, sources, wids):
-        ui_info = self.get_ui_info(proto)
+        ui_info = self.get_ui_info(proto, wids)
         def in_thread(*args):
             try:
                 info = self.get_info(proto)
@@ -814,11 +814,14 @@ class ServerBase(object):
             callback(ui_info)
         thread.start_new_thread(in_thread, ())
 
-    def get_ui_info(self, proto):
+    def get_ui_info(self, proto, window_ids):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
-        return {"server.max_desktop_size" : self.get_max_screen_size()}
+        info = {"server.max_desktop_size" : self.get_max_screen_size()}
+        #window info:
+        self.add_windows_info(info, window_ids)
+        return info
 
     def get_info(self, proto):
         return self.do_get_info(proto, self._server_sources.values(), self._id_to_window.keys())
@@ -874,8 +877,6 @@ class ServerBase(object):
         # other clients:
         info["clients"] = len([p for p in self._server_sources.keys() if p!=proto])
         info["clients.unauthenticated"] = len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])
-        #window info:
-        self.add_windows_info(info, window_ids)
         #find the source to report on:
         n = len(server_sources)
         if n==1:

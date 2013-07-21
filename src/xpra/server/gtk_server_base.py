@@ -61,8 +61,8 @@ class GTKServerBase(ServerBase):
         add_gtk_version_info(capabilities, gtk, "", True)
         return capabilities
 
-    def get_ui_info(self, proto):
-        info = ServerBase.get_ui_info(self, proto)
+    def get_ui_info(self, proto, wids):
+        info = ServerBase.get_ui_info(self, proto, wids)
         info["server.root_window_size"] = self.get_root_window_size()
         return info
 
