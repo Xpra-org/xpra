@@ -22,8 +22,6 @@ ctypedef void csc_nvcuda_ctx
 cdef extern from "csc_nvcuda.h":
 #char **get_supported_colorspaces()
 
-    char *get_flags_description(csc_nvcuda_ctx *ctx)
-
     csc_nvcuda_ctx *init_csc(int src_width, int src_height, const char *src_format, const char *dst_format)
     void free_csc(csc_nvcuda_ctx *ctx)
     int csc_image(csc_nvcuda_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3])
@@ -113,8 +111,7 @@ cdef class ColorspaceConverter:
         self.context = init_csc(self.src_width, self.src_height, self.src_format, self.dst_format)
 
     def get_info(self):
-        return {"flags"     : get_flags_description(self.context),
-                "frames"    : self.frames,
+        return {"frames"    : self.frames,
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "src_format": self.src_format,
