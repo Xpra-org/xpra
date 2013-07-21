@@ -43,9 +43,7 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES_SRC, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES_SRC)
     assert out_colorspace in COLORSPACES_DST, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES_DST)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    #we can handle high quality and full speed
-    #setup cost is very low (usually less than 1ms!)
-    return codec_spec(ColorspaceConverter, 101, 101, 20, 10, 10, 0, 4096, 4096, 4096*4096, True)
+    return codec_spec(ColorspaceConverter, speed=100, setup_cost=60, cpu_cost=10, gpu_cost=50, min_w=16, min_h=16, can_scale=False)
 
 
 cdef class CSCImage:
@@ -218,5 +216,4 @@ cdef class ColorspaceConverter:
             csci.set_plane(0, output_image[0])
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, nplanes)
         out_image.csc_image = csci
-        #print("convert_image(%s)=%s" % (image, yuv))
         return out_image
