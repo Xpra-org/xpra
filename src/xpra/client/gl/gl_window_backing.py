@@ -109,6 +109,9 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.draw_needs_refresh = False
         self.offscreen_fbo = None
 
+    def __str__(self):
+        return "GLPixmapBacking(%s)" % (self.size, self.pixel_format)
+
     def init(self, w, h):
         #re-init gl projection with new dimensions
         #(see gl_init)

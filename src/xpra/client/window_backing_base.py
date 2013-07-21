@@ -48,12 +48,15 @@ class WindowBackingBase(object):
         self.mmap = None
         self.mmap_enabled = False
 
+    def __str__(self):
+        return "WindowBackingBase"
+
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
         self.mmap_enabled = True
 
     def close(self):
-        log("%s.close() video_decoder=%s", type(self), self._video_decoder)
+        log("%s.close() video_decoder=%s", self, self._video_decoder)
         if self._video_decoder or self._csc_decoder:
             try:
                 self._decoder_lock.acquire()

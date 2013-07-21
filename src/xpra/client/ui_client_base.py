@@ -1167,10 +1167,11 @@ class UIXpraClient(XpraClientBase):
             del self._window_to_id[window]
             self.destroy_window(wid, window)
         if len(self._id_to_window)==0:
-            log.debug("last window gone, clearing key repeat")
+            log("last window gone, clearing key repeat")
             self.keyboard_helper.clear_repeat()
 
     def destroy_window(self, wid, window):
+        log("destroy_window(%s, %s)", wid, window)
         window.destroy()
 
     def _process_desktop_size(self, packet):

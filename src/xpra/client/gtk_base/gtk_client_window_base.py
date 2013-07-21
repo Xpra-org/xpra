@@ -99,9 +99,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized)
 
     def set_fullscreen(self, fullscreen):
-        self.debug("set_fullscreen(%s)", fullscreen)
         if self._fullscreen is None or self._fullscreen!=fullscreen:
             #note: the "_fullscreen" flag is updated by the window-state-event, not here
+            self.debug("set_fullscreen(%s)", fullscreen)
             if fullscreen:
                 self.fullscreen()
             else:
@@ -109,12 +109,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def set_xid(self, xid):
         if HAS_X11_BINDINGS and self.is_realized():
-            self.debug("set_xid(%s)", xid)
             try:
                 if xid.startswith("0x") and xid.endswith("L"):
                     xid = xid[:-1]
                 iid = int(xid, 16)
-                self.debug("set_xid(%s) using xset_u32_property", iid)
                 self.xset_u32_property(self.gdk_window(), "XID", iid)
             except Exception, e:
                 self.debug("set_xid(%s) error parsing/setting xid: %s", xid, e)

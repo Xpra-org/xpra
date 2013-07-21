@@ -407,9 +407,8 @@ class XpraClient(GTKXpraClient):
 
     def destroy_window(self, wid, window):
         #override so we can cleanup the group-leader if needed:
-        group_leader = window.group_leader
         GTKXpraClient.destroy_window(self, wid, window)
-        log("group leader=%s", group_leader)
+        group_leader = window.group_leader
         if group_leader is None or len(self._group_leader_wids)==0:
             return
         wids = self._group_leader_wids.get(group_leader)
@@ -417,7 +416,6 @@ class XpraClient(GTKXpraClient):
             #not recorded any window ids on this group leader
             #means it is another managed window, leave it alone
             return
-        log("windows for group leader %s: %s", group_leader, wids)
         if wid in wids:
             wids.remove(wid)
         if len(wids)>0:

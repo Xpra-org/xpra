@@ -18,6 +18,9 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
+    def __str__(self):
+        return "PixmapBacking(%s)" % self._backing
+
     def init(self, w, h):
         old_backing = self._backing
         assert w<32768 and h<32768, "dimensions too big: %sx%s" % (w, h)
