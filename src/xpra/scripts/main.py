@@ -422,26 +422,30 @@ When unspecified, all the available codecs are allowed and the first one is used
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
-    if mode=="start" and len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:")):
-        #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
-        return run_remote_server(parser, options, args)
-    elif (mode in ("start", "upgrade") and supports_server) or (mode=="shadow" and supports_shadow):
-        nox()
-        from xpra.scripts.server import run_server
-        return run_server(parser, options, mode, script_file, args)
-    elif mode in ("attach", "detach", "screenshot", "version", "info"):
-        return run_client(parser, options, args, mode)
-    elif mode == "stop" and (supports_server or supports_shadow):
-        nox()
-        return run_stop(parser, options, args)
-    elif mode == "list" and (supports_server or supports_shadow):
-        return run_list(parser, options, args)
-    elif mode in ("_proxy", "_proxy_start") and (supports_server or supports_shadow):
-        nox()
-        return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
-    else:
-        parser.error("invalid mode '%s'" % mode)
-        return 1
+    try:
+        if mode=="start" and len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:")):
+            #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
+            return run_remote_server(parser, options, args)
+        elif (mode in ("start", "upgrade") and supports_server) or (mode=="shadow" and supports_shadow):
+            nox()
+            from xpra.scripts.server import run_server
+            return run_server(parser, options, mode, script_file, args)
+        elif mode in ("attach", "detach", "screenshot", "version", "info"):
+            return run_client(parser, options, args, mode)
+        elif mode == "stop" and (supports_server or supports_shadow):
+            nox()
+            return run_stop(parser, options, args)
+        elif mode == "list" and (supports_server or supports_shadow):
+            return run_list(parser, options, args)
+        elif mode in ("_proxy", "_proxy_start") and (supports_server or supports_shadow):
+            nox()
+            return run_proxy(parser, options, script_file, args, mode=="_proxy_start")
+        else:
+            parser.error("invalid mode '%s'" % mode)
+            return 1
+    except KeyboardInterrupt, e:
+        sys.stderr.write("\ncaught %s, exiting\n" % repr(e))
+        return 128+signal.SIGINT
 
 
 def parse_display_name(error_cb, opts, display_name):
