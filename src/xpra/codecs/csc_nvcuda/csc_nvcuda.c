@@ -223,7 +223,7 @@ static int init_cuda(struct csc_nvcuda_ctx *ctx)
 	}
 
 	printf("curren = %p\n", cuCtxGetCurrent(cuda_context));
-	printf("Cuda context ptr%p\n", cuda_context);
+	printf("Cuda context ptr %p\n", cuda_context);
 	cuda_initialized = 1;
 	return 0;
 }
