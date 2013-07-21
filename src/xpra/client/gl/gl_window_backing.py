@@ -442,7 +442,6 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.gl_marker("Painting YUV update")
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
