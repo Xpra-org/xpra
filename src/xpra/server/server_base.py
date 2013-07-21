@@ -854,7 +854,8 @@ class ServerBase(object):
         info["features.pulseaudio"] = self.pulseaudio
         info["features.clipboard"] = self.supports_clipboard
         if self._clipboard_helper is not None:
-            info["features.clipboard.type"] = str(self._clipboard_helper)
+            for k,v in self._clipboard_helper.get_info().items():
+                info["clipboard.%s" % k] = v
         info["encodings"] = SERVER_ENCODINGS
         self.add_encoding_info(info)
         for k,v in codec_versions.items():
