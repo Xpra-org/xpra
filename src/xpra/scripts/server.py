@@ -341,6 +341,8 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             parser.error("You already have an xpra server running at %s\n"
                          "  (did you want 'xpra upgrade'?)"
                          % (display_name,))
+        except Exception, e:
+            parser.error("socket path error: %s" % e)
         sock = create_unix_domain_socket(sockpath, opts.mmap_group)
         sockets.append(("unix-domain", sock))
         def cleanup_socket():
