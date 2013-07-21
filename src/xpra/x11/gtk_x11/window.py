@@ -271,6 +271,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         self._managed = False
         self._managed_handlers = []
         self._setup_done = False
+        self._input_field = True            # The WM_HINTS input field
         self._geometry = None
         self._damage_forward_handle = None
         self._last_wm_state_serial = 0
@@ -733,8 +734,6 @@ class WindowModel(BaseWindowModel):
         self.client_reparented = False
         self.startup_unmap_serial = None
 
-        # The WM_HINTS input field
-        self._input_field = True
         self.connect("notify::iconic", self._handle_iconic_update)
 
         self.property_names += ["title", "icon-title", "size-hints", "class-instance", "icon", "client-machine", "modal"]
