@@ -971,6 +971,8 @@ class WindowSource(object):
         return Compressed(coding, cdata), {"zlib" : level}, image.get_width(), image.get_height(), image.get_rowstride(), bpp
 
     def PIL_encode(self, coding, image, options):
+        #for more information on pixel formats supported by PIL / Pillow, see:
+        #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.SERVER_CORE_ENCODINGS
         assert PIL is not None, "Python PIL is not available"
         pixel_format = image.get_pixel_format()
