@@ -444,7 +444,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
         debug("render_planar_update%s pixel_format=%s", (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "BGRP"):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
         assert rx==0 and ry==0
