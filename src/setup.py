@@ -1012,11 +1012,12 @@ if csc_swscale_ENABLED:
                 **swscale_pkgconfig), min_version=(0, 16))
 
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
-#if csc_nvcuda_ENABLED:
-#    nvcuda_pkgconfig = pkgconfig("cuda")
-#    cython_add(Extension("xpra.codecs.csc_nvcuda.colorspace_converter",
-#                ["xpra/codecs/csc_nvcuda/colorspace_converter.pyx", "xpra/codecs/csc_nvcuda/csc_nvcuda.c"],
-#                **nvcuda_pkgconfig), min_version=(0, 16))
+if csc_nvcuda_ENABLED:
+    cython_add(Extension("xpra.codecs.csc_nvcuda.colorspace_converter",
+                ["xpra/codecs/csc_nvcuda/colorspace_converter.pyx", "xpra/codecs/csc_nvcuda/csc_nvcuda.c"],
+                include_dirs = ['/opt/cuda/include','/usr/local/cuda/include'],
+                libraries = ['cudart', 'npp', 'cuda'],
+                library_dirs = ['/opt/cuda/lib64']), min_version=(0, 16))
 
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
