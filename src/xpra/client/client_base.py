@@ -70,7 +70,6 @@ class XpraClientBase(object):
         self._remote_revision = None
         self.make_uuid()
         self.init_packet_handlers()
-        self.init_aliases()
 
     def init(self, opts):
         self.compression_level = opts.compression_level

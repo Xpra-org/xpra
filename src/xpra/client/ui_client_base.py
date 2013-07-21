@@ -162,6 +162,7 @@ class UIXpraClient(XpraClientBase):
         self._focused = None
 
         self.init_packet_handlers()
+        self.init_aliases()
 
 
     def init(self, opts):
