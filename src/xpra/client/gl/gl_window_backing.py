@@ -448,7 +448,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             #not ready to render yet
             return
         assert rx==0 and ry==0
-        if self.pixel_format == "BGRP":
+        if self.pixel_format == "GBRP":
             self.set_rgbP_paint_state()
         self.gl_marker("Painting planar update, format %s" % (self.pixel_format))
         divs = get_subsampling_divs(self.pixel_format)
@@ -468,5 +468,5 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glMultiTexCoord2i(texture, ax/div_w, ay/div_h)
             glVertex2i(int(ax*x_scale), int(ay*y_scale))
         glEnd()
-        if self.pixel_format == "BGRP":
+        if self.pixel_format == "GBRP":
             self.unset_rgbP_paint_state()
