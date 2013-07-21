@@ -7,7 +7,8 @@ import time
 import os
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
-from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter
+#from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter
+from xpra.codecs.csc_nvcuda.colorspace_converter import ColorspaceConverter
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
@@ -195,6 +196,7 @@ cdef class Encoder:
                 PyObject_AsReadBuffer(pixels[i], <const_void_pp> &pic_buf, &pic_buf_len)
                 pic_in[i] = pic_buf
                 strides[i] = istrides[i]
+        print("compress_image format=%s strides=%s, planes=%s" % (self.src_format,[x for x in strides], [len(x or "") for x in pic_in]))
         try:
             start = time.time()
             with nogil:
