@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
@@ -22,12 +23,21 @@ ctypedef void csc_nvcuda_ctx
 cdef extern from "csc_nvcuda.h":
 #char **get_supported_colorspaces()
 
+    int init_cuda()
     csc_nvcuda_ctx *init_csc(int src_width, int src_height, const char *src_format, const char *dst_format)
     void free_csc(csc_nvcuda_ctx *ctx)
-    int csc_image(csc_nvcuda_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3])
+    int csc_image(csc_nvcuda_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3]) nogil
     void free_csc_image(uint8_t *buf[3])
     char *get_NPP_version()
 
+
+_init = None
+def init():
+    global _init
+    if _init is None:
+        _init = init_cuda()==0
+    return _init
+init()
 
 COLORSPACES_SRC = [ "RGB", "RGBA", "BGR", "BGRX" ]
 COLORSPACES_DST = [ "YUV420P", "YUV422P", "YUV444P" ]
@@ -36,17 +46,22 @@ def get_version():
     return get_NPP_version()
 
 def get_input_colorspaces():
+    if not init():
+        return []
     return COLORSPACES_SRC
 
 def get_output_colorspaces(input_colorspace):
+    if not init():
+        return []
     #exclude input colorspace:
     return COLORSPACES_DST
 
 def get_spec(in_colorspace, out_colorspace):
+    assert init(), "nvcuda is not available!"
     assert in_colorspace in COLORSPACES_SRC, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES_SRC)
     assert out_colorspace in COLORSPACES_DST, "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES_DST)
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(ColorspaceConverter, speed=100, setup_cost=60, cpu_cost=10, gpu_cost=50, min_w=16, min_h=16, can_scale=False)
+    return codec_spec(ColorspaceConverter, speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=16, min_h=16, can_scale=False)
 
 
 cdef class CSCImage:
@@ -89,6 +104,7 @@ cdef class ColorspaceConverter:
     cdef int dst_width
     cdef int dst_height
     cdef char* dst_format
+    cdef double time
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed):    #@DuplicatedSignature
@@ -96,6 +112,7 @@ cdef class ColorspaceConverter:
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
+        self.time = 0
         #ugly trick to use a string which won't go away from underneath us: 
         assert src_format in COLORSPACES_SRC, "invalid source format: %s" % src_format
         for x in COLORSPACES_SRC:
@@ -111,13 +128,18 @@ cdef class ColorspaceConverter:
         self.context = init_csc(self.src_width, self.src_height, self.src_format, self.dst_format)
 
     def get_info(self):
-        return {"frames"    : self.frames,
+        info = {"frames"    : self.frames,
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "src_format": self.src_format,
                 "dst_width" : self.dst_width,
                 "dst_height": self.dst_height,
                 "dst_format": self.dst_format}
+        if self.frames>0 and self.time>0:
+            pps = float(self.src_width) * float(self.src_height) * float(self.frames) / self.time
+            info["total_time_ms"] = int(self.time*1000.0)
+            info["pixels_per_second"] = int(pps)
+        return info
 
     def __str__(self):
         return "nvcuda(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
@@ -168,6 +190,7 @@ cdef class ColorspaceConverter:
         cdef int i                          #@DuplicatedSignature
         cdef int height
         cdef int stride
+        cdef int result
         planes = image.get_planes()
         assert planes in (0, 1, 3), "invalid number of planes: %s" % planes
         input = image.get_pixels()
@@ -183,9 +206,14 @@ cdef class ColorspaceConverter:
         for i in range(planes):
             input_stride[i] = strides[i]
             PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
-        result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
+        start = time.time()
+        with nogil:
+            result = csc_image(self.context, input_image, input_stride, output_image, output_stride)
         if result != 0:
             return None
+        end = time.time()
+        self.time += (end-start)
+        self.frames += 1
         #now parse the output:
         csci = CSCImage()           #keep a reference to memory for cleanup
         if self.dst_format.endswith("P"):
