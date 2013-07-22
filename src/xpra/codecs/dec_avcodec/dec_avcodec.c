@@ -18,13 +18,14 @@
 #endif
 
 #include "dec_avcodec.h"
+#include "lists.h"
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
 
 /** Context for dec_avcodec_lib
  * decode video with libavcodec
  */
-struct dec_avcodec_ctx{
+struct dec_avcodec_ctx {
 	int width;
 	int height;
 	AVCodec *codec;
@@ -33,11 +34,24 @@ struct dec_avcodec_ctx{
 	enum PixelFormat pixfmt;		//may get updated by swscale!
 };
 
+
+/** List of frame pointers used by avcodec,
+ * used to keep track of when a frame
+ * can be freed.
+ */
+struct frame_pointer {
+	AVFrame *frame;
+	int avcodec_released;
+	int xpra_released;
+	struct list_head node;
+};
+
+LIST_HEAD(frame_pointers);
+
 const char *get_avcodec_version(void)
 {
 	return LIBAVCODEC_IDENT;
 }
-
 
 const char YUV420P[] = "YUV420P";
 const char YUV422P[] = "YUV422P";
@@ -117,6 +131,82 @@ static const char *get_string_format(enum PixelFormat pixfmt)
 	return "unknown";
 }
 
+static int my_avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
+	// Create frame pointer structure to hold information
+	struct frame_pointer *f = malloc(sizeof(struct frame_pointer));
+	INIT_LIST_HEAD(&f->node);
+	f->avcodec_released = 0;
+	f->xpra_released = 0;
+	f->frame = frame;
+	list_add(&f->node, &frame_pointers);
+
+	fprintf(stderr, "Avcodec: adding frame %p to struct %p\n", frame, f);
+	// Call default get_buffer
+	return avcodec_default_get_buffer(avctx, frame);
+}
+
+static void release_buffer_if_ready(struct frame_pointer *f, AVCodecContext *avctx, AVFrame *frame)
+{
+	// If buffer is released both by avcodec and xpra, free it...
+	if (f->avcodec_released) { // disable xpra tracking until hooked up && f->xpra_released) {
+		avcodec_default_release_buffer(avctx, frame);
+	}
+
+	// ...and remove it from the list
+	list_del(&f->node);
+	free(f);
+}
+
+static void my_avcodec_release_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
+	struct frame_pointer *f = NULL;
+	int found = 0;
+
+	// Find corresponding frame in our list
+	list_for_each_entry(f, &frame_pointers, node) {
+		if (f->frame == frame) {
+			found = 1;
+			break;
+		}
+	}
+
+	if (!found) {
+		fprintf(stderr, "avcodec tried to release a buffer we're not tracking\n");
+		return;
+	}
+
+	// Mark it as released by avcodec
+	f->avcodec_released = 1;
+
+	release_buffer_if_ready(f, avctx, frame);
+}
+
+void xpra_release_buffer(struct dec_avcodec_ctx *ctx, const uint8_t *data)
+{
+	struct frame_pointer *f = NULL;
+	int found = 0;
+
+	// Xpra gives us a *data* pointer, not a *frame* pointer
+	// Find corresponding frame in our list, using the  data pointer given to us
+	list_for_each_entry(f, &frame_pointers, node) {
+		if (f->frame->data[0] == data) {
+			found = 1;
+			break;
+		}
+	}
+	
+	if (!found) {
+		fprintf(stderr, "xpra tried to release a buffer we're not tracking\n");
+		return;
+	}
+
+	// Mark it as released by xpra
+	f->xpra_released = 1;
+
+	release_buffer_if_ready(f, ctx->codec_ctx, f->frame);
+}
+
 struct dec_avcodec_ctx *init_decoder(int width, int height, const char *colorspace)
 {
 	struct dec_avcodec_ctx *ctx;
@@ -150,6 +240,8 @@ struct dec_avcodec_ctx *init_decoder(int width, int height, const char *colorspa
 	ctx->codec_ctx->width = ctx->width;
 	ctx->codec_ctx->height = ctx->height;
 	ctx->codec_ctx->pix_fmt = pix_fmt;
+	ctx->codec_ctx->get_buffer = my_avcodec_get_buffer;
+	ctx->codec_ctx->release_buffer = my_avcodec_release_buffer;
 	if (avcodec_open2(ctx->codec_ctx, ctx->codec, NULL) < 0) {
 		fprintf(stderr, "could not open codec\n");
 		goto err;
@@ -233,3 +325,5 @@ const char *get_colorspace(struct dec_avcodec_ctx *ctx)
 {
 	return get_string_format(ctx->pixfmt);
 }
+
+

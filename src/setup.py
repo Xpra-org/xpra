@@ -1001,7 +1001,7 @@ toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     avcodec_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c"],
+                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/dec_avcodec/lists.c"],
                 **avcodec_pkgconfig), min_version=(0, 16))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
