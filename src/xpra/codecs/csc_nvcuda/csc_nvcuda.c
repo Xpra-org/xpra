@@ -151,7 +151,7 @@ static void _cuda_report_error(int line, const char *fmt, ...)
 
 #define cuda_err(fmt, ...) _cuda_report_error(__LINE__, fmt, ##__VA_ARGS__)
 
-static int init_cuda(struct csc_nvcuda_ctx *ctx)
+int init_cuda(void)
 {
 	int cuda_count = 0;
 	char PCI_id[25];
@@ -244,7 +244,8 @@ struct csc_nvcuda_ctx *init_csc(int width, int height, const char *src_format_st
 
 	// Initialize Cuda (once in the application's lifetime)			
 	if (!cuda_initialized) {
-		if (init_cuda(ctx)) {
+		fprintf(stderr, "Cuda was not initialized - please call init_cuda() before init_csc(). Initializing Cuda...\n");
+		if (init_cuda()) {
 			goto err;
 		}
 	}

@@ -14,6 +14,13 @@
 /** Opaque structure - "context". You must have a context to convert frames */
 struct csc_nvcuda_ctx;
 
+/**
+ * Initialize Cuda. Call this before doing anything else.
+ * Will be called by init_csc if you forget.
+ * @return 0 if OK, non zero on error
+ */
+int init_cuda(void);
+
 /** Create a CSC context
  * @return NULL on error
  */
