@@ -26,6 +26,8 @@ class GTKWindowBacking(WindowBackingBase):
         self.cairo_draw_from_drawable(context, self._backing)
 
     def cairo_draw_from_drawable(self, context, drawable):
+        if drawable is None:
+            return
         import cairo
         try:
             context.set_source_pixmap(drawable, 0, 0)

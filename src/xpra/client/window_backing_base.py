@@ -56,6 +56,7 @@ class WindowBackingBase(object):
         self.mmap_enabled = True
 
     def close(self):
+        self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
         if self._video_decoder or self._csc_decoder:
             try:
@@ -75,11 +76,6 @@ class WindowBackingBase(object):
             self._csc_decoder.clean()
             self._csc_decoder = None
 
-    def jpegimage(self, img_data, width, height):
-        """ can be called from any thread """
-        assert PIL
-        buf = BytesIOClass(img_data)
-        return PIL.Image.open(buf)
 
     def process_delta(self, raw_data, width, height, rowstride, options):
         """
