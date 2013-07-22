@@ -21,6 +21,12 @@ struct csc_nvcuda_ctx;
  */
 int init_cuda(void);
 
+/**
+ * Return the version of nvidia performance primitives,
+ * the lib used by csc_nvcuda for CSC.
+ */
+const char *get_NPP_version(void);
+
 /** Create a CSC context
  * @return NULL on error
  */

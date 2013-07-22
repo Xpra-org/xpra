@@ -26,13 +26,14 @@ cdef extern from "csc_nvcuda.h":
     void free_csc(csc_nvcuda_ctx *ctx)
     int csc_image(csc_nvcuda_ctx *ctx, const uint8_t *input_image[3], const int in_stride[3], uint8_t *out[3], int out_stride[3])
     void free_csc_image(uint8_t *buf[3])
+    char *get_NPP_version()
 
 
 COLORSPACES_SRC = [ "RGB", "RGBA", "BGR", "BGRX" ]
 COLORSPACES_DST = [ "YUV420P", "YUV422P", "YUV444P" ]
 
 def get_version():
-    return 1
+    return get_NPP_version()
 
 def get_input_colorspaces():
     return COLORSPACES_SRC

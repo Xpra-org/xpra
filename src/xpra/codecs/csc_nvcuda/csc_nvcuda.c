@@ -151,6 +151,13 @@ static void _cuda_report_error(int line, const char *fmt, ...)
 
 #define cuda_err(fmt, ...) _cuda_report_error(__LINE__, fmt, ##__VA_ARGS__)
 
+const char *get_NPP_version(void)
+{
+#define xstr(s) str(s)
+#define str(s) #s
+	return "" xstr(NPP_VERSION_MAJOR) "." xstr(NPP_VERSION_MINOR) "." xstr(NPP_VERSION_BUILD);
+}
+
 int init_cuda(void)
 {
 	int cuda_count = 0;
