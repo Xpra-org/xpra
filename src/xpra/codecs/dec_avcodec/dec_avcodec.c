@@ -141,7 +141,6 @@ static int my_avcodec_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 	f->frame = frame;
 	list_add(&f->node, &frame_pointers);
 
-	fprintf(stderr, "Avcodec: adding frame %p to struct %p\n", frame, f);
 	// Call default get_buffer
 	return avcodec_default_get_buffer(avctx, frame);
 }
