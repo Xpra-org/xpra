@@ -320,11 +320,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def destroy(self):
         if self._refresh_timer:
             self.source_remove(self._refresh_timer)
-        self._unfocus()
         if self._backing:
             self._backing.close()
             self._backing = None
         gtk.Window.destroy(self)
+        self._unfocus()
 
 
     def do_unmap_event(self, event):
