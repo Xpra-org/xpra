@@ -7,8 +7,6 @@ import time
 import os
 
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, codec_spec
-#from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter
-from xpra.codecs.csc_nvcuda.colorspace_converter import ColorspaceConverter
 
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
