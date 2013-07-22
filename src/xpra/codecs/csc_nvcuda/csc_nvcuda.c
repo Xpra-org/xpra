@@ -1,5 +1,8 @@
-/* Copyright (C) 2012-2013 Arthur Huillet <arthur dot huillet AT free dot fr>
-   */
+/* This file is part of Xpra.
+ * Copyright (C) 2013 Arthur Huillet
+ * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+ * later version. See the file COPYING for details.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,7 +94,7 @@ static packed_to_subsampled_planar_func NPP_dst_YUV420P[] = {
 };
 
 #define ARRAY_SIZE(X) (int)(sizeof(X)/sizeof(X[0]))
-static enum colorspace get_colorspace_by_name(const char *str) 
+static enum colorspace get_colorspace_by_name(const char *str)
 {
 	int i;
 	if (!str)
@@ -106,7 +109,7 @@ static enum colorspace get_colorspace_by_name(const char *str)
 	return UNKNOWN;
 }
 
-/* Retrieve the conversion function for a un-subsampled planar destination. 
+/* Retrieve the conversion function for a un-subsampled planar destination.
  This cannot be unified because the NPP signatures are different from the other variants.*/
 packed_to_planar_func get_conversion_function_444(enum colorspace src, enum colorspace dst)
 {
@@ -197,7 +200,7 @@ int init_cuda(void)
 		}
 		timer_display_and_reset(&t, "setflags");
 
-		// All good - select this device! 
+		// All good - select this device!
 		break;
 	}
 
@@ -351,7 +354,7 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 
 	if (ctx->dst_colorspace == YUV444P) {
 		func2 = get_conversion_function_444(ctx->src_colorspace, ctx->dst_colorspace);
-		if (func2) 
+		if (func2)
 			err = func2(src, stride[0], gpudst, out_stride[0], size);
 		else goto err2;
 	} else {
@@ -370,8 +373,8 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 			case -7: str = "NPP_STEP_ERROR"; break;
 			case -8: str = "NPP_ALIGNMENT_ERROR"; break;
 			case -19: str = "NPP_NOT_EVEN_STEP_ERROR"; break;
-			default: 
-					  str = "(unknown)"; 
+			default:
+					  str = "(unknown)";
 		}
 		fprintf(stderr, "nppiRGBToYCbCr420_8u_C3P3R failed: %d - %s\n", err, str);
 		goto err2;
@@ -415,7 +418,7 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 	return 0;
 
 err2:
-	if (pinned_output_buffer) 
+	if (pinned_output_buffer)
 		cudaHostUnregister((void *)out[0]);
 	cudaFree(gpudst[0]);
 	cudaFree(gpudst[1]);

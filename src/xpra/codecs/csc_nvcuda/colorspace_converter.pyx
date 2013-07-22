@@ -1,6 +1,6 @@
 # This file is part of Xpra.
-# Copyright (C) 2013 Arthur Huillet 
-# Copyright (C) 2012, 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013 Arthur Huillet
+# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -113,7 +113,7 @@ cdef class ColorspaceConverter:
         self.dst_width = dst_width
         self.dst_height = dst_height
         self.time = 0
-        #ugly trick to use a string which won't go away from underneath us: 
+        #ugly trick to use a string which won't go away from underneath us:
         assert src_format in COLORSPACES_SRC, "invalid source format: %s" % src_format
         for x in COLORSPACES_SRC:
             if x==src_format:
@@ -178,7 +178,7 @@ cdef class ColorspaceConverter:
             free_csc(self.context)
             free(self.context)
             self.context = NULL
-    
+
     def convert_image(self, image):
         cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL

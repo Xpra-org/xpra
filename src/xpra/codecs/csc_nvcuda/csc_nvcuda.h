@@ -1,5 +1,9 @@
-/* Copyright (C) 2013 Arthur Huillet
+/* This file is part of Xpra.
+ * Copyright (C) 2013 Arthur Huillet
+ * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+ * later version. See the file COPYING for details.
  */
+
 #ifdef _WIN32
 #include "stdint.h"
 #include "inttypes.h"
@@ -40,7 +44,7 @@ void free_csc(struct csc_nvcuda_ctx *ctx);
  @param in: Input buffer planes.
  @param stride: Input strides.
  @param out: Array of pointers to be set to point to data planes.
- @param out_stride: Array of strides 
+ @param out_stride: Array of strides
  @return: 0 if OK, 1 on error
 */
 int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int in_stride[3], uint8_t *out[3], int out_stride[3]);
