@@ -151,9 +151,9 @@ if HELP:
         d = vars()["%s_ENABLED" % x]
         with_str = "  --with-%s" % x
         without_str = "  --without-%s" % x
-        while len(with_str)<22:
+        while len(with_str)<25:
             with_str += " "
-        while len(without_str)<22:
+        while len(without_str)<25:
             without_str += " "
         if d is True or d is False:
             default_str = str(d)
