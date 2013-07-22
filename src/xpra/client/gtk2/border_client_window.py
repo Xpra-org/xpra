@@ -32,10 +32,16 @@ class BorderClientWindow(ClientWindow):
         #now paint our border import gtk.gdk
         s = 5
         ww, wh = self.window.get_size()
-        for x, y, w, h in ((0, 0, ww, s),       #top
-                           (ww-s, s, s, wh-s*2),#right
-                           (0, wh-s, ww, s),    #bottom
-                           (0, 0, s, wh)):      #left
+        borders = []
+        if ww>s*2:
+            #window is wide enough, add borders on the side:
+            borders.append((0, 0, s, wh))           #left
+            borders.append((ww-s, 0, s, wh))        #right
+        if wh>s*2:
+            #window is tall enough, add borders on top and bottom:
+            borders.append((0, 0, ww, s))           #top
+            borders.append((0, wh-s, ww, s))        #bottom
+        for x, y, w, h in borders:
             if w<=0 or h<=0:
                 continue
             r = gtk.gdk.Rectangle(x, y, w, h)
