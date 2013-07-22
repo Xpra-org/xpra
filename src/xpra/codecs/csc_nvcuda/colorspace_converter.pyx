@@ -31,6 +31,8 @@ cdef extern from "csc_nvcuda.h":
 COLORSPACES_SRC = [ "RGB", "RGBA", "BGR", "BGRX" ]
 COLORSPACES_DST = [ "YUV420P", "YUV422P", "YUV444P" ]
 
+def get_version():
+    return 1
 
 def get_input_colorspaces():
     return COLORSPACES_SRC
