@@ -101,6 +101,7 @@ class UIXpraClient(XpraClientBase):
         if self.microphone_allowed:
             self.microphone_codecs = get_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
+        self.sink_restart_pending = False
         self.sound_sink = None
         self.server_sound_sequence = False
         self.min_sound_sequence = 0
@@ -853,28 +854,35 @@ class UIXpraClient(XpraClientBase):
         def sound_sink_error(*args):
             log.warn("stopping speaker because of error")
             self.stop_receiving_sound()
-        def sound_sink_overrun(*args):
-            log.warn("re-starting speaker because of overrun")
+        def sound_sink_overrun(sink, level, *args):
+            log("sound_sink_overrun(%s, %s, %s)", sink, level, args)
             if self.server_sound_sequence:
+                if self.sink_restart_pending:
+                    log("overrun: already waiting for restart")
+                    return
+                self.sink_restart_pending = True
+                log.warn("re-starting speaker because of overrun, delay=%sms", level)
                 #start refusing all the sound packets with the current sequence no:
                 self.min_sound_sequence += 1
+                log("min_sound_sequence=%s", self.min_sound_sequence)
                 #tell the server to stop sending:
                 self.send("sound-control", "stop")
+                #flush pipeline: how?
                 #tell the server to start again once the queue has drained:
-                self.sink_underrun_signal = None
-                def sink_underrun(*args):
-                    log("sink_underrun(%s)", args)
-                    #don't fire this signal again:
-                    self.sound_sink.remove_listener("underrun", self.sink_underrun_signal)
-                    self.sink_underrun_signal = None
+                def start_sink_again(*args):
                     #reset start_time and queue size:
-                    self.sound_sink.reset_queue()
+                    log("start_sink_again: send new-sequence")
                     #tell the server to bump the sequence no:
                     self.send("sound-control", "new-sequence", self.min_sound_sequence)
                     #now safe to start again:
+                    log("start_sink_again: tell server start again: %s", self.sound_sink.get_info())
                     self.send("sound-control", "start")
-                self.sink_underrun_signal = self.sound_sink.connect("underrun", sink_underrun)
+                    self.sink_restart_pending = False
+                    return False
+                log("overrun: dropping new sound packets from %s: %s", self.sound_sink, self.sound_sink.get_info())
+                self.timeout_add(level, start_sink_again)
             else:
+                log.warn("re-starting speaker because of overrun")
                 #for older servers: teardown and start again
                 #note: this may not work on all platforms...
                 def sink_clean():

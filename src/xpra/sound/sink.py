@@ -30,9 +30,9 @@ GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
 GST_QUEUE_LEAK_DOWNSTREAM     = 2
 
-QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "450"))*1000000        #ns
-QUEUE_START_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_START_TIME", "250"))*1000000        #ns
-QUEUE_MIN_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_MIN_TIME", "50"))*1000000 #ns
+MS_TO_NS = 1000000
+QUEUE_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_TIME", "450"))*MS_TO_NS
+QUEUE_MIN_TIME = int(os.environ.get("XPRA_SOUND_QUEUE_MIN_TIME", "50"))*MS_TO_NS
 QUEUE_TIME = max(0, QUEUE_TIME)
 QUEUE_MIN_TIME = max(0, min(QUEUE_TIME, QUEUE_MIN_TIME))
 DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
@@ -74,7 +74,7 @@ class SoundSink(SoundPipeline):
             pipeline_els.append("queue" +
                                 " name=queue"+
                                 " min-threshold-time=%s" % QUEUE_MIN_TIME+
-                                " max-size-time=%s" % QUEUE_START_TIME+
+                                " max-size-time=%s" % QUEUE_TIME+
                                 " leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
         else:
             pipeline_els.append("queue leaky=%s" % GST_QUEUE_LEAK_DOWNSTREAM)
@@ -88,15 +88,11 @@ class SoundSink(SoundPipeline):
         self.src.set_property('format', 4)
         self.src.set_property('is-live', True)
         self.queue = self.pipeline.get_by_name("queue")
+        self.overruns = 0
         self.queue.connect("overrun", self.queue_overrun)
         self.queue.connect("underrun", self.queue_underrun)
         self.src.connect("need-data", self.need_data)
         self.src.connect("enough-data", self.on_enough_data)
-
-    def reset_queue(self):
-        #reset the start_time and go back to original queue size
-        self.start_time = time.time()
-        self.queue.set_property("max-size-time", QUEUE_START_TIME)
 
     def queue_underrun(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/1000000)
@@ -104,16 +100,14 @@ class SoundSink(SoundPipeline):
         self.emit("underrun", ltime)
 
     def queue_overrun(self, *args):
-        ltime = int(self.queue.get_property("current-level-time")/1000000)
-        debug("sound sink queue overrun: level=%s", ltime)
+        ltime = self.queue.get_property("current-level-time")
+        mtime = int(ltime/1000000)
+        debug("sound sink queue overrun: level=%s", mtime)
         #no overruns for the first 2 seconds:
-        if time.time()-self.start_time<2.0:
+        if time.time()-self.start_time<2.0 or ltime<QUEUE_TIME:
             return
-        #if we haven't done so yet, just bump the max-size-time
-        if int(self.queue.get_property("max-size-time")) < QUEUE_TIME:
-            self.queue.set_property("max-size-time", QUEUE_TIME)
-            return
-        self.emit("overrun", ltime)
+        self.overruns += 1
+        self.emit("overrun", mtime)
 
     def cleanup(self):
         SoundPipeline.cleanup(self)
@@ -153,13 +147,15 @@ class SoundSink(SoundPipeline):
         if QUEUE_TIME>0:
             clt = self.queue.get_property("current-level-time")
             info["queue.used_pct"] = int(min(QUEUE_TIME, clt)*100.0/QUEUE_TIME)
+            info["queue.overruns"] = self.overruns
         if VOLUME and self.volume:
             info["mute"] = self.volume.get_property("mute")
             info["volume"] = int(100.0*self.volume.get_property("volume"))
         return info
 
     def add_data(self, data, metadata=None):
-        debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/1000000))
+        debug("sound sink: adding %s bytes to %s", len(data), self.src)
+        #debug("sound sink: adding %s bytes to %s, metadata: %s, level=%s", len(data), self.src, metadata, int(self.queue.get_property("current-level-time")/1000000))
         if self.src:
             buf = gst.Buffer(data)
             if metadata:
@@ -182,6 +178,7 @@ class SoundSink(SoundPipeline):
             else:
                 self.buffer_count += 1
                 self.byte_count += len(data)
+                debug("sound sink: new level=%s", int(self.queue.get_property("current-level-time")/1000000))
 
     def need_data(self, src_arg, needed):
         debug("need_data: %s bytes in %s", needed, src_arg)

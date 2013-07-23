@@ -594,6 +594,7 @@ class ServerSource(object):
             log.error("error setting up sound: %s", e)
 
     def stop_sending_sound(self):
+        log("stop_sending_sound() sound_source=%s", self.sound_source)
         if self.sound_source:
             self.sound_source.stop()
             self.sound_source.cleanup()
@@ -608,13 +609,13 @@ class ServerSource(object):
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def sound_control(self, action, *args):
+        log("sound_control(%s, %s)", action, args)
         if action=="stop":
             self.stop_sending_sound()
         elif action=="start":
             self.start_sending_sound()
         elif action=="new-sequence":
             self.sound_source_sequence = args[0]
-            log("sound_control(%s, %s) client requested new sound sequence %s", action, args, self.sound_source_sequence)
         #elif action=="quality":
         #    assert self.sound_source
         #    quality = args[0]
