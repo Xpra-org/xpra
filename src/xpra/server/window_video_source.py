@@ -180,7 +180,8 @@ class WindowVideoSource(WindowSource):
                 #could have been freed since we got the lock!
                 return
             if force_reload:
-                self.do_csc_encoder_cleanup()
+                if self._csc_encoder:
+                    self.do_csc_encoder_cleanup()
                 self.do_video_encoder_cleanup()
                 return
 
