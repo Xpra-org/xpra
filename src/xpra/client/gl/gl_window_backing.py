@@ -261,7 +261,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
 
     def present_fbo(self, drawable):
-        debug("present_fbo() drawable=%s", drawable)
+        debug("present_fbo(%s)", drawable)
         self.gl_marker("Presenting FBO on screen")
         assert drawable
         # Change state to target screen instead of our FBO
@@ -286,7 +286,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         # Show the backbuffer on screen
         if drawable.is_double_buffered():
-            debug("SWAPPING BUFFERS NOW")
+            debug("GL swapping buffers now")
             drawable.swap_buffers()
             # Clear the new backbuffer to illustrate that its contents are undefined
             glClear(GL_COLOR_BUFFER_BIT)
