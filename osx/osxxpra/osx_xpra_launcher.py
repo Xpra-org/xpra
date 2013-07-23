@@ -6,6 +6,7 @@ from xpra.client.gtk_base.client_launcher import main
 from xpra.platform.darwin.shadow_server import ShadowServer
 from xpra.platform.darwin.features import CAN_DAEMONIZE
 from xpra.platform.darwin.gui import get_OSXApplication
+from xpra.platform.darwin.info import get_sys_info
 from xpra.platform.darwin.keyboard import Keyboard
 from xpra.platform.darwin.options import add_client_options
 from xpra.platform.darwin.osx_menu import getOSXMenu
