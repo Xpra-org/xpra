@@ -598,12 +598,14 @@ if WIN32:
                 raise Exception("cannot find a directory which is required for building: %s" % d)
 
     def pkgconfig(*packages, **ekw):
+        kw = dict(ekw)
+        if len(packages)==0:
+            return kw
         def add_to_PATH(bindir):
             if os.environ['PATH'].find(bindir)<0:
                 os.environ['PATH'] = bindir + ';' + os.environ['PATH']
             if bindir not in sys.path:
                 sys.path.append(bindir)
-        kw = dict(ekw)
         if "libavcodec" in packages[0]:
             add_to_PATH(libffmpeg_bin_dir)
             add_to_keywords(kw, 'include_dirs', win32_include_dir, libffmpeg_include_dir)
