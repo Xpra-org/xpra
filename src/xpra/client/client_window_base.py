@@ -246,7 +246,9 @@ class ClientWindowBase(ClientWidgetBase):
         def after_draw_refresh(success):
             if DRAW_DEBUG:
                 self.info("after_draw_refresh(%s) %sx%s at %sx%s encoding=%s, options=%s", success, width, height, x, y, coding, options)
-            if success and self._backing and self._backing.draw_needs_refresh:
+            if self._backing is None:
+                return
+            if success and self._backing.draw_needs_refresh:
                 self.queue_draw(x, y, width, height)
             #clear the auto refresh if enough pixels were sent (arbitrary limit..)
             if success and self._refresh_timer and width*height>=self._refresh_min_pixels:
