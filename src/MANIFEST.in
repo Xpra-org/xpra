@@ -5,8 +5,6 @@ include xpra/codecs/csc_swscale/csc_swscale.h
 include xpra/codecs/csc_swscale/csc_swscale.c
 include xpra/codecs/dec_avcodec/dec_avcodec.h
 include xpra/codecs/dec_avcodec/dec_avcodec.c
-include xpra/codecs/dec_avcodec/list.h
-include xpra/codecs/dec_avcodec/list.c
 include xpra/codecs/csc_nvcuda/csc_nvcuda.h
 include xpra/codecs/css_nvcuda/csc_nvcuda.c
 include xpra/codecs/enc_x264/enc_x264.h

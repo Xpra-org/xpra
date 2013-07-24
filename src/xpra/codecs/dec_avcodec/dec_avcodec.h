@@ -36,9 +36,3 @@ int decompress_image(struct dec_avcodec_ctx *ctx, const uint8_t *in, int size, u
 
 /** Retrieve video colorspace */
 const char *get_colorspace(struct dec_avcodec_ctx *ctx);
-
-/** Mark a buffer as released.
- @param data: Pointer to the first plane of output data in the frame (out[0] from decompress image)
- */
-void xpra_release_buffer(struct dec_avcodec_ctx *ctx, const uint8_t *data);
-
