@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import thread
 import os
 import time
 try:
@@ -594,11 +595,14 @@ class ServerSource(object):
             log.error("error setting up sound: %s", e)
 
     def stop_sending_sound(self):
-        log("stop_sending_sound() sound_source=%s", self.sound_source)
-        if self.sound_source:
-            self.sound_source.stop()
-            self.sound_source.cleanup()
+        ss = self.sound_source
+        log("stop_sending_sound() sound_source=%s", ss)
+        if ss:
             self.sound_source = None
+            def stop_sound(*args):
+                ss.stop()
+                ss.cleanup()
+            thread.start_new_thread(stop_sound, ())
 
     def new_sound_buffer(self, sound_source, data, metadata):
         assert self.sound_source
