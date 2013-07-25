@@ -169,7 +169,7 @@ cdef class Decoder:
         if self.frame!=NULL:
             avcodec_free_frame(&self.frame)
             self.frame = NULL
-        if self.codec_ctx==NULL:
+        if self.codec_ctx!=NULL:
             avcodec_close(self.codec_ctx)
             av_free(self.codec_ctx)
             self.codec_ctx = NULL
