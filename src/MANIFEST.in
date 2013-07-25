@@ -9,6 +9,8 @@ include xpra/codecs/csc_nvcuda/csc_nvcuda.h
 include xpra/codecs/css_nvcuda/csc_nvcuda.c
 include xpra/codecs/enc_x264/enc_x264.h
 include xpra/codecs/enc_x264/enc_x264.c
+include xpra/codecs/memalign/memalign.h
+include xpra/codecs/memalign/memalign.c
 include xpra/codecs/vpx/vpxlib.h
 include xpra/codecs/vpx/vpxlib.c
 include xpra/codecs/webm/LICENSE
