@@ -360,10 +360,6 @@ class GLPixmapBacking(GTK2WindowBacking):
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
-        #we need to run in UI thread from here on!
-        #ideally, the decoder would manage buffers properly...
-        #instead of relying on us making a copy before leaving the decoding thread
-        img.clone_pixel_data()
         gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
