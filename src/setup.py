@@ -306,6 +306,52 @@ def get_gcc_version():
                     break
     return GCC_VERSION
 
+def make_constants_pxi(constants_path, pxi_path):
+    constants = []
+    for line in open(constants_path):
+        data = line.split("#", 1)[0].strip()
+        # data can be empty ''...
+        if not data:
+            continue
+        # or a pair like 'cFoo "Foo"'...
+        elif len(data.split()) == 2:
+            (pyname, cname) = data.split()
+            constants.append((pyname, cname))
+        # or just a simple token 'Foo'
+        else:
+            constants.append(data)
+    out = open(pxi_path, "w")
+    out.write("cdef extern from *:\n")
+    ### Apparently you can't use | on enum's?!
+    # out.write("    enum MagicNumbers:\n")
+    # for const in constants:
+    #     if isinstance(const, tuple):
+    #         out.write('        %s %s\n' % const)
+    #     else:
+    #         out.write('        %s\n' % (const,))
+    for const in constants:
+        if isinstance(const, tuple):
+            out.write('    unsigned int %s %s\n' % const)
+        else:
+            out.write('    unsigned int %s\n' % (const,))
+
+    out.write("const = {\n")
+    for const in constants:
+        if isinstance(const, tuple):
+            pyname = const[0]
+        else:
+            pyname = const
+        out.write('    "%s": %s,\n' % (pyname, pyname))
+    out.write("}\n")
+
+def make_constants(*paths):
+    base = os.path.join(os.getcwd(), *paths)
+    constants_file = "%s.txt" % base
+    pxi_file = "%s.pxi" % base
+    if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
+        print("(re)generating %s" % pxi_file)
+        make_constants_pxi(constants_file, pxi_file)
+
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def pkgconfig(*packages_options, **ekw):
     kw = dict(ekw)
@@ -483,7 +529,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/dec_avcodec/decoder.c",
+                   "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
+                   "xpra/codecs/csc_swscale/constants.pxi",
                    "xpra/codecs/csc_nvcuda/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
@@ -863,52 +911,6 @@ toggle_packages(server_ENABLED or gtk2_ENABLED or gtk3_ENABLED, "xpra.gtk_common
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.gtk_x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    def make_constants_pxi(constants_path, pxi_path):
-        constants = []
-        for line in open(constants_path):
-            data = line.split("#", 1)[0].strip()
-            # data can be empty ''...
-            if not data:
-                continue
-            # or a pair like 'cFoo "Foo"'...
-            elif len(data.split()) == 2:
-                (pyname, cname) = data.split()
-                constants.append((pyname, cname))
-            # or just a simple token 'Foo'
-            else:
-                constants.append(data)
-        out = open(pxi_path, "w")
-        out.write("cdef extern from *:\n")
-        ### Apparently you can't use | on enum's?!
-        # out.write("    enum MagicNumbers:\n")
-        # for const in constants:
-        #     if isinstance(const, tuple):
-        #         out.write('        %s %s\n' % const)
-        #     else:
-        #         out.write('        %s\n' % (const,))
-        for const in constants:
-            if isinstance(const, tuple):
-                out.write('    unsigned int %s %s\n' % const)
-            else:
-                out.write('    unsigned int %s\n' % (const,))
-
-        out.write("const = {\n")
-        for const in constants:
-            if isinstance(const, tuple):
-                pyname = const[0]
-            else:
-                pyname = const
-            out.write('    "%s": %s,\n' % (pyname, pyname))
-        out.write("}\n")
-
-    def make_constants(*paths):
-        base = os.path.join(os.getcwd(), *paths)
-        constants_file = "%s.txt" % base
-        pxi_file = "%s.pxi" % base
-        if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
-            print("(re)generating %s" % pxi_file)
-            make_constants_pxi(constants_file, pxi_file)
-
     make_constants("xpra", "x11", "bindings", "constants")
     make_constants("xpra", "x11", "gtk_x11", "constants")
 
@@ -1001,16 +1003,18 @@ if enc_x264_ENABLED:
 
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
+    make_constants("xpra", "codecs", "dec_avcodec", "constants")
     avcodec_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c"],
+                ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
                 **avcodec_pkgconfig), min_version=(0, 16))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
+    make_constants("xpra", "codecs", "csc_swscale", "constants")
     swscale_pkgconfig = pkgconfig("libswscale")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
-                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c"],
+                ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c", "xpra/codecs/memalign/memalign.c"],
                 **swscale_pkgconfig), min_version=(0, 16))
 
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
