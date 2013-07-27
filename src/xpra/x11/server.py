@@ -645,10 +645,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return ["screenshot", 0, 0, "png", -1, ""]
         debug("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
         #in theory, we could run the rest in a non-UI thread since we're done with GTK..
-        minx = min([x for (_,x,_,_,_,_,_,_) in all_regions])
-        miny = min([y for (_,_,y,_,_,_,_,_) in all_regions])
-        maxx = max([(x+w) for (_,x,_,w,_,_,_,_) in all_regions])
-        maxy = max([(y+h) for (_,_,y,_,h,_,_,_) in all_regions])
+        minx = min([x for (_,x,_,_) in all_regions])
+        miny = min([y for (_,_,y,_) in all_regions])
+        maxx = max([(x+img.get_width()) for (_,x,_,img) in all_regions])
+        maxy = max([(y+img.get_height()) for (_,_,y,img) in all_regions])
         width = maxx-minx
         height = maxy-miny
         debug("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
