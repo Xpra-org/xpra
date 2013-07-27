@@ -5,4 +5,8 @@
  * later version. See the file COPYING for details.
  */
 
+#ifdef _WIN32
+#define inline __inline
+#endif
+
 const char *get_avcodec_version(void);

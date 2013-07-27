@@ -5,6 +5,7 @@
  * later version. See the file COPYING for details.
  */
 
+#include "dec_avcodec.h"
 #include <libavcodec/avcodec.h>
 
 const char *get_avcodec_version(void)

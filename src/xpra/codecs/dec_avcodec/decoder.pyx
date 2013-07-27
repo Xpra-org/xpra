@@ -29,6 +29,14 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
 
 
+cdef extern from "dec_avcodec.h":
+    char *get_avcodec_version()
+    char **get_supported_colorspaces()
+
+cdef extern from "../memalign/memalign.h":
+    void *xmemalign(size_t size)
+
+
 ctypedef long AVPixelFormat
 
 cdef extern from "libavcodec/avcodec.h":
@@ -75,14 +83,6 @@ cdef extern from "libavcodec/avcodec.h":
     #buffer management:
     int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic)
     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
-
-
-cdef extern from "dec_avcodec.h":
-    char *get_avcodec_version()
-    char **get_supported_colorspaces()
-
-cdef extern from "../memalign/memalign.h":
-    void *xmemalign(size_t size)
 
 
 COLORSPACES = []

@@ -5,6 +5,7 @@
  * later version. See the file COPYING for details.
  */
 
+#include "csc_swscale.h"
 #include <libswscale/swscale.h>
 
 const char *get_swscale_version(void)
