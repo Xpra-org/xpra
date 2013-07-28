@@ -335,9 +335,6 @@ cdef class Decoder:
         self.clean_decoder()
 
     def clean_decoder(self):
-        if self.get_width()==544:
-            import traceback
-            traceback.print_stack()
         debug("%s.clean_decoder()", self)
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
