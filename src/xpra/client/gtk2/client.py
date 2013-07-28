@@ -467,7 +467,7 @@ class XpraClient(GTKXpraClient):
             metadata = window._metadata
             override_redirect = window._override_redirect
             #now we can unmap it:
-            window.destroy()
+            self.destroy_window(wid, window)
             #explicitly tell the server we have unmapped it:
             #(so it will reset the video encoders, etc)
             self.send("unmap-window", wid)
