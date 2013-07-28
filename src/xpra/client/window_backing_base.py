@@ -199,6 +199,10 @@ class WindowBackingBase(object):
         factory = getattr(decoder_module, "Decoder")
         try:
             self._decoder_lock.acquire()
+            if self._backing is None:
+                log("window %s is already gone!", self.wid)
+                fire_paint_callbacks(callbacks, False)
+                return  False
             enc_width, enc_height = options.get("scaled_size", (width, height))
             colorspace = options.get("csc")
             if not colorspace:
@@ -230,8 +234,8 @@ class WindowBackingBase(object):
 
             img = self._video_decoder.decompress_image(img_data, options)
             if not img:
-                raise Exception("paint_with_video_decoder: %s decompression error on %s bytes of picture data for %sx%s pixels, options=%s" % (
-                      coding, len(img_data), width, height, options))
+                raise Exception("paint_with_video_decoder: wid=%s, %s decompression error on %s bytes of picture data for %sx%s pixels, options=%s" % (
+                      self.wid, coding, len(img_data), width, height, options))
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         finally:
             self._decoder_lock.release()
