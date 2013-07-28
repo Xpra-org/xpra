@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import weakref
 from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_AVCODEC_DEBUG")
@@ -21,6 +22,7 @@ cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "string.h":
@@ -235,16 +237,27 @@ cdef class AVFrameWrapper:
 class AVImageWrapper(ImageWrapper):
     """
         Wrapper which allows us to call xpra_free on the decoder
-        when the image is freed.
+        when the image is freed, or once we have made a copy of the pixels.
     """
+
+    def __str__(self):                          #@DuplicatedSignature
+        return ImageWrapper.__str__(self)+"-(%s)" % self.av_frame
 
     def free(self):                             #@DuplicatedSignature
         debug("AVImageWrapper.free() av_frame=%s", self.av_frame)
         ImageWrapper.free(self)
+        self.xpra_free_frame()
+
+    def clone_pixel_data(self):
+        ImageWrapper.clone_pixel_data(self)
+        self.xpra_free_frame()
+
+    def xpra_free_frame(self):
         if self.av_frame:
             assert self.decoder, "no decoder set!"
             self.decoder.xpra_free(self.av_frame.get_key())
             self.av_frame = None
+
 
 
 cdef class Decoder:
@@ -258,6 +271,7 @@ cdef class Decoder:
     cdef AVPixelFormat actual_pix_fmt
     cdef char *colorspace
     cdef object framewrappers
+    cdef object weakref_images
     cdef AVFrame *frame                             #@DuplicatedSignature
     cdef int frames
 
@@ -307,6 +321,9 @@ cdef class Decoder:
         self.frames = 0
         #to keep track of frame wrappers:
         self.framewrappers = {}
+        #to keep track of images not freed yet:
+        #(we want a weakref.WeakSet() but this is python2.7+ only..)
+        self.weakref_images = []
         #register this decoder in the global dictionary:
         global DECODERS
         cdef unsigned long ctx_key = get_context_key(self.codec_ctx)
@@ -317,10 +334,23 @@ cdef class Decoder:
         self.clean_decoder()
 
     def clean_decoder(self):
+        #we may have images handed out, ensure we don't reference any memory
+        #that needs to be freed using avcodec_release_buffer(..)
+        #as this requires the context to still be valid!
+        #copying the pixels should ensure we free the AVFrameWrapper associated with it: 
+        images = [y for y in [x() for x in self.weakref_images] if y is not None]
+        self.weakref_images = []
+        debug("clean_decoder() cloning pixels for images still in use: %s", images)
+        for img in images:
+            img.clone_pixel_data()
+
+        debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
         if self.frame!=NULL:
             avcodec_free_frame(&self.frame)
             #redundant: self.frame = NULL
+
         cdef unsigned long ctx_key          #@DuplicatedSignature
+        debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))
         if self.codec_ctx!=NULL:
             avcodec_close(self.codec_ctx)
             av_free(self.codec_ctx)
@@ -329,6 +359,7 @@ cdef class Decoder:
             if ctx_key in DECODERS:
                 DECODERS[ctx_key] = self
             self.codec_ctx = NULL
+        debug("clean_decoder() done")
 
 
     def get_info(self):
@@ -419,7 +450,6 @@ cdef class Decoder:
         if outsize==0:
             raise Exception("output size is zero!")
         img = AVImageWrapper(0, 0, self.codec_ctx.width, self.codec_ctx.height, out, cs, 24, strides, nplanes)
-        debug("avcodec: %s bytes in %s", outsize, img)
         img.decoder = self
         img.av_frame = None
         #we must find the frame wrapper used by our get_buffer override:
@@ -427,7 +457,13 @@ cdef class Decoder:
         framewrapper = self.get_framewrapper(frame_key)
         img.av_frame = framewrapper
         self.frames += 1
+        #add to weakref list after cleaning it up:
+        self.weakref_images = [x for x in self.weakref_images if x() is not None]
+        ref = weakref.ref(img)
+        self.weakref_images.append(ref)
+        debug("avcodec: %s bytes in %s", outsize, img)
         return img
+
 
     def get_framewrapper(self, frame_key):
         framewrapper = self.framewrappers.get(int(frame_key))
