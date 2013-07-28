@@ -65,8 +65,10 @@ DEL /Q xpra\codecs\argb\argb.c
 DEL /Q xpra\codecs\argb\argb.pyd
 DEL /Q xpra\codecs\csc_nvcuda\colorspace_converter.c
 DEL /Q xpra\codecs\csc_nvcuda\colorspace_converter.pyd
+DEL /Q xpra\codecs\csc_swscale\constants.pxi
 DEL /Q xpra\codecs\csc_swscale\colorspace_converter.c
 DEL /Q xpra\codecs\csc_swscale\colorspace_converter.pyd
+DEL /Q xpra\codecs\dec_avcodec\constants.pxi
 DEL /Q xpra\codecs\dec_avcodec\decoder.c
 DEL /Q xpra\codecs\dec_avcodec\decoder.pyd
 DEL /Q xpra\codecs\enc_x264\encoder.c
