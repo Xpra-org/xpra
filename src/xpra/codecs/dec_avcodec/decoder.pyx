@@ -328,12 +328,17 @@ cdef class Decoder:
         global DECODERS
         cdef unsigned long ctx_key = get_context_key(self.codec_ctx)
         DECODERS[ctx_key] = self
+        debug("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
         return True
 
     def clean(self):
         self.clean_decoder()
 
     def clean_decoder(self):
+        if self.get_width()==544:
+            import traceback
+            traceback.print_stack()
+        debug("%s.clean_decoder()", self)
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
         #as this requires the context to still be valid!
@@ -362,12 +367,16 @@ cdef class Decoder:
         debug("clean_decoder() done")
 
 
+    def __str__(self):                      #@DuplicatedSignature
+        return "dec_avcodec.Decoder(%s)" % self.get_info()
+
     def get_info(self):
         return {
                 "width"     : self.get_width(),
                 "height"    : self.get_height(),
                 "type"      : self.get_type(),
                 "colorspace": self.get_colorspace(),
+                "actual_colorspace": self.get_actual_colorspace(),
                 "frames"    : self.frames,
                 "buffers"   : len(self.framewrappers),
                 }
@@ -413,7 +422,9 @@ cdef class Decoder:
             len = avcodec_decode_video2(self.codec_ctx, self.frame, &got_picture, &avpkt)
             free(padded_buf)
         if len < 0:
-            raise Exception("avcodec_decode_video2 failed to decode this frame")
+            log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, len)
+            return None
+            #raise Exception("avcodec_decode_video2 failed to decode this frame and returned %s, decoder=%s" % (len, self.get_info()))
 
         #actual pixfmt:
         if self.pix_fmt!=self.frame.format:
@@ -461,7 +472,7 @@ cdef class Decoder:
         self.weakref_images = [x for x in self.weakref_images if x() is not None]
         ref = weakref.ref(img)
         self.weakref_images.append(ref)
-        debug("avcodec: %s bytes in %s", outsize, img)
+        debug("%s.decompress_image(%s:%s, %s)=%s", self, type(input), buf_len, options, img)
         return img
 
 
