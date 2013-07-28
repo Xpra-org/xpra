@@ -93,11 +93,11 @@ class GLPixmapBacking(GTK2WindowBacking):
         except gtk.gdkgl.NoMatches:
             display_mode &= ~gtk.gdkgl.MODE_DOUBLE
             self.glconfig = gtk.gdkgl.Config(mode=display_mode)
-        self.glarea = gtk.gtkgl.DrawingArea(self.glconfig)
+        self._backing = gtk.gtkgl.DrawingArea(self.glconfig)
         #restoring missed masks:
-        self.glarea.set_events(self.glarea.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
-        self.glarea.show()
-        self.glarea.connect("expose_event", self.gl_expose_event)
+        self._backing.set_events(self._backing.get_events() | gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK)
+        self._backing.show()
+        self._backing.connect("expose_event", self.gl_expose_event)
         self.textures = None # OpenGL texture IDs
         self.shaders = None
         self.pixel_format = None
@@ -164,8 +164,6 @@ class GLPixmapBacking(GTK2WindowBacking):
                 #don't bother trying again for another window:
                 glInitFrameTerminatorGREMEDY = None
 
-
-
             self.gl_marker("Initializing GL context for window size %d x %d" % (w, h))
             # Initialize viewport and matrices for 2D rendering
             glViewport(0, 0, w, h)
@@ -216,15 +214,16 @@ class GLPixmapBacking(GTK2WindowBacking):
         return drawable
 
     def close(self):
+        if self._backing:
+            self._backing.destroy()
         GTK2WindowBacking.close(self)
-        self.glarea = None
         self.glconfig = None
 
     def gl_begin(self):
-        if self.glarea is None:
+        if self._backing is None:
             return None     #closed already
-        drawable = self.glarea.get_gl_drawable()
-        context = self.glarea.get_gl_context()
+        drawable = self._backing.get_gl_drawable()
+        context = self._backing.get_gl_context()
         if drawable is None or context is None:
             log.error("OpenGL error: no drawable or context!")
             return None
@@ -364,14 +363,14 @@ class GLPixmapBacking(GTK2WindowBacking):
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
-        pixel_format = img.get_pixel_format()
-        assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
-        drawable = self.gl_init()
-        if not drawable:
-            debug("OpenGL cannot paint planar, drawable is not set")
-            fire_paint_callbacks(callbacks, False)
-            return
         try:
+            pixel_format = img.get_pixel_format()
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
+            drawable = self.gl_init()
+            if not drawable:
+                debug("OpenGL cannot paint planar, drawable is not set")
+                fire_paint_callbacks(callbacks, False)
+                return
             try:
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
                 if self.paint_screen:
@@ -379,12 +378,12 @@ class GLPixmapBacking(GTK2WindowBacking):
                     self.render_planar_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
                     # Present it on screen
                     self.present_fbo(drawable)
-                fire_paint_callbacks(callbacks, True)
-            except Exception, e:
-                log.error("OpenGL paint error: %s", e, exc_info=True)
-                fire_paint_callbacks(callbacks, False)
-        finally:
-            drawable.gl_end()
+            finally:
+                drawable.gl_end()
+            fire_paint_callbacks(callbacks, True)
+        except Exception, e:
+            log.error("OpenGL paint error: %s", e, exc_info=True)
+            fire_paint_callbacks(callbacks, False)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert x==0 and y==0

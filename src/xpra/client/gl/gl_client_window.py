@@ -19,21 +19,21 @@ class GLClientWindow(ClientWindow):
         debug("GLClientWindow(..)")
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self.set_reallocate_redraws(True)
-        self.add(self._backing.glarea)
+        self.add(self._backing._backing)
 
     def is_GL(self):
         return True
 
     def spinner(self, ok):
-        if not self._backing.paint_screen or not self._backing.glarea or not self.can_have_spinner():
+        if not self._backing.paint_screen or not self._backing._backing or not self.can_have_spinner():
             return
         w, h = self.get_size()
         if ok:
-            self._backing.gl_expose_event(self._backing.glarea, "spinner: fake event")
+            self._backing.gl_expose_event(self._backing._backing, "spinner: fake event")
             self.queue_draw(0, 0, w, h)
         else:
             import gtk.gdk
-            window = self._backing.glarea.get_window()
+            window = self._backing._backing.get_window()
             context = window.cairo_create()
             self.paint_spinner(context, gtk.gdk.Rectangle(0, 0, w, h))
 
