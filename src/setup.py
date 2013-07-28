@@ -8,7 +8,7 @@
 
 ##############################################################################
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.  (So
-# does the make-constants-pxi.py hack.)
+# does the make_constants hack.)
 
 import glob
 from distutils.core import setup
@@ -1007,7 +1007,7 @@ if dec_avcodec_ENABLED:
     avcodec_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
-                **avcodec_pkgconfig), min_version=(0, 16))
+                **avcodec_pkgconfig), min_version=(0, 19))
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
@@ -1015,7 +1015,7 @@ if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("libswscale")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c", "xpra/codecs/memalign/memalign.c"],
-                **swscale_pkgconfig), min_version=(0, 16))
+                **swscale_pkgconfig), min_version=(0, 19))
 
 toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
 if csc_nvcuda_ENABLED:
