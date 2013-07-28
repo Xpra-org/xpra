@@ -243,7 +243,7 @@ class WindowSource(object):
 
     def is_cancelled(self, sequence):
         """ See cancel_damage(wid) """
-        return sequence>=0 and self._damage_cancelled>=sequence
+        return self._damage_cancelled>=sequence
 
     def add_stats(self, info, suffix=""):
         """
@@ -886,7 +886,7 @@ class WindowSource(object):
         totals[0] = totals[0] + 1
         totals[1] = totals[1] + w*h
         self._last_sequence_queued = sequence
-        #debug("make_data_packet: returning packet=%s,[..],%s", packet[:7], packet[8:])
+        #debug("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
 
