@@ -368,15 +368,19 @@ cdef class Decoder:
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
     def get_info(self):
-        return {
-                "width"     : self.get_width(),
-                "height"    : self.get_height(),
+        info = {
                 "type"      : self.get_type(),
                 "colorspace": self.get_colorspace(),
                 "actual_colorspace": self.get_actual_colorspace(),
                 "frames"    : self.frames,
                 "buffers"   : len(self.framewrappers),
                 }
+        if not self.is_closed():
+            info["width"] = self.get_width()
+            info["height"] = self.get_height()
+        else:
+            info["closed"] = True
+        return info
 
     def is_closed(self):
         return self.codec_ctx==NULL
