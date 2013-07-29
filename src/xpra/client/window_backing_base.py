@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import thread
 import os
 import zlib
 
@@ -59,11 +58,11 @@ class WindowBackingBase(object):
     def close(self):
         self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
-        #try first without blocking:
-        if not self.close_decoder() or True:
-            #then via a throw away thread:
-            #this will run once the current frame has finished decoding
-            thread.start_new_thread(self.close_decoder, (True,))
+        #try without blocking, if that fails then
+        #the lock is held by the decoding thread,
+        #and it will run the cleanup after releasing the lock
+        #(it checks for self._backing None)
+        self.close_decoder(False)
 
     def close_decoder(self, blocking=False):
         if not self._decoder_lock.acquire(blocking):
@@ -247,10 +246,9 @@ class WindowBackingBase(object):
                       self.wid, coding, len(img_data), width, height, options))
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         finally:
-            if self._backing is None:
-                self.do_clean_csc_decoder()
-                self.do_clean_video_decoder()
             self._decoder_lock.release()
+            if self._backing is None:
+                self.close_decoder(True)
         return  False
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
