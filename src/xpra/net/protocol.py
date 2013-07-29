@@ -40,6 +40,7 @@ log = Logger()
 
 from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
+from xpra.simple_stats import std_unit, std_unit_dec
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 try:
     try:
@@ -711,8 +712,8 @@ class Protocol(object):
             try:
                 self._conn.close()
                 log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
-                         self.input_packetcount, self._conn.input_bytecount,
-                         self.output_packetcount, self._conn.output_bytecount
+                         std_unit(self.input_packetcount), std_unit_dec(self._conn.input_bytecount),
+                         std_unit(self.output_packetcount), std_unit_dec(self._conn.output_bytecount)
                          )
             except:
                 log.error("error closing %s", self._conn, exc_info=True)
