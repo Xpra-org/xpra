@@ -848,6 +848,7 @@ class ServerBase(object):
         except:
             pass
         info["server.python.full_version"] = sys.version
+        info["server.python.version"] = sys.version_info[:3]
         info["session.name"] = self.session_name or ""
         info["features.password_file"] = self.password_file or ""
         info["features.randr"] = self.randr
