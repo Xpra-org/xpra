@@ -33,6 +33,16 @@ v0.10.0 (2013-07-16)
 	-- simplify non-UI subcommands and their packets, also use rencode ("xpra info", "xpra version", etc)
 
 
+v0.9.8 (2013-07-29)
+======================
+	-- fix client workarea size change detection (again)
+	-- fix crashes handling info requests
+	-- fix Ubuntu raring clients: must use Xvfb
+	-- fix server hangs due to sound cleanup deadlock
+	-- use lockless window video decoder cleanup (much faster)
+	-- speedup server startup when no XAUTHORITY file exists yet
+
+
 v0.9.7 (2013-07-16)
 ======================
 	-- fix error in sound cleanup code

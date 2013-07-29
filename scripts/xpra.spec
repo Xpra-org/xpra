@@ -149,7 +149,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Tue Jul 16 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
+* Mon Jul 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
 - performance: X11 shared memory (XShm) transfers
 - performance: zero-copy window pixels to picture encoders
 - performance: use cuda for colourspace conversion if available
@@ -179,6 +179,13 @@ So basically it's screen for remote X apps.
 - export compiler information with build (Cython, C compiler, etc)
 - export much more debugging information about system state and statistics
 - simplify non-UI subcommands and their packets, also use rencode ("xpra info", "xpra version", etc)
+
+* Mon Jul 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.8-1
+- fix client workarea size change detection (again)
+- fix crashes handling info requests
+- fix server hangs due to sound cleanup deadlock
+- use lockless window video decoder cleanup (much faster)
+- speedup server startup when no XAUTHORITY file exists yet
 
 * Tue Jul 16 2013 Antoine Martin <antoine@devloop.org.uk> 0.9.7-1
 - fix error in sound cleanup code
