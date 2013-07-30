@@ -135,10 +135,12 @@ Patch4: use-static-x264lib.patch
 Patch5: use-static-vpxlib.patch
 Patch7: no-strict.patch
 Patch8: old-libav.patch
-Patch9: disable-pulseaudio.patch
-Patch10: old-xdg-desktop.patch
-Patch11: use-static-avcodec.patch
-Patch12: use-static-swscale.patch
+Patch9: old-libav-pixfmtconsts.patch
+Patch10: old-libav-no0RGB.patch
+Patch11: disable-pulseaudio.patch
+Patch12: old-xdg-desktop.patch
+Patch13: use-static-avcodec.patch
+Patch14: use-static-swscale.patch
 
 
 %description
@@ -802,22 +804,27 @@ cd xpra-all-%{version}
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
-(echo "xpra/codecs/dec_avcodec/dec_avcodec.c" > %{S:ignored_changed_files.txt})
+%patch9 -p1
+%patch10 -p1
+(echo "xpra/codecs/csc_swscale/colorspace_converter.pyx" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/csc_swscale/constants.txt" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/dec_avcodec/decoder.pyx" > %{S:ignored_changed_files.txt})
+(echo "xpra/codecs/dec_avcodec/constants.txt" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?no_pulseaudio}
-%patch9 -p1
+%patch11 -p1
 (echo "etc/*/xpra.conf" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?old_xdg}
-%patch10 -p1
+%patch12 -p1
 (echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?static_avcodec}
-%patch11 -p1
+%patch13 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 %if 0%{?static_swscale}
-%patch12 -p1
+%patch14 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
 %endif
 
