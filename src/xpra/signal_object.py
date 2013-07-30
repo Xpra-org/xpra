@@ -54,7 +54,7 @@ class SignalObject(object):
                 allargs = [self]+list(fnargs)+list(args)
                 fn(*allargs)
             except Exception, e:
-                log.error("error on listener %s for signal %s: %s", fn, signal, e)
+                log.error("error on listener %s for signal %s: %s", fn, signal, e, exc_info=True)
 
     def cleanup(self):
         self._signal_listeners = {}
