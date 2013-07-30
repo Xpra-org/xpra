@@ -110,7 +110,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         self.offscreen_fbo = None
 
     def __str__(self):
-        return "GLPixmapBacking(%s, %s)" % (self.size, self.pixel_format)
+        return "GLPixmapBacking(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
     def init(self, w, h):
         #re-init gl projection with new dimensions
@@ -120,12 +120,14 @@ class GLPixmapBacking(GTK2WindowBacking):
             self.size = w, h
 
     def gl_marker(self, msg):
+        debug("%s.gl_marker(%s)", self, msg)
         if not bool(glStringMarkerGREMEDY):
             return
         c_string = c_char_p(msg)
         glStringMarkerGREMEDY(0, c_string)
 
     def gl_frame_terminator(self):
+        debug("%s.gl_frame_terminator()", self)
         # Mark the end of the frame
         # This makes the debug output more readable especially when doing single-buffered rendering
         if not bool(glFrameTerminatorGREMEDY):
@@ -135,7 +137,7 @@ class GLPixmapBacking(GTK2WindowBacking):
     def gl_init(self):
         drawable = self.gl_begin()
         w, h = self.size
-        debug("GL Pixmap backing size: %d x %d, drawable=%s", w, h, drawable)
+        debug("%s.gl_init() GL Pixmap backing size: %d x %d, drawable=%s", self, w, h, drawable)
         if not drawable:
             return  None
         if not self.gl_setup:
@@ -184,7 +186,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glEnable(GL_FRAGMENT_PROGRAM_ARB)
             if self.textures is None:
                 self.textures = glGenTextures(5)
-                debug("textures for wid=%s of size %s : %s", self.wid, self.size, self.textures)
+                debug("%s.gl_init() textures of size %s : %s", self, self.size, self.textures)
             if self.offscreen_fbo is None:
                 self.offscreen_fbo = glGenFramebuffers(1)
 
@@ -209,7 +211,6 @@ class GLPixmapBacking(GTK2WindowBacking):
 
             # Bind program 0 for YUV painting by default
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
-
             self.gl_setup = True
         return drawable
 
@@ -225,10 +226,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         drawable = self._backing.get_gl_drawable()
         context = self._backing.get_gl_context()
         if drawable is None or context is None:
-            log.error("OpenGL error: no drawable or context!")
+            log.error("%s.gl_begin() no drawable or context!", self)
             return None
         if not drawable.gl_begin(context):
-            log.error("OpenGL error: cannot create rendering context!")
+            log.error("%s.gl_begin() cannot create rendering context!", self)
             return None
         return drawable
 
@@ -260,8 +261,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[0])
 
     def present_fbo(self, drawable):
-        debug("present_fbo(%s)", drawable)
-        self.gl_marker("Presenting FBO on screen")
+        self.gl_marker("Presenting FBO on screen for drawable %s" % drawable)
         assert drawable
         # Change state to target screen instead of our FBO
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -285,7 +285,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         # Show the backbuffer on screen
         if drawable.is_double_buffered():
-            debug("GL swapping buffers now")
+            debug("%s.present_fbo() swapping buffers now", self)
             drawable.swap_buffers()
             # Clear the new backbuffer to illustrate that its contents are undefined
             glClear(GL_COLOR_BUFFER_BIT)
@@ -295,9 +295,10 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         self.unset_rgb24_paint_state()
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+        debug("%s.present_fbo() done", self)
 
     def gl_expose_event(self, glarea, event):
-        debug("gl_expose_event(%s, %s)", glarea, event)
+        debug("%s.gl_expose_event(%s, %s)", self, glarea, event)
         drawable = self.gl_init()
         if not drawable:
             return
@@ -307,10 +308,10 @@ class GLPixmapBacking(GTK2WindowBacking):
             drawable.gl_end()
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
-        debug("_do_paint_rgb24(x=%d, y=%d, width=%d, height=%d rowstride=%d)", x, y, width, height, rowstride)
+        debug("%s._do_paint_rgb24(x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, x, y, width, height, rowstride)
         drawable = self.gl_init()
         if not drawable:
-            debug("OpenGL cannot paint rgb24, drawable is not set")
+            debug("%s._do_paint_rgb24(..) drawable is not set!", self)
             return False
 
         try:
@@ -329,7 +330,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             if (rowstride - width * 3) > a:
                 row_length = width + (rowstride - width * 3) / 3
     
-            self.gl_marker("Painting RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
+            self.gl_marker("RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
@@ -368,7 +369,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
             drawable = self.gl_init()
             if not drawable:
-                debug("OpenGL cannot paint planar, drawable is not set")
+                debug("%s.gl_paint_planar() drawable is not set!", self)
                 fire_paint_callbacks(callbacks, False)
                 return
             try:
@@ -382,20 +383,19 @@ class GLPixmapBacking(GTK2WindowBacking):
                 drawable.gl_end()
             fire_paint_callbacks(callbacks, True)
         except Exception, e:
-            log.error("OpenGL paint error: %s", e, exc_info=True)
+            log.error("%s.gl_paint_planar(..) error: %s", e, exc_info=True)
             fire_paint_callbacks(callbacks, False)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
         assert x==0 and y==0
         assert self.textures is not None, "no OpenGL textures!"
-        debug("update_planar_textures(%s)", (x, y, width, height, img, pixel_format))
+        debug("%s.update_planar_textures%s", self, (x, y, width, height, img, pixel_format))
 
         divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.pixel_format = pixel_format
             self.texture_size = (width, height)
-            debug("GL creating new planar textures for pixel format %s using divs=%s", pixel_format, divs)
-            self.gl_marker("Creating new planar textures, pixel format %s" % (pixel_format))
+            self.gl_marker("Creating new planar textures, pixel format %s" % pixel_format)
             # Create textures of the same size as the window's
             glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
@@ -412,8 +412,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                 glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width/div_w, height/div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
 
-        debug("Updating planar textures: %sx%s %s", width, height, pixel_format)
-        self.gl_marker("Updating planar textures: %sx%s %s" % (width, height, pixel_format))
+        self.gl_marker("updating planar textures: %sx%s %s" % (width, height, pixel_format))
         U_width = 0
         U_height = 0
         rowstrides = img.get_rowstride()
@@ -438,14 +437,14 @@ class GLPixmapBacking(GTK2WindowBacking):
                     log.error("Height of V plane is %d, differs from height of corresponding U plane (%d), pixel_format is %d", height/div_h, U_height, pixel_format)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
-        debug("render_planar_update%s pixel_format=%s", (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
+        debug("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
         assert rx==0 and ry==0
         if self.pixel_format == "GBRP":
             self.set_rgbP_paint_state()
-        self.gl_marker("Painting planar update, format %s" % (self.pixel_format))
+        self.gl_marker("painting planar update, format %s" % self.pixel_format)
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
@@ -453,7 +452,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
 
         tw, th = self.texture_size
-        debug("render_planar_update texture_size=%s, size=%s", self.texture_size, self.size)
+        debug("%s.render_planar_update(..) texture_size=%s, size=%s", self, self.texture_size, self.size)
         glBegin(GL_QUADS)
         for x,y in ((rx, ry), (rx, ry+rh), (rx+rw, ry+rh), (rx+rw, ry)):
             ax = min(tw, x)

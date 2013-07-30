@@ -21,6 +21,9 @@ class GLClientWindow(ClientWindow):
         self.set_reallocate_redraws(True)
         self.add(self._backing._backing)
 
+    def __str__(self):
+        return "GLClientWindow(%s)" % self._backing
+
     def is_GL(self):
         return True
 
