@@ -1,24 +1,33 @@
-Description: Build against old versions of libav.
- Author: Antoine Martin <antoine@devloop.org.uk>
- Forwarded: not-needed
+Index: xpra/codecs/dec_avcodec/decoder.pyx
+===================================================================
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4003)
++++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
+@@ -71,8 +71,6 @@
+     AVCodec *avcodec_find_decoder(AVCodecID id)
+     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
+     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
+-    AVFrame *avcodec_alloc_frame()
+-    void avcodec_free_frame(AVFrame **frame)
+     int avcodec_close(AVCodecContext *avctx)
+     void av_free(void *ptr)
  
---- a/xpra/codecs/dec_avcodec/dec_avcodec.c	(revision 3545)
-+++ b/xpra/codecs/dec_avcodec/dec_avcodec.c	(working copy)
-@@ -118,7 +118,7 @@
- 		fprintf(stderr, "could not open codec\n");
- 		goto err;
- 	}
--	ctx->frame = avcodec_alloc_frame();
-+	ctx->frame = malloc(sizeof(struct AVFrame));
- 	if (!ctx->frame) {
- 		fprintf(stderr, "could not allocate an AVFrame for decoding\n");
- 		goto err;
-@@ -133,7 +133,7 @@
- void clean_decoder(struct dec_avcodec_ctx *ctx)
- {
- 	if (ctx->frame) {
--		avcodec_free_frame(&ctx->frame);
-+		free(&ctx->frame);
- 		ctx->frame = NULL;
- 	}
- 	if (ctx->codec_ctx) {
+@@ -313,7 +311,7 @@
+             error("could not open codec")
+             self.clean_decoder()
+             return  False
+-        self.frame = avcodec_alloc_frame()
++        self.frame = xmemalign(sizeof(struct AVFrame))
+         if self.frame==NULL:
+             error("could not allocate an AVFrame for decoding")
+             self.clean_decoder()
+@@ -348,8 +346,8 @@
+ 
+         debug("clean_decoder() freeing AVFrame: %s", hex(<unsigned long> self.frame))
+         if self.frame!=NULL:
+-            avcodec_free_frame(&self.frame)
+-            #redundant: self.frame = NULL
++            free(&self.frame)
++            self.frame = NULL
+ 
+         cdef unsigned long ctx_key          #@DuplicatedSignature
+         debug("clean_decoder() freeing AVCodecContext: %s", hex(<unsigned long> self.codec_ctx))

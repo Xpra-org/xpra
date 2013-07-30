@@ -1,7 +1,7 @@
 Index: xpra/codecs/argb/argb.pxd
 ===================================================================
---- xpra/codecs/argb/argb.pxd	(revision 3848)
-+++ xpra/codecs/argb/argb.pxd	(working copy)
+--- a/xpra/codecs/argb/argb.pxd	(revision 3848)
++++ b/xpra/codecs/argb/argb.pxd	(working copy)
 @@ -5,4 +5,6 @@
  # later version. See the file COPYING for details.
  
@@ -12,8 +12,8 @@ Index: xpra/codecs/argb/argb.pxd
 +cdef argbdata_to_pixdata(const_unsigned_long_p data, int len)
 Index: xpra/codecs/argb/argb.pyx
 ===================================================================
---- xpra/codecs/argb/argb.pyx	(revision 3848)
-+++ xpra/codecs/argb/argb.pyx	(working copy)
+--- a/xpra/codecs/argb/argb.pyx	(revision 3848)
++++ b/xpra/codecs/argb/argb.pyx	(working copy)
 @@ -8,6 +8,7 @@
      object PyString_FromStringAndSize(char * s, int len)
      ctypedef int Py_ssize_t

@@ -4,7 +4,7 @@ Description: Build vpx codec as a static library.
  
 --- a/setup.py	(revision 3336)
 +++ b/setup.py	(working copy)
-@@ -969,7 +969,11 @@
+@@ -1027,7 +1027,11 @@
  
  toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
  if vpx_ENABLED:

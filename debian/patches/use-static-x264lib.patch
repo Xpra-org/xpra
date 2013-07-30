@@ -4,7 +4,7 @@ Description: Build x264 codec as a static library.
  
 --- a/setup.py	(revision 3336)
 +++ b/setup.py	(working copy)
-@@ -940,7 +940,11 @@
+@@ -996,7 +996,11 @@
  
  toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
  if enc_x264_ENABLED:

@@ -3,12 +3,12 @@ Description: Build dec_avcodec as a static library.
  Author: Antoine Martin <antoine@nagafix.co.uk>
  Forwarded: not-needed
  
---- a/setup.py	(revision 3545)
+--- a/setup.py	(revision 4003)
 +++ b/setup.py	(working copy)
-@@ -947,7 +947,11 @@
- 
+@@ -1004,7 +1004,11 @@
  toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
  if dec_avcodec_ENABLED:
+     make_constants("xpra", "codecs", "dec_avcodec", "constants")
 -    avcodec_pkgconfig = pkgconfig("libavcodec")
 +    avcodec_pkgconfig = {'include_dirs': ["/usr/local/include"],
 +                         'library_dirs': ["/usr/local/lib"],
@@ -16,5 +16,5 @@ Description: Build dec_avcodec as a static library.
 +                                      "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
 +                      }
      cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
-                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c"],
-                 **avcodec_pkgconfig), min_version=(0, 16))
+                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
+                 **avcodec_pkgconfig), min_version=(0, 19))
