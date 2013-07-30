@@ -1002,18 +1002,15 @@ class UIXpraClient(XpraClientBase):
         self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
 
     def make_new_window(self, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
-        pid = metadata.get("pid", -1)
-        leader_xid = metadata.get("group-leader-xid")
-        leader_wid = metadata.get("group-leader-wid")
-        group_leader_window = self.get_group_leader(wid, pid, leader_xid, leader_wid)
         ClientWindowClass = self.get_client_window_class(metadata, override_redirect)
+        group_leader_window = self.get_group_leader(metadata, override_redirect)
         window = ClientWindowClass(self, group_leader_window, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
         window.show()
         return window
 
-    def get_group_leader(self, wid, pid, leader_xid, leader_wid):
+    def get_group_leader(self, metadata, override_redirect):
         #subclasses that wish to implement the feature may override this method
         return None
 

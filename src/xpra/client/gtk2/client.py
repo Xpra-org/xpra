@@ -378,30 +378,46 @@ class XpraClient(GTKXpraClient):
             log.error("Error loading OpenGL support: %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)
 
-    def get_group_leader(self, wid, pid, leader_xid, leader_wid):
+    def get_group_leader(self, metadata, override_redirect):
         if not self.suppors_group_leader:
             return None
+        wid = metadata.get("transient-for")
+        if wid>0:
+            client_window = self._id_to_window.get(wid)
+            if client_window:
+                gdk_window = client_window.gdk_window()
+                if gdk_window:
+                    return gdk_window
+        pid = metadata.get("pid", -1)
+        leader_xid = metadata.get("group-leader-xid")
+        leader_wid = metadata.get("group-leader-wid")
         group_leader_window = self._id_to_window.get(leader_wid)
         if group_leader_window:
             #leader is another managed window
             log("found group leader window %s for wid=%s", group_leader_window, pid)
             return group_leader_window
-        ref = leader_xid or pid
-        if not ref:
+        reftype = "xid"
+        ref = leader_xid
+        if ref is None:
+            reftype = "pid"
+            ref = pid
+        if ref is None:
             #no reference to use! invent a unique one for this window:
             #(use its wid)
-            ref = "wid:%s" % wid
-        group_leader_window = self._ref_to_group_leader.get(ref)
+            reftype = "wid"
+            ref = wid
+        refkey = "%s:%s" % (reftype, ref)
+        group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
-            log("found existing group leader window %s using ref=%s", group_leader_window, ref)
-        else:
-            #we need to create one:
-            title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
-            group_leader_window = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
-            self._ref_to_group_leader[ref] = group_leader_window
-            #spec says window should point to itself
-            group_leader_window.set_group(group_leader_window)
-            log("new hidden group leader window %s for ref=%s", group_leader_window, ref)
+            log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
+            return group_leader_window
+        #we need to create one:
+        title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
+        group_leader_window = gdk.Window(None, 1, 1, self.WINDOW_TOPLEVEL, 0, self.INPUT_ONLY, title)
+        self._ref_to_group_leader[refkey] = group_leader_window
+        #spec says window should point to itself
+        group_leader_window.set_group(group_leader_window)
+        log("new hidden group leader window %s for ref=%s", group_leader_window, refkey)
         self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
         return group_leader_window
 
