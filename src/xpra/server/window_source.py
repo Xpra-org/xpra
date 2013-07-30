@@ -103,6 +103,7 @@ class WindowSource(object):
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
         self.supports_transparency = encoding_options.get("transparency", False)
+        self.full_frames_only = encoding_options.get("full_frames_only", False)
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
             self.supports_delta = [x for x in encoding_options.get("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -192,6 +193,7 @@ class WindowSource(object):
     def set_client_properties(self, properties):
         debug("set_client_properties(%s)", properties)
         self.maximized = properties.get("maximized", False)
+        self.full_frames_only = properties.get("full_frames_only", self.full_frames_only)
 
 
     def unmap(self):
@@ -374,11 +376,14 @@ class WindowSource(object):
         self.statistics.last_damage_event_time = now
         ww, wh = window.get_dimensions()
         self.window_dimensions = ww, wh
+        if self.full_frames_only:
+            x, y, w, h = 0, 0, ww, wh
 
         if self._damage_delayed:
             #use existing delayed region:
-            region = self._damage_delayed[2]
-            add_rectangle(region, x, y, w, h)
+            if not self.full_frames_only:
+                region = self._damage_delayed[2]
+                add_rectangle(region, x, y, w, h)
             #merge/override options
             if options is not None:
                 override = options.get("override_options", False)
@@ -416,7 +421,7 @@ class WindowSource(object):
             actual_encoding = options.get("encoding")
             if actual_encoding is None:
                 actual_encoding = self.get_best_encoding(False, window, w*h, ww, wh, self.encoding)
-            if actual_encoding in ("x264", "vpx") or window.is_tray():
+            if actual_encoding in ("x264", "vpx") or window.is_tray() or self.full_frames_only:
                 x, y = 0, 0
                 w, h = ww, wh
             self.batch_config.last_delays.append((now, delay))
@@ -518,7 +523,7 @@ class WindowSource(object):
             debug("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
             self.process_damage_region(damage_time, window, 0, 0, ww, wh, actual_encoding, options)
 
-        if window.is_tray():
+        if window.is_tray() or self.full_frames_only:
             send_full_window_update()
             return
 
