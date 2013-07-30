@@ -16,7 +16,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
              self.clean_decoder()
              return  False
 -        self.frame = avcodec_alloc_frame()
-+        self.frame = xmemalign(sizeof(struct AVFrame))
++        self.frame = xmemalign(sizeof(AVFrame))
          if self.frame==NULL:
              error("could not allocate an AVFrame for decoding")
              self.clean_decoder()
