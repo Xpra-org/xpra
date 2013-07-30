@@ -804,6 +804,9 @@ cd xpra-all-%{version}
 %endif
 %if 0%{?old_libav}
 %patch8 -p1
+(echo "xpra/codecs/dec_avcodec/decoder.pyx" > %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?old_libav}{?old_pixfmt}
 %patch9 -p1
 %patch10 -p1
 (echo "xpra/codecs/csc_swscale/colorspace_converter.pyx" > %{S:ignored_changed_files.txt})
