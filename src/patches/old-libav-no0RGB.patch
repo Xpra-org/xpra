@@ -1,0 +1,52 @@
+Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
+===================================================================
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4007)
++++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
+@@ -80,8 +80,6 @@
+ FORMAT_OPTIONS = [
+     ("AV_PIX_FMT_RGB24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "RGB"   ),
+     ("AV_PIX_FMT_BGR24",    (3, 0, 0, 0),       (1, 0, 0, 0),       "BGR"   ),
+-    ("AV_PIX_FMT_0RGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
+-    ("AV_PIX_FMT_BGR0",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
+     ("AV_PIX_FMT_ARGB",     (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
+     ("AV_PIX_FMT_BGRA",     (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
+     ("AV_PIX_FMT_YUV420P",  (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
+Index: xpra/codecs/csc_swscale/constants.txt
+===================================================================
+--- a/xpra/codecs/csc_swscale/constants.txt	(revision 4007)
++++ b/xpra/codecs/csc_swscale/constants.txt	(working copy)
+@@ -14,8 +14,6 @@
+ AV_PIX_FMT_YUV422P
+ AV_PIX_FMT_YUV444P
+ AV_PIX_FMT_RGB24
+-AV_PIX_FMT_0RGB
+-AV_PIX_FMT_BGR0
+ AV_PIX_FMT_ARGB
+ AV_PIX_FMT_BGRA
+ AV_PIX_FMT_GBRP
+Index: xpra/codecs/dec_avcodec/constants.txt
+===================================================================
+--- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4007)
++++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
+@@ -14,8 +14,6 @@
+ AV_PIX_FMT_YUV422P
+ AV_PIX_FMT_YUV444P
+ AV_PIX_FMT_RGB24
+-AV_PIX_FMT_0RGB
+-AV_PIX_FMT_BGR0
+ AV_PIX_FMT_ARGB
+ AV_PIX_FMT_BGRA
+ AV_PIX_FMT_GBRP
+Index: xpra/codecs/dec_avcodec/decoder.pyx
+===================================================================
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4007)
++++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
+@@ -96,8 +96,6 @@
+         "YUV422P"   : "AV_PIX_FMT_YUV422P",
+         "YUV444P"   : "AV_PIX_FMT_YUV444P",        
+         "RGB"       : "AV_PIX_FMT_RGB24",
+-        "XRGB"      : "AV_PIX_FMT_0RGB",
+-        "BGRX"      : "AV_PIX_FMT_BGR0",
+         "ARGB"      : "AV_PIX_FMT_ARGB",
+         "BGRA"      : "AV_PIX_FMT_BGRA",
+         "GBRP"      : "AV_PIX_FMT_GBRP",
