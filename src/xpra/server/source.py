@@ -605,8 +605,7 @@ class ServerSource(object):
             thread.start_new_thread(stop_sound, ())
 
     def new_sound_buffer(self, sound_source, data, metadata):
-        assert self.sound_source
-        if self.suspended:
+        if self.suspended or self.sound_source is None:
             return
         if self.sound_source_sequence>0:
             metadata["sequence"] = self.sound_source_sequence

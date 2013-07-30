@@ -909,8 +909,8 @@ class UIXpraClient(XpraClientBase):
             return False
 
     def new_sound_buffer(self, sound_source, data, metadata):
-        assert self.sound_source
-        self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
+        if self.sound_source:
+            self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
         if not self.speaker_enabled:
