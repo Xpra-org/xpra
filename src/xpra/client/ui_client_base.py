@@ -481,7 +481,7 @@ class UIXpraClient(XpraClientBase):
         if self.min_speed>=0:
             capabilities["encoding.min-speed"] = self.min_speed
         log("encoding capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("encoding")])
-        capabilities["encoding.uses_swscale"] = True    #used to be False for opengl, but we may still use swscale then..
+        capabilities["encoding.uses_swscale"] = True
         if "x264" in self.get_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for I420/YUV420P

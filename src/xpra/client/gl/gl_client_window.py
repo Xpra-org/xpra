@@ -18,6 +18,7 @@ class GLClientWindow(ClientWindow):
     def __init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay):
         debug("GLClientWindow(..)")
         ClientWindow.__init__(self, client, group_leader, wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+        self._client_properties["encoding.uses_swscale"] = False
         self.set_reallocate_redraws(True)
         self.add(self._backing._backing)
 

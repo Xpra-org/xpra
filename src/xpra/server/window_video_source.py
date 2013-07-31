@@ -130,8 +130,9 @@ class WindowVideoSource(WindowSource):
         #client may restrict csc modes for specific windows
         self.csc_modes = properties.get("encoding.csc_modes", self.csc_modes)
         self.video_scaling = properties.get("encoding.video_scaling", self.video_scaling)
+        self.uses_swscale = properties.get("encoding.uses_swscale", self.uses_swscale)
         WindowSource.set_client_properties(self, properties)
-        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s", properties, self.csc_modes, self.video_scaling)
+        log("set_client_properties(%s) csc_modes=%s, video_scaling=%s, uses_swscale=%s", properties, self.csc_modes, self.video_scaling, self.uses_swscale)
 
     def unmap(self):
         WindowSource.cancel_damage(self)
