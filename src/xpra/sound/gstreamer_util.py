@@ -155,14 +155,18 @@ def add_gst_capabilities(capabilities, receive=True, send=True,
     capabilities["sound.send"] = send and len(send_codecs)>0
 
 
-def start_sending_sound(remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
     try:
         matching_codecs = [x for x in remote_decoders if x in local_decoders]
         ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
         if len(ordered_codecs)==0:
             log.error("no matching codecs between remote (%s) and local (%s) - sound disabled", remote_decoders, local_decoders)
             return    None
-        codec = ordered_codecs[0]
+        if codec is not None and codec not in matching_codecs:
+            log.warn("invalid codec specified: %s", codec)
+            codec = None
+        if codec is None:
+            codec = ordered_codecs[0]
         log.info("using sound codec %s", codec)
         from xpra.sound.src import SoundSource
         if SOUND_TEST_MODE:

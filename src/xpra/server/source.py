@@ -581,8 +581,8 @@ class ServerSource(object):
         if self.notify_startup_complete:
             self.send("startup-complete")
 
-    def start_sending_sound(self):
-        soundlog("start_sending_sound()")
+    def start_sending_sound(self, codec):
+        soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
             log.warn("not starting sound as we are suspended")
             return
@@ -591,7 +591,7 @@ class ServerSource(object):
         assert self.sound_receive, "cannot send sound: support is not enabled on the client"
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            self.sound_source = start_sending_sound(codec, self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
             soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
@@ -636,7 +636,10 @@ class ServerSource(object):
         if action=="stop":
             self.stop_sending_sound()
         elif action=="start":
-            self.start_sending_sound()
+            codec = None
+            if len(args)>0:
+                codec = args[0]
+            self.start_sending_sound(codec)
         elif action=="new-sequence":
             self.sound_source_sequence = args[0]
         #elif action=="quality":

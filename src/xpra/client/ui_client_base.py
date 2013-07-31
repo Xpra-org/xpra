@@ -103,6 +103,7 @@ class UIXpraClient(XpraClientBase):
             self.microphone_codecs = get_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
         self.sink_restart_pending = False
+        self.on_sink_ready = None
         self.sound_sink = None
         self.server_sound_sequence = False
         self.min_sound_sequence = 0
@@ -796,7 +797,7 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
-            self.sound_source = start_sending_sound(self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
+            self.sound_source = start_sending_sound(None, self.server_sound_decoders, self.microphone_codecs, self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not self.sound_source:
                 return False
             self.sound_source.connect("new-buffer", self.new_sound_buffer)
@@ -833,9 +834,22 @@ class UIXpraClient(XpraClientBase):
         elif not self.server_sound_send:
             log.error("cannot start receiving sound: support not enabled on the server")
         else:
+            #choose a codec:
+            from xpra.sound.gstreamer_util import CODEC_ORDER
+            matching_codecs = [x for x in self.server_sound_encoders if x in self.speaker_codecs]
+            ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
+            if len(ordered_codecs)==0:
+                log.error("no matching codecs between server (%s) and client (%s)", self.server_sound_encoders, self.speaker_codecs)
+                return
+            codec = ordered_codecs[0]
             self.speaker_enabled = True
-            self.send("sound-control", "start")
             self.emit("speaker-changed")
+            def sink_ready(*args):
+                soundlog("sink_ready(%s) codec=%s", args, codec)
+                self.send("sound-control", "start", codec)
+                return False
+            self.on_sink_ready = sink_ready
+            self.start_sound_sink(codec)
 
     def stop_receiving_sound(self):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
@@ -869,45 +883,50 @@ class UIXpraClient(XpraClientBase):
         soundlog("send_new_sound_sequence() sequence=%s", self.min_sound_sequence)
         self.send("sound-control", "new-sequence", self.min_sound_sequence)
 
+
+    def sound_sink_state_changed(self, sound_sink, state):
+        soundlog("sound_sink_state_changed(%s, %s) on_sink_ready=%s", sound_sink, state, self.on_sink_ready)
+        if state=="ready" and self.on_sink_ready:
+            if not self.on_sink_ready():
+                self.on_sink_ready = None
+        self.emit("speaker-changed")
+    def sound_sink_bitrate_changed(self, sound_sink, bitrate):
+        soundlog("sound_sink_bitrate_changed(%s, %s)", sound_sink, bitrate)
+        self.emit("speaker-changed")
+    def sound_sink_error(self, sound_sink, error):
+        log.warn("stopping speaker because of error: %s", error)
+        self.stop_receiving_sound()
+
+    def sound_sink_overrun(self, *args):
+        log.warn("re-starting speaker because of overrun")
+        if self.sink_restart_pending:
+            return
+        codec = self.sound_sink.codec
+        self.sink_restart_pending = True
+        if self.server_sound_sequence:
+            self.min_sound_sequence += 1
+        #Note: the next sound packet will take care of starting a new pipeline
+        self.stop_receiving_sound()
+        def restart():
+            soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
+            if self.server_sound_sequence:
+                self.send_new_sound_sequence()
+            self.sink_restart_pending = False
+            self.start_receiving_sound()
+            return False
+        self.timeout_add(200, restart)
+
     def start_sound_sink(self, codec):
         soundlog("start_sound_sink(%s)", codec)
         assert self.sound_sink is None
-        def sound_sink_state_changed(*args):
-            soundlog("sound_sink_state_changed(%s)", args)
-            self.emit("speaker-changed")
-        def sound_sink_bitrate_changed(*args):
-            soundlog("sound_sink_bitrate_changed(%s)", args)
-            self.emit("speaker-changed")
-        def sound_sink_error(*args):
-            log.warn("stopping speaker because of error: %s", args)
-            self.stop_receiving_sound()
-        def sound_sink_overrun(*args):
-            log.warn("re-starting speaker because of overrun")
-            if self.sink_restart_pending:
-                return
-            self.sink_restart_pending = True
-            if self.server_sound_sequence:
-                self.min_sound_sequence += 1
-            #Note: the next sound packet will take care of starting a new pipeline
-            self.stop_receiving_sound()
-            def restart():
-                soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
-                if self.server_sound_sequence:
-                    self.send_new_sound_sequence()
-                #prepare the new sound sink already:
-                #self.start_sound_sink(codec)
-                self.start_receiving_sound()
-                self.sink_restart_pending = False
-                return False
-            self.timeout_add(200, restart)
         try:
             soundlog("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
             self.sound_sink = SoundSink(codec=codec)
-            self.sound_sink.connect("state-changed", sound_sink_state_changed)
-            self.sound_sink.connect("bitrate-changed", sound_sink_bitrate_changed)
-            self.sound_sink.connect("error", sound_sink_error)
-            self.sound_sink.connect("overrun", sound_sink_overrun)
+            self.sound_sink.connect("state-changed", self.sound_sink_state_changed)
+            self.sound_sink.connect("bitrate-changed", self.sound_sink_bitrate_changed)
+            self.sound_sink.connect("error", self.sound_sink_error)
+            self.sound_sink.connect("overrun", self.sound_sink_overrun)
             self.sound_sink.start()
             soundlog("%s sound sink started", codec)
             return True

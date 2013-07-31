@@ -61,11 +61,10 @@ class SoundPipeline(SignalObject):
     def do_get_state(self, state):
         if not self.pipeline:
             return  "stopped"
-        if state==gst.STATE_PLAYING:
-            return  "active"
-        if state==gst.STATE_NULL:
-            return  "stopped"
-        return  "unknown"
+        return {gst.STATE_PLAYING   : "active",
+                gst.STATE_PAUSED    : "paused",
+                gst.STATE_NULL      : "stopped",
+                gst.STATE_READY     : "ready"}.get(state, "unknown")
 
     def get_state(self):
         return self.state
