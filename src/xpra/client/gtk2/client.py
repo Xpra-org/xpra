@@ -47,7 +47,7 @@ class XpraClient(GTKXpraClient):
         self.remote_clipboard_requests = 0
 
         #avoid ugly "not implemented" warning on win32
-        self.suppors_group_leader = not sys.platform.startswith("win")
+        self.supports_group_leader = not sys.platform.startswith("win")
 
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
@@ -379,7 +379,7 @@ class XpraClient(GTKXpraClient):
             self.opengl_props["info"] = str(e)
 
     def get_group_leader(self, metadata, override_redirect):
-        if not self.suppors_group_leader:
+        if not self.supports_group_leader:
             return None
         wid = metadata.get("transient-for")
         if wid>0:
