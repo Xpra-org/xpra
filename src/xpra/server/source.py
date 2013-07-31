@@ -611,6 +611,17 @@ class ServerSource(object):
             metadata["sequence"] = self.sound_source_sequence
         self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
+    def stop_receiving_sound(self):
+        ss = self.sound_sink
+        log("stop_receiving_sound() sound_sink=%s", ss)
+        if ss:
+            self.sound_sink = None
+            def stop_sound(*args):
+                ss.stop()
+                ss.cleanup()
+            thread.start_new_thread(stop_sound, ())
+
+
     def sound_control(self, action, *args):
         log("sound_control(%s, %s)", action, args)
         if action=="stop":
