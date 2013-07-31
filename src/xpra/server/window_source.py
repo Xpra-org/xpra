@@ -88,7 +88,7 @@ class WindowSource(object):
         self.statistics = WindowPerformanceStatistics()
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
-        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "webp")]
+        refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
         client_refresh_encodings = encoding_options.get("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.SERVER_CORE_ENCODINGS]
         if self.auto_refresh_encodings not in self.encodings:
@@ -743,10 +743,9 @@ class WindowSource(object):
             new_options = damage_options.copy()
             encoding = self.auto_refresh_encodings[0]
             new_options["encoding"] = encoding
-            if encoding not in ("png", "rgb", "webp"):
-                #FIXME: with x264, the quality must be higher than the YUV444 threshold
-                new_options["quality"] = AUTO_REFRESH_QUALITY
-                new_options["speed"] = AUTO_REFRESH_SPEED
+            new_options["optimize"] = False
+            new_options["quality"] = AUTO_REFRESH_QUALITY
+            new_options["speed"] = AUTO_REFRESH_SPEED
             debug("full_quality_refresh() with options=%s", new_options)
             self.damage(window, 0, 0, ww, wh, options=new_options)
             return False
@@ -1004,8 +1003,8 @@ class WindowSource(object):
             raise e
         buf = StringIOClass()
         client_options = {}
-        optimize = False
-        if self.batch_config.delay>2*self.batch_config.START_DELAY:
+        optimize = options.get("optimize")
+        if optimize is None and self.batch_config.delay>2*self.batch_config.START_DELAY:
             ces = self.get_current_speed()
             mes = self.get_min_speed()
             optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
@@ -1016,7 +1015,7 @@ class WindowSource(object):
             q = int(min(99, max(1, q)))
             kwargs = im.info
             kwargs["quality"] = q
-            if optimize:
+            if optimize is True:
                 kwargs["optimize"] = optimize
             im.save(buf, "JPEG", **kwargs)
             client_options["quality"] = q
@@ -1032,7 +1031,7 @@ class WindowSource(object):
                 im = im.convert("P", palette=PIL.Image.WEB)
                 bpp = 8
             kwargs = im.info
-            if optimize:
+            if optimize is True:
                 kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
