@@ -15,8 +15,9 @@ except ImportError:
     from Queue import Queue     #@Reimport
 
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
@@ -237,9 +238,9 @@ class UIXpraClient(XpraClientBase):
             except:
                 log.error("error on %s cleanup", type(x), exc_info=True)
         if self.sound_source:
-            thread.start_new_thread(self.stop_sending_sound, ())
+            self.stop_sending_sound()
         if self.sound_sink:
-            thread.start_new_thread(self.stop_receiving_sound, ())
+            self.stop_receiving_sound()
         time.sleep(0.1)
         self.clean_mmap()
         #the protocol has been closed, it is now safe to close all the windows:
@@ -510,7 +511,7 @@ class UIXpraClient(XpraClientBase):
                 from xpra.sound.gstreamer_util import add_gst_capabilities
                 add_gst_capabilities(capabilities, receive=self.speaker_allowed, send=self.microphone_allowed,
                                      receive_codecs=self.speaker_codecs, send_codecs=self.microphone_codecs, new_namespace=True)
-                log("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
+                soundlog("sound capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("sound.")])
             except Exception, e:
                 log.error("failed to setup sound: %s", e, exc_info=True)
                 self.speaker_allowed = False
@@ -741,6 +742,9 @@ class UIXpraClient(XpraClientBase):
         self.server_sound_encoders = capabilities.get("sound.encoders", [])
         self.server_sound_receive = capabilities.get("sound.receive", False)
         self.server_sound_send = capabilities.get("sound.send", False)
+        soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
+                 self.server_pulseaudio_id, self.server_pulseaudio_server, self.server_sound_decoders,
+                 self.server_sound_encoders, self.server_sound_receive, self.server_sound_send)
         if self.server_sound_send and self.speaker_allowed:
             self.start_receiving_sound()
         #dont' send sound automatically, wait for user to request it:
@@ -769,6 +773,7 @@ class UIXpraClient(XpraClientBase):
 
     def start_sending_sound(self):
         """ (re)start a sound source and emit client signal """
+        soundlog("start_sending_sound()")
         assert self.microphone_allowed
         assert self.server_sound_receive
         if self.sound_source:
@@ -780,8 +785,10 @@ class UIXpraClient(XpraClientBase):
             return
         self.microphone_enabled = True
         self.emit("microphone-changed")
+        soundlog("start_sending_sound() done")
 
     def start_sound_source(self):
+        soundlog("start_sound_source()")
         assert self.sound_source is None
         def sound_source_state_changed(*args):
             self.emit("microphone-changed")
@@ -796,6 +803,7 @@ class UIXpraClient(XpraClientBase):
             self.sound_source.connect("state-changed", sound_source_state_changed)
             self.sound_source.connect("bitrate-changed", sound_source_bitrate_changed)
             self.sound_source.start()
+            soundlog("start_sound_source() sound source %s started", self.sound_source)
             return True
         except Exception, e:
             log.error("error setting up sound: %s", e)
@@ -803,20 +811,25 @@ class UIXpraClient(XpraClientBase):
 
     def stop_sending_sound(self):
         """ stop the sound source and emit client signal """
-        log("XpraClient.stop_sending_sound()")
-        if self.sound_source is None:
-            log.warn("stop_sending_sound: sound not started!")
-            return
+        soundlog("stop_sending_sound() sound source=%s", self.sound_source)
+        ss = self.sound_source
         self.microphone_enabled = False
-        self.sound_source.cleanup()
         self.sound_source = None
-        self.emit("microphone-changed")
-        log("XpraClient.stop_sending_sound() done")
+        def stop_sending_sound_thread():
+            soundlog("UIXpraClient.stop_sending_sound_thread()")
+            if ss is None:
+                log.warn("stop_sending_sound: sound not started!")
+                return
+            ss.cleanup()
+            self.emit("microphone-changed")
+            soundlog("UIXpraClient.stop_sending_sound_thread() done")
+        thread.start_new_thread(stop_sending_sound_thread, ())
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
+        soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
         if self.sound_sink is not None and self.sound_sink.get_state()=="active":
-            log("start_receiving_sound: we are already receiving sound!")
+            soundlog("start_receiving_sound: we are already receiving sound!")
         elif not self.server_sound_send:
             log.error("cannot start receiving sound: support not enabled on the server")
         else:
@@ -826,75 +839,69 @@ class UIXpraClient(XpraClientBase):
 
     def stop_receiving_sound(self):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
-        log("XpraClient.stop_receiving_sound()")
-        self.send("sound-control", "stop")
-        if self.sound_sink is None:
-            log("stop_receiving_sound: sound not started!")
-            return
+        soundlog("stop_receiving_sound() sound sink=%s", self.sound_sink)
+        ss = self.sound_sink
         self.speaker_enabled = False
-        self.sound_sink.cleanup()
+        if ss is None:
+            return
         self.sound_sink = None
-        self.emit("speaker-changed")
-        log("XpraClient.stop_receiving_sound() done")
+        self.send("sound-control", "stop")
+        def stop_receiving_sound_thread():
+            soundlog("UIXpraClient.stop_receiving_sound_thread()")
+            if ss is None:
+                log("stop_receiving_sound: sound not started!")
+                return
+            ss.cleanup()
+            self.emit("speaker-changed")
+            soundlog("UIXpraClient.stop_receiving_sound_thread() done")
+        thread.start_new_thread(stop_receiving_sound_thread, ())
 
     def bump_sound_sequence(self):
         if self.server_sound_sequence:
             #server supports the "sound-sequence" feature
             #tell it to use a new one:
             self.min_sound_sequence += 1
+            soundlog("bump_sound_sequence() sequence is now %s", self.min_sound_sequence)
             #via idle add so this will wait for UI thread to catch up if needed:
-            self.idle_add(self.send, "sound-control", "new-sequence", self.min_sound_sequence)
+            self.idle_add(self.send_new_sound_sequence)
+
+    def send_new_sound_sequence(self):
+        soundlog("send_new_sound_sequence() sequence=%s", self.min_sound_sequence)
+        self.send("sound-control", "new-sequence", self.min_sound_sequence)
 
     def start_sound_sink(self, codec):
+        soundlog("start_sound_sink(%s)", codec)
         assert self.sound_sink is None
         def sound_sink_state_changed(*args):
+            soundlog("sound_sink_state_changed(%s)", args)
             self.emit("speaker-changed")
         def sound_sink_bitrate_changed(*args):
+            soundlog("sound_sink_bitrate_changed(%s)", args)
             self.emit("speaker-changed")
         def sound_sink_error(*args):
-            log.warn("stopping speaker because of error")
+            log.warn("stopping speaker because of error: %s", args)
             self.stop_receiving_sound()
-        def sound_sink_overrun(sink, level, *args):
-            log("sound_sink_overrun(%s, %s, %s)", sink, level, args)
+        def sound_sink_overrun(*args):
+            log.warn("re-starting speaker because of overrun")
+            if self.sink_restart_pending:
+                return
+            self.sink_restart_pending = True
             if self.server_sound_sequence:
-                if self.sink_restart_pending:
-                    log("overrun: already waiting for restart")
-                    return
-                self.sink_restart_pending = True
-                log.warn("re-starting speaker because of overrun, delay=%sms", level)
-                #start refusing all the sound packets with the current sequence no:
                 self.min_sound_sequence += 1
-                log("min_sound_sequence=%s", self.min_sound_sequence)
-                #tell the server to stop sending:
-                self.send("sound-control", "stop")
-                #flush pipeline: how?
-                #tell the server to start again once the queue has drained:
-                def start_sink_again(*args):
-                    #reset start_time and queue size:
-                    log("start_sink_again: send new-sequence")
-                    #tell the server to bump the sequence no:
-                    self.send("sound-control", "new-sequence", self.min_sound_sequence)
-                    #now safe to start again:
-                    log("start_sink_again: tell server start again: %s", self.sound_sink.get_info())
-                    self.send("sound-control", "start")
-                    self.sink_restart_pending = False
-                    return False
-                log("overrun: dropping new sound packets from %s: %s", self.sound_sink, self.sound_sink.get_info())
-                self.timeout_add(level, start_sink_again)
-            else:
-                log.warn("re-starting speaker because of overrun")
-                #for older servers: teardown and start again
-                #note: this may not work on all platforms...
-                def sink_clean():
-                    log("sink_clean() sound_sink=%s, server_sound_sequence=%s", self.sound_sink, self.server_sound_sequence)
-                    sink = self.sound_sink
-                    if sink:
-                        self.sound_sink = None
-                        sink.cleanup()
-                self.idle_add(sink_clean)
-                #Note: the next sound packet will take care of starting a new pipeline
+            #Note: the next sound packet will take care of starting a new pipeline
+            self.stop_receiving_sound()
+            def restart():
+                soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
+                if self.server_sound_sequence:
+                    self.send_new_sound_sequence()
+                #prepare the new sound sink already:
+                #self.start_sound_sink(codec)
+                self.start_receiving_sound()
+                self.sink_restart_pending = False
+                return False
+            self.timeout_add(200, restart)
         try:
-            log("starting %s sound sink", codec)
+            soundlog("starting %s sound sink", codec)
             from xpra.sound.sink import SoundSink
             self.sound_sink = SoundSink(codec=codec)
             self.sound_sink.connect("state-changed", sound_sink_state_changed)
@@ -902,33 +909,36 @@ class UIXpraClient(XpraClientBase):
             self.sound_sink.connect("error", sound_sink_error)
             self.sound_sink.connect("overrun", sound_sink_overrun)
             self.sound_sink.start()
-            log("%s sound sink started", codec)
+            soundlog("%s sound sink started", codec)
             return True
         except:
             log.error("failed to start sound sink", exc_info=True)
             return False
 
     def new_sound_buffer(self, sound_source, data, metadata):
+        soundlog("new_sound_buffer(%s, %s, %s) sound source=%s", sound_source, len(data or []), metadata, self.sound_source)
         if self.sound_source:
             self.send("sound-data", self.sound_source.codec, Compressed(self.sound_source.codec, data), metadata)
 
     def _process_sound_data(self, packet):
         if not self.speaker_enabled:
-            log("speaker is now disabled - dropping packet")
+            soundlog("speaker is now disabled - dropping packet")
             return
         codec, data, metadata = packet[1:4]
         seq = metadata.get("sequence", -1)
         if self.min_sound_sequence>0 and seq<self.min_sound_sequence:
-            log("ignoring sound data with old sequence number %s", seq)
+            soundlog("ignoring sound data with old sequence number %s", seq)
             return
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.error("sound codec change not supported! (from %s to %s)", self.sound_sink.codec, codec)
             self.sound_sink.stop()
             return
         if self.sound_sink is None:
+            soundlog("sound data received, creating a sound sink for it")
             if not self.start_sound_sink(codec):
                 return
         elif self.sound_sink.get_state()=="stopped":
+            soundlog("sound data received, sound sink is stopped - starting it")
             self.sound_sink.start()
         self.sound_sink.add_data(data, metadata)
 
