@@ -898,9 +898,10 @@ class UIXpraClient(XpraClientBase):
         self.stop_receiving_sound()
 
     def sound_sink_overrun(self, *args):
-        log.warn("re-starting speaker because of overrun")
         if self.sink_restart_pending:
+            soundlog("overrun re-start is already pending")
             return
+        log.warn("re-starting speaker because of overrun")
         codec = self.sound_sink.codec
         self.sink_restart_pending = True
         if self.server_sound_sequence:
