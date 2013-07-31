@@ -19,6 +19,7 @@ from threading import Event
 from xpra.log import Logger, debug_if_env
 log = Logger()
 elog = debug_if_env(log, "XPRA_ENCODING_DEBUG")
+soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window_video_source import WindowVideoSource
@@ -480,6 +481,8 @@ class ServerSource(object):
         self.sound_encoders = capabilities.get("sound.encoders", [])
         self.sound_receive = capabilities.get("sound.receive", False)
         self.sound_send = capabilities.get("sound.send", False)
+        soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
+                 self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
 
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -579,6 +582,7 @@ class ServerSource(object):
             self.send("startup-complete")
 
     def start_sending_sound(self):
+        soundlog("start_sending_sound()")
         if self.suspended:
             log.warn("not starting sound as we are suspended")
             return
@@ -588,6 +592,7 @@ class ServerSource(object):
         try:
             from xpra.sound.gstreamer_util import start_sending_sound
             self.sound_source = start_sending_sound(self.sound_decoders, self.microphone_codecs, self.pulseaudio_server, self.pulseaudio_id)
+            soundlog("start_sending_sound() sound source=%s", self.sound_source)
             if self.sound_source:
                 self.sound_source.connect("new-buffer", self.new_sound_buffer)
                 self.sound_source.start()
@@ -596,15 +601,18 @@ class ServerSource(object):
 
     def stop_sending_sound(self):
         ss = self.sound_source
-        log("stop_sending_sound() sound_source=%s", ss)
+        soundlog("stop_sending_sound() sound_source=%s", ss)
         if ss:
             self.sound_source = None
-            def stop_sound(*args):
-                ss.stop()
+            def stop_sending_sound_thread(*args):
+                soundlog("stop_sending_sound_thread(%s)", args)
                 ss.cleanup()
-            thread.start_new_thread(stop_sound, ())
+                soundlog("stop_sending_sound_thread(%s) done", args)
+            thread.start_new_thread(stop_sending_sound_thread, ())
 
     def new_sound_buffer(self, sound_source, data, metadata):
+        soundlog("new_sound_buffer(%s, %s, %s) source=%s, suspended=%s, sequence=%s",
+                 sound_source, len(data or []), metadata, self.sound_source, self.suspended, self.sound_source_sequence)
         if self.suspended or self.sound_source is None:
             return
         if self.sound_source_sequence>0:
@@ -613,17 +621,18 @@ class ServerSource(object):
 
     def stop_receiving_sound(self):
         ss = self.sound_sink
-        log("stop_receiving_sound() sound_sink=%s", ss)
+        soundlog("stop_receiving_sound() sound_sink=%s", ss)
         if ss:
             self.sound_sink = None
-            def stop_sound(*args):
-                ss.stop()
+            def stop_receiving_sound_thread(*args):
+                soundlog("stop_receiving_sound_thread() sound_sink=%s", ss)
                 ss.cleanup()
-            thread.start_new_thread(stop_sound, ())
+                soundlog("stop_receiving_sound_thread() done")
+            thread.start_new_thread(stop_receiving_sound_thread, ())
 
 
     def sound_control(self, action, *args):
-        log("sound_control(%s, %s)", action, args)
+        soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
             self.stop_sending_sound()
         elif action=="start":
@@ -639,9 +648,9 @@ class ServerSource(object):
             log.error("unknown sound action: %s", action)
 
     def sound_data(self, codec, data, metadata, *args):
+        soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, args, self.sound_sink)
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             log.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
-            self.sound_sink.stop()
             self.sound_sink.cleanup()
             self.sound_sink = None
         if not self.sound_sink:
@@ -652,7 +661,7 @@ class ServerSource(object):
                 def sound_sink_overrun(*args):
                     log.warn("re-starting sound input because of overrun")
                     def sink_clean():
-                        log("sink_clean() sound_sink=%s", self.sound_sink)
+                        soundlog("sink_clean() sound_sink=%s", self.sound_sink)
                         if self.sound_sink:
                             self.sound_sink.cleanup()
                             self.sound_sink = None
@@ -660,9 +669,11 @@ class ServerSource(object):
                     #Note: the next sound packet will take care of starting a new pipeline
                 from xpra.sound.sink import SoundSink
                 self.sound_sink = SoundSink(codec=codec)
+                soundlog("sound_data(..) created sound sink: %s", self.sound_sink)
                 self.sound_sink.connect("error", sound_sink_error)
                 self.sound_sink.connect("overrun", sound_sink_overrun)
                 self.sound_sink.start()
+                soundlog("sound_data(..) sound sink started")
             except Exception, e:
                 log.error("failed to setup sound: %s", e)
                 return
