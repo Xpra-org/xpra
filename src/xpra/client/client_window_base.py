@@ -278,6 +278,8 @@ class ClientWindowBase(ClientWidgetBase):
         self.queue_draw(self, 0, 0, w, h)
 
     def can_have_spinner(self):
+        if self._backing is None:
+            return False
         window_types = self._metadata.get("window-type")
         if not window_types:
             return False
