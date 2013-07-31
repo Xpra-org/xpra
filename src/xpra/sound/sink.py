@@ -40,7 +40,7 @@ if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
     DEFAULT_SINK = SINKS[0]
 
-VOLUME = True
+VOLUME = False
 
 
 def sink_has_device_attribute(sink):
@@ -128,11 +128,11 @@ class SoundSink(SoundPipeline):
         return bool(self.volume.get_property("mute"))
 
     def get_volume(self):
-        assert self.volume
+        assert VOLUME and self.volume
         return  self.volume.get_property("volume")
 
     def set_volume(self, volume):
-        assert self.volume
+        assert VOLUME and self.volume
         assert volume>=0 and volume<=100
         self.volume.set_property('volume', float(volume)/10.0)
 
