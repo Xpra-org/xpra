@@ -7,8 +7,9 @@
 import sys
 import os
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
 
 SOUND_TEST_MODE = os.environ.get("XPRA_SOUND_TEST", "0")!="0"
 
@@ -88,14 +89,14 @@ def get_all_plugin_names():
         registry = gst.registry_get_default()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
-        log("found the following plugins: %s", all_plugin_names)
+        soundlog("found the following plugins: %s", all_plugin_names)
     return all_plugin_names
 
 def has_plugins(*names):
     allp = get_all_plugin_names()
     missing = [name for name in names if (name is not None and name not in allp)]
     if len(missing)>0:
-        log("missing %s from %s (all=%s)", missing, names, allp)
+        soundlog("missing %s from %s (all=%s)", missing, names, allp)
     return len(missing)==0
 
 def get_encoder_formatter(name):
@@ -179,17 +180,17 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                 log.error("pulseaudio not supported - sound disabled")
                 return    None
             pa_server = get_pulse_server()
-            log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
+            soundlog("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
             if remote_pulseaudio_server and (remote_pulseaudio_server==pa_server or len(pa_server)>16 and remote_pulseaudio_server.endswith(pa_server)):
                 log.error("identical pulseaudio server, refusing to create a sound loop - sound disabled")
                 return    None
             pa_id = get_pulse_id()
-            log("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
+            soundlog("start sound, client id=%s, server id=%s", remote_pulseaudio_id, pa_id)
             if remote_pulseaudio_id and remote_pulseaudio_id==pa_id:
                 log.error("identical pulseaudio ID, refusing to create a sound loop - sound disabled")
                 return    None
             monitor_devices = get_pa_device_options(True, False)
-            log("found pulseaudio monitor devices: %s", monitor_devices)
+            soundlog("found pulseaudio monitor devices: %s", monitor_devices)
             if len(monitor_devices)==0:
                 log.error("could not detect any pulseaudio monitor devices - sound forwarding is disabled")
                 return    None
