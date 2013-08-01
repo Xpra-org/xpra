@@ -667,15 +667,17 @@ class GTKTrayMenuBase(object):
 
     def make_soundsubmenu(self, is_on_cb, on_cb, off_cb, client_signal):
         menu = gtk.Menu()
+        menu.ignore_events = False
         def onoffitem(label, active, cb):
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(active)
             def submenu_uncheck(item, menu):
-                ensure_item_selected(menu, item)
+                if not menu.ignore_events:
+                    ensure_item_selected(menu, item)
             c.connect('activate', submenu_uncheck, menu)
             def check_enabled(item):
-                if item.get_active():
+                if not menu.ignore_events and item.get_active():
                     cb()
             c.connect('activate', check_enabled)
             return c
@@ -685,6 +687,7 @@ class GTKTrayMenuBase(object):
         menu.append(on)
         menu.append(off)
         def client_signalled_change(obj):
+            menu.ignore_events = True
             is_on = is_on_cb()
             log("sound: client_signalled_change(%s) is_on=%s", obj, is_on)
             if is_on:
@@ -695,6 +698,7 @@ class GTKTrayMenuBase(object):
                 if not off.get_active():
                     off.set_active(True)
                     ensure_item_selected(menu, off)
+            menu.ignore_events = False
         self.client.connect(client_signal, client_signalled_change)
         #menu.append(gtk.SeparatorMenuItem())
         #...
