@@ -64,7 +64,8 @@ class CairoBacking(GTKWindowBacking):
     def paint_png(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
         if self._backing is None:
-            return
+            fire_paint_callbacks(callbacks, False)
+            return  False
         buf = data_to_buffer(img_data)
         surf = cairo.ImageSurface.create_from_png(buf)
         gc = cairo.Context(self._backing)
@@ -86,7 +87,8 @@ class CairoBacking(GTKWindowBacking):
         if DRAW_DEBUG:
             log.info("cairo_paint_rgb24(..,%s,%s,%s,%s,%s,%s,%s)", x, y, width, height, rowstride, options, callbacks)
         if self._backing is None:
-            return
+            fire_paint_callbacks(callbacks, False)
+            return  False
         gc = cairo.Context(self._backing)
         if rowstride==0:
             rowstride = width*3
