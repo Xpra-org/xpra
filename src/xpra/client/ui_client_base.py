@@ -94,14 +94,22 @@ class UIXpraClient(XpraClientBase):
         #sound:
         self.speaker_allowed = HAS_SOUND
         self.speaker_enabled = False
+        self.speaker_codecs = []
         if self.speaker_allowed:
             self.speaker_codecs = get_codecs(True, False)
             self.speaker_allowed = len(self.speaker_codecs)>0
         self.microphone_allowed = HAS_SOUND
         self.microphone_enabled = False
+        self.microphone_codecs = []
         if self.microphone_allowed:
             self.microphone_codecs = get_codecs(False, False)
             self.microphone_allowed = len(self.microphone_codecs)>0
+        if HAS_SOUND:
+            soundlog("speaker_allowed=%s, speaker_codecs=%s", self.speaker_allowed, self.speaker_codecs)
+            soundlog("microphone_allowed=%s, microphone_codecs=%s", self.microphone_allowed, self.microphone_codecs)
+        else:
+            soundlog("sound support is disabled (pygst is missing?)")
+        #sound state:
         self.sink_restart_pending = False
         self.on_sink_ready = None
         self.sound_sink = None
