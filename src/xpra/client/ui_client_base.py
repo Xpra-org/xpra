@@ -837,27 +837,28 @@ class UIXpraClient(XpraClientBase):
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
         soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
-        if self.sound_sink is not None and self.sound_sink.get_state()=="active":
-            soundlog("start_receiving_sound: we are already receiving sound!")
+        if self.sound_sink is not None:
+            soundlog("start_receiving_sound: we already have a sound sink")
+            return
         elif not self.server_sound_send:
             log.error("cannot start receiving sound: support not enabled on the server")
-        else:
-            #choose a codec:
-            from xpra.sound.gstreamer_util import CODEC_ORDER
-            matching_codecs = [x for x in self.server_sound_encoders if x in self.speaker_codecs]
-            ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
-            if len(ordered_codecs)==0:
-                log.error("no matching codecs between server (%s) and client (%s)", self.server_sound_encoders, self.speaker_codecs)
-                return
-            codec = ordered_codecs[0]
-            self.speaker_enabled = True
-            self.emit("speaker-changed")
-            def sink_ready(*args):
-                soundlog("sink_ready(%s) codec=%s", args, codec)
-                self.send("sound-control", "start", codec)
-                return False
-            self.on_sink_ready = sink_ready
-            self.start_sound_sink(codec)
+            return
+        #choose a codec:
+        from xpra.sound.gstreamer_util import CODEC_ORDER
+        matching_codecs = [x for x in self.server_sound_encoders if x in self.speaker_codecs]
+        ordered_codecs = [x for x in CODEC_ORDER if x in matching_codecs]
+        if len(ordered_codecs)==0:
+            log.error("no matching codecs between server (%s) and client (%s)", self.server_sound_encoders, self.speaker_codecs)
+            return
+        codec = ordered_codecs[0]
+        self.speaker_enabled = True
+        self.emit("speaker-changed")
+        def sink_ready(*args):
+            soundlog("sink_ready(%s) codec=%s", args, codec)
+            self.send("sound-control", "start", codec)
+            return False
+        self.on_sink_ready = sink_ready
+        self.start_sound_sink(codec)
 
     def stop_receiving_sound(self):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
@@ -920,8 +921,8 @@ class UIXpraClient(XpraClientBase):
             soundlog("restart() sound_sink=%s, codec=%s, server_sound_sequence=%s", self.sound_sink, codec, self.server_sound_sequence)
             if self.server_sound_sequence:
                 self.send_new_sound_sequence()
-            self.sink_restart_pending = False
             self.start_receiving_sound()
+            self.sink_restart_pending = False
             return False
         self.timeout_add(200, restart)
 
@@ -962,9 +963,8 @@ class UIXpraClient(XpraClientBase):
             self.sound_sink.stop()
             return
         if self.sound_sink is None:
-            soundlog("sound data received, creating a sound sink for it")
-            if not self.start_sound_sink(codec):
-                return
+            soundlog("no sound sink to process sound data, dropping it")
+            return
         elif self.sound_sink.get_state()=="stopped":
             soundlog("sound data received, sound sink is stopped - starting it")
             self.sound_sink.start()
