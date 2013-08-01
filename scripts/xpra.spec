@@ -921,16 +921,20 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/x264/codec.so
 chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/codec.so
 %endif
+%if %{defined Fedora}
 update-desktop-database &> /dev/null || :
 touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+%endif
 
 
 %postun
+%if %{defined Fedora}
 update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
     /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
     /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
+%endif
 
 
 %posttrans
