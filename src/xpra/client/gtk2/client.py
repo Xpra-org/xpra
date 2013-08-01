@@ -359,6 +359,8 @@ class XpraClient(GTKXpraClient):
         try:
             try:
                 __import__("xpra.client.gl", {}, {}, [])
+                __import__("gtk.gdkgl", {}, {}, [])
+                __import__("gtk.gtkgl", {}, {}, [])
                 try:
                     gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
                     w, h = self.get_root_size()
