@@ -181,7 +181,10 @@ def start_sending_sound(codec, remote_decoders, local_decoders, remote_pulseaudi
                 return    None
             pa_server = get_pulse_server()
             soundlog("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote_pulseaudio_server, pa_server)
-            if remote_pulseaudio_server and (remote_pulseaudio_server==pa_server or len(pa_server)>16 and remote_pulseaudio_server.endswith(pa_server)):
+            #only worth comparing if we have a real server string
+            #one that starts with {UUID}unix:/..
+            if pa_server and pa_server.startswith("{") and \
+                remote_pulseaudio_server and remote_pulseaudio_server==pa_server:
                 log.error("identical pulseaudio server, refusing to create a sound loop - sound disabled")
                 return    None
             pa_id = get_pulse_id()
