@@ -860,11 +860,13 @@ rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/gtk_common/gdk_atom
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/gtk_x11/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
-rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/xor/cyxor.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
+rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
 %if 0%{?static_x264}
 echo "Note: static x264 included in generic rpm"
 %else
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec
 %endif
 %if 0%{?static_vpx}
 echo "Note: static vpx included in generic rpm"
@@ -881,7 +883,8 @@ mv -f "${RPM_BUILD_ROOT}/usr/lib64" "${RPM_BUILD_ROOT}/usr/lib"
 #exclude list for non-generic RPMs:
 %if 0%{?no_video}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
-rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec
 %endif
 %if 0%{?no_webp}
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
@@ -918,8 +921,11 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 %post
 %if 0%{?static_video_libs}
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/x264/codec.so
-chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/codec.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/csc_swscale/colorspace_converter.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/dec_avcodec/decoder.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/enc_x264/encoder.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/encoder.so
+chcon -t texrel_shlib_t %{python_sitelib}/xpra/codecs/vpx/decoder.so
 %endif
 %if %{defined Fedora}
 update-desktop-database &> /dev/null || :
