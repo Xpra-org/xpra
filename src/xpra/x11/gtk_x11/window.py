@@ -367,7 +367,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             self._property_handlers[name](self)
 
     def do_xpra_configure_event(self, event):
-        if self.client_window is None:
+        if self.client_window is None or not self._managed:
             return
         oldgeom = self._geometry
         self._geometry = (event.x, event.y, event.width, event.height,
@@ -995,12 +995,9 @@ class WindowModel(BaseWindowModel):
 
     def do_xpra_configure_event(self, event):
         log("WindowModel.do_xpra_configure_event(%s)", event)
-        BaseWindowModel.do_xpra_configure_event(self, event)
-        gobject.idle_add(self.may_resize_corral_window)
-
-    def may_resize_corral_window(self):
         if not self._managed:
             return
+        BaseWindowModel.do_xpra_configure_event(self, event)
         if self.corral_window is None or not self.corral_window.is_visible():
             return
         if self.client_window is None or not self.client_window.is_visible():
