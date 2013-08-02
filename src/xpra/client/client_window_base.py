@@ -209,8 +209,8 @@ class ClientWindowBase(ClientWidgetBase):
     def set_window_type(self, window_types):
         hints = 0
         for window_type in window_types:
-            hint = self.NAME_TO_HINT.get(window_type)
-            if hint:
+            hint = self.NAME_TO_HINT.get(window_type, None)
+            if hint is not None:
                 hints |= hint
             else:
                 self.debug("ignoring unknown window type hint: %s", window_type)
