@@ -210,7 +210,7 @@ class WindowPerformanceStatistics(object):
             log.debug("get_client_backlog missing acks: %s", drop_missing_acks)
             #this should never happen...
             if len(drop_missing_acks)>0:
-                log.error("get_client_backlog found some damage acks that have been pending for too long, expiring them: %s", drop_missing_acks)
+                log.error("Error: expiring missing damage acks: %s", drop_missing_acks)
                 for sequence in drop_missing_acks:
                     try:
                         del self.damage_ack_pending[sequence]
