@@ -43,6 +43,10 @@ set WORKING_DIRECTORY=%cd%
 IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 SET PYTHONPATH=.;%PYTHONPATH%
+
+REM Record Version Info
+%PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
+
 SET VERSION=ERROR
 FOR /F "delims=" %%i IN ('%PYTHON_EXE% -c "from xpra import __version__;print __version__"') DO set VERSION=%%i
 ECHO Building Xpra Version %VERSION%
