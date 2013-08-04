@@ -65,7 +65,7 @@ class WindowBackingBase(object):
         self.close_decoder(False)
 
     def close_decoder(self, blocking=False):
-        if not self._decoder_lock.acquire(blocking):
+        if self._decoder_lock is None or not self._decoder_lock.acquire(blocking):
             return False
         try:
             self.do_clean_csc_decoder()

@@ -484,21 +484,45 @@ class XpraClient(GTKXpraClient):
             auto_refresh_delay = window._auto_refresh_delay
             metadata = window._metadata
             override_redirect = window._override_redirect
-            #now we can unmap it:
-            self.destroy_window(wid, window)
-            #explicitly tell the server we have unmapped it:
-            #(so it will reset the video encoders, etc)
-            self.send("unmap-window", wid)
+            backing = window._backing
+            video_decoder = None
+            csc_decoder = None
+            decoder_lock = None
             try:
-                del self._id_to_window[wid]
-            except:
-                pass
-            try:
-                del self._window_to_id[window]
-            except:
-                pass
-            #create the new window, which should honour the new state of the opengl_enabled flag:
-            self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+                if backing:
+                    video_decoder = backing._video_decoder
+                    csc_decoder = backing._csc_decoder
+                    decoder_lock = backing._decoder_lock
+                    if decoder_lock:
+                        decoder_lock.acquire()
+                        log("toggle_opengl() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
+                        backing._video_decoder = None
+                        backing._csc_decoder = None
+                        backing._decoder_lock = None
+
+                #now we can unmap it:
+                self.destroy_window(wid, window)
+                #explicitly tell the server we have unmapped it:
+                #(so it will reset the video encoders, etc)
+                self.send("unmap-window", wid)
+                try:
+                    del self._id_to_window[wid]
+                except:
+                    pass
+                try:
+                    del self._window_to_id[window]
+                except:
+                    pass
+                #create the new window, which should honour the new state of the opengl_enabled flag:
+                window = self.make_new_window(wid, x, y, w, h, metadata, override_redirect, client_properties, auto_refresh_delay)
+                if video_decoder or csc_decoder:
+                    backing = window._backing
+                    backing._video_decoder = video_decoder
+                    backing._csc_decoder = csc_decoder
+                    backing._decoder_lock = decoder_lock
+            finally:
+                if decoder_lock:
+                    decoder_lock.release()
         log("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
 
 gobject.type_register(XpraClient)
