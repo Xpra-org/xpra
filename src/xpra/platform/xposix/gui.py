@@ -16,6 +16,22 @@ try:
 except:
     device_bell = None
 
+
+def get_native_notifier_classes():
+    ncs = []
+    try:
+        from xpra.client.notifications.dbus_notifier import DBUS_Notifier
+        ncs.append(DBUS_Notifier)
+    except Exception, e:
+        log("cannot load dbus notifier: %s", e)
+    try:
+        from xpra.client.notifications.pynotify_notifier import PyNotify_Notifier
+        ncs.append(PyNotify_Notifier)
+    except Exception, e:
+        log("cannot load pynotify notifier: %s", e)
+    return ncs
+
+
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
     global device_bell
     if device_bell is None:

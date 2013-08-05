@@ -24,6 +24,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
+from xpra.platform.gui import get_native_notifier_classes
 from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
@@ -215,6 +216,7 @@ class UIXpraClient(XpraClientBase):
 
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
+            log("using notifier=%s", self.notifier)
             self.client_supports_notifications = self.notifier is not None
 
         #draw thread:
@@ -299,9 +301,35 @@ class UIXpraClient(XpraClientBase):
     def make_tray(self, delay_tray, tray_icon):
         return None
 
-    def make_notifier(self):
+    def get_tray_classes(self):
         return None
 
+    def make_notifier(self):
+        ncs = self.get_notifier_classes()
+        log("make_notifier() options=%s", ncs)
+        for n in ncs:
+            try:
+                v = n()
+                log("make_notifier() %s()=%s", n, v)
+                if v:
+                    return v
+            except:
+                log.error("failed to instantiate %s", n, exc_info=True)
+        return None
+
+    def get_notifier_classes(self):
+        #subclasses will generally add their toolkit specific variants
+        #by overriding this method
+        ncs = []
+        try:
+            #add the native ones first:
+            nncs = get_native_notifier_classes()
+            if nncs:
+                for n in nncs:
+                    ncs.append(n)
+        except:
+            log.error("get_notifier_classes() error on %s", get_native_notifier_classes, exc_info=True)
+        return ncs
 
     def make_system_tray(self, wid, w, h):
         raise Exception("override me!")
@@ -1177,14 +1205,18 @@ class UIXpraClient(XpraClientBase):
         self._ui_event()
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
         log("_process_notify_show(%s)", packet)
-        self._client_extras.show_notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+        assert self.notifier
+        #TODO: choose more appropriate tray if we have more than one shown?
+        tray = self.tray
+        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
 
     def _process_notify_close(self, packet):
         if not self.notifications_enabled:
             return
+        assert self.notifier
         nid = packet[1]
         log("_process_notify_close(%s)", nid)
-        self._client_extras.close_notify(nid)
+        self.notifier.close_notify(nid)
 
 
     def _process_window_metadata(self, packet):

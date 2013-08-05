@@ -961,7 +961,7 @@ if argb_ENABLED:
     cython_add(Extension("xpra.codecs.argb.argb",
                 ["xpra/codecs/argb/argb.pyx"]))
 
-toggle_packages(client_ENABLED, "xpra.client")
+toggle_packages(client_ENABLED, "xpra.client", "xpra.client.notifications")
 toggle_packages(client_ENABLED and gtk2_ENABLED or gtk3_ENABLED, "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")

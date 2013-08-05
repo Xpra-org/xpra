@@ -114,7 +114,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def make_tray(self, delay_tray, tray_icon):
         self.menu_helper = self.make_tray_menu()
-        tray = make_native_tray(self.menu_helper, delay_tray, tray_icon)
+        self.menu_helper.build()
+        tray = make_native_tray("Xpra", delay_tray, tray_icon, self.menu_helper.activate, self.quit)
         if tray:
             return tray
         try:
@@ -130,14 +131,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             def activate(*args):
                 self.menu_helper.activate()
             gtk_tray = GTKStatusIconTray(popup, activate, delay_tray, tray_icon)
-            self.menu_helper.build()
             return gtk_tray
         except Exception, e:
             log.warn("failed to load StatusIcon tray: %s" % e)
-
-
-    def make_notifier(self):
-        return None
 
 
     def supports_system_tray(self):

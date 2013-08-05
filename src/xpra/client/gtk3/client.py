@@ -35,6 +35,15 @@ class XpraClient(GTKXpraClient):
     def client_toolkit(self):
         return "gtk3"
 
+    def get_notifier_classes(self):
+        ncs = GTKXpraClient.get_notifier_classes(self)
+        try:
+            from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
+            ncs.append(GTK3_Notifier)
+        except Exception, e:
+            log("cannot load GTK3 notifier: %s", e)
+        return ncs
+
 
     def do_get_pixbuf(self, icon_filename):
         return Pixbuf.new_from_file(icon_filename)

@@ -29,6 +29,9 @@ class Win32Tray:
 			return	None
 		return	self.tray_widget.hwnd
 
+	def cleanup(self):
+		self.close()
+
 	def close(self):
 		log("Win32Tray.close() tray_widget=%s", self.tray_widget)
 		if self.tray_widget:

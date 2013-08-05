@@ -11,8 +11,33 @@ import os.path
 from xpra.log import Logger
 log = Logger()
 
+from xpra.platform.win32.paths import get_icon_dir
 from xpra.gtk_common.gobject_compat import import_gdk
 gdk = import_gdk()
+
+
+def get_native_notifier_classes():
+    from xpra.platform.win32.win32_notifier import Win32_Notifier
+    return [Win32_Notifier]
+
+
+def make_native_tray(tooltip, delay_tray, tray_icon, activate_cb, quit_cb):
+    from xpra.platform.win32.win32_tray import Win32Tray
+
+    if not tray_icon or not os.path.exists(tray_icon):
+        tray_icon = os.path.join(get_icon_dir(), 'xpra.ico')
+    if not tray_icon or not os.path.exists(tray_icon):
+        log.error("invalid tray icon filename: '%s'" % tray_icon)
+
+    def tray_exit(*args):
+        log("tray_exit() calling %s", quit_cb)
+        quit_cb()
+
+    def tray_activate(*args):
+        log("tray_activate() calling %s", activate_cb)
+        activate_cb()
+
+    return Win32Tray(tooltip, tray_activate, tray_exit, tray_icon)
 
 
 class ClientExtras(object):
@@ -44,38 +69,3 @@ class ClientExtras(object):
         if event in events:
             log.info("received win32 console event %s", events.get(event))
         return 0
-
-
-    def setup_tray(self, no_tray, notifications, tray_icon_filename):
-        self.tray = None
-        self.notify = None
-        if not no_tray:
-            #we wait for session_name to be set during the handshake
-            #the alternative would be to implement a set_name() method
-            #on the Win32Tray - but this looks too complicated
-            self.client.connect("handshake-complete", self.do_setup_tray, notifications, tray_icon_filename)
-
-    def do_setup_tray(self, client, notifications, tray_icon_filename):
-        self.tray = None
-        self.notify = None
-        if not tray_icon_filename or not os.path.exists(tray_icon_filename):
-            tray_icon_filename = self.get_icon_filename('xpra.ico')
-        if not tray_icon_filename or not os.path.exists(tray_icon_filename):
-            log.error("invalid tray icon filename: '%s'" % tray_icon_filename)
-
-        def tray_exit(*args):
-            log("tray_exit() calling quit")
-            self.quit()
-        try:
-            from xpra.platform.win32.win32_tray import Win32Tray
-            self.tray = Win32Tray(self.get_tray_tooltip(), self.activate_menu, tray_exit, tray_icon_filename)
-        except Exception, e:
-            log.error("failed to load native Windows NotifyIcon: %s", e)
-
-        #cant do balloon without a tray:
-        if self.tray and notifications:
-            try:
-                from xpra.platform.win32.win32_balloon import notify
-                self.notify = notify
-            except Exception, e:
-                log.error("failed to load native win32 balloon: %s", e)

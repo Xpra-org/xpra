@@ -67,6 +67,16 @@ class XpraClient(GTKXpraClient):
     def client_toolkit(self):
         return "gtk2"
 
+    def get_notifier_classes(self):
+        ncs = GTKXpraClient.get_notifier_classes(self)
+        try:
+            from xpra.client.gtk2.gtk2_notifier import GTK2_Notifier
+            ncs.append(GTK2_Notifier)
+        except Exception, e:
+            log("cannot load GTK3 notifier: %s", e)
+        return ncs
+
+
     def get_supported_window_layouts(self):
         return  WINDOW_LAYOUTS
 
