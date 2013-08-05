@@ -140,6 +140,11 @@ cdef long get_frame_key(AVFrame *frame):
     frame_key = <unsigned long> frame.data[0]
     return frame_key
 
+cdef void clear_frame(AVFrame *frame):
+    assert frame!=NULL, "frame is not set!"
+    for i in xrange(4):
+        frame.data[i] = NULL
+
 
 cdef get_decoder(AVCodecContext *avctx):
     cdef long ctx_key = get_context_key(avctx)
@@ -415,6 +420,8 @@ cdef class Decoder:
         padded_buf = <unsigned char *> xmemalign(buf_len+128)
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)
+        #ensure we can detect if the frame buffer got allocated:
+        clear_frame(self.frame)
         #now safe to run without gil:
         with nogil:
             av_init_packet(&avpkt)
@@ -422,8 +429,9 @@ cdef class Decoder:
             avpkt.size = buf_len
             len = avcodec_decode_video2(self.codec_ctx, self.frame, &got_picture, &avpkt)
             free(padded_buf)
-        if len < 0:
-            log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s", self, type(input), buf_len, options, len)
+        if len < 0: #for testing add: or options.get("frame", 0)%100==99:
+            framewrapper = self.frame_error()
+            log.warn("%s.decompress_image(%s:%s, %s) avcodec_decode_video2 failure: %s, framewrapper=%s", self, type(input), buf_len, options, len, framewrapper)
             return None
             #raise Exception("avcodec_decode_video2 failed to decode this frame and returned %s, decoder=%s" % (len, self.get_info()))
 
@@ -447,6 +455,7 @@ cdef class Decoder:
                 elif dy==2:
                     height = (self.codec_ctx.height+1)>>1
                 else:
+                    self.frame_error()
                     raise Exception("invalid height divisor %s" % dy)
                 stride = self.frame.linesize[i]
                 size = height * stride
@@ -460,6 +469,7 @@ cdef class Decoder:
             out = PyBuffer_FromMemory(<void *>self.frame.data[0], outsize)
             nplanes = 0
         if outsize==0:
+            self.frame_error()
             raise Exception("output size is zero!")
         img = AVImageWrapper(0, 0, self.codec_ctx.width, self.codec_ctx.height, out, cs, 24, strides, nplanes)
         img.decoder = self
@@ -477,11 +487,20 @@ cdef class Decoder:
         return img
 
 
-    def get_framewrapper(self, frame_key):
+    def frame_error(self):
+        frame_key = get_frame_key(self.frame)
+        framewrapper = self.get_framewrapper(frame_key, True)
+        log("frame_error() freeing %s", framewrapper)
+        if framewrapper:
+            #avcodec had allocated a buffer, make sure we don't claim to be using it:
+            self.av_free(frame_key)
+        return framewrapper
+
+    def get_framewrapper(self, frame_key, ignore_missing=False):
         framewrapper = self.framewrappers.get(int(frame_key))
         #debug("get_framewrapper(%s)=%s, known frame keys=%s", frame_key, framewrapper,
         #                        [hex(x) for x in self.framewrappers.keys()])
-        assert framewrapper is not None, "frame not found for pointer %s, known frame keys=%s" % (hex(frame_key),
+        assert ignore_missing or framewrapper is not None, "frame not found for pointer %s, known frame keys=%s" % (hex(frame_key),
                                 [hex(x) for x in self.framewrappers.keys()])
         return framewrapper
 
