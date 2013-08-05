@@ -233,7 +233,7 @@ void do_init_encoder(struct enc_x264_ctx *ctx)
 {
 	x264_param_t param;
 	x264_param_default_preset(&param, x264_preset_names[ctx->encoding_preset], "zerolatency");
-	param.i_threads = 1;
+	param.i_threads = 0;
 	param.i_width = ctx->width;
 	param.i_height = ctx->height;
 	param.i_csp = ctx->color_sampling;
