@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os, time
+import sys, os, time, thread
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
@@ -42,6 +42,7 @@ DEFAULT_SINK = os.environ.get("XPRA_SOUND_SINK", DEFAULT_SINK)
 if DEFAULT_SINK not in SINKS:
     log.error("invalid default sound sink: '%s' is not in %s, using %s instead", DEFAULT_SINK, SINKS, SINKS[0])
     DEFAULT_SINK = SINKS[0]
+QUEUE_SILENT = 0
 
 
 def sink_has_device_attribute(sink):
@@ -81,6 +82,7 @@ class SoundSink(SoundPipeline):
                             " max-size-buffers=0"+
                             " max-size-bytes=0"+
                             " max-size-time=%s" % QUEUE_TIME+
+                            " silent=%s" % QUEUE_SILENT+
                             " leaky=%s" % QUEUE_LEAK)
         pipeline_els.append(sink_type)
         self.setup_pipeline_and_bus(pipeline_els)
@@ -88,10 +90,11 @@ class SoundSink(SoundPipeline):
         self.queue = self.pipeline.get_by_name("queue")
         self.overruns = 0
         self.queue_state = "starting"
-        self.queue.connect("overrun", self.queue_overrun)
-        self.queue.connect("underrun", self.queue_underrun)
-        self.queue.connect("running", self.queue_running)
-        self.queue.connect("pushing", self.queue_pushing)
+        if QUEUE_SILENT==0:
+            self.queue.connect("overrun", self.queue_overrun)
+            self.queue.connect("underrun", self.queue_underrun)
+            self.queue.connect("running", self.queue_running)
+            self.queue.connect("pushing", self.queue_pushing)
 
     def queue_pushing(self, *args):
         ltime = int(self.queue.get_property("current-level-time")/MS_TO_NS)
@@ -155,7 +158,7 @@ class SoundSink(SoundPipeline):
                 buf.duration = d
         debug("add_data(..) queue_state=%s", self.queue_state)
         self.push_buffer(buf)
-    
+
     def push_buffer(self, buf):
         #buf.size = size
         #buf.timestamp = timestamp
@@ -213,6 +216,10 @@ def main():
     data = f.read()
     f.close()
     print("loaded %s bytes from %s" % (len(data), filename))
+    #force no leak since we push all the data at once
+    global QUEUE_LEAK, GST_QUEUE_NO_LEAK, QUEUE_SILENT
+    QUEUE_LEAK = GST_QUEUE_NO_LEAK
+    QUEUE_SILENT = 1
     ss = SoundSink(codec=codec)
     ss.add_data(data)
     def eos(*args):
@@ -231,9 +238,12 @@ def main():
     signal.signal(signal.SIGTERM, deadly_signal)
 
     def check_for_end(*args):
-        if not ss.pipeline:
-            log.info("pipeline closed")
-            gobject_mainloop.quit()
+        qtime = int(ss.queue.get_property("current-level-time")/MS_TO_NS)
+        if qtime<=0:
+            log.info("underrun (end of stream)")
+            thread.start_new_thread(ss.stop, ())
+            gobject.timeout_add(500, gobject_mainloop.quit)
+            return False
         return True
     gobject.timeout_add(1000, check_for_end)
 
