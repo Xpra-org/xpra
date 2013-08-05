@@ -21,7 +21,7 @@ cdef extern from *:
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    object PyString_FromStringAndSize(const char *v, Py_ssize_t len)
+    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
@@ -451,13 +451,13 @@ cdef class Decoder:
                 stride = self.frame.linesize[i]
                 size = height * stride
                 outsize += size
-                plane = PyString_FromStringAndSize(<const char *>self.frame.data[i], size)
+                plane = PyBuffer_FromMemory(<void *>self.frame.data[i], size)
                 out.append(plane)
                 strides.append(stride)
         else:
             strides = self.frame.linesize[0]+self.frame.linesize[1]+self.frame.linesize[2]
             outsize = self.codec_ctx.height * strides
-            out = PyString_FromStringAndSize(<const char *>self.frame.data[0], outsize)
+            out = PyBuffer_FromMemory(<void *>self.frame.data[0], outsize)
             nplanes = 0
         if outsize==0:
             raise Exception("output size is zero!")

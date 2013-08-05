@@ -360,6 +360,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         return True
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
+        img.clone_pixel_data()
         gobject.idle_add(self.gl_paint_planar, img, x, y, enc_width, enc_height, width, height, callbacks)
 
     def gl_paint_planar(self, img, x, y, enc_width, enc_height, width, height, callbacks):
@@ -424,7 +425,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
-            pixel_data = img_data[index]
+            pixel_data = img_data[index][:]
             debug("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes", index, divs[index], rowstrides[index], width/div_w, height/div_h, len(pixel_data))
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, width/div_w, height/div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             if index == 1:
