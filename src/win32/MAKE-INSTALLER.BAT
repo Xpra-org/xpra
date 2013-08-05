@@ -44,6 +44,8 @@ IF EXIST "MAKE-INSTALLER.BAT" CD ..
 
 SET PYTHONPATH=.;%PYTHONPATH%
 
+%PYTHON_EXE% ./setup.py clean
+
 REM Record Version Info
 %PYTHON_EXE% -c "from add_build_info import record_src_info;record_src_info()"
 
