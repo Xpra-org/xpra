@@ -72,7 +72,11 @@ class SessionInfo(gtk.Window):
         self.last_populate_statistics = 0
         self.is_closed = False
         self.get_pixbuf = get_pixbuf
-        self.set_title(self.session_name or "Session Info")
+        if self.session_name=="Xpra":
+            title = "Session Info"
+        else:
+            title = "%s: Session Info" % self.session_name
+        self.set_title(title)
         self.set_destroy_with_parent(True)
         self.set_resizable(True)
         self.set_decorated(True)
