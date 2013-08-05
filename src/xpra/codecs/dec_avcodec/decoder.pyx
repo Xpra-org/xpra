@@ -62,6 +62,9 @@ cdef extern from "libavcodec/avcodec.h":
         AVPixelFormat pix_fmt
         int (*get_buffer)(AVCodecContext *c, AVFrame *pic)
         void (*release_buffer)(AVCodecContext *avctx, AVFrame *frame)
+        int thread_safe_callbacks
+        int thread_count
+        int thread_type
 
     AVPixelFormat PIX_FMT_NONE
     AVCodecID CODEC_ID_H264
@@ -314,6 +317,9 @@ cdef class Decoder:
         self.codec_ctx.pix_fmt = self.pix_fmt
         self.codec_ctx.get_buffer = avcodec_get_buffer
         self.codec_ctx.release_buffer = avcodec_release_buffer
+        self.codec_ctx.thread_safe_callbacks = 1
+        #self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
+        #self.codec_ctx.thread_count = 0     #auto?
         if avcodec_open2(self.codec_ctx, self.codec, NULL) < 0:
             error("could not open codec")
             self.clean_decoder()
