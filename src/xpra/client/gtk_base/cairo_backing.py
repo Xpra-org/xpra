@@ -4,10 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject
-gdk = import_gdk()
-gobject = import_gobject()
 import cairo
 
 from xpra.log import Logger
@@ -80,7 +76,7 @@ class CairoBacking(GTKWindowBacking):
         pil_image.save(buf, format="PNG")
         png_data = buf.getvalue()
         buf.close()
-        gobject.idle_add(self.paint_png, png_data, 0, 0, width, height, rowstride, options, callbacks)
+        self.idle_add(self.paint_png, png_data, 0, 0, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         """ must be called from UI thread """
