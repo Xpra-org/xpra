@@ -74,11 +74,14 @@ class ClientTray(ClientWidgetBase):
             self.reconfigure()
 
     def reconfigure(self):
-        client_properties = {"orientation" : ORIENTATION.get(self._orientation, self._orientation)}
+        client_properties = {
+                             "orientation"          : ORIENTATION.get(self._orientation, self._orientation),
+                             "encoding.transparency": True,
+                             }
         if self._screen>=0:
             client_properties["screen"] = self._screen
         x, y, w, h = self._geometry
-        if self._geometry!=(0, 0, 200, 200):
+        if self._geometry!=(0, 0, 200, 200) and self._geometry!=(0, 0, 1, 1):
             self._client.send("configure-window", self._id, x, y, w, h, client_properties)
         self.new_backing(w, h)
 
@@ -139,6 +142,7 @@ class ClientTray(ClientWidgetBase):
             if not self._backing.pixels:
                 log.warn("TrayBacking does not have any pixels / format!")
                 return
+            log("after_draw_update_tray() format=%s", self._backing.format)
             enc, w, h, rowstride = self._backing.format
             has_alpha = enc=="rgb32"
             tray_icon = gdk.pixbuf_new_from_data(self._backing.pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
