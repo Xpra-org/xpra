@@ -30,6 +30,23 @@ License: MIT-X11
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+Files: xpra/client/gtk2/gtk2_notifier
+Copyright: 2013 Antoine Martin <antoine@devloop.org.uk>
+           2009 Daniel Woodhouse
+License: LGPL-3+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 Files: xpra/webm/*
 Copyright: 2011 Daniele Esposti <expo@expobrain.net>
 License: BSD-2-clause
@@ -62,8 +79,6 @@ Copyright: 2009-2013 Antoine Martin <antoine@devloop.org.uk>
            2010-2011 Miguel Landaeta <miguel@miguel.cc>
            2010-2011 أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>
            2012 Dmitry Smirnov <onlyjob@member.fsf.org>
-License: GPL-2+
-
 License: GPL-2+
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
