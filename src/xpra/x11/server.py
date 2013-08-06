@@ -534,7 +534,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._desktop_manager.configure_window(window, x, y, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        if self._desktop_manager.visible(window) and (oww!=w or owh!=h):
+        if window.is_tray() or (self._desktop_manager.visible(window) and (oww!=w or owh!=h)):
             self._damage(window, 0, 0, w, h)
 
     def _process_move_window(self, proto, packet):
