@@ -6,10 +6,9 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.gtk_common.gobject_compat import import_gobject3, import_gtk3, import_gdk3
-gobject = import_gobject3()
-gtk = import_gtk3()
-gdk = import_gdk3()
+from gi.repository import GObject               #@UnresolvedImport @UnusedImport
+from gi.repository import Gtk                   #@UnresolvedImport @UnusedImport
+from gi.repository import Gdk                   #@UnresolvedImport @UnusedImport
 
 from xpra.client.gtk_base.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
@@ -23,8 +22,8 @@ GTK3 version of the ClientWindow class
 """
 class ClientWindow(GTKClientWindowBase):
 
-    WINDOW_POPUP = gtk.WindowType.POPUP
-    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
+    WINDOW_POPUP = Gtk.WindowType.POPUP
+    WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
     #where have those values gone?
     #gi/pygtk3 docs are terrible for this
     WINDOW_EVENT_MASK = 0
@@ -35,7 +34,7 @@ class ClientWindow(GTKClientWindowBase):
     def init_window(self):
         #TODO: no idea how to do this with gtk3
         #maybe not even possible..
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         GTKClientWindowBase.init_window(self)
 
     def get_client_window_class(self, metadata, override_redirect):
@@ -45,9 +44,9 @@ class ClientWindow(GTKClientWindowBase):
     def xget_u32_property(self, target, name):
         try:
             if not HAS_X11_BINDINGS:
-                name_atom = gdk.Atom.intern(name, False)
-                type_atom = gdk.Atom.intern("CARDINAL", False)
-                prop = gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
+                name_atom = Gdk.Atom.intern(name, False)
+                type_atom = Gdk.Atom.intern("CARDINAL", False)
+                prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
                 if not prop or len(prop)!=3 or len(prop[2])!=1:
                     return  None
                 log("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
@@ -66,7 +65,7 @@ class ClientWindow(GTKClientWindowBase):
 
     def apply_geometry_hints(self, hints):
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
-        wh = gdk.WindowHints
+        wh = Gdk.WindowHints
         name_to_hint = {"maximum-size"  : wh.MAX_SIZE,
                         "max_width"     : wh.MAX_SIZE,
                         "max_height"    : wh.MAX_SIZE,
@@ -91,7 +90,7 @@ class ClientWindow(GTKClientWindowBase):
                         "min_aspect_ratio"  : "min_aspect",
                         "max_aspect_ratio"  : "max_aspect",
                          }
-        geom = gdk.Geometry()
+        geom = Gdk.Geometry()
         mask = 0
         for k,v in hints.items():
             if k in INT_FIELDS:
@@ -101,7 +100,7 @@ class ClientWindow(GTKClientWindowBase):
                 field = ASPECT_FIELDS.get(k)
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
-        hints = gdk.WindowHints(mask)
+        hints = Gdk.WindowHints(mask)
         self.set_geometry_hints(None, geom, hints)
 
 
@@ -115,4 +114,4 @@ class ClientWindow(GTKClientWindowBase):
             self._backing.cairo_draw(context)
 
 
-gobject.type_register(ClientWindow)
+GObject.type_register(ClientWindow)
