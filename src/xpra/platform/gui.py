@@ -26,13 +26,15 @@ def system_bell(*args):
     #let the toolkit classes use their own
     return False
 def get_native_notifier_classes():
-    return None
+    return []
 
+ClientExtras = None
 
 from xpra.platform import platform_import
 platform_import(globals(), "gui", False,
                 "do_init",
                 "make_tray_menu",
+                "ClientExtras",
                 "make_native_tray",
                 "get_native_notifier_classes",
                 "system_bell")

@@ -19,6 +19,7 @@ class TrayBase(object):
         self.activate_cb = activate_cb
         self.delay_tray = delay_tray
         self.tray_widget = None
+        self.default_icon_name = "xpra.png"
 
     def get_tray_tooltip(self):
         if self.client.session_name:
@@ -34,7 +35,7 @@ class TrayBase(object):
         if cmdlineoverride and os.path.exists(cmdlineoverride):
             debug("get_tray_icon_filename using %s from command line", cmdlineoverride)
             return  cmdlineoverride
-        f = os.path.join(get_icon_dir(), "xpra.png")
+        f = os.path.join(get_icon_dir(), self.default_icon_name)
         if os.path.exists(f):
             debug("get_tray_icon_filename using default: %s", f)
             return  f

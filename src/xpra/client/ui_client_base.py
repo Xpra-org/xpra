@@ -24,7 +24,7 @@ from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
-from xpra.platform.gui import get_native_notifier_classes
+from xpra.platform.gui import get_native_notifier_classes, ClientExtras
 from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
@@ -163,6 +163,7 @@ class UIXpraClient(XpraClientBase):
         self.supports_mmap = MMAP_SUPPORTED and ("rgb24" in self.get_core_encodings())
 
         #helpers and associated flags:
+        self.client_extras = None
         self.keyboard_helper = None
         self.clipboard_helper = None
         self.clipboard_enabled = False
@@ -211,13 +212,27 @@ class UIXpraClient(XpraClientBase):
         if not self.readonly:
             self.keyboard_helper = self.make_keyboard_helper(opts.keyboard_sync, opts.key_shortcut)
 
+        tray_icon_filename = opts.tray_icon
         if not opts.no_tray:
             self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
+            if self.tray:
+                tray_icon_filename = self.tray.get_tray_icon_filename(tray_icon_filename)
 
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
             log("using notifier=%s", self.notifier)
             self.client_supports_notifications = self.notifier is not None
+
+        #audio tagging:
+        if tray_icon_filename and os.path.exists(tray_icon_filename):
+            try:
+                from xpra.sound.pulseaudio_util import add_audio_tagging_env
+                add_audio_tagging_env(tray_icon_filename)
+            except ImportError, e:
+                log("failed to set pulseaudio audio tagging: %s", e)
+
+        if ClientExtras is not None:
+            self.client_extras = ClientExtras(self)
 
         #draw thread:
         self._draw_queue = Queue()
@@ -286,6 +301,7 @@ class UIXpraClient(XpraClientBase):
                 for enc in formats:
                     if enc not in encodings:
                         encodings.append(enc)
+        log("get_core_encodings()=%s", encodings)
         return encodings
 
 
@@ -320,16 +336,8 @@ class UIXpraClient(XpraClientBase):
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
         #by overriding this method
-        ncs = []
-        try:
-            #add the native ones first:
-            nncs = get_native_notifier_classes()
-            if nncs:
-                for n in nncs:
-                    ncs.append(n)
-        except:
-            log.error("get_notifier_classes() error on %s", get_native_notifier_classes, exc_info=True)
-        return ncs
+        #use the native ones first:
+        return get_native_notifier_classes()
 
     def make_system_tray(self, wid, w, h):
         raise Exception("override me!")

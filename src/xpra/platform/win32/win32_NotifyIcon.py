@@ -39,7 +39,7 @@ class win32NotifyIcon:
 		# Register the Window class.
 		wc = WNDCLASS()
 		self.hinst = wc.hInstance = GetModuleHandle(None)
-		wc.lpszClassName = "win32StatusIcon"
+		wc.lpszClassName = "win32NotifyIcon"
 		wc.lpfnWndProc = message_map # could also specify a wndproc.
 		classAtom = RegisterClass(wc)
 		# Create the Window.

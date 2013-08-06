@@ -11,11 +11,15 @@ from xpra.log import Logger
 log = Logger()
 
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
+from xpra.client.tray_base import TrayBase
 
 
-class Win32Tray:
+class Win32Tray(TrayBase):
 
 	def __init__(self, name, activate_menu, exit_cb, icon_filename):
+		TrayBase.__init__(self, None, activate_menu, False)
+		self.default_icon_name = "xpra.ico"
+		icon_filename = self.get_tray_icon_filename(icon_filename)
 		self.tray_widget = win32NotifyIcon(name, activate_menu, exit_cb, None, icon_filename)
 		#now let's try to hook the session notification
 		self.detect_win32_session_events(self.getHWND())
@@ -30,15 +34,12 @@ class Win32Tray:
 		return	self.tray_widget.hwnd
 
 	def cleanup(self):
-		self.close()
-
-	def close(self):
-		log("Win32Tray.close() tray_widget=%s", self.tray_widget)
+		log("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
 		if self.tray_widget:
 			self.stop_win32_session_events(self.getHWND())
 			self.tray_widget.close()
 			self.tray_widget = None
-		log("Win32Tray.close() ended")
+		log("Win32Tray.cleanup() ended")
 
 	def set_tooltip(self, name):
 		if self.tray_widget:
@@ -76,7 +77,7 @@ class Win32Tray:
 			log.warn("detect_win32_session_events(%s) missing handle!", app_hwnd)
 			return
 		try:
-			log.debug("detect_win32_session_events(%s)", app_hwnd)
+			log("detect_win32_session_events(%s)", app_hwnd)
 			import win32ts, win32con, win32api, win32gui		#@UnresolvedImport
 			WM_TRAYICON = win32con.WM_USER + 20
 			NIN_BALLOONSHOW = win32con.WM_USER + 2
@@ -93,29 +94,29 @@ class Win32Tray:
 			def MyWndProc(hWnd, msg, wParam, lParam):
 				#from the web!: WM_WTSSESSION_CHANGE is 0x02b1.
 				if msg==0x02b1:
-					log.debug("Session state change!")
+					log("Session state change!")
 				elif msg==win32con.WM_DESTROY:
 					# Restore the old WndProc
-					log.debug("WM_DESTROY, restoring call handler")
+					log("WM_DESTROY, restoring call handler")
 					win32api.SetWindowLong(app_hwnd, win32con.GWL_WNDPROC, self.oldWndProc)
 				elif msg==win32con.WM_COMMAND:
-					log.debug("WM_COMMAND")
+					log("WM_COMMAND")
 				elif msg==WM_TRAYICON:
-					log.debug("WM_TRAYICON")
+					log("WM_TRAYICON")
 					if lParam==NIN_BALLOONSHOW:
-						log.debug("NIN_BALLOONSHOW")
+						log("NIN_BALLOONSHOW")
 					if lParam==NIN_BALLOONHIDE:
-						log.debug("NIN_BALLOONHIDE")
+						log("NIN_BALLOONHIDE")
 						self.balloon_click_callback = None
 					elif lParam==NIN_BALLOONTIMEOUT:
-						log.debug("NIN_BALLOONTIMEOUT")
+						log("NIN_BALLOONTIMEOUT")
 					elif lParam==NIN_BALLOONUSERCLICK:
 						log.info("NIN_BALLOONUSERCLICK, balloon_click_callback=%s" % self.balloon_click_callback)
 						if self.balloon_click_callback:
 							self.balloon_click_callback()
 							self.balloon_click_callback = None
 				else:
-					log.debug("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
+					log("unknown win32 message: %s / %s / %s", msg, wParam, lParam)
 				# Pass all messages to the original WndProc
 				try:
 					return win32gui.CallWindowProc(self.old_win32_proc, hWnd, msg, wParam, lParam)

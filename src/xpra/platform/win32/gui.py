@@ -6,28 +6,21 @@
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
-import os.path
-
 from xpra.log import Logger
 log = Logger()
 
-from xpra.platform.win32.paths import get_icon_dir
-from xpra.gtk_common.gobject_compat import import_gdk
-gdk = import_gdk()
-
 
 def get_native_notifier_classes():
-    from xpra.platform.win32.win32_notifier import Win32_Notifier
-    return [Win32_Notifier]
+    try:
+        from xpra.platform.win32.win32_notifier import Win32_Notifier
+        return [Win32_Notifier]
+    except Exception, e:
+        log("cannot load native win32 notifier: %s", e)
+        return []
 
 
 def make_native_tray(tooltip, delay_tray, tray_icon, activate_cb, quit_cb):
     from xpra.platform.win32.win32_tray import Win32Tray
-
-    if not tray_icon or not os.path.exists(tray_icon):
-        tray_icon = os.path.join(get_icon_dir(), 'xpra.ico')
-    if not tray_icon or not os.path.exists(tray_icon):
-        log.error("invalid tray icon filename: '%s'" % tray_icon)
 
     def tray_exit(*args):
         log("tray_exit() calling %s", quit_cb)
@@ -41,7 +34,7 @@ def make_native_tray(tooltip, delay_tray, tray_icon, activate_cb, quit_cb):
 
 
 class ClientExtras(object):
-    def __init__(self, client, opts, conn):
+    def __init__(self, client):
         self.setup_console_event_listener()
 
     def cleanup(self):

@@ -7,7 +7,6 @@
 from xpra.log import Logger
 log = Logger()
 
-
 try:
     from xpra.x11.gtk_x11.error import trap, XError
     from xpra.x11.gtk_x11.gdk_bindings import get_xwindow   #@UnresolvedImport
@@ -47,17 +46,9 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
 
 
 class ClientExtras(object):
-    def __init__(self, client, opts, conn):
+    def __init__(self, client):
+        self.client = client
         self.setup_xprops()
-        self.setup_x11_bell()
-        self.setup_pa_audio_tagging()
-
-    def setup_pa_audio_tagging(self):
-        try:
-            from xpra.sound.pulseaudio_util import add_audio_tagging_env
-            add_audio_tagging_env(self.get_tray_icon_filename(None))
-        except Exception, e:
-            log("failed to set pulseaudio audio tagging: %s", e)
 
     def setup_xprops(self):
         self.ROOT_PROPS = {

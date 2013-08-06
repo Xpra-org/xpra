@@ -15,6 +15,9 @@ class NotifierBase(object):
         #posix only - but degrades ok on non-posix:
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
 
+    def cleanup(self):
+        pass
+
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, may_retry=True):
         pass
 
