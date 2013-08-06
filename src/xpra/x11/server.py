@@ -527,11 +527,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if window.is_tray():
             assert self._tray
             self._tray.move_resize(window, x, y, w, h)
-            return
-        assert not window.is_OR()
-        owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
-        log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-        self._desktop_manager.configure_window(window, x, y, w, h)
+        else:
+            assert not window.is_OR()
+            owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
+            log("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+            self._desktop_manager.configure_window(window, x, y, w, h)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
         if self._desktop_manager.visible(window) and (oww!=w or owh!=h):

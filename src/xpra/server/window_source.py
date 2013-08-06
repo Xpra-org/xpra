@@ -193,7 +193,10 @@ class WindowSource(object):
     def set_client_properties(self, properties):
         debug("set_client_properties(%s)", properties)
         self.maximized = properties.get("maximized", False)
-        self.full_frames_only = properties.get("full_frames_only", self.full_frames_only)
+        self.full_frames_only = properties.get("encoding.full_frames_only", self.full_frames_only)
+        self.supports_transparency = properties.get("encoding.transparency", self.supports_transparency)
+        self.encodings = properties.get("encodings", self.encodings)
+        self.core_encodings = properties.get("encodings.core", self.core_encodings)
 
 
     def unmap(self):
@@ -561,7 +564,9 @@ class WindowSource(object):
             self.process_damage_region(damage_time, window, x, y, w, h, actual_encoding, options)
 
     def get_best_encoding(self, batching, window, pixel_count, ww, wh, current_encoding):
-        return self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
+        e = self.do_get_best_encoding(batching, window.has_alpha(), window.is_tray(), window.is_OR(), pixel_count, ww, wh, current_encoding)
+        log.info("get_best_encoding%s=%s", (batching, window, pixel_count, ww, wh, current_encoding), e)
+        return e
 
     def do_get_best_encoding(self, batching, has_alpha, is_tray, is_OR, pixel_count, ww, wh, current_encoding):
         """
@@ -996,6 +1001,7 @@ class WindowSource(object):
             #and we save the compressed data then discard the image
             im = PIL.Image.frombuffer(rgb, (w, h), image.get_pixels(), "raw", pixel_format, image.get_rowstride())
             if coding.startswith("png") and not self.supports_transparency and rgb=="RGBA":
+                log.info("converting to 24 bits supports_transparency=%s", self.supports_transparency)
                 im = im.convert("RGB")
                 bpp = 24
         except Exception, e:
