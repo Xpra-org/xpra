@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#@PydevCodeAnalysisIgnore
-
 import os as os
 import sys as sys
 from xpra.log import Logger, debug_if_env
