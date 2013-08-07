@@ -360,12 +360,12 @@ class SessionInfo(gtk.Window):
     def scaled_image(self, pixbuf, icon_size=None):
         if not icon_size:
             icon_size = self.get_icon_size()
-        return gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size,gtk.gdk.INTERP_BILINEAR))
+        return gtk.image_new_from_pixbuf(pixbuf.scale_simple(icon_size,icon_size, gdk.INTERP_BILINEAR))
 
     def add_graph_button(self, tooltip, click_cb):
         button = gtk.EventBox()
         def set_cursor(widget):
-            widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.BASED_ARROW_DOWN))
+            widget.window.set_cursor(gdk.Cursor(gdk.BASED_ARROW_DOWN))
         button.connect("realize", set_cursor)
         graph = gtk.Image()
         graph.set_size_request(0, 0)
@@ -741,13 +741,13 @@ class SessionInfo(gtk.Window):
                         pw, ph = pixmap.get_size()
                         w = max(w, pw)
                         h += ph
-                pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
                 pixbuf.fill(0x00000000)
                 x, y = 0, 0
                 for pixmap in pixmaps:
                     if pixmap:
                         pw, ph = pixmap.get_size()
-                        pixbuf = gtk.gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
+                        pixbuf = gdk.Pixbuf.get_from_drawable(pixbuf, pixmap, pixmap.get_colormap(), 0, 0, x, y, pw, ph)
                         y += ph
                 pixbuf.save(filename, "png")
         elif response in (gtk.RESPONSE_CANCEL, gtk.RESPONSE_CLOSE, gtk.RESPONSE_DELETE_EVENT):
