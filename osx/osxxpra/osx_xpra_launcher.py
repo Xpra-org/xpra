@@ -9,7 +9,7 @@ from xpra.platform.darwin.gui import get_OSXApplication
 from xpra.platform.darwin.info import get_sys_info
 from xpra.platform.darwin.keyboard import Keyboard
 from xpra.platform.darwin.options import add_client_options
-from xpra.platform.darwin.osx_menu import getOSXMenu
+from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin.osx_tray import OSXTray
 from xpra.platform.darwin.osx_clipboard import OSXClipboardProtocolHelper
 from xpra.platform.darwin.paths import get_resources_dir
