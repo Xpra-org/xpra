@@ -70,11 +70,15 @@ class GTKStatusIconTray(TrayBase):
 
     def get_geometry(self):
         ag = self.tray_widget.get_geometry()
-        debug("GTKStatusIconTray.get_geometry()=%s", ag)
+        debug("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
             return None
         _, geom, _ = ag
         return geom.x, geom.y, geom.width, geom.height
+
+    def get_size(self):
+        s = self.tray_widget.get_size()
+        return [s, s]
 
 
     def set_tooltip(self, text=None):

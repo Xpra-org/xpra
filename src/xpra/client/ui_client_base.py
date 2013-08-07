@@ -407,8 +407,16 @@ class UIXpraClient(XpraClientBase):
             log("tray_click(%s, %s, %s)", button, pressed, time)
             tray = self._id_to_window.get(wid)
             if tray:
-                modifiers = self.get_current_modifiers()
                 x, y = self.get_mouse_position()
+                #special case for crapple where we don't have
+                #the real location of the tray, so we have to
+                #cheat to make the click hit the default tray location
+                geom = tray.get_geometry()
+                if geom[:2]==ClientTray.DEFAULT_LOCATION:
+                    w, h = geom[2:4]
+                    x, y = int(w/2), int(h/2)
+                    log("faking location: %sx%s", x, y)
+                modifiers = self.get_current_modifiers()
                 self.send_positional(["button-action", wid,
                                               button, pressed, (x, y), modifiers])
                 tray.reconfigure()

@@ -59,7 +59,12 @@ class TrayBase(object):
 
     def get_geometry(self):
         raise Exception("override me!")
-        
+
+    def get_size(self):
+        g = self.get_geometry()
+        if g is None:
+            return None
+        return g[2:4]
 
     def set_tooltip(self, tooltip=None):
         self.tooltip = tooltip
