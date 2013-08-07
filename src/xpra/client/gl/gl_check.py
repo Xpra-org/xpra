@@ -7,8 +7,9 @@
 
 import sys, os
 import logging
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_OPENGL_DEBUG")
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
@@ -56,7 +57,7 @@ def check_functions(*functions):
     if len(missing)>0:
         gl_check_error("some required OpenGL functions are not available: %s" % (", ".join(missing)))
     else:
-        log("All the required OpenGL functions are available: %s " % (", ".join(available)))
+        debug("All the required OpenGL functions are available: %s " % (", ".join(available)))
 
 #sanity checks: OpenGL version and fragment program support:
 def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=False):
@@ -65,6 +66,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
     props = {}
     try:
         if SILENCE_FORMAT_HANDLER_LOGGER:
+            debug("silencing formathandler warnings")
             logging.getLogger('OpenGL.formathandler').setLevel(logging.WARN)
         import OpenGL
         props["pyopengl"] = OpenGL.__version__
@@ -78,12 +80,12 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             gl_check_error("OpenGL output requires version %s or greater, not %s.%s" %
                               (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
         else:
-            log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
+            debug("found valid OpenGL version: %s.%s", gl_major, gl_minor)
         try:
             extensions = glGetString(GL_EXTENSIONS).split(" ")
         except:
             gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
-        log("OpenGL extensions found: %s", ", ".join(extensions))
+        debug("OpenGL extensions found: %s", ", ".join(extensions))
         props["extensions"] = extensions
 
         from OpenGL.GL import GL_RENDERER, GL_VENDOR, GL_SHADING_LANGUAGE_VERSION
@@ -92,7 +94,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
                           ("shading language version", GL_SHADING_LANGUAGE_VERSION, False)):
             try:
                 v = glGetString(s)
-                log("%s: %s", d, v)
+                debug("%s: %s", d, v)
             except:
                 if fatal:
                     gl_check_error("OpenGL property '%s' is missing" % d)
@@ -104,7 +106,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         from OpenGL.GLU import gluGetString, GLU_VERSION, GLU_EXTENSIONS
         for d,s in {"GLU version": GLU_VERSION, "GLU extensions":GLU_EXTENSIONS}.items():
             v = gluGetString(s)
-            log("%s: %s", d, v)
+            debug("%s: %s", d, v)
             props[d] = v
 
         for k,vlist in BLACKLIST.items():
@@ -143,7 +145,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
             if ext not in extensions:
                 gl_check_error("OpenGL driver lacks support for extension: %s" % ext)
             else:
-                log("Extension %s is present", ext)
+                debug("Extension %s is present", ext)
 
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
@@ -151,13 +153,13 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         if not glInitFragmentProgramARB():
             gl_check_error("OpenGL output requires glInitFragmentProgramARB")
         else:
-            log("glInitFragmentProgramARB works")
+            debug("glInitFragmentProgramARB works")
 
         from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
         if not glInitTextureRectangleARB():
             gl_check_error("OpenGL output requires glInitTextureRectangleARB")
         else:
-            log("glInitTextureRectangleARB works")
+            debug("glInitTextureRectangleARB works")
 
         from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
             glBindProgramARB, glProgramStringARB
@@ -168,7 +170,7 @@ def check_GL_support(gldrawable, glcontext, min_texture_size=0, force_enable=Fal
         if min_texture_size>texture_size:
             gl_check_error("The texture size is too small: %s" % texture_size)
         else:
-            log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s", texture_size)
+            debug("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB=%s", texture_size)
         return props
     finally:
         if SILENCE_FORMAT_HANDLER_LOGGER:
@@ -182,12 +184,12 @@ def check_support(min_texture_size=0, force_enable=False):
     #tricks to get py2exe to include what we need / load it from its unusual path:
     opengl_icon = os.path.join(os.getcwd(), "icons", "opengl.png")
     if sys.platform.startswith("win"):
-        log("is frozen: %s", hasattr(sys, "frozen"))
+        debug("is frozen: %s", hasattr(sys, "frozen"))
         if hasattr(sys, "frozen"):
-            log("found frozen path: %s", sys.frozen)
+            debug("found frozen path: %s", sys.frozen)
             if sys.frozen in ("windows_exe", "console_exe"):
                 main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
-                log("main_dir=%s", main_dir)
+                debug("main_dir=%s", main_dir)
                 sys.path.insert(0, main_dir)
                 os.chdir(main_dir)
                 opengl_icon = os.path.join(main_dir, "icons", "opengl.png")
@@ -200,9 +202,9 @@ def check_support(min_texture_size=0, force_enable=False):
     from gtk import gdk
     import gtk.gdkgl, gtk.gtkgl
     assert gtk.gdkgl is not None and gtk.gtkgl is not None
-    log("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
+    debug("pygdkglext version=%s", gtk.gdkgl.pygdkglext_version)
     props["pygdkglext_version"] = gtk.gdkgl.pygdkglext_version
-    log("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
+    debug("pygdkglext OpenGL version=%s", gtk.gdkgl.query_version())
     props["gdkgl_version"] = gtk.gdkgl.query_version()
     display_mode = get_DISPLAY_MODE()
     try:
@@ -215,7 +217,7 @@ def check_support(min_texture_size=0, force_enable=False):
                            gtk.gdkgl.MODE_DOUBLE    : "DOUBLE",
                            gtk.gdkgl.MODE_SINGLE    : "SINGLE"}
     friendly_modes = [v for k,v in friendly_mode_names.items() if (k&display_mode)==k]
-    log("using display mode: %s", friendly_modes)
+    debug("using display mode: %s", friendly_modes)
     props["display_mode"] = friendly_modes
     props["glconfig"] = glconfig
     assert gtk.gdkgl.query_extension()
