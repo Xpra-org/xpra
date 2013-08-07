@@ -22,9 +22,10 @@ soundlog = debug_if_env(log, "XPRA_SOUND_DEBUG")
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.deque import maxdeque
 from xpra.client.client_base import XpraClientBase, EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE
+from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY
-from xpra.platform.gui import get_native_notifier_classes, ClientExtras
+from xpra.platform.gui import init as gui_init, ready as gui_ready, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_native_tray_menu_helper_classes, ClientExtras
 from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, codec_versions
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
@@ -60,6 +61,7 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
+        gui_init()
         self.start_time = time.time()
         self._window_to_id = {}
         self._id_to_window = {}
@@ -167,6 +169,7 @@ class UIXpraClient(XpraClientBase):
         self.keyboard_helper = None
         self.clipboard_helper = None
         self.clipboard_enabled = False
+        self.menu_helper = None
         self.tray = None
         self.notifier = None
         self.client_supports_notifications = False
@@ -214,9 +217,15 @@ class UIXpraClient(XpraClientBase):
 
         tray_icon_filename = opts.tray_icon
         if not opts.no_tray:
-            self.tray = self.make_tray(opts.delay_tray, opts.tray_icon)
+            self.menu_helper = self.make_tray_menu_helper()
+            self.tray = self.setup_xpra_tray(opts.tray_icon)
             if self.tray:
                 tray_icon_filename = self.tray.get_tray_icon_filename(tray_icon_filename)
+                if opts.delay_tray:
+                    self.tray.hide()
+                    self.connect("first-ui-received", self.tray.show)
+                else:
+                    self.tray.show()
 
         if self.client_supports_notifications:
             self.notifier = self.make_notifier()
@@ -251,7 +260,7 @@ class UIXpraClient(XpraClientBase):
     def cleanup(self):
         log("UIXpraClient.cleanup()")
         XpraClientBase.cleanup(self)
-        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier):
+        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper):
             if x is None:
                 continue
             if not hasattr(x, "cleanup"):
@@ -314,24 +323,9 @@ class UIXpraClient(XpraClientBase):
     def make_clipboard_helper(self):
         raise Exception("override me!")
 
-    def make_tray(self, delay_tray, tray_icon):
-        return None
-
-    def get_tray_classes(self):
-        return None
 
     def make_notifier(self):
-        ncs = self.get_notifier_classes()
-        log("make_notifier() options=%s", ncs)
-        for n in ncs:
-            try:
-                v = n()
-                log("make_notifier() %s()=%s", n, v)
-                if v:
-                    return v
-            except:
-                log.error("failed to instantiate %s", n, exc_info=True)
-        return None
+        return self.make_instance(self.get_notifier_classes())
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
@@ -339,8 +333,95 @@ class UIXpraClient(XpraClientBase):
         #use the native ones first:
         return get_native_notifier_classes()
 
-    def make_system_tray(self, wid, w, h):
-        raise Exception("override me!")
+
+    def make_system_tray(self, *args):
+        """ tray used for application systray forwarding """
+        return self.make_instance(self.get_system_tray_classes(), *args)
+
+    def get_system_tray_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_system_tray_classes()
+
+
+    def make_tray(self, *args):
+        """ tray used by our own application """
+        return self.make_instance(self.get_tray_classes(), *args)
+
+    def get_tray_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_tray_classes()
+
+
+    def make_tray_menu_helper(self):
+        """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
+        return self.make_instance(self.get_tray_menu_helper_classes(), self)
+
+    def get_tray_menu_helper_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_tray_menu_helper_classes()
+
+
+    def make_instance(self, class_options, *args):
+        log("make_instance%s", [class_options]+list(args))
+        for c in class_options:
+            try:
+                v = c(*args)
+                log("make_instance(..) %s()=%s", c, v)
+                if v:
+                    return v
+            except:
+                log.error("make_instance%s failed to instantiate %s", class_options+list(args), c, exc_info=True)
+        return None
+
+
+    def setup_xpra_tray(self, tray_icon_filename):
+        def xpra_tray_click(button, pressed, time=0):
+            log("xpra_tray_click(%s, %s)", button, pressed)
+            if button==1 and pressed:
+                self.menu_helper.activate()
+            elif button==3 and not pressed:
+                self.menu_helper.popup(button, time)
+        def xpra_tray_mouseover(*args):
+            log("xpra_tray_mouseover(%s)", args)
+        def xpra_tray_exit(*args):
+            log("xpra_tray_exit(%s)", args)
+            self.quit(0)
+        menu = None
+        if self.menu_helper:
+            menu = self.menu_helper.build()
+        return self.make_tray(menu, "Xpra", tray_icon_filename, None, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+
+    def setup_system_tray(self, client, wid, w, h):
+        def tray_resized(*args):
+            log("tray_resized(%s)", args)
+            tray = self._id_to_window.get(wid)
+            if tray:
+                tray.reconfigure()
+        def tray_click(button, pressed, time=0):
+            log("tray_click(%s, %s, %s)", button, pressed, time)
+            tray = self._id_to_window.get(wid)
+            if tray:
+                modifiers = self.get_current_modifiers()
+                x, y = self.get_mouse_position()
+                self.send_positional(["button-action", wid,
+                                              button, pressed, (x, y), modifiers])
+                tray.reconfigure()
+        def tray_mouseover(*args):
+            log("tray_mouseover(%s)", args)
+        def tray_exit(*args):
+            log("tray_exit(%s)", args)
+        #(menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
+        tray_widget = self.make_system_tray(None, "Xpra", None, tray_resized, tray_click, tray_mouseover, tray_exit)
+        assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
+        tray_widget.show()
+        return ClientTray(client, wid, w, h, tray_widget)
+
 
     def get_screen_sizes(self):
         raise Exception("override me!")
@@ -349,6 +430,9 @@ class UIXpraClient(XpraClientBase):
         raise Exception("override me!")
 
     def set_windows_cursor(self, client_windows, new_cursor):
+        raise Exception("override me!")
+
+    def get_mouse_position(self):
         raise Exception("override me!")
 
     def get_current_modifiers(self):
@@ -812,6 +896,7 @@ class UIXpraClient(XpraClientBase):
 
     def _startup_complete(self, *args):
         log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
+        gui_ready()
         if self.tray:
             self.tray.ready()
 
@@ -1103,7 +1188,7 @@ class UIXpraClient(XpraClientBase):
         self._ui_event()
         wid, w, h = packet[1:4]
         assert wid not in self._id_to_window, "we already have a window %s" % wid
-        tray = self.make_system_tray(self, wid, w, h)
+        tray = self.setup_system_tray(self, wid, w, h)
         log("process_new_tray(%s) tray=%s", packet, tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid

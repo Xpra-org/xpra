@@ -7,11 +7,9 @@
 # Ubuntu re-invents the wheel, and it's a broken one
 
 import os
-from xpra.client.tray_base import TrayBase
+from xpra.client.tray_base import TrayBase, debug
 from xpra.platform.paths import get_icon_dir
 
-from xpra.log import Logger
-log = Logger()
 
 def _is_ubuntu_11_10_or_later(self):
     lsb = "/etc/lsb-release"
@@ -29,10 +27,10 @@ def _is_ubuntu_11_10_or_later(self):
             if len(parts)!=2:
                 continue
             props[parts[0].strip()] = parts[1].strip()
-        log("found lsb properties: %s", props)
+        debug("found lsb properties: %s", props)
         if props.get("DISTRIB_ID")=="Ubuntu":
             version = [int(x) for x in props.get("DISTRIB_RELEASE", "0").split(".")]
-            log("detected Ubuntu release %s", version)
+            debug("detected Ubuntu release %s", version)
             return version>=[11,10]
     except:
         return False

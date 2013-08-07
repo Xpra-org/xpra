@@ -30,6 +30,18 @@ def get_native_notifier_classes():
         log("cannot load pynotify notifier: %s", e)
     return ncs
 
+def get_native_tray_classes():
+    tcs = []
+    try:
+        from xpra.platform.xposix.appindicator_tray import AppindicatorTray
+        tcs.append(AppindicatorTray)
+    except Exception, e:
+        log("cannot load appindicator tray: %s", e)
+    return []
+
+def get_native_system_tray_classes():
+    #appindicator can be used for both
+    return get_native_tray_classes()
 
 def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
     global device_bell

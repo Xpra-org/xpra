@@ -15,13 +15,30 @@ def init():
 def do_init():
     pass
 
+_ready_done = False
+def ready():
+    global _ready_done
+    if not _ready_done:
+        _ready_done = True
+        do_ready()
+
+def do_ready():
+    pass
+
+
 #defaults:
-def make_tray_menu(client):
+def get_native_tray_menu_helper_classes():
+    #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
-    return None
-def make_native_tray(*args):
+    return []
+def get_native_tray_classes(*args):
+    #the classes we can use for our system tray:
     #let the toolkit classes use their own
-    return None
+    return []
+def get_native_system_tray_classes(*args):
+    #the classes we can use for application system tray forwarding:
+    #let the toolkit classes use their own
+    return []
 def system_bell(*args):
     #let the toolkit classes use their own
     return False
@@ -32,9 +49,11 @@ ClientExtras = None
 
 from xpra.platform import platform_import
 platform_import(globals(), "gui", False,
+                "do_ready",
                 "do_init",
-                "make_tray_menu",
                 "ClientExtras",
-                "make_native_tray",
+                "get_native_tray_menu_helper_classes",
+                "get_native_tray_classes",
+                "get_native_system_tray_classes",
                 "get_native_notifier_classes",
                 "system_bell")

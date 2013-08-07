@@ -18,19 +18,17 @@ def get_native_notifier_classes():
         log("cannot load native win32 notifier: %s", e)
         return []
 
+def get_native_tray_classes():
+    try:
+        from xpra.platform.win32.win32_tray import Win32Tray
+        return [Win32Tray]
+    except Exception, e:
+        log("cannot load native win32 tray: %s", e)
+        return []
 
-def make_native_tray(tooltip, delay_tray, tray_icon, activate_cb, quit_cb):
-    from xpra.platform.win32.win32_tray import Win32Tray
-
-    def tray_exit(*args):
-        log("tray_exit() calling %s", quit_cb)
-        quit_cb()
-
-    def tray_activate(*args):
-        log("tray_activate() calling %s", activate_cb)
-        activate_cb()
-
-    return Win32Tray(tooltip, tray_activate, tray_exit, tray_icon)
+def get_native_system_tray_classes(*args):
+    #Win32Tray can be used for both:
+    return get_native_tray_classes()
 
 
 class ClientExtras(object):

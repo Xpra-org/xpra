@@ -7,24 +7,25 @@
 import os.path
 
 from xpra.platform.paths import get_icon_dir
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
-debug = log.debug
+debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
 
 
 class TrayBase(object):
+    """
+        Utility superclass for all tray implementations
+    """
 
-    def __init__(self, popup_cb, activate_cb, delay_tray):
-        self.popup_cb = popup_cb
-        self.activate_cb = activate_cb
-        self.delay_tray = delay_tray
+    def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+        self.menu = menu
+        self.tooltip = tooltip
+        self.size_changed_cb = size_changed_cb
+        self.click_cb = click_cb
+        self.mouseover_cb = mouseover_cb
+        self.exit_cb = exit_cb
         self.tray_widget = None
         self.default_icon_name = "xpra.png"
-
-    def get_tray_tooltip(self):
-        if self.client.session_name:
-            return "%s\non %s" % (self.client.session_name, self.connection.target)
-        return self.connection.target
 
     def cleanup(self):
         if self.tray_widget:
@@ -42,8 +43,7 @@ class TrayBase(object):
         return  None
 
     def ready(self):
-        if not self.delay_tray:
-            self.show()
+        pass
 
     def show(self):
         raise Exception("override me!")
@@ -51,10 +51,24 @@ class TrayBase(object):
     def hide(self):
         raise Exception("override me!")
 
-    def set_tooltip(self, text=None):
+    def get_screen(self):
+        return -1
+
+    def get_orientation(self):
+        return None     #assume "HORIZONTAL"
+
+    def get_geometry(self):
+        raise Exception("override me!")
+        
+
+    def set_tooltip(self, tooltip=None):
+        self.tooltip = tooltip
         raise Exception("override me!")
 
     def set_blinking(self, on):
+        raise Exception("override me!")
+
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
         raise Exception("override me!")
 
     def set_icon(self, basefilename):

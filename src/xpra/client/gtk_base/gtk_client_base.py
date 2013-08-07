@@ -24,8 +24,7 @@ from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import make_native_tray, system_bell
-from xpra.client.gtk_base.client_tray import ClientTray
+from xpra.platform.gui import system_bell
 try:
     from xpra.codecs.xor import xor_str        #@UnresolvedImport
 except:
@@ -41,7 +40,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
-        self.menu_helper = None
 
     def init(self, opts):
         GObjectXpraClient.init(self, opts)
@@ -68,13 +66,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if gtk.main_level()>0:
             log("GTKXpraClient.quit(%s) main loop at level %s, calling gtk quit via timeout", exit_code, gtk.main_level())
             gobject.timeout_add(500, gtk_main_quit_really)
-
-    def cleanup(self):
-        log("GTKXpraClient.cleanup() menu_helper=%s", self.menu_helper)
-        if self.menu_helper:
-            self.menu_helper.cleanup()
-            self.menu_helper = None
-        UIXpraClient.cleanup(self)
 
 
     def get_pixbuf(self, icon_name):
@@ -112,36 +103,25 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def make_keyboard_helper(self, keyboard_sync, key_shortcuts):
         return GTKKeyboardHelper(self.send, keyboard_sync, key_shortcuts, self.send_layout, self.send_keymap)
 
-    def make_tray(self, delay_tray, tray_icon):
-        self.menu_helper = self.make_tray_menu()
-        self.menu_helper.build()
-        tray = make_native_tray("Xpra", delay_tray, tray_icon, self.menu_helper.activate, self.quit)
-        if tray:
-            return tray
-        try:
-            from xpra.client.gtk_base.appindicator_tray import can_use_appindicator, AppindicatorTray
-            if can_use_appindicator():
-                return AppindicatorTray(self.menu_helper.menu, delay_tray, tray_icon)
-        except Exception, e:
-            log.warn("failed to load appindicator: %s" % e)
+    def _add_statusicon_tray(self, tray_list):
+        #add gtk.StatusIcon tray:
         try:
             from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
-            def popup(widget, button, time, *args):
-                self.menu_helper.popup(button, time)
-            def activate(*args):
-                self.menu_helper.activate()
-            gtk_tray = GTKStatusIconTray(popup, activate, delay_tray, tray_icon)
-            return gtk_tray
+            tray_list.append(GTKStatusIconTray)
         except Exception, e:
             log.warn("failed to load StatusIcon tray: %s" % e)
+        return tray_list
+
+    def get_tray_classes(self):
+        return self._add_statusicon_tray(UIXpraClient.get_tray_classes(self))
+
+    def get_system_tray_classes(self):
+        return self._add_statusicon_tray(UIXpraClient.get_system_tray_classes(self))
 
 
     def supports_system_tray(self):
         #always True: we can always use gtk.StatusIcon as fallback
         return True
-
-    def make_system_tray(self, client, wid, w, h):
-        return ClientTray(client, wid, w, h)
 
     def get_root_size(self):
         raise Exception("override me!")
@@ -149,6 +129,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def set_windows_cursor(self, gtkwindows, new_cursor):
         raise Exception("override me!")
 
+    def get_mouse_position(self):
+        return gdk.get_default_root_window().get_pointer()[:2]
 
     def get_current_modifiers(self):
         modifiers_mask = gdk.get_default_root_window().get_pointer()[-1]

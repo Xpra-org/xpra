@@ -7,6 +7,7 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
+import tempfile
 from xpra.log import Logger
 log = Logger()
 
@@ -16,17 +17,24 @@ from xpra.client.tray_base import TrayBase
 
 class Win32Tray(TrayBase):
 
-	def __init__(self, name, activate_menu, exit_cb, icon_filename):
-		TrayBase.__init__(self, None, activate_menu, False)
+	def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+		TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
 		self.default_icon_name = "xpra.ico"
 		icon_filename = self.get_tray_icon_filename(icon_filename)
-		self.tray_widget = win32NotifyIcon(name, activate_menu, exit_cb, None, icon_filename)
+		self.tray_widget = win32NotifyIcon(tooltip, click_cb, exit_cb, None, icon_filename)
 		#now let's try to hook the session notification
 		self.detect_win32_session_events(self.getHWND())
 		self.balloon_click_callback = None
 
 	def ready(self):
 		pass
+
+	def show(self):
+		pass
+
+	def hide(self):
+		pass
+
 
 	def getHWND(self):
 		if self.tray_widget is None:
@@ -44,6 +52,19 @@ class Win32Tray(TrayBase):
 	def set_tooltip(self, name):
 		if self.tray_widget:
 			self.tray_widget.set_tooltip(name)
+
+
+	def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+		#TODO: use native code somehow
+		import os
+		from gtk import gdk
+		try:
+			_, filename = tempfile.mkstemp(".ico", "temp")
+			tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+			tray_icon.save(filename, "ico")
+			self.set_icon(filename)
+		finally:
+			os.unlink(filename)
 
 	def set_icon(self, iconPathName):
 		if self.tray_widget:

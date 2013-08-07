@@ -107,6 +107,8 @@ if __name__ == "__main__":
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	from xpra.platform import init
+	from xpra.platform.gui import init as gui_init
 	init()
+	gui_init()
 	v = main()
 	sys.exit(v)

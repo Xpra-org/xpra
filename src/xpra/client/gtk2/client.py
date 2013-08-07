@@ -113,8 +113,10 @@ class XpraClient(GTKXpraClient):
         return  gtk.image_new_from_pixbuf(pixbuf)
 
 
-    def make_tray_menu(self):
-        return GTK2TrayMenu(self)
+    def get_tray_menu_helper_classes(self):
+        tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
+        tmhc.append(GTK2TrayMenu)
+        return tmhc
 
 
     def make_clipboard_helper(self):
@@ -367,25 +369,20 @@ class XpraClient(GTKXpraClient):
             return
         self.opengl_props["info"] = ""
         try:
-            try:
-                __import__("xpra.client.gl", {}, {}, [])
-                __import__("gtk.gdkgl", {}, {}, [])
-                __import__("gtk.gtkgl", {}, {}, [])
-                try:
-                    gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
-                    w, h = self.get_root_size()
-                    min_texture_size = max(w, h)
-                    self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
-    
-                    gl_client_window = __import__("xpra.client.gl.gl_client_window", {}, {}, ["GLClientWindow"])
-                    self.GLClientWindowClass = gl_client_window.GLClientWindow
-                    self.client_supports_opengl = True
-                    self.opengl_enabled = True
-                except:
-                    log.error("OpenGL setup failure:", exc_info=True)
-            except ImportError, e:
-                log.info("OpenGL support not enabled: %s", e)
-                self.opengl_props["info"] = str(e)
+            __import__("xpra.client.gl", {}, {}, [])
+            __import__("gtk.gdkgl", {}, {}, [])
+            __import__("gtk.gtkgl", {}, {}, [])
+            gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
+            w, h = self.get_root_size()
+            min_texture_size = max(w, h)
+            self.opengl_props = gl_check.check_support(min_texture_size, force_enable=(enable_opengl is True))
+            gl_client_window = __import__("xpra.client.gl.gl_client_window", {}, {}, ["GLClientWindow"])
+            self.GLClientWindowClass = gl_client_window.GLClientWindow
+            self.client_supports_opengl = True
+            self.opengl_enabled = True
+        except ImportError, e:
+            log.info("OpenGL support not enabled: %s", e)
+            self.opengl_props["info"] = str(e)
         except Exception, e:
             log.error("Error loading OpenGL support: %s", e, exc_info=True)
             self.opengl_props["info"] = str(e)

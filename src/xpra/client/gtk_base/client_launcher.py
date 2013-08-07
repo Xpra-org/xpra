@@ -38,6 +38,7 @@ from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES
 from xpra.scripts.main import connect_to, make_client
 from xpra.platform import init as platform_init
+from xpra.platform.gui import init as gui_init, ready as gui_ready
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 log = Logger()
@@ -594,6 +595,7 @@ def main():
 		from xpra.platform.win32 import set_log_filename
 		set_log_filename("Xpra-Launcher.log")
 	platform_init()
+	gui_init()
 	import logging
 	logging.basicConfig(format="%(asctime)s %(message)s")
 	logging.root.setLevel(logging.INFO)
@@ -622,6 +624,7 @@ def main():
 			gobject.idle_add(app.do_connect)
 		if not has_file:
 			app.reset_errors()
+		gui_ready()
 		if not app.config.autoconnect or app.config.debug:
 			app.show()
 		app.run()

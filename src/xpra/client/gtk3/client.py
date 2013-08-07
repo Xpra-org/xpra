@@ -4,11 +4,11 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient, xor_str
-from xpra.gtk_common.gobject_compat import import_gobject3, import_gtk3, import_gdk3
-gobject = import_gobject3()
-gtk = import_gtk3()
-gdk = import_gdk3()
-from gi.repository.GdkPixbuf import Pixbuf    #@UnresolvedImport
+
+from gi.repository import GObject               #@UnresolvedImport
+from gi.repository import Gtk                   #@UnresolvedImport
+from gi.repository import Gdk                   #@UnresolvedImport
+from gi.repository.GdkPixbuf import Pixbuf      #@UnresolvedImport
 from gi.repository.GdkPixbuf import InterpType  #@UnresolvedImport
 
 from xpra.client.gtk3.client_window import ClientWindow
@@ -19,8 +19,8 @@ log = Logger()
 
 class XpraClient(GTKXpraClient):
 
-    WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
-    INPUT_ONLY = gtk.WindowWindowClass.INPUT_ONLY
+    WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
+    INPUT_ONLY = Gtk.WindowWindowClass.INPUT_ONLY
     ClientWindowClass = ClientWindow
 
     def make_hello(self, challenge_response=None):
@@ -51,11 +51,13 @@ class XpraClient(GTKXpraClient):
     def do_get_image(self, pixbuf, size=None):
         if size>0:
             pixbuf = pixbuf.scale_simple(size, size, InterpType.BILINEAR)
-        return  gtk.Image.new_from_pixbuf(pixbuf)
+        return  Gtk.Image.new_from_pixbuf(pixbuf)
 
 
-    def make_tray_menu(self):
-        return GTK3TrayMenu(self)
+    def get_tray_menu_helper_classes(self):
+        tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
+        tmhc.append(GTK3TrayMenu)
+        return tmhc
 
     def make_clipboard_helper(self):
         return None
@@ -65,7 +67,7 @@ class XpraClient(GTKXpraClient):
         return []
 
     def get_root_size(self):
-        return gdk.get_default_root_window().get_geometry()[2:]
+        return Gdk.get_default_root_window().get_geometry()[2:]
 
     def set_windows_cursor(self, gtkwindows, new_cursor):
         pass
@@ -75,4 +77,4 @@ class XpraClient(GTKXpraClient):
         self.opengl_props = {"info" : "GTK3 does not support OpenGL"}
 
 
-gobject.type_register(XpraClient)
+GObject.type_register(XpraClient)
