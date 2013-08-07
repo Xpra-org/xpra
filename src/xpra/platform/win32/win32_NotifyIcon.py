@@ -28,6 +28,17 @@ BUTTON_MAP = {
 
 class win32NotifyIcon(object):
 
+	message_map = {
+		win32con.WM_DESTROY			: win32NotifyIcon.OnDestroy,
+		win32con.WM_COMMAND			: win32NotifyIcon.OnCommand,
+		win32NotifyIcon._message_id	: win32NotifyIcon.OnTaskbarNotify,
+	}
+	wc = win32gui.WNDCLASS()
+	wc.hInstance = win32api.GetModuleHandle(None)
+	wc.lpszClassName = "win32NotifyIcon"
+	wc.lpfnWndProc = message_map # could also specify a wndproc.
+	classAtom = win32gui.RegisterClass(wc)
+
 	def __init__(self, title, click_callback, exit_callback, command_callback=None, iconPathName=None):
 		self.title = title[:127]
 		self.click_callback = click_callback
@@ -36,20 +47,11 @@ class win32NotifyIcon(object):
 		self.current_icon = None
 		self.closed = False
 		self._message_id = win32con.WM_USER+20		#a message id we choose
-		message_map = {
-			win32con.WM_DESTROY	: self.OnDestroy,
-			win32con.WM_COMMAND	: self.OnCommand,
-			self._message_id	: self.OnTaskbarNotify,
-		}
 		# Register the Window class.
-		wc = win32gui.WNDCLASS()
-		self.hinst = wc.hInstance = win32api.GetModuleHandle(None)
-		wc.lpszClassName = "win32NotifyIcon"
-		wc.lpfnWndProc = message_map # could also specify a wndproc.
-		classAtom = win32gui.RegisterClass(wc)
+		self.hinst = win32NotifyIcon.wc.hInstance
 		# Create the Window.
 		style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-		self.hwnd = win32gui.CreateWindow(classAtom, self.title+" StatusIcon Window", style, \
+		self.hwnd = win32gui.CreateWindow(win32NotifyIcon.classAtom, self.title+" StatusIcon Window", style, \
 		0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
 		0, 0, self.hinst, None)
 		win32gui.UpdateWindow(self.hwnd)
@@ -141,7 +143,7 @@ def main():
 		win32gui.PostQuitMessage(0) # Terminate the app.
 
 	iconPathName = os.path.abspath(os.path.join( sys.prefix, "pyc.ico"))
-	w = win32NotifyIcon(notify_callback, win32_quit, command_callback, iconPathName)
+	win32NotifyIcon(notify_callback, win32_quit, command_callback, iconPathName)
 	win32gui.PumpMessages()
 
 
