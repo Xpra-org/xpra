@@ -44,7 +44,13 @@ class ClientTray(ClientWidgetBase):
     def get_geometry(self):
         return self._geometry or ClientTray.DEFAULT_GEOMETRY
 
-    def reconfigure(self):
+    def get_tray_geometry(self):
+        return self.tray_widget.get_geometry()
+
+    def get_tray_size(self):
+        return self.tray_widget.get_size()
+
+    def reconfigure(self, force_send_configure=False):
         geometry = self.tray_widget.get_geometry()
         if geometry is None:
             if self._geometry:
@@ -58,7 +64,7 @@ class ClientTray(ClientWidgetBase):
         if w<=1 or h<=1:
             w, h = ClientTray.DEFAULT_SIZE
             geometry = x, y, w, h
-        if self._geometry is None or geometry!=self._geometry:
+        if force_send_configure or self._geometry is None or geometry!=self._geometry:
             self._geometry = geometry
             client_properties = {"encoding.transparency": True}
             orientation = self.tray_widget.get_orientation()
@@ -76,7 +82,7 @@ class ClientTray(ClientWidgetBase):
         w = max(1, w)
         h = max(1, h)
         self._geometry = x, y, w, h
-        self.reconfigure()
+        self.reconfigure(True)
 
     def new_backing(self, w, h):
         self._size = w, h

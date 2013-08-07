@@ -409,13 +409,21 @@ class UIXpraClient(XpraClientBase):
             if tray:
                 x, y = self.get_mouse_position()
                 #special case for crapple where we don't have
-                #the real location of the tray, so we have to
-                #cheat to make the click hit the default tray location
-                geom = tray.get_geometry()
-                if geom[:2]==ClientTray.DEFAULT_LOCATION:
-                    w, h = geom[2:4]
-                    x, y = int(w/2), int(h/2)
-                    log("faking location: %sx%s", x, y)
+                #the real location of the tray, so we may have to
+                #move where the tray is mapped to ensure the click
+                #does hit it... what a lot of ****
+                tx, ty, tw, th = tray.get_geometry()
+                if tray.get_tray_geometry() is None:
+                    #ok so, we don't have the real location...
+                    #is the click within the current bounds:
+                    if x<tx or x>(tx+tw) or y<ty or y>(ty+th):
+                        #no, so we have to move the tray first
+                        #we'll assume the click was in the middle
+                        tww, twh = tray.get_tray_size() or [24, 24]
+                        tx = max(0, int(x - tww/2))
+                        ty = max(0, int(y - twh/2))
+                        log("moving tray to: %sx%s", tx, ty)
+                        tray.move_resize(tx, ty, tww, twh)
                 modifiers = self.get_current_modifiers()
                 self.send_positional(["button-action", wid,
                                               button, pressed, (x, y), modifiers])
