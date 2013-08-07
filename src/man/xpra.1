@@ -200,15 +200,18 @@ forwarding enabled will also use a display number; ssh generally picks
 numbers near ten (10, 11, 12, ...).
 .PP
 When specifying an xpra server to a client program like \fBxpra
-attach\fP or \fBxpra stop\fP, then you can use a display of the form
+attach\fP, \fBxpra detach\fP, \fBxpra stop\fP, \fBxpra version\fP,
+\fBxpra info\fP, \fBxpra list\fP or \fBxpra screenshot\fP then you
+can use a display of the form
 \fB:\fP\fINUMBER\fP to refer to a server on the local host, or one of
 the form \fBssh:\fP\fI[USER@]HOST\fP\fB:\fP\fINUMBER\fP to refer to a server
 on a remote host; xpra will automatically connect to the remote host
-using \fBssh\fP(1).  Generally, if you have only one xpra server
-running on a machine, then you can omit the number entirely; \fBxpra
+using \fBssh\fP(1).  Generally, if you have only one xpra session
+running on a machine (which you can verify by running \fBxpra list\fP
+on that machine), then you can omit the number entirely; \fBxpra
 attach\fP alone will attach to the lone xpra server on the current
 machine regardless of its number, \fBxpra attach ssh:frodo\fP will
-similarly attach to the lone xpra server on a remote machine.
+similarly attach to the lone xpra session on a remote machine.
 
 If the xpra server was given the \fB\-\-bind\-tcp\fP option when
 started (which is a security risk unless the \fB\-\-password\-file\fP
