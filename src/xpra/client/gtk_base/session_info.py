@@ -160,10 +160,11 @@ class SessionInfo(gtk.Window):
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
         opengl_box = gtk.HBox(False, 20)
-        self.server_opengl_label = label()
-        self.server_opengl_icon = gtk.Image()
-        opengl_box.add(self.server_opengl_icon)
-        opengl_box.add(self.server_opengl_label)
+        self.client_opengl_label = label()
+        self.client_opengl_label.set_line_wrap(True)
+        self.client_opengl_icon = gtk.Image()
+        opengl_box.add(self.client_opengl_icon)
+        opengl_box.add(self.client_opengl_label)
         tb.new_row("Client OpenGL", opengl_box)
         self.opengl_buffering = label()
         tb.new_row("OpenGL Buffering", self.opengl_buffering)
@@ -446,7 +447,7 @@ class SessionInfo(gtk.Window):
                 size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
         self.server_randr_label.set_text("%s" % size_info)
-        self.bool_icon(self.server_opengl_icon, self.client.client_supports_opengl)
+        self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
         buffering = "n/a"
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
@@ -459,7 +460,7 @@ class SessionInfo(gtk.Window):
                 buffering = "unknown"
         else:
             glinfo = self.client.opengl_props.get("info", "")
-        self.server_opengl_label.set_text(glinfo)
+        self.client_opengl_label.set_text(glinfo)
         self.opengl_buffering.set_text(buffering)
 
         scaps = self.client.server_capabilities
