@@ -607,6 +607,9 @@ class OverrideRedirectWindowModel(BaseWindowModel):
     def raise_window(self):
         self.client_window.raise_()
 
+    def __repr__(self):
+        return "OverrideRedirectWindowModel(%s)" % self.client_window
+
 
 gobject.type_register(OverrideRedirectWindowModel)
 
@@ -634,6 +637,9 @@ class SystemTrayWindowModel(OverrideRedirectWindowModel):
         self.client_window.move_resize(x, y, width, height)
         border = self._geometry[4]
         self._geometry = (x, y, width, height, border)
+
+    def __repr__(self):
+        return "SystemTrayWindowModel(%s)" % self.client_window
 
 
 class WindowModel(BaseWindowModel):
@@ -1365,5 +1371,9 @@ class WindowModel(BaseWindowModel):
                 except OSError:
                     log.warn("failed to kill() client with pid %s", pid)
         trap.swallow_synced(X11Window.XKillClient, get_xwindow(self.client_window))
+
+    def __repr__(self):
+        return "WindowModel(%s)" % self.client_window
+
 
 gobject.type_register(WindowModel)
