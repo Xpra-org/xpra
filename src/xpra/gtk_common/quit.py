@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import gobject
 import traceback
 
 
@@ -39,6 +38,8 @@ def gtk_main_quit_really():
             # unregister ourselves so that it's possible to start the
             # main-loop again if desired:
             return False
+    from xpra.gtk_common.gobject_compat import import_gobject
+    gobject = import_gobject()
     gobject.timeout_add(0, gtk_main_quit_forever)
 
 # If a user hits control-C, and we are currently executing Python code below
