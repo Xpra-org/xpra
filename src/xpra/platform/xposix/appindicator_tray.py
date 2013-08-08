@@ -110,6 +110,9 @@ def main():
         debug("appindicator not available")
         return
 
+    if not can_use_appindicator():
+        debug("appindicator may not be shown...")
+
     from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
     gobject = import_gobject()
     gtk = import_gtk()
@@ -117,7 +120,9 @@ def main():
     menu = gtk.Menu()
     item = gtk.MenuItem("Some Menu Item Here")
     menu.append(item)
-    AppindicatorTray(menu, "test", "xpra.png", None, None, None, gtk.main_quit)
+    menu.show_all()
+    a = AppindicatorTray(menu, "test", "xpra.png", None, None, None, gtk.main_quit)
+    a.show()
     gobject.timeout_add(1000*10, gtk.main_quit)
     gtk.main()
 
