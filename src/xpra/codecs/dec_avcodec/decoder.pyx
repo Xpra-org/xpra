@@ -452,10 +452,12 @@ cdef class Decoder:
             return None
             #raise Exception("avcodec_decode_video2 failed to decode this frame and returned %s, decoder=%s" % (len, self.get_info()))
 
-        #actual pixfmt:
-        if self.pix_fmt!=self.frame.format:
+        if self.actual_pix_fmt!=self.frame.format:
             self.actual_pix_fmt = self.frame.format
-            debug("avcodec actual output pixel format is %s: %s" % (self.pix_fmt, self.get_actual_colorspace()))
+            if self.actual_pix_fmt not in ENUM_TO_FORMAT:
+                self.frame_error()
+                raise Exception("unknown output pixel format: %s, expected %s (%s)" % (self.actual_pix_fmt, self.pix_fmt, self.colorspace))
+            debug("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         #print("decompress image: colorspace=%s / %s" % (self.colorspace, self.get_colorspace()))
         cs = self.get_actual_colorspace()
