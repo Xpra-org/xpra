@@ -47,22 +47,15 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx b/xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	2013-08-08 15:46:25.160461837 +0700
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	2013-08-08 15:47:20.451796824 +0700
-@@ -108,12 +108,12 @@
-             "YUV420P"   : "PIX_FMT_YUV420P",
+@@ -109,8 +109,8 @@
              "YUV422P"   : "PIX_FMT_YUV422P",
              "YUV444P"   : "PIX_FMT_YUV444P",        
--            "RGB"       : "PIX_FMT_RGB24",
+             "RGB"       : "PIX_FMT_RGB24",
 -            "XRGB"      : "PIX_FMT_0RGB",
 -            "BGRX"      : "PIX_FMT_BGR0",
--            "ARGB"      : "PIX_FMT_ARGB",
--            "BGRA"      : "PIX_FMT_BGRA",
--            "GBRP"      : "PIX_FMT_GBRP",
-+            #"RGB"       : "PIX_FMT_RGB24",
-+            #"XRGB"      : "PIX_FMT_0RGB",
-+            #"BGRX"      : "PIX_FMT_BGR0",
-+            #"ARGB"      : "PIX_FMT_ARGB",
-+            #"BGRA"      : "PIX_FMT_BGRA",
-+            #"GBRP"      : "PIX_FMT_GBRP",
-          }.items():
-         if av_enum_str not in const:
-             debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
++            "XRGB"      : "PIX_FMT_ARGB",
++            "BGRX"      : "PIX_FMT_BGRA",
+             "ARGB"      : "PIX_FMT_ARGB",
+             "BGRA"      : "PIX_FMT_BGRA",
+             "GBRP"      : "PIX_FMT_GBRP",
+
