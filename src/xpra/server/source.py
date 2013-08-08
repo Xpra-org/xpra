@@ -6,13 +6,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import thread
 import os
 import time
-try:
-    from queue import Queue         #@UnresolvedImport @UnusedImport (python3)
-except:
-    from Queue import Queue         #@Reimport
 from collections import deque
 from threading import Event
 
@@ -28,7 +23,7 @@ from xpra.simple_stats import add_list_stats, std_unit
 from xpra.scripts.config import HAS_SOUND, python_platform
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import platform_name, StringIOClass
+from xpra.os_util import platform_name, StringIOClass, thread, Queue
 from xpra.util import alnum
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None

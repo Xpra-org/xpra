@@ -10,6 +10,19 @@ import os
 import sys
 import signal
 
+#hide some ugly python3 compat:
+try:
+    import _thread    as thread         #@UnresolvedImport @UnusedImport (python3)
+except:
+    import thread                       #@Reimport @UnusedImport
+
+try:
+    from queue import Queue             #@UnresolvedImport @UnusedImport (python3)
+except ImportError:
+    from Queue import Queue             #@Reimport @UnusedImport
+
+
+
 SIGNAMES = {signal.SIGINT:"SIGINT", signal.SIGTERM:"SIGTERM"}
 
 

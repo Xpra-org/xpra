@@ -5,11 +5,11 @@
 
 from PyQt4 import QtCore
 
+from xpra.os_util import Queue
 from xpra.log import Logger
 log = Logger()
 
 
-from Queue import Queue
 class Invoker(QtCore.QObject):
     def __init__(self):
         super(Invoker, self).__init__()

@@ -17,27 +17,13 @@ import os
 import threading
 import errno
 import binascii
-
-USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
-PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
-FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
-
-if sys.version_info[:2]>=(2,5):
-    def unpack_header(buf):
-        return struct.unpack_from('!cBBBL', buf)
-else:
-    def unpack_header(buf):
-        return struct.unpack('!cBBBL', "".join(buf))
-
-try:
-    from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
-except:
-    from Queue import Queue     #@Reimport
 from threading import Lock
+
 
 from xpra.log import Logger
 log = Logger()
 
+from xpra.os_util import Queue
 from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
@@ -65,6 +51,18 @@ if sys.version > '3':
 else:
     def zcompress(packet, level):
         return compress(packet, level)
+
+if sys.version_info[:2]>=(2,5):
+    def unpack_header(buf):
+        return struct.unpack_from('!cBBBL', buf)
+else:
+    def unpack_header(buf):
+        return struct.unpack('!cBBBL', "".join(buf))
+
+USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
+PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
+FAKE_JITTER = int(os.environ.get("XPRA_FAKE_JITTER", "0"))
+
 
 
 def repr_ellipsized(obj, limit=100):

@@ -22,6 +22,13 @@ elif hasattr(gtk, "_version"):
     GTK_VERSION_INFO["gtk_version"] = gtk._version
 
 
+if is_gtk3():
+    #where is this gone now?
+    FILL = None
+else:
+    FILL = gtk.FILL
+
+
 def add_gtk_version_info(props, gtk, prefix="", new_namespace=False):
     #update props given:
     global GTK_VERSION_INFO
@@ -232,7 +239,7 @@ class TableBuilder(object):
                 i += 1
         self.inc()
 
-    def attach(self, widget, i, count=1, xoptions=gtk.FILL, xpadding=10):
+    def attach(self, widget, i, count=1, xoptions=FILL, xpadding=10):
         self.table.attach(widget, i, i+count, self.row, self.row+1, xoptions=xoptions, xpadding=xpadding)
 
     def inc(self):

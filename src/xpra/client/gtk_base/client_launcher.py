@@ -15,11 +15,6 @@ import sys
 import shlex
 import signal
 
-try:
-	import _thread	as thread		#@UnresolvedImport @UnusedImport (python3)
-except:
-	import thread					#@Reimport
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobject
 gtk = import_gtk()
 gdk = import_gdk()
@@ -32,7 +27,7 @@ from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
 gtk_main_quit_on_fatal_exceptions_enable()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config, PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import set_tooltip_text, add_close_accel, scaled_image
-from xpra.os_util import set_prgname
+from xpra.os_util import set_prgname, thread
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.client.gtk_base.about import about
 from xpra.client.client_base import SIGNAMES

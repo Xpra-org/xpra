@@ -8,12 +8,6 @@
 import os
 import time
 import ctypes
-import thread
-try:
-    from queue import Queue     #@UnresolvedImport @UnusedImport (python3)
-except ImportError:
-    from Queue import Queue     #@Reimport
-
 
 from xpra.log import Logger, debug_if_env
 log = Logger()
@@ -30,7 +24,7 @@ from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, 
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import set_application_name
+from xpra.os_util import set_application_name, thread, Queue
 from xpra.util import nn
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS

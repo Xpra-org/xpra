@@ -12,7 +12,6 @@ import sys
 import hmac
 import time
 import socket
-import thread
 import signal
 
 from xpra.log import Logger
@@ -23,9 +22,8 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, pyt
         has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
-from xpra.os_util import get_hex_uuid, platform_name, SIGNAMES
+from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
-from xpra.os_util import set_application_name
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
 MAX_CONCURRENT_CONNECTIONS = 20

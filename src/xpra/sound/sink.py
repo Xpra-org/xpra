@@ -4,11 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os, time, thread
+import sys, os, time
 
 from xpra.sound.sound_pipeline import SoundPipeline, debug
 from xpra.sound.pulseaudio_util import has_pa
 from xpra.sound.gstreamer_util import plugin_str, get_decoder_parser, MP3, CODECS, gst
+from xpra.os_util import thread
 from xpra.log import Logger
 log = Logger()
 
