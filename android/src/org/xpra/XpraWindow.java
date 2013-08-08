@@ -198,10 +198,7 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 	public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
 		this.log("onCreateInputConnection("+outAttrs+")");
 		BaseInputConnection bic = null;
-		if (true)
-			bic = new XpraInputConnection(this, false);
-		else
-			bic = new BaseInputConnection(this, false);
+		bic = new XpraInputConnection(this, false);
 		outAttrs.actionLabel = null;
 		outAttrs.inputType = InputType.TYPE_NULL;
 		outAttrs.imeOptions = EditorInfo.IME_ACTION_NEXT;
@@ -444,11 +441,11 @@ public class XpraWindow extends RelativeLayout implements ClientWindow, OnKeyLis
 			DragLayer mDragLayer = this.client.context.mDragLayer;
 			this.log("onTouchEvent(" + ev + ") rawX=" + ev.getRawX() + ", rawY=" + ev.getRawY() + ", dragLeft=" + mDragLayer.getLeft() + ", dragTop="
 					+ mDragLayer.getTop() + ")");
-			float ex = ev.getX() + this.layoutParams.x;
-			float ey = ev.getY() + this.layoutParams.y;
+			Float ex = Float.valueOf(ev.getX() + this.layoutParams.x);
+			Float ey = Float.valueOf(ev.getY() + this.layoutParams.y);
 			Vector<Integer> pointer = new Vector<Integer>(2);
-			pointer.add(new Float(ex).intValue());
-			pointer.add(new Float(ey).intValue());
+			pointer.add(ex.intValue());
+			pointer.add(ey.intValue());
 			// this.client.send_mouse_position("pointer-position", this.id, pointer, "");
 			int pressed = action == MotionEvent.ACTION_DOWN ? 1 : 0;
 			this.client.send_positional("button-action", this.id, 1, pressed, pointer, "");
