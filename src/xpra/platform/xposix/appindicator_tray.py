@@ -35,6 +35,10 @@ def _is_ubuntu_11_10_or_later(self):
     except:
         return False
 
+def is_unity():
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").toLower() == "unity"
+
+
 try:
     try:
         import appindicator            #@UnresolvedImport @UnusedImport
@@ -47,7 +51,7 @@ except:
     appindicator = None
 
 def can_use_appindicator():
-    return appindicator is not None and _is_ubuntu_11_10_or_later()
+    return appindicator is not None and _is_ubuntu_11_10_or_later() and is_unity()
 
 
 class AppindicatorTray(TrayBase):
