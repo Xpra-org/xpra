@@ -67,7 +67,8 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_icon(filename)
         else:
             self.tray_widget.set_label("Xpra")
-        self.tray_widget.set_menu(menu)
+        if menu:
+            self.tray_widget.set_menu(menu)
         return  True
 
     def hide(self, *args):
@@ -113,7 +114,11 @@ def main():
     from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
     gobject = import_gobject()
     gtk = import_gtk()
-    AppindicatorTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)
+
+    menu = gtk.Menu()
+    item = gtk.MenuItem("Some Menu Item Here")
+    menu.append(item)
+    AppindicatorTray(menu, "test", "xpra.png", None, None, None, gtk.main_quit)
     gobject.timeout_add(1000*10, gtk.main_quit)
     gtk.main()
 
