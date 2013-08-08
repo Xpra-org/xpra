@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
+
+from xpra.gtk_common.gobject_compat import import_gdk
+gdk = import_gdk()
 import math
 
 DEFAULT_COLOURS = [(0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6)]
@@ -26,7 +28,7 @@ def make_graph_pixmap(data, labels=None, width=320, height=200, title=None,
                       colours=DEFAULT_COLOURS, dots=False, curves=True):
     #print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
     #                  show_y_scale, show_x_scale, min_y_scale, colours))
-    pixmap = gtk.gdk.Pixmap(None, width, height, 24)
+    pixmap = gdk.Pixmap(None, width, height, 24)
     y_label_chars = 4
     x_offset = y_label_chars*8
     y_offset = 20

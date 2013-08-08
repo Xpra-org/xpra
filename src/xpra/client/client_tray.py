@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_TRAY_DEBUG")
 
-from xpra.client.gtk2.pixmap_backing import GTK2WindowBacking
+from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 
 
 class ClientTray(ClientWidgetBase):
@@ -128,7 +128,7 @@ class ClientTray(ClientWidgetBase):
         return "ClientTray(%s)" % self._id
 
 
-class TrayBacking(GTK2WindowBacking):
+class TrayBacking(GTKWindowBacking):
     """
         This backing only stores the rgb pixels so
         we can use them with the real widget.
@@ -137,7 +137,7 @@ class TrayBacking(GTK2WindowBacking):
     def __init__(self, wid, w, h, has_alpha):
         self.pixels = None
         self.format = None
-        GTK2WindowBacking.__init__(self, wid, w, h, has_alpha)
+        GTKWindowBacking.__init__(self, wid, w, h, has_alpha)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         self.pixels = img_data

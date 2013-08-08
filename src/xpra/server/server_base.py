@@ -26,6 +26,10 @@ from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_na
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
 
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
+
+
 MAX_CONCURRENT_CONNECTIONS = 20
 PLATFORM_NAME = platform_name(sys.platform, python_platform.release())
 

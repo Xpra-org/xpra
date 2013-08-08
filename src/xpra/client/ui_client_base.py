@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import time
 import ctypes
 
@@ -34,6 +35,9 @@ except:
 DRAW_DEBUG = os.environ.get("XPRA_DRAW_DEBUG", "0")=="1"
 FAKE_BROKEN_CONNECTION = os.environ.get("XPRA_FAKE_BROKEN_CONNECTION", "0")=="1"
 PING_TIMEOUT = int(os.environ.get("XPRA_PING_TIMEOUT", "60"))
+
+if sys.version > '3':
+    unicode = str           #@ReservedAssignment
 
 
 """

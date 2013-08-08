@@ -68,6 +68,8 @@ gst_version = ""
 if sys.platform.startswith("win"):
     if hasattr(sys, "frozen"):
         if sys.frozen in ("windows_exe", "console_exe"):
+            if sys.version > '3':
+                unicode = str           #@ReservedAssignment
             main_dir = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
             os.environ["GST_PLUGIN_PATH"] = os.path.join(main_dir, "gstreamer-0.10")
 #now do the import with stderr redirection:

@@ -20,7 +20,7 @@ log = Logger()
 class XpraClient(GTKXpraClient):
 
     WINDOW_TOPLEVEL = Gtk.WindowType.TOPLEVEL
-    INPUT_ONLY = Gtk.WindowWindowClass.INPUT_ONLY
+    INPUT_ONLY = None #got moved again???? Gtk.WindowWindowClass.INPUT_ONLY
     ClientWindowClass = ClientWindow
 
     def make_hello(self, challenge_response=None):
