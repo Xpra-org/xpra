@@ -9,14 +9,15 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_gobjec
 gtk = import_gtk()
 gdk = import_gdk()
 gobject = import_gobject()
+import sys
 import time
 import datetime
-import platform
 
+from xpra.os_util import platform_name
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
-from xpra.scripts.config import HAS_SOUND
+from xpra.scripts.config import HAS_SOUND, python_platform
 from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, set_tooltip_text, TableBuilder, imagebutton
 log = Logger()
@@ -102,6 +103,16 @@ class SessionInfo(gtk.Window):
         tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.inc()
 
+        def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution):
+            s = platform_name(sys_platform, platform_release)
+            if platform_linux_distribution and len(platform_linux_distribution)==3 and len(platform_linux_distribution[0])>0:
+                s += "\n%s" % (" ".join(platform_linux_distribution))
+            elif platform_platform:
+                s += "\n%s" % platform_platform
+            return s
+        LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), python_platform.linux_distribution())
+        SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
+        tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
         from xpra.__init__ import __version__
         tb.new_row("Xpra", label(__version__), label(self.client._remote_version or "unknown"))
@@ -138,7 +149,7 @@ class SessionInfo(gtk.Window):
         else:
             tb.new_row("PyGTK", label(client_version_info("pygtk_version")), label(server_version_info("pygtk.version", "pygtk_version")))
             tb.new_row("GTK", label(client_version_info("gtk_version")), label(server_version_info("gtk.version", "gtk_version")))
-        tb.new_row("Python", label(platform.python_version()), label(server_version_info("server.python.version", "python_version")))
+        tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version")))
         cl_gst_v, cl_pygst_v = "", ""
         if HAS_SOUND:
             try:

@@ -726,6 +726,10 @@ class ServerBase(object):
         capabilities["max_desktop_size"] = self.get_max_screen_size()
         capabilities["version"] = xpra.__version__
         capabilities["platform"] = sys.platform
+        capabilities["platform.release"] = python_platform.release()
+        capabilities["platform.platform"] = python_platform.platform()
+        if sys.platform.startswith("linux"):
+            capabilities["platform.linux_distribution"] = python_platform.linux_distribution()
         capabilities["python_version"] = python_platform.python_version()
         encs = SERVER_ENCODINGS[:]
         if not self.generic_rgb_encodings:
@@ -833,6 +837,10 @@ class ServerBase(object):
         info["server.type"] = "Python"
         info["server.byteorder"] = sys.byteorder
         info["server.platform"] = PLATFORM_NAME
+        info["server.platform.release"] = python_platform.release()
+        info["server.platform.platform"] = python_platform.platform()
+        if sys.platform.startswith("linux"):
+            info["server.platform.linux_distribution"] = python_platform.linux_distribution()
         info["server.pid"] = os.getpid()
         for x in ("uid", "gid"):
             if hasattr(os, "get%s" % x):

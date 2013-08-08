@@ -68,6 +68,10 @@ class XpraClientBase(object):
         self.server_capabilities = {}
         self._remote_version = None
         self._remote_revision = None
+        self._remote_platform = None
+        self._remote_platform_release = None
+        self._remote_platform_platform = None
+        self._remote_platform_linux_distribution = None
         self.make_uuid()
         self.init_packet_handlers()
 
@@ -348,6 +352,10 @@ class XpraClientBase(object):
         self._remote_version = capabilities.get("version")
         self._remote_revision = capabilities.get("revision")
         self._remote_revision = capabilities.get("build.revision", self._remote_revision)
+        self._remote_platform = capabilities.get("platform")
+        self._remote_platform_release = capabilities.get("platform.release")
+        self._remote_platform_platform = capabilities.get("platform.platform")
+        self._remote_platform_linux_distribution = capabilities.get("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
