@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char * s, int len)
     ctypedef int Py_ssize_t
     ctypedef void** const_void_pp "const void**"
     int PyObject_AsWriteBuffer(object obj,
