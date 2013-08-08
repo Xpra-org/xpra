@@ -123,6 +123,8 @@ def init_colorspaces():
         ENUM_TO_FORMAT[av_enum] = pix_fmt
         COLORSPACES.append(pix_fmt)
     debug("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
+    if len(COLORSPACES)==0:
+        error("avcodec installation problem: no colorspaces found!")
 
 def get_colorspaces():
     init_colorspaces()
