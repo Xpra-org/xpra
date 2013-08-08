@@ -69,7 +69,6 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_label("Xpra")
         if menu:
             self.tray_widget.set_menu(menu)
-        return  True
 
     def hide(self, *args):
         self.tray_widget.set_status(appindicator.STATUS_PASSIVE)
