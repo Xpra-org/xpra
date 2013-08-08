@@ -11,7 +11,7 @@ from xpra.client.tray_base import TrayBase, debug
 from xpra.platform.paths import get_icon_dir
 
 
-def _is_ubuntu_11_10_or_later(self):
+def _is_ubuntu_11_10_or_later():
     lsb = "/etc/lsb-release"
     if not os.path.exists(lsb):
         return  False
