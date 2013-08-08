@@ -42,6 +42,7 @@ class WindowBackingBase(object):
         self._backing = None
         self._last_pixmap_data = None
         self._video_decoder = None
+        self._csc_prep = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self.draw_needs_refresh = True
@@ -68,11 +69,17 @@ class WindowBackingBase(object):
         if self._decoder_lock is None or not self._decoder_lock.acquire(blocking):
             return False
         try:
-            self.do_clean_csc_decoder()
+            self.do_clean_csc_prep()
             self.do_clean_video_decoder()
+            self.do_clean_csc_decoder()
             return True
         finally:
             self._decoder_lock.release()
+
+    def do_clean_csc_prep(self):
+        if self._csc_prep:
+            self._csc_prep.clean()
+            self._csc_prep = None
 
     def do_clean_video_decoder(self):
         if self._video_decoder:
@@ -204,7 +211,10 @@ class WindowBackingBase(object):
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
         assert x==0 and y==0
+        assert hasattr(decoder_module, "Decoder"), "decoder module %s does not have 'Decoder' factory function!" % decoder_module
+        assert hasattr(decoder_module, "get_colorspaces"), "decoder module %s does not have 'get_colorspaces' function!" % decoder_module
         factory = getattr(decoder_module, "Decoder")
+        get_colorspaces = getattr(decoder_module, "get_colorspaces")
         try:
             self._decoder_lock.acquire()
             if self._backing is None:
@@ -212,13 +222,45 @@ class WindowBackingBase(object):
                 fire_paint_callbacks(callbacks, False)
                 return  False
             enc_width, enc_height = options.get("scaled_size", (width, height))
-            colorspace = options.get("csc")
-            if not colorspace:
+            input_colorspace = options.get("csc")
+            if not input_colorspace:
                 # Backwards compatibility with pre 0.10.x clients
                 # We used to specify the colorspace as an avutil PixelFormat constant
                 old_csc_fmt = options.get("csc_pixel_format")
-                colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
-                assert colorspace is not None, "csc was not specified and we cannot find a colorspace from csc_pixel_format=%s" % old_csc_fmt
+                input_colorspace = get_colorspace_from_avutil_enum(old_csc_fmt)
+                assert input_colorspace is not None, "csc was not specified and we cannot find a colorspace from csc_pixel_format=%s" % old_csc_fmt
+
+            #do we need a prep step for decoders that cannot handle the input_colorspace directly?
+            decoder_colorspaces = get_colorspaces()
+            decoder_colorspace = input_colorspace
+            #if input_colorspace not in decoder_colorspaces:
+            if input_colorspace not in decoder_colorspaces:
+                log("colorspace not supported by %s directly", decoder_module)
+                assert input_colorspace in ("BGRA", "BGRX"), "colorspace %s cannot be handled directly or via a csc preparation step!" % input_colorspace
+                decoder_colorspace = "YUV444P"
+                if self._csc_prep:
+                    if self._csc_prep.get_src_format()!=input_colorspace:
+                        #this should not happen!
+                        log.warn("input colorspace has changed from %s to %s", self._csc_prep.get_src_format(), input_colorspace)
+                        self.do_clean_csc_prep()
+                    elif self._csc_prep.get_dst_format() not in decoder_colorspaces:
+                        #this should not happen!
+                        log.warn("csc prep colorspace %s is now invalid!?", self._csc_prep.get_dst_format())
+                        self.do_clean_csc_prep()
+                    elif self._csc_prep.get_src_width()!=enc_width or self._csc_prep.get_src_height()!=enc_height:
+                        log("csc prep dimensions have changed from %s to %s", (self._csc_prep.get_src_width(), self._csc_prep.get_src_height()), (enc_width, enc_height))
+                        self.do_clean_csc_prep()
+                if self._csc_prep is None:
+                    from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
+                    self._csc_prep = ColorspaceConverter()
+                    csc_speed = 0   #always best quality
+                    self._csc_prep.init_context(enc_width, enc_height, input_colorspace,
+                                           width, height, decoder_colorspace, csc_speed)
+                    log("csc preparation step: %s", self._csc_prep)
+            elif self._csc_prep:
+                #no longer needed?
+                self.do_clean_csc_prep()
+
             if self._video_decoder:
                 if self._video_decoder.get_type()!=coding:
                     if DRAW_DEBUG:
@@ -228,15 +270,15 @@ class WindowBackingBase(object):
                     if DRAW_DEBUG:
                         log.info("paint_with_video_decoder: window dimensions have changed from %s to %s", (self._video_decoder.get_width(), self._video_decoder.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
-                elif self._video_decoder.get_colorspace()!=colorspace:
+                elif self._video_decoder.get_colorspace()!=decoder_colorspace:
                     if DRAW_DEBUG:
-                        log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), colorspace)
+                        log.info("paint_with_video_decoder: colorspace changed from %s to %s", self._video_decoder.get_colorspace(), decoder_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
                 if DRAW_DEBUG:
-                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, colorspace)
+                    log.info("paint_with_video_decoder: new %s(%s,%s,%s)", factory, width, height, decoder_colorspace)
                 self._video_decoder = factory()
-                self._video_decoder.init_context(enc_width, enc_height, colorspace)
+                self._video_decoder.init_context(enc_width, enc_height, decoder_colorspace)
                 if DRAW_DEBUG:
                     log.info("paint_with_video_decoder: info=%s", self._video_decoder.get_info())
 
