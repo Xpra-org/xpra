@@ -106,3 +106,21 @@ class GTKStatusIconTray(TrayBase):
         else:
             pixbuf = gdk.pixbuf_new_from_file(filename)
             self.tray_widget.set_from_pixbuf(pixbuf)
+
+
+def main():
+    import logging
+    logging.basicConfig(format="%(asctime)s %(message)s")
+    logging.root.setLevel(logging.DEBUG)
+
+    from xpra.gtk_common.gobject_compat import import_gobject
+    gobject = import_gobject()
+    s = GTKStatusIconTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)
+    gobject.timeout_add(1000*2, s.set_blinking, True)
+    gobject.timeout_add(1000*5, s.set_blinking, False)
+    gobject.timeout_add(1000*10, gtk.main_quit)
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()

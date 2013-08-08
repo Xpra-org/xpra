@@ -99,3 +99,24 @@ class AppindicatorTray(TrayBase):
         if dot>0:
             icon_name = icon_name[:dot]
         self.tray_widget.set_icon(icon_name)
+
+
+def main():
+    import logging
+    logging.basicConfig(format="%(asctime)s %(message)s")
+    logging.root.setLevel(logging.DEBUG)
+
+    if not appindicator:
+        debug("appindicator not available")
+        return
+
+    from xpra.gtk_common.gobject_compat import import_gobject, import_gtk
+    gobject = import_gobject()
+    gtk = import_gtk()
+    AppindicatorTray(None, "test", "xpra.png", None, None, None, gtk.main_quit)
+    gobject.timeout_add(1000*10, gtk.main_quit)
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()
