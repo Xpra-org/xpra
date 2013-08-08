@@ -31,11 +31,10 @@ def get_native_notifier_classes():
     return ncs
 
 def get_native_tray_classes():
-    tcs = []
     try:
         from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
         if can_use_appindicator():
-            tcs.append(AppindicatorTray)
+            return [AppindicatorTray]
     except Exception, e:
         log("cannot load appindicator tray: %s", e)
     return []
