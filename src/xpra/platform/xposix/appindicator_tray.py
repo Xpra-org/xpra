@@ -36,7 +36,7 @@ def _is_ubuntu_11_10_or_later():
         return False
 
 def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").tolower() == "unity"
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"
 
 
 try:
