@@ -384,7 +384,7 @@ class GLPixmapBacking(GTK2WindowBacking):
                 drawable.gl_end()
             fire_paint_callbacks(callbacks, True)
         except Exception, e:
-            log.error("%s.gl_paint_planar(..) error: %s", e, exc_info=True)
+            log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
             fire_paint_callbacks(callbacks, False)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
