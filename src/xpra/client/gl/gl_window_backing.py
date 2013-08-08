@@ -367,7 +367,7 @@ class GLPixmapBacking(GTK2WindowBacking):
         #this function runs in the UI thread, no video_decoder lock held
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format %s yet!" % (pixel_format)
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
             drawable = self.gl_init()
             if not drawable:
                 debug("%s.gl_paint_planar() drawable is not set!", self)
