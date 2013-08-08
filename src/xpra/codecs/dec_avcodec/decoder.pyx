@@ -90,33 +90,43 @@ cdef extern from "libavcodec/avcodec.h":
     void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 
 
-COLORSPACES = []
-FORMAT_TO_ENUM = {}
-ENUM_TO_FORMAT = {}
-#populate mappings:
-for pix_fmt, av_enum_str in {
-        "YUV420P"   : "AV_PIX_FMT_YUV420P",
-        "YUV422P"   : "AV_PIX_FMT_YUV422P",
-        "YUV444P"   : "AV_PIX_FMT_YUV444P",        
-        "RGB"       : "AV_PIX_FMT_RGB24",
-        "XRGB"      : "AV_PIX_FMT_0RGB",
-        "BGRX"      : "AV_PIX_FMT_BGR0",
-        "ARGB"      : "AV_PIX_FMT_ARGB",
-        "BGRA"      : "AV_PIX_FMT_BGRA",
-        "GBRP"      : "AV_PIX_FMT_GBRP",
-     }.items():
-    if av_enum_str not in const:
-        continue
-    av_enum = const[av_enum_str]
-    FORMAT_TO_ENUM[pix_fmt] = av_enum
-    ENUM_TO_FORMAT[av_enum] = pix_fmt
-    COLORSPACES.append(pix_fmt)
-
-def get_colorspaces():
-    return COLORSPACES
-
 def get_version():
     return get_avcodec_version()
+
+
+COLORSPACES = None
+FORMAT_TO_ENUM = {}
+ENUM_TO_FORMAT = {}
+def init_colorspaces():
+    global COLORSPACES
+    if COLORSPACES is not None:
+        #done already!
+        return
+    #populate mappings:
+    COLORSPACES = []
+    for pix_fmt, av_enum_str in {
+            "YUV420P"   : "AV_PIX_FMT_YUV420P",
+            "YUV422P"   : "AV_PIX_FMT_YUV422P",
+            "YUV444P"   : "AV_PIX_FMT_YUV444P",        
+            "RGB"       : "AV_PIX_FMT_RGB24",
+            "XRGB"      : "AV_PIX_FMT_0RGB",
+            "BGRX"      : "AV_PIX_FMT_BGR0",
+            "ARGB"      : "AV_PIX_FMT_ARGB",
+            "BGRA"      : "AV_PIX_FMT_BGRA",
+            "GBRP"      : "AV_PIX_FMT_GBRP",
+         }.items():
+        if av_enum_str not in const:
+            debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
+            continue
+        av_enum = const[av_enum_str]
+        FORMAT_TO_ENUM[pix_fmt] = av_enum
+        ENUM_TO_FORMAT[av_enum] = pix_fmt
+        COLORSPACES.append(pix_fmt)
+    debug("colorspaces supported by avcodec %s: %s", get_version(), COLORSPACES)
+
+def get_colorspaces():
+    init_colorspaces()
+    return COLORSPACES
 
 
 #maps AVCodecContext to the Decoder that manages it
@@ -284,6 +294,7 @@ cdef class Decoder:
     cdef int frames
 
     def init_context(self, int width, int height, colorspace):
+        init_colorspaces()
         assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
         self.colorspace = NULL
         for x in COLORSPACES:
