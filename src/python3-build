@@ -1,11 +1,12 @@
 #!/bin/sh
 
 set -e
-rm -rf build install py3
+rm -rf py3
 mkdir py3
 cp -apr etc man scripts xdg xpra add_build_info.py setup.py README COPYING ./py3/
 pushd py3
-patch -p1 < ../patches/disable-posix-server.patch
 python3-2to3 --no-diffs -x all -f except -w -n .
-CFLAGS=-O2 python3 setup.py install "$@"
+python3 setup.py install "$@" --without-server --without-x11 \
+    --without-shadow --without-clipboard \
+    --without-dec_avcodec --without-csc_swscale
 popd
