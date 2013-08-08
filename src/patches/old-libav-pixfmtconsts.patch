@@ -1,6 +1,6 @@
 Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
---- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4007)
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4054)
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
 @@ -78,16 +78,16 @@
  COLORSPACES = []
@@ -31,7 +31,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
  for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
 Index: xpra/codecs/csc_swscale/constants.txt
 ===================================================================
---- a/xpra/codecs/csc_swscale/constants.txt	(revision 4007)
+--- a/xpra/codecs/csc_swscale/constants.txt	(revision 4054)
 +++ b/xpra/codecs/csc_swscale/constants.txt	(working copy)
 @@ -10,17 +10,17 @@
  ## dictionary through which the constants can be accessed like
@@ -64,7 +64,7 @@ Index: xpra/codecs/csc_swscale/constants.txt
  SWS_BICUBIC
 Index: xpra/codecs/dec_avcodec/constants.txt
 ===================================================================
---- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4007)
+--- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4054)
 +++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
 @@ -10,12 +10,12 @@
  ## dictionary through which the constants can be accessed like
@@ -90,30 +90,30 @@ Index: xpra/codecs/dec_avcodec/constants.txt
 +PIX_FMT_GBRP
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4007)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4080)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -92,15 +92,15 @@
- ENUM_TO_FORMAT = {}
- #populate mappings:
- for pix_fmt, av_enum_str in {
--        "YUV420P"   : "AV_PIX_FMT_YUV420P",
--        "YUV422P"   : "AV_PIX_FMT_YUV422P",
--        "YUV444P"   : "AV_PIX_FMT_YUV444P",        
--        "RGB"       : "AV_PIX_FMT_RGB24",
--        "XRGB"      : "AV_PIX_FMT_0RGB",
--        "BGRX"      : "AV_PIX_FMT_BGR0",
--        "ARGB"      : "AV_PIX_FMT_ARGB",
--        "BGRA"      : "AV_PIX_FMT_BGRA",
--        "GBRP"      : "AV_PIX_FMT_GBRP",
-+        "YUV420P"   : "PIX_FMT_YUV420P",
-+        "YUV422P"   : "PIX_FMT_YUV422P",
-+        "YUV444P"   : "PIX_FMT_YUV444P",        
-+        "RGB"       : "PIX_FMT_RGB24",
-+        "XRGB"      : "PIX_FMT_0RGB",
-+        "BGRX"      : "PIX_FMT_BGR0",
-+        "ARGB"      : "PIX_FMT_ARGB",
-+        "BGRA"      : "PIX_FMT_BGRA",
-+        "GBRP"      : "PIX_FMT_GBRP",
-      }.items():
-     if av_enum_str not in const:
-         continue
+@@ -105,15 +105,15 @@
+     #populate mappings:
+     COLORSPACES = []
+     for pix_fmt, av_enum_str in {
+-            "YUV420P"   : "AV_PIX_FMT_YUV420P",
+-            "YUV422P"   : "AV_PIX_FMT_YUV422P",
+-            "YUV444P"   : "AV_PIX_FMT_YUV444P",        
+-            "RGB"       : "AV_PIX_FMT_RGB24",
+-            "XRGB"      : "AV_PIX_FMT_0RGB",
+-            "BGRX"      : "AV_PIX_FMT_BGR0",
+-            "ARGB"      : "AV_PIX_FMT_ARGB",
+-            "BGRA"      : "AV_PIX_FMT_BGRA",
+-            "GBRP"      : "AV_PIX_FMT_GBRP",
++            "YUV420P"   : "PIX_FMT_YUV420P",
++            "YUV422P"   : "PIX_FMT_YUV422P",
++            "YUV444P"   : "PIX_FMT_YUV444P",        
++            "RGB"       : "PIX_FMT_RGB24",
++            "XRGB"      : "PIX_FMT_0RGB",
++            "BGRX"      : "PIX_FMT_BGR0",
++            "ARGB"      : "PIX_FMT_ARGB",
++            "BGRA"      : "PIX_FMT_BGRA",
++            "GBRP"      : "PIX_FMT_GBRP",
+          }.items():
+         if av_enum_str not in const:
+             debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
