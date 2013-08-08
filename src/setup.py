@@ -402,7 +402,7 @@ def pkgconfig(*packages_options, **ekw):
         add_to_keywords(kw, 'extra_link_args', "-Wall")
     if strict_ENABLED:
         #these are almost certainly real errors since our code is "clean":
-        if get_gcc_version()>=4.4:
+        if get_gcc_version()>=[4, 4]:
             eifd = "-Werror=implicit-function-declaration"
         else:
             eifd = "-Werror-implicit-function-declaration"
