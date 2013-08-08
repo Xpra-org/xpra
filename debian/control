@@ -30,6 +30,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,x11-xserver-utils
         ,xserver-xorg-video-dummy
         ,xserver-xorg-input-void
+        #if you use Ubuntu, you will "want" this mess:
+        #,python-appindicator
 Recommends:
 # audio-related:
         ,gstreamer0.10-plugins-base
