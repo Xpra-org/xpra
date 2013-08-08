@@ -38,9 +38,6 @@ cdef extern from "stdlib.h":
 cdef extern from "X11/Xutil.h":
     pass
 
-cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char * s, int len)
-
 
 ######
 # Xlib primitives and constants
@@ -843,7 +840,7 @@ cdef class X11WindowBindings(X11CoreBindings):
         nbytes = bytes_per_item * nitems
         if bytes_after:
             raise PropertyOverflow(nbytes + bytes_after)
-        data = PyString_FromStringAndSize(<char *>prop, nbytes)
+        data = (<char *> prop)[:nbytes]
         XFree(prop)
         if actual_format == 32:
             return _munge_packed_longs_to_ints(data)
