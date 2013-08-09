@@ -11,6 +11,10 @@ def version_as_numbers(version):
     return [int(x) for x in version.split(".")]
 
 def version_compat_check(remote_version):
+    if remote_version is None:
+        msg = "remote version not available!"
+        log(msg)
+        return msg
     rv = version_as_numbers(remote_version)
     lv = version_as_numbers(local_version)
     if rv==lv:
