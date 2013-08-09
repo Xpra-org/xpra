@@ -22,6 +22,7 @@ def get_appindicator():
         try:
             try:
                 import appindicator            #@UnresolvedImport @UnusedImport
+                _appindicator = appindicator
             except:
                 try:
                     from gi.repository import AppIndicator as appindicator  #@UnresolvedImport @Reimport @UnusedImport
