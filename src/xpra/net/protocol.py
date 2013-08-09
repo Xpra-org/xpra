@@ -23,7 +23,7 @@ from threading import Lock
 from xpra.log import Logger
 log = Logger()
 
-from xpra.os_util import Queue
+from xpra.os_util import Queue, strtobytes
 from xpra.daemon_thread import make_daemon_thread
 from xpra.net.bencode import bencode, bdecode
 from xpra.simple_stats import std_unit, std_unit_dec
@@ -58,6 +58,18 @@ if sys.version_info[:2]>=(2,5):
 else:
     def unpack_header(buf):
         return struct.unpack('!cBBBL', "".join(buf))
+
+
+#'P' + protocol-flags + compression_level + packet_index + data_size
+def pack_header(proto_flags, level, index, payload_size):
+    return struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
+
+pack_header_and_data = None
+if sys.version_info[0]<3:
+    #before v3, python does the right thing without hassle:
+    def pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data):
+        return struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
+
 
 USE_ALIASES = os.environ.get("XPRA_USE_ALIASES", "1")=="1"
 PACKET_JOIN_SIZE = int(os.environ.get("XPRA_PACKET_JOIN_SIZE", 16384))
@@ -297,16 +309,15 @@ class Protocol(object):
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size
                 log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
-            if actual_size<PACKET_JOIN_SIZE:
-                #'p' + protocol-flags + compression_level + packet_index + data_size
+            if pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
                 if type(data)==unicode:
                     data = str(data)
-                header_and_data = struct.pack('!BBBBL%ss' % actual_size, ord("P"), proto_flags, level, index, payload_size, data)
+                header_and_data = pack_header_and_data(actual_size, proto_flags, level, index, payload_size, data)
                 items.append((header_and_data, scb, ecb))
             else:
-                header = struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
+                header = pack_header(proto_flags, level, index, payload_size)
                 items.append((header, scb, None))
-                items.append((data, None, ecb))
+                items.append((strtobytes(data), None, ecb))
             counter += 1
         self._write_queue.put(items)
         self.output_packetcount += 1
@@ -602,8 +613,6 @@ class Protocol(object):
                         data = decompress(data)
                     else:
                         data = self._decompressor.decompress(data)
-                if sys.version>='3':
-                    data = data.decode("latin1")
 
                 if self.cipher_in and not (protocol_flags & Protocol.FLAGS_CIPHER):
                     return self._call_connection_lost("unencrypted packet dropped: %s" % repr_ellipsized(data))
@@ -624,6 +633,8 @@ class Protocol(object):
                         assert has_rencode, "we don't support rencode mode but the other end sent us a rencoded packet!"
                         packet = list(rencode_loads(data))
                     else:
+                        #if sys.version>='3':
+                        #    data = data.decode("latin1")
                         packet, l = bdecode(data)
                         assert l==len(data)
                 except ValueError, e:
@@ -644,13 +655,9 @@ class Protocol(object):
                         #replace placeholder with the raw_data packet data:
                         packet[index] = raw_data
                     raw_packets = {}
-                try:
-                    self.input_packetcount += 1
-                    self._process_packet_cb(self, packet)
-                except KeyboardInterrupt:
-                    raise
-                except:
-                    log.warn("Unhandled error while processing a '%s' packet from peer", packet[0], exc_info=True)
+
+                self.input_packetcount += 1
+                self._process_packet_cb(self, packet)
 
     def flush_then_close(self, last_packet):
         """ Note: this is best effort only
