@@ -65,6 +65,8 @@ cdef extern from "libavcodec/avcodec.h":
         int thread_safe_callbacks
         int thread_count
         int thread_type
+        int flags
+        int flags2
 
     AVPixelFormat PIX_FMT_NONE
     AVCodecID CODEC_ID_H264
@@ -333,6 +335,7 @@ cdef class Decoder:
         self.codec_ctx.thread_safe_callbacks = 1
         self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
         self.codec_ctx.thread_count = 0     #auto
+        self.codec_ctx.flags2 |= CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         if avcodec_open2(self.codec_ctx, self.codec, NULL) < 0:
             error("could not open codec")
             self.clean_decoder()
