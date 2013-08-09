@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
-from xpra.scripts.config import csc_swscale, enc_vpx, enc_x264, enc_nvenc, csc_nvcuda
+from xpra.scripts.config import csc_swscale, enc_vpx, enc_x264
 
 
 class VideoPipelineHelper(object):
@@ -41,10 +41,10 @@ class VideoPipelineHelper(object):
             self.init_video_encoder_option("x264", enc_x264)
         except:
             log.warn("init_video_encoders_options() cannot add x264 encoder", exc_info=True)
-        try:
-            self.init_video_encoder_option("nvenc", enc_nvenc)
-        except:
-            log.warn("init_video_encoders_options() cannot add nvenc encoder", exc_info=True)
+        #try:
+        #    self.init_video_encoder_option("nvenc", enc_nvenc)
+        #except:
+        #    log.warn("init_video_encoders_options() cannot add nvenc encoder", exc_info=True)
         debug("init_video_encoders_options() video encoder specs: %s", self._video_encoder_specs)
 
     def init_video_encoder_option(self, encoding, encoder_module):
@@ -63,10 +63,10 @@ class VideoPipelineHelper(object):
             self.init_csc_option(csc_swscale)
         except:
             log.warn("init_csc_options() cannot add swscale csc", exc_info=True)
-        try:
-            self.init_csc_option(csc_nvcuda)
-        except:
-            log.warn("init_csc_options() cannot add nvcuda csc", exc_info=True)
+        #try:
+        #    self.init_csc_option(csc_nvcuda)
+        #except:
+        #    log.warn("init_csc_options() cannot add nvcuda csc", exc_info=True)
         debug("init_csc_options() csc specs: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_module):
