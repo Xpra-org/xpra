@@ -1450,37 +1450,43 @@ class ServerBase(object):
 
 
     def process_packet(self, proto, packet):
-        packet_type = packet[0]
-        if type(packet_type)==int:
-            packet_type = self._aliases.get(packet_type)
-        assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
-        if packet_type.startswith("clipboard-"):
-            ss = self._server_sources.get(proto)
-            if not ss:
-                #protocol has been dropped!
+        try:
+            handler = None
+            packet_type = packet[0]
+            if type(packet_type)==int:
+                packet_type = self._aliases.get(packet_type)
+            assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
+            if packet_type.startswith("clipboard-"):
+                ss = self._server_sources.get(proto)
+                if not ss:
+                    #protocol has been dropped!
+                    return
+                assert self._clipboard_client==ss, \
+                        "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
+                assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
+                assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
+                self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
                 return
-            assert self._clipboard_client==ss, \
-                    "the clipboard packet '%s' does not come from the clipboard owner!" % packet_type
-            assert ss.clipboard_enabled, "received a clipboard packet from a source which does not have clipboard enabled!"
-            assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
-            self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
-            return
-        if proto in self._server_sources:
-            handlers = self._authenticated_packet_handlers
-            ui_handlers = self._authenticated_ui_packet_handlers
-        else:
-            handlers = {}
-            ui_handlers = self._default_packet_handlers
-        handler = handlers.get(packet_type)
-        if handler:
-            log("process non-ui packet %s", packet_type)
-            handler(proto, packet)
-            return
-        handler = ui_handlers.get(packet_type)
-        if handler:
-            log("will process ui packet %s", packet_type)
-            self.idle_add(handler, proto, packet)
-            return
-        log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
-        if proto not in self._server_sources:
-            proto.close()
+            if proto in self._server_sources:
+                handlers = self._authenticated_packet_handlers
+                ui_handlers = self._authenticated_ui_packet_handlers
+            else:
+                handlers = {}
+                ui_handlers = self._default_packet_handlers
+            handler = handlers.get(packet_type)
+            if handler:
+                log("process non-ui packet %s", packet_type)
+                handler(proto, packet)
+                return
+            handler = ui_handlers.get(packet_type)
+            if handler:
+                log("will process ui packet %s", packet_type)
+                self.idle_add(handler, proto, packet)
+                return
+            log.error("unknown or invalid packet type: %s from %s", packet_type, proto)
+            if proto not in self._server_sources:
+                proto.close()
+        except KeyboardInterrupt:
+            raise
+        except:
+            log.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
