@@ -537,6 +537,11 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
                    "etc/xpra/xpra.conf"]
+    if sys.platform.startswith("win"):
+        #on win32, the build creates ".pyd" files, clean those too:
+        for x in list(CLEAN_FILES):
+            if x.endswith(".c"):
+                CLEAN_FILES.append(x[:-2]+".pyd")
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
@@ -581,7 +586,7 @@ if WIN32:
                "Microsoft.VC90.MFC/mfcm90u.dll"                 : "371226b8346f29011137c7aa9e93f2f6",
                }
     # This is where I keep them, you will obviously need to change this value:
-    C_DLLs="C:\\"
+    C_DLLs = "C:\\"
     for dll_file, md5sum in md5sums.items():
         filename = os.path.join(C_DLLs, *dll_file.split("/"))
         if not os.path.exists(filename) or not os.path.isfile(filename):
@@ -605,7 +610,7 @@ if WIN32:
     win32_include_dir = os.path.join(os.getcwd(), "win32")
 
     #ffmpeg is needed for both swscale and x264:
-    libffmpeg_path="C:\\ffmpeg-win32-bin"
+    libffmpeg_path = "C:\\ffmpeg-win32-bin"
     libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
     libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
     libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")

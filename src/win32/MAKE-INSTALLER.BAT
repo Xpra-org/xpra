@@ -67,32 +67,6 @@ SET PYTHONPATH=%PYGTK%;%GTK%\lib;%GTK%\bin;%PYTHON%\Lib\site-packages\;%DIR%;%PY
 ECHO ****** Clearing build directory (you can ignore any errors here)
 RMDIR /S /Q %BUILD_DIR% dist Output
 DEL /Q Xpra_Setup*.exe
-DEL /Q xpra\codecs\argb\argb.c
-DEL /Q xpra\codecs\argb\argb.pyd
-DEL /Q xpra\codecs\csc_nvcuda\colorspace_converter.c
-DEL /Q xpra\codecs\csc_nvcuda\colorspace_converter.pyd
-DEL /Q xpra\codecs\csc_swscale\constants.pxi
-DEL /Q xpra\codecs\csc_swscale\colorspace_converter.c
-DEL /Q xpra\codecs\csc_swscale\colorspace_converter.pyd
-DEL /Q xpra\codecs\dec_avcodec\constants.pxi
-DEL /Q xpra\codecs\dec_avcodec\decoder.c
-DEL /Q xpra\codecs\dec_avcodec\decoder.pyd
-DEL /Q xpra\codecs\enc_x264\encoder.c
-DEL /Q xpra\codecs\enc_x264\encoder.pyd
-DEL /Q xpra\codecs\nvenc\encoder.c
-DEL /Q xpra\codecs\nvenc\encoder.pyd
-DEL /Q xpra\codecs\vpx\decoder.c
-DEL /Q xpra\codecs\vpx\decoder.pyd
-DEL /Q xpra\codecs\vpx\encoder.c
-DEL /Q xpra\codecs\vpx\encoder.pyd
-DEL /Q xpra\codecs\xor\cyxor.c
-DEL /Q xpra\codecs\xor\cyxor.pyd
-DEL /Q xpra\gtk_common\gdk_atoms.c
-DEL /Q xpra\gtk_common\gdk_atoms.pyd
-DEL /Q xpra\net\rencode\rencode.c
-DEL /Q xpra\net\rencode\rencode.pyd
-DEL /Q xpra\server\stats\cymaths.c
-DEL /Q xpra\server\stats\cymaths.pyd
 
 ECHO ***************************************************************
 SET BUILD_ARGS=
