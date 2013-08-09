@@ -11,30 +11,6 @@ from xpra.client.tray_base import TrayBase, debug
 from xpra.platform.paths import get_icon_dir
 
 
-def _is_ubuntu_11_10_or_later():
-    lsb = "/etc/lsb-release"
-    if not os.path.exists(lsb):
-        return  False
-    try:
-        try:
-            f = open(lsb, mode='rb')
-            data = f.read()
-        finally:
-            f.close()
-        props = {}
-        for l in data.splitlines():
-            parts = l.split("=", 1)
-            if len(parts)!=2:
-                continue
-            props[parts[0].strip()] = parts[1].strip()
-        debug("found lsb properties: %s", props)
-        if props.get("DISTRIB_ID")=="Ubuntu":
-            version = [int(x) for x in props.get("DISTRIB_RELEASE", "0").split(".")]
-            debug("detected Ubuntu release %s", version)
-            return version>=[11,10]
-    except:
-        return False
-
 def is_unity():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"
 
@@ -58,7 +34,7 @@ def get_appindicator():
         _appindicator = None
 
 def can_use_appindicator():
-    return get_appindicator() is not None and _is_ubuntu_11_10_or_later() and is_unity()
+    return get_appindicator() is not None and is_unity()
 
 
 class AppindicatorTray(TrayBase):
