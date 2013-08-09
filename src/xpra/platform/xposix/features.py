@@ -15,7 +15,9 @@ SHADOW_SUPPORTED = True
 
 
 
-SYSTEM_TRAY_SUPPORTED = True
+#don't bother trying to forward system tray with Ubuntu's "unity":
+from xpra.platform.xposix.appindicator_tray import is_unity
+SYSTEM_TRAY_SUPPORTED = is_unity()
 MMAP_SUPPORTED = True
 CAN_DAEMONIZE = True
 DEFAULT_SSH_CMD = "ssh"
