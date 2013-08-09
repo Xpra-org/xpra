@@ -37,5 +37,5 @@ class GTKWindowBacking(WindowBackingBase):
         except KeyboardInterrupt:
             raise
         except:
-            log.error("cairo_draw(%s)", context, exc_info=True)
+            log.error("cairo_draw_from_drawable(%s, %s)", context, drawable, exc_info=True)
             return False
