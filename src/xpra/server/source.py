@@ -380,7 +380,7 @@ class ServerSource(object):
         if self.sound_source is None:
             self.resume_sound = False
         else:
-            self.resume_sound = True
+            self.resume_sound = self.sound_source.codec
             self.stop_sending_sound()
         for wid in wd.keys():
             ws = self.window_sources.get(wid)
@@ -397,7 +397,7 @@ class ServerSource(object):
             if ws:
                 ws.resume(window)
         if self.resume_sound:
-            self.start_sending_sound()
+            self.start_sending_sound(self.resume_sound)
         self.do_send_cursor()
 
 
