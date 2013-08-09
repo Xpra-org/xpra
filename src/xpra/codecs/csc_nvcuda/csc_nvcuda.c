@@ -23,13 +23,6 @@
 
 #include "csc_nvcuda.h"
 
-//#define USE_TIMER
-#ifdef USE_TIMER
-#include "../timer.h"
-#else
-#define timer_display_and_reset(X,Y)
-#endif
-
 static int cuda_device = -1;
 static int cuda_initialized = 0;
 static CUcontext *cuda_context;
@@ -167,25 +160,19 @@ int init_cuda(void)
 	char PCI_id[25];
 	struct cudaDeviceProp prop;
 
-#ifdef USE_TIMER
-	struct my_timer t = timer_create();
-#endif
 	if (cudaGetDeviceCount(&cuda_count)) {
 		fprintf(stderr, "No CUDA devices available.\n");
 	}
 
-	timer_display_and_reset(&t, "getdevicecount");
 	int i;
 	for (i = 0; i < cuda_count; i++) {
 		cudaSetDevice(i);
-		timer_display_and_reset(&t, "setdevice");
 
 		// Retrieve device properties
 		if (cudaGetDeviceProperties(&prop, i)) {
 			cuda_err("Error retrieving Cuda device %d properties, skipping", i);
 			continue;
 		}
-		timer_display_and_reset(&t, "getprops");
 
 		// Check if device is able to map host memory
 		if (!prop.canMapHostMemory) {
@@ -198,7 +185,6 @@ int init_cuda(void)
 			cuda_err("Unable to set cudaDeviceMapHost device flag");
 			return 1;
 		}
-		timer_display_and_reset(&t, "setflags");
 
 		// All good - select this device!
 		break;
@@ -273,9 +259,6 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 
 	int pinned_input_buffer = 1;
 	int pinned_output_buffer = 1;
-#ifdef USE_TIMER
-	struct my_timer t = timer_create();
-#endif
 	NppiSize size = { ctx->width, ctx->height };
 	Npp8u *src = NULL; // GPU-side input buffer
 	uint8_t *dstbuf = NULL; // CPU-side linear output buffer (data + strides)
@@ -311,7 +294,6 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 		cuda_err("cudaMalloc input buf");
 		goto err0;
 	}
-	timer_display_and_reset(&t, "cudaMalloc in");
 
 	// Copy input data to GPU buffer
 	if (pinned_input_buffer) {
@@ -328,14 +310,12 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 	}
 
 	cudaDeviceSynchronize();
-	timer_display_and_reset(&t, "cudaMemcpy in");
 	
 
 	// Allocate GPU output buffer
 	cudaMallocPitch((void *)&gpudst[0], (void *)&out_stride[0], y_width, ctx->height);
 	cudaMallocPitch((void *)&gpudst[1], (void *)&out_stride[1], uv_width, uv_height);
 	cudaMallocPitch((void *)&gpudst[2], (void *)&out_stride[2], uv_width, uv_height);
-	timer_display_and_reset(&t, "cudaMalloc out");
 
 	// Allocate CPU output buffer
 	out[0] = malloc(out_stride[0] * ctx->height + (out_stride[1] + out_stride[2]) * uv_height);
@@ -365,7 +345,6 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 	}
 
 	cudaDeviceSynchronize();
-	timer_display_and_reset(&t, "nppiRGBToYuv");
 	if (err) {
 		const char *str = NULL;
 		switch (err) {
@@ -396,7 +375,6 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 		}
 	}
 	cudaDeviceSynchronize();
-	timer_display_and_reset(&t, "memcpy out");
 
 	// Free GPU output buffer
 	cudaFree(gpudst[0]);
@@ -412,8 +390,6 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 	if (pinned_output_buffer) {
 		cudaHostUnregister((void *)out[0]);
 	}
-
-	timer_display_and_reset(&t, "free GPU buffers");
 
 	return 0;
 
@@ -446,4 +422,3 @@ void free_csc(struct csc_nvcuda_ctx *ctx)
 const char *get_flags_description(struct csc_nvcuda_ctx *ctx) {
 	return "";
 }
-
