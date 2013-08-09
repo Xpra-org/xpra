@@ -92,7 +92,11 @@ def encode_list(x, r):
 def encode_dict(x,r):
     r.append('d')
     ilist = list(x.items())
-    ilist.sort()
+    try:
+        #this may fail with python3
+        ilist.sort()
+    except:
+        pass
     for k, v in ilist:
         encode_func[type(k)](k, r)
         encode_func[type(v)](v, r)
@@ -118,6 +122,9 @@ else:
     encode_func[tuple] = encode_list
     encode_func[dict] = encode_dict
     encode_func[bool] = encode_int
+    def encode_bytes(x, r):
+        encode_string(x.decode(), r)
+    encode_func[bytes] = encode_bytes
 
 def bencode(x):
     r = []
