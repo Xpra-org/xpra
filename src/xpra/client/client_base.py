@@ -18,7 +18,7 @@ from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencod
 from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
-from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES
+from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES, strtobytes, bytestostr
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -309,11 +309,13 @@ class XpraClientBase(object):
         self.password_sent = True
         self.send_hello(password_hash)
 
-    def set_server_encryption(self, props):
-        cipher = props.get("cipher")
-        cipher_iv = props.get("cipher.iv")
-        key_salt = props.get("cipher.key_salt")
-        iterations = props.get("cipher.key_stretch_iterations")
+    def set_server_encryption(self, capabilities):
+        def get(key, default=None):
+            return capabilities.get(strtobytes(key), default)
+        cipher = get("cipher")
+        cipher_iv = get("cipher.iv")
+        key_salt = get("cipher.key_salt")
+        iterations = get("cipher.key_stretch_iterations")
         if not cipher or not cipher_iv:
             self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
             return False
@@ -348,14 +350,22 @@ class XpraClientBase(object):
         self.server_capabilities = packet[1]
         self.parse_server_capabilities(self.server_capabilities)
 
+    def capsget(self, capabilities, key, default):
+        v = capabilities.get(strtobytes(key), default)
+        if sys.version >= '3' and type(v)==bytes:
+            v = bytestostr(v)
+        return v
+
     def parse_server_capabilities(self, capabilities):
-        self._remote_version = capabilities.get("version")
-        self._remote_revision = capabilities.get("revision")
-        self._remote_revision = capabilities.get("build.revision", self._remote_revision)
-        self._remote_platform = capabilities.get("platform")
-        self._remote_platform_release = capabilities.get("platform.release")
-        self._remote_platform_platform = capabilities.get("platform.platform")
-        self._remote_platform_linux_distribution = capabilities.get("platform.linux_distribution")
+        def get(key, default=None):
+            return self.capsget(capabilities, key, default)
+        self._remote_version = get("version")
+        self._remote_revision = get("revision")
+        self._remote_revision = get("build.revision", self._remote_revision)
+        self._remote_platform = get("platform")
+        self._remote_platform_release = get("platform.release")
+        self._remote_platform_platform = get("platform.platform")
+        self._remote_platform_linux_distribution = get("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
@@ -365,8 +375,8 @@ class XpraClientBase(object):
         if self.encryption:
             #server uses a new cipher after second hello:
             self.set_server_encryption(capabilities)
-        self._protocol.chunked_compression = capabilities.get("chunked_compression", False)
-        self._protocol.aliases = capabilities.get("aliases", {})
+        self._protocol.chunked_compression = get("chunked_compression", False)
+        self._protocol.aliases = get("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)
         else:
@@ -392,15 +402,21 @@ class XpraClientBase(object):
             self.quit(EXIT_PACKET_FAILURE)
 
     def process_packet(self, proto, packet):
-        packet_type = packet[0]
-        if type(packet_type)==int:
-            packet_type = self._aliases.get(packet_type)
-        handler = self._packet_handlers.get(packet_type)
-        if handler:
-            handler(packet)
-            return
-        handler = self._ui_packet_handlers.get(packet_type)
-        if not handler:
-            log.error("unknown packet type: %s", packet_type)
-            return
-        self.idle_add(handler, packet)
+        try:
+            handler = None
+            packet_type = packet[0]
+            if type(packet_type)==int:
+                packet_type = self._aliases.get(packet_type)
+            handler = self._packet_handlers.get(packet_type)
+            if handler:
+                handler(packet)
+                return
+            handler = self._ui_packet_handlers.get(packet_type)
+            if not handler:
+                log.error("unknown packet type: %s", packet_type)
+                return
+            self.idle_add(handler, packet)
+        except KeyboardInterrupt:
+            raise
+        except:
+            log.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)

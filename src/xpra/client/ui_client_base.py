@@ -138,6 +138,7 @@ class UIXpraClient(XpraClientBase):
         self.toggle_keyboard_sync = False
         self.window_configure = False
         self.window_unmap = False
+        self.server_encodings = []
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless = ()
@@ -795,24 +796,26 @@ class UIXpraClient(XpraClientBase):
     def parse_server_capabilities(self, capabilities):
         if not XpraClientBase.parse_server_capabilities(self, capabilities):
             return
+        def get(key, default=None):
+            return self.capsget(capabilities, key, default)
         if not self.session_name:
-            self.session_name = capabilities.get("session_name", "Xpra")
+            self.session_name = get("session_name", "Xpra")
         set_application_name(self.session_name)
-        self.window_configure = capabilities.get("window_configure", False)
-        self.window_unmap = capabilities.get("window_unmap", False)
-        self.suspend_resume = capabilities.get("suspend-resume", False)
-        self.server_supports_notifications = capabilities.get("notifications", False)
+        self.window_configure = get("window_configure", False)
+        self.window_unmap = get("window_unmap", False)
+        self.suspend_resume = get("suspend-resume", False)
+        self.server_supports_notifications = get("notifications", False)
         self.notifications_enabled = self.server_supports_notifications and self.client_supports_notifications
-        self.server_supports_cursors = capabilities.get("cursors", True)    #added in 0.5, default to True!
+        self.server_supports_cursors = get("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
-        self.server_supports_bell = capabilities.get("bell", True)          #added in 0.5, default to True!
+        self.server_supports_bell = get("bell", True)          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
-        self.server_supports_clipboard = capabilities.get("clipboard", False)
-        self.server_clipboards = capabilities.get("clipboards", ALL_CLIPBOARDS)
+        self.server_supports_clipboard = get("clipboard", False)
+        self.server_clipboards = get("clipboards", ALL_CLIPBOARDS)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
-        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and capabilities.get("mmap_enabled")
+        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and get("mmap_enabled")
         if self.mmap_enabled:
-            mmap_token = capabilities.get("mmap_token")
+            mmap_token = get("mmap_token")
             if mmap_token:
                 from xpra.net.mmap_pipe import read_mmap_token
                 token = read_mmap_token(self.mmap)
@@ -821,32 +824,33 @@ class UIXpraClient(XpraClientBase):
                     self.mmap_enabled = False
                     self.quit(EXIT_MMAP_TOKEN_FAILURE)
                     return
-        self.server_auto_refresh_delay = capabilities.get("auto_refresh_delay", 0)/1000.0
-        self.server_encodings_with_speed = capabilities.get("encodings.with_speed", ("x264",)) #old servers only supported x264
-        self.server_encodings_with_quality = capabilities.get("encodings.with_quality", ("jpeg", "webp", "x264"))
-        self.server_encodings_with_lossless_mode = capabilities.get("encodings.with_lossless_mode", ())
-        self.change_quality = capabilities.get("change-quality", False)
-        self.change_min_quality = capabilities.get("change-min-quality", False)
-        self.change_speed = capabilities.get("change-speed", False)
-        self.change_min_speed = capabilities.get("change-min-speed", False)
-        self.xsettings_tuple = capabilities.get("xsettings-tuple", False)
+        self.server_auto_refresh_delay = get("auto_refresh_delay", 0)/1000.0
+        self.server_encodings = get("encodings", [])
+        self.server_encodings_with_speed = get("encodings.with_speed", ("x264",)) #old servers only supported x264
+        self.server_encodings_with_quality = get("encodings.with_quality", ("jpeg", "webp", "x264"))
+        self.server_encodings_with_lossless_mode = get("encodings.with_lossless_mode", ())
+        self.change_quality = get("change-quality", False)
+        self.change_min_quality = get("change-min-quality", False)
+        self.change_speed = get("change-speed", False)
+        self.change_min_speed = get("change-min-speed", False)
+        self.xsettings_tuple = get("xsettings-tuple", False)
         if self.mmap_enabled:
             log.info("mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), self.mmap_filename)
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
-        self.server_start_time = capabilities.get("start_time", -1)
-        self.server_platform = capabilities.get("platform")
-        self.toggle_cursors_bell_notify = capabilities.get("toggle_cursors_bell_notify", False)
-        self.toggle_keyboard_sync = capabilities.get("toggle_keyboard_sync", False)
-        self.server_max_desktop_size = capabilities.get("max_desktop_size")
-        self.server_display = capabilities.get("display")
-        self.server_actual_desktop_size = capabilities.get("actual_desktop_size")
+        self.server_start_time = get("start_time", -1)
+        self.server_platform = get("platform")
+        self.toggle_cursors_bell_notify = get("toggle_cursors_bell_notify", False)
+        self.toggle_keyboard_sync = get("toggle_keyboard_sync", False)
+        self.server_max_desktop_size = get("max_desktop_size")
+        self.server_display = get("display")
+        self.server_actual_desktop_size = get("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
-        self.server_randr = capabilities.get("resize_screen", False)
+        self.server_randr = get("resize_screen", False)
         log.debug("server has randr: %s", self.server_randr)
-        self.server_sound_sequence = capabilities.get("sound_sequence", False)
-        self.server_info_request = capabilities.get("info-request", False)
-        e = capabilities.get("encoding")
+        self.server_sound_sequence = get("sound_sequence", False)
+        self.server_info_request = get("info-request", False)
+        e = get("encoding")
         if e and e!=self.encoding:
             log.debug("server is using %s encoding" % e)
             self.encoding = e
@@ -854,6 +858,8 @@ class UIXpraClient(XpraClientBase):
         self.idle_add(self.process_ui_capabilities, capabilities)
 
     def process_ui_capabilities(self, capabilities):
+        def get(key, default=None):
+            return self.capsget(capabilities, key, default)
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         if self.clipboard_enabled:
@@ -861,9 +867,9 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_enabled = self.clipboard_helper is not None
         self.set_max_packet_size()
         self.send_deflate_level()
-        server_desktop_size = capabilities.get("desktop_size")
+        server_desktop_size = get("desktop_size")
         log("server desktop size=%s", server_desktop_size)
-        if not capabilities.get("shadow", False):
+        if not get("shadow", False):
             assert server_desktop_size
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
@@ -874,17 +880,17 @@ class UIXpraClient(XpraClientBase):
                          "Please see "
                          "https://www.xpra.org/trac/ticket/10"
                          % (avail_w, avail_h, root_w, root_h))
-        modifier_keycodes = capabilities.get("modifier_keycodes")
+        modifier_keycodes = get("modifier_keycodes")
         if modifier_keycodes:
             self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
         #sound:
-        self.server_pulseaudio_id = capabilities.get("sound.pulseaudio.id")
-        self.server_pulseaudio_server = capabilities.get("sound.pulseaudio.server")
-        self.server_sound_decoders = capabilities.get("sound.decoders", [])
-        self.server_sound_encoders = capabilities.get("sound.encoders", [])
-        self.server_sound_receive = capabilities.get("sound.receive", False)
-        self.server_sound_send = capabilities.get("sound.send", False)
+        self.server_pulseaudio_id = get("sound.pulseaudio.id")
+        self.server_pulseaudio_server = get("sound.pulseaudio.server")
+        self.server_sound_decoders = get("sound.decoders", [])
+        self.server_sound_encoders = get("sound.encoders", [])
+        self.server_sound_receive = get("sound.receive", False)
+        self.server_sound_send = get("sound.send", False)
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server, self.server_sound_decoders,
                  self.server_sound_encoders, self.server_sound_receive, self.server_sound_send)
@@ -894,7 +900,7 @@ class UIXpraClient(XpraClientBase):
         #if self.server_sound_receive and self.microphone_allowed:
         #    self.start_sending_sound()
 
-        self.key_repeat_delay, self.key_repeat_interval = capabilities.get("key_repeat", (-1,-1))
+        self.key_repeat_delay, self.key_repeat_interval = get("key_repeat", (-1,-1))
         self.emit("handshake-complete")
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
@@ -904,7 +910,7 @@ class UIXpraClient(XpraClientBase):
         if self.toggle_keyboard_sync:
             self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
-        if not capabilities.get("notify-startup-complete", False):
+        if not get("notify-startup-complete", False):
             #we won't get notified, so assume it is now:
             self._startup_complete()
 
@@ -1144,8 +1150,7 @@ class UIXpraClient(XpraClientBase):
     def set_encoding(self, encoding):
         log("set_encoding(%s)", encoding)
         assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
-        server_encodings = self.server_capabilities.get("encodings", [])
-        assert encoding in server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, server_encodings)
+        assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
         self.encoding = encoding
         self.send("encoding", encoding)
 

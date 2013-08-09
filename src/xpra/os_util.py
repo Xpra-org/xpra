@@ -36,6 +36,21 @@ try:
 except:
     from io import StringIO as StringIOClass        #@Reimport @UnusedImport
 
+
+if sys.version < '3':
+    def strtobytes(x):
+        return x
+    def bytestostr(x):
+        return x
+else:
+    def strtobytes(x):
+        if type(x)==bytes:
+            return x
+        return x.encode()
+    def bytestostr(x):
+        return x.decode()
+
+
 def data_to_buffer(in_data):
     if sys.version>='3':
         data = bytearray(in_data.encode("latin1"))
