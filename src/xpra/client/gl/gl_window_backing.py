@@ -42,8 +42,9 @@ from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT
 try:
     from OpenGL.GL.KHR.debug import GL_DEBUG_OUTPUT, GL_DEBUG_OUTPUT_SYNCHRONOUS, glDebugMessageControl, glDebugMessageCallback, glInitDebugKHR
 except ImportError:
-    log.warn("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
+    debug("Unable to import GL_KHR_debug OpenGL extension. Debug output will be more limited.")
     GL_DEBUG_OUTPUT = None
+    GL_DEBUG_OUTPUT_SYNCHRONOUS = None
 try:
     from OpenGL.GL.GREMEDY.string_marker import glInitStringMarkerGREMEDY, glStringMarkerGREMEDY
     from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
@@ -58,6 +59,17 @@ except ImportError:
     glStringMarkerGREMEDY = None
     glInitFrameTerminatorGREMEDY = None
     glFrameTerminatorGREMEDY = None
+debug("OpenGL debugging settings: "+
+      "GL_DEBUG_OUTPUT=%s, GL_DEBUG_OUTPUT_SYNCHRONOUS=%s"+
+      "gl_debug_callback=%s, "+
+      "glInitStringMarkerGREMEDY=%s, glStringMarkerGREMEDY=%s, glInitFrameTerminatorGREMEDY=%s, glFrameTerminatorGREMEDY=%s",
+        GL_DEBUG_OUTPUT,
+        GL_DEBUG_OUTPUT_SYNCHRONOUS,
+        gl_debug_callback,
+        glInitStringMarkerGREMEDY,
+        glStringMarkerGREMEDY,
+        glInitFrameTerminatorGREMEDY,
+        glFrameTerminatorGREMEDY)
 from ctypes import c_char_p
 
 
