@@ -737,7 +737,9 @@ if WIN32:
             add_packages(*package_names)
         else:
             remove_packages(*package_names)
-            py2exe_exclude(*package_names)
+            #FIXME: this breaks things...
+            # we need a better way of excluding packages with py2exe 
+            #py2exe_exclude(*package_names)
 
     add_packages("xpra.platform.win32")
     py2exe_exclude("xpra.platform.darwin", "xpra.platform.xposix")
