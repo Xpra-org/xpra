@@ -39,19 +39,26 @@ def is_unity():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"
 
 
-try:
+_appindicator = False
+def get_appindicator():
+    global _appindicator
+    if _appindicator is not False:
+        return _appindicator
     try:
-        import appindicator            #@UnresolvedImport @UnusedImport
-    except:
         try:
-            from gi.repository import AppIndicator as appindicator  #@UnresolvedImport @Reimport @UnusedImport
+            import appindicator            #@UnresolvedImport @UnusedImport
         except:
-            from gi.repository import AppIndicator3 as appindicator  #@UnresolvedImport @Reimport
-except:
-    appindicator = None
+            try:
+                from gi.repository import AppIndicator as appindicator  #@UnresolvedImport @Reimport @UnusedImport
+                _appindicator = appindicator
+            except:
+                from gi.repository import AppIndicator3 as appindicator  #@UnresolvedImport @Reimport
+                _appindicator = appindicator
+    except:
+        _appindicator = None
 
 def can_use_appindicator():
-    return appindicator is not None and _is_ubuntu_11_10_or_later() and is_unity()
+    return get_appindicator() is not None and _is_ubuntu_11_10_or_later() and is_unity()
 
 
 class AppindicatorTray(TrayBase):
@@ -59,7 +66,9 @@ class AppindicatorTray(TrayBase):
     def __init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
         TrayBase.__init__(self, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
         filename = self.get_tray_icon_filename(icon_filename)
-        self.tray_widget = appindicator.Indicator(tooltip, filename, appindicator.CATEGORY_APPLICATION_STATUS)
+        self.appindicator = get_appindicator()
+        assert self.appindicator, "appindicator is not available!"
+        self.tray_widget = self.appindicator.Indicator(tooltip, filename, self.appindicator.CATEGORY_APPLICATION_STATUS)
         if hasattr(self.tray_widget, "set_icon_theme_path"):
             self.tray_widget.set_icon_theme_path(get_icon_dir())
         self.tray_widget.set_attention_icon("xpra.png")
@@ -71,10 +80,10 @@ class AppindicatorTray(TrayBase):
             self.tray_widget.set_menu(menu)
 
     def hide(self, *args):
-        self.tray_widget.set_status(appindicator.STATUS_PASSIVE)
+        self.tray_widget.set_status(self.appindicator.STATUS_PASSIVE)
 
     def show(self, *args):
-        self.tray_widget.set_status(appindicator.STATUS_ACTIVE)
+        self.tray_widget.set_status(self.appindicator.STATUS_ACTIVE)
 
     def set_blinking(self, on):
         #"I'm Afraid I Can't Do That"
@@ -106,6 +115,7 @@ def main():
     logging.basicConfig(format="%(asctime)s %(message)s")
     logging.root.setLevel(logging.DEBUG)
 
+    appindicator = get_appindicator()
     if not appindicator:
         debug("appindicator not available")
         return
