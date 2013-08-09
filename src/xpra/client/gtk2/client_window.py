@@ -63,6 +63,9 @@ class ClientWindow(GTKClientWindowBase):
                   gdk.SCROLL_LEFT: 6,
                   gdk.SCROLL_RIGHT: 7,
                   }
+    WINDOW_STATE_FULLSCREEN = gdk.WINDOW_STATE_FULLSCREEN
+    WINDOW_STATE_MAXIMIZED = gdk.WINDOW_STATE_MAXIMIZED
+
 
     def init_window(self, metadata):
         if self._override_redirect:
@@ -70,6 +73,20 @@ class ClientWindow(GTKClientWindowBase):
         else:
             gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         GTKClientWindowBase.init_window(self, metadata)
+        # tell KDE/oxygen not to intercept clicks
+        # see: https://bugs.kde.org/show_bug.cgi?id=274485
+        self.set_data("_kde_no_window_grab", 1)
+
+    def setup_window(self):
+        #preserve screen:
+        if not self._override_redirect:
+            display = gtk.gdk.display_get_default()
+            screen_num = self._client_properties.get("screen")
+            if screen_num is not None and screen_num>=0 and screen_num<display.get_n_screens():
+                screen = display.get_screen(screen_num)
+                if screen:
+                    self.set_screen(screen)
+        GTKClientWindowBase.setup_window(self)
 
     def set_alpha(self):
         if sys.platform.startswith("win"):
@@ -104,6 +121,25 @@ class ClientWindow(GTKClientWindowBase):
         except Exception, e:
             self.error("xget_u32_property error on %s / %s: %s", target, name, e)
         return GTKClientWindowBase.xget_u32_property(self, target, name)
+
+    def get_current_workspace(self):
+        window = self.gdk_window()
+        root = window.get_screen().get_root_window()
+        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
+
+    def get_window_workspace(self):
+        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
+
+    def do_get_workspace(self, target, prop):
+        if sys.platform.startswith("win"):
+            return  -1              #windows does not have workspaces
+        value = self.xget_u32_property(target, prop)
+        if value is not None:
+            self.debug("do_get_workspace() found value=%s from %s / %s", value, target, prop)
+            return value
+        self.debug("do_get_workspace() value not found!")
+        return  -1
+
 
     def is_mapped(self):
         return self.window is not None and self.window.is_visible()

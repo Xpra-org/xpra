@@ -14,7 +14,6 @@ gdk = import_gdk()
 
 import os
 import cairo
-import sys
 import time
 import math
 
@@ -48,20 +47,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._fullscreen = None
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         ClientWindowBase.init_window(self, metadata)
-        # tell KDE/oxygen not to intercept clicks
-        # see: https://bugs.kde.org/show_bug.cgi?id=274485
-        self.set_data("_kde_no_window_grab", 1)
 
     def setup_window(self):
         ClientWindowBase.setup_window(self)
-        #preserve screen:
-        if not self._override_redirect:
-            display = gtk.gdk.display_get_default()
-            screen_num = self._client_properties.get("screen")
-            if screen_num is not None and screen_num>=0 and screen_num<display.get_n_screens():
-                screen = display.get_screen(screen_num)
-                if screen:
-                    self.set_screen(screen)
         self.set_app_paintable(True)
         self.add_events(self.WINDOW_EVENT_MASK)
         if self._override_redirect:
@@ -93,8 +81,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def window_state_updated(self, widget, event):
-        self._fullscreen = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_FULLSCREEN)
-        maximized = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_MAXIMIZED)
+        self._fullscreen = bool(event.new_window_state & self.WINDOW_STATE_FULLSCREEN)
+        maximized = bool(event.new_window_state & self.WINDOW_STATE_MAXIMIZED)
         self._client_properties["maximized"] = maximized
         self.debug("window_state_updated(%s, %s) new_window_state=%s, fullscreen=%s, maximized=%s", widget, repr(event), event.new_window_state, self._fullscreen, maximized)
 
@@ -162,22 +150,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         return workspace
 
     def get_current_workspace(self):
-        window = self.gdk_window()
-        root = window.get_screen().get_root_window()
-        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
+        return -1
 
     def get_window_workspace(self):
-        return self.do_get_workspace(self.gdk_window(), "_NET_WM_DESKTOP")
-
-    def do_get_workspace(self, target, prop):
-        if sys.platform.startswith("win"):
-            return  -1              #windows does not have workspaces
-        value = self.xget_u32_property(target, prop)
-        if value is not None:
-            self.debug("do_get_workspace() found value=%s from %s / %s", value, target, prop)
-            return value
-        self.debug("do_get_workspace() value not found!")
-        return  -1
+        return -1
 
 
     def apply_transient_for(self, wid):

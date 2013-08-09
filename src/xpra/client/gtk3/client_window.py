@@ -31,14 +31,22 @@ class ClientWindow(GTKClientWindowBase):
     NAME_TO_HINT = { }
     SCROLL_MAP = {}
 
-    def init_window(self):
-        #TODO: no idea how to do this with gtk3
-        #maybe not even possible..
-        Gtk.Window.__init__(self)
-        GTKClientWindowBase.init_window(self)
+    WINDOW_STATE_FULLSCREEN = Gdk.WindowState.FULLSCREEN
+    WINDOW_STATE_MAXIMIZED = Gdk.WindowState.MAXIMIZED
 
-    def get_client_window_class(self, metadata, override_redirect):
-        return CairoBacking
+
+    def init_window(self, metadata):
+        #TODO: no idea how to do the window-type with gtk3
+        #maybe not even be possible..
+        Gtk.Window.__init__(self)
+        GTKClientWindowBase.init_window(self, metadata)
+        # tell KDE/oxygen not to intercept clicks
+        # see: https://bugs.kde.org/show_bug.cgi?id=274485
+        # does not work with gtk3? what the??
+        #self.set_data(strtobytes("_kde_no_window_grab"), 1)
+
+    def new_backing(self, w, h):
+        self._backing = self.make_new_backing(CairoBacking, w, h)
 
 
     def xget_u32_property(self, target, name):
