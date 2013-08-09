@@ -66,7 +66,7 @@ Index: xpra/codecs/dec_avcodec/constants.txt
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/constants.txt	(revision 4054)
 +++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
-@@ -10,12 +10,12 @@
+@@ -10,14 +10,14 @@
  ## dictionary through which the constants can be accessed like
  ## const["AV_..."].
  
@@ -88,11 +88,13 @@ Index: xpra/codecs/dec_avcodec/constants.txt
 +PIX_FMT_ARGB
 +PIX_FMT_BGRA
 +PIX_FMT_GBRP
+ 
+ CODEC_FLAG2_FAST
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4080)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -105,15 +105,15 @@
+@@ -107,15 +107,15 @@
      #populate mappings:
      COLORSPACES = []
      for pix_fmt, av_enum_str in {

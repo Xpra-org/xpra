@@ -47,7 +47,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx b/xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	2013-08-08 15:46:25.160461837 +0700
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	2013-08-08 15:47:20.451796824 +0700
-@@ -109,8 +109,8 @@
+@@ -111,8 +111,8 @@
              "YUV422P"   : "PIX_FMT_YUV422P",
              "YUV444P"   : "PIX_FMT_YUV444P",        
              "RGB"       : "PIX_FMT_RGB24",
