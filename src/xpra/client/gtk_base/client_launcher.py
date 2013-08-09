@@ -599,10 +599,13 @@ def main():
 	def app_signal(signum, frame):
 		print("")
 		log("got signal %s" % SIGNAMES.get(signum, signum))
-		app.show()
-		app.client.cleanup()
-		gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-		gobject.timeout_add(1000, app.set_info_color, True)
+		def show_signal():
+			app.show()
+			app.client.cleanup()
+			gobject.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+			gobject.timeout_add(1000, app.set_info_color, True)
+		#call from UI thread:
+		gobject.idle_add(show_signal)
 	signal.signal(signal.SIGINT, app_signal)
 	signal.signal(signal.SIGTERM, app_signal)
 	has_file = len(sys.argv) == 2
