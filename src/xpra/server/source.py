@@ -223,7 +223,6 @@ class ServerSource(object):
 
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False 
-        self.resume_sound = False
 
         self.uuid = ""
         self.hostname = ""
@@ -373,31 +372,24 @@ class ServerSource(object):
             self.protocol = None
 
     def suspend(self, ui, wd):
-        log.debug("suspend(%s, %s) suspended=%s, resume_sound=%s, sound_source=%s",
-                  ui, wd, self.suspended, self.resume_sound, self.sound_source)
+        log.debug("suspend(%s, %s) suspended=%s, sound_source=%s",
+                  ui, wd, self.suspended, self.sound_source)
         if ui:
             self.suspended = True
-        if self.sound_source is None:
-            self.resume_sound = False
-        else:
-            self.resume_sound = self.sound_source.codec
-            self.stop_sending_sound()
         for wid in wd.keys():
             ws = self.window_sources.get(wid)
             if ws:
                 ws.suspend()
 
     def resume(self, ui, wd):
-        log.debug("resume(%s, %s) suspended=%s, resume_sound=%s, sound_source=%s",
-                  ui, wd, self.suspended, self.resume_sound, self.sound_source)
+        log.debug("resume(%s, %s) suspended=%s, sound_source=%s",
+                  ui, wd, self.suspended, self.sound_source)
         if ui:
             self.suspended = False
         for wid, window in wd.items():
             ws = self.window_sources.get(wid)
             if ws:
                 ws.resume(window)
-        if self.resume_sound:
-            self.start_sending_sound(self.resume_sound)
         self.do_send_cursor()
 
 

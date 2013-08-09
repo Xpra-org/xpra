@@ -245,7 +245,6 @@ class XpraClient(GTKXpraClient):
                     if not self.UI_blocked_sent:
                         log.info("UI thread is blocked, pausing server")
                         self.send("suspend", True, self._id_to_window.keys())
-                        self.bump_sound_sequence()
                         self.UI_blocked_sent = True
                 time.sleep(1.0)
         thread.start_new_thread(poll_UI_loop, ())

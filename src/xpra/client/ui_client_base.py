@@ -1398,7 +1398,6 @@ class UIXpraClient(XpraClientBase):
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
-            "sound-data":           self._process_sound_data,
             "draw":                 self._process_draw,
             # "clipboard-*" packets are handled by a special case below.
             }.items():
@@ -1408,6 +1407,7 @@ class UIXpraClient(XpraClientBase):
             "ping":                 self._process_ping,
             "ping_echo":            self._process_ping_echo,
             "info-response":        self._process_info_response,
+            "sound-data":           self._process_sound_data,
             }.items():
             self._packet_handlers[k] = v
 
