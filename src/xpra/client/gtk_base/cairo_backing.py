@@ -28,7 +28,7 @@ class CairoBacking(GTKWindowBacking):
     def __init__(self, wid, w, h, has_alpha):
         GTKWindowBacking.__init__(self, wid)
 
-    def init(self, w, h, has_alpha):
+    def init(self, w, h):
         old_backing = self._backing
         #should we honour self.depth here?
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
