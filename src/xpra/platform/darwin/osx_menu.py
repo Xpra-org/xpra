@@ -90,11 +90,11 @@ class OSXMenuHelper(GTKTrayMenuBase):
         features_menu.add(self.make_bellmenuitem())
         features_menu.add(self.make_cursorsmenuitem())
         features_menu.add(self.make_notificationsmenuitem())
-        sound_menu = self.make_osxmenu("Sound")
-        if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
-            sound_menu.add(self.make_speakermenuitem())
-        if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
-            sound_menu.add(self.make_microphonemenuitem())
+        #sound_menu = self.make_osxmenu("Sound")
+        #if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
+        #    sound_menu.add(self.make_speakermenuitem())
+        #if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
+        #    sound_menu.add(self.make_microphonemenuitem())
         actions_menu = self.make_osxmenu("Actions")
         actions_menu.add(self.make_refreshmenuitem())
         actions_menu.add(self.make_raisewindowsmenuitem())
