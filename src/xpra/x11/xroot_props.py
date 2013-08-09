@@ -13,9 +13,10 @@ from xpra.x11.gtk_x11.prop import prop_get
 from xpra.log import Logger
 log = Logger()
 
+
 class XRootPropWatcher(gobject.GObject):
     __gsignals__ = {
-        "root-prop-changed": n_arg_signal(2),
+        "root-prop-changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gobject.TYPE_STRING,)),
         "xpra-property-notify-event": n_arg_signal(1),
         }
 
@@ -26,14 +27,14 @@ class XRootPropWatcher(gobject.GObject):
         add_event_receiver(self._root, self)
 
     def do_xpra_property_notify_event(self, event):
-        log.info("XRootPropWatcher.do_xpra_property_notify_event(%s) props=%s", event, self._props)
+        log("XRootPropWatcher.do_xpra_property_notify_event(%s) props=%s", event, self._props)
         if event.atom in self._props:
             self._notify(event.atom)
 
     def _notify(self, prop):
         v = prop_get(gtk.gdk.get_default_root_window(),
                      prop, "latin1", ignore_errors=True)
-        self.emit("root-prop-changed", prop, v)
+        self.emit("root-prop-changed", prop, str(v))
 
     def notify_all(self):
         for prop in self._props:
