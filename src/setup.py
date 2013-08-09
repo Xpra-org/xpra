@@ -609,6 +609,11 @@ if WIN32:
     #and stdint.h:
     win32_include_dir = os.path.join(os.getcwd(), "win32")
 
+    #cuda:
+    cuda_path = "C:\\NVIDIA\CUDA\CUDAToolkit"
+    cuda_include_dir   = os.path.join(cuda_path, "include")
+    cuda_bin_dir       = os.path.join(cuda_path, "bin")
+
     #ffmpeg is needed for both swscale and x264:
     libffmpeg_path = "C:\\ffmpeg-win32-bin"
     libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
@@ -699,6 +704,10 @@ if WIN32:
                     cairo_include_dir, pango_include_dir)
             add_to_keywords(kw, 'include_dirs', *dirs)
             checkdirs(*dirs)
+        elif "cuda" in packages[0]:
+            add_to_keywords(kw, 'include_dirs', win32_include_dir, cuda_include_dir)
+            checkdirs(cuda_include_dir)
+            data_files.append(('.', glob.glob("%s/*32*.dll" % cuda_bin_dir)))
         else:
             sys.exit("ERROR: unknown package config: %s" % str(packages))
         print("pkgconfig(%s,%s)=%s" % (packages, ekw, kw))
