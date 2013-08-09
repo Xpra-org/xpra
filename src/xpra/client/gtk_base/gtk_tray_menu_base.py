@@ -510,8 +510,7 @@ class GTKTrayMenuBase(object):
 
     def make_encodingssubmenu(self, handshake_complete=True):
         encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
-        server_encodings = self.client.server_capabilities.get("encodings", [])
-        encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)
+        encodings_submenu = make_encodingsmenu(self.get_current_encoding, self.set_current_encoding, encodings, self.client.server_encodings)
         self.popup_menu_workaround(encodings_submenu)
         return encodings_submenu
 
@@ -524,14 +523,13 @@ class GTKTrayMenuBase(object):
         self.set_speedmenu()
 
     def reset_encoding_options(self, encodings_menu):
-        server_encodings = self.client.server_capabilities.get("encodings", [])
         for x in encodings_menu.get_children():
             if isinstance(x, gtk.CheckMenuItem):
                 encoding = x.get_label()
                 active = encoding==self.client.encoding
                 if active!=x.get_active():
                     x.set_active(active)
-                x.set_sensitive(encoding in server_encodings)
+                x.set_sensitive(encoding in self.client.server_encodings)
 
 
     def make_qualitymenuitem(self):
