@@ -18,20 +18,20 @@ def is_unity():
 _appindicator = False
 def get_appindicator():
     global _appindicator
-    if _appindicator is not False:
-        return _appindicator
-    try:
+    if _appindicator is False:
         try:
-            import appindicator            #@UnresolvedImport @UnusedImport
-        except:
             try:
-                from gi.repository import AppIndicator as appindicator  #@UnresolvedImport @Reimport @UnusedImport
-                _appindicator = appindicator
+                import appindicator            #@UnresolvedImport @UnusedImport
             except:
-                from gi.repository import AppIndicator3 as appindicator  #@UnresolvedImport @Reimport
-                _appindicator = appindicator
-    except:
-        _appindicator = None
+                try:
+                    from gi.repository import AppIndicator as appindicator  #@UnresolvedImport @Reimport @UnusedImport
+                    _appindicator = appindicator
+                except:
+                    from gi.repository import AppIndicator3 as appindicator  #@UnresolvedImport @Reimport
+                    _appindicator = appindicator
+        except:
+            _appindicator = None
+    return _appindicator
 
 def can_use_appindicator():
     return get_appindicator() is not None and is_unity()
