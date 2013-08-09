@@ -28,7 +28,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
          if self.frame!=NULL:
 -            avcodec_free_frame(&self.frame)
 -            #redundant: self.frame = NULL
-+            free(&self.frame)
++            #free(&self.frame)   #freeing here causes a double free on Ubuntu, avcodec_close probably does it too
 +            self.frame = NULL
  
          cdef unsigned long ctx_key          #@DuplicatedSignature
