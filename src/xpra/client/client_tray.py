@@ -21,13 +21,15 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY = DEFAULT_LOCATION + DEFAULT_SIZE
 
-    def __init__(self, client, wid, w, h, tray_widget):
+    def __init__(self, client, wid, w, h, tray_widget, mmap_enabled, mmap_area):
         ClientWidgetBase.__init__(self, client, wid)
         self.tray_widget = tray_widget
         self._has_alpha = True
         self._geometry = None
         self.group_leader = None
 
+        self.mmap_enabled = mmap_enabled
+        self.mmap = mmap_area
         self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
@@ -87,6 +89,8 @@ class ClientTray(ClientWidgetBase):
     def new_backing(self, w, h):
         self._size = w, h
         self._backing = TrayBacking(self._id, w, h, self._has_alpha)
+        if self.mmap_enabled:
+            self._backing.enable_mmap(self.mmap)
 
     def update_metadata(self, metadata):
         debug("%s.update_metadata(%s)", self, metadata)
@@ -101,6 +105,7 @@ class ClientTray(ClientWidgetBase):
         debug("%s.draw_region%s", self, [x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks])
 
         def after_draw_update_tray(success):
+            debug("%s.after_draw_update_tray(%s)", self, success)
             if not success:
                 log.warn("after_draw_update_tray(%s) options=%s", success, options)
                 return
@@ -117,7 +122,7 @@ class ClientTray(ClientWidgetBase):
         enc, w, h, rowstride = self._backing.format
         has_alpha = enc=="rgb32"
         self.tray_widget.set_icon_from_data(self._backing.pixels, has_alpha, w, h, rowstride)
-        
+
 
     def destroy(self):
         if self.tray_widget:
@@ -137,7 +142,7 @@ class TrayBacking(GTKWindowBacking):
     def __init__(self, wid, w, h, has_alpha):
         self.pixels = None
         self.format = None
-        GTKWindowBacking.__init__(self, wid, w, h, has_alpha)
+        GTKWindowBacking.__init__(self, wid)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         self.pixels = img_data

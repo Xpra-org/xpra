@@ -433,10 +433,10 @@ class UIXpraClient(XpraClientBase):
             log("tray_exit(%s)", args)
         #(menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb)
         tray_widget = self.make_system_tray(None, "Xpra", None, tray_resized, tray_click, tray_mouseover, tray_exit)
+        log.info("tray_widget=%s", tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
-        return ClientTray(client, wid, w, h, tray_widget)
-
+        return ClientTray(client, wid, w, h, tray_widget, self.mmap_enabled, self.mmap)
 
     def get_screen_sizes(self):
         raise Exception("override me!")
