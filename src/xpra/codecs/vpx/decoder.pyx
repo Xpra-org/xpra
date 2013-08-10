@@ -19,6 +19,8 @@ ctypedef unsigned char uint8_t
 ctypedef void vpx_codec_ctx_t
 ctypedef void vpx_image_t
 cdef extern from "vpxlib.h":
+    char **get_supported_colorspaces()
+
     void xmemfree(void* ptr)
 
     int get_vpx_abi_version()
@@ -31,6 +33,21 @@ cdef extern from "vpxlib.h":
 
 def get_version():
     return get_vpx_abi_version()
+
+#copy C list of colorspaces to a python list:
+cdef do_get_colorspaces():
+    cdef const char** c_colorspaces
+    cdef int i
+    c_colorspaces = get_supported_colorspaces()
+    i = 0;
+    colorspaces = []
+    while c_colorspaces[i]!=NULL:
+        colorspaces.append(c_colorspaces[i])
+        i += 1
+    return colorspaces
+COLORSPACES = do_get_colorspaces()
+def get_colorspaces():
+    return COLORSPACES
 
 
 cdef class Decoder:
