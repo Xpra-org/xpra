@@ -463,6 +463,9 @@ class XpraClient(GTKXpraClient):
         log("get_client_window_class(%s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, window_types=%s, encoding=%s", metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, window_types, self.encoding)
         if self.GLClientWindowClass is None or not self.opengl_enabled or override_redirect:
             return self.ClientWindowClass
+        if metadata.get("has-alpha", False):
+            #GL cannot do transparency yet:
+            return self.ClientWindowClass
         if self.mmap_enabled or self.encoding not in ("x264", "vpx"):
             return self.ClientWindowClass
         if ("NORMAL" not in window_types) and ("_NET_WM_WINDOW_TYPE_NORMAL" not in window_types):
