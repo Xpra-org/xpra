@@ -319,6 +319,10 @@ class GLPixmapBacking(GTK2WindowBacking):
         finally:
             drawable.gl_end()
 
+    def _do_paint_rgb32(self, *args):
+        #FIXME #385: add transparency to GL
+        raise Exception("bug: it should be impossible to get here: gl backing does not handle transparency")
+
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options, callbacks):
         debug("%s._do_paint_rgb24(x=%d, y=%d, width=%d, height=%d, rowstride=%d)", self, x, y, width, height, rowstride)
         drawable = self.gl_init()
