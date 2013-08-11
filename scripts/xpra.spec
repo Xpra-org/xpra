@@ -152,18 +152,19 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Mon Jul 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-1
-- performance: X11 shared memory (XShm) transfers
+* Sun Aug 11 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-2
+- performance: X11 shared memory (XShm) pixels transfers
 - performance: zero-copy window pixels to picture encoders
-- performance: use cuda for colourspace conversion if available
+- performance: zero copy decoded pixels to window (but not with OpenGL..)
+- performance: multi-threaded x264 encoding and decoding
 - support for speed tuning (latency vs bandwidth) with more encodings (png, jpeg, rgb)
 - support for grayscale and palette based png encoding
-- support for window transparency
+- support for window and tray transparency
 - support webp lossless
 - support x264's "ultrafast" preset
 - support forwarding of group-leader application window information
 - prevent slow encoding from creating backlogs
-- OpenGL client rendering enabled by default wherever supported, with the ability to toggle it on or off via the tray menu
+- OpenGL accelerated client rendering enabled by default wherever supported
 - register as a generic URL handler
 - fullscreen toggle support
 - stricter Cython code
