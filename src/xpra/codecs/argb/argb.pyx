@@ -105,9 +105,38 @@ cdef do_premultiply_argb_in_place(unsigned int * cbuf, Py_ssize_t cbuf_len):
     for 0 <= i < cbuf_len / 4:
         a = (cbuf[i] >> 24) & 0xff
         r = (cbuf[i] >> 16) & 0xff
-        r = (r * a) / 255
+        r = r * a / 255
         g = (cbuf[i] >> 8) & 0xff
         g = g * a / 255
         b = (cbuf[i] >> 0) & 0xff
         b = b * a / 255
+        cbuf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
+
+def unpremultiply_argb_in_place(buf):
+    # b is a Python buffer object
+    cdef unsigned int * cbuf = <unsigned int *> 0   #@DuplicateSignature
+    cdef Py_ssize_t cbuf_len = 0                    #@DuplicateSignature
+    assert sizeof(int) == 4
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    assert PyObject_AsWriteBuffer(buf, <void **>&cbuf, &cbuf_len)==0
+    do_unpremultiply_argb_in_place(cbuf, cbuf_len)
+
+cdef do_unpremultiply_argb_in_place(unsigned int * cbuf, Py_ssize_t cbuf_len):
+    # cbuf contains non-premultiplied ARGB32 data in native-endian.
+    # We convert to premultiplied ARGB32 data, in-place.
+    cdef unsigned int a, r, g, b                    #@DuplicateSignature
+    assert sizeof(int) == 4
+    assert cbuf_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % cbuf_len
+    cdef int i                                      #@DuplicateSignature
+    for 0 <= i < cbuf_len / 4:
+        a = (cbuf[i] >> 24) & 0xff
+        if a==0:
+            cbuf[i] = 0
+            continue
+        r = (cbuf[i] >> 16) & 0xff
+        r = r * 255 / a
+        g = (cbuf[i] >> 8) & 0xff
+        g = g * 255 / a
+        b = (cbuf[i] >> 0) & 0xff
+        b = b * 255 / a
         cbuf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)

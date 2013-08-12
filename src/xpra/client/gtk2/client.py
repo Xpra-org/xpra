@@ -84,7 +84,13 @@ class XpraClient(GTKXpraClient):
     def get_core_encodings(self):
         encodings = GTKXpraClient.get_core_encodings(self)
         if gdk.screen_get_default().get_rgba_visual() is not None:
-            encodings.append("rgb32")
+            try:
+                #check for bytearray which is used by PixmapBacking
+                #to unpremultiply rgb32 data
+                bytearray("")
+                encodings.append("rgb32")
+            except:
+                pass
         #gtk2 can handle 'png' and 'jpeg' natively (without PIL)
         #(though using PIL is better since we can do that in the decode thread)
         for x in ("png", "jpeg"):

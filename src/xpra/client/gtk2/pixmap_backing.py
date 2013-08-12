@@ -77,6 +77,11 @@ class PixmapBacking(GTK2WindowBacking):
         #log.info("data head=%s", [hex(ord(v))[2:] for v in list(img_data[:500])])
         if self._backing is None:
             return  False
+        #FIXME: slow, we create a bytearray and then convert it back to a string!
+        img_data = bytearray(img_data)
+        from xpra.codecs.argb.argb import unpremultiply_argb_in_place
+        unpremultiply_argb_in_place(img_data)
+        img_data = str(img_data)
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
         cr = self._backing.cairo_create()
         cr.rectangle(x, y, width, height)
