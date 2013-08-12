@@ -122,7 +122,7 @@ def make_window_icon(surf, png_window_icons):
     log("found new window icon: %sx%s, sending as png=%s", w, h, png_window_icons)
     if png_window_icons:
         return make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h)
-    return make_argb32_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h)
+    return make_argb32_window_icon(pixel_data, pixel_format, stride, w, h)
 
 def make_png_window_icon(png_window_icons, pixel_data, pixel_format, stride, w, h):
     from PIL import Image                       #@UnresolvedImport
