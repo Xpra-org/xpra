@@ -48,12 +48,12 @@ def decode_list(x, f):
 
 def decode_dict(x, f):
     r, f = {}, f+1
-    lastkey = None
+    #lastkey = None
     while x[f] != 'e':
         k, f = decode_func[x[f]](x, f)
-        if lastkey is not None and lastkey >= k:
-            raise ValueError
-        lastkey = k
+        #if lastkey is not None and lastkey >= k:
+        #    raise ValueError("keys are not in ascending order!")
+        #lastkey = k
         r[k], f = decode_func[x[f]](x, f)
     return (r, f + 1)
 
