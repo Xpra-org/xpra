@@ -12,6 +12,7 @@ log = Logger()
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks, DRAW_DEBUG
 from xpra.os_util import BytesIOClass, data_to_buffer
+from xpra.scripts.config import PIL
 
 
 """
@@ -61,15 +62,17 @@ class CairoBacking(GTKWindowBacking):
         """ must be called from UI thread """
         if self._backing is None:
             fire_paint_callbacks(callbacks, False)
-            return  False
+            return
         buf = data_to_buffer(img_data)
+        self.do_paint_png(buf, x, y, width, height, rowstride, options, callbacks)
+
+    def do_paint_png(self, buf, x, y, width, height, rowstride, options, callbacks):
         surf = cairo.ImageSurface.create_from_png(buf)
         gc = cairo.Context(self._backing)
         gc.set_source_surface(surf)
         gc.paint()
         surf.finish()
         fire_paint_callbacks(callbacks, True)
-        return  False
 
     def paint_pil_image(self, pil_image, width, height, rowstride, options, callbacks):
         buf = BytesIOClass()
@@ -85,16 +88,18 @@ class CairoBacking(GTKWindowBacking):
         if self._backing is None:
             fire_paint_callbacks(callbacks, False)
             return  False
-        gc = cairo.Context(self._backing)
+        assert PIL, "cannot paint without PIL!"
         if rowstride==0:
-            rowstride = width*3
-        surf = cairo.ImageSurface.create_for_data(img_data, cairo.FORMAT_RGB24, width, height, rowstride)
-        gc.set_source_surface(surf)
-        gc.paint()
-        surf.finish()
-        fire_paint_callbacks(callbacks, True)
-        del img_data
+            rowstride = width * 3
+        im = PIL.Image.frombuffer("RGB", (width, height), img_data, "raw", "RGB", rowstride)
+        buf = BytesIOClass()
+        im.save(buf, "PNG")
+        data = buf.getvalue()
+        buf.close()
+        img_data = BytesIOClass(data)
+        self.do_paint_png(img_data, x, y, width, height, rowstride, options, callbacks)
         return  False
+
 
     def cairo_draw(self, context):
         if self._backing is None:
