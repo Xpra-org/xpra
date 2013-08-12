@@ -13,7 +13,7 @@ log = Logger()
 from threading import Lock
 from xpra.codecs.xor import xor_str
 from xpra.net.mmap_pipe import mmap_read
-from xpra.os_util import BytesIOClass
+from xpra.os_util import BytesIOClass, strtobytes
 from xpra.codecs.codec_constants import get_colorspace_from_avutil_enum
 from xpra.scripts.config import dec_avcodec, dec_vpx, dec_webp, PIL
 
@@ -366,6 +366,7 @@ class WindowBackingBase(object):
         """ dispatches the paint to one of the paint_XXXX methods """
         if DRAW_DEBUG:
             log.info("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)", x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
+        coding = strtobytes(coding)
         if coding == "mmap":
             self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
         elif coding == "rgb24":
