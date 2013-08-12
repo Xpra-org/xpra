@@ -3,7 +3,7 @@
 set -e
 rm -rf py3
 mkdir py3
-cp -apr etc man scripts xdg xpra add_build_info.py setup.py README COPYING ./py3/
+cp -apr etc man scripts xdg xpra tests add_build_info.py setup.py README COPYING ./py3/
 pushd py3
 python3-2to3 --no-diffs -x all -f except -w -n .
 python3 setup.py install "$@" --without-server --without-x11 \
