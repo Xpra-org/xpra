@@ -79,7 +79,7 @@ class PixmapBacking(GTK2WindowBacking):
             return  False
         #FIXME: slow, we create a bytearray and then convert it back to a string!
         img_data = bytearray(img_data)
-        from xpra.codecs.argb.argb import unpremultiply_argb_in_place
+        from xpra.codecs.argb.argb import unpremultiply_argb_in_place   #@UnresolvedImport
         unpremultiply_argb_in_place(img_data)
         img_data = str(img_data)
         pixbuf = gdk.pixbuf_new_from_data(img_data, gtk.gdk.COLORSPACE_RGB, True, 8, width, height, rowstride)
