@@ -95,3 +95,17 @@ class CairoBacking(GTKWindowBacking):
         fire_paint_callbacks(callbacks, True)
         del img_data
         return  False
+
+    def cairo_draw(self, context):
+        if self._backing is None:
+            return
+        try:
+            context.set_source_surface(self._backing, 0, 0)
+            context.set_operator(cairo.OPERATOR_SOURCE)
+            context.paint()
+            return True
+        except KeyboardInterrupt:
+            raise
+        except:
+            log.error("cairo_draw(%s)", context, exc_info=True)
+            return False
