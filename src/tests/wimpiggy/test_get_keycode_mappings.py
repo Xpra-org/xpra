@@ -2,14 +2,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
 
-import pygtk
-pygtk.require('2.0')
-import gtk.gdk
+from xpra.x11.gtk_x11 import gdk_display_source			 #@UnusedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings		#@UnresolvedImport
+keyboard_bindings = X11KeyboardBindings()
 
-from wimpiggy.lowlevel import get_keycode_mappings		#@UnresolvedImport
 
 def main():
-	mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
+	mappings = keyboard_bindings.get_keycode_mappings()
 	print("mappings=%s" % mappings)
 	print("")
 	for k,v in mappings.items():

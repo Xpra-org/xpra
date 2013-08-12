@@ -22,6 +22,8 @@ def test_decoding():
         rrstr = g_str[rr:]
         assert rrstr.endswith("asdf")
 
+    t("l16:configure-windowi2ei555ei340ei649ei381ed9:maximizedi0e6:screeni0e9:maximizedi0eee", [], "")
+
     t("i12345e", 12345, "")
     t("i-12345e", -12345, "")
     t("i12345eQQQ", 12345, "QQQ")
@@ -35,6 +37,9 @@ def test_decoding():
       "")
 
     t("l0:e", [""], "")
+
+    # Keys do not have to be strings:
+    t("di0ei0ee", {0 : 0}, "")
 
     print("------")
     def te(s, exc):
@@ -55,10 +60,6 @@ def test_decoding():
     te("-1:aa", ValueError)
     te("02:aa", ValueError)
 
-    # Keys must be strings:
-    te("di0ei0ee", ValueError)
-    te("dli0eei0ee", ValueError)
-    te("dd1:a1:aei0ee", ValueError)
     # Keys must be in ascending order:
     te("d1:bi0e1:ai0e1:ci0ee", ValueError)
     te("d1:ai0e1:ci0e1:bi0ee", ValueError)
@@ -96,6 +97,8 @@ def test_encoding():
         return rlist
 
     def test_hello():
+        print()
+        print("test_hello()")
         d = {}
         d["__prerelease_version"] = "0.0.7.26"
         #caps.put("deflate", 6);
@@ -108,6 +111,8 @@ def test_encoding():
         t(hello, "l5:hellod20:__prerelease_version8:0.0.7.2618:challenge_response40:ba59e4110119264f4a6eaf3adc075ea2c540855012:desktop_sizeli480ei800ee4:jpegi4eee")
 
     def test_large_hello():
+        print()
+        print("test_large_hello()")
         d = {'start_time': 1325786122,
                 'resize_screen': False, 'bell': True, 'desktop_size': [800, 600], 'modifiers_nuisance': True,
                 'actual_desktop_size': [3840, 2560], 'encodings': ['rgb24', 'jpeg', 'png'],
@@ -127,13 +132,17 @@ def test_encoding():
     test_large_hello()
 
 def test_large_dict():
-    import gtk.gdk
-    from wimpiggy.lowlevel import get_keycode_mappings          #@UnresolvedImport
-    mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
-    b = bencode(mappings)
-    print("bencode(%s)=%s" % (mappings, b))
-    d = bdecode(b)
-    print("bdecode(%s)=%s" % (b, d))
+    try:
+        from xpra.x11.gtk_x11 import gdk_display_source             #@UnusedImport
+        from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings        #@UnresolvedImport
+        keyboard_bindings = X11KeyboardBindings()
+        mappings = keyboard_bindings.get_keycode_mappings()
+        b = bencode(mappings)
+        print("bencode(%s)=%s" % (mappings, b))
+        d = bdecode(b)
+        print("bdecode(%s)=%s" % (b, d))
+    except ImportError, e:
+        print("test_large_dict() skipped because of: %s" % e)
 
 def main():
     test_decoding()

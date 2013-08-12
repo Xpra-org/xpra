@@ -5,17 +5,18 @@ pygtk.require('2.0')
 import gtk
 
 
-from wimpiggy.lowlevel import get_keycode_mappings		#@UnresolvedImport
-from wimpiggy.lowlevel import get_modifier_mappings		#@UnresolvedImport
+from xpra.x11.gtk_x11 import gdk_display_source			 #@UnusedImport
+from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings		#@UnresolvedImport
+keyboard_bindings = X11KeyboardBindings()
+keycode_mappings = keyboard_bindings.get_keycode_mappings()
+modifier_mappings = keyboard_bindings.get_modifier_mappings()
 
-keycode_mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
-modifier_mappings = get_modifier_mappings()
 
 def keys_changed(*args):
 	global keycode_mappings, modifier_mappings
 	print("keys_changed(%s)" % str(args))
-	new_keycode_mappings = get_keycode_mappings(gtk.gdk.get_default_root_window())
-	new_modifier_mappings = get_modifier_mappings()
+	new_keycode_mappings = keyboard_bindings.get_keycode_mappings()
+	new_modifier_mappings = keyboard_bindings.get_modifier_mappings()
 	if new_keycode_mappings!=keycode_mappings:
 		print("modifier mappings have changed: %s" % new_modifier_mappings)
 		modifier_mappings = new_modifier_mappings
