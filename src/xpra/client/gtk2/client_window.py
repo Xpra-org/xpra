@@ -91,13 +91,13 @@ class ClientWindow(GTKClientWindowBase):
     def set_alpha(self):
         if sys.platform.startswith("win"):
             return
-        if self._has_alpha:
+        if self._has_alpha and not self.is_realized():
             screen = self.get_screen()
             rgba = screen.get_rgba_colormap()
             if rgba is None:
                 self.error("cannot handle window transparency!")
             else:
-                self.debug("set_alpha() using rgba colormap for %s", self._id)
+                self.debug("set_alpha() using rgba colormap for %s, realized=%s", self._id, self.is_realized())
                 self.set_colormap(rgba)
 
     def set_modal(self, modal):
