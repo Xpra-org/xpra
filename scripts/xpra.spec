@@ -10,6 +10,7 @@
 %endif
 %define include_egg 1
 %define old_xdg 0
+%define PIL_bug 1
 
 #if building a generic rpm: exclude anything that requires cython modules:
 %if 0%{?generic}
@@ -41,6 +42,10 @@
 %define requires_x264 , x264-libs
 %define requires_xorg , xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-drv-void, xorg-x11-xauth
 %define requires_opengl , PyOpenGL, pygtkglext, python-numeric, numpy
+# Fedora 19 onwards ship with Pillow in place of PIL, which has the bug fix:
+%if %(egrep -vq 'release 18' /etc/redhat-release && echo 1 || echo 0)
+%define PIL_bug 0
+%endif
 %endif
 
 %if 0%{?el6}
@@ -142,6 +147,7 @@ Patch11: disable-pulseaudio.patch
 Patch12: old-xdg-desktop.patch
 Patch13: use-static-avcodec.patch
 Patch14: use-static-swscale.patch
+Patch15: PIL-cannot-optimize-bug.patch
 
 
 %description
@@ -831,6 +837,10 @@ cd xpra-all-%{version}
 %if 0%{?static_swscale}
 %patch14 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
+%endif
+%if 0%{?PIL_bug}
+%patch15 -p1
+(echo "xpra/server/window_source.py" > %{S:ignored_changed_files.txt})
 %endif
 
 

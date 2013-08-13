@@ -1,0 +1,13 @@
+Index: xpra/server/window_source.py
+===================================================================
+--- a/xpra/server/window_source.py	(revision 4165)
++++ b/xpra/server/window_source.py	(working copy)
+@@ -25,7 +25,7 @@
+ 
+ DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
+ MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
+-PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
++PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "0")=="1"
+ 
+ import time
+ 
