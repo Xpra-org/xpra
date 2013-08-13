@@ -17,16 +17,16 @@ def warn(msg):
 
 def codec_import_check(name, top_module, class_module, *classnames):
     try:
-        __import__(top_module, {}, {}, [])
-        for classname in classnames:
-            try:
+        try:
+            __import__(top_module, {}, {}, [])
+            for classname in classnames:
                 return __import__(class_module, {}, {}, classname)
-            except Exception, e:
-                warn("cannot load %s: %s missing from %s: %s" % (name, classname, class_module, e))
-    except ImportError, e:
-        #the required module does not exist
-        #xpra was probably built with the option: --without-${name}
-        pass
+        except ImportError, e:
+            #the required module does not exist
+            #xpra was probably built with the option: --without-${name}
+            pass
+    except Exception, e:
+        warn("cannot load %s: %s missing from %s: %s" % (name, classname, class_module, e))
     return None
 codec_versions = {}
 def add_codec_version(name, top_module, fieldname, invoke=False):
@@ -66,7 +66,7 @@ csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra
 has_csc_swscale = csc_swscale is not None
 add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
 
-csc_nvcuda = codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
+csc_nvcuda = None   #codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
 has_csc_nvcuda = csc_nvcuda is not None
 add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
 
