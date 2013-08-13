@@ -600,7 +600,7 @@ class ServerSource(object):
     def new_sound_buffer(self, sound_source, data, metadata):
         soundlog("new_sound_buffer(%s, %s, %s) source=%s, suspended=%s, sequence=%s",
                  sound_source, len(data or []), metadata, self.sound_source, self.suspended, self.sound_source_sequence)
-        if self.suspended or self.sound_source is None:
+        if self.sound_source is None:
             return
         if self.sound_source_sequence>0:
             metadata["sequence"] = self.sound_source_sequence
