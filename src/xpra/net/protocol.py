@@ -20,8 +20,9 @@ import binascii
 from threading import Lock
 
 
-from xpra.log import Logger
+from xpra.log import Logger, debug_if_env
 log = Logger()
+debug = debug_if_env(log, "XPRA_NETWORK_DEBUG")
 
 from xpra.os_util import Queue, strtobytes
 from xpra.daemon_thread import make_daemon_thread
@@ -34,7 +35,7 @@ try:
         from xpra.net.rencode import loads as rencode_loads  #@UnresolvedImport
         from xpra.net.rencode import __version__
         rencode_version = __version__
-        log("found rencode version %s", rencode_version)
+        debug("found rencode version %s", rencode_version)
     except ImportError:
         log.error("rencode load error", exc_info=True)
 except Exception, e:
@@ -175,7 +176,7 @@ class Protocol(object):
         self._get_packet_cb = get_packet_cb
 
     def get_cipher(self, ciphername, iv, password, key_salt, iterations):
-        log("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+        debug("get_cipher_in(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
         if not ciphername:
             return None, 0
         assert iterations>=100
@@ -187,7 +188,7 @@ class Protocol(object):
         block_size = 32         #fixme: can we derive this?
         secret = PBKDF2(password, key_salt, dkLen=block_size, count=iterations)
         #secret = (password+password+password+password+password+password+password+password)[:32]
-        log("get_cipher(%s, %s, %s) secret=%s, block_size=%s", ciphername, iv, password, secret.encode('hex'), block_size)
+        debug("get_cipher(%s, %s, %s) secret=%s, block_size=%s", ciphername, iv, password, secret.encode('hex'), block_size)
         return AES.new(secret, AES.MODE_CBC, iv), block_size
 
     def set_cipher_in(self, ciphername, iv, password, key_salt, iterations):
@@ -223,6 +224,7 @@ class Protocol(object):
         info[prefix+"max_packet_size" + suffix] = self.max_packet_size
         for k,v in self.aliases.items():
             info[prefix+"alias." + k + suffix] = v
+            info[prefix+"alias." + str(v) + suffix] = k
         try:
             info[prefix+"encoder" + suffix] = self._encoder.__name__
         except:
@@ -245,9 +247,9 @@ class Protocol(object):
 
     def send_now(self, packet):
         if self._closed:
-            log("send_now(%s ...) connection is closed already, not sending", packet[0])
+            debug("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
-        log("send_now(%s ...)", packet[0])
+        debug("send_now(%s ...)", packet[0])
         assert self._get_packet_cb==None, "cannot use send_now when a packet source exists!"
         def packet_cb():
             self._get_packet_cb = None
@@ -276,6 +278,7 @@ class Protocol(object):
         if packet is None:
             return
         chunks, proto_flags = self.encode(packet)
+        debug("add_packet_to_queue(%s ...)", packet[0])
         try:
             self._write_lock.acquire()
             self._add_chunks_to_queue(chunks, proto_flags, start_send_cb, end_send_cb)
@@ -308,7 +311,7 @@ class Protocol(object):
                 assert len(padded)==actual_size
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size
-                log("sending %s bytes encrypted with %s padding", payload_size, len(padding))
+                debug("sending %s bytes encrypted with %s padding", payload_size, len(padding))
             if pack_header_and_data is not None and actual_size<PACKET_JOIN_SIZE:
                 if type(data)==unicode:
                     data = str(data)
@@ -351,7 +354,7 @@ class Protocol(object):
 
     def enable_rencode(self):
         assert rencode_dumps is not None, "rencode cannot be enabled: the module failed to load!"
-        log("enable_rencode()")
+        debug("enable_rencode()")
         self._encoder = self.rencode
 
     def bencode(self, data):
@@ -432,7 +435,7 @@ class Protocol(object):
         try:
             while not self._closed:
                 callback()
-            log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
+            debug("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
         except KeyboardInterrupt, e:
             raise e
         except (OSError, IOError, socket_error), e:
@@ -455,7 +458,7 @@ class Protocol(object):
         items = self._write_queue.get()
         # Used to signal that we should exit:
         if items is None:
-            log("write thread: empty marker, exiting")
+            debug("write thread: empty marker, exiting")
             self.close()
             return
         for buf, start_cb, end_cb in items:
@@ -483,13 +486,13 @@ class Protocol(object):
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         self._read_queue.put(buf)
         if not buf:
-            log("read thread: eof")
+            debug("read thread: eof")
             self.close()
             return
         self.input_raw_packetcount += 1
 
     def _call_connection_lost(self, message="", exc_info=False):
-        log("will call connection lost: %s", message)
+        debug("will call connection lost: %s", message)
         scheduler.idle_add(self._connection_lost, message, exc_info)
 
     def _connection_lost(self, message="", exc_info=False):
@@ -529,7 +532,7 @@ class Protocol(object):
         while not self._closed:
             buf = self._read_queue.get()
             if not buf:
-                log("read thread: empty marker, exiting")
+                debug("read thread: empty marker, exiting")
                 scheduler.idle_add(self.close)
                 return
             if read_buffer:
@@ -575,7 +578,7 @@ class Protocol(object):
                     #this gives 'set_max_packet_size' a chance to run from "hello"
                     def check_packet_size(size_to_check, packet_header):
                         if not self._closed:
-                            log("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
+                            debug("check_packet_size(%s, 0x%s) limit is %s", size_to_check, repr_ellipsized(packet_header), self.max_packet_size)
                             if size_to_check>self.max_packet_size:
                                 self._call_connection_lost("invalid packet: size requested is %s (maximum allowed is %s - packet header: 0x%s), dropping this connection!" %
                                                               (size_to_check, self.max_packet_size, repr_ellipsized(packet_header)))
@@ -596,7 +599,7 @@ class Protocol(object):
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & Protocol.FLAGS_CIPHER:
-                    log("received %s encrypted bytes with %s padding", payload_size, len(padding))
+                    debug("received %s encrypted bytes with %s padding", payload_size, len(padding))
                     data = self.cipher_in.decrypt(raw_string)
                     if padding:
                         def debug_str():
@@ -674,14 +677,14 @@ class Protocol(object):
             if not self._write_queue.empty():
                 #write queue still has stuff in it..
                 if timeout<=0:
-                    log("flush_then_close: queue still busy, closing without sending the last packet")
+                    debug("flush_then_close: queue still busy, closing without sending the last packet")
                     self._write_lock.release()
                     self.close()
                 else:
-                    log("flush_then_close: still waiting for queue to flush")
+                    debug("flush_then_close: still waiting for queue to flush")
                     scheduler.timeout_add(100, wait_for_queue, timeout-1)
             else:
-                log("flush_then_close: queue is now empty, sending the last packet and closing")
+                debug("flush_then_close: queue is now empty, sending the last packet and closing")
                 chunks, proto_flags = self.encode(last_packet)
                 def close_cb(*args):
                     self.close()
@@ -692,13 +695,13 @@ class Protocol(object):
         def wait_for_write_lock(timeout=100):
             if not self._write_lock.acquire(False):
                 if timeout<=0:
-                    log("flush_then_close: timeout waiting for the write lock")
+                    debug("flush_then_close: timeout waiting for the write lock")
                     self.close()
                 else:
-                    log("flush_then_close: write lock is busy, will retry %s more times", timeout)
+                    debug("flush_then_close: write lock is busy, will retry %s more times", timeout)
                     scheduler.timeout_add(10, wait_for_write_lock, timeout-1)
             else:
-                log("flush_then_close: acquired the write lock")
+                debug("flush_then_close: acquired the write lock")
                 #we have the write lock - we MUST free it!
                 wait_for_queue()
         #normal codepath:
