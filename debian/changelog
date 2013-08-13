@@ -1,4 +1,4 @@
-xpra (0.10.0-5) UNRELEASED; urgency=low
+xpra (0.10.0-6) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) pixels transfers
   * performance: zero-copy window pixels to picture encoders
   * performance: zero copy decoded pixels to window (but not with OpenGL..)
@@ -30,7 +30,7 @@ xpra (0.10.0-5) UNRELEASED; urgency=low
   * export much more debugging information about system state and statistics
   * simplify non-UI subcommands and their packets, also use rencode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 11 Aug 2013 20:03:33 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 13 Aug 2013 13:15:11 +0700
 
 xpra (0.9.8-1) UNRELEASED; urgency=low
   * fix client workarea size change detection (again)

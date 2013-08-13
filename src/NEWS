@@ -1,4 +1,4 @@
-v0.10.0 (2013-08-11)
+v0.10.0 (2013-08-13)
 ======================
 	-- performance: X11 shared memory (XShm) pixels transfers
 	-- performance: zero-copy window pixels to picture encoders

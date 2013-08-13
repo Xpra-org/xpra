@@ -158,7 +158,7 @@ So basically it's screen for remote X apps.
 
 
 %changelog
-* Sun Aug 11 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-2
+* Tue Aug 13 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.0-3
 - performance: X11 shared memory (XShm) pixels transfers
 - performance: zero-copy window pixels to picture encoders
 - performance: zero copy decoded pixels to window (but not with OpenGL..)
