@@ -25,6 +25,7 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
+PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
 
 import time
 
@@ -1009,7 +1010,7 @@ class WindowSource(object):
         buf = StringIOClass()
         client_options = {}
         optimize = options.get("optimize")
-        if optimize is None and self.batch_config.delay>2*self.batch_config.START_DELAY:
+        if PIL_CAN_OPTIMIZE and optimize is None and self.batch_config.delay>2*self.batch_config.START_DELAY:
             ces = self.get_current_speed()
             mes = self.get_min_speed()
             optimize = ces<50 and ces<(mes+20)          #optimize if speed is close to minimum
@@ -1020,7 +1021,7 @@ class WindowSource(object):
             q = int(min(99, max(1, q)))
             kwargs = im.info
             kwargs["quality"] = q
-            if optimize is True:
+            if PIL_CAN_OPTIMIZE and optimize is True:
                 kwargs["optimize"] = optimize
             im.save(buf, "JPEG", **kwargs)
             client_options["quality"] = q
@@ -1036,7 +1037,7 @@ class WindowSource(object):
                 im = im.convert("P", palette=PIL.Image.WEB)
                 bpp = 8
             kwargs = im.info
-            if optimize is True:
+            if PIL_CAN_OPTIMIZE and optimize is True:
                 kwargs["optimize"] = optimize
             im.save(buf, "PNG", **kwargs)
         debug("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
