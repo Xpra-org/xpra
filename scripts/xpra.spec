@@ -58,8 +58,8 @@
 #(so it can be installed if desired):
 %define no_sound 0
 %define requires_sound %{nil}
-#opengl is supported from 6.3 onwards:
-%if %(egrep -q 'release 7|release 6.3|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
+#opengl is supported from 6.4 onwards:
+%if %(egrep -q 'release 7|release 6.4|release 6.5|release 6.6|release 6.7|release 6.8|release 6.9' /etc/redhat-release && echo 1 || echo 0)
 %define requires_opengl , PyOpenGL, pygtkglext
 %endif
 #6.4 has dummy support, but detection fails because of console ownership issues..
