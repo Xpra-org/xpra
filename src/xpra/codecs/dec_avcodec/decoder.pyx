@@ -24,6 +24,7 @@ cdef extern from "Python.h":
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
+
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil
     void * memset(void * ptr, int value, size_t num) nogil

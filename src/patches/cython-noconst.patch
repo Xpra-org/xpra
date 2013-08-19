@@ -126,7 +126,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4178)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -77,8 +77,8 @@
+@@ -78,8 +78,8 @@
      #init and free:
      void avcodec_register_all()
      AVCodec *avcodec_find_decoder(AVCodecID id)
@@ -137,7 +137,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      AVFrame *avcodec_alloc_frame()
      void avcodec_free_frame(AVFrame **frame)
      int avcodec_close(AVCodecContext *avctx)
-@@ -87,7 +87,7 @@
+@@ -88,7 +88,7 @@
      void av_init_packet(AVPacket *pkt) nogil
      void avcodec_get_frame_defaults(AVFrame *frame) nogil
      int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
@@ -146,7 +146,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
  
      #buffer management:
      int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic)
-@@ -430,7 +430,7 @@
+@@ -431,7 +431,7 @@
  
      def decompress_image(self, input, options):
          cdef unsigned char * padded_buf = NULL
@@ -155,7 +155,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
          cdef Py_ssize_t buf_len = 0
          cdef int len = 0
          cdef int got_picture
-@@ -440,7 +440,7 @@
+@@ -441,7 +441,7 @@
          assert self.codec_ctx!=NULL
          assert self.codec!=NULL
          #copy input buffer into padded C buffer:
