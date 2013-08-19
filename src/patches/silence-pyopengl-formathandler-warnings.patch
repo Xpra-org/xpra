@@ -1,0 +1,13 @@
+Index: src/xpra/client/gl/gl_check.py
+===================================================================
+--- a/src/xpra/client/gl/gl_check.py	(revision 4166)
++++ b/src/xpra/client/gl/gl_check.py	(working copy)
+@@ -15,7 +15,7 @@
+ 
+ #warnings seem unavoidable on win32, so silence them
+ #(other platforms should fix their packages instead)
+-SILENCE_FORMAT_HANDLER_LOGGER = sys.platform.startswith("win") or sys.platform.startswith("darwin")
++SILENCE_FORMAT_HANDLER_LOGGER = True
+ 
+ BLACKLIST = {"vendor" : ["nouveau", "Humper"]}
+ 
