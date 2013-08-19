@@ -148,13 +148,13 @@ DECODERS = {}
 #(the one we create and pass to avcodec_decode_video2)
 #because avcodec will pass a different "Frame" pointing
 #to the same memory. So we have to use frame.data[0] instead.
-cdef long get_context_key(AVCodecContext *avctx):
+cdef unsigned long get_context_key(AVCodecContext *avctx):
     cdef unsigned long ctx_key
     assert avctx!=NULL, "context is not set!"
     ctx_key = <unsigned long> avctx
     return ctx_key
 
-cdef long get_frame_key(AVFrame *frame):
+cdef unsigned long get_frame_key(AVFrame *frame):
     cdef unsigned long frame_key
     assert frame!=NULL, "frame is not set!"
     frame_key = <unsigned long> frame.data[0]
@@ -515,7 +515,7 @@ cdef class Decoder:
 
 
     def frame_error(self):
-        frame_key = get_frame_key(self.frame)
+        cdef unsigned long frame_key = get_frame_key(self.frame)
         framewrapper = self.get_framewrapper(frame_key, True)
         log("frame_error() freeing %s", framewrapper)
         if framewrapper:
