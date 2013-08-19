@@ -167,7 +167,7 @@ cdef void clear_frame(AVFrame *frame):
 
 
 cdef get_decoder(AVCodecContext *avctx):
-    cdef long ctx_key = get_context_key(avctx)
+    cdef unsigned long ctx_key = get_context_key(avctx)
     global DECODERS
     decoder = DECODERS.get(ctx_key)
     assert decoder is not None, "decoder not found for context %s" % hex(ctx_key)
