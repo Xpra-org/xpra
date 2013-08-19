@@ -144,6 +144,16 @@ except:
 
 
 def OpenGL_safety_check():
+    #Ubuntu 12.04 will just crash on you if you try:
+    distro = python_platform.linux_distribution()
+    if distro and len(distro)==3 and distro[0]=="Ubuntu":
+        ur = distro[1]  #ie: "12.04"
+        try:
+            rnum = [int(x) for x in ur.split(".")]  #ie: [12, 4]
+            if rnum<=[12, 04]:
+                return "Ubuntu %s is too buggy" % ur
+        except:
+            pass
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
