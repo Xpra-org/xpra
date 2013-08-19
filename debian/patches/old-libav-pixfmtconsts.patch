@@ -94,7 +94,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
 --- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4080)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -107,15 +107,15 @@
+@@ -110,15 +110,15 @@
      #populate mappings:
      COLORSPACES = []
      for pix_fmt, av_enum_str in {
