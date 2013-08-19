@@ -1,7 +1,7 @@
-Index: src/xpra/client/gl/gl_check.py
+Index: xpra/client/gl/gl_check.py
 ===================================================================
---- a/src/xpra/client/gl/gl_check.py	(revision 4166)
-+++ b/src/xpra/client/gl/gl_check.py	(working copy)
+--- a/xpra/client/gl/gl_check.py	(revision 4166)
++++ b/xpra/client/gl/gl_check.py	(working copy)
 @@ -15,7 +15,7 @@
  
  #warnings seem unavoidable on win32, so silence them
