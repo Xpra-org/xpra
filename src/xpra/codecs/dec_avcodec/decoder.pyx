@@ -41,6 +41,10 @@ cdef extern from "../memalign/memalign.h":
 
 ctypedef long AVPixelFormat
 
+
+cdef extern from "libavutil/mem.h":
+    void av_free(void *ptr)
+
 cdef extern from "libavcodec/avcodec.h":
     ctypedef struct AVFrame:
         uint8_t **data
@@ -79,7 +83,6 @@ cdef extern from "libavcodec/avcodec.h":
     AVFrame *avcodec_alloc_frame()
     void avcodec_free_frame(AVFrame **frame)
     int avcodec_close(AVCodecContext *avctx)
-    void av_free(void *ptr)
 
     #actual decoding:
     void av_init_packet(AVPacket *pkt) nogil
