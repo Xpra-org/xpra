@@ -1,6 +1,6 @@
 Index: xpra/gtk_common/gdk_atoms.pyx
 ===================================================================
---- a/xpra/gtk_common/gdk_atoms.pyx	(revision 4003)
+--- a/xpra/gtk_common/gdk_atoms.pyx	(revision 4166)
 +++ b/xpra/gtk_common/gdk_atoms.pyx	(working copy)
 @@ -59,7 +59,7 @@
      # interpret atoms when dealing with the clipboard, therefore, we need to
@@ -13,7 +13,7 @@ Index: xpra/gtk_common/gdk_atoms.pyx
      assert PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)==0
 Index: xpra/x11/gtk_x11/gdk_bindings.pyx
 ===================================================================
---- a/xpra/x11/gtk_x11/gdk_bindings.pyx	(revision 4007)
+--- a/xpra/x11/gtk_x11/gdk_bindings.pyx	(revision 4166)
 +++ b/xpra/x11/gtk_x11/gdk_bindings.pyx	(working copy)
 @@ -44,6 +44,7 @@
      ctypedef int Py_ssize_t
@@ -45,7 +45,7 @@ Index: xpra/x11/gtk_x11/gdk_bindings.pyx
              free(self.pixels)
 Index: xpra/codecs/enc_x264/encoder.pyx
 ===================================================================
---- a/xpra/codecs/enc_x264/encoder.pyx	(revision 4007)
+--- a/xpra/codecs/enc_x264/encoder.pyx	(revision 4166)
 +++ b/xpra/codecs/enc_x264/encoder.pyx	(working copy)
 @@ -32,7 +32,7 @@
      char * get_preset(enc_x264_ctx *ctx)
@@ -67,7 +67,7 @@ Index: xpra/codecs/enc_x264/encoder.pyx
      i = 0;
 Index: xpra/codecs/xor/cyxor.pyx
 ===================================================================
---- a/xpra/codecs/xor/cyxor.pyx	(revision 4007)
+--- a/xpra/codecs/xor/cyxor.pyx	(revision 4166)
 +++ b/xpra/codecs/xor/cyxor.pyx	(working copy)
 @@ -17,10 +17,10 @@
  
@@ -84,7 +84,7 @@ Index: xpra/codecs/xor/cyxor.pyx
      assert cbuf_len == xbuf_len
 Index: xpra/codecs/argb/argb.pxd
 ===================================================================
---- a/xpra/codecs/argb/argb.pxd	(revision 4007)
+--- a/xpra/codecs/argb/argb.pxd	(revision 4166)
 +++ b/xpra/codecs/argb/argb.pxd	(working copy)
 @@ -5,4 +5,4 @@
  # later version. See the file COPYING for details.
@@ -94,9 +94,9 @@ Index: xpra/codecs/argb/argb.pxd
 +cdef argbdata_to_pixdata(unsigned long * data, int len)
 Index: xpra/codecs/argb/argb.pyx
 ===================================================================
---- a/xpra/codecs/argb/argb.pyx	(revision 4007)
+--- a/xpra/codecs/argb/argb.pyx	(revision 4166)
 +++ b/xpra/codecs/argb/argb.pyx	(working copy)
-@@ -18,14 +18,14 @@
+@@ -17,14 +17,14 @@
  
  def argb_to_rgba(buf):
      # b is a Python buffer object
@@ -113,7 +113,7 @@ Index: xpra/codecs/argb/argb.pyx
      if dlen <= 0:
          return None
      assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
-@@ -61,7 +61,7 @@
+@@ -60,7 +60,7 @@
      assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
      return argbdata_to_rgb(cbuf, cbuf_len)
  
@@ -124,9 +124,9 @@ Index: xpra/codecs/argb/argb.pyx
      assert dlen % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % dlen
 Index: xpra/codecs/dec_avcodec/decoder.pyx
 ===================================================================
---- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4017)
+--- a/xpra/codecs/dec_avcodec/decoder.pyx	(revision 4178)
 +++ b/xpra/codecs/dec_avcodec/decoder.pyx	(working copy)
-@@ -69,8 +69,8 @@
+@@ -78,8 +78,8 @@
      #init and free:
      void avcodec_register_all()
      AVCodec *avcodec_find_decoder(AVCodecID id)
@@ -137,7 +137,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
      AVFrame *avcodec_alloc_frame()
      void avcodec_free_frame(AVFrame **frame)
      int avcodec_close(AVCodecContext *avctx)
-@@ -80,7 +80,7 @@
+@@ -88,7 +88,7 @@
      void av_init_packet(AVPacket *pkt) nogil
      void avcodec_get_frame_defaults(AVFrame *frame) nogil
      int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
@@ -146,7 +146,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
  
      #buffer management:
      int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic)
-@@ -401,7 +401,7 @@
+@@ -431,7 +431,7 @@
  
      def decompress_image(self, input, options):
          cdef unsigned char * padded_buf = NULL
@@ -155,7 +155,7 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
          cdef Py_ssize_t buf_len = 0
          cdef int len = 0
          cdef int got_picture
-@@ -411,7 +411,7 @@
+@@ -441,7 +441,7 @@
          assert self.codec_ctx!=NULL
          assert self.codec!=NULL
          #copy input buffer into padded C buffer:
@@ -164,25 +164,9 @@ Index: xpra/codecs/dec_avcodec/decoder.pyx
          padded_buf = <unsigned char *> xmemalign(buf_len+128)
          memcpy(padded_buf, buf, buf_len)
          memset(padded_buf+buf_len, 0, 128)
-@@ -451,13 +451,13 @@
-                 stride = self.frame.linesize[i]
-                 size = height * stride
-                 outsize += size
--                plane = PyString_FromStringAndSize(<const char *>self.frame.data[i], size)
-+                plane = PyString_FromStringAndSize(<char *>self.frame.data[i], size)
-                 out.append(plane)
-                 strides.append(stride)
-         else:
-             strides = self.frame.linesize[0]+self.frame.linesize[1]+self.frame.linesize[2]
-             outsize = self.codec_ctx.height * strides
--            out = PyString_FromStringAndSize(<const char *>self.frame.data[0], outsize)
-+            out = PyString_FromStringAndSize(<char *>self.frame.data[0], outsize)
-             nplanes = 0
-         if outsize==0:
-             raise Exception("output size is zero!")
 Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
 ===================================================================
---- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4007)
+--- a/xpra/codecs/csc_swscale/colorspace_converter.pyx	(revision 4166)
 +++ b/xpra/codecs/csc_swscale/colorspace_converter.pyx	(working copy)
 @@ -46,12 +46,12 @@
      SwsContext *sws_getContext(int srcW, int srcH, AVPixelFormat srcFormat,
@@ -212,7 +196,7 @@ Index: xpra/codecs/csc_swscale/colorspace_converter.pyx
          cdef int iplanes,oplanes
 Index: xpra/codecs/vpx/encoder.pyx
 ===================================================================
---- a/xpra/codecs/vpx/encoder.pyx	(revision 4007)
+--- a/xpra/codecs/vpx/encoder.pyx	(revision 4166)
 +++ b/xpra/codecs/vpx/encoder.pyx	(working copy)
 @@ -20,11 +20,11 @@
  
@@ -239,9 +223,9 @@ Index: xpra/codecs/vpx/encoder.pyx
      i = 0;
 Index: xpra/codecs/vpx/decoder.pyx
 ===================================================================
---- a/xpra/codecs/vpx/decoder.pyx	(revision 4007)
+--- a/xpra/codecs/vpx/decoder.pyx	(revision 4166)
 +++ b/xpra/codecs/vpx/decoder.pyx	(working copy)
-@@ -23,10 +23,10 @@
+@@ -25,10 +25,10 @@
  
      int get_vpx_abi_version()
  
@@ -254,7 +238,7 @@ Index: xpra/codecs/vpx/decoder.pyx
  
  
  def get_version():
-@@ -75,7 +75,7 @@
+@@ -92,7 +92,7 @@
      def decompress_image(self, input, options):
          cdef uint8_t *dout[3]
          cdef int outstrides[3]

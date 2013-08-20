@@ -8,6 +8,6 @@ Index: xpra/server/window_source.py
  MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 -PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
 +PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "0")=="1"
+ ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", "1")=="1"
  
  import time
- 
