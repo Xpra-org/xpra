@@ -5,11 +5,11 @@ xpra (0.10.1-1) UNRELEASED; urgency=low
   * compilation fix for some newer versions of libav
   * disable OpenGL on Ubuntu 12.04 and earlier (non functional)
   * honour scaling at high quality settings 
-  * disable transparency on Ubuntu servers (non functional)
+  * add ability to disable transparency via environment variable
   * silence PyOpenGL warnings we can do nothing about
   * fix CentOS 6.3 packaging dependencies
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 20 Aug 2013 18:28:45 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 20 Aug 2013 21:09:46 +0700
 
 xpra (0.10.0-6) UNRELEASED; urgency=low
   * performance: X11 shared memory (XShm) pixels transfers
