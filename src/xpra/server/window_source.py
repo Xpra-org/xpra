@@ -55,7 +55,12 @@ try:
 except:
     xor_str = None
 from xpra.os_util import StringIOClass
-from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL
+from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL, python_platform
+
+
+distro = python_platform.linux_distribution()
+ALLOW_ALPHA = distro or len(distro)!=3 or distro[0]!="Ubuntu"
+ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", ALLOW_ALPHA) not in (False, "0")
 
 
 class WindowSource(object):
@@ -103,7 +108,7 @@ class WindowSource(object):
                                                         #does the client support encoding options?
         self.supports_rgb24zlib = encoding_options.get("rgb24zlib", False)
                                                         #supports rgb24 compression outside network layer (unwrapped)
-        self.supports_transparency = encoding_options.get("transparency", False)
+        self.supports_transparency = ALLOW_ALPHA and encoding_options.get("transparency", False)
         self.full_frames_only = encoding_options.get("full_frames_only", False)
         self.supports_delta = []
         if xor_str is not None and not window.is_tray():
@@ -195,7 +200,7 @@ class WindowSource(object):
         debug("set_client_properties(%s)", properties)
         self.maximized = properties.get("maximized", False)
         self.full_frames_only = properties.get("encoding.full_frames_only", self.full_frames_only)
-        self.supports_transparency = properties.get("encoding.transparency", self.supports_transparency)
+        self.supports_transparency = ALLOW_ALPHA and properties.get("encoding.transparency", self.supports_transparency)
         self.encodings = properties.get("encodings", self.encodings)
         self.core_encodings = properties.get("encodings.core", self.core_encodings)
 
@@ -995,7 +1000,7 @@ class WindowSource(object):
                "BGRA"   : "RGBA",
                }.get(pixel_format, pixel_format)
         bpp = 32
-        #remove transparency if not handled by the client:
+        #remove transparency if it cannot be handled:
         try:
             #it is safe to use frombuffer() here since the convert()
             #calls below will not convert and modify the data in place
