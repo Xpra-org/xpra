@@ -248,7 +248,11 @@ class WindowVideoSource(WindowSource):
                         item = score, csc_spec, enc_in_format, encoder_spec
                         scores.append(item)
         if src_format in self.csc_modes:
-            add_scores("direct (no csc)", None, src_format)
+            scaling = self.calculate_scaling(width, height)
+            #we can only use direct if not scaling
+            #as csc is the step that does the scaling (at present..)
+            if scaling == (1, 1):
+                add_scores("direct (no csc)", None, src_format)
         #now add those that require a csc step:
         csc_specs = self._video_pipeline_helper.get_csc_specs(src_format)
         if csc_specs:
@@ -356,14 +360,18 @@ class WindowVideoSource(WindowSource):
             * the encoder may not support all dimensions
               (see width and height masks)
         """
-        #TODO: framerate is relevant, probably
-        #log("get_encoder_dimensions%s", (csc_spec, encoder_spec, width, height))
-        if not SCALING:
+        v, u = self.calculate_scaling(width, height) 
+        enc_width = int(width * v / u) & encoder_spec.width_mask
+        enc_height = int(height * v / u) & encoder_spec.height_mask
+        if not encoder_spec.can_handle(enc_width, enc_height):
             return width, height
+        return enc_width, enc_height
+
+    def calculate_scaling(self, width, height):
         self.actual_scaling = self.scaling
-        if not self.video_scaling:
-            #not supported by client!
-            self.actual_scaling = None
+        if not SCALING or not self.video_scaling:
+            #not supported by client or disabled by env:
+            self.actual_scaling = 1, 1
         elif SCALING_HARDCODED:
             self.actual_scaling = SCALING_HARDCODED
             debug("using hardcoded scaling: %s", self.actual_scaling)
@@ -378,17 +386,15 @@ class WindowVideoSource(WindowSource):
             elif self.fullscreen and quality<60 and speed>70:
                 self.actual_scaling = 1,2
         if self.actual_scaling is None:
-            return width, height
+            self.actual_scaling = 1, 1
         v, u = self.actual_scaling
-        if v/u>1.0:         #never upscale before encoding!
-            return width, height
-        if float(v)/float(u)<0.1:         #don't downscale more than 10 times! (for each dimension - that's 100 times!)
-            v, u = 1, 10
-        enc_width = int(width * v / u) & encoder_spec.width_mask
-        enc_height = int(height * v / u) & encoder_spec.height_mask
-        if not encoder_spec.can_handle(enc_width, enc_height):
-            return width, height
-        return enc_width, enc_height
+        if v/u>1.0:
+            #never upscale before encoding!
+            self.actual_scaling = 1, 1
+        elif float(v)/float(u)<0.1:
+            #don't downscale more than 10 times! (for each dimension - that's 100 times!)
+            self.actual_scaling = 1, 10
+        return self.actual_scaling
 
 
     def check_pipeline(self, encoding, width, height, src_format):
