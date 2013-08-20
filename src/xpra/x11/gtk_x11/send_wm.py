@@ -11,22 +11,15 @@ X11Window = X11WindowBindings()
 from xpra.log import Logger
 log = Logger()
 
-def int32(x):
-    if x>0xFFFFFFFF:
-        raise OverflowError
-    if x>0x7FFFFFFF:
-        x=int(0x100000000-x)
-        if x<2147483648:
-            return -x
-        else:
-            return -2147483648
-    return x
-
 def send_wm_take_focus(target, time):
     log("sending WM_TAKE_FOCUS: %r, %r", target, time)
+    if time<0:
+        time = 0    #should mean CurrentTime which is better than nothing
+    elif time>0xFFFFFFFF:
+        raise OverflowError("invalid time: %s" % hex(time))
     X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
                       "WM_PROTOCOLS",
-                      "WM_TAKE_FOCUS", int32(time), 0, 0, 0)
+                      "WM_TAKE_FOCUS", time, 0, 0, 0)
 
 def send_wm_delete_window(target):
     log("sending WM_DELETE_WINDOW")
