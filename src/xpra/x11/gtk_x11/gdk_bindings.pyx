@@ -493,9 +493,15 @@ cdef Display * get_xdisplay_for(obj) except? NULL:
 def get_xatom(str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
     integer (assumed to already be an X atom)."""
-    if isinstance(str_or_xatom, (int, long)):
-        return str_or_xatom
-    assert isinstance(str_or_xatom, str)
+    if isinstance(str_or_xatom, int):
+        i = int(str_or_xatom)
+        assert i>=0, "invalid int atom value %s" % str_or_xatom
+        return i
+    if isinstance(str_or_xatom, long):
+        l = long(str_or_xatom)
+        assert l>=0, "invalid long atom value %s" % str_or_xatom
+        return l
+    assert isinstance(str_or_xatom, str), "argument is not a string or number: %s" % type(str_or_xatom)
     gdkatom = gtk.gdk.atom_intern(str_or_xatom)
     if not gdkatom:
         return  0

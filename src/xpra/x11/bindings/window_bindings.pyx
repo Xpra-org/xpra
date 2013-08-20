@@ -431,8 +431,15 @@ cdef class X11WindowBindings(X11CoreBindings):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         cdef char* string
-        if isinstance(str_or_int, (int, long)):
-            return <Atom> str_or_int
+        if isinstance(str_or_int, int):
+            i = int(str_or_int)
+            assert i>=0, "invalid int atom value %s" % str_or_int
+            return <Atom> i
+        if isinstance(str_or_int, long):
+            l = long(str_or_int)
+            assert l>=0, "invalid long atom value %s" % str_or_int
+            return <Atom> l
+        assert isinstance(str_or_int, str), "argument is not a string or number: %s" % type(str_or_int)
         string = str_or_int
         return XInternAtom(self.display, string, False)
 
