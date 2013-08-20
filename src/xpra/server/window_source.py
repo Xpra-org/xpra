@@ -26,6 +26,7 @@ AUTO_REFRESH_SPEED = int(os.environ.get("XPRA_AUTO_REFRESH_SPEED", 0))
 DELTA = os.environ.get("XPRA_DELTA", "1")=="1"
 MAX_DELTA_SIZE = int(os.environ.get("XPRA_MAX_DELTA_SIZE", "10000"))
 PIL_CAN_OPTIMIZE = os.environ.get("XPRA_PIL_OPTIMIZE", "1")=="1"
+ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", "1")=="1"
 
 import time
 
@@ -55,12 +56,7 @@ try:
 except:
     xor_str = None
 from xpra.os_util import StringIOClass
-from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL, python_platform
-
-
-distro = python_platform.linux_distribution()
-ALLOW_ALPHA = distro or len(distro)!=3 or distro[0]!="Ubuntu"
-ALLOW_ALPHA = os.environ.get("XPRA_ALLOW_ALPHA", ALLOW_ALPHA) not in (False, "0")
+from xpra.scripts.config import enc_webp, has_enc_webp_lossless, webp_handlers, PIL
 
 
 class WindowSource(object):
