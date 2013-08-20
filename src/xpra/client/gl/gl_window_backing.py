@@ -393,7 +393,11 @@ class GLPixmapBacking(GTK2WindowBacking):
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
                 if self.paint_screen:
                     # Update FBO texture
-                    self.render_planar_update(x, y, enc_width, enc_height, x_scale=width/enc_width, y_scale=height/enc_height)
+                    x_scale, y_scale = 1, 1
+                    if width!=enc_width or height!=enc_height:
+                        x_scale = float(width)/enc_width
+                        y_scale = float(height)/enc_height
+                    self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                     # Present it on screen
                     self.present_fbo(drawable)
             finally:
