@@ -10,6 +10,7 @@ import re
 from xpra.x11.gtk_x11 import gdk_display_source
 assert gdk_display_source
 
+from xpra.util import std
 from xpra.x11.gtk_x11.error import trap
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
@@ -103,11 +104,11 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         if len(args)==1:
             log.warn("do_set_keymap could not find rules, model or layout in the xkbmap query string..")
         else:
-            log.info("setting keymap: %s", ", ".join(["%s=%s" % (k,v) for k,v in used_settings.items()]))
+            log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in used_settings.items()]))
         exec_keymap_command(args)
         #try to set the options:
         if "options" in settings:
-            log.info("setting keymap options: %s", settings.get("options"))
+            log.info("setting keymap options: %s", std(str(settings.get("options"))))
             exec_keymap_command(["setxkbmap", "-option", "", "-option", settings.get("options")])
     elif xkbmap_print:
         debug("do_set_keymap using xkbmap_print")
@@ -117,7 +118,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             for line in xkbmap_print.splitlines():
                 m = sym_re.match(line)
                 if m:
-                    layout = m.group(1)
+                    layout = std(m.group(1))
                     log.info("guessing keyboard layout='%s'" % layout)
                     exec_keymap_command(["setxkbmap", layout])
                     break
@@ -125,12 +126,12 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             log.info("error setting keymap: %s" % e)
     else:
         layout = xkbmap_layout or "us"
-        log.info("setting keyboard layout to '%s'", layout)
+        log.info("setting keyboard layout to '%s'", std(layout))
         set_layout = ["setxkbmap", "-layout", layout]
         if xkbmap_variant:
             set_layout += ["-variant", xkbmap_variant]
         if not exec_keymap_command(set_layout) and xkbmap_variant:
-            log.info("error setting keymap with variant %s, retrying with just layout %s", xkbmap_variant, layout)
+            log.info("error setting keymap with variant %s, retrying with just layout %s", std(xkbmap_variant), std(layout))
             set_layout = ["setxkbmap", "-layout", layout]
             exec_keymap_command(set_layout)
 

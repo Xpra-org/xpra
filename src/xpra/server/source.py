@@ -24,7 +24,7 @@ from xpra.scripts.config import HAS_SOUND, python_platform
 from xpra.net.protocol import zlib_compress, Compressed
 from xpra.daemon_thread import make_daemon_thread
 from xpra.os_util import platform_name, StringIOClass, thread, Queue
-from xpra.util import alnum
+from xpra.util import std
 
 NOYIELD = os.environ.get("XPRA_YIELD") is None
 debug = log.debug
@@ -483,13 +483,13 @@ class ServerSource(object):
 
         log("cursors=%s, bell=%s, notifications=%s", self.send_cursors, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
-        msg = "%s %s client version %s" % (self.client_type, platform_name(self.client_platform, self.client_release), self.client_version)
+        msg = "%s %s client version %s" % (std(self.client_type), platform_name(self.client_platform, self.client_release), std(self.client_version))
         if self.hostname:
-            msg += " connected from '%s'" % alnum(self.hostname)
+            msg += " connected from '%s'" % std(self.hostname)
         if self.username:
-            msg += " as '%s'" % alnum(self.username)
+            msg += " as '%s'" % std(self.username)
             if self.name:
-                msg += " ('%s')" % alnum(self.name)
+                msg += " ('%s')" % std(self.name)
         log.info(msg)
 
         #keyboard:

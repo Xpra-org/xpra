@@ -17,6 +17,11 @@ class AdHocStruct(object):
         return ("<%s object, contents: %r>"
                 % (type(self).__name__, self.__dict__))
 
+def std(_str, extras="-,./ "):
+    def f(v):
+        return str.isalnum(v) or v in extras
+    return filter(f, _str)
+
 def alnum(_str):
     return filter(str.isalnum, _str)
 
