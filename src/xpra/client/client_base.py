@@ -359,13 +359,20 @@ class XpraClientBase(object):
     def parse_server_capabilities(self, capabilities):
         def get(key, default=None):
             return self.capsget(capabilities, key, default)
-        self._remote_version = get("version")
-        self._remote_revision = get("revision")
-        self._remote_revision = get("build.revision", self._remote_revision)
-        self._remote_platform = get("platform")
-        self._remote_platform_release = get("platform.release")
-        self._remote_platform_platform = get("platform.platform")
-        self._remote_platform_linux_distribution = get("platform.linux_distribution")
+        def strget(k, default=None):
+            v = capabilities.get(k, default)
+            if v is None:
+                return None
+            return str(v)
+        def boolget(k, default_value=False):
+            return bool(capabilities.get(k, default_value))
+        self._remote_version = strget("version")
+        self._remote_revision = strget("revision")
+        self._remote_revision = strget("build.revision", self._remote_revision)
+        self._remote_platform = strget("platform")
+        self._remote_platform_release = strget("platform.release")
+        self._remote_platform_platform = strget("platform.platform")
+        self._remote_platform_linux_distribution = strget("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
@@ -375,7 +382,7 @@ class XpraClientBase(object):
         if self.encryption:
             #server uses a new cipher after second hello:
             self.set_server_encryption(capabilities)
-        self._protocol.chunked_compression = get("chunked_compression", False)
+        self._protocol.chunked_compression = boolget("chunked_compression")
         self._protocol.aliases = get("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)
