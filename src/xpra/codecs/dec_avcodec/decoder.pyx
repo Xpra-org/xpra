@@ -120,10 +120,10 @@ def init_colorspaces():
             "BGRA"      : "AV_PIX_FMT_BGRA",
             "GBRP"      : "AV_PIX_FMT_GBRP",
          }.items():
-        if av_enum_str not in const:
+        av_enum = constants.get(av_enum_str)
+        if av_enum is None:
             debug("colorspace format %s (%s) not supported by avcodec", pix_fmt, av_enum_str)
             continue
-        av_enum = const[av_enum_str]
         FORMAT_TO_ENUM[pix_fmt] = av_enum
         ENUM_TO_FORMAT[av_enum] = pix_fmt
         COLORSPACES.append(pix_fmt)

@@ -14,7 +14,7 @@ from struct import pack, unpack, calcsize
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.x11.gtk_x11.error import trap, XError
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -52,7 +52,7 @@ class ManagerSelection(gobject.GObject):
 
     def owned(self):
         "Returns True if someone owns the given selection."
-        return self._owner() != const["XNone"]
+        return self._owner() != constants["XNone"]
 
     # If the selection is already owned, then raise AlreadyOwned rather
     # than stealing it.
@@ -65,7 +65,7 @@ class ManagerSelection(gobject.GObject):
     FORCE_AND_RETURN = "force_and_return"
     def acquire(self, when):
         old_owner = self._owner()
-        if when is self.IF_UNOWNED and old_owner != const["XNone"]:
+        if when is self.IF_UNOWNED and old_owner != constants["XNone"]:
             raise AlreadyOwned
 
         self.clipboard.set_with_data([("VERSION", 0, 0)],
@@ -104,11 +104,11 @@ class ManagerSelection(gobject.GObject):
 
         root = self.clipboard.get_display().get_default_screen().get_root_window()
         xroot = get_xwindow(root)
-        X11Window.sendClientMessage(xroot, xroot, False, const["StructureNotifyMask"],
+        X11Window.sendClientMessage(xroot, xroot, False, constants["StructureNotifyMask"],
                           "MANAGER",
                           ts_num, selection_xatom, self._xwindow, 0, 0)
 
-        if old_owner != const["XNone"] and when is self.FORCE:
+        if old_owner != constants["XNone"] and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has
             # cleared out.
             def getwin():

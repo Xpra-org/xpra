@@ -7,7 +7,7 @@
 import gtk
 import gobject
 from xpra.x11.gtk_x11.error import trap
-from xpra.x11.bindings.window_bindings import const         #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.log import Logger
@@ -133,7 +133,7 @@ class WorldWindow(gtk.Window):
             # (ICCCM violating) to use CurrentTime in a WM_TAKE_FOCUS message,
             # but GTK doesn't happen to care, and this guarantees that we
             # *will* get the focus, and thus a real FocusIn event.
-            current_time = const["CurrentTime"]
+            current_time = constants["CurrentTime"]
             send_wm_take_focus(self.window, current_time)
 
     def do_focus_in_event(self, *args):
@@ -163,7 +163,7 @@ class WorldWindow(gtk.Window):
         log("widget with focus: %s", self.get_focus())
         def do_reset_x_focus():
             self._take_focus()
-            root_set("_NET_ACTIVE_WINDOW", "u32", const["XNone"])
+            root_set("_NET_ACTIVE_WINDOW", "u32", constants["XNone"])
         trap.swallow_synced(do_reset_x_focus)
 
     def _after_set_focus(self, *args):

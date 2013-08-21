@@ -91,10 +91,10 @@ FORMAT_OPTIONS = [
      ]
 FORMATS = {}
 for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
-    if av_enum_name not in const:
+    av_enum = constants.get(av_enum_name)
+    if av_enum is None:
         debug("av pixel mode %s is not available", av_enum_name)
         continue
-    av_enum = const[av_enum_name]
     FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name, width_mult, height_mult, pix_fmt)
     COLORSPACES.append(pix_fmt)
 debug("swscale pixel formats: %s", FORMATS)
@@ -139,13 +139,13 @@ FLAGS = []
 for speed, flags_strs in FLAGS_OPTIONS:
     flags = 0
     for flags_str in flags_strs:
-        if flags_str not in const:
+        flag_val = constants.get(flags_str)
+        if flag_val is None:
             print("av flag %s is missing!" % flags_str)
             log.warn("av flag %s is missing!", flags_str)
             continue
-        flag_val = const[flags_str]
         debug("%s=%s", flags_str, flag_val)
-        flags |= const[flags_str]
+        flags |= flag_val
     FLAGS.append((speed, SWSFlags(flags, flags_strs)))
 debug("swscale flags: %s", FLAGS)
 
@@ -160,7 +160,7 @@ cdef get_swscale_flags(int speed):
 def get_swscale_flags_strs(int flags):
     strs = []
     for flag in ("SWS_BICUBIC", "SWS_BICUBLIN", "SWS_FAST_BILINEAR", "SWS_ACCURATE_RND"):
-        flag_value = const.get(flag, 0)
+        flag_value = constants.get(flag, 0)
         if flag_value & flags>0:
             strs.append(flag)
     return strs

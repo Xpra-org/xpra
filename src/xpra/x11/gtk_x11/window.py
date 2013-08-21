@@ -22,7 +22,7 @@ import cairo
 import os
 from socket import gethostname
 
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -1045,16 +1045,16 @@ class WindowModel(BaseWindowModel):
 
         # Also potentially update our record of what the app has requested:
         (x, y) = self.get_property("requested-position")
-        if event.value_mask & const["CWX"]:
+        if event.value_mask & constants["CWX"]:
             x = event.x
-        if event.value_mask & const["CWY"]:
+        if event.value_mask & constants["CWY"]:
             y = event.y
         self._internal_set_property("requested-position", (x, y))
 
         (w, h) = self.get_property("requested-size")
-        if event.value_mask & const["CWWidth"]:
+        if event.value_mask & constants["CWWidth"]:
             w = event.width
-        if event.value_mask & const["CWHeight"]:
+        if event.value_mask & constants["CWHeight"]:
             h = event.height
         self._internal_set_property("requested-size", (w, h))
         self._update_client_geometry()
@@ -1287,13 +1287,13 @@ class WindowModel(BaseWindowModel):
         def set_state(state):
             trap.swallow_synced(prop_set, self.client_window, "WM_STATE",
                              ["u32"],
-                             [state, const["XNone"]])
+                             [state, constants["XNone"]])
 
         if self.get_property("iconic"):
-            set_state(const["IconicState"])
+            set_state(constants["IconicState"])
             self._state_add("_NET_WM_STATE_HIDDEN")
         else:
-            set_state(const["NormalState"])
+            set_state(constants["NormalState"])
             self._state_remove("_NET_WM_STATE_HIDDEN")
 
     def _write_initial_properties_and_setup(self):

@@ -19,7 +19,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                 get_xvisual,                #@UnresolvedImport
                )
 from xpra.x11.bindings.window_bindings import (
-                const,                      #@UnresolvedImport
+                constants,                      #@UnresolvedImport
                 X11WindowBindings,          #@UnresolvedImport
                 NoSuchProperty,             #@UnresolvedImport
                 PropertyError)              #@UnresolvedImport
@@ -65,23 +65,23 @@ class WMSizeHints(object):
          base_width, base_height,
          win_gravity) = struct.unpack("=" + "I" * 18, data) #@UnusedVariable
         # We only extract the pieces we care about:
-        if flags & const["PMaxSize"]:
+        if flags & constants["PMaxSize"]:
             self.max_size = (max_width, max_height)
         else:
             self.max_size = None
-        if flags & const["PMinSize"]:
+        if flags & constants["PMinSize"]:
             self.min_size = (min_width, min_height)
         else:
             self.min_size = None
-        if flags & const["PBaseSize"]:
+        if flags & constants["PBaseSize"]:
             self.base_size = (base_width, base_height)
         else:
             self.base_size = None
-        if flags & const["PResizeInc"]:
+        if flags & constants["PResizeInc"]:
             self.resize_inc = (width_inc, height_inc)
         else:
             self.resize_inc = None
-        if flags & const["PAspect"]:
+        if flags & constants["PAspect"]:
             self.min_aspect = min_aspect_num * 1.0 / min_aspect_denom
             self.min_aspect_ratio = (min_aspect_num, min_aspect_denom)
             self.max_aspect = max_aspect_num * 1.0 / max_aspect_denom
@@ -89,7 +89,7 @@ class WMSizeHints(object):
         else:
             self.min_aspect, self.max_aspect = (None, None)
             self.min_aspect_ratio, self.max_aspect_ratio = (None, None)
-        if flags & const["PWinGravity"]:
+        if flags & constants["PWinGravity"]:
             self.win_gravity = win_gravity
         else:
             self.win_gravity = -1
@@ -129,8 +129,8 @@ class WMHints(object):
          window_group) = struct.unpack("=" + "i" * 9, data)
         # NB the last field is missing from at least some ICCCM 2.0's (typo).
         # FIXME: extract icon stuff too
-        self.urgency = bool(flags & const["XUrgencyHint"])
-        if flags & const["WindowGroupHint"]:
+        self.urgency = bool(flags & constants["XUrgencyHint"])
+        if flags & constants["WindowGroupHint"]:
             try:
                 pywin = get_pywindow(disp, window_group)
             except:
@@ -138,11 +138,11 @@ class WMHints(object):
             self.group_leader = (window_group, pywin)
         else:
             self.group_leader = None
-        if flags & const["StateHint"]:
-            self.start_iconic = (initial_state == const["IconicState"])
+        if flags & constants["StateHint"]:
+            self.start_iconic = (initial_state == constants["IconicState"])
         else:
             self.start_iconic = None
-        if flags & const["InputHint"]:
+        if flags & constants["InputHint"]:
             self.input = _input
         else:
             self.input = None

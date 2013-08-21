@@ -16,7 +16,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                get_pywindow,                #@UnresolvedImport
                get_xatom)                   #@UnresolvedImport
 
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.log import Logger
 log = Logger()
@@ -65,7 +65,7 @@ class XSettingsWatcher(gobject.GObject):
 
     def _owner(self):
         owner_x = X11Window.XGetSelectionOwner(self._selection)
-        if owner_x == const["XNone"]:
+        if owner_x == constants["XNone"]:
             return None
         try:
             return trap.call_synced(get_pywindow, self._clipboard, owner_x)

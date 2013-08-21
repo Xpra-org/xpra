@@ -10,7 +10,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.error import trap
 
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -118,7 +118,7 @@ class SystemTray(gobject.GObject):
         assert colormap is not None and visual is not None, "failed to obtain visual or colormap"
         owner = X11Window.XGetSelectionOwner(SELECTION)
         debug("setup tray: current selection owner=%s", owner)
-        if owner!=const["XNone"]:
+        if owner!=constants["XNone"]:
             raise Exception("%s already owned by %s" % (SELECTION, owner))
         self.tray_window = gtk.gdk.Window(root, width=1, height=1,
                                            window_type=gtk.gdk.WINDOW_TOPLEVEL,
@@ -134,10 +134,10 @@ class SystemTray(gobject.GObject):
         display.request_selection_notification(SELECTION)
         setsel = X11Window.XSetSelectionOwner(xtray, SELECTION)
         debug("setup tray: set selection owner returned %s", setsel)
-        event_mask = const["StructureNotifyMask"]
+        event_mask = constants["StructureNotifyMask"]
         xroot = get_xwindow(root)
         X11Window.sendClientMessage(xroot, xroot, False, event_mask, "MANAGER",
-                          const["CurrentTime"], SELECTION,
+                          constants["CurrentTime"], SELECTION,
                           xtray, 0, 0)
         owner = X11Window.XGetSelectionOwner(SELECTION)
         #FIXME: cleanup if we fail!

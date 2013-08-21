@@ -27,7 +27,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
                get_children,                                #@UnresolvedImport
                get_xwindow,                                 #@UnresolvedImport
                )
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
@@ -378,7 +378,7 @@ class Wm(gobject.GObject):
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
-        if event.detail in (const["NotifyPointerRoot"], const["NotifyDetailNone"]):
+        if event.detail in (constants["NotifyPointerRoot"], constants["NotifyDetailNone"]):
             self._world_window.reset_x_focus()
 
     def do_xpra_focus_out_event(self, event):

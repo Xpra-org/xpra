@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.gtk_x11.gdk_bindings import get_xwindow       #@UnresolvedImport
-from xpra.x11.bindings.window_bindings import const, X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 
 from xpra.log import Logger
@@ -26,4 +26,4 @@ def send_wm_delete_window(target):
     X11Window.sendClientMessage(get_xwindow(target), get_xwindow(target), False, 0,                     #@UndefinedVariable"
                       "WM_PROTOCOLS",
                       "WM_DELETE_WINDOW",
-                      const["CurrentTime"], 0, 0, 0)        #@UndefinedVariable"
+                      constants["CurrentTime"], 0, 0, 0)        #@UndefinedVariable"

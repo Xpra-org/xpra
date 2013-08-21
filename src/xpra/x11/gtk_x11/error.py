@@ -56,10 +56,10 @@ def XErrorToName(xerror):
     if type(xerror)!=int:
         return xerror
     try:
-        from xpra.x11.bindings.window_bindings import const     #@UnresolvedImport
+        from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
-            for name,code in const.items():
+            for name,code in constants.items():
                 if name=="Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
             log("XErrorToName(..) initialized error names: %s", xerror_to_name)
