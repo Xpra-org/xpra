@@ -151,9 +151,13 @@ class InfoXpraClient(CommandConnectClient):
         log.debug("process_hello: %s", packet)
         props = packet[1]
         if props:
-            def sorted_nicely(l): 
+            def sorted_nicely(l):
                 """ Sort the given iterable in the way that humans expect."""
-                convert = lambda text: int(text) if text.isdigit() else text
+                def convert(text):
+                    if text.isdigit():
+                        return int(text)
+                    else:
+                        return text
                 alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
                 return sorted(l, key = alphanum_key)
             for k in sorted_nicely(props.keys()):
