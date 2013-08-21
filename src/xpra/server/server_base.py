@@ -444,6 +444,7 @@ class ServerBase(object):
         self.timeout_add(1000, self.clean_quit)
 
     def send_disconnect(self, proto, reason):
+        log("send_disconnect(%s, %s)", proto, reason)
         if proto._closed:
             return
         def force_disconnect(*args):
@@ -544,17 +545,30 @@ class ServerBase(object):
 
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
-        if capabilities.get("rencode") and use_rencode:
+        def strget(k):
+            v = capabilities.get(k)
+            if v is None:
+                return None
+            return str(v)
+        def intget(k, d=0):
+            return int(capabilities.get(k, d))
+        def boolget(k, default_value=False):
+            return bool(capabilities.get(k, default_value))
+        def dictget(k, default_value={}):
+            v = capabilities.get(k, default_value)
+            assert type(v)==dict
+            return v
+        if boolget("rencode") and use_rencode:
             proto.enable_rencode()
         log("process_hello: capabilities=%s", capabilities)
-        if capabilities.get("version_request", False):
+        if boolget("version_request"):
             response = {"version" : xpra.__version__}
             proto.send_now(("hello", response))
             self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
         if not self.sanity_checks(proto, capabilities):
             return
-        remote_version = capabilities.get("version")
+        remote_version = strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
             self.disconnect_client(proto, "incompatible version: %s" % verr)
@@ -562,13 +576,14 @@ class ServerBase(object):
             return
 
         #client may have requested encryption:
-        cipher = capabilities.get("cipher")
-        cipher_iv = capabilities.get("cipher.iv")
-        key_salt = capabilities.get("cipher.key_salt")
-        iterations = capabilities.get("cipher.key_stretch_iterations")
+        cipher = strget("cipher")
+        cipher_iv = strget("cipher.iv")
+        key_salt = strget("cipher.key_salt")
+        iterations = intget("cipher.key_stretch_iterations")
         password = None
-        if self.password_file or (cipher and cipher_iv):
+        if bool(self.password_file) or (cipher is not None and cipher_iv is not None):
             #we will need the password:
+            log("process_hello password is required!")
             password = self.get_password()
             if not password:
                 self.send_disconnect(proto, "password not found")
@@ -596,15 +611,15 @@ class ServerBase(object):
         if self.password_file:
             log("password auth required")
             #send challenge if this is not a response:
-            client_hash = capabilities.get("challenge_response")
+            client_hash = strget("challenge_response")
             if not client_hash or not proto.salt:
                 self._send_password_challenge(proto, server_cipher or "")
                 return
             if not self._verify_password(proto, client_hash, password):
                 return
 
-        screenshot_req = capabilities.get("screenshot_request", False)
-        info_req = capabilities.get("info_request", False)
+        screenshot_req = boolget("screenshot_request")
+        info_req = boolget("info_request", False)
         if not screenshot_req and not info_req:
             log.info("Handshake complete; enabling connection")
 
@@ -632,7 +647,7 @@ class ServerBase(object):
             #check existing sessions are willing to share:
             if not self.sharing:
                 self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
-            elif not capabilities.get("share", False):
+            elif not boolget("share"):
                 self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
             elif not ss.share:
                 self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
@@ -640,20 +655,20 @@ class ServerBase(object):
                 share_count += 1
         if share_count>0:
             log.info("sharing with %s other session(s)", share_count)
-        self.dpi = capabilities.get("dpi", self.default_dpi)
+        self.dpi = intget("dpi", self.default_dpi)
         if self.dpi>0:
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
-        proto.chunked_compression = capabilities.get("chunked_compression", False)
-        proto.aliases = capabilities.get("aliases", {})
+        proto.chunked_compression = boolget("chunked_compression")
+        proto.aliases = dictget("aliases")
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
-        self.generic_rgb_encodings = capabilities.get("generic-rgb-encodings", False)
+        self.generic_rgb_encodings = boolget("generic-rgb-encodings")
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -665,6 +680,7 @@ class ServerBase(object):
                           self.speaker_codecs, self.microphone_codecs,
                           self.default_quality, self.default_min_quality,
                           self.default_speed, self.default_min_speed)
+        log("process_hello serversource=%s", ss)
         ss.parse_hello(capabilities)
         self._server_sources[proto] = ss
         root_w, root_h = self.set_best_screen_size()
@@ -674,17 +690,18 @@ class ServerBase(object):
             (self._clipboard_client is None or self._clipboard_client.is_closed()):
             self._clipboard_client = ss
             #deal with buggy win32 clipboards:
-            greedy = capabilities.get("clipboard.greedy")
-            if greedy is None:
+            if "clipboard.greedy" not in capabilities:
                 #old clients without the flag: take a guess based on platform:
-                client_platform = capabilities.get("platform")
+                client_platform = strget("platform")
                 greedy = client_platform is not None and \
                     (client_platform.startswith("win") or client_platform.startswith("darwin"))
+            else:
+                greedy = capabilities.get("clipboard.greedy")
             self._clipboard_helper.set_greedy_client(greedy)
-            want_targets = capabilities.get("clipboard.want_targets", False)
+            want_targets = boolget("clipboard.want_targets")
             self._clipboard_helper.set_want_targets_client(want_targets)
         #so only activate this feature afterwards:
-        self.keyboard_sync = bool(capabilities.get("keyboard_sync", True))
+        self.keyboard_sync = boolget("keyboard_sync", True)
         key_repeat = capabilities.get("key_repeat", None)
         self.set_keyboard_repeat(key_repeat)
 
@@ -714,7 +731,7 @@ class ServerBase(object):
         pass
 
     def sanity_checks(self, proto, capabilities):
-        server_uuid = capabilities.get("server_uuid")
+        server_uuid = str(capabilities.get("server_uuid"))
         if server_uuid:
             if server_uuid==self.uuid:
                 self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")

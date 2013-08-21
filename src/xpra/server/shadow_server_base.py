@@ -103,7 +103,7 @@ class ShadowServerBase(object):
         return True
 
     def sanity_checks(self, proto, capabilities):
-        server_uuid = capabilities.get("server_uuid")
+        server_uuid = str(capabilities.get("server_uuid"))
         if server_uuid:
             if server_uuid==self.uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
