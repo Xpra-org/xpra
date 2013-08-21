@@ -15,6 +15,12 @@ import re
 import sys
 
 
+def update_properties(props, filename):
+    eprops = get_properties(filename)
+    for key,value in props.items():
+        set_prop(eprops, key, value)
+    save_properties(eprops, filename)
+
 def save_properties(props, filename):
     if os.path.exists(filename):
         try:
@@ -195,7 +201,7 @@ def get_svn_props():
 
 def record_src_info():
     SRC_INFO_FILE = "./xpra/src_info.py"
-    save_properties(get_svn_props(), SRC_INFO_FILE)
+    update_properties(get_svn_props(), SRC_INFO_FILE)
 
 def main():
     record_build_info(True)
