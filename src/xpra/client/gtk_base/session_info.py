@@ -96,7 +96,7 @@ class SessionInfo(gtk.Window):
         self.tab_box.pack_start(self.tab_button_box, expand=False, fill=True, padding=0)
 
         #Package Table:
-        tb = self.table_tab("package.png", "Software", self.populate_package)
+        tb, _ = self.table_tab("package.png", "Software", self.populate_package)
         #title row:
         tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Client"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
@@ -163,7 +163,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label("n/a"))
 
         # Features Table:
-        tb = self.table_tab("features.png", "Features", self.populate_features)
+        tb, _ = self.table_tab("features.png", "Features", self.populate_features)
         randr_box = gtk.HBox(False, 20)
         self.server_randr_label = label()
         self.server_randr_icon = gtk.Image()
@@ -215,7 +215,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("Client Codecs", self.client_microphone_codecs_label)
 
         # Connection Table:
-        tb = self.table_tab("connect.png", "Connection", self.populate_connection)
+        tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
         tb.new_row("Server Endpoint", label(self.connection.target))
         if self.client.server_display:
             tb.new_row("Server Display", label(self.client.server_display))
@@ -253,7 +253,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("Microphone", self.microphone_label)
 
         # Details:
-        tb = self.table_tab("browse.png", "Statistics", self.populate_statistics)
+        tb, stats_box = self.table_tab("browse.png", "Statistics", self.populate_statistics)
         tb.widget_xalign = 1.0
         tb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.attach(title_box("Latest"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
@@ -289,15 +289,34 @@ class SessionInfo(gtk.Window):
             self.pixels_per_second_labels = maths_labels()
             tb.add_row(label("Pixels/s"), *self.pixels_per_second_labels)
 
+            #Window count stats:
+            wtb = TableBuilder()
+            stats_box.add(wtb.get_table())
+            #title row:
+            wtb.attach(title_box(""), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.attach(title_box("Regular"), 1, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.attach(title_box("Transient"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.attach(title_box("Trays"), 3, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            if self.client.client_supports_opengl:
+                wtb.attach(title_box("OpenGL"), 4, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
+            wtb.inc()
+
+            wtb.attach(label("Windows:"), 0, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
             self.windows_managed_label = label()
-            tb.new_row("Regular Windows", self.windows_managed_label),
+            wtb.attach(self.windows_managed_label, 1)
             self.transient_managed_label = label()
-            tb.new_row("Transient Windows", self.transient_managed_label),
+            wtb.attach(self.transient_managed_label, 2)
             self.trays_managed_label = label()
-            tb.new_row("Trays Managed", self.trays_managed_label),
+            wtb.attach(self.trays_managed_label, 3)
             if self.client.client_supports_opengl:
                 self.opengl_label = label()
-                tb.new_row("OpenGL Windows", self.opengl_label),
+                wtb.attach(self.opengl_label, 4)
+
+            #add encoder info:
+            etb = TableBuilder()
+            stats_box.add(etb.get_table())
+            self.encoder_info_box = gtk.HBox(spacing=4)
+            etb.new_row("Window Encoders", self.encoder_info_box)
 
         self.graph_box = gtk.VBox(False, 10)
         self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
@@ -335,7 +354,7 @@ class SessionInfo(gtk.Window):
         al.add(table)
         box.pack_start(al, expand=True, fill=True, padding=20)
         self.add_tab(icon_filename, title, populate_cb, contents=box)
-        return tb
+        return tb, box
 
     def add_tab(self, icon_filename, title, populate_cb, contents):
         icon = self.get_pixbuf(icon_filename)
@@ -680,6 +699,38 @@ class SessionInfo(gtk.Window):
             self.trays_managed_label.set_text(str(trays))
             if self.client.client_supports_opengl:
                 self.opengl_label.set_text(str(gl))
+
+            #remove all the current labels:
+            for x in self.encoder_info_box.get_children():
+                self.encoder_info_box.remove(x)
+            window_encoder_stats = {}
+            if self.client.server_last_info:
+                #We are interested in data like:
+                #window[1].encoder=x264
+                #window[1].encoder.frames=1
+                for k,v in self.client.server_last_info.items():
+                    pos = k.find("].encoder")
+                    if k.startswith("window[") and pos>0:
+                        wid_str = k[len("window["):pos]     #ie: "1"
+                        ekey = k[(pos+len("].encoder")):]   #ie: "" or ".frames"
+                        if ekey.startswith("."):
+                            ekey = ekey[1:]
+                        try:
+                            wid = int(wid_str)
+                            props = window_encoder_stats.setdefault(wid, {})
+                            props[ekey] = v
+                        except:
+                            #wid_str may be invalid, ie:
+                            #window[1].pipeline_option[1].encoder=codec_spec(xpra.codecs.enc_x264.encoder.Encoder)
+                            # -> wid_str= "1].pipeline_option[1"
+                            pass
+                #print("window_encoder_stats=%s" % window_encoder_stats)
+                for wid, props in window_encoder_stats.items():
+                    l = label("%s (%s)" % (wid, props.get("")))
+                    l.show()
+                    info = ["%s=%s" % (k,v) for k,v in props.items() if k!=""]
+                    set_tooltip_text(l, " ".join(info))
+                    self.encoder_info_box.add(l)
         return True
 
     def populate_graphs(self, *args):
