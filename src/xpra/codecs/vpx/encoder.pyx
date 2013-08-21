@@ -9,7 +9,6 @@ from xpra.codecs.codec_constants import codec_spec
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    ctypedef void** const_void_pp "const void**"
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
@@ -114,7 +113,7 @@ cdef class Encoder:
         if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
             assert len(pixels)>0
             assert istrides>0
-            PyObject_AsReadBuffer(pixels, <const_void_pp> &pic_buf, &pic_buf_len)
+            PyObject_AsReadBuffer(pixels, <const void**> &pic_buf, &pic_buf_len)
             for i in range(3):
                 pic_in[i] = pic_buf
                 strides[i] = istrides
@@ -122,7 +121,7 @@ cdef class Encoder:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
             for i in range(3):
-                PyObject_AsReadBuffer(pixels[i], <const_void_pp> &pic_buf, &pic_buf_len)
+                PyObject_AsReadBuffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)
                 pic_in[i] = pic_buf
                 strides[i] = istrides[i]
         return self.do_compress_image(pic_in, strides), {"frame" : self.frames}

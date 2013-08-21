@@ -28,10 +28,6 @@ cdef extern from "pygtk/pygtk.h":
 init_pygtk()
 # Now all the macros in those header files will work.
 
-cdef extern from "gdk/gdk.h":
-    ctypedef void** const_void_pp "const void**"
-    pass
-
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     int PyObject_AsReadBuffer(object obj,
@@ -62,7 +58,7 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     cdef const GdkAtom * array = <GdkAtom*> NULL
     cdef Py_ssize_t array_len_bytes = 0
     cdef long gdk_atom_value = 0
-    assert PyObject_AsReadBuffer(atom_string, <const_void_pp> &array, &array_len_bytes)==0
+    assert PyObject_AsReadBuffer(atom_string, <const void**> &array, &array_len_bytes)==0
     array_len = array_len_bytes / sizeof(GdkAtom)
     objects = []
     for i in xrange(array_len):

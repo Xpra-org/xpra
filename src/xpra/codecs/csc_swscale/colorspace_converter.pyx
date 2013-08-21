@@ -26,7 +26,6 @@ cdef extern from "stdlib.h":
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    ctypedef void** const_void_pp "const void**"
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
@@ -358,7 +357,7 @@ cdef class ColorspaceConverter:
         for i in xrange(4):
             if i<iplanes:
                 input_stride[i] = strides[i]
-                PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
+                PyObject_AsReadBuffer(input[i], <const void**> &input_image[i], &pic_buf_len)
             else:
                 input_stride[i] = 0
                 input_image[i] = NULL

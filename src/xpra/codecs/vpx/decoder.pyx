@@ -12,7 +12,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    ctypedef void** const_void_pp "const void**"
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 ctypedef unsigned char uint8_t
@@ -96,7 +95,7 @@ cdef class Decoder:
         cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         assert self.context!=NULL
-        assert PyObject_AsReadBuffer(input, <const_void_pp> &buf, &buf_len)==0
+        assert PyObject_AsReadBuffer(input, <const void**> &buf, &buf_len)==0
         i = decompress_image(self.context, buf, buf_len, dout, outstrides)
         if i!=0:
             return None

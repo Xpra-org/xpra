@@ -14,7 +14,6 @@ cdef extern from "stdlib.h":
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    ctypedef void** const_void_pp "const void**"
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
@@ -205,7 +204,7 @@ cdef class ColorspaceConverter:
         assert len(strides)==planes, "expected %s rowstrides but found %s" % (planes, len(strides))
         for i in range(planes):
             input_stride[i] = strides[i]
-            PyObject_AsReadBuffer(input[i], <const_void_pp> &input_image[i], &pic_buf_len)
+            PyObject_AsReadBuffer(input[i], <const void**> &input_image[i], &pic_buf_len)
         start = time.time()
         with nogil:
             result = csc_image(self.context, input_image, input_stride, output_image, output_stride)

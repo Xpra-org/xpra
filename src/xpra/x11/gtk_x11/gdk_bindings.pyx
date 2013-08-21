@@ -43,7 +43,6 @@ else:
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    ctypedef void** const_void_pp "const void**"
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
@@ -752,7 +751,7 @@ cdef class XImageWrapper:
             self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
-        assert PyObject_AsReadBuffer(pixels, <const_void_pp> &buf, &buf_len)==0
+        assert PyObject_AsReadBuffer(pixels, <const void**> &buf, &buf_len)==0
         self.pixels = <char *> malloc(buf_len)
         assert self.pixels!=NULL
         memcpy(self.pixels, buf, buf_len)

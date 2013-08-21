@@ -6,7 +6,6 @@
 
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
-    ctypedef void** const_void_pp "const void**"
     int PyObject_AsWriteBuffer(object obj,
                                void ** buffer,
                                Py_ssize_t * buffer_len) except -1
@@ -21,7 +20,7 @@ def argb_to_rgba(buf):
     cdef Py_ssize_t cbuf_len = 0
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
+    assert PyObject_AsReadBuffer(buf, <const void**> &cbuf, &cbuf_len)==0
     return argbdata_to_pixdata(cbuf, cbuf_len)
 
 cdef argbdata_to_pixdata(const unsigned long* data, int dlen):
@@ -57,7 +56,7 @@ def argb_to_rgb(buf):
     cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
     assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert PyObject_AsReadBuffer(buf, <const_void_pp> &cbuf, &cbuf_len)==0
+    assert PyObject_AsReadBuffer(buf, <const void**> &cbuf, &cbuf_len)==0
     return argbdata_to_rgb(cbuf, cbuf_len)
 
 cdef argbdata_to_rgb(const unsigned long* data, int dlen):
