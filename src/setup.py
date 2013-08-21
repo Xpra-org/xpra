@@ -24,121 +24,54 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
+
+
 #*******************************************************************************
-#NOTE: these variables are defined here to make it easier
-#to keep their line number unchanged.
-#There are 3 empty lines in between each var so patches
-#cannot cause further patches to fail to apply due to context changes.
+# Most of the options below can be modified on the command line
+# using --with-OPTION or --without-OPTION
+# only the default values are specified here:
 #*******************************************************************************
-
-
-
-clipboard_ENABLED = True
-
-
-
-enc_x264_ENABLED = True
-
-
-
-nvenc_ENABLED = False
-
-
-
-vpx_ENABLED = True
-
-
-
-webp_ENABLED = True
-
-
-
-rencode_ENABLED = True
-
-
-
-Xdummy_ENABLED = None
-
-
 
 shadow_ENABLED = SHADOW_SUPPORTED
-
-
-
 server_ENABLED = LOCAL_SERVERS_SUPPORTED or shadow_ENABLED
-
-
-
 client_ENABLED = True
 
-
-
 x11_ENABLED = not WIN32 and not OSX
-
-
-
 argb_ENABLED = x11_ENABLED or OSX
-
-
-
 gtk2_ENABLED = client_ENABLED
-
-
-
 gtk3_ENABLED = client_ENABLED
-
-
-
 qt4_ENABLED = client_ENABLED
-
-
-
 opengl_ENABLED = client_ENABLED
 
-
-
+rencode_ENABLED = True
+cymaths_ENABLED = True
+cyxor_ENABLED = True
+clipboard_ENABLED = True
+Xdummy_ENABLED = None           #none means auto-detect
 sound_ENABLED = True
 
-
-
-cyxor_ENABLED = True
-
-
-
-cymaths_ENABLED = True
-
-
-
-warn_ENABLED = True
-
-
-
-strict_ENABLED = True
-
-
-
-debug_ENABLED = False
-
-
-
-PIC_ENABLED = True
-
-
-
+enc_x264_ENABLED = True
+x264_static_ENABLED = False
+vpx_ENABLED = True
+vpx_static_ENABLED = False
 dec_avcodec_ENABLED = True
-
-
-
+avcodec_static_ENABLED = False
 csc_swscale_ENABLED = True
-
-
-
+swscale_static_ENABLED = False
+webp_ENABLED = True
+nvenc_ENABLED = False
 csc_nvcuda_ENABLED = False
 
-
+warn_ENABLED = True
+strict_ENABLED = True
+debug_ENABLED = False
+PIC_ENABLED = True
 
 #allow some of these flags to be modified on the command line:
-SWITCHES = ("enc_x264", "nvenc", "dec_avcodec", "csc_swscale", "csc_nvcuda", "vpx", "webp", "rencode", "clipboard",
+SWITCHES = ("enc_x264", "x264_static",
+            "nvenc", "dec_avcodec", "csc_swscale", "csc_nvcuda",
+            "vpx", "vpx_static",
+            "webp", "rencode", "clipboard",
             "server", "client", "x11",
             "gtk2", "gtk3", "qt4",
             "sound", "cyxor", "cymaths", "opengl", "argb",
@@ -212,6 +145,12 @@ if not client_ENABLED and not server_ENABLED:
     print("Error: you must build at least the client or server!")
     exit(1)
 
+
+
+STATIC_INCLUDE_DIRS = ["/usr/local/include"]
+STATIC_LIB_DIRS = ["/usr/local/lib"]
+STATIC_COMMON_DEFS = {'include_dirs': STATIC_INCLUDE_DIRS,
+                      'library_dirs': STATIC_LIB_DIRS}
 
 #*******************************************************************************
 # build options, these may get modified further down..
@@ -1012,7 +951,12 @@ toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
-    x264_pkgconfig = pkgconfig("x264")
+    if x264_static_ENABLED:
+        x264_pkgconfig = STATIC_COMMON_DEFS.copy()
+        x264_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+                                 "-lx264", "-Wl,-Bdynamic"]
+    else:
+        x264_pkgconfig = pkgconfig("x264")
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx", "xpra/codecs/enc_x264/enc_x264.c"],
                 **x264_pkgconfig), min_version=(0, 16))
@@ -1020,7 +964,12 @@ if enc_x264_ENABLED:
 toggle_packages(dec_avcodec_ENABLED, "xpra.codecs.dec_avcodec")
 if dec_avcodec_ENABLED:
     make_constants("xpra", "codecs", "dec_avcodec", "constants")
-    avcodec_pkgconfig = pkgconfig("libavcodec")
+    if avcodec_static_ENABLED:
+        avcodec_pkgconfig = STATIC_COMMON_DEFS.copy()
+        avcodec_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+                                    "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
+    else:
+        avcodec_pkgconfig = pkgconfig("libavcodec")
     cython_add(Extension("xpra.codecs.dec_avcodec.decoder",
                 ["xpra/codecs/dec_avcodec/decoder.pyx", "xpra/codecs/dec_avcodec/dec_avcodec.c", "xpra/codecs/memalign/memalign.c"],
                 **avcodec_pkgconfig), min_version=(0, 19))
@@ -1028,7 +977,12 @@ if dec_avcodec_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     make_constants("xpra", "codecs", "csc_swscale", "constants")
-    swscale_pkgconfig = pkgconfig("libswscale")
+    if swscale_static_ENABLED:
+        swscale_pkgconfig = STATIC_COMMON_DEFS.copy()
+        swscale_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+                                 "-lswscale", "-Wl,-Bdynamic"]
+    else:
+        swscale_pkgconfig = pkgconfig("libswscale")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c", "xpra/codecs/memalign/memalign.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
@@ -1043,7 +997,12 @@ if csc_nvcuda_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
+    if vpx_static_ENABLED:
+        vpx_pkgconfig = STATIC_COMMON_DEFS.copy()
+        vpx_pkgconfig['extra_link_args'] = ["-Wl,-soname,vpxlib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
+                                "-lvpx", "-lswscale", "-lavcodec", "-lavutil", "-Wl,-Bdynamic"]
+    else:
+        vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
                 **vpx_pkgconfig), min_version=(0, 16))
