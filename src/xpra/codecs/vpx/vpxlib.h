@@ -13,7 +13,7 @@
 #endif
 #include "vpx/vpx_image.h"
 
-const char **get_supported_colorspaces();
+const char **get_supported_colorspaces(void);
 
 /** Expose the VPX_CODEC_ABI_VERSION value */
 int get_vpx_abi_version(void);
