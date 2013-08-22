@@ -1006,10 +1006,10 @@ if vpx_ENABLED:
     else:
         vpx_pkgconfig = pkgconfig(["libvpx", "vpx"])
     cython_add(Extension("xpra.codecs.vpx.encoder",
-                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
+                ["xpra/codecs/vpx/encoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
                 **vpx_pkgconfig), min_version=(0, 16))
     cython_add(Extension("xpra.codecs.vpx.decoder",
-                ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/vpx/vpxlib.c"],
+                ["xpra/codecs/vpx/decoder.pyx", "xpra/codecs/vpx/vpxlib.c", "xpra/codecs/memalign/memalign.c"],
                 **vpx_pkgconfig), min_version=(0, 16))
 
 
