@@ -396,7 +396,7 @@ class ServerSource(object):
     def user_event(self):
         self.last_user_event = time.time()
 
-    def parse_hello(self, capabilities):
+    def parse_hello(self, c):
         #batch options:
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
@@ -409,7 +409,7 @@ class ServerSource(object):
                 return None
             #from client caps first:
             cpname = "batch.%s" % prop
-            v = parse_batch_int(capabilities.get(cpname), cpname)
+            v = parse_batch_int(c.get(cpname), cpname)
             #try env:
             if v is None:
                 evname = "XPRA_BATCH_%s" % prop.upper()
@@ -432,52 +432,43 @@ class ServerSource(object):
         self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
         log.debug("default batch config: %s", self.default_batch_config)
         #client uuid:
-        def intget(k, d):
-            return int(capabilities.get(k, d))
-        def strget(k, d=""):
-            v = capabilities.get(k, d)
-            if v is None:
-                return v
-            return str(v)
-        def boolget(k, d=False):
-            return bool(capabilities.get(k, d))
-        self.uuid = strget("uuid")
-        self.hostname = strget("hostname")
-        self.username = strget("username")
-        self.name = strget("name")
-        self.client_type = strget("client_type", "PyGTK")
-        self.client_platform = strget("platform")
-        self.client_machine = strget("platform.machine")
-        self.client_processor = strget("platform.processor")
-        self.client_release = strget("platform.release")
-        self.client_version = strget("version")
+        self.uuid = c.strget("uuid")
+        self.hostname = c.strget("hostname")
+        self.username = c.strget("username")
+        self.name = c.strget("name")
+        self.client_type = c.strget("client_type", "PyGTK")
+        self.client_platform = c.strget("platform")
+        self.client_machine = c.strget("platform.machine")
+        self.client_processor = c.strget("platform.processor")
+        self.client_release = c.strget("platform.release")
+        self.client_version = c.strget("version")
         #general features:
-        self.send_windows = boolget("windows", True)
-        self.server_window_resize = boolget("server-window-resize")
-        self.send_cursors = self.send_windows and boolget("cursors")
-        self.send_bell = boolget("bell")
-        self.send_notifications = boolget("notifications")
-        self.randr_notify = boolget("randr_notify")
-        self.clipboard_enabled = boolget("clipboard", True)
-        self.clipboard_notifications = boolget("clipboard.notifications")
-        self.share = boolget("share")
-        self.named_cursors = boolget("named_cursors")
-        self.raw_window_icons = boolget("raw_window_icons")
-        self.system_tray = boolget("system_tray")
-        self.generic_window_types = boolget("generic_window_types")
-        self.notify_startup_complete = boolget("notify-startup-complete")
-        self.namespace = boolget("namespace")
+        self.send_windows = c.boolget("windows", True)
+        self.server_window_resize = c.boolget("server-window-resize")
+        self.send_cursors = self.send_windows and c.boolget("cursors")
+        self.send_bell = c.boolget("bell")
+        self.send_notifications = c.boolget("notifications")
+        self.randr_notify = c.boolget("randr_notify")
+        self.clipboard_enabled = c.boolget("clipboard", True)
+        self.clipboard_notifications = c.boolget("clipboard.notifications")
+        self.share = c.boolget("share")
+        self.named_cursors = c.boolget("named_cursors")
+        self.raw_window_icons = c.boolget("raw_window_icons")
+        self.system_tray = c.boolget("system_tray")
+        self.generic_window_types = c.boolget("generic_window_types")
+        self.notify_startup_complete = c.boolget("notify-startup-complete")
+        self.namespace = c.boolget("namespace")
 
-        self.desktop_size = capabilities.get("desktop_size")
-        self.set_screen_sizes(capabilities.get("screen_sizes"))
+        self.desktop_size = c.listget("desktop_size")
+        self.set_screen_sizes(c.listget("screen_sizes"))
 
         #sound stuff:
-        self.pulseaudio_id = strget("sound.pulseaudio.id")
-        self.pulseaudio_server = strget("sound.pulseaudio.server")
-        self.sound_decoders = capabilities.get("sound.decoders", [])
-        self.sound_encoders = capabilities.get("sound.encoders", [])
-        self.sound_receive = boolget("sound.receive")
-        self.sound_send = boolget("sound.send")
+        self.pulseaudio_id = c.strget("sound.pulseaudio.id")
+        self.pulseaudio_server = c.strget("sound.pulseaudio.server")
+        self.sound_decoders = c.listget("sound.decoders", [])
+        self.sound_encoders = c.listget("sound.encoders", [])
+        self.sound_receive = c.boolget("sound.receive")
+        self.sound_send = c.boolget("sound.send")
         soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
 
@@ -496,26 +487,26 @@ class ServerSource(object):
         try:
             from xpra.x11.server_keyboard_config import KeyboardConfig
             self.keyboard_config = KeyboardConfig()
-            self.keyboard_config.enabled = self.send_windows and boolget("keyboard", True)
-            self.assign_keymap_options(capabilities)
-            self.keyboard_config.xkbmap_layout = strget("xkbmap_layout")
-            self.keyboard_config.xkbmap_variant = strget("xkbmap_variant")
+            self.keyboard_config.enabled = self.send_windows and c.boolget("keyboard", True)
+            self.assign_keymap_options(c)
+            self.keyboard_config.xkbmap_layout = c.strget("xkbmap_layout")
+            self.keyboard_config.xkbmap_variant = c.strget("xkbmap_variant")
         except ImportError, e:
             log.error("failed to load keyboard support: %s", e)
             self.keyboard_config = None
 
         #encodings:
-        self.encodings = capabilities.get("encodings", [])
-        self.core_encodings = capabilities.get("encodings.core", self.encodings)
-        self.rgb_formats = capabilities.get("encodings.rgb_formats", ["RGB"])
+        self.encodings = c.listget("encodings", [])
+        self.core_encodings = c.listget("encodings.core", self.encodings)
+        self.rgb_formats = c.listget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
             log.info("windows/pixels forwarding is disabled for this client")
         else:
-            self.parse_encoding_caps(capabilities)
+            self.parse_encoding_caps(c)
 
-    def parse_encoding_caps(self, capabilities):
-        self.set_encoding(capabilities.get("encoding", None), None)
+    def parse_encoding_caps(self, c):
+        self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention:
@@ -524,36 +515,42 @@ class ServerSource(object):
                      "encoding_client_options"  : "client_options",
                      "quality"                  : "quality",
                      }.items():
-            if k in capabilities:
-                self.encoding_options[ek] = capabilities.get(k)
+            if k in c:
+                self.encoding_options[ek] = c.get(k)
         #2: standardized encoding options:
-        for k, v in capabilities.items():
+        for k, v in c.items():
             if k.startswith("encoding."):
                 k = k[len("encoding."):]
                 self.encoding_options[k] = v
         elog("encoding options: %s", self.encoding_options)
 
-        q = capabilities.get("jpeg", self.default_quality)  #pre 0.7 versions
-        q = self.encoding_options.get("quality", q)         #0.7 onwards:
+        q = c.intget("jpeg", self.default_quality)  #pre 0.7 versions
+        def getencint(k, d):
+            v = self.encoding_options.get(k, d)
+            try:
+                return int(v)
+            except:
+                return d
+        q = getencint("quality", q)         #0.7 onwards:
         if q>0:
             self.default_encoding_options["quality"] = q
-        mq = self.encoding_options.get("min-quality", self.default_min_quality)
+        mq = getencint("min-quality", self.default_min_quality)
         if mq>0 and (q<=0 or q>mq):
             self.default_encoding_options["min-quality"] = mq
-        s = self.encoding_options.get("speed", self.default_speed)
+        s = getencint("speed", self.default_speed)
         if s>0:
             self.default_encoding_options["speed"] = s
-        ms = self.encoding_options.get("min-speed", self.default_min_speed)
+        ms = getencint("min-speed", self.default_min_speed)
         if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
         from xpra.server.server_base import SERVER_CORE_ENCODINGS
         self.png_window_icons = "png" in self.encodings and "png" in SERVER_CORE_ENCODINGS
-        self.auto_refresh_delay = int(capabilities.get("auto_refresh_delay", 0))
+        self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
-        mmap_filename = capabilities.get("mmap_file")
-        mmap_token = capabilities.get("mmap_token")
-        log("client supplied mmap_file=%s, mmap supported=%s", mmap_filename, self.supports_mmap)
+        mmap_filename = c.strget("mmap_file")
+        mmap_token = c.strget("mmap_token")
+        log("client supplied mmap_file=%s, mmap supported=%s, token=%s", mmap_filename, self.supports_mmap, mmap_token)
         if mmap_filename:
             if not self.supports_mmap:
                 log.warn("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)

@@ -19,6 +19,7 @@ from xpra.scripts.config import ENCRYPTION_CIPHERS, python_platform
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.platform.features import GOT_PASSWORD_PROMPT_SUGGESTION
 from xpra.os_util import get_hex_uuid, get_machine_id, SIGNAMES, strtobytes, bytestostr
+from xpra.util import typedict
 
 EXIT_OK = 0
 EXIT_CONNECTION_LOST = 1
@@ -348,7 +349,8 @@ class XpraClientBase(object):
         if not self.password_sent and self.password_file:
             log.warn("Warning: the server did not request our password!")
         self.server_capabilities = packet[1]
-        self.parse_server_capabilities(self.server_capabilities)
+        c = typedict(self.server_capabilities)
+        self.parse_server_capabilities(c)
 
     def capsget(self, capabilities, key, default):
         v = capabilities.get(strtobytes(key), default)
@@ -356,34 +358,25 @@ class XpraClientBase(object):
             v = bytestostr(v)
         return v
 
-    def parse_server_capabilities(self, capabilities):
-        def get(key, default=None):
-            return self.capsget(capabilities, key, default)
-        def strget(k, default=None):
-            v = capabilities.get(k, default)
-            if v is None:
-                return None
-            return str(v)
-        def boolget(k, default_value=False):
-            return bool(capabilities.get(k, default_value))
-        self._remote_version = strget("version")
-        self._remote_revision = strget("revision")
-        self._remote_revision = strget("build.revision", self._remote_revision)
-        self._remote_platform = strget("platform")
-        self._remote_platform_release = strget("platform.release")
-        self._remote_platform_platform = strget("platform.platform")
-        self._remote_platform_linux_distribution = get("platform.linux_distribution")
+    def parse_server_capabilities(self, c):
+        self._remote_version = c.strget("version")
+        self._remote_revision = c.strget("revision")
+        self._remote_revision = c.strget("build.revision", self._remote_revision)
+        self._remote_platform = c.strget("platform")
+        self._remote_platform_release = c.strget("platform.release")
+        self._remote_platform_platform = c.strget("platform.platform")
+        self._remote_platform_linux_distribution = c.get("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
             return False
-        if capabilities.get("rencode") and use_rencode:
+        if use_rencode and c.boolget("rencode"):
             self._protocol.enable_rencode()
         if self.encryption:
             #server uses a new cipher after second hello:
-            self.set_server_encryption(capabilities)
-        self._protocol.chunked_compression = boolget("chunked_compression")
-        self._protocol.aliases = get("aliases", {})
+            self.set_server_encryption(c)
+        self._protocol.chunked_compression = c.boolget("chunked_compression")
+        self._protocol.aliases = c.dictget("aliases", {})
         if self.pings:
             self.timeout_add(1000, self.send_ping)
         else:

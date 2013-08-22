@@ -25,6 +25,7 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
+from xpra.util import typedict
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -545,30 +546,18 @@ class ServerBase(object):
 
     def _process_hello(self, proto, packet):
         capabilities = packet[1]
-        def strget(k):
-            v = capabilities.get(k)
-            if v is None:
-                return None
-            return str(v)
-        def intget(k, d=0):
-            return int(capabilities.get(k, d))
-        def boolget(k, default_value=False):
-            return bool(capabilities.get(k, default_value))
-        def dictget(k, default_value={}):
-            v = capabilities.get(k, default_value)
-            assert type(v)==dict
-            return v
-        if boolget("rencode") and use_rencode:
+        c = typedict(capabilities)
+        if use_rencode and c.boolget("rencode"):
             proto.enable_rencode()
         log("process_hello: capabilities=%s", capabilities)
-        if boolget("version_request"):
+        if c.boolget("version_request"):
             response = {"version" : xpra.__version__}
             proto.send_now(("hello", response))
             self.timeout_add(5*1000, self.send_disconnect, proto, "version sent")
             return
-        if not self.sanity_checks(proto, capabilities):
+        if not self.sanity_checks(proto, c):
             return
-        remote_version = strget("version")
+        remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
             self.disconnect_client(proto, "incompatible version: %s" % verr)
@@ -576,10 +565,10 @@ class ServerBase(object):
             return
 
         #client may have requested encryption:
-        cipher = strget("cipher")
-        cipher_iv = strget("cipher.iv")
-        key_salt = strget("cipher.key_salt")
-        iterations = intget("cipher.key_stretch_iterations")
+        cipher = c.strget("cipher")
+        cipher_iv = c.strget("cipher.iv")
+        key_salt = c.strget("cipher.key_salt")
+        iterations = c.intget("cipher.key_stretch_iterations")
         password = None
         if bool(self.password_file) or (cipher is not None and cipher_iv is not None):
             #we will need the password:
@@ -611,15 +600,15 @@ class ServerBase(object):
         if self.password_file:
             log("password auth required")
             #send challenge if this is not a response:
-            client_hash = strget("challenge_response")
+            client_hash = c.strget("challenge_response")
             if not client_hash or not proto.salt:
                 self._send_password_challenge(proto, server_cipher or "")
                 return
             if not self._verify_password(proto, client_hash, password):
                 return
 
-        screenshot_req = boolget("screenshot_request")
-        info_req = boolget("info_request", False)
+        screenshot_req = c.boolget("screenshot_request")
+        info_req = c.boolget("info_request", False)
         if not screenshot_req and not info_req:
             log.info("Handshake complete; enabling connection")
 
@@ -647,7 +636,7 @@ class ServerBase(object):
             #check existing sessions are willing to share:
             if not self.sharing:
                 self.disconnect_client(p, "new valid connection received, this session does not allow sharing")
-            elif not boolget("share"):
+            elif not c.boolget("share"):
                 self.disconnect_client(p, "new valid connection received, the new client does not wish to share")
             elif not ss.share:
                 self.disconnect_client(p, "new valid connection received, this client had not enabled sharing ")
@@ -655,20 +644,20 @@ class ServerBase(object):
                 share_count += 1
         if share_count>0:
             log.info("sharing with %s other session(s)", share_count)
-        self.dpi = intget("dpi", self.default_dpi)
+        self.dpi = c.intget("dpi", self.default_dpi)
         if self.dpi>0:
             #some non-posix clients never send us 'resource-manager' settings
             #so just use a fake one to ensure the dpi gets applied:
             self.update_server_settings({'resource-manager' : ""})
         #max packet size from client (the biggest we can get are clipboard packets)
         proto.max_packet_size = 1024*1024  #1MB
-        proto.chunked_compression = boolget("chunked_compression")
-        proto.aliases = dictget("aliases")
+        proto.chunked_compression = c.boolget("chunked_compression")
+        proto.aliases = c.dictget("aliases")
         def drop_client(reason="unknown"):
             self.disconnect_client(proto, reason)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
-        self.generic_rgb_encodings = boolget("generic-rgb-encodings")
+        self.generic_rgb_encodings = c.boolget("generic-rgb-encodings")
         from xpra.server.source import ServerSource
         ss = ServerSource(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -681,7 +670,7 @@ class ServerBase(object):
                           self.default_quality, self.default_min_quality,
                           self.default_speed, self.default_min_speed)
         log("process_hello serversource=%s", ss)
-        ss.parse_hello(capabilities)
+        ss.parse_hello(c)
         self._server_sources[proto] = ss
         root_w, root_h = self.set_best_screen_size()
         self.calculate_workarea()
@@ -692,21 +681,21 @@ class ServerBase(object):
             #deal with buggy win32 clipboards:
             if "clipboard.greedy" not in capabilities:
                 #old clients without the flag: take a guess based on platform:
-                client_platform = strget("platform")
+                client_platform = c.strget("platform")
                 greedy = client_platform is not None and \
                     (client_platform.startswith("win") or client_platform.startswith("darwin"))
             else:
-                greedy = capabilities.get("clipboard.greedy")
+                greedy = c.boolget("clipboard.greedy")
             self._clipboard_helper.set_greedy_client(greedy)
-            want_targets = boolget("clipboard.want_targets")
+            want_targets = c.boolget("clipboard.want_targets")
             self._clipboard_helper.set_want_targets_client(want_targets)
         #so only activate this feature afterwards:
-        self.keyboard_sync = boolget("keyboard_sync", True)
-        key_repeat = capabilities.get("key_repeat", None)
+        self.keyboard_sync = c.boolget("keyboard_sync", True)
+        key_repeat = c.listget("key_repeat", None)
         self.set_keyboard_repeat(key_repeat)
 
         #always clear modifiers before setting a new keymap
-        ss.make_keymask_match(capabilities.get("modifiers", []))
+        ss.make_keymask_match(c.listget("modifiers", []))
         self.set_keymap(ss)
 
         #send_hello will take care of sending the current and max screen resolutions
@@ -730,8 +719,8 @@ class ServerBase(object):
     def send_windows_and_cursors(self, ss):
         pass
 
-    def sanity_checks(self, proto, capabilities):
-        server_uuid = str(capabilities.get("server_uuid"))
+    def sanity_checks(self, proto, c):
+        server_uuid = c.strget("server_uuid")
         if server_uuid:
             if server_uuid==self.uuid:
                 self.send_disconnect(proto, "cannot connect a client running on the same display that the server it connects to is managing - this would create a loop!")
