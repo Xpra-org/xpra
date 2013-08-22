@@ -372,7 +372,7 @@ class XpraClientBase(object):
         self._remote_platform = strget("platform")
         self._remote_platform_release = strget("platform.release")
         self._remote_platform_platform = strget("platform.platform")
-        self._remote_platform_linux_distribution = strget("platform.linux_distribution")
+        self._remote_platform_linux_distribution = get("platform.linux_distribution")
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version %s: %s" % (self._remote_version, verr))
