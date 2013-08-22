@@ -25,7 +25,7 @@ from xpra.scripts.config import HAS_SOUND, PREFERED_ENCODING_ORDER, get_codecs, 
 from xpra.simple_stats import std_unit
 from xpra.net.protocol import Compressed
 from xpra.daemon_thread import make_daemon_thread
-from xpra.os_util import set_application_name, thread, Queue
+from xpra.os_util import set_application_name, thread, Queue, os_info
 from xpra.util import nn
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -864,6 +864,11 @@ class UIXpraClient(XpraClientBase):
         if e and e!=self.encoding:
             log.debug("server is using %s encoding" % e)
             self.encoding = e
+        i = " ".join(os_info(self._remote_platform, self._remote_platform_release, self._remote_platform_platform, self._remote_platform_linux_distribution))
+        r = self._remote_version
+        if self._remote_revision:
+            r += " (r%s)" % self._remote_revision
+        log.info("server: %s, Xpra version %s", i, r)
         #process the rest from the UI thread:
         self.idle_add(self.process_ui_capabilities, capabilities)
 

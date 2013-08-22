@@ -13,7 +13,7 @@ import sys
 import time
 import datetime
 
-from xpra.os_util import platform_name
+from xpra.os_util import os_info
 from xpra.gtk_common.graph import make_graph_pixmap
 from xpra.deque import maxdeque
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec
@@ -103,13 +103,9 @@ class SessionInfo(gtk.Window):
         tb.attach(title_box("Server"), 2, xoptions=gtk.EXPAND|gtk.FILL, xpadding=0)
         tb.inc()
 
-        def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution):
-            s = platform_name(sys_platform, platform_release)
-            if platform_linux_distribution and len(platform_linux_distribution)==3 and len(platform_linux_distribution[0])>0:
-                s += "\n%s" % (" ".join(platform_linux_distribution))
-            elif platform_platform:
-                s += "\n%s" % platform_platform
-            return s
+        def make_os_str(*args):
+            s = os_info(*args)
+            return "\n".join(s)
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), python_platform.linux_distribution())
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
