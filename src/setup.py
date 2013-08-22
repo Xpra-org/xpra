@@ -287,7 +287,9 @@ def make_constants(*paths):
     base = os.path.join(os.getcwd(), *paths)
     constants_file = "%s.txt" % base
     pxi_file = "%s.pxi" % base
-    if not os.path.exists(pxi_file) or os.path.getctime(pxi_file)<os.path.getctime(constants_file):
+    if not os.path.exists(pxi_file) or \
+           os.path.getctime(pxi_file)<os.path.getctime(constants_file) or \
+           os.path.getctime(pxi_file)<os.path.getctime(__file__):
         print("(re)generating %s" % pxi_file)
         make_constants_pxi(constants_file, pxi_file)
 
