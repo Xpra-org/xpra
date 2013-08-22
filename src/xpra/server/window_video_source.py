@@ -373,7 +373,7 @@ class WindowVideoSource(WindowSource):
             #not supported by client or disabled by env:
             self.actual_scaling = 1, 1
         elif SCALING_HARDCODED:
-            self.actual_scaling = SCALING_HARDCODED
+            self.actual_scaling = tuple(SCALING_HARDCODED)
             debug("using hardcoded scaling: %s", self.actual_scaling)
         elif self.actual_scaling is None:
             #no scaling window attribute defined, so use heuristics to enable:
