@@ -12,10 +12,12 @@
 %define old_xdg 0
 %define PIL_bug 1
 
+%define webp_build_args --with-webp
+%define server_build_args --with-server
 #if building a generic rpm: exclude anything that requires cython modules:
 %if 0%{?generic}
-%define no_server 1
-%define no_webp 1
+%define webp_build_args --without-webp
+%define server_build_args --without-server
 %define no_video 1
 %define no_sound 1
 %define no_pulseaudio 1
@@ -52,8 +54,8 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define webp_build_args --without-webp
 %define requires_sound %{nil}
-%define no_webp 1
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define no_sound 0
@@ -74,9 +76,9 @@
 %define requires_vpx %{nil}
 %define requires_x264 %{nil}
 %define requires_webp %{nil}
+%define webp_build_args --without-webp
 %define requires_sound %{nil}
 %define xim %{nil}
-%define no_webp 1
 %define no_sound 1
 %define no_pulseaudio 1
 %define no_strict 1
@@ -86,16 +88,16 @@
 %define include_egg 0
 %endif
 
+%define video_build_args %{nil}
+%if 0%{?no_video}
+%define video_build_args --without-x264 --without-vpx --without-dec_avcodec --without-csc_swscale
+%else
 %if 0%{?static_video_libs}
-%define static_x264 1
-%define static_vpx 1
-%define static_avcodec 1
-%define static_swscale 1
+%define video_build_args --with-vpx_static --with-x264_static --with-avcodec_static --with-swscale_static
+%endif
 %endif
 
-%if 0%{?no_webp}
-%define requires_webp %{nil}
-%endif
+
 %if 0%{?no_sound}
 %define requires_sound %{nil}
 %endif
@@ -133,20 +135,12 @@ Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 
 ### Patches ###
-Patch0: disable-posix-server.patch
-Patch1: disable-x264.patch
-Patch2: disable-vpx.patch
-Patch3: disable-webp.patch
-Patch4: use-static-x264lib.patch
-Patch5: use-static-vpxlib.patch
 Patch7: no-strict.patch
 Patch8: old-libav.patch
 Patch9: old-libav-pixfmtconsts.patch
 Patch10: old-libav-no0RGB.patch
 Patch11: disable-pulseaudio.patch
 Patch12: old-xdg-desktop.patch
-Patch13: use-static-avcodec.patch
-Patch14: use-static-swscale.patch
 Patch15: PIL-cannot-optimize-bug.patch
 
 
@@ -795,27 +789,6 @@ So basically it's screen for remote X apps.
 rm -rf $RPM_BUILD_DIR/xpra-all-%{version}
 zcat $RPM_SOURCE_DIR/xpra-all-%{version}.tar.gz | tar -xvf -
 cd xpra-all-%{version}
-%if 0%{?no_server}
-%patch0 -p1
-(echo "xpra/xposix/__init__.py" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?no_video}
-%patch1 -p1
-%patch2 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?no_webp}
-%patch3 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?static_x264}
-%patch4 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?static_vpx}
-%patch5 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
 %if 0%{?no_strict}
 %patch7 -p1
 (echo "setup.py" > %{S:ignored_changed_files.txt})
@@ -840,14 +813,6 @@ cd xpra-all-%{version}
 %patch12 -p1
 (echo "xdg/*.desktop" > %{S:ignored_changed_files.txt})
 %endif
-%if 0%{?static_avcodec}
-%patch13 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
-%if 0%{?static_swscale}
-%patch14 -p1
-(echo "setup.py" > %{S:ignored_changed_files.txt})
-%endif
 %if 0%{?PIL_bug}
 %patch15 -p1
 (echo "xpra/server/window_source.py" > %{S:ignored_changed_files.txt})
@@ -857,7 +822,7 @@ cd xpra-all-%{version}
 %build
 cd xpra-all-%{version}
 rm -rf build install
-CFLAGS=-O2 python setup.py build
+CFLAGS=-O2 python setup.py build %{video_build_args} %{webp_build_args} %{server_build_args}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -884,15 +849,12 @@ rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/x11/bindings/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/net/rencode/_rencode.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/*/*.so
 rm -f ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/server/stats/cymaths.so
-%if 0%{?static_x264}
-echo "Note: static x264 included in generic rpm"
+%if 0%{?static_video_libs}
+echo "Note: static x264/vpx included in generic rpm"
 %else
+rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/csc_swscale
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/enc_x264
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/dec_avcodec
-%endif
-%if 0%{?static_vpx}
-echo "Note: static vpx included in generic rpm"
-%else
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/vpx
 %endif
 rm -fr ${RPM_BUILD_ROOT}/usr/lib/python2.*/site-packages/xpra/codecs/webm
