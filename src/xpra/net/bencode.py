@@ -39,6 +39,10 @@ def decode_string(x, f):
     colon += 1
     return (x[colon:colon+n], colon+n)
 
+def decode_unicode(x, f):
+    xs, fs = decode_string(x, f+1)
+    return (xs.decode("utf8"), fs)
+
 def decode_list(x, f):
     r, f = [], f+1
     while x[f] != 'e':
@@ -63,6 +67,7 @@ decode_func['d'] = decode_dict
 decode_func['i'] = decode_int
 for c in '0123456789':
     decode_func[c] = decode_string
+decode_func['u'] = decode_unicode
 #now as byte values:
 for k,v in dict(decode_func).items():
     decode_func[ord(k)] = lambda x,f : v(str(x), f)
@@ -82,6 +87,10 @@ def encode_int(x, r):
 
 def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
+
+def encode_unicode(x, r):
+    s = x.encode("utf8")
+    r.extend(('u', str(len(s)), ':', s))
 
 def encode_list(x, r):
     r.append('l')
@@ -105,12 +114,12 @@ def encode_dict(x,r):
 
 encode_func = {}
 if sys.version < '3':
-    from types import (StringTypes, IntType, LongType, DictType, ListType,
+    from types import (StringType, UnicodeType, IntType, LongType, DictType, ListType,
                        TupleType, BooleanType)
     encode_func[IntType] = encode_int
     encode_func[LongType] = encode_int
-    for x in StringTypes:
-        encode_func[x] = encode_string
+    encode_func[StringType] = encode_string
+    encode_func[UnicodeType] = encode_unicode
     encode_func[ListType] = encode_list
     encode_func[TupleType] = encode_list
     encode_func[DictType] = encode_dict
