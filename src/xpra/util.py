@@ -19,11 +19,13 @@ class AdHocStruct(object):
 
 def std(_str, extras="-,./ "):
     def f(v):
-        return str.isalnum(v) or v in extras
+        return str.isalnum(str(v)) or v in extras
     return filter(f, _str)
 
 def alnum(_str):
-    return filter(str.isalnum, _str)
+    def f(v):
+        return str.isalnum(str(v))
+    return filter(f, _str)
 
 def nn(x):
     if x is None:
