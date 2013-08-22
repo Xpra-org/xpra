@@ -13,6 +13,12 @@ import sys
 if sys.version > '3':
     long = int              #@ReservedAssignment
 
+unicode_support = False
+def set_unicode_support(us):
+    global unicode_support
+    unicode_support = us
+
+
 def decode_int(x, f):
     f += 1
     newf = x.index('e', f)
@@ -89,8 +95,10 @@ def encode_string(x, r):
     r.extend((str(len(x)), ':', x))
 
 def encode_unicode(x, r):
-    s = x.encode("utf8")
-    r.extend(('u', str(len(s)), ':', s))
+    global unicode_support
+    if unicode_support:
+        x = x.encode("utf8")
+    r.extend(('u', str(len(x)), ':', x))
 
 def encode_list(x, r):
     r.append('l')
