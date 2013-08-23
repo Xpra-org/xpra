@@ -307,8 +307,8 @@ class TestFocusStuff(TestLowlevel, MockEventReceiver):
         gtk.main()
         assert self.w1_got is not None
         assert self.w1_got.window is self.w1
-        assert self.w1_got.mode == l.const["NotifyNormal"]
-        assert self.w1_got.detail == l.const["NotifyNonlinear"]
+        assert self.w1_got.mode == l.constants["NotifyNormal"]
+        assert self.w1_got.detail == l.constants["NotifyNonlinear"]
         self.w1_got = None
         assert self.w2_got is None
         assert self.w1_lost is None
@@ -321,13 +321,13 @@ class TestFocusStuff(TestLowlevel, MockEventReceiver):
         assert self.w1_got is None
         assert self.w2_got is not None
         assert self.w2_got.window is self.w2
-        assert self.w2_got.mode == l.const["NotifyNormal"]
-        assert self.w2_got.detail == l.const["NotifyNonlinear"]
+        assert self.w2_got.mode == l.constants["NotifyNormal"]
+        assert self.w2_got.detail == l.constants["NotifyNonlinear"]
         self.w2_got = None
         assert self.w1_lost is not None
         assert self.w1_lost.window is self.w1
-        assert self.w1_lost.mode == l.const["NotifyNormal"]
-        assert self.w1_lost.detail == l.const["NotifyNonlinear"]
+        assert self.w1_lost.mode == l.constants["NotifyNormal"]
+        assert self.w1_lost.detail == l.constants["NotifyNonlinear"]
         self.w1_lost = None
         assert self.w2_lost is None
 
@@ -339,8 +339,8 @@ class TestFocusStuff(TestLowlevel, MockEventReceiver):
         assert self.w1_lost is None
         assert self.w2_lost is not None
         assert self.w2_lost.window is self.w2
-        assert self.w2_lost.mode == l.const["NotifyNormal"]
-        assert self.w2_lost.detail == l.const["NotifyAncestor"]
+        assert self.w2_lost.mode == l.constants["NotifyNormal"]
+        assert self.w2_lost.detail == l.constants["NotifyAncestor"]
         self.w2_lost = None
 
 class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
@@ -370,10 +370,10 @@ class TestClientMessageAndXSelectInputStuff(TestLowlevel, MockEventReceiver):
         assert ev.data == data
 
         self.evs = []
-        l.sendClientMessage(self.root(), False, l.const["Button1MotionMask"],
+        l.sendClientMessage(self.root(), False, l.constants["Button1MotionMask"],
                             "BAD", *data)
-        l.addXSelectInput(self.root(), l.const["Button1MotionMask"])
-        l.sendClientMessage(self.root(), False, l.const["Button1MotionMask"],
+        l.addXSelectInput(self.root(), l.constants["Button1MotionMask"])
+        l.sendClientMessage(self.root(), False, l.constants["Button1MotionMask"],
                             "GOOD", *data)
         gtk.main()
         assert len(self.evs) == 1
@@ -536,10 +536,10 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.y == 2
         assert self.conf_ev.width == 3
         assert self.conf_ev.height == 4
-        assert self.conf_ev.value_mask == (l.const["CWX"]
-                                           | l.const["CWY"]
-                                           | l.const["CWWidth"]
-                                           | l.const["CWHeight"])
+        assert self.conf_ev.value_mask == (l.constants["CWX"]
+                                           | l.constants["CWY"]
+                                           | l.constants["CWWidth"]
+                                           | l.constants["CWHeight"])
 
         self.map_ev = None
         self.conf_ev = None
@@ -548,15 +548,15 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.map_ev is None
         assert self.conf_ev.x == 5
         assert self.conf_ev.y == 6
-        assert self.conf_ev.value_mask == (l.const["CWX"] | l.const["CWY"])
+        assert self.conf_ev.value_mask == (l.constants["CWX"] | l.constants["CWY"])
 
         self.map_ev = None
         self.conf_ev = None
         w2.raise_()
         gtk.main()
         assert self.map_ev is None
-        assert self.conf_ev.detail == l.const["Above"]
-        assert self.conf_ev.value_mask == l.const["CWStackMode"]
+        assert self.conf_ev.detail == l.constants["Above"]
+        assert self.conf_ev.value_mask == l.constants["CWStackMode"]
 
     def test_configureAndNotify(self):
         self.conf_ev = None
@@ -580,13 +580,13 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.width == 13
         assert self.conf_ev.height == 14
         assert self.conf_ev.border_width == 0
-        assert self.conf_ev.value_mask == (l.const["CWX"]
-                                           | l.const["CWY"]
-                                           | l.const["CWWidth"]
-                                           | l.const["CWHeight"]
-                                           | l.const["CWBorderWidth"])
+        assert self.conf_ev.value_mask == (l.constants["CWX"]
+                                           | l.constants["CWY"]
+                                           | l.constants["CWWidth"]
+                                           | l.constants["CWHeight"]
+                                           | l.constants["CWBorderWidth"])
 
-        partial_mask = l.const["CWWidth"] | l.const["CWStackMode"]
+        partial_mask = l.constants["CWWidth"] | l.constants["CWStackMode"]
         l.configureAndNotify(w1_client, 11, 12, 13, 14, partial_mask)
         gtk.main()
 
@@ -595,8 +595,8 @@ class TestSubstructureRedirect(TestLowlevel, MockEventReceiver):
         assert self.conf_ev.window is w1_wm
         assert self.conf_ev.width == 13
         assert self.conf_ev.border_width == 0
-        assert self.conf_ev.value_mask == (l.const["CWWidth"]
-                                           | l.const["CWBorderWidth"])
+        assert self.conf_ev.value_mask == (l.constants["CWWidth"]
+                                           | l.constants["CWBorderWidth"])
 
 
 

@@ -29,7 +29,7 @@ class TestError(TestWithSession):
         try:
             trap.call(self.cause_badwindow)
         except XError, e:
-            assert e.args == (wimpiggy.lowlevel.const["BadWindow"],)
+            assert e.args == (wimpiggy.lowlevel.constants["BadWindow"],)
 
     def test_swallow(self):
         assert trap.swallow(lambda: 0) is None

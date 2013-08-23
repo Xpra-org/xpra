@@ -35,7 +35,7 @@ Index: xpra/codecs/csc_swscale/constants.txt
 +++ b/xpra/codecs/csc_swscale/constants.txt	(working copy)
 @@ -10,17 +10,17 @@
  ## dictionary through which the constants can be accessed like
- ## const["AV_..."].
+ ## constants["AV_..."].
  
 -AV_PIX_FMT_YUV420P
 -AV_PIX_FMT_YUV422P
@@ -68,7 +68,7 @@ Index: xpra/codecs/dec_avcodec/constants.txt
 +++ b/xpra/codecs/dec_avcodec/constants.txt	(working copy)
 @@ -10,14 +10,14 @@
  ## dictionary through which the constants can be accessed like
- ## const["AV_..."].
+ ## constants["AV_..."].
  
 -AV_PIX_FMT_YUV420P
 -AV_PIX_FMT_YUV422P

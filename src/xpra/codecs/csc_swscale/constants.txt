@@ -8,7 +8,7 @@
 ## The resulting .pxi file will make all the constants available to
 ## Cython code under their own names, and also create a python-exposed
 ## dictionary through which the constants can be accessed like
-## const["AV_..."].
+## constants["AV_..."].
 
 AV_PIX_FMT_YUV420P
 AV_PIX_FMT_YUV422P
