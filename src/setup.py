@@ -953,6 +953,7 @@ toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
+    make_constants("xpra", "codecs", "enc_x264", "constants")
     if x264_static_ENABLED:
         x264_pkgconfig = STATIC_COMMON_DEFS.copy()
         x264_pkgconfig['extra_link_args'] = ["-Wl,-soname,x264lib.so", "-Wl,-Bstatic", "-Wl,-Bsymbolic",
