@@ -469,7 +469,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/enc_x264/encoder.c",
-                   "xpra/codecs/enc_x264/constants.txt",
+                   "xpra/codecs/enc_x264/constants.pxi",
                    "xpra/codecs/dec_avcodec/decoder.c",
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
