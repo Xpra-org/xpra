@@ -88,7 +88,7 @@ class XpraClient(GTKXpraClient):
                 #check for bytearray which is used by PixmapBacking
                 #to unpremultiply rgb32 data
                 bytearray("")
-                from xpra.codecs.argb.argb import unpremultiply_argb_in_place
+                from xpra.codecs.argb.argb import unpremultiply_argb_in_place   #@UnresolvedImport
                 assert unpremultiply_argb_in_place
                 encodings.append("rgb32")
             except:
