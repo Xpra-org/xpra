@@ -33,27 +33,18 @@ class ClientWidgetBase(object):
     def make_new_backing(self, backing_class, w, h):
         w = max(1, w)
         h = max(1, h)
-        lock = None
         backing = self._backing
-        if backing:
-            lock = backing._decoder_lock
-        try:
-            if lock:
-                lock.acquire()
-            if backing is None:
-                bc = backing_class
-                if USE_FAKE_BACKING:
-                    from xpra.client.fake_window_backing import FakeBacking
-                    bc = FakeBacking
-                self.debug("make_new_backing(%s, %s, %s) effective backing class=%s, alpha=%s", backing_class, w, h, bc, self._has_alpha)
-                backing = bc(self._id, w, h, self._has_alpha)
-                if self._client.mmap_enabled:
-                    backing.enable_mmap(self._client.mmap)
-            self.debug("make_new_backing(%s, %s, %s) calling init", backing_class, w, h)
-            backing.init(w, h)
-        finally:
-            if lock:
-                lock.release()
+        if backing is None:
+            bc = backing_class
+            if USE_FAKE_BACKING:
+                from xpra.client.fake_window_backing import FakeBacking
+                bc = FakeBacking
+            self.debug("make_new_backing(%s, %s, %s) effective backing class=%s, alpha=%s", backing_class, w, h, bc, self._has_alpha)
+            backing = bc(self._id, w, h, self._has_alpha)
+            if self._client.mmap_enabled:
+                backing.enable_mmap(self._client.mmap)
+        self.debug("make_new_backing(%s, %s, %s) calling init", backing_class, w, h)
+        backing.init(w, h)
         return backing
 
     def new_backing(self, w, h):
