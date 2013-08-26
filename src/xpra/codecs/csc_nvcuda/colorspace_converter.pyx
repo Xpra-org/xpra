@@ -144,9 +144,6 @@ cdef class ColorspaceConverter:
         return "nvcuda(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
-    def is_closed(self):
-        return self.context==NULL
-
     def __dealloc__(self):                  #@DuplicatedSignature
         self.clean()
 
