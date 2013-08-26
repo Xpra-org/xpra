@@ -7,16 +7,18 @@
 import gobject
 from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
 from xpra.x11.gtk_x11.gdk_bindings import (
-            XShmWrapper,                    #@UnresolvedImport
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             get_xwindow,                    #@UnresolvedImport
-            get_parent,                     #@UnresolvedImport
-            xcomposite_name_window_pixmap)  #@UnresolvedImport
+            get_parent)  #@UnresolvedImport
 from xpra.x11.gtk_x11.error import trap
 
+from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
+XImage = XImageBindings()
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
+X11Window.ensure_XComposite_support()
+X11Window.ensure_XDamage_support()
 
 from xpra.log import Logger
 log = Logger()
@@ -117,8 +119,11 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
             self._shm_handle = None
         if self._shm_handle is None:
             #make a new one:
-            self._shm_handle = XShmWrapper()
-            init_ok, retry_window, xshm_failed = self._shm_handle.init(self._window)
+            self._shm_handle = XImage.get_XShmWrapper(get_xwindow(self._window))
+            if self._shm_handle is None:
+                #failed (may retry)
+                return None
+            init_ok, retry_window, xshm_failed = self._shm_handle.setup()
             if not init_ok:
                 #this handle is not valid, clear it:
                 self._shm_handle = None
@@ -168,7 +173,7 @@ class CompositeHelper(AutoPropGObjectMixin, gobject.GObject):
                         add_event_receiver(win, self, max_receivers=-1)
                         listening.append(win)
                         win = get_parent(win)
-                    handle = xcomposite_name_window_pixmap(self._window)
+                    handle = XImage.get_xcomposite_pixmap(get_xwindow(self._window))
                 except Exception, e:
                     try:
                         self._cleanup_listening(listening)

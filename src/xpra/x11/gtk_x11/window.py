@@ -489,9 +489,9 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
         try:
             logger("get_image(%s, %s, %s, %s) geometry=%s", x, y, width, height, self._geometry[:4])
             shm = self._composite.get_property("shm-handle")
-            logger("get_image(..) XShm handle: %s, handle=%s, xpixmap=%s", shm, handle, handle.xpixmap)
+            logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
-                shm_image = trap.call_synced(shm.get_image, handle.xpixmap, x, y, width, height)
+                shm_image = trap.call_synced(shm.get_image, handle.get_pixmap(), x, y, width, height)
                 logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
@@ -499,11 +499,11 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
 
         try:
-            w = min(handle.width, width)
-            h = min(handle.height, height)
+            w = min(handle.get_width(), width)
+            h = min(handle.get_height(), height)
             if w!=width or h!=height:
                 logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             return trap.call_synced(handle.get_image, x, y, w, h)
@@ -511,7 +511,7 @@ class BaseWindowModel(AutoPropGObjectMixin, gobject.GObject):
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e)
+                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
             return None
 
     def do_xpra_client_message_event(self, event):

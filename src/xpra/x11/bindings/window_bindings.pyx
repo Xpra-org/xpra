@@ -532,7 +532,7 @@ cdef class X11WindowBindings(X11CoreBindings):
     ###################################
     # Composite
     ###################################
-    def _ensure_XComposite_support(self):
+    def ensure_XComposite_support(self):
         # We need NameWindowPixmap, but we don't need the overlay window
         # (v0.3) or the special manual-redirect clipping semantics (v0.4).
         self._ensure_extension_support(0, 2, "Composite",
@@ -541,26 +541,22 @@ cdef class X11WindowBindings(X11CoreBindings):
 
     def displayHasXComposite(self):
         try:
-            self._ensure_XComposite_support()
+            self.ensure_XComposite_support()
             return  True
         except Exception, e:
             error("%s", e)
         return False
 
     def XCompositeRedirectWindow(self, xwindow):
-        self._ensure_XComposite_support()
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
 
     def XCompositeRedirectSubwindows(self, xwindow):
-        self._ensure_XComposite_support()
         XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
     def XCompositeUnredirectWindow(self, xwindow):
-        self._ensure_XComposite_support()
         XCompositeUnredirectWindow(self.display, xwindow, CompositeRedirectManual)
 
     def XCompositeUnredirectSubwindows(self, xwindow):
-        self._ensure_XComposite_support()
         XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
 
@@ -568,17 +564,15 @@ cdef class X11WindowBindings(X11CoreBindings):
     ###################################
     # Xdamage
     ###################################
-    def _ensure_XDamage_support(self):
+    def ensure_XDamage_support(self):
         self._ensure_extension_support(1, 0, "DAMAGE",
                                   XDamageQueryExtension,
                                   XDamageQueryVersion)
 
     def XDamageCreate(self, xwindow):
-        self._ensure_XDamage_support()
         return XDamageCreate(self.display, xwindow, XDamageReportDeltaRectangles)
 
     def XDamageDestroy(self, handle):
-        self._ensure_XDamage_support()
         XDamageDestroy(self.display, handle)
 
     def XDamageSubtract(self, handle):

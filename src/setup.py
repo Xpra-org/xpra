@@ -465,6 +465,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/window_bindings.c",
                    "xpra/x11/bindings/randr_bindings.c",
                    "xpra/x11/bindings/core_bindings.c",
+                   "xpra/x11/bindings/ximage.c",
                    "xpra/net/rencode/rencode.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
@@ -897,16 +898,20 @@ if x11_ENABLED:
                 ["xpra/x11/bindings/window_bindings.pyx"],
                 **pkgconfig("xtst", "xfixes", "xcomposite", "xdamage")
                 ))
+    cython_add(Extension("xpra.x11.bindings.ximage",
+                ["xpra/x11/bindings/ximage.pyx"],
+                **pkgconfig("xcomposite", "xdamage", "xext")
+                ))
 
     #below uses gtk/gdk:
-    GDK_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xcomposite", "xdamage"]
     cython_add(Extension("xpra.x11.gtk_x11.gdk_display_source",
                 ["xpra/x11/gtk_x11/gdk_display_source.pyx"],
-                **pkgconfig(*GDK_PACKAGES)
+                **pkgconfig(*PYGTK_PACKAGES)
                 ))
+    GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["xfixes", "xdamage"]
     cython_add(Extension("xpra.x11.gtk_x11.gdk_bindings",
                 ["xpra/x11/gtk_x11/gdk_bindings.pyx"],
-                **pkgconfig(*GDK_PACKAGES)
+                **pkgconfig(*GDK_BINDINGS_PACKAGES)
                 ))
 elif WIN32:
     #with py2exe, we have to remove the default packages and let it figure it out...
