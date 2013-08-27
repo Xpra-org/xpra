@@ -25,7 +25,7 @@ from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
 from xpra.version_util import version_compat_check, add_version_info
 from xpra.net.protocol import Protocol, has_rencode, rencode_version, use_rencode
-from xpra.util import typedict
+from xpra.util import typedict, alnum
 
 if sys.version > '3':
     unicode = str           #@ReservedAssignment
@@ -1230,7 +1230,7 @@ class ServerBase(object):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        cinfo = ss.hostname or str(proto)
+        cinfo = alnum(ss.hostname) or str(proto)
         log.info("received new keymap from client %s @ %s", ss.uuid, cinfo)
         if ss.assign_keymap_options(props):
             self.set_keymap(ss, True)
