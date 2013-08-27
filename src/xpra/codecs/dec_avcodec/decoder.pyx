@@ -400,11 +400,12 @@ cdef class Decoder:
     def get_info(self):
         info = {
                 "type"      : self.get_type(),
-                "colorspace": self.get_colorspace(),
-                "actual_colorspace": self.get_actual_colorspace(),
                 "frames"    : self.frames,
                 "buffers"   : len(self.framewrappers),
                 }
+        if self.colorspace:
+            info["colorspace"] = self.colorspace
+            info["actual_colorspace"] = self.get_actual_colorspace()
         if not self.is_closed():
             info["width"] = self.get_width()
             info["height"] = self.get_height()
