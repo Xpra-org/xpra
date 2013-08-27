@@ -294,6 +294,8 @@ cdef class ColorspaceConverter:
         return info
 
     def __str__(self):
+        if self.src_format==NULL or self.dst_format==NULL:
+            return "swscale(uninitialized)"
         return "swscale(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
