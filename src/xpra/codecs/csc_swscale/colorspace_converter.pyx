@@ -140,11 +140,11 @@ for speed, flags_strs in FLAGS_OPTIONS:
     for flags_str in flags_strs:
         flag_val = constants.get(flags_str)
         if flag_val is None:
-            print("av flag %s is missing!" % flags_str)
             log.warn("av flag %s is missing!", flags_str)
             continue
         debug("%s=%s", flags_str, flag_val)
         flags |= flag_val
+    debug("%s=%s", flags_strs, flags)
     FLAGS.append((speed, SWSFlags(flags, flags_strs)))
 debug("swscale flags: %s", FLAGS)
 
@@ -240,15 +240,18 @@ cdef class ColorspaceConverter:
 
     def init_context(self, int src_width, int src_height, src_format,
                            int dst_width, int dst_height, dst_format, int speed):    #@DuplicatedSignature
+        debug("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         cdef CSCPixelFormat src
         cdef CSCPixelFormat dst
         #src:
         src = FORMATS.get(src_format)
+        debug("source format=%s", src)
         assert src, "invalid source format: %s" % src_format
         self.src_format = src.pix_fmt
         self.src_format_enum = src.av_enum
         #dst:
         dst = FORMATS.get(dst_format)
+        debug("destination format=%s", dst)
         assert dst, "invalid destination format: %s" % dst_format
         self.dst_format = dst.pix_fmt
         self.dst_format_enum = dst.av_enum
@@ -262,6 +265,7 @@ cdef class ColorspaceConverter:
             #MEMALIGN may be redundant here but it is very cheap
             self.out_size[i] = pad(self.out_stride[i] * (self.out_height[i]+1))
             self.buffer_size += self.out_size[i]
+        debug("buffer size=%s", self.buffer_size)
 
         self.src_width = src_width
         self.src_height = src_height
@@ -275,6 +279,7 @@ cdef class ColorspaceConverter:
         self.context = sws_getContext(self.src_width, self.src_height, self.src_format_enum,
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
+        debug("sws context=%s", hex(<long> self.context))
         assert self.context!=NULL, "sws_getContext returned NULL"
 
     def get_info(self):
