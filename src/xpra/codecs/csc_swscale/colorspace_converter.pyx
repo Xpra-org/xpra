@@ -239,7 +239,7 @@ cdef class ColorspaceConverter:
     cdef int buffer_size
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed):    #@DuplicatedSignature
+                           int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
         debug("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         cdef CSCPixelFormat src
         cdef CSCPixelFormat dst
