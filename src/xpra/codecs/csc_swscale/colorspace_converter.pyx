@@ -340,11 +340,11 @@ cdef class ColorspaceConverter:
         cdef int stride
         cdef int result
         iplanes = image.get_planes()
-        assert iplanes in (0, 1, 3), "invalid number of planes: %s" % iplanes
+        assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
         input = image.get_pixels()
         strides = image.get_rowstride()
-        if iplanes==0:
-            #magic: if planes==0, this is an XImageWrapper... with raw pixels/rowstride
+        if iplanes==ImageWrapper.PACKED_RGB:
+            #magic: repack raw pixels/rowstride:
             input = [input]
             strides = [strides]
             iplanes = 1
