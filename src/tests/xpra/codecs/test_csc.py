@@ -4,13 +4,35 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 from xpra.codecs.image_wrapper import ImageWrapper
 
 
-
 def test_csc(ColorspaceConverter):
+    perf_measure(ColorspaceConverter)
     test_csc1(ColorspaceConverter)
     test_csc2(ColorspaceConverter)
+
+
+def perf_measure(ColorspaceConverter):
+    w, h = 1920, 1080
+    pixels = bytearray("\0" * (w*h*4))
+    for y in range(h):
+        for x in range(w):
+            i = (y*w+x)*4
+            pixels[i] = i % 256
+            pixels[i+1] = i % 256
+            pixels[i+2] = i % 256
+            pixels[i+3] = 0
+    start = time.time()
+    count = 1024
+    pixels = test_csc_pixels(ColorspaceConverter, w, h, pixels, count=count)
+    end = time.time()
+    print("%s did %sx%s csc %s times in %.1fms" % (ColorspaceConverter, w, h, count, end-start))
+    mpps = float(w*h*count)/(end-start)
+    print("**********************")
+    print("%s MPixels/s" % int(mpps/1024/1024))
+    print("**********************")
 
 
 def test_csc2(ColorspaceConverter):
@@ -42,17 +64,25 @@ def test_csc1(ColorspaceConverter):
     Vstart = bytearray([0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x93])
     pixels = test_csc_pixels(ColorspaceConverter, w, h, pixels, (("Y", 0, Ystart), ("U", 1, Ustart), ("V", 2, Vstart)))
 
-    
 
-def test_csc_pixels(ColorspaceConverter, w, h, pixels, checks=()):
+def dump_pixels(pixels):
+    S = 32
+    if len(pixels)>S:
+        l = [hex(x) for x in pixels[:S-1]]+["..."]
+    else:
+        l = [hex(x) for x in pixels[:S]]
+    return str(l) 
+
+def test_csc_pixels(ColorspaceConverter, w, h, pixels, checks=(), count=1):
     print("going to create %s" % ColorspaceConverter)
     cc = ColorspaceConverter()
     print("%s()=%s" % (ColorspaceConverter, cc))
     cc.init_context(w, h, "BGRX", w, h, "YUV420P")
     print("ColorspaceConverter=%s" % cc)
-    print("test_csc() input pixels=%s" % str([hex(x) for x in pixels]))
+    print("test_csc() input pixels=%s" % dump_pixels(pixels))
     image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 32, w*4, planes=ImageWrapper.PACKED_RGB)
-    out = cc.convert_image(image)
+    for _ in range(count):
+        out = cc.convert_image(image)
     print("test_csc() output=%s" % out)
     assert out.get_planes()==ImageWrapper._3_PLANES
     pixels = out.get_pixels()
@@ -61,7 +91,7 @@ def test_csc_pixels(ColorspaceConverter, w, h, pixels, checks=()):
         plane = pixels[i]
         print("test_csc() plane[%s]=%s" % (i, type(plane)))
         print("test_csc() len(plane[%s])=%s" % (i, len(plane)))
-        print("test_csc() plane data[%s]=%s" % (i, str([hex(x) for x in bytearray(plane)])))
+        print("test_csc() plane data[%s]=%s" % (i, dump_pixels(bytearray(plane))))
     def check_plane(plane, data, expected):
         #chop data to same size as expected sample:
         if type(data)==buffer:
@@ -71,8 +101,8 @@ def test_csc_pixels(ColorspaceConverter, w, h, pixels, checks=()):
         actual_data = data[:len(expected)]
         if actual_data==expected:
             return
-        print("check_plane(%s, .., ..) expected=%s" % (plane, str([hex(x) for x in expected])))
-        print("check_plane(%s, .., ..) actual_data=%s" % (plane, str([hex(x) for x in actual_data])))
+        print("check_plane(%s, .., ..) expected=%s" % (plane, dump_pixels(expected)))
+        print("check_plane(%s, .., ..) actual_data=%s" % (plane, dump_pixels(actual_data)))
         assert type(actual_data)==type(expected), "expected result as %s but got %s" % (type(expected), type(actual_data))
         assert len(actual_data)==len(expected), "expected at least %s items but got %s" % (len(expected), len(actual_data))
         #now compare values, with some tolerance for rounding (off by one):
