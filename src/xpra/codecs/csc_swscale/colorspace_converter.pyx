@@ -383,10 +383,10 @@ cdef class ColorspaceConverter:
             csci.set_plane(i, NULL)
         if self.dst_format.endswith("P"):
             #planar mode, assume 3 planes:
-            oplanes = 3
+            oplanes = ImageWrapper._3_PLANES
             out = []
             strides = []
-            for i in range(oplanes):
+            for i in range(3):
                 if self.out_stride[i]>0 and output_image[i]!=NULL:
                     stride = self.out_stride[i]
                     plane = PyBuffer_FromMemory(<void *>output_image[i], self.out_height[i] * self.out_stride[i])
@@ -398,7 +398,7 @@ cdef class ColorspaceConverter:
                 strides.append(stride)
         else:
             #assume no planes, plain RGB packed pixels:
-            oplanes = 0
+            oplanes = ImageWrapper.PACKED_RGB
             strides = self.out_stride[0]
             out = PyBuffer_FromMemory(<void *>output_image[0], self.out_height[0] * self.out_stride[0])
             csci.set_plane(0, output_image[0])
