@@ -96,8 +96,8 @@ def encode_string(x, r):
 
 def encode_unicode(x, r):
     global unicode_support
+    x = x.encode("utf8")
     if unicode_support:
-        x = x.encode("utf8")
         r.extend(('u', str(len(x)), ':', x))
     else:
         encode_string(x, r)
