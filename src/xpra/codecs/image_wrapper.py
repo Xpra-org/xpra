@@ -12,7 +12,7 @@ class ImageWrapper(object):
     _4_PLANES = 4
     PLANE_OPTIONS = (PACKED_RGB, _3_PLANES, _4_PLANES)
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=1):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=PACKED_RGB):
         self.x = x
         self.y = y
         self.width = width
