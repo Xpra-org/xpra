@@ -4,13 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from tests.xpra.codecs.test_csc import test_csc
+from tests.xpra.codecs.test_csc import test_csc_planar
 
 
 def test_csc_swscale():
     print("test_csc_swscale()")
-    from xpra.codecs.csc_swscale.colorspace_converter import ColorspaceConverter    #@UnresolvedImport
-    test_csc(ColorspaceConverter)
+    from xpra.codecs.csc_swscale import colorspace_converter #@UnresolvedImport
+    test_csc_planar(colorspace_converter)
 
 
 def main():
