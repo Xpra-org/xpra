@@ -222,7 +222,7 @@ class ServerSource(object):
         self.default_encoding_options = {}
 
         self.window_sources = {}                    #WindowSource for each Window ID
-        self.suspended = False 
+        self.suspended = False
 
         self.uuid = ""
         self.hostname = ""

@@ -112,7 +112,7 @@ def init_colorspaces():
     for pix_fmt, av_enum_str in {
             "YUV420P"   : "AV_PIX_FMT_YUV420P",
             "YUV422P"   : "AV_PIX_FMT_YUV422P",
-            "YUV444P"   : "AV_PIX_FMT_YUV444P",        
+            "YUV444P"   : "AV_PIX_FMT_YUV444P",
             "RGB"       : "AV_PIX_FMT_RGB24",
             "XRGB"      : "AV_PIX_FMT_0RGB",
             "BGRX"      : "AV_PIX_FMT_BGR0",
@@ -258,7 +258,7 @@ cdef class AVFrameWrapper:
     def get_key(self):
         return get_frame_key(self.frame)
 
-        
+
 class AVImageWrapper(ImageWrapper):
     """
         Wrapper which allows us to call xpra_free on the decoder
@@ -369,7 +369,7 @@ cdef class Decoder:
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
         #as this requires the context to still be valid!
-        #copying the pixels should ensure we free the AVFrameWrapper associated with it: 
+        #copying the pixels should ensure we free the AVFrameWrapper associated with it:
         images = [y for y in [x() for x in self.weakref_images] if y is not None]
         self.weakref_images = []
         debug("clean_decoder() cloning pixels for images still in use: %s", images)

@@ -158,7 +158,7 @@ class InfoXpraClient(CommandConnectClient):
                         return int(text)
                     else:
                         return text
-                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
                 return sorted(l, key = alphanum_key)
             for k in sorted_nicely(props.keys()):
                 v = props.get(k)

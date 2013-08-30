@@ -681,7 +681,7 @@ if WIN32:
         else:
             remove_packages(*package_names)
             #FIXME: this breaks things...
-            # we need a better way of excluding packages with py2exe 
+            # we need a better way of excluding packages with py2exe
             #py2exe_exclude(*package_names)
 
     add_packages("xpra.platform.win32")
@@ -703,7 +703,7 @@ if WIN32:
     if opengl_ENABLED:
         console.append({'script': 'xpra/client/gl/gl_check.py',            'icon_resources': [(1, "win32/opengl.ico")],    "dest_base": "OpenGL_check",})
     setup_options["console"] = console
-    
+
     py2exe_include("cairo", "pango", "pangocairo", "atk", "glib", "gobject", "gio", "gtk.keysyms",
                         "Crypto", "Crypto.Cipher",
                         "hashlib",

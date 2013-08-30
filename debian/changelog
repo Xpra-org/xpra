@@ -4,7 +4,7 @@ xpra (0.10.1-1) UNRELEASED; urgency=low
   * fix OpenGL scaling with fractions
   * compilation fix for some newer versions of libav
   * disable OpenGL on Ubuntu 12.04 and earlier (non functional)
-  * honour scaling at high quality settings 
+  * honour scaling at high quality settings
   * add ability to disable transparency via environment variable
   * silence PyOpenGL warnings we can do nothing about
   * fix CentOS 6.3 packaging dependencies

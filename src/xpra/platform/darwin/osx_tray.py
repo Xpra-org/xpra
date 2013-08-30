@@ -30,7 +30,7 @@ class OSXTray(TrayBase):
         self.set_dock_menu()
         self.set_dock_icon()
         set_exit_cb(self.quit)
-        
+
 
     def show(self):
         pass

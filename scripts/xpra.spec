@@ -157,7 +157,7 @@ So basically it's screen for remote X apps.
 - fix invalid time convertion
 - fix OpenGL scaling with fractions
 - compilation fix for some newer versions of libav
-- honour scaling at high quality settings 
+- honour scaling at high quality settings
 - add ability to disable transparency via environment variable
 - silence PyOpenGL warnings we can do nothing about
 - fix CentOS 6.3 packaging dependencies

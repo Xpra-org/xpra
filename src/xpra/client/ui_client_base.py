@@ -630,7 +630,7 @@ class UIXpraClient(XpraClientBase):
             # set the default to "high10" for I420/YUV420P
             # as the python client always supports all the profiles
             # whereas on the server side, the default is baseline to accomodate less capable clients.
-            # I422/YUV422P requires high422, and 
+            # I422/YUV422P requires high422, and
             # I444/YUV444P requires high444,
             # so we don't bother specifying anything for those two.
             for old_csc_name, csc_name, default_profile in (

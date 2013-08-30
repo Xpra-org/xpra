@@ -89,7 +89,7 @@ class WindowVideoSource(WindowSource):
         if self.last_pipeline_scores:
             i = 0
             for score, csc_spec, enc_in_format, encoder_spec in self.last_pipeline_scores:
-                info[prefix+("pipeline_option[%s].score" % i)+suffix] = score 
+                info[prefix+("pipeline_option[%s].score" % i)+suffix] = score
                 info[prefix+("pipeline_option[%s].csc" % i)+suffix] = repr(csc_spec)
                 info[prefix+("pipeline_option[%s].format" % i)+suffix] = str(enc_in_format)
                 info[prefix+("pipeline_option[%s].encoder" % i)+suffix] = repr(encoder_spec)
@@ -360,7 +360,7 @@ class WindowVideoSource(WindowSource):
             * the encoder may not support all dimensions
               (see width and height masks)
         """
-        v, u = self.calculate_scaling(width, height) 
+        v, u = self.calculate_scaling(width, height)
         enc_width = int(width * v / u) & encoder_spec.width_mask
         enc_height = int(height * v / u) & encoder_spec.height_mask
         if not encoder_spec.can_handle(enc_width, enc_height):

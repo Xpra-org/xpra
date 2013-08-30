@@ -56,17 +56,17 @@ _LIBRARY.WebPEncodeBGRA.argtypes = LOSSY_ARGS
 HAS_LOSSLESS = False
 try:
     LOSSLESS_ARGS = [c_void_p, c_int, c_int, c_int, c_void_p]
-    _LIBRARY.WebPEncodeLosslessRGB.argtypes = LOSSLESS_ARGS 
+    _LIBRARY.WebPEncodeLosslessRGB.argtypes = LOSSLESS_ARGS
     _LIBRARY.WebPEncodeLosslessBGR.argtypes = LOSSLESS_ARGS
     _LIBRARY.WebPEncodeLosslessRGBA.argtypes = LOSSLESS_ARGS
     _LIBRARY.WebPEncodeLosslessBGRA.argtypes = LOSSLESS_ARGS
-    
+
     # Set return types
     _LIBRARY.WebPEncodeRGB.restype = c_int
     _LIBRARY.WebPEncodeBGR.restype = c_int
     _LIBRARY.WebPEncodeRGBA.restype = c_int
     _LIBRARY.WebPEncodeBGRA.restype = c_int
-    _LIBRARY.WebPEncodeLosslessRGB.restype = c_int 
+    _LIBRARY.WebPEncodeLosslessRGB.restype = c_int
     _LIBRARY.WebPEncodeLosslessBGR.restype = c_int
     _LIBRARY.WebPEncodeLosslessRGBA.restype = c_int
     _LIBRARY.WebPEncodeLosslessBGRA.restype = c_int

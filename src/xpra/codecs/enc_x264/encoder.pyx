@@ -216,13 +216,13 @@ cdef class Encoder:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
             self.profile = None
         if self.profile is None:
-            self.profile = cs_info[1] 
+            self.profile = cs_info[1]
         self.init_encoder()
 
     cdef init_encoder(self):
         cdef x264_param_t param
         cdef const char *preset
-        preset = get_preset_names()[self.preset] 
+        preset = get_preset_names()[self.preset]
         x264_param_default_preset(&param, preset, "zerolatency")
         param.i_threads = 0
         param.i_width = self.width

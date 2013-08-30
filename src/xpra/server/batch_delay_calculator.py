@@ -116,7 +116,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
             "avg_damage_latency"    : int(1000.0*statistics.avg_damage_in_latency),
             "target_damage_latency" : int(1000.0*target_damage_latency),
             "batch.delay"   : int(batch.delay),
-            "abs_factor"    : int(100.0*dam_lat_abs), 
+            "abs_factor"    : int(100.0*dam_lat_abs),
             "rel_factor"    : int(100.0*dam_lat_rel),
             "decoding_latency_factor"   : int(100.0*dec_lat)
             }
@@ -154,5 +154,5 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             "backlog_factor": int(100.0*packets_bl),
             "batch_factor"  : int(100.0*batch_q),
             "latency_factor": int(100.0*latency_q),
-            } 
+            }
     return info, target_quality

@@ -60,7 +60,7 @@ class GTKStatusIconTray(TrayBase):
             return -1
         screen, _, _ = ag
         return screen
-    
+
     def get_orientation(self):
         ag = self.tray_widget.get_geometry()
         if ag is None:

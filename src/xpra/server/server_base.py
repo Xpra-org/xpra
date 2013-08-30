@@ -407,7 +407,7 @@ class ServerBase(object):
         raise NotImplementedError()
 
     def _new_connection(self, listener, *args):
-        socktype = self.socket_types.get(listener, "") 
+        socktype = self.socket_types.get(listener, "")
         sock, address = listener.accept()
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("too many connections (%s), ignoring new one", len(self._potential_protocols))

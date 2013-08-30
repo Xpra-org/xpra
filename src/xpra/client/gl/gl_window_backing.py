@@ -332,7 +332,7 @@ class GLPixmapBacking(GTK2WindowBacking):
 
         try:
             self.set_rgb24_paint_state()
-    
+
             # Compute alignment and row length
             row_length = 0
             alignment = 1
@@ -345,7 +345,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             # Otherwise it remains at 0 (= width implicitely)
             if (rowstride - width * 3) > a:
                 row_length = width + (rowstride - width * 3) / 3
-    
+
             self.gl_marker("RGB24 update at %d,%d, size %d,%d, stride is %d, row length %d, alignment %d" % (x, y, width, height, rowstride, row_length, alignment))
             # Upload data as temporary RGB texture
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
@@ -354,7 +354,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 4, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
-    
+
             # Draw textured RGB quad at the right coordinates
             glBegin(GL_QUADS)
             glTexCoord2i(0, 0)
@@ -366,7 +366,7 @@ class GLPixmapBacking(GTK2WindowBacking):
             glTexCoord2i(width, 0)
             glVertex2i(x+width, y)
             glEnd()
-    
+
             # Present update to screen
             self.present_fbo(drawable)
             # present_fbo has reset state already
