@@ -260,10 +260,7 @@ class ColorspaceConverter(object):
         #convert input buffers to numpy arrays then OpenCL Buffers:
         for i in range(3):
             in_array = numpy.frombuffer(pixels[i], dtype=numpy.byte)
-            if type(pixels[i])==str:
-                flags = mf.READ_ONLY | mf.COPY_HOST_PTR
-            else:
-                flags = mf.READ_ONLY | mf.USE_HOST_PTR
+            flags = mf.READ_ONLY | mf.COPY_HOST_PTR
             in_buf = pyopencl.Buffer(context, flags, hostbuf=in_array)
             kernelargs.append(in_buf)
             kernelargs.append(numpy.int32(strides[i]))
