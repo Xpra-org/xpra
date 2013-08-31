@@ -67,7 +67,7 @@ def test_csc_rgb(csc_module):
     print("")
     test_csc_rgb1(csc_module)
     test_csc_rgb2(csc_module)
-    #test_csc_rgb3(csc_module)
+    test_csc_rgb3(csc_module)
     perf_measure_rgb(csc_module)
     perf_measure_rgb(csc_module, 512, 512)
 
@@ -87,8 +87,12 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64):
 
 def perf_measure_rgb(csc_module, w=1920, h=1080):
     rgb_src_formats = [x for x in csc_module.get_input_colorspaces() if (x.find("RGB")>=0 or x.find("BGR")>=0)]
+    if DEBUG:
+        print("%s: rgb src_formats=%s" % (csc_module, rgb_src_formats))
     for src_format in rgb_src_formats:
-        yuv_dst_formats = [x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)]
+        yuv_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)])
+        if DEBUG:
+            print("%s: yuv_formats(%s)=%s" % (csc_module, src_format, yuv_dst_formats))
         for dst_format in yuv_dst_formats:
             pixels = make_rgb_input(src_format, w, h)
             start = time.time()
@@ -205,7 +209,7 @@ def perf_measure_planar(csc_module, w=1920, h=1080):
     for src_format in csc_module.get_input_colorspaces():
         if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
             continue
-        rgb_dst_formats = [x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")>=0 or x.find("BGR")>=0)]
+        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")>=0 or x.find("BGR")>=0)])
         for dst_format in rgb_dst_formats:
             strides, pixels = make_planar_input(src_format, w, h)
             start = time.time()
