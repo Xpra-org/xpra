@@ -66,6 +66,10 @@ csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra
 has_csc_swscale = csc_swscale is not None
 add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
 
+csc_opencl = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+has_csc_opencl = csc_opencl is not None
+add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter", "get_version", True)
+
 csc_nvcuda = None   #codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
 has_csc_nvcuda = csc_nvcuda is not None
 add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)

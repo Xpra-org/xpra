@@ -7,9 +7,8 @@
 from tests.xpra.codecs.test_csc import test_csc_planar, test_csc_rgb
 
 
-def test_csc_swscale():
-    print("test_csc_swscale()")
-    from xpra.codecs.csc_swscale import colorspace_converter #@UnresolvedImport
+def test_csc_opencl():
+    from xpra.codecs.csc_opencl import colorspace_converter
     test_csc_rgb(colorspace_converter)
     test_csc_planar(colorspace_converter)
 
@@ -19,7 +18,7 @@ def main():
     import sys
     logging.root.setLevel(logging.INFO)
     logging.root.addHandler(logging.StreamHandler(sys.stdout))
-    test_csc_swscale()
+    test_csc_opencl()
 
 
 if __name__ == "__main__":

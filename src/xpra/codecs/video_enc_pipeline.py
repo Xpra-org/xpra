@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
-from xpra.scripts.config import csc_swscale, enc_vpx, enc_x264
+from xpra.scripts.config import csc_swscale, csc_opencl, enc_vpx, enc_x264
 
 
 class VideoPipelineHelper(object):
@@ -63,6 +63,10 @@ class VideoPipelineHelper(object):
             self.init_csc_option(csc_swscale)
         except:
             log.warn("init_csc_options() cannot add swscale csc", exc_info=True)
+        try:
+            self.init_csc_option(csc_opencl)
+        except:
+            log.warn("init_csc_options() cannot add opencl csc", exc_info=True)
         #try:
         #    self.init_csc_option(csc_nvcuda)
         #except:

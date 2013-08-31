@@ -61,6 +61,7 @@ swscale_static_ENABLED = False
 webp_ENABLED = True
 nvenc_ENABLED = False
 csc_nvcuda_ENABLED = False
+csc_opencl_ENABLED = False
 
 warn_ENABLED = True
 strict_ENABLED = True
@@ -69,7 +70,8 @@ PIC_ENABLED = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ("enc_x264", "x264_static",
-            "nvenc", "dec_avcodec", "csc_swscale", "csc_nvcuda",
+            "nvenc", "dec_avcodec",
+            "csc_swscale", "csc_nvcuda", "csc_opencl",
             "vpx", "vpx_static",
             "webp", "rencode", "clipboard",
             "server", "client", "x11",
@@ -954,8 +956,7 @@ if cymaths_ENABLED:
 
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
-
-
+toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
@@ -1003,7 +1004,6 @@ if csc_nvcuda_ENABLED:
                 ["xpra/codecs/csc_nvcuda/colorspace_converter.pyx", "xpra/codecs/csc_nvcuda/csc_nvcuda.c"],
                 **cuda_pkgconfig), min_version=(0, 16))
 
-
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     if vpx_static_ENABLED:
@@ -1020,7 +1020,6 @@ if vpx_ENABLED:
                 **vpx_pkgconfig), min_version=(0, 16))
 
 
-
 toggle_packages(rencode_ENABLED, "xpra.net.rencode")
 if rencode_ENABLED:
     rencode_pkgconfig = pkgconfig()
@@ -1031,7 +1030,6 @@ if rencode_ENABLED:
     cython_add(Extension("xpra.net.rencode._rencode",
                 ["xpra/net/rencode/rencode.pyx"],
                 **rencode_pkgconfig))
-
 
 
 if ext_modules:

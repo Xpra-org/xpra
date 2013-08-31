@@ -9,66 +9,10 @@ import binascii
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
 
+DEBUG = False
+PERF_LOOP_COUNT = 16
 
-def test_csc_rgb(csc_module):
-    print("")
-    perf_measure_rgb(csc_module)
-    perf_measure_rgb(csc_module, 512, 512)
-    test_csc_rgb1(csc_module)
-    test_csc_rgb2(csc_module)
-
-
-def perf_measure_rgb(csc_module, w=1920, h=1080):
-    pixels = bytearray("\0" * (w*h*4))
-    for y in range(h):
-        for x in range(w):
-            i = (y*w+x)*4
-            pixels[i] = i % 256
-            pixels[i+1] = i % 256
-            pixels[i+2] = i % 256
-            pixels[i+3] = 0
-    start = time.time()
-    count = 1024
-    pixels = do_test_csc_rgb(csc_module, w, h, pixels, count=count)
-    end = time.time()
-    print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
-    mpps = float(w*h*count)/(end-start)
-    print("**********************")
-    print(" testing with %sx%s" % (w, h))
-    print("%s MPixels/s" % int(mpps/1024/1024))
-    print("**********************")
-
-
-def test_csc_rgb2(csc_module):
-    w, h = 32, 32
-    pixels = bytearray("\0" * (w*h*4))
-    for y in range(h):
-        for x in range(w):
-            i = (y*w+x)*4
-            pixels[i] = i % 256
-            pixels[i+1] = i % 256
-            pixels[i+2] = i % 256
-            pixels[i+3] = 0
-    Ystart = bytearray([0x10, 0x13, 0x17, 0x1a])
-    X80 = chr(0x80)*256
-    pixels = do_test_csc_rgb(csc_module, w, h, pixels, (("Y", 0, Ystart), ("U", 1, X80), ("V", 2, X80)))
-
-def test_csc_rgb1(csc_module):
-    w, h = 16, 16
-    pixels = bytearray("\0" * (w*h*4))
-    for y in range(h):
-        for x in range(w):
-            i = (y*w+x)*4
-            pixels[i] = i % 256
-            pixels[i+1] = (i+128) % 256
-            pixels[i+2] = (i+192) % 256
-            pixels[i+3] = 0
-    Ystart = bytearray([0x82, 0x85, 0x89, 0x8c])
-    Ustart = bytearray([0x51, 0x51, 0x51, 0x51, 0x51, 0x51, 0x51, 0x51, 0xaf])
-    Vstart = bytearray([0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x6d, 0x93])
-    pixels = do_test_csc_rgb(csc_module, w, h, pixels, (("Y", 0, Ystart), ("U", 1, Ustart), ("V", 2, Vstart)))
-
-
+#Some helper methods:
 def check_plane(plane, data, expected):
     #chop data to same size as expected sample:
     if type(data) in (buffer, str):
@@ -77,24 +21,25 @@ def check_plane(plane, data, expected):
         expected = bytearray(expected)
     actual_data = data[:len(expected)]
     if actual_data==expected:
-        return
-    print("check_plane(%s, .., ..) expected=%s" % (plane, dump_pixels(expected)))
-    print("check_plane(%s, .., ..)   actual=%s" % (plane, dump_pixels(actual_data)))
+        return  True
     assert type(actual_data)==type(expected), "expected result as %s but got %s" % (type(expected), type(actual_data))
     assert len(actual_data)==len(expected), "expected at least %s items but got %s" % (len(expected), len(actual_data))
     #now compare values, with some tolerance for rounding (off by one):
-    warned = False
+    errs = []
     for i in range(len(expected)):
         va = actual_data[i]
         ve = expected[i]
         if abs(va-ve)>3:
-            if not warned:
-                print("ERROR! output differs for plane %s" % plane)
-                warned = True
-            print("* at index %s: expected %s but got %s" % (i, hex(ve), hex(va)))
+            errs.append(i)
+    if len(errs)>0:
+        print("ERROR! output differs for plane %s" % plane)
+        print("check_plane(%s, .., ..) expected=%s" % (plane, dump_pixels(expected)))
+        print("check_plane(%s, .., ..)   actual=%s" % (plane, dump_pixels(data)))
+        print("errors at indexes %s" % str(errs))
+    return len(errs)==0
 
 def dump_pixels(pixels):
-    S = 24
+    S = 64
     t = type(pixels)
     add = []
     if len(pixels)>S:
@@ -102,48 +47,121 @@ def dump_pixels(pixels):
         add = ["..."]
     else:
         v = pixels
-    if t==bytearray:
-        t=str
-        v = str(v)
-    if t==str:
+    if t==buffer:
+        l = binascii.hexlify(v) + str(add)
+    elif t==bytearray:
+        l = binascii.hexlify(str(v)) + str(add)
+    elif t==str:
         l = binascii.hexlify(v) + str(add)
     else:
-        l = [hex(x) for x in v] + add
-    return ("%s %s:%s" % (t, len(pixels), l)).replace("'","")
+        l = [hex(x) for x in v] + str(add)
+    return ("%s %s:%s" % (str(type(pixels)).ljust(20), str(len(pixels)).rjust(8), l)).replace("'","")
+
+def hextobytes(s):
+    return bytearray(binascii.unhexlify(s))
 
 
-def do_test_csc_rgb(csc_module, w, h, pixels, checks=(), count=1):
+
+#RGB:
+def test_csc_rgb(csc_module):
+    print("")
+    test_csc_rgb1(csc_module)
+    test_csc_rgb2(csc_module)
+    #test_csc_rgb3(csc_module)
+    perf_measure_rgb(csc_module)
+    perf_measure_rgb(csc_module, 512, 512)
+
+def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64):
+    bpp = len(src_format)
+    assert bpp==3 or bpp==4
+    pixels = bytearray("\0" * (w*h*bpp))
+    for y in range(h):
+        for x in range(w):
+            i = (y*w+x)*bpp
+            v = (y*yratio*w+x*xratio)*bpp
+            for j in range(3):
+                pixels[i+j] = (v+j*channelratio) % 256
+            if bpp==4:
+                pixels[i+3] = 0
+    return str(pixels)
+
+def perf_measure_rgb(csc_module, w=1920, h=1080):
+    rgb_src_formats = [x for x in csc_module.get_input_colorspaces() if (x.find("RGB")>=0 or x.find("BGR")>=0)]
+    for src_format in rgb_src_formats:
+        yuv_dst_formats = [x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")<0 and x.find("BGR")<0)]
+        for dst_format in yuv_dst_formats:
+            pixels = make_rgb_input(src_format, w, h)
+            start = time.time()
+            pixels = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, count=PERF_LOOP_COUNT)
+            end = time.time()
+            if DEBUG:
+                print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, PERF_LOOP_COUNT, end-start))
+            mpps = float(w*h*PERF_LOOP_COUNT)/(end-start)
+            dim = ("%sx%s" % (w,h)).rjust(10)
+            info = ("%s to %s at %s" % (src_format.ljust(7), dst_format.ljust(7), dim)).ljust(40)
+            print("%s: %s MPixels/s" % (info, int(mpps/1024/1024)))
+
+def test_csc_rgb1(csc_module):
+    w, h = 16, 16
+    pixels = make_rgb_input("BGRX", w, h)
+    Ystart = hextobytes("5155585b5f6266696d7073777a7e8185888c8f9296999d")
+    Ustart = hextobytes("5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a")
+    Vstart = hextobytes("a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1")
+    ok = do_test_csc_rgb(csc_module, "BGRX", "YUV444P", w, h, pixels, (("Y", 0, Ystart), ("U", 1, Ustart), ("V", 2, Vstart)))
+    print("test_csc_rgb1() OK=%s" % ok)
+
+def test_csc_rgb2(csc_module):
+    w, h = 32, 32
+    pixels = make_rgb_input("BGRX", w, h, xratio=2)
+    Ystart = hextobytes("51585f666d737a81888f969da4aab1b87e848b9299a0a6ad343a41484f565c637d848b9299a0a7ad343a41484f565c6351585f666d737a81888f969da4aab1")
+    Ustart = hextobytes("5a5a5a5a5a5a5a5a80808080cbcbcbcb80808080cbcbcbcb5b5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a80808080cbcbcbcb80808080cbcbcbcb5b5a5a5a5a5a5a")
+    Vstart = hextobytes("a1a1a1a1a1a1a1a1313030308e8e8e8e303030308e8e8e8ea1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1313030308e8e8e8e303030308e8e8e8ea1a1a1a1a1a1a1")
+    ok = do_test_csc_rgb(csc_module, "BGRX", "YUV422P", w, h, pixels, (("Y", 0, Ystart), ("U", 1, Ustart), ("V", 2, Vstart)))
+    print("test_csc_rgb2() OK=%s" % ok)
+
+def test_csc_rgb3(csc_module):
+    w, h = 32, 32
+    pixels = make_rgb_input("BGRX", w, h)
+    Ystart = hextobytes("5155585b5f6266696d7073777a7e8185888c8f9296999d")
+    Ustart = hextobytes("6d6d6d6d6d6d6d6d93939393939393936d6d6d6d6d6d6d")
+    Vstart = hextobytes("6868686868686868979898989898989868686868686868")
+    ok = do_test_csc_rgb(csc_module, "BGRX", "YUV420P", w, h, pixels, (("Y", 0, Ystart), ("U", 1, Ustart), ("V", 2, Vstart)))
+    print("test_csc_rgb3() OK=%s" % ok)
+
+
+def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(), count=1):
     ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
     cc = ColorspaceConverterClass()
     #print("%s()=%s" % (ColorspaceConverterClass, cc))
-    cc.init_context(w, h, "BGRX", w, h, "YUV420P")
-    print("ColorspaceConverter=%s" % cc)
-    print("test_csc() input pixels=%s" % dump_pixels(pixels))
-    image = ImageWrapper(0, 0, w, h, pixels, "BGRX", 32, w*4, planes=ImageWrapper.PACKED_RGB)
+    cc.init_context(w, h, src_format, w, h, dst_format)
+    if DEBUG:
+        print("ColorspaceConverter=%s" % cc)
+        print("    %s" % cc.get_info())
+        print("do_test_csc_rgb() input pixels=%s" % dump_pixels(pixels))
+    bpp = len(src_format)
+    image = ImageWrapper(0, 0, w, h, pixels, src_format, 32, w*bpp, planes=ImageWrapper.PACKED_RGB)
     for _ in range(count):
         out = cc.convert_image(image)
-    print("test_csc() output=%s" % out)
-    assert out.get_planes()==ImageWrapper._3_PLANES
+    if DEBUG:
+        print("do_test_csc_rgb() output=%s" % out)
+    assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s" % out.get_planes()
     pixels = out.get_pixels()
     assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
-    for i in range(3):
-        plane = pixels[i]
-        print("test_csc() plane[%s]=%s" % (i, type(plane)))
-        print("test_csc() len(plane[%s])=%s" % (i, len(plane)))
-        print("test_csc() plane data[%s]=%s" % (i, dump_pixels(plane)))
+    #for i in range(3):
+    #    print("do_test_csc_rgb() plane data[%s]=%s" % (i, dump_pixels(pixels[i])))
+    ok = True
     for plane, index, expected in checks:
-        check_plane(plane, pixels[index], expected)
-    return pixels
+        ok &= check_plane(plane, pixels[index], expected)
+    return ok
 
 
+#PLANAR:
 def test_csc_planar(csc_module):
     print("")
     test_csc_planar1(csc_module)
     #perf_measure_planar(ColorspaceConverter, 4096, 2048)
     perf_measure_planar(csc_module, 1920, 1080)
     perf_measure_planar(csc_module, 512, 512)
-
-
 
 def make_planar_input(src_format, w, h):
     assert src_format in ("YUV420P", "YUV422P", "YUV444P"), "invalid source format %s" % src_format
@@ -178,40 +196,44 @@ def test_csc_planar1(csc_module, w=256, h=128):
             print("test_csc_planar1(%s, %s, %s) skipping %s", csc_module, w, h, src_format)
             continue
         strides, pixels = make_planar_input(src_format, w, h)
-        pixels = do_test_csc_planar(csc_module, src_format, w, h, strides, pixels)
-        print("test_csc_planar1() head of output pixels=%s" % dump_pixels(pixels[:128]))
+        pixels = do_test_csc_planar(csc_module, src_format, "XRGB", w, h, strides, pixels)
+        if DEBUG:
+            print("test_csc_planar1() head of output pixels=%s" % dump_pixels(pixels[:128]))
         check_plane("XRGB", pixels, expected)
 
 def perf_measure_planar(csc_module, w=1920, h=1080):
     for src_format in csc_module.get_input_colorspaces():
         if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
             continue
-        strides, pixels = make_planar_input(src_format, w, h)
-        start = time.time()
-        count = 128
-        print("**********************")
-        print("testing with %s at %sx%s ..." % (src_format, w, h))
-        pixels = do_test_csc_planar(csc_module, src_format, w, h, strides, pixels, count=count)
-        end = time.time()
-        print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, count, end-start))
-        mpps = float(w*h*count)/(end-start)
-        print("%s MPixels/s" % int(mpps/1024/1024))
-        print("**********************")
+        rgb_dst_formats = [x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")>=0 or x.find("BGR")>=0)]
+        for dst_format in rgb_dst_formats:
+            strides, pixels = make_planar_input(src_format, w, h)
+            start = time.time()
+            pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, count=PERF_LOOP_COUNT)
+            end = time.time()
+            if DEBUG:
+                print("%s did %sx%s csc %s times in %.1fms" % (csc_module, w, h, PERF_LOOP_COUNT, end-start))
+            mpps = float(w*h*PERF_LOOP_COUNT)/(end-start)
+            dim = ("%sx%s" % (w,h)).rjust(10)
+            info = ("%s to %s at %s" % (src_format.ljust(7), dst_format.ljust(7), dim)).ljust(40)
+            print("%s: %s MPixels/s" % (info, int(mpps/1024/1024)))
 
 
-def do_test_csc_planar(csc_module, src_format, w, h, strides, pixels, checks=(), count=1):
+def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels, checks=(), count=1):
     assert len(pixels)==3, "this test only handles 3-plane pixels"
     ColorspaceConverterClass = getattr(csc_module, "ColorspaceConverter")
     cc = ColorspaceConverterClass()
     #print("%s()=%s" % (ColorspaceConverterClass, cc))
-    cc.init_context(w, h, src_format, w, h, "XRGB")
-    print("ColorspaceConverter=%s" % cc)
-    #for i in range(3):
-    #    print("test_csc() plane[%s]=%s" % (i, dump_pixels(pixels[i])))
+    cc.init_context(w, h, src_format, w, h, dst_format)
+    if DEBUG:
+        print("ColorspaceConverter=%s" % cc)
+        for i in range(3):
+            print("test_csc() plane[%s]=%s" % (i, dump_pixels(pixels[i])))
     image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=ImageWrapper._3_PLANES)
     for _ in range(count):
         out = cc.convert_image(image)
-    print("test_csc() output=%s" % out)
+    if DEBUG:
+        print("do_test_csc_planar() output=%s" % out)
     assert out is not None, "convert_image returned None!"
     assert out.get_planes()==ImageWrapper.PACKED_RGB, "output image is not in packed RGB!"
     #clone the pixels before the wrapper falls out of scope!
