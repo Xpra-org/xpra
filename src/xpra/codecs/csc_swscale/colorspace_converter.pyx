@@ -95,17 +95,10 @@ for av_enum_name, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
         debug("av pixel mode %s is not available", av_enum_name)
         continue
     FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name, width_mult, height_mult, pix_fmt)
-    COLORSPACES.append(pix_fmt)
+    if pix_fmt not in COLORSPACES:
+        COLORSPACES.append(pix_fmt)
 debug("swscale pixel formats: %s", FORMATS)
 debug("colorspaces: %s", COLORSPACES)
-
-#trick to use a constant and not the string passed in:
-def get_colorspace_str(colorspace):
-    for x in COLORSPACES:
-        if x==colorspace:
-            return x
-    return None
-
 
 
 cdef int align4(int i):
