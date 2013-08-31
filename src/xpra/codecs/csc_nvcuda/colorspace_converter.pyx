@@ -106,7 +106,7 @@ cdef class ColorspaceConverter:
     cdef double time
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed):    #@DuplicatedSignature
+                           int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width

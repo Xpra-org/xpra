@@ -209,7 +209,7 @@ int init_cuda(void)
 		fprintf(stderr, "cuInit failed\n");
 	}
 
-	printf("curren = %p\n", cuCtxGetCurrent(cuda_context));
+	//printf("curren = %p\n", cuCtxGetCurrent(cuda_context));
 	printf("Cuda context ptr %p\n", cuda_context);
 	cuda_initialized = 1;
 	return 0;
@@ -261,7 +261,7 @@ int csc_image(struct csc_nvcuda_ctx *ctx, const uint8_t *in[3], const int stride
 	int pinned_output_buffer = 1;
 	NppiSize size = { ctx->width, ctx->height };
 	Npp8u *src = NULL; // GPU-side input buffer
-	uint8_t *dstbuf = NULL; // CPU-side linear output buffer (data + strides)
+	//uint8_t *dstbuf = NULL; // CPU-side linear output buffer (data + strides)
 	uint8_t *gpudst[3] = { NULL, NULL, NULL }; // GPU-side planar output array
 
 	// Plane dimensions
