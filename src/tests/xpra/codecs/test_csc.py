@@ -83,7 +83,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64):
                 pixels[i+j] = (v+j*channelratio) % 256
             if bpp==4:
                 pixels[i+3] = 0
-    return str(pixels)
+    return pixels
 
 def perf_measure_rgb(csc_module, w=1920, h=1080):
     rgb_src_formats = [x for x in csc_module.get_input_colorspaces() if (x.find("RGB")>=0 or x.find("BGR")>=0)]

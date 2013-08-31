@@ -220,7 +220,10 @@ class ColorspaceConverter(object):
 
 
     def clean(self):                        #@DuplicatedSignature
-        pass
+        if self.queue:
+            self.queue.finish()
+            self.queue = None
+            self.kernel_function = None
 
     def convert_image(self, image):
         #we override this method during init_context
@@ -257,7 +260,11 @@ class ColorspaceConverter(object):
         #convert input buffers to numpy arrays then OpenCL Buffers:
         for i in range(3):
             in_array = numpy.frombuffer(pixels[i], dtype=numpy.byte)
-            in_buf = pyopencl.Buffer(context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=in_array)
+            if type(pixels[i])==str:
+                flags = mf.READ_ONLY | mf.COPY_HOST_PTR
+            else:
+                flags = mf.READ_ONLY | mf.USE_HOST_PTR
+            in_buf = pyopencl.Buffer(context, flags, hostbuf=in_array)
             kernelargs.append(in_buf)
             kernelargs.append(numpy.int32(strides[i]))
         kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
@@ -302,7 +309,11 @@ class ColorspaceConverter(object):
         iformat = pyopencl.ImageFormat(co, pyopencl.channel_type.UNSIGNED_INT8)
         shape = (stride/bpp, height)
         debug("convert_image() input image format=%s, shape=%s", iformat, shape)
-        iimage = pyopencl.Image(context, mf.READ_ONLY | mf.COPY_HOST_PTR, iformat, shape=shape, hostbuf=pixels)
+        if type(pixels)==str:
+            flags = mf.READ_ONLY | mf.COPY_HOST_PTR
+        else:
+            flags = mf.READ_ONLY | mf.USE_HOST_PTR
+        iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=pixels)
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize, iimage, numpy.int32(width), numpy.int32(height)]
 
