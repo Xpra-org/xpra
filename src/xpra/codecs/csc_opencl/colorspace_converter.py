@@ -337,7 +337,7 @@ class ColorspaceConverter(object):
         pixels = []
         read_events = []
         for i in range(3):
-            out_array = numpy.zeros(out_sizes[i], dtype=numpy.byte)
+            out_array = numpy.empty(out_sizes[i], dtype=numpy.byte)
             pixels.append(out_array.data)
             read = pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array)
             read_events.append(read)
