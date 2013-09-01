@@ -140,7 +140,7 @@ __kernel void %s(global uchar *srcY, uint strideY,
         if (gy*2+1 < h) {
             i += strideY;
             Y = 1.1643 * (srcY[i] / 255.0f - 0.0625);
-    
+
             p.s0 = %s;
             p.s1 = %s;
             p.s2 = %s;
@@ -150,12 +150,12 @@ __kernel void %s(global uchar *srcY, uint strideY,
 
             if (gx*2+1 < w) {
                 Y = 1.1643 * (srcY[i+1] / 255.0f - 0.0625);
-    
+
                 p.s0 = %s;
                 p.s1 = %s;
                 p.s2 = %s;
                 p.s3 = %s;
-    
+
                 write_imagef(dst, (int2)( gx*2+1, gy*2+1 ), p);
             }
         }

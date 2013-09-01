@@ -330,7 +330,11 @@ class ColorspaceConverter(object):
 
         #convert input buffers to numpy arrays then OpenCL Buffers:
         for i in range(3):
-            in_array = numpy.frombuffer(pixels[i], dtype=numpy.byte)
+            plane = pixels[i]
+            if type(plane)==str:
+                in_array = numpy.fromstring(pixels[i], dtype=numpy.byte)
+            else:
+                in_array = numpy.frombuffer(pixels[i], dtype=numpy.byte)
             flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             in_buf = pyopencl.Buffer(context, flags, hostbuf=in_array)
             kernelargs.append(in_buf)
@@ -383,6 +387,10 @@ class ColorspaceConverter(object):
         shape = (stride/bpp, height)
         debug("convert_image() input image format=%s, shape=%s", iformat, shape)
         if type(pixels)==str:
+            #str is not a buffer, so we have to copy the data
+            #alternatively, we could copy it first ourselves using this:
+            #pixels = numpy.fromstring(pixels, dtype=numpy.byte).data
+            #but I think this is even slower
             flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
         else:
             flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR

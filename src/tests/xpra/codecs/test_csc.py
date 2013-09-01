@@ -12,6 +12,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 DEBUG = False
 PERF_LOOP_COUNT = 16
 
+
 #Some helper methods:
 def check_plane(plane, data, expected):
     if expected is None:
@@ -72,7 +73,7 @@ def test_csc_rgb(csc_module):
     perf_measure_rgb(csc_module)
     perf_measure_rgb(csc_module, 512, 512)
 
-def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64):
+def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_strings=False):
     bpp = len(src_format)
     assert bpp==3 or bpp==4
     pixels = bytearray("\0" * (w*h*bpp))
@@ -84,6 +85,8 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64):
                 pixels[i+j] = (v+j*channelratio) % 256
             if bpp==4:
                 pixels[i+3] = 0
+    if use_strings:
+        return str(pixels)
     return pixels
 
 def perf_measure_rgb(csc_module, w=1920, h=1080):
@@ -119,15 +122,16 @@ def test_csc_rgb_all(csc_module):
                                                ("U", 1, "6d6d6d6d6d6d6d6d93939393939393936d6d6d6d6d6d6d"),
                                                ("V", 2, "6868686868686868979898989898989868686868686868")),
               }
-    for w,h in ((16, 16), (32, 32)):
-        rgb_in = sorted([x for x in csc_module.get_input_colorspaces() if not x.endswith("P")])
-        for src_format in rgb_in:
-            pixels = make_rgb_input(src_format, w, h)
-            dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x.startswith("YUV")])
-            for dst_format in dst_formats:
-                checks = CHECKS.get((src_format, dst_format, w, h)) 
-                ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks)
-                print("test_csc_rgb(%s) %s to %s at %sx%s OK=%s" % (csc_module.get_type(), src_format, dst_format, w, h, ok))
+    for use_strings in (True, False):
+        for w,h in ((16, 16), (32, 32)):
+            rgb_in = sorted([x for x in csc_module.get_input_colorspaces() if not x.endswith("P")])
+            for src_format in rgb_in:
+                pixels = make_rgb_input(src_format, w, h, use_strings)
+                dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x.startswith("YUV")])
+                for dst_format in dst_formats:
+                    checks = CHECKS.get((src_format, dst_format, w, h))
+                    ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks)
+                    print("test_csc_rgb_all(%s) %s to %s at %sx%s use_strings=%s OK=%s" % (csc_module.get_type(), src_format, dst_format, w, h, use_strings, ok))
 
 
 def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(), count=1):
@@ -160,12 +164,12 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
 #PLANAR:
 def test_csc_planar(csc_module):
     print("")
-    test_csc_planar1(csc_module)
+    test_csc_planar_all(csc_module)
     #perf_measure_planar(ColorspaceConverter, 4096, 2048)
     perf_measure_planar(csc_module, 1920, 1080)
     perf_measure_planar(csc_module, 512, 512)
 
-def make_planar_input(src_format, w, h):
+def make_planar_input(src_format, w, h, use_strings=False):
     assert src_format in ("YUV420P", "YUV422P", "YUV444P"), "invalid source format %s" % src_format
     Ydivs, Udivs, Vdivs = get_subsampling_divs(src_format)
     Yxd, Yyd = Ydivs
@@ -180,11 +184,14 @@ def make_planar_input(src_format, w, h):
             Ydata[i/Yxd/Yyd] = i % 256
             Udata[i/Uxd/Uyd] = i % 256
             Vdata[i/Vxd/Vyd] = i % 256
-    pixels = (Ydata, Udata, Vdata)
+    if use_strings:
+        pixels = (str(Ydata), str(Udata), str(Vdata))
+    else:
+        pixels = (Ydata, Udata, Vdata)
     strides = (w/Yxd, w/Uxd, w/Vxd)
     return strides, pixels
 
-def test_csc_planar1(csc_module, w=256, h=128):
+def test_csc_planar_all(csc_module, w=256, h=128):
     #get_subsampling_divs()
     e420 = bytearray([0xff, 0x0, 0x87, 0x0, 0xff, 0x0, 0x88, 0x0, 0xff, 0x0, 0x81, 0x0, 0xff, 0x0, 0x82])
     e422 = bytearray([0xff, 0x0, 0x87, 0x0, 0xff, 0x0, 0x86, 0x0, 0xff, 0x0, 0x84, 0x0, 0xff, 0x0, 0x84])
@@ -192,16 +199,17 @@ def test_csc_planar1(csc_module, w=256, h=128):
     FMT_TO_EXPECTED_OUTPUT = {("YUV420P", "XRGB")  : e420,
                               ("YUV422P", "XRGB")  : e422,
                               ("YUV444P", "XRGB")  : e444}
-    planar_in = [x for x in csc_module.get_input_colorspaces() if x.startswith("YUV")]
-    for src_format in sorted(planar_in):
-        strides, pixels = make_planar_input(src_format, w, h)
-        dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (not x.startswith("YUV") and not x.endswith("P"))])
-        for dst_format in dst_formats:
-            out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels)
-            if DEBUG:
-                print("test_csc_planar1() %s to %s head of output pixels=%s" % (src_format, dst_format, dump_pixels(out_pixels[:128])))
-            expected = FMT_TO_EXPECTED_OUTPUT.get((src_format, dst_format))
-            check_plane(dst_format, out_pixels, expected)
+    for use_strings in (True, False):
+        planar_in = [x for x in csc_module.get_input_colorspaces() if x.startswith("YUV")]
+        for src_format in sorted(planar_in):
+            strides, pixels = make_planar_input(src_format, w, h, use_strings)
+            dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (not x.startswith("YUV") and not x.endswith("P"))])
+            for dst_format in dst_formats:
+                out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels)
+                if DEBUG:
+                    print("test_csc_planar1() %s to %s head of output pixels=%s" % (src_format, dst_format, dump_pixels(out_pixels[:128])))
+                expected = FMT_TO_EXPECTED_OUTPUT.get((src_format, dst_format))
+                check_plane(dst_format, out_pixels, expected)
 
 def perf_measure_planar(csc_module, w=1920, h=1080):
     for src_format in sorted(csc_module.get_input_colorspaces()):
