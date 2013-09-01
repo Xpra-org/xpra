@@ -9,6 +9,7 @@ log = Logger()
 debug = debug_if_env(log, "XPRA_OPENCL_DEBUG")
 error = log.error
 
+import time
 import os
 import warnings
 import numpy
@@ -144,6 +145,7 @@ class ColorspaceConverter(object):
         self.frames = 0
         self.queue = None
         self.kernel_function = None
+        self.kernel_function_name = None
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format):    #@DuplicatedSignature
@@ -159,15 +161,15 @@ class ColorspaceConverter(object):
         if src_format in COLORSPACES_SRC_RGB:
             #rgb 2 yuv:
             src = RGB_2_YUV_KERNELS[dst_format]
-            kernel_name = "RGB_2_%s" % dst_format
+            self.kernel_function_name = "RGB_2_%s" % dst_format
             self.convert_image = self.convert_image_rgb
         else:
             #yuv 2 rgb:
             src = YUV_2_RGB_KERNELS[(src_format, dst_format)]
-            kernel_name =  "%s_2_%s" % (src_format, dst_format)
+            self.kernel_function_name =  "%s_2_%s" % (src_format, dst_format)
             self.convert_image = self.convert_image_yuv
         debug("init_context(..) kernel source=%s", src)
-        self.kernel_function = getattr(program, kernel_name)
+        self.kernel_function = getattr(program, self.kernel_function_name)
         debug("init_context(..) kernel_function=%s", self.kernel_function)
         assert self.kernel_function
 
@@ -232,12 +234,12 @@ class ColorspaceConverter(object):
 
     def convert_image_yuv(self, image):
         global program
+        start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
         height = image.get_height()
         strides = image.get_rowstride()
         pixels = image.get_pixels()
-        debug("convert_image(%s) planes=%s", image, iplanes)
         assert iplanes==ImageWrapper._3_PLANES, "we only handle planar data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert len(strides)==len(pixels)==3, "invalid number of planes or strides (should be 3)"
@@ -266,23 +268,29 @@ class ColorspaceConverter(object):
             kernelargs.append(numpy.int32(strides[i]))
         kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
 
-        debug("convert_image(%s) calling %s%s", image, self.kernel_function, kernelargs)
+        kstart = time.time()
+        debug("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
+        kend = time.time()
+        debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
+
         out_array = numpy.empty(width*height*4, dtype=numpy.byte)
         read = pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array)
         read.wait()
         self.queue.finish()
+        debug("readback took %.1fms", 1000.0*(time.time()-kend))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED_RGB)
 
 
     def convert_image_rgb(self, image):
         global program
+        start = time.time()
         iplanes = image.get_planes()
         width = image.get_width()
         height = image.get_height()
         stride = image.get_rowstride()
         pixels = image.get_pixels()
-        debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
+        #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED_RGB, "we only handle packed rgb as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         mf = pyopencl.mem_flags
@@ -330,8 +338,11 @@ class ColorspaceConverter(object):
             strides.append(p_stride)
             out_sizes.append(p_size)
 
-        debug("convert_image(%s) calling %s%s", image, self.kernel_function, kernelargs)
+        kstart = time.time()
+        debug("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
+        kend = time.time()
+        debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
         #read back:
         pixels = []
@@ -343,6 +354,10 @@ class ColorspaceConverter(object):
             read_events.append(read)
         #for i in range(3):
         #    read_events[i].wait()
+        readstart = time.time()
+        debug("queue read events took %.1fms", 1000.0*(readstart-kend))
         pyopencl.wait_for_events(read_events)
         self.queue.finish()
+        readend = time.time()
+        debug("wait for read events took %.1fms", 1000.0*(readend-readstart))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
