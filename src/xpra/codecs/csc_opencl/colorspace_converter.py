@@ -275,8 +275,7 @@ class ColorspaceConverter(object):
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
         out_array = numpy.empty(width*height*4, dtype=numpy.byte)
-        read = pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array)
-        read.wait()
+        pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array, is_blocking=True)
         self.queue.finish()
         debug("readback took %.1fms", 1000.0*(time.time()-kend))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED_RGB)
@@ -350,10 +349,8 @@ class ColorspaceConverter(object):
         for i in range(3):
             out_array = numpy.empty(out_sizes[i], dtype=numpy.byte)
             pixels.append(out_array.data)
-            read = pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array)
+            read = pyopencl.enqueue_read_buffer(self.queue, out_buffers[i], out_array, is_blocking=False)
             read_events.append(read)
-        #for i in range(3):
-        #    read_events[i].wait()
         readstart = time.time()
         debug("queue read events took %.1fms", 1000.0*(readstart-kend))
         pyopencl.wait_for_events(read_events)
