@@ -111,24 +111,28 @@ sif_copy = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | m
 debug("get_supported_image_formats(READ_ONLY | COPY_HOST_PTR, IMAGE2D)=%s", sif)
 sif_use = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR,  pyopencl.mem_object_type.IMAGE2D)
 debug("get_supported_image_formats(READ_ONLY | USE_HOST_PTR, IMAGE2D)=%s", sif)
-for rgb_mode, channel_order in IN_CHANNEL_ORDER.items():
-    errs = []
-    if not has_image_format(sif_copy, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
-        errs.append("COPY_HOST_PTR")
-    if not has_image_format(sif_use, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
-        errs.append("USE_HOST_PTR")
-    if len(errs)>0:
-        debug("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", rgb_mode, " or ".join(errs))
-        continue
-    #we hardcode RGB here since we currently handle byteswapping
-    #via the channel_order only for now:
-    kernels = gen_rgb_to_yuv_kernels(rgb_modes=["RGB"])
-    #debug("kernels(%s)=%s", rgb_mode, kernels)
-    for key, k_def in kernels.items():
-        src, dst = key
-        kname, ksrc = k_def
-        #note: "RGBX" isn't actually used (yet?)
-        RGB_to_YUV_KERNELS[(rgb_mode, dst)] = (kname, "RGB", channel_order, ksrc)
+if not has_image_format(sif_copy, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8) or \
+   not has_image_format(sif_use, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8):
+    log.error("cannot convert to yuv without support for R channel!")
+else:
+    for rgb_mode, channel_order in IN_CHANNEL_ORDER.items():
+        errs = []
+        if not has_image_format(sif_copy, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
+            errs.append("COPY_HOST_PTR")
+        if not has_image_format(sif_use, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
+            errs.append("USE_HOST_PTR")
+        if len(errs)>0:
+            debug("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", rgb_mode, " or ".join(errs))
+            continue
+        #we hardcode RGB here since we currently handle byteswapping
+        #via the channel_order only for now:
+        kernels = gen_rgb_to_yuv_kernels(rgb_modes=["RGB"])
+        #debug("kernels(%s)=%s", rgb_mode, kernels)
+        for key, k_def in kernels.items():
+            src, dst = key
+            kname, ksrc = k_def
+            #note: "RGBX" isn't actually used (yet?)
+            RGB_to_YUV_KERNELS[(rgb_mode, dst)] = (kname, "RGB", channel_order, ksrc)
 debug("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
 #debug("RGB 2 YUV kernels=%s", RGB_to_YUV_KERNELS)
 debug("RGB 2 YUV kernels=%s", set([x[0] for x in RGB_to_YUV_KERNELS.values()]))
@@ -328,17 +332,20 @@ class ColorspaceConverter(object):
         oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
         oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(width, height))
 
+        iformat = pyopencl.ImageFormat(pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8)
         #convert input buffers to numpy arrays then OpenCL Buffers:
         for i in range(3):
+            _, y_div = divs[i]
             plane = pixels[i]
             if type(plane)==str:
-                in_array = numpy.fromstring(pixels[i], dtype=numpy.byte)
+                flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             else:
-                in_array = numpy.frombuffer(pixels[i], dtype=numpy.byte)
-            flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
-            in_buf = pyopencl.Buffer(context, flags, hostbuf=in_array)
-            kernelargs.append(in_buf)
+                flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
+            shape = strides[i], height/y_div
+            iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
+            kernelargs.append(iimage)
             kernelargs.append(numpy.int32(strides[i]))
+
         kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
 
         kstart = time.time()
