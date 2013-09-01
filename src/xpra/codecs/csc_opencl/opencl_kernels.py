@@ -23,17 +23,14 @@ YUV_TO_RGB = {"X"    : "1.0",
               }
 
 #Cr width div, Cr heigth div, Cb width div, Cb width div
-YUV_DIVS = {"YUV444P"   : [1, 1, 1, 1],
-            "YUV422P"   : [2, 2, 1, 1],
-            "YUV420P"   : [2, 2, 2, 2]
-            }
+YUV_FORMATS = ("YUV444P", "YUV422P", "YUV420P")
 
 
-def gen_yuv_to_rgb_kernel(yuv_format, rgb_format):
+def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
     RGB_args = rgb_mode_to_indexes(rgb_format)
     kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
-    args = tuple([kname] + YUV_DIVS[yuv_format] + [YUV_TO_RGB[c] for c in rgb_format])
+    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
 __kernel void %s(global uchar *srcY, uint strideY,
               global uchar *srcU, uint strideU,
@@ -42,12 +39,12 @@ __kernel void %s(global uchar *srcY, uint strideY,
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
 
-    if ((gx < w) & (gy<h)) {
+    if ((gx < w) & (gy < h)) {
         float4 p;
 
         float Y = 1.1643 * (srcY[gx + gy*strideY] / 255.0f - 0.0625);
-        float Cr = srcU[gx/%s+(gy/%s)*(strideU)] / 255.0f - 0.5f;
-        float Cb = srcV[gx/%s+(gy/%s)*(strideV)] / 255.0f - 0.5f;
+        float Cr = srcU[gx+gy*strideU] / 255.0f - 0.5f;
+        float Cb = srcV[gx+gy*strideV] / 255.0f - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
@@ -60,12 +57,125 @@ __kernel void %s(global uchar *srcY, uint strideY,
 """
     return kname, kstr % args
 
+def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
+    assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    RGB_args = rgb_mode_to_indexes(rgb_format)
+    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
+    kstr = """
+__kernel void %s(global uchar *srcY, uint strideY,
+              global uchar *srcU, uint strideU,
+              global uchar *srcV, uint strideV,
+              uint w, uint h, write_only image2d_t dst) {
+    uint gx = get_global_id(0);
+    uint gy = get_global_id(1);
 
-def gen_yuv_to_rgb_kernels(yuv_modes=YUV_DIVS.keys(), rgb_modes=["XRGB", "BGRX"]):
+    if ((gx*2 < w) & (gy < h)) {
+        float4 p;
+        uint i = gx*2 + gy*strideY;
+        float Y = 1.1643 * (srcY[i] / 255.0f - 0.0625);
+        float Cr = srcU[gx+gy*strideU] / 255.0f - 0.5f;
+        float Cb = srcV[gx+gy*strideV] / 255.0f - 0.5f;
+
+        p.s0 = %s;
+        p.s1 = %s;
+        p.s2 = %s;
+        p.s3 = %s;
+
+        write_imagef(dst, (int2)( gx*2, gy ), p);
+
+        if (gx*2+1 < w) {
+            Y = 1.1643 * (srcY[i+1] / 255.0f - 0.0625);
+
+            p.s0 = %s;
+            p.s1 = %s;
+            p.s2 = %s;
+            p.s3 = %s;
+
+            write_imagef(dst, (int2)( gx*2+1, gy ), p);
+        }
+    }
+}
+"""
+    return kname, kstr % args
+
+def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
+    assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    RGB_args = rgb_mode_to_indexes(rgb_format)
+    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
+    kstr = """
+__kernel void %s(global uchar *srcY, uint strideY,
+              global uchar *srcU, uint strideU,
+              global uchar *srcV, uint strideV,
+              uint w, uint h, write_only image2d_t dst) {
+    uint gx = get_global_id(0);
+    uint gy = get_global_id(1);
+
+    if ((gx*2 < w) & (gy*2 < h)) {
+        float4 p;
+        uint i = gx*2 + gy*strideY;
+        float Y = 1.1643 * (srcY[i] / 255.0f - 0.0625);
+        float Cr = srcU[gx+gy*strideU] / 255.0f - 0.5f;
+        float Cb = srcV[gx+gy*strideV] / 255.0f - 0.5f;
+
+        p.s0 = %s;
+        p.s1 = %s;
+        p.s2 = %s;
+        p.s3 = %s;
+
+        write_imagef(dst, (int2)( gx*2, gy*2 ), p);
+
+        if (gx*2+1 < w) {
+            Y = 1.1643 * (srcY[i+1] / 255.0f - 0.0625);
+
+            p.s0 = %s;
+            p.s1 = %s;
+            p.s2 = %s;
+            p.s3 = %s;
+
+            write_imagef(dst, (int2)( gx*2+1, gy*2 ), p);
+        }
+
+        if (gy*2+1 < h) {
+            i += strideY;
+            Y = 1.1643 * (srcY[i] / 255.0f - 0.0625);
+    
+            p.s0 = %s;
+            p.s1 = %s;
+            p.s2 = %s;
+            p.s3 = %s;
+
+            write_imagef(dst, (int2)( gx*2, gy*2+1 ), p);
+
+            if (gx*2+1 < w) {
+                Y = 1.1643 * (srcY[i+1] / 255.0f - 0.0625);
+    
+                p.s0 = %s;
+                p.s1 = %s;
+                p.s2 = %s;
+                p.s3 = %s;
+    
+                write_imagef(dst, (int2)( gx*2+1, gy*2+1 ), p);
+            }
+        }
+    }
+}
+"""
+    return kname, kstr % args
+
+
+YUV_to_RGB_generators = {
+                    "YUV444P"   : gen_yuv444p_to_rgb_kernel,
+                    "YUV422P"   : gen_yuv422p_to_rgb_kernel,
+                    "YUV420P"   : gen_yuv420p_to_rgb_kernel,
+                    }
+def gen_yuv_to_rgb_kernels(yuv_modes=YUV_FORMATS, rgb_modes=["XRGB", "BGRX"]):
     YUV_to_RGB_KERNELS = {}
     for yuv in yuv_modes:
+        gen = YUV_to_RGB_generators.get(yuv)
         for rgb in rgb_modes:
-            YUV_to_RGB_KERNELS[(yuv, rgb)] = gen_yuv_to_rgb_kernel(yuv, rgb)
+            YUV_to_RGB_KERNELS[(yuv, rgb)] = gen(yuv, rgb)
     return YUV_to_RGB_KERNELS
 
 
@@ -144,13 +254,14 @@ __kernel void %s(read_only image2d_t src,
 
         //write up to 2 Y pixels:
         float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
-        dstY[gx*2 + gy*strideY] = convert_uchar_rte(Y1);
+        uint i = gx*2 + gy*strideY;
+        dstY[i] = convert_uchar_rte(Y1);
         //we process two pixels at a time
         //if the source width is odd, this destination pixel may not exist (right edge of picture)
         //(we only read it via CLAMP_TO_EDGE to calculate U and V, which do exist)
         if (gx*2+1 < w) {
             float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
-            dstY[gx*2 + 1 + gy*strideY] = convert_uchar_rte(Y2);
+            dstY[i+1] = convert_uchar_rte(Y2);
         }
 
         //write 1 U pixel:
@@ -203,14 +314,16 @@ __kernel void %s(read_only image2d_t src,
         float Y3 =  (0.257 * p2.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
         float Y4 =  (0.257 * p2.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
         //same logic as 422P for missing pixels:
-        dstY[gx*2 + gy*2*strideY] = convert_uchar_rte(Y1);
+        uint i = gx*2 + gy*2*strideY;
+        dstY[i] = convert_uchar_rte(Y1);
         if (gx*2+1 < w) {
-            dstY[gx*2 + 1 + gy*2*strideY] = convert_uchar_rte(Y2);
+            dstY[i+1] = convert_uchar_rte(Y2);
         }
         if (gy*2+1 < h) {
-            dstY[gx*2 + (gy*2+1)*strideY] = convert_uchar_rte(Y3);
+            i += strideY;
+            dstY[i] = convert_uchar_rte(Y3);
             if (gx*2+1 < w) {
-                dstY[gx*2+1 + (gy*2+1)*strideY] = convert_uchar_rte(Y4);
+                dstY[i+1] = convert_uchar_rte(Y4);
             }
         }
 

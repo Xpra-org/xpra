@@ -163,6 +163,12 @@ except Exception, e:
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
 
+def dimdiv(dim, div):
+    #when we divide a dimensions by the subsampling
+    #we want to round up so as to include the last
+    #pixel when we hit odd dimensions
+    return roundup(dim/div, div)
+
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import codec_spec, get_subsampling_divs
@@ -302,13 +308,19 @@ class ColorspaceConverter(object):
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert len(strides)==len(pixels)==3, "invalid number of planes or strides (should be 3)"
 
+        #adjust work dimensions for subsampling:
+        #(we process N pixels at a time in each dimension)
+        divs = get_subsampling_divs(self.src_format)
+        wwidth = dimdiv(width, max(x_div for x_div, _ in divs))
+        wheight = dimdiv(height, max(y_div for _, y_div in divs))
+
         #ensure the local and global work size are valid, see:
         #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
         chunk = 64
         while chunk**2>selected_device.max_work_group_size or chunk>min(selected_device.max_work_item_sizes):
             chunk /= 2
         localWorkSize = (chunk, chunk)
-        globalWorkSize = (roundup(width, localWorkSize[0]), roundup(height, localWorkSize[1]))
+        globalWorkSize = (roundup(wwidth, localWorkSize[0]), roundup(wheight, localWorkSize[1]))
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize]
 
@@ -349,10 +361,12 @@ class ColorspaceConverter(object):
         #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED_RGB, "we only handle packed rgb as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
+
+        #adjust work dimensions for subsampling:
+        #(we process N pixels at a time in each dimension)
         divs = get_subsampling_divs(self.dst_format)
-        #the x and y divs also tell us how many pixels we process at a time:
-        x_unit = max([x_div for x_div, _ in divs])
-        y_unit = max([y_div for _, y_div in divs])
+        wwidth = dimdiv(width, max([x_div for x_div, _ in divs]))
+        wheight = dimdiv(height, max([y_div for _, y_div in divs]))
 
         #ensure the local and global work size are valid, see:
         #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
@@ -360,7 +374,7 @@ class ColorspaceConverter(object):
         while chunk**2>selected_device.max_work_group_size or chunk>min(selected_device.max_work_item_sizes):
             chunk /= 2
         localWorkSize = (chunk, chunk)
-        globalWorkSize = (roundup(width/x_unit, localWorkSize[0]), roundup(height/y_unit, localWorkSize[1]))
+        globalWorkSize = (roundup(wwidth, localWorkSize[0]), roundup(wheight, localWorkSize[1]))
 
         #input image:
         bpp = len(self.src_format)
