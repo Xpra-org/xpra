@@ -16,23 +16,26 @@
 
 
 YUV_TO_RGB = {"X"    : "1.0",
+              "A"    : "1.0",
               "R"    : "Y + 1.5958 * Cb",
               "G"    : "Y - 0.39173*Cr-0.81290*Cb",
               "B"    : "Y + 2.017*Cr"
               }
 
 #Cr width div, Cr heigth div, Cb width div, Cb width div
-YUV_DIVS = {"444"   : [1, 1, 1, 1],
-            "422"   : [2, 2, 1, 1],
-            "420"   : [2, 2, 2, 2]
+YUV_DIVS = {"YUV444P"   : [1, 1, 1, 1],
+            "YUV422P"   : [2, 2, 1, 1],
+            "YUV420P"   : [2, 2, 2, 2]
             }
 
 
-def gen_yuv_2_rgb_kernel(yuv_format, rgb_format):
-    assert len(rgb_format)==4, "invalid destination rgb format: %s" % rgb_format
-    args = tuple([yuv_format, rgb_format] + YUV_DIVS[yuv_format] + [YUV_TO_RGB[c] for c in rgb_format])
+def gen_yuv_to_rgb_kernel(yuv_format, rgb_format):
+    assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    RGB_args = rgb_mode_to_indexes(rgb_format)
+    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    args = tuple([kname] + YUV_DIVS[yuv_format] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
-__kernel void YUV%sP_2_%s(global uchar *srcY, uint strideY,
+__kernel void %s(global uchar *srcY, uint strideY,
               global uchar *srcU, uint strideU,
               global uchar *srcV, uint strideV,
               uint w, uint h, write_only image2d_t dst) {
@@ -55,28 +58,39 @@ __kernel void YUV%sP_2_%s(global uchar *srcY, uint strideY,
     }
 }
 """
-    return kstr % args
+    return kname, kstr % args
 
 
-YUV_2_RGB_KERNELS = {}
-for yuv in YUV_DIVS.keys():
-    for rgb in ("XRGB", "BGRX"):
-        YUV_2_RGB_KERNELS[("YUV%sP" % yuv, rgb)] = gen_yuv_2_rgb_kernel(yuv, rgb)
+def gen_yuv_to_rgb_kernels(yuv_modes=YUV_DIVS.keys(), rgb_modes=["XRGB", "BGRX"]):
+    YUV_to_RGB_KERNELS = {}
+    for yuv in yuv_modes:
+        for rgb in rgb_modes:
+            YUV_to_RGB_KERNELS[(yuv, rgb)] = gen_yuv_to_rgb_kernel(yuv, rgb)
+    return YUV_to_RGB_KERNELS
 
 
 
 
-def gen_rgb_2_yuv444p_kernel():
-    #potentially, we could change the RGB order
+def rgb_mode_to_indexes(rgb_mode):
+    #we can change the RGB order
     #to handle other pixel formats
-    #(but most are already handled natively by OpenCL, so we don't)
-    #RGB order, ie: "RGB" -> "012"
-    RGB_args = [0, 1, 2]
+    #(most are already handled natively by OpenCL but not all
+    #and not on all platforms..)
+    RGB_ARGS = []
+    for c in ("R", "G", "B"):
+        i = rgb_mode.find(c)
+        assert i>=0, "channel %s not found in %s" % (c, rgb_mode)
+        RGB_ARGS.append(i)
+    return RGB_ARGS
+
+def gen_rgb_to_yuv444p_kernel(rgb_mode):
+    RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 3 times each:
-    args = tuple(RGB_args*3)
+    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    args = tuple([kname]+RGB_args*3)
 
     kstr = """
-__kernel void RGB_2_YUV444P(read_only image2d_t src,
+__kernel void %s(read_only image2d_t src,
               uint w, uint h,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
@@ -103,18 +117,16 @@ __kernel void RGB_2_YUV444P(read_only image2d_t src,
     }
 }
 """
-    return kstr % args
+    return kname, kstr % args
 
-def gen_rgb_2_yuv422p_kernel(RGB_args = [0, 1, 2]):
-    #potentially, we could change the RGB order
-    #to handle other pixel formats
-    #(but most are already handled natively by OpenCL, so we don't)
-    #RGB order, ie: "RGB" -> "012"
+def gen_rgb_to_yuv422p_kernel(rgb_mode):
+    RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 6 times each:
-    args = tuple(RGB_args*6)
+    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    args = tuple([kname]+RGB_args*6)
 
     kstr = """
-__kernel void RGB_2_YUV422P(read_only image2d_t src,
+__kernel void %s(read_only image2d_t src,
               uint w, uint h,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
@@ -157,19 +169,17 @@ __kernel void RGB_2_YUV422P(read_only image2d_t src,
     }
 }
 """
-    return kstr % args
+    return kname, kstr % args
 
 
-def gen_rgb_2_yuv420p_kernel(RGB_args = [0, 1, 2]):
-    #potentially, we could change the RGB order
-    #to handle other pixel formats
-    #(but most are already handled natively by OpenCL, so we don't)
-    #RGB order, ie: "RGB" -> "012"
+def gen_rgb_to_yuv420p_kernel(rgb_mode):
+    RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 12 times each:
-    args = tuple(RGB_args*12)
+    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    args = tuple([kname]+RGB_args*12)
 
     kstr = """
-__kernel void RGB_2_YUV420P(read_only image2d_t src,
+__kernel void %s(read_only image2d_t src,
               uint w, uint h,
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
@@ -220,11 +230,20 @@ __kernel void RGB_2_YUV420P(read_only image2d_t src,
     }
 }
 """
-    return kstr % args
+    return kname, kstr % args
 
 
-RGB_2_YUV_KERNELS = {
-                    "YUV444P"   : gen_rgb_2_yuv444p_kernel(),
-                    "YUV422P"   : gen_rgb_2_yuv422p_kernel(),
-                    "YUV420P"   : gen_rgb_2_yuv420p_kernel(),
+RGB_to_YUV_generators = {
+                    "YUV444P"   : gen_rgb_to_yuv444p_kernel,
+                    "YUV422P"   : gen_rgb_to_yuv422p_kernel,
+                    "YUV420P"   : gen_rgb_to_yuv420p_kernel,
                     }
+
+def gen_rgb_to_yuv_kernels(rgb_modes=["XRGB", "BGRX"], yuv_modes=RGB_to_YUV_generators.keys()):
+    RGB_to_YUV_KERNELS = {}
+    for yuv in yuv_modes:
+        gen = RGB_to_YUV_generators.get(yuv)
+        assert gen is not None, "no generator found for yuv mode %s" % yuv
+        for rgb in rgb_modes:
+            RGB_to_YUV_KERNELS[(rgb, yuv)] = gen(rgb)
+    return RGB_to_YUV_KERNELS
