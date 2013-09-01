@@ -195,7 +195,7 @@ def test_csc_planar1(csc_module, w=256, h=128):
     planar_in = [x for x in csc_module.get_input_colorspaces() if x.startswith("YUV")]
     for src_format in sorted(planar_in):
         strides, pixels = make_planar_input(src_format, w, h)
-        dst_formats = csc_module.get_output_colorspaces(src_format)
+        dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (not x.startswith("YUV") and not x.endswith("P"))])
         for dst_format in dst_formats:
             out_pixels = do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels)
             if DEBUG:
@@ -207,7 +207,7 @@ def perf_measure_planar(csc_module, w=1920, h=1080):
     for src_format in sorted(csc_module.get_input_colorspaces()):
         if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
             continue
-        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x.find("YUV")<0])
+        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("YUV")<0 and not x.endswith("P"))])
         for dst_format in rgb_dst_formats:
             strides, pixels = make_planar_input(src_format, w, h)
             #print("make_planar_input(%s, %s, %s) strides=%s, len(pixels=%s", src_format, w, h, strides, len(pixels))
@@ -238,7 +238,7 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
     if DEBUG:
         print("do_test_csc_planar() output=%s" % out)
     assert out is not None, "convert_image returned None!"
-    assert out.get_planes()==ImageWrapper.PACKED_RGB, "output image is not in packed RGB!"
+    assert out.get_planes()==ImageWrapper.PACKED_RGB, "output image %s is not in packed RGB: it has %s planes" % (out, out.get_planes())
     #clone the pixels before the wrapper falls out of scope!
     out.clone_pixel_data()
     return out.get_pixels()
