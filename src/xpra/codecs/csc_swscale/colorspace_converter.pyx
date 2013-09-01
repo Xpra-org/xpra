@@ -53,8 +53,12 @@ cdef extern from "libswscale/swscale.h":
                   uint8_t *const dst[], const int dstStride[]) nogil
 
 
+def get_type():
+    return "swscale"
+
 def get_version():
     return get_swscale_version()
+
 
 cdef class CSCPixelFormat:
     cdef AVPixelFormat av_enum
@@ -318,7 +322,7 @@ cdef class ColorspaceConverter:
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self):
+    def get_type(self):                     #@DuplicatedSignature
         return  "swscale"
 
 
