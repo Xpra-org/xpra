@@ -123,8 +123,8 @@ def test_csc_rgb_all(csc_module):
         rgb_in = sorted([x for x in csc_module.get_input_colorspaces() if not x.endswith("P")])
         for src_format in rgb_in:
             pixels = make_rgb_input(src_format, w, h)
-            dst_formats = csc_module.get_output_colorspaces(src_format)
-            for dst_format in sorted(dst_formats):
+            dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x.startswith("YUV")])
+            for dst_format in dst_formats:
                 checks = CHECKS.get((src_format, dst_format, w, h)) 
                 ok = do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks)
                 print("test_csc_rgb(%s) %s to %s at %sx%s OK=%s" % (csc_module.get_type(), src_format, dst_format, w, h, ok))
@@ -145,7 +145,7 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
         out = cc.convert_image(image)
     if DEBUG:
         print("do_test_csc_rgb() output=%s" % out)
-    assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s" % out.get_planes()
+    assert out.get_planes()==ImageWrapper._3_PLANES, "expected 3 planes as output but got: %s in %s" % (out.get_planes(), out)
     pixels = out.get_pixels()
     assert len(pixels)==3, "expected 3 planes but found: %s" % len(pixels)
     #for i in range(3):
@@ -192,7 +192,7 @@ def test_csc_planar1(csc_module, w=256, h=128):
     FMT_TO_EXPECTED_OUTPUT = {("YUV420P", "XRGB")  : e420,
                               ("YUV422P", "XRGB")  : e422,
                               ("YUV444P", "XRGB")  : e444}
-    planar_in = [x for x in csc_module.get_input_colorspaces() if x.endswith("P")]
+    planar_in = [x for x in csc_module.get_input_colorspaces() if x.startswith("YUV")]
     for src_format in sorted(planar_in):
         strides, pixels = make_planar_input(src_format, w, h)
         dst_formats = csc_module.get_output_colorspaces(src_format)
@@ -207,7 +207,7 @@ def perf_measure_planar(csc_module, w=1920, h=1080):
     for src_format in sorted(csc_module.get_input_colorspaces()):
         if src_format not in ("YUV420P", "YUV422P", "YUV444P"):
             continue
-        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if (x.find("RGB")>=0 or x.find("BGR")>=0)])
+        rgb_dst_formats = sorted([x for x in csc_module.get_output_colorspaces(src_format) if x.find("YUV")<0])
         for dst_format in rgb_dst_formats:
             strides, pixels = make_planar_input(src_format, w, h)
             #print("make_planar_input(%s, %s, %s) strides=%s, len(pixels=%s", src_format, w, h, strides, len(pixels))
