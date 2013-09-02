@@ -158,12 +158,18 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def apply_transient_for(self, wid):
         if wid==-1:
-            window = gtk.gdk.get_default_root_window()
+            #root is a gdk window, so we need to ensure we have one
+            #backing our gtk window to be able to call set_transient_for on it
+            self.debug("apply_transient_for(%s) gdkwindow=%s, mapped=%s", wid, self.gdk_window(), self.is_mapped())
+            if self.gdk_window() is None:
+                self.realize()
+            self.gdk_window().set_transient_for(gtk.gdk.get_default_root_window())
         else:
+            #gtk window is easier:
             window = self._client._id_to_window.get(wid)
-        self.debug("found transient-for: %s / %s", wid, window)
-        if window:
-            self.set_transient_for(window)
+            self.debug("apply_transient_for(%s) window=%s", wid, window)
+            if window:
+                self.set_transient_for(window)
 
     def update_icon(self, width, height, coding, data):
         self.debug("update_icon(%s, %s, %s, %s bytes)", width, height, coding, len(data))
