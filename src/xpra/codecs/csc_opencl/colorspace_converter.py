@@ -25,8 +25,10 @@ PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
     raise ImportError("no OpenCL platforms found!")
+log.info("PyOpenCL loaded, header version: %s", ".".join([str(x) for x in pyopencl.get_cl_header_version()]))
 log.info("PyOpenCL OpenGL support: %s", pyopencl.have_gl())
 log.info("found %s OpenCL platforms:", len(opencl_platforms))
+
 def device_info(d):
     dtype = pyopencl.device_type.to_string(d.type)
     return "%s: %s (%s / %s)" % (dtype, d.name.strip(), d.version, d.opencl_c_version)
@@ -300,6 +302,28 @@ class ColorspaceConverter(object):
         raise Exception("not initialized!")
 
 
+    def get_work_sizes(self, wwidth, wheight):
+        #ensure the local and global work size are valid, see:
+        #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
+        local_w, local_h = 64, 64
+        #debug("max_work_item_sizes=%s, max_work_group_size=%s", selected_device.max_work_item_sizes, selected_device.max_work_group_size)
+        maxw_w, maxw_h = selected_device.max_work_item_sizes[:2]
+        while local_w*local_h>selected_device.max_work_group_size or local_w>maxw_w or local_h>maxw_h:
+            if local_w>maxw_w:
+                local_w /= 2
+            if local_h>maxw_h:
+                local_h /= 2
+            if local_w*local_h>selected_device.max_work_group_size:
+                #prefer h<w for local work:
+                if local_h>=local_w:
+                    local_h /= 2
+                else:
+                    local_w /= 2
+        globalWorkSize = (roundup(wwidth, local_w), roundup(wheight, local_h))
+        localWorkSize = local_w, local_h
+        return globalWorkSize, localWorkSize
+
+
     def convert_image_yuv(self, image):
         global program
         start = time.time()
@@ -317,14 +341,7 @@ class ColorspaceConverter(object):
         divs = get_subsampling_divs(self.src_format)
         wwidth = dimdiv(width, max(x_div for x_div, _ in divs))
         wheight = dimdiv(height, max(y_div for _, y_div in divs))
-
-        #ensure the local and global work size are valid, see:
-        #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
-        chunk = 64
-        while chunk**2>selected_device.max_work_group_size or chunk>min(selected_device.max_work_item_sizes):
-            chunk /= 2
-        localWorkSize = (chunk, chunk)
-        globalWorkSize = (roundup(wwidth, localWorkSize[0]), roundup(wheight, localWorkSize[1]))
+        globalWorkSize, localWorkSize  = self.get_work_sizes(wwidth, wheight)
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize]
 
@@ -378,21 +395,14 @@ class ColorspaceConverter(object):
         divs = get_subsampling_divs(self.dst_format)
         wwidth = dimdiv(width, max([x_div for x_div, _ in divs]))
         wheight = dimdiv(height, max([y_div for _, y_div in divs]))
-
-        #ensure the local and global work size are valid, see:
-        #http://stackoverflow.com/questions/3957125/questions-about-global-and-local-work-size
-        chunk = 64
-        while chunk**2>selected_device.max_work_group_size or chunk>min(selected_device.max_work_item_sizes):
-            chunk /= 2
-        localWorkSize = (chunk, chunk)
-        globalWorkSize = (roundup(wwidth, localWorkSize[0]), roundup(wheight, localWorkSize[1]))
+        globalWorkSize, localWorkSize  = self.get_work_sizes(wwidth, wheight)
 
         #input image:
         bpp = len(self.src_format)
         #UNSIGNED_INT8 / UNORM_INT8
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
         shape = (stride/bpp, height)
-        debug("convert_image() input image format=%s, shape=%s", iformat, shape)
+        debug("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
         if type(pixels)==str:
             #str is not a buffer, so we have to copy the data
             #alternatively, we could copy it first ourselves using this:
@@ -411,7 +421,7 @@ class ColorspaceConverter(object):
         out_sizes = []
         for i in range(3):
             x_div, y_div = divs[i]
-            p_stride = roundup(width / x_div, max(2, chunk/2))
+            p_stride = roundup(width / x_div, max(2, localWorkSize[0]))
             p_height = roundup(height / y_div, 2)
             p_size = p_stride * p_height
             #debug("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
