@@ -266,7 +266,7 @@ class ColorspaceConverter(object):
     def is_closed(self):
         return False
 
-    def __dealloc__(self):                  #@DuplicatedSignature
+    def __del__(self):                  #@DuplicatedSignature
         self.clean()
 
     def get_src_width(self):
