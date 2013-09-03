@@ -477,7 +477,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/dec_avcodec/constants.pxi",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_swscale/constants.pxi",
-                   "xpra/codecs/csc_nvcuda/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/server/stats/cymaths.c",
@@ -957,6 +956,7 @@ if cymaths_ENABLED:
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(csc_opencl_ENABLED, "xpra.codecs.csc_opencl")
+toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
@@ -996,13 +996,6 @@ if csc_swscale_ENABLED:
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx", "xpra/codecs/csc_swscale/csc_swscale.c", "xpra/codecs/memalign/memalign.c"],
                 **swscale_pkgconfig), min_version=(0, 19))
-
-toggle_packages(csc_nvcuda_ENABLED, "xpra.codecs.csc_nvcuda")
-if csc_nvcuda_ENABLED:
-    cuda_pkgconfig = pkgconfig("cuda")
-    cython_add(Extension("xpra.codecs.csc_nvcuda.colorspace_converter",
-                ["xpra/codecs/csc_nvcuda/colorspace_converter.pyx", "xpra/codecs/csc_nvcuda/csc_nvcuda.c"],
-                **cuda_pkgconfig), min_version=(0, 16))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
