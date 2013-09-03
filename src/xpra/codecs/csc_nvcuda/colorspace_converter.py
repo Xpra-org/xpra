@@ -404,11 +404,11 @@ class ColorspaceConverter(object):
         self.frames += 1
 
         read_start = time.time()
-        gpu_size = out_stride*height*4
-        min_size = width*height*4
+        gpu_size = out_stride*height
+        min_size = width*4*height
         if gpu_size<=2*min_size:
             #direct full buffer async copy with GPU padding:
-            pixels = driver.aligned_empty(out_stride*height, dtype=numpy.byte)
+            pixels = driver.pagelocked_empty(stride*height, dtype=numpy.byte)
             driver.memcpy_dtoh_async(pixels, out_buf, stream)
         else:
             #we don't want the crazy large GPU padding, so we do it ourselves:
