@@ -398,22 +398,26 @@ class ColorspaceConverter(object):
         self.frames += 1
 
         read_start = time.time()
-        #copy output RGB data to host memory, roughly equivallent to:
-        # pixels = driver.aligned_empty(out_stride*height, dtype=numpy.byte)
-        # driver.memcpy_dtoh(pixels, out_buf)
-        #except we can choose a better stride:
-        stride = width*4
-        pixels = driver.pagelocked_empty(stride*height, dtype=numpy.byte)
-        copy = driver.Memcpy2D()
-        copy.set_src_device(out_buf)
-        copy.set_dst_host(pixels)
-        copy.src_pitch = out_stride
-        copy.dst_pitch = stride
-        copy.width_in_bytes = width*4
-        copy.height = height
-        copy(stream)
+        gpu_size = out_stride*height*4
+        min_size = width*height*4
+        if gpu_size<=2*min_size:
+            #direct full buffer async copy with GPU padding:
+            pixels = driver.aligned_empty(out_stride*height, dtype=numpy.byte)
+            driver.memcpy_dtoh_async(pixels, out_buf, stream)
+        else:
+            #we don't want the crazy large GPU padding, so we do it ourselves:
+            stride = width*4
+            pixels = driver.pagelocked_empty(stride*height, dtype=numpy.byte)
+            copy = driver.Memcpy2D()
+            copy.set_src_device(out_buf)
+            copy.set_dst_host(pixels)
+            copy.src_pitch = out_stride
+            copy.dst_pitch = stride
+            copy.width_in_bytes = width*4
+            copy.height = height
+            copy(stream)
         stream.synchronize()
-        
+
         #the pixels have been copied, we can free the GPU output memory:
         out_buf.free()
         context.synchronize()
@@ -504,27 +508,32 @@ class ColorspaceConverter(object):
         strides = []
         for i in range(3):
             x_div, y_div = divs[i]
-            #code below is the full async equivallent to:
-            # plane = driver.aligned_empty(out_sizes[i], dtype=numpy.byte)
-            # driver.memcpy_dtoh(plane, out_bufs[i])
-            #the async version is:
-            # plane = driver.pagelocked_empty(out_sizes[i], dtype=numpy.byte)
-            # driver.memcpy_dtoh_async(plane, out_bufs[i], stream)
-            #but we don't want the crazy large GPU padding, so we do it ourselves:
-            plane_height = height/y_div
-            plane_width  = width/x_div
-            stride = roundup(plane_width, 4)
-            strides.append(stride)
-            plane = driver.pagelocked_empty(stride*plane_height, dtype=numpy.byte)
-            pixels.append(plane.data)
-            copy = driver.Memcpy2D()
-            copy.set_src_device(out_bufs[i])
-            copy.set_dst_host(plane)
-            copy.src_pitch = out_strides[min(len(out_strides)-1, i)]  #ugly bounds limit for YUV444P
-            copy.dst_pitch = stride
-            copy.width_in_bytes = plane_width
-            copy.height = plane_height
-            copy(stream)
+            out_size = out_sizes[i]
+            gpu_size = out_size[0] * out_size[1]
+            min_size = width*height/x_div/y_div
+            #copying everything is faster, but only do this if we aren't wasting too much memory:
+            if gpu_size<=2*min_size:
+                #direct full plane async copy with GPU padding:
+                plane = driver.aligned_empty(out_size, dtype=numpy.byte)
+                driver.memcpy_dtoh_async(plane, out_bufs[i], stream)
+                pixels.append(plane.data)
+                strides.append(out_strides[min(len(out_strides)-1, i)])
+            else:
+                #we don't want the crazy large GPU padding, so we do it ourselves:
+                plane_height = height/y_div
+                plane_width  = width/x_div
+                stride = roundup(plane_width, 4)
+                strides.append(stride)
+                plane = driver.pagelocked_empty(stride*plane_height, dtype=numpy.byte)
+                pixels.append(plane.data)
+                copy = driver.Memcpy2D()
+                copy.set_src_device(out_bufs[i])
+                copy.set_dst_host(plane)
+                copy.src_pitch = out_strides[min(len(out_strides)-1, i)]  #ugly bounds limit for YUV444P
+                copy.dst_pitch = stride
+                copy.width_in_bytes = plane_width
+                copy.height = plane_height
+                copy(stream)
         stream.synchronize()
         #the copying has finished, we can now free the YUV GPU memory:
         #(the host memory will be freed by GC when 'pixels' goes out of scope)
