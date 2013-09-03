@@ -342,28 +342,34 @@ class ColorspaceConverter(object):
             in_height = height/y_div
             plane = pixels[i]
             assert len(plane)>=stride*in_height
-            in_buf, in_stride = driver.mem_alloc_pitch(stride, in_height, 4)
-            in_bufs.append(in_buf)
-            in_strides.append(in_stride)
 
-            #the code below is roughly the async equivallent to:
-            # in_buf = driver.to_device(plane)
-            #except we can change the stride
             mem = numpy.frombuffer(plane, dtype=numpy.byte)
-            l = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
-            locked_mem.append(l)
-            copy = driver.Memcpy2D()
-            copy.set_src_host(l)
-            copy.set_dst_device(in_buf)
-            copy.src_pitch = stride
-            copy.dst_pitch = in_stride
-            copy.width_in_bytes = stride
-            copy.height = in_height
-            copy(stream)
+            if True:
+                #keeping stride as it is:
+                in_buf = driver.mem_alloc(len(plane))
+                in_bufs.append(in_buf)
+                in_strides.append(stride)
+                hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
+                pycuda.driver.memcpy_htod_async(in_buf, mem, stream)
+            else:
+                #change stride to what we get from mem_alloc_pitch:
+                in_buf, in_stride = driver.mem_alloc_pitch(stride, in_height, 4)
+                in_bufs.append(in_buf)
+                in_strides.append(in_stride)
+                hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
+                locked_mem.append(hmem)
+                copy = driver.Memcpy2D()
+                copy.set_src_host(hmem)
+                copy.set_dst_device(in_buf)
+                copy.src_pitch = stride
+                copy.dst_pitch = in_stride
+                copy.width_in_bytes = stride
+                copy.height = in_height
+                copy(stream)
         stream.synchronize()
         #all the copying is complete, we can unpin the host memory:
-        for l in locked_mem:
-            l.base.unregister()
+        for hmem in locked_mem:
+            hmem.base.unregister()
         upload_end = time.time()
         debug("%s pixels now on GPU at %s, took %.1fms", sum([len(plane) for plane in pixels]), in_bufs, upload_end-upload_start)
 
@@ -440,24 +446,31 @@ class ColorspaceConverter(object):
 
         divs = get_subsampling_divs(self.dst_format)
 
+        #copy packed rgb pixels to GPU:
         upload_start = time.time()
         stream = driver.Stream()
-        #copy packed rgb pixels to GPU:
-        #the non async/pinned version is simple but slower:
-        # gpu_image = driver.to_device(pixels)
-        #followed by:
-        # gpu_image.free()
-        in_buf, in_stride = driver.mem_alloc_pitch(stride, height, 4)
         mem = numpy.frombuffer(pixels, dtype=numpy.byte)
-        l = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
-        copy = driver.Memcpy2D()
-        copy.set_src_host(l)
-        copy.set_dst_device(in_buf)
-        copy.src_pitch = stride
-        copy.dst_pitch = in_stride
-        copy.width_in_bytes = width*4
-        copy.height = height
-        copy(stream)
+        if True:
+            #keeping stride as it is:
+            #the non async/pinned version is simple but slower:
+            # gpu_image = driver.to_device(pixels)
+            #followed by:
+            # gpu_image.free()
+            in_buf = driver.mem_alloc(len(pixels))
+            in_stride = stride
+            hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
+            pycuda.driver.memcpy_htod_async(in_buf, mem, stream)
+        else:
+            in_buf, in_stride = driver.mem_alloc_pitch(stride, height, 4)
+            hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
+            copy = driver.Memcpy2D()
+            copy.set_src_host(hmem)
+            copy.set_dst_device(in_buf)
+            copy.src_pitch = stride
+            copy.dst_pitch = in_stride
+            copy.width_in_bytes = width*4
+            copy.height = height
+            copy(stream)
 
         #YUV444P argtypes = [ctypes.c_void_p, ctypes.c_int, (ctypes.c_void_p)*3, ctypes.c_int, NppiSize]
         #YUV42xP argtypes = [ctypes.c_void_p, ctypes.c_int, (ctypes.c_void_p)*3, (ctypes.c_int)*3, NppiSize]
@@ -483,7 +496,7 @@ class ColorspaceConverter(object):
         #ensure copying has finished:
         stream.synchronize()
         #we can now unpin the host memory:
-        l.base.unregister()
+        hmem.base.unregister()
         debug("allocation took %.1fms", 1000.0*(time.time() - upload_start))
 
         debug("calling %s%s", self.kernel_function_name, tuple(kargs))
