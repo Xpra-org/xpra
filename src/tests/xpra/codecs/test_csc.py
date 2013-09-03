@@ -13,6 +13,7 @@ DEBUG = False
 PERF_LOOP = 8       #number of megapixels to test on for measuring performance
 MAX_ITER = 32       #also limit total number of iterations (as each iteration takes time to setup)
 SIZES = ((16, 16), (32, 32), (64, 64), (128, 128), (256, 256), (512, 512), (1920, 1080), (2560, 1600))
+#SIZES = ((512, 512), (1920, 1080), (2560, 1600))
 TEST_SIZES = SIZES + ((51, 7), (511, 3), (5, 768), (111, 555))
 
 #Some helper methods:
@@ -167,6 +168,7 @@ def do_test_csc_rgb(csc_module, src_format, dst_format, w, h, pixels, checks=(),
     if checks:
         for plane, index, expected in checks:
             ok &= check_plane(plane, pixels[index], expected)
+    cc.clean()
     return ok
 
 
@@ -272,4 +274,5 @@ def do_test_csc_planar(csc_module, src_format, dst_format, w, h, strides, pixels
     assert out.get_planes()==ImageWrapper.PACKED_RGB, "output image %s is not in packed RGB: it has %s planes" % (out, out.get_planes())
     #clone the pixels before the wrapper falls out of scope!
     out.clone_pixel_data()
+    cc.clean()
     return out.get_pixels()
