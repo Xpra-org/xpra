@@ -394,7 +394,7 @@ class ColorspaceConverter(object):
         if v<0:
             log.error("%s%s returned an error: %s", self.kernel_function_name, kargs, ERRORS.get(v, v))
             return None
-        elif v>0:
+        elif v>0 and v!=NPP_DOUBLE_SIZE_WARNING:
             #positive return-codes indicate warnings:
             warning = WARNINGS.get(v, "unknown")
             log.warn("%s returned a warning %s: %s", self.kernel_function_name, v, warning)
@@ -507,7 +507,7 @@ class ColorspaceConverter(object):
         if v<0:
             log.error("%s%s returned an error: %s", self.kernel_function_name, kargs, ERRORS.get(v, v))
             return None
-        elif v>0:
+        elif v>0 and v!=NPP_DOUBLE_SIZE_WARNING:
             #positive return-codes indicate warnings:
             warning = WARNINGS.get(v, "unknown")
             log.warn("%s returned a warning %s: %s", self.kernel_function_name, v, warning)
