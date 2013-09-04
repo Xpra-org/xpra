@@ -78,6 +78,24 @@ for name in _NPP_LIBRARY_NAMES:
 if len(_NPP_LIBRARIES)==0:
     raise ImportError("failed to load npp library - check your library path")
 
+#try to get the npp version:
+class NppLibraryVersion(ctypes.Structure):
+    _fields_ = [("major", ctypes.c_int),
+                ("minor", ctypes.c_int),
+                ("build", ctypes.c_int)]
+try:
+    nppGetLibVersion = None
+    for lib in _NPP_LIBRARIES:
+        if hasattr(lib, "nppGetLibVersion"):
+            nppGetLibVersion = getattr(lib, "nppGetLibVersion")
+    if nppGetLibVersion:
+        nppGetLibVersion.argtypes = []
+        nppGetLibVersion.restype = ctypes.POINTER(NppLibraryVersion)
+        v = nppGetLibVersion().contents
+        log.info("found npp library version %s.%s.%s", v.major, v.minor, v.build)
+except:
+    log.warn("error getting npp version", exc_info=True)
+
 
 class NppiSize(ctypes.Structure):
     _fields_ = [("width", ctypes.c_int),
