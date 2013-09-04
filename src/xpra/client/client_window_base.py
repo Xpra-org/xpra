@@ -111,9 +111,14 @@ class ClientWindowBase(ClientWidgetBase):
             window_type = [x.replace("_NET_WM_WINDOW_TYPE_", "").replace("_NET_WM_TYPE_", "") for x in window_type]
             metadata["window-type"] = window_type
 
+        if not self.is_realized():
+            self.set_wmclass(*self._metadata.get("class-instance",
+                                                 ("xpra", "Xpra")))
         self._metadata.update(metadata)
+        self.set_metadata(metadata)
 
-        if "title" in self._metadata:
+    def set_metadata(self, metadata):
+        if "title" in metadata:
             title = u(self._client.title)
             if title.find("@")>=0:
                 #perform metadata variable substitutions:
@@ -123,19 +128,19 @@ class ClientWindowBase(ClientWidgetBase):
                     atvar = match.group(0)          #ie: '@title@'
                     var = atvar[1:len(atvar)-1]     #ie: 'title'
                     default_value = default_values.get(var, u("<unknown %s>") % var)
-                    value = self._metadata.get(var, default_value)
+                    value = metadata.get(var, default_value)
                     if sys.version<'3':
                         value = value.decode("utf-8")
                     return value
                 title = re.sub("@[\w\-]*@", metadata_replace, title)
             self.set_title(title)
 
-        if "icon-title" in self._metadata:
-            icon_title = self._metadata.get("icon-title")
+        if "icon-title" in metadata:
+            icon_title = metadata["icon-title"]
             self.set_icon_name(icon_title)
 
-        if "size-constraints" in self._metadata:
-            size_metadata = self._metadata["size-constraints"]
+        if "size-constraints" in metadata:
+            size_metadata = metadata["size-constraints"]
             hints = {}
             for (a, h1, h2) in [
                 ("maximum-size", "max_width", "max_height"),
@@ -162,48 +167,45 @@ class ClientWindowBase(ClientWidgetBase):
             #TODO:
             #gravity = size_metadata.get("gravity")
 
-        if not self.is_realized():
-            self.set_wmclass(*self._metadata.get("class-instance",
-                                                 ("xpra", "Xpra")))
-
-        if "icon" in self._metadata:
-            width, height, coding, data = self._metadata["icon"]
+        if "icon" in metadata:
+            width, height, coding, data = metadata["icon"]
             self.update_icon(width, height, coding, data)
 
-        if "transient-for" in self._metadata:
-            wid = self._metadata.get("transient-for")
+        if "transient-for" in metadata:
+            wid = metadata["transient-for"]
             self.apply_transient_for(wid)
 
-        if "modal" in self._metadata:
-            modal = self._metadata.get("modal", False)
+        if "modal" in metadata:
+            modal = bool(metadata["modal"])
             self.set_modal(modal)
 
-        #apply window-type hint if window is not mapped yet:
-        if "window-type" in self._metadata and not self.is_mapped():
-            window_types = self._metadata.get("window-type")
+        #apply window-type hint if window has not been mapped yet:
+        if "window-type" in metadata and not self.is_mapped():
+            window_types = metadata["window-type"]
             self.set_window_type(window_types)
 
-        if "role" in self._metadata:
-            role = self._metadata.get("role")
+        if "role" in metadata:
+            role = metadata["role"]
             self.set_role(role)
 
-        if "xid" in self._metadata:
-            xid = self._metadata.get("xid")
+        if "xid" in metadata:
+            xid = metadata["xid"]
             self.set_xid(xid)
 
-        if "has-alpha" in self._metadata:
-            self._has_alpha = self._metadata.get("has-alpha", False)
+        if "has-alpha" in metadata:
+            self._has_alpha = bool(metadata["has-alpha"])
             self.set_alpha()
 
-        if "maximized" in self._metadata:
-            maximized = self._metadata.get("maximized", False)
+        if "maximized" in metadata:
+            maximized = bool(metadata["maximized"])
             if maximized:
                 self.maximize()
             else:
                 self.unmaximize()
 
-        if "fullscreen" in self._metadata:
-            self.set_fullscreen(self._metadata.get("fullscreen"))
+        if "fullscreen" in metadata:
+            fullscreen = bool(metadata["fullscreen"])
+            self.set_fullscreen(fullscreen)
 
 
     def set_window_type(self, window_types):
