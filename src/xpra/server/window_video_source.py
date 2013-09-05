@@ -13,6 +13,8 @@ from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_sub
 from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
 from xpra.server.window_source import WindowSource, debug, log
 
+FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
+FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
 SCALING_HARDCODED = None
 _SCALING_HARDCODED = os.environ.get("XPRA_SCALING_HARDCODED", "")
@@ -247,7 +249,7 @@ class WindowVideoSource(WindowSource):
                     if score>=0:
                         item = score, csc_spec, enc_in_format, encoder_spec
                         scores.append(item)
-        if src_format in self.csc_modes:
+        if src_format in self.csc_modes and not FORCE_CSC:
             scaling = self.calculate_scaling(width, height)
             #we can only use direct if not scaling
             #as csc is the step that does the scaling (at present..)
@@ -259,7 +261,7 @@ class WindowVideoSource(WindowSource):
             #debug("%s can also be converted to %s using %s", pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
             #we have csc module(s) that can get us from pixel_format to out_csc:
             for out_csc, csc_spec in csc_specs:
-                if out_csc in self.csc_modes:
+                if out_csc in self.csc_modes and (not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc):
                     add_scores("via %s" % out_csc, csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         debug("get_video_pipeline_options%s scores=%s", (encoding, width, height, src_format), s)
