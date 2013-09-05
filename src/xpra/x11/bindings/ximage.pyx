@@ -32,7 +32,7 @@ else:
 cdef extern from "Python.h":
     ctypedef int Py_ssize_t
     ctypedef object PyObject
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
+    object PyBuffer_FromReadWriteMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "string.h":
@@ -288,11 +288,11 @@ cdef class XImageWrapper:
 
     def get_char_pixels(self):
         assert self.pixels!=NULL
-        return PyBuffer_FromMemory(self.pixels, self.get_size())
+        return PyBuffer_FromReadWriteMemory(self.pixels, self.get_size())
 
     def get_image_pixels(self):
         assert self.image!=NULL
-        return PyBuffer_FromMemory(self.image.data, self.get_size())
+        return PyBuffer_FromReadWriteMemory(self.image.data, self.get_size())
 
     def set_rowstride(self, rowstride):
         self.rowstride = rowstride
@@ -487,7 +487,7 @@ cdef class XShmImageWrapper(XImageWrapper):
         assert self.image!=NULL
         #calculate offset (assuming 4 bytes "pixelstride"):
         offset = self.image.data + (self.y * self.rowstride) + (4 * self.x)
-        return PyBuffer_FromMemory(offset, self.get_size())
+        return PyBuffer_FromReadWriteMemory(offset, self.get_size())
 
     def free(self):                                 #@DuplicatedSignature
         xshm_debug("XShmImageWrapper.free() free_callback=%s", self.free_callback)
