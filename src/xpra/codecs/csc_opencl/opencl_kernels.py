@@ -25,11 +25,21 @@ YUV_TO_RGB = {"X"    : "1.0",
 #Cr width div, Cr heigth div, Cb width div, Cb width div
 YUV_FORMATS = ("YUV444P", "YUV422P", "YUV420P")
 
+def rgb_kernelname(RGB_args):
+    s = "RGB"
+    if RGB_args==[0, 1, 2]:
+        return s
+    #ie: 210==BGR
+    for i in RGB_args:
+        s += {0 : "R",
+              1 : "G",
+              2 : "B"}.get(i)
+    return s
 
 def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    kname = "%s_to_RGB%s" % (yuv_format, rgb_kernelname(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -63,7 +73,7 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
 def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    kname = "%s_to_RGB%s" % (yuv_format, rgb_kernelname(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -108,7 +118,7 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
 def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_RGB%s" % (yuv_format, ("".join([str(x) for x in RGB_args])))
+    kname = "%s_to_RGB%s" % (yuv_format, rgb_kernelname(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -204,7 +214,7 @@ def rgb_mode_to_indexes(rgb_mode):
 def gen_rgb_to_yuv444p_kernel(rgb_mode):
     RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 3 times each:
-    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    kname = "RGB%s_to_YUV444P" % rgb_kernelname(RGB_args)
     args = tuple([kname]+RGB_args*3)
 
     kstr = """
@@ -240,7 +250,7 @@ __kernel void %s(read_only image2d_t src,
 def gen_rgb_to_yuv422p_kernel(rgb_mode):
     RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 6 times each:
-    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    kname = "RGB%s_to_YUV444P" % rgb_kernelname(RGB_args)
     args = tuple([kname]+RGB_args*6)
 
     kstr = """
@@ -294,7 +304,7 @@ __kernel void %s(read_only image2d_t src,
 def gen_rgb_to_yuv420p_kernel(rgb_mode):
     RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 12 times each:
-    kname = "RGB%s_to_YUV444P" % ("".join([str(x) for x in RGB_args]))
+    kname = "RGB%s_to_YUV444P" % rgb_kernelname(RGB_args)
     args = tuple([kname]+RGB_args*12)
 
     kstr = """
