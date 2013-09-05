@@ -20,10 +20,13 @@ def codec_import_check(name, top_module, class_module, *classnames):
         try:
             __import__(top_module, {}, {}, [])
             for classname in classnames:
-                return __import__(class_module, {}, {}, classname)
+                ic =  __import__(class_module, {}, {}, classname)
+                warn("codec_import_check(%s, ..)=%s" % (name, ic))
+                return ic
         except ImportError, e:
             #the required module does not exist
             #xpra was probably built with the option: --without-${name}
+            #warn("%s: %s" % (name, e))
             pass
     except Exception, e:
         warn("cannot load %s: %s missing from %s: %s" % (name, classname, class_module, e))
@@ -43,6 +46,9 @@ def add_codec_version(name, top_module, fieldname, invoke=False):
     except ImportError:
         #not present
         pass
+    except Exception, e:
+        warn("error during codec import: %s" % e)
+
 
 PIL = codec_import_check("Python Imaging Library", "PIL", "PIL", "Image")
 has_PIL = PIL is not None
@@ -53,6 +59,8 @@ has_enc_vpx = enc_vpx is not None
 dec_vpx = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
 has_dec_vpx = dec_vpx is not None
 add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
+
+print("has_vpx: %s, %s", has_enc_vpx, has_dec_vpx)
 
 enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
 has_enc_x264 = enc_x264 is not None
@@ -66,11 +74,11 @@ csc_swscale = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra
 has_csc_swscale = csc_swscale is not None
 add_codec_version("swscale", "xpra.codecs.csc_swscale.colorspace_converter", "get_version", True)
 
-csc_opencl = codec_import_check("csc swscale", "xpra.codecs.csc_swscale", "xpra.codecs.csc_swscale.colorspace_converter", "ColorspaceConverter")
+csc_opencl = codec_import_check("csc opencl", "xpra.codecs.csc_opencl", "xpra.codecs.csc_opencl.colorspace_converter", "ColorspaceConverter")
 has_csc_opencl = csc_opencl is not None
 add_codec_version("opencl", "xpra.codecs.csc_opencl.colorspace_converter", "get_version", True)
 
-csc_nvcuda = None   #codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
+csc_nvcuda = codec_import_check("csc nvcuda", "xpra.codecs.csc_nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "ColorspaceConverter")
 has_csc_nvcuda = csc_nvcuda is not None
 add_codec_version("nvcuda", "xpra.codecs.csc_nvcuda.colorspace_converter", "get_version", True)
 
