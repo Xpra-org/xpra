@@ -13,6 +13,7 @@ from xpra.codecs.codec_constants import get_avutil_enum_from_colorspace, get_sub
 from xpra.codecs.video_enc_pipeline import VideoPipelineHelper
 from xpra.server.window_source import WindowSource, debug, log
 
+CSC_TYPE = os.environ.get("XPRA_CSC_TYPE", "")          #ie: "swscale" or "opencl"
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 FORCE_CSC = bool(FORCE_CSC_MODE) or  os.environ.get("XPRA_FORCE_CSC", "0")=="1"
 SCALING = os.environ.get("XPRA_SCALING", "1")=="1"
@@ -243,6 +244,8 @@ class WindowVideoSource(WindowSource):
             if colorspace_specs:
                 #debug("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
+                    if bool(CSC_TYPE) and encoder_spec.codec_class!=CSC_TYPE:
+                        continue
                     score = self.get_score(enc_in_format,
                                            csc_spec, encoder_spec,
                                            width, height)

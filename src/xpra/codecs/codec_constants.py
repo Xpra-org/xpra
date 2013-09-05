@@ -44,12 +44,13 @@ RGB_FORMATS = ("XRGB",
 
 class codec_spec(object):
 
-    def __init__(self, codec_class, quality=100, speed=100,
+    def __init__(self, codec_class, codec_type="", quality=100, speed=100,
                     setup_cost=50, cpu_cost=100, gpu_cost=0,
                     min_w=1, min_h=1, max_w=4*1024, max_h=4*1024, max_pixels=4*1024*4*1024,
                     can_scale=False,
                     width_mask=0xFFFF, height_mask=0xFFFF):
         self.codec_class = codec_class
+        self.type = codec_type
         self.quality = quality
         self.speed = speed
         self.setup_cost = setup_cost
