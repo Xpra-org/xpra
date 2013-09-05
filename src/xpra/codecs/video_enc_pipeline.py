@@ -8,7 +8,7 @@ from xpra.log import Logger, debug_if_env
 log = Logger()
 debug = debug_if_env(log, "XPRA_VIDEOPIPELINE_DEBUG")
 
-from xpra.scripts.config import csc_swscale, csc_opencl, enc_vpx, enc_x264
+from xpra.scripts.config import csc_swscale, csc_opencl, csc_nvcuda, enc_vpx, enc_x264
 
 
 class VideoPipelineHelper(object):
@@ -67,17 +67,17 @@ class VideoPipelineHelper(object):
             self.init_csc_option(csc_opencl)
         except:
             log.warn("init_csc_options() cannot add opencl csc", exc_info=True)
-        #try:
-        #    self.init_csc_option(csc_nvcuda)
-        #except:
-        #    log.warn("init_csc_options() cannot add nvcuda csc", exc_info=True)
+        try:
+            self.init_csc_option(csc_nvcuda)
+        except:
+            log.warn("init_csc_options() cannot add nvcuda csc", exc_info=True)
         debug("init_csc_options() csc specs: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_module):
+        debug("init_csc_option(%s)", csc_module)
         if csc_module is None:
             return
         in_cscs = csc_module.get_input_colorspaces()
-        debug("init_csc_option(%s)", csc_module)
         for in_csc in in_cscs:
             csc_specs = VideoPipelineHelper._csc_encoder_specs.setdefault(in_csc, [])
             out_cscs = csc_module.get_output_colorspaces(in_csc)
