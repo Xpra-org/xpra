@@ -39,12 +39,9 @@ for i in range(ngpus):
     if host_mem and selected_device is None:
         selected_device = d
 assert selected_device is not None
-context = selected_device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
-debug("testing with context=%s", context)
-debug("api version=%s", context.get_api_version())
-free, total = driver.mem_get_info()
-debug("using device %s, memory: free=%sMB, total=%sMB",  selected_device, int(free/1024/1024), int(total/1024/1024))
-context.pop()
+
+context = None
+context_wrapper = None
 #ensure we cleanup:
 class CudaContextWrapper(object):
 
@@ -54,7 +51,16 @@ class CudaContextWrapper(object):
     def __del__(self):
         self.context.detach()
         self.context = None
-ccw = CudaContextWrapper(context)
+
+def init_context():
+    global context, context_wrapper
+    context = selected_device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
+    debug("testing with context=%s", context)
+    debug("api version=%s", context.get_api_version())
+    free, total = driver.mem_get_info()
+    debug("using device %s, memory: free=%sMB, total=%sMB",  selected_device, int(free/1024/1024), int(total/1024/1024))
+    context.pop()
+    context_wrapper = CudaContextWrapper(context)
 
 
 def find_lib(basename):
@@ -229,8 +235,7 @@ def validate_in_out(in_colorspace, out_colorspace):
 
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    return codec_spec(ColorspaceConverter, speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=16, min_h=16, can_scale=False)
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=128, min_h=128, can_scale=False)
 
 
 class ColorspaceConverter(object):
@@ -247,8 +252,9 @@ class ColorspaceConverter(object):
         self.kernel_function = None
 
     def init_context(self, src_width, src_height, src_format,
-                           dst_width, dst_height, dst_format):    #@DuplicatedSignature
+                           dst_width, dst_height, dst_format, speed=100):  #@DuplicatedSignature
         validate_in_out(src_format, dst_format)
+        init_context()
         self.src_width = src_width
         self.src_height = src_height
         self.src_format = src_format
