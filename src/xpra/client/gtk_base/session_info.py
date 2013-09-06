@@ -476,12 +476,12 @@ class SessionInfo(gtk.Window):
                     ttime += 1000.0 * (end_time-start_time) * size
                     tsize += size
                 self.avg_decoding_latency.append(int(ttime/tsize))
-        #total:
-        els  = [self.avg_batch_delay, self.avg_damage_out_latency,
-                self.avg_ping_latency, self.avg_decoding_latency]
-        if len([x for x in els if len(x)>0])==len(els):
-            totals = [x[-1] for x in els]
-            log.info("totals=%s", totals)
+        #totals: ping latency is halved since we only care about sending, not sending+receiving
+        els  = [(self.avg_batch_delay, 1), (self.avg_damage_out_latency, 1),
+                (self.avg_ping_latency, 2), (self.avg_decoding_latency, 1)]
+        if len([x for x, _ in els if len(x)>0])==len(els):
+            totals = [x[-1]/r for x, r in els]
+            log("frame totals=%s", totals)
             self.avg_total.append(sum(totals))
         return not self.is_closed
 
@@ -813,9 +813,7 @@ class SessionInfo(gtk.Window):
             pass
         #latency graph:
         latency_graph_items = (
-#                                (self.server_latency, "server"),
-#                                (self.client_latency, "client"),
-                                (self.avg_ping_latency, "average ping"),
+                                (self.avg_ping_latency, "network"),
                                 (self.avg_batch_delay, "batch delay"),
                                 (self.avg_damage_out_latency, "encode&send"),
                                 (self.avg_decoding_latency, "decoding"),
