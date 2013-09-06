@@ -390,6 +390,8 @@ class ColorspaceConverter(object):
         pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array, is_blocking=True)
         self.queue.finish()
         debug("readback took %.1fms", 1000.0*(time.time()-kend))
+        self.time += time.time()-start
+        self.frames += 1
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED_RGB)
 
 

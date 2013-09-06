@@ -343,6 +343,7 @@ cdef class ColorspaceConverter:
         cdef int height
         cdef int stride
         cdef int result
+        start = time.time()
         iplanes = image.get_planes()
         assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
         input = image.get_pixels()
@@ -362,18 +363,12 @@ cdef class ColorspaceConverter:
             else:
                 input_stride[i] = 0
                 input_image[i] = NULL
-        start = time.time()
         with nogil:
             output_image[0] = <uint8_t*> xmemalign(self.buffer_size)
             for i in xrange(3):
                 output_image[1+i] = output_image[i] + self.out_size[i]
             result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
         assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
-        end = time.time()
-        elapsed = end-start
-        debug("%s took %.1fms", self, 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
         #now parse the output:
         csci = CSCImage()           #keep a reference to memory for cleanup
         for i in range(4):
@@ -399,7 +394,10 @@ cdef class ColorspaceConverter:
             strides = self.out_stride[0]
             out = PyBuffer_FromMemory(<void *>output_image[0], self.out_height[0] * self.out_stride[0])
             csci.set_plane(0, output_image[0])
+        elapsed = time.time()-start
+        debug("%s took %.1fms", self, 1000.0*elapsed)
+        self.time += elapsed
+        self.frames += 1
         out_image = CSCImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)
         out_image.csc_image = csci
-        #print("convert_image(%s)=%s" % (image, yuv))
         return out_image
