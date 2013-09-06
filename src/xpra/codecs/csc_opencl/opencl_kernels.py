@@ -239,9 +239,10 @@ __kernel void %s(read_only image2d_t src,
         float U = (-0.148 * p.s%s - 0.291 * p.s%s + 0.439 * p.s%s + 128);
         float V =  (0.439 * p.s%s - 0.368 * p.s%s - 0.071 * p.s%s + 128);
 
-        dstY[gx + gy*strideY] = convert_uchar_rte(Y);
-        dstU[gx + gy*strideU] = convert_uchar_rte(U);
-        dstV[gx + gy*strideV] = convert_uchar_rte(V);
+        uint i = gx + gy*strideY;
+        dstY[i] = convert_uchar_rte(Y);
+        dstU[i] = convert_uchar_rte(U);
+        dstV[i] = convert_uchar_rte(V);
     }
 }
 """
@@ -328,19 +329,19 @@ __kernel void %s(read_only image2d_t src,
 
         //write up to 4 Y pixels:
         float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
-        float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
-        float Y3 =  (0.257 * p2.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
-        float Y4 =  (0.257 * p2.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
         //same logic as 422P for missing pixels:
         uint i = gx*2 + gy*2*strideY;
         dstY[i] = convert_uchar_rte(Y1);
         if (gx*2+1 < w) {
+            float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
             dstY[i+1] = convert_uchar_rte(Y2);
         }
         if (gy*2+1 < h) {
             i += strideY;
+            float Y3 =  (0.257 * p3.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
             dstY[i] = convert_uchar_rte(Y3);
             if (gx*2+1 < w) {
+                float Y4 =  (0.257 * p4.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
                 dstY[i+1] = convert_uchar_rte(Y4);
             }
         }
@@ -348,8 +349,8 @@ __kernel void %s(read_only image2d_t src,
         //write 1 U pixel:
         float U1 = (-0.148 * p1.s%s - 0.291 * p1.s%s + 0.439 * p1.s%s + 128);
         float U2 = (-0.148 * p2.s%s - 0.291 * p2.s%s + 0.439 * p2.s%s + 128);
-        float U3 = (-0.148 * p2.s%s - 0.291 * p3.s%s + 0.439 * p3.s%s + 128);
-        float U4 = (-0.148 * p2.s%s - 0.291 * p4.s%s + 0.439 * p4.s%s + 128);
+        float U3 = (-0.148 * p3.s%s - 0.291 * p3.s%s + 0.439 * p3.s%s + 128);
+        float U4 = (-0.148 * p4.s%s - 0.291 * p4.s%s + 0.439 * p4.s%s + 128);
         dstU[gx + gy*strideU] = convert_uchar_rte((U1+U2+U3+U4)/4.0);
 
         //write 1 V pixel:
