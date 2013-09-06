@@ -338,6 +338,7 @@ class SessionInfo(gtk.Window):
         self.connect('delete_event', window_deleted)
         self.show_tab(self.tabs[0][1])
         self.set_size_request(-1, 480)
+        self.init_counters()
         self.populate()
         self.populate_all()
         gobject.timeout_add(1000, self.populate)
@@ -454,7 +455,42 @@ class SessionInfo(gtk.Window):
             return [recs.get(x) for x in sorted(recs.keys())]
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
+        if self.client.server_last_info:
+            #populate running averages for graphs:
+            def getavg(name):
+                return self.client.server_last_info.get("%s.avg" % name)
+            def addavg(l, name):
+                v = getavg(name)
+                if v:
+                    l.append(v)
+            addavg(self.avg_batch_delay, "batch.delay")
+            addavg(self.avg_damage_out_latency, "damage.out_latency")
+            if len(self.client.server_ping_latency)>0 and len(self.client.client_ping_latency)>0:
+                spl = [1000.0*x for _,x in list(self.client.server_ping_latency)]
+                cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
+                self.avg_ping_latency.append(sum(spl+cpl)/len(spl+cpl))
+            if len(self.client.pixel_counter)>0:
+                tsize = 0
+                ttime = 0
+                for start_time, end_time, size in self.client.pixel_counter:
+                    ttime += 1000.0 * (end_time-start_time) * size
+                    tsize += size
+                self.avg_decoding_latency.append(int(ttime/tsize))
+        #total:
+        els  = [self.avg_batch_delay, self.avg_damage_out_latency,
+                self.avg_ping_latency, self.avg_decoding_latency]
+        if len([x for x in els if len(x)>0])==len(els):
+            totals = [x[-1] for x in els]
+            log.info("totals=%s", totals)
+            self.avg_total.append(sum(totals))
         return not self.is_closed
+
+    def init_counters(self):
+        self.avg_batch_delay = maxdeque(N_SAMPLES+4)
+        self.avg_damage_out_latency = maxdeque(N_SAMPLES+4)
+        self.avg_ping_latency = maxdeque(N_SAMPLES+4)
+        self.avg_decoding_latency = maxdeque(N_SAMPLES+4)
+        self.avg_total = maxdeque(N_SAMPLES+4)
 
     def populate_tab(self, *args):
         if self.is_closed:
@@ -582,6 +618,40 @@ class SessionInfo(gtk.Window):
         self.output_encryption_label.set_text((p.cipher_out_name or "None")+suffix)
         return True
 
+
+    def getval(self, prefix, suffix, alt=""):
+        if self.client.server_last_info is None:
+            return ""
+        altv = ""
+        if alt:
+            altv = self.client.server_last_info.get(alt+"."+suffix, "")
+        return self.client.server_last_info.get(prefix+"."+suffix, altv)
+
+    def values_from_info(self, prefix, alt=None):
+        def getv(suffix):
+            return self.getval(prefix, suffix, alt)
+        return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
+
+    def all_values_from_info(self, window_prop):
+        def avg(values):
+            if not values:
+                return ""
+            return sum(values) / len(values)
+        def getv(suffix, op):
+            if self.client.server_last_info is None:
+                return ""
+            values = []
+            for wid in self.client._window_to_id.values():
+                v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
+                if v is not None:
+                    values.append(v)
+            try:
+                return op(values)
+            except:
+                #no values?
+                return ""
+        return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
+
     def populate_statistics(self):
         log("populate_statistics()")
         if time.time()-self.last_populate_statistics<1.0:
@@ -621,38 +691,10 @@ class SessionInfo(gtk.Window):
             setlabels(self.client_latency_labels, cpl)
         if self.client.windows_enabled:
             if self.client.server_info_request:
-                def values_from_info(prefix, alt=None):
-                    def getv(suffix):
-                        if self.client.server_last_info is None:
-                            return ""
-                        altv = ""
-                        if alt:
-                            altv = self.client.server_last_info.get(alt+"."+suffix, "")
-                        return self.client.server_last_info.get(prefix+"."+suffix, altv)
-                    return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
-                setall(self.batch_labels, values_from_info("batch_delay", "batch.delay"))
-                setall(self.damage_labels, values_from_info("damage_out_latency", "damage.out_latency"))
-                def all_values_from_info(window_prop):
-                    def avg(values):
-                        if not values:
-                            return ""
-                        return sum(values) / len(values)
-                    def getv(suffix, op):
-                        if self.client.server_last_info is None:
-                            return ""
-                        values = []
-                        for wid in self.client._window_to_id.values():
-                            v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
-                            if v is not None:
-                                values.append(v)
-                        try:
-                            return op(values)
-                        except:
-                            #no values?
-                            return ""
-                    return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
-                setall(self.quality_labels, all_values_from_info("quality"))
-                setall(self.speed_labels, all_values_from_info("speed"))
+                setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
+                setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
+                setall(self.quality_labels, self.all_values_from_info("quality"))
+                setall(self.speed_labels, self.all_values_from_info("speed"))
 
             region_sizes = []
             rps = []
@@ -734,6 +776,8 @@ class SessionInfo(gtk.Window):
         return True
 
     def populate_graphs(self, *args):
+        if self.client.server_info_request:
+            self.client.send_info_request()
         box = self.tab_box
         _, h = box.size_request()
         _, bh = self.tab_button_box.size_request()
@@ -765,12 +809,30 @@ class SessionInfo(gtk.Window):
                                        start_x_offset=start_x_offset)
             self.bandwidth_graph.set_size_request(*pixmap.get_size())
             self.bandwidth_graph.set_from_pixmap(pixmap, None)
+        if self.client.server_info_request:
+            pass
         #latency graph:
-        for l in (self.server_latency, self.client_latency):
+        latency_graph_items = (
+#                                (self.server_latency, "server"),
+#                                (self.client_latency, "client"),
+                                (self.avg_ping_latency, "average ping"),
+                                (self.avg_batch_delay, "batch delay"),
+                                (self.avg_damage_out_latency, "encode&send"),
+                                (self.avg_decoding_latency, "decoding"),
+                                (self.avg_total, "frame total"),
+                                )
+        latency_graph_values = []
+        labels = []
+        for l, name in latency_graph_items:
+            if len(l)==0:
+                continue
+            l = list(l)
             if len(l)<20:
                 for _ in range(20-len(l)):
                     l.insert(0, None)
-        pixmap = make_graph_pixmap([self.server_latency, self.client_latency], labels=["server", "client"],
+            latency_graph_values.append(l)
+            labels.append(name)
+        pixmap = make_graph_pixmap(latency_graph_values, labels=labels,
                                     width=w, height=h/2,
                                     title="Latency (ms)", min_y_scale=10, rounding=25,
                                     start_x_offset=start_x_offset)
