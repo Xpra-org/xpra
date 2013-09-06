@@ -20,6 +20,7 @@ log = Logger()
 import xpra
 from xpra.scripts.config import ENCRYPTION_CIPHERS, PREFERED_ENCODING_ORDER, python_platform, get_codecs, codec_versions, \
         has_PIL, has_enc_vpx, has_enc_x264, has_enc_nvenc, has_enc_webp, has_enc_webp_lossless
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.scripts.server import deadly_signal
 from xpra.net.bytestreams import SocketConnection
 from xpra.os_util import set_application_name, thread, get_hex_uuid, platform_name, SIGNAMES
@@ -1256,6 +1257,8 @@ class ServerBase(object):
     def get_keycode(self, ss, client_keycode, keyname, modifiers):
         return ss.get_keycode(client_keycode, keyname, modifiers)
 
+    def is_modifier(self, keyname, keycode):
+        return keyname in DEFAULT_MODIFIER_MEANINGS.keys()
 
     def fake_key(self, keycode, press):
         pass
@@ -1298,7 +1301,8 @@ class ServerBase(object):
                 unpress()
             else:
                 log("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+        is_mod = self.is_modifier(name, keycode)
+        if not is_mod and self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
 
     def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
