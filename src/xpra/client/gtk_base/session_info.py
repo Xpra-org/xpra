@@ -262,28 +262,32 @@ class SessionInfo(gtk.Window):
         def maths_labels():
             return label(), label(), label(), label(), label()
         self.server_latency_labels = maths_labels()
-        tb.add_row(label("Server Latency (ms)"), *self.server_latency_labels)
+        tb.add_row(label("Server Latency (ms)", "The time it takes for the server to respond to pings"),
+                   *self.server_latency_labels)
         self.client_latency_labels = maths_labels()
-        tb.add_row(label("Client Latency (ms)"), *self.client_latency_labels)
+        tb.add_row(label("Client Latency (ms)", "The time it takes for the client to respond to pings, as measured by the server"),
+                   *self.client_latency_labels)
         if self.client.windows_enabled:
             if self.client.server_info_request:
                 self.batch_labels = maths_labels()
-                tb.add_row(label("Batch Delay (ms)"), *self.batch_labels)
+                tb.add_row(label("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
+                           *self.batch_labels)
                 self.damage_labels = maths_labels()
-                tb.add_row(label("Damage Latency (ms)"), *self.damage_labels)
+                tb.add_row(label("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
+                           *self.damage_labels)
                 self.quality_labels = maths_labels()
                 tb.add_row(label("Encoding Quality (pct)"), *self.quality_labels)
                 self.speed_labels = maths_labels()
                 tb.add_row(label("Encoding Speed (pct)"), *self.speed_labels)
 
             self.decoding_labels = maths_labels()
-            tb.add_row(label("Decoding Latency (ms)"), *self.decoding_labels)
+            tb.add_row(label("Decoding Latency (ms)", "How long it takes the client to decode a screen update"), *self.decoding_labels)
             self.regions_per_second_labels = maths_labels()
-            tb.add_row(label("Regions/s"), *self.regions_per_second_labels)
+            tb.add_row(label("Regions/s", "The number of screen updates per second (includes both partial and full screen updates)"), *self.regions_per_second_labels)
             self.regions_sizes_labels = maths_labels()
-            tb.add_row(label("Pixels/region"), *self.regions_sizes_labels)
+            tb.add_row(label("Pixels/region", "The number of pixels per screen update"), *self.regions_sizes_labels)
             self.pixels_per_second_labels = maths_labels()
-            tb.add_row(label("Pixels/s"), *self.pixels_per_second_labels)
+            tb.add_row(label("Pixels/s", "The number of pixels processed per second"), *self.pixels_per_second_labels)
 
             #Window count stats:
             wtb = TableBuilder()
