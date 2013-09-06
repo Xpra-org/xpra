@@ -1,3 +1,23 @@
+v0.11.0 (2013-09-06)
+======================
+	-- TODO
+
+
+v0.10.3 (2013-09-06)
+======================
+	-- fix transient windows with no parent
+	-- fix metadata updates handling (maximize, etc)
+
+
+v0.10.2 (2013-08-29)
+======================
+	-- fix connection error with unicode user name
+	-- fix vpx compilation warning
+	-- fix python 2.4 compatibility
+	-- fix handling of scaling attribute via environment override
+	-- build fix: ensure all builds include source information
+
+
 v0.10.1 (2013-08-20)
 ======================
 	-- fix avcodec buffer pointer errors on some 32-bit Linux

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 0.10.1
+%define version 0.11.0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %if 0%{?build_no} == 0
 %define build_no 0
@@ -152,6 +152,21 @@ So basically it's screen for remote X apps.
 
 
 %changelog
+* Thu Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.11.0-1
+- TODO
+
+* Thu Sep 06 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.3-2
+- fix transient windows with no parent
+- fix metadata updates handling (maximize, etc)
+
+* Thu Aug 29 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.2-2
+- fix connection error with unicode user name
+- fix vpx compilation warning
+- fix python 2.4 compatibility
+- fix handling of scaling attribute via environment override
+- build fix: ensure all builds include source information
+
+
 * Tue Aug 20 2013 Antoine Martin <antoine@devloop.org.uk> 0.10.1-1
 - fix avcodec buffer pointer errors on some 32-bit Linux
 - fix invalid time convertion

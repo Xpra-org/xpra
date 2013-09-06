@@ -1,3 +1,23 @@
+xpra (0.11.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 06 Sep 2013 11:53:39 +0700
+
+xpra (0.10.3-1) UNRELEASED; urgency=low
+  * fix transient windows with no parent
+  * fix metadata updates handling (maximize, etc)
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 06 Sep 2013 11:08:42 +0700
+
+xpra (0.10.2-1) UNRELEASED; urgency=low
+  * fix connection error with unicode user name
+  * fix vpx compilation warning
+  * fix python 2.4 compatibility
+  * fix handling of scaling attribute via environment override
+  * build fix: ensure all builds include source information
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 29 Aug 2013 15:18:25 +0700
+
 xpra (0.10.1-1) UNRELEASED; urgency=low
   * fix avcodec buffer pointer errors on some 32-bit Linux
   * fix invalid time convertion
