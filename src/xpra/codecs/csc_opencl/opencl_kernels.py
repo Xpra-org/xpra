@@ -250,7 +250,7 @@ __kernel void %s(read_only image2d_t src,
 def gen_rgb_to_yuv422p_kernel(rgb_mode):
     RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 6 times each:
-    kname = "%s_to_YUV444P" % rgb_kernelname(RGB_args)
+    kname = "%s_to_YUV422P" % rgb_kernelname(RGB_args)
     args = tuple([kname]+RGB_args*6)
 
     kstr = """
@@ -304,7 +304,7 @@ __kernel void %s(read_only image2d_t src,
 def gen_rgb_to_yuv420p_kernel(rgb_mode):
     RGB_args = rgb_mode_to_indexes(rgb_mode)
     #kernel args: R, G, B are used 12 times each:
-    kname = "%s_to_YUV444P" % rgb_kernelname(RGB_args)
+    kname = "%s_to_YUV420P" % rgb_kernelname(RGB_args)
     args = tuple([kname]+RGB_args*12)
 
     kstr = """
