@@ -14,6 +14,9 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     return codec_spec(Encoder, quality=60, setup_cost=100, cpu_cost=10, gpu_cost=100)
 
+def get_type():
+    return "nvenc"
+
 
 class Encoder(object):
 

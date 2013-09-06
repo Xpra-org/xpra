@@ -50,7 +50,7 @@ class codec_spec(object):
                     can_scale=False,
                     width_mask=0xFFFF, height_mask=0xFFFF):
         self.codec_class = codec_class
-        self.type = codec_type
+        self.codec_type = codec_type
         self.quality = quality
         self.speed = speed
         self.setup_cost = setup_cost

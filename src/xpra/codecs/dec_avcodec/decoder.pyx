@@ -98,6 +98,9 @@ cdef extern from "libavcodec/avcodec.h":
 def get_version():
     return get_avcodec_version()
 
+def get_type():
+    return "avcodec"
+
 
 COLORSPACES = None
 FORMAT_TO_ENUM = {}
@@ -427,7 +430,7 @@ cdef class Decoder:
         assert self.codec_ctx!=NULL
         return self.codec_ctx.height
 
-    def get_type(self):
+    def get_type(self):                             #@DuplicatedSignature
         return "x264"
 
     def decompress_image(self, input, options):

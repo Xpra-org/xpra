@@ -132,6 +132,10 @@ cdef extern from "enc_x264.h":
 def get_version():
     return get_x264_build_no()
 
+def get_type():
+    return "x264"
+
+
 #we choose presets from 1 to 7
 #(we exclude placebo)
 cdef int get_preset_for_speed(int speed):
@@ -271,7 +275,7 @@ cdef class Encoder:
     def get_height(self):
         return self.height
 
-    def get_type(self):
+    def get_type(self):                     #@DuplicatedSignature
         return  "x264"
 
     def get_src_format(self):

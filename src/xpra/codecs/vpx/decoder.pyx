@@ -88,6 +88,10 @@ cdef extern from "vpxlib.h":
 def get_version():
     return get_vpx_abi_version()
 
+def get_type(self):
+    return  "vpx"
+
+
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES = ["YUV420P"]
@@ -99,7 +103,7 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Decoder, setup_cost=40)
+    return codec_spec(Decoder, codec_class="vpx", setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
@@ -148,7 +152,7 @@ cdef class Decoder:
     def is_closed(self):
         return self.context==NULL
 
-    def get_type(self):
+    def get_type(self):                 #@DuplicatedSignature
         return  "vpx"
 
     def __dealloc__(self):
