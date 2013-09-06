@@ -239,10 +239,9 @@ __kernel void %s(read_only image2d_t src,
         float U = (-0.148 * p.s%s - 0.291 * p.s%s + 0.439 * p.s%s + 128);
         float V =  (0.439 * p.s%s - 0.368 * p.s%s - 0.071 * p.s%s + 128);
 
-        uint i = gx + gy*strideY;
-        dstY[i] = convert_uchar_rte(Y);
-        dstU[i] = convert_uchar_rte(U);
-        dstV[i] = convert_uchar_rte(V);
+        dstY[gx + gy*strideY] = convert_uchar_rte(Y);
+        dstU[gx + gy*strideU] = convert_uchar_rte(U);
+        dstV[gx + gy*strideV] = convert_uchar_rte(V);
     }
 }
 """
