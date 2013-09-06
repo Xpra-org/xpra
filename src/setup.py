@@ -61,7 +61,7 @@ swscale_static_ENABLED = False
 webp_ENABLED = True
 nvenc_ENABLED = False
 csc_nvcuda_ENABLED = False
-csc_opencl_ENABLED = False
+csc_opencl_ENABLED = True
 
 warn_ENABLED = True
 strict_ENABLED = True
