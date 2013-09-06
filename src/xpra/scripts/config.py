@@ -21,7 +21,7 @@ def codec_import_check(name, top_module, class_module, *classnames):
             __import__(top_module, {}, {}, [])
             for classname in classnames:
                 ic =  __import__(class_module, {}, {}, classname)
-                warn("codec_import_check(%s, ..)=%s" % (name, ic))
+                #warn("codec_import_check(%s, ..)=%s" % (name, ic))
                 return ic
         except ImportError, e:
             #the required module does not exist
@@ -59,8 +59,6 @@ has_enc_vpx = enc_vpx is not None
 dec_vpx = codec_import_check("vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
 has_dec_vpx = dec_vpx is not None
 add_codec_version("vpx", "xpra.codecs.vpx.encoder", "get_version", True)
-
-print("has_vpx: %s, %s", has_enc_vpx, has_dec_vpx)
 
 enc_x264 = codec_import_check("x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
 has_enc_x264 = enc_x264 is not None
