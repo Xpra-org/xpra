@@ -86,88 +86,222 @@ def init_context():
     else:
         context = pyopencl.create_some_context(interactive=False)
         devices = context.get_info(pyopencl.context_info.DEVICES)
-        log.info("chosen context has %s devices=%s", len(devices), devices)
+        log.info("chosen context has %s device(s):", len(devices))
+        for d in devices:
+            log_device_info(d)
         assert len(devices)==1, "we only handle a single device at a time, sorry!"
         selected_device = devices[0]
     assert context is not None and selected_device is not None
 
 
-KERNELS_DEFS = {}
-def gen_kernels():
-    global context, KERNELS_DEFS
-    from xpra.codecs.csc_opencl.opencl_kernels import gen_yuv_to_rgb_kernels, gen_rgb_to_yuv_kernels
-    #TODO: we could handle other formats here and manage the channel swap ourselves
-    #(most of the code to do this is already implemented in the kernel generators)
-    def has_image_format(image_formats, channel_order, channel_type):
-        for iformat in image_formats:
-            if iformat.channel_order==channel_order and iformat.channel_data_type==channel_type:
-                return True
-        return False
-    IN_CHANNEL_ORDER = {
-                      "RGBA"    : pyopencl.channel_order.RGBA,
-                      "RGBX"    : pyopencl.channel_order.RGBA,
-                      "BGRA"    : pyopencl.channel_order.BGRA,
-                      "BGRX"    : pyopencl.channel_order.BGRA,
-                      "RGBX"    : pyopencl.channel_order.RGBx,
-                      "RGB"     : pyopencl.channel_order.RGB,
-                      }
+#Note: we don't care about alpha!
+#This tries to map our standard RGB representation
+#to the channel_order types that OpenCL may support
+IN_CHANNEL_ORDER = (
+                  ("RGBA",  pyopencl.channel_order.RGBA),
+                  ("RGBX",  pyopencl.channel_order.RGBA),
+                  ("BGRA",  pyopencl.channel_order.BGRA),
+                  ("BGRX",  pyopencl.channel_order.BGRA),
+                  ("RGBX",  pyopencl.channel_order.RGBx),
+                  ("RGB" ,  pyopencl.channel_order.RGB),
+                  )
+CHANNEL_ORDER_TO_STR = {
+                    pyopencl.channel_order.RGBA : "RGBA",
+                    pyopencl.channel_order.BGRA : "BGRA",
+                    pyopencl.channel_order.RGBx : "RGBx",
+                    pyopencl.channel_order.RGB  : "RGB",
+                  }
 
-    #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode:
+def has_image_format(image_formats, channel_order, channel_type):
+    """ checks that the combination of channel_order and channel_type is supported
+        in one of the image_formats.
+    """
+    for iformat in image_formats:
+        if iformat.channel_order==channel_order and iformat.channel_data_type==channel_type:
+            return True
+    return False
+
+def has_same_channels(src, dst):
+    """ checks for missing RGB channels ignoring alpha, RGB-BGR -> True, but also BGRX-RGBA -> True ...
+        in effect, this should always be True for the modes we use in this class
+    """
+    scheck = [x for x in src if (x not in dst and x not in ("A", "X"))]
+    dcheck = [x for x in dst if (x not in src and x not in ("A", "X"))]
+    #log.info("has_same_channels(%s, %s)=%s (%s - %s)", src, dst, scheck, dcheck, len(scheck)==0 and len(dcheck)==0)
+    return len(scheck)==0 and len(dcheck)==0
+
+KERNELS_DEFS = {}
+def gen_yuv_to_rgb():
+    global context, KERNELS_DEFS
+    from xpra.codecs.csc_opencl.opencl_kernels import gen_yuv_to_rgb_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
+
     YUV_to_RGB_KERNELS = {}
+    #for YUV to RGB support we need to be able to handle the channel_order in WRITE_ONLY mode
+    #so we can download the result of the CSC:
     sif = pyopencl.get_supported_image_formats(context, mem_flags.WRITE_ONLY,  pyopencl.mem_object_type.IMAGE2D)
     debug("get_supported_image_formats(WRITE_ONLY, IMAGE2D)=%s", sif)
-    for rgb_mode, channel_order in IN_CHANNEL_ORDER.items():
+    missing = []
+    found_rgb = set()
+    def add_yuv_to_rgb(dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, channel_order):
+        """ add the kernels converting yuv-to-rgb for the rgb_mode given (and record the channel order)"""
+        debug("add_yuv_to_rgb%s", (dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, channel_order))
+        kernels = gen_yuv_to_rgb_kernels(kernel_rgb_mode)
+        for (yuv_mode, krgb_mode), (kname, ksrc) in kernels.items():
+            assert krgb_mode==kernel_rgb_mode
+            YUV_to_RGB_KERNELS[(yuv_mode, dst_rgb_mode)] = (kname, download_rgb_mode, channel_order, ksrc)
+            found_rgb.add(dst_rgb_mode)
+
+    for rgb_mode, channel_order in IN_CHANNEL_ORDER:
         if not has_image_format(sif, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
-            debug("YUV 2 RGB: channel order %s is not supported in WRITE_ONLY mode", rgb_mode)
+            debug("YUV 2 RGB: channel order %s is not supported directly in WRITE_ONLY + UNSIGNED_INT8 mode", CHANNEL_ORDER_TO_STR.get(channel_order))
+            missing.append((rgb_mode, channel_order))
             continue
-        kernels = gen_yuv_to_rgb_kernels(rgb_modes=["RGBX"])
-        for key, k_def in kernels.items():
-            src, dst = key
-            kname, ksrc = k_def
-            #note: "RGBX" isn't actually used (yet?)
-            YUV_to_RGB_KERNELS[(src, rgb_mode)] = (kname, "RGBX", channel_order, ksrc)
+        #it is supported natively, so this is easy:
+        #just generate kernels for the "RGB(X)" format OpenCL will deliver the image in
+        #and dst_rgb_mode is the same mode we download to
+        add_yuv_to_rgb(rgb_mode, "RGBX", rgb_mode, channel_order)
+
+    if len(YUV_to_RGB_KERNELS)>0 and len(missing)>0:
+        debug("YUV 2 RGB: trying to find alternatives for: %s", missing)
+        #now look for rgb byte order workarounds (doing the byteswapping ourselves):
+        for dst_rgb_mode, _ in missing:
+            if dst_rgb_mode in found_rgb:
+                #we already have an alternative channel_order for this rgb mode
+                #ie: RGBx and RGBA both map to "RGBX" or "RGBA"
+                debug("%s already found", dst_rgb_mode)
+                continue
+            #we want a mode which is supported and has the same component channels
+            for _, download_rgb_mode, channel_order, _ in YUV_to_RGB_KERNELS.values():
+                if len(download_rgb_mode)<len(dst_rgb_mode):
+                    #skip mode if it has fewer channels (could drop one we need)
+                    debug("skipping %s (too few channels compared to %s)", download_rgb_mode, dst_rgb_mode)
+                    continue
+                ok = has_same_channels(download_rgb_mode, dst_rgb_mode)
+                debug("testing %s as byteswap alternative to %s : %s", download_rgb_mode, dst_rgb_mode, ok)
+                if not ok:
+                    continue
+                debug("YUV 2 RGB: using download mode %s to support %s via generated CL kernel byteswapping", download_rgb_mode, dst_rgb_mode)
+                #now we "just" need to add a kernel which will give us
+                #dst_rgb_mode after the ???X image data is downloaded as download_rgb_mode
+                #ie: we may want BGRX as output, but are downloading the pixels to RGBX (OpenCL does byteswapping)
+                #OR: we want RGBX as output, but are downloading to BGRX..
+                #so we need the inverse transform which will come out right
+                dli = rgb_mode_to_indexes(download_rgb_mode)    #ie: BGRX -> [2,1,0,3]
+                wanti = rgb_mode_to_indexes(dst_rgb_mode)       #ie: RGBX -> [0,1,2,3]
+                #for each ending position, figure out where it started from:
+                rindex = {} #reverse index
+                for i in range(4):
+                    rindex[dli.index(i)] = i                    #ie: {2:0, 1:1, 0:2, 3:3}
+                debug("YUV 2 RGB: reverse map for download mode %s (%s): %s", download_rgb_mode, dli, rindex)
+                virt_mode = indexes_to_rgb_mode([rindex[x] for x in wanti])
+                debug("YUV 2 RGB: virtual mode for %s (%s): %s", dst_rgb_mode, wanti, virt_mode)
+                add_yuv_to_rgb(dst_rgb_mode, virt_mode, download_rgb_mode, channel_order)
+                break
+            if dst_rgb_mode not in found_rgb:
+                #not matched:
+                log.warn("YUV 2 RGB: channel order %s is not supported: we don't have a byteswapping alternative", dst_rgb_mode)
+                continue
     debug("YUV 2 RGB conversions=%s", sorted(YUV_to_RGB_KERNELS.keys()))
     #debug("YUV 2 RGB kernels=%s", YUV_to_RGB_KERNELS)
     debug("YUV 2 RGB kernels=%s", set([x[0] for x in YUV_to_RGB_KERNELS.values()]))
+    return YUV_to_RGB_KERNELS
 
+
+def gen_rgb_to_yuv():
+    global context, KERNELS_DEFS
+    from xpra.codecs.csc_opencl.opencl_kernels import gen_rgb_to_yuv_kernels, rgb_mode_to_indexes, indexes_to_rgb_mode
     #for RGB to YUV support we need to be able to handle the channel_order,
     #with READ_ONLY and both with COPY_HOST_PTR and USE_HOST_PTR since we
     #do not know in advance which one we can use..
-    #TODO: enable channel_order anyway and use COPY as fallback?
     RGB_to_YUV_KERNELS = {}
+    sif = pyopencl.get_supported_image_formats(context, mem_flags.WRITE_ONLY,  pyopencl.mem_object_type.IMAGE2D)
     sif_copy = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR,  pyopencl.mem_object_type.IMAGE2D)
     debug("get_supported_image_formats(READ_ONLY | COPY_HOST_PTR, IMAGE2D)=%s", sif)
     sif_use = pyopencl.get_supported_image_formats(context, mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR,  pyopencl.mem_object_type.IMAGE2D)
     debug("get_supported_image_formats(READ_ONLY | USE_HOST_PTR, IMAGE2D)=%s", sif)
     if not has_image_format(sif_copy, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8) or \
        not has_image_format(sif_use, pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8):
-        log.error("cannot convert to yuv without support for R channel!")
-    else:
-        for rgb_mode, channel_order in IN_CHANNEL_ORDER.items():
-            errs = []
-            if not has_image_format(sif_copy, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
-                errs.append("COPY_HOST_PTR")
-            if not has_image_format(sif_use, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
-                errs.append("USE_HOST_PTR")
-            if len(errs)>0:
-                debug("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", rgb_mode, " or ".join(errs))
+        log.error("cannot convert to YUV without support for READ_ONLY R channel with both COPY_HOST_PTR and USE_HOST_PTR")
+        return  {}
+    missing = []
+    found_rgb = set()
+    def add_rgb_to_yuv(src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, channel_order):
+        debug("add_rgb_to_yuv%s", (src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, channel_order))
+        kernels = gen_rgb_to_yuv_kernels(kernel_rgb_mode)
+        #debug("kernels(%s)=%s", rgb_mode, kernels)
+        for key, k_def in kernels.items():
+            ksrc, dst = key
+            assert ksrc==kernel_rgb_mode
+            kname, ksrc = k_def
+            RGB_to_YUV_KERNELS[(src_rgb_mode, dst)] = (kname, upload_rgb_mode, channel_order, ksrc)
+            found_rgb.add(src_rgb_mode)
+    for src_rgb_mode, channel_order in IN_CHANNEL_ORDER:
+        errs = []
+        if not has_image_format(sif_copy, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
+            errs.append("COPY_HOST_PTR")
+        if not has_image_format(sif_use, channel_order, pyopencl.channel_type.UNSIGNED_INT8):
+            errs.append("USE_HOST_PTR")
+        if len(errs)>0:
+            debug("RGB 2 YUV: channel order %s is not supported in READ_ONLY mode(s): %s", src_rgb_mode, " or ".join(errs))
+            missing.append((src_rgb_mode, channel_order))
+            continue
+        #OpenCL handles this rgb mode natively,
+        #so we can generate the kernel for RGB(x) format:
+        #(and let the copy to device deal natively with the format given)
+        add_rgb_to_yuv(src_rgb_mode, "RGBX", src_rgb_mode, channel_order)
+    if len(missing)>0:
+        debug("RGB 2 YUV: trying to find alternatives for: %s", missing)
+        #now look for rgb byte order workarounds (doing the byteswapping ourselves):
+        for src_rgb_mode, _ in missing:
+            if src_rgb_mode in found_rgb:
+                #we already have an alternative channel_order for this rgb mode
+                #ie: RGBx and RGBA both map to "RGBX" or "RGBA"
+                debug("%s already found", src_rgb_mode)
                 continue
-            #we hardcode RGB here since we currently handle byteswapping
-            #via the channel_order only for now:
-            kernels = gen_rgb_to_yuv_kernels(rgb_modes=["RGB"])
-            #debug("kernels(%s)=%s", rgb_mode, kernels)
-            for key, k_def in kernels.items():
-                src, dst = key
-                kname, ksrc = k_def
-                #note: "RGBX" isn't actually used (yet?)
-                RGB_to_YUV_KERNELS[(rgb_mode, dst)] = (kname, "RGB", channel_order, ksrc)
+            #we want a mode which is supported and has the same component channels
+            for _, upload_rgb_mode, channel_order, _ in RGB_to_YUV_KERNELS.values():
+                if len(upload_rgb_mode)<len(src_rgb_mode):
+                    #skip mode if it has fewer channels (could drop one we need)
+                    debug("skipping %s (too few channels compared to %s)", upload_rgb_mode, src_rgb_mode)
+                    continue
+                ok = has_same_channels(upload_rgb_mode, src_rgb_mode)
+                debug("testing %s as byteswap alternative to %s : %s", upload_rgb_mode, src_rgb_mode, ok)
+                if not ok:
+                    continue
+                debug("RGB 2 YUV: using upload mode %s to support %s via generated CL kernel byteswapping", upload_rgb_mode, src_rgb_mode)
+                #easier than in YUV 2 RGB above, we just need to work out the starting positions of the RGB pixels:
+                spos = rgb_mode_to_indexes(src_rgb_mode)     #ie: BGRX -> [2,1,0,3]
+                uli = rgb_mode_to_indexes(upload_rgb_mode)   #ie: RGBX -> [0,1,2,3]
+                virt_mode = indexes_to_rgb_mode([uli[x] for x in spos])   #ie: [2,1,0,3]
+                debug("RGB 2 YUV: virtual mode for %s: %s", src_rgb_mode, virt_mode)
+                add_rgb_to_yuv(src_rgb_mode, virt_mode, upload_rgb_mode, channel_order)
+                break
+            if src_rgb_mode not in found_rgb:
+                #not matched:
+                log.warn("RGB 2 YUV: channel order %s is not supported: we don't have a byteswapping alternative", src_rgb_mode)
+                continue
+
     debug("RGB 2 YUV conversions=%s", sorted(RGB_to_YUV_KERNELS.keys()))
     #debug("RGB 2 YUV kernels=%s", RGB_to_YUV_KERNELS)
     debug("RGB 2 YUV kernels=%s", set([x[0] for x in RGB_to_YUV_KERNELS.values()]))
+    return RGB_to_YUV_KERNELS
+
+
+def gen_kernels():
+    """
+    The code here is complicated by the fact that we don't know
+    in advance what image modes are supported where...
+    So we try to generate the minimum set of kernels that will allow
+    us to handle the greatest combination of inputs and outputs.
+    See both gen_xxx_to_xxx methods for details.
+    """
+    global KERNELS_DEFS
+    YUV_to_RGB_KERNELS = gen_yuv_to_rgb()
+    RGB_to_YUV_KERNELS = gen_rgb_to_yuv()
 
     KERNELS_DEFS = RGB_to_YUV_KERNELS.copy()
     KERNELS_DEFS.update(YUV_to_RGB_KERNELS)
-    debug("all conversions=%s", KERNELS_DEFS.keys())
+    debug("all supported conversions=%s", KERNELS_DEFS.keys())
     #work out the unique kernels we have generated (kname -> ksrc)
     NAMES_TO_KERNELS = {}
     for name, _, _, kernel in KERNELS_DEFS.values():
@@ -185,7 +319,7 @@ def build_kernels():
     try:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            log.info("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(NAMES_TO_KERNELS.keys()))
+            log.info("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
             log.debug("all warnings:%s", "\n* ".join([str(x) for x in w]))
@@ -401,7 +535,8 @@ class ColorspaceConverter(object):
         kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
 
         kstart = time.time()
-        debug("convert_image(%s) calling %s%s after %.1fms", image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
+        debug("convert_image(%s) calling %s%s after upload took %.1fms",
+              image, self.kernel_function_name, tuple(kernelargs), 1000.0*(kstart-start))
         self.kernel_function(*kernelargs)
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
@@ -409,7 +544,7 @@ class ColorspaceConverter(object):
         out_array = numpy.empty(width*height*4, dtype=numpy.byte)
         pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array, is_blocking=True)
         self.queue.finish()
-        debug("readback took %.1fms", 1000.0*(time.time()-kend))
+        debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
         self.frames += 1
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, out_array.data, self.dst_format, 24, strides, planes=ImageWrapper.PACKED_RGB)

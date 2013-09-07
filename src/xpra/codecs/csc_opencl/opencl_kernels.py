@@ -25,21 +25,51 @@ YUV_TO_RGB = {"X"    : "1.0",
 #Cr width div, Cr heigth div, Cb width div, Cb width div
 YUV_FORMATS = ("YUV444P", "YUV422P", "YUV420P")
 
-def rgb_kernelname(RGB_args):
-    s = "RGB"
-    if RGB_args==[0, 1, 2]:
-        return s
-    #ie: 210==BGR
+def indexes_to_rgb_mode(RGB_args):
+    #ie: 2103==BGRX
+    s = ""
     for i in RGB_args:
         s += {0 : "R",
               1 : "G",
-              2 : "B"}.get(i)
+              2 : "B",
+              3 : "X"}.get(i)
     return s
+
+def rgb_mode_to_indexes(rgb_mode):
+    #we can change the RGB order
+    #to handle other pixel formats
+    #(most are already handled natively by OpenCL but not all
+    #and not on all platforms..)
+    RGB_ARGS = []
+    for c in rgb_mode:
+        v = {"R":0, "G":1, "B":2, "X":3, "A":3}.get(c)
+        assert v is not None, "invalid channel: %s" % c
+        RGB_ARGS.append(v)
+    return RGB_ARGS
+
+def rgb_indexes(rgb_mode):
+    #we can change the RGB order
+    #to handle other pixel formats
+    #(most are already handled natively by OpenCL but not all
+    #and not on all platforms..)
+    RGB_ARGS = []
+    for c in rgb_mode:
+        if c in ("A", "X"):
+            continue
+        v = {"R":0, "G":1, "B":2}.get(c)
+        assert v is not None, "invalid channel: %s" % c
+        RGB_ARGS.append(v)
+    return RGB_ARGS
+
 
 def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    if len(rgb_format)==3:
+        #pad with empty channel:
+        rgb_format = rgb_format+"X"
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_%s" % (yuv_format, rgb_kernelname(RGB_args))
+    assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
+    kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -72,8 +102,12 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
 
 def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    if len(rgb_format)==3:
+        #pad with empty channel:
+        rgb_format = rgb_format+"X"
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_%s" % (yuv_format, rgb_kernelname(RGB_args))
+    assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
+    kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -117,8 +151,12 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
 
 def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     assert len(rgb_format) in (3,4), "invalid destination rgb format: %s" % rgb_format
+    if len(rgb_format)==3:
+        #pad with empty channel:
+        rgb_format = rgb_format+"X"
     RGB_args = rgb_mode_to_indexes(rgb_format)
-    kname = "%s_to_%s" % (yuv_format, rgb_kernelname(RGB_args))
+    assert len(RGB_args)==4, "we need 4 RGB components (R,G,B and A or X), not: %s" % RGB_args
+    kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, uint strideY,
@@ -188,33 +226,20 @@ YUV_to_RGB_generators = {
                     "YUV422P"   : gen_yuv422p_to_rgb_kernel,
                     "YUV420P"   : gen_yuv420p_to_rgb_kernel,
                     }
-def gen_yuv_to_rgb_kernels(yuv_modes=YUV_FORMATS, rgb_modes=["XRGB", "BGRX"]):
+def gen_yuv_to_rgb_kernels(rgb_mode="RGBX", yuv_modes=YUV_FORMATS):
     YUV_to_RGB_KERNELS = {}
     for yuv in yuv_modes:
         gen = YUV_to_RGB_generators.get(yuv)
-        for rgb in rgb_modes:
-            YUV_to_RGB_KERNELS[(yuv, rgb)] = gen(yuv, rgb)
+        YUV_to_RGB_KERNELS[(yuv, rgb_mode)] = gen(yuv, rgb_mode)
     return YUV_to_RGB_KERNELS
 
 
 
 
-def rgb_mode_to_indexes(rgb_mode):
-    #we can change the RGB order
-    #to handle other pixel formats
-    #(most are already handled natively by OpenCL but not all
-    #and not on all platforms..)
-    RGB_ARGS = []
-    for c in ("R", "G", "B"):
-        i = rgb_mode.find(c)
-        assert i>=0, "channel %s not found in %s" % (c, rgb_mode)
-        RGB_ARGS.append(i)
-    return RGB_ARGS
-
 def gen_rgb_to_yuv444p_kernel(rgb_mode):
-    RGB_args = rgb_mode_to_indexes(rgb_mode)
+    RGB_args = rgb_indexes(rgb_mode)
     #kernel args: R, G, B are used 3 times each:
-    kname = "%s_to_YUV444P" % rgb_kernelname(RGB_args)
+    kname = "%s_to_YUV444P" % indexes_to_rgb_mode(RGB_args)
     args = tuple([kname]+RGB_args*3)
 
     kstr = """
@@ -248,9 +273,9 @@ __kernel void %s(read_only image2d_t src,
     return kname, kstr % args
 
 def gen_rgb_to_yuv422p_kernel(rgb_mode):
-    RGB_args = rgb_mode_to_indexes(rgb_mode)
+    RGB_args = rgb_indexes(rgb_mode)
     #kernel args: R, G, B are used 6 times each:
-    kname = "%s_to_YUV422P" % rgb_kernelname(RGB_args)
+    kname = "%s_to_YUV422P" % indexes_to_rgb_mode(RGB_args)
     args = tuple([kname]+RGB_args*6)
 
     kstr = """
@@ -268,7 +293,7 @@ __kernel void %s(read_only image2d_t src,
     //CLK_FILTER_LINEAR
     if ((gx*2 < w) & (gy < h)) {
         uint4 p1 = read_imageui(src, sampler, (int2)( gx*2, gy ));
-        uint4 p2 = read_imageui(src, sampler, (int2)( gx*2+1, gy ));
+        uint4 p2 = p1;
 
         //write up to 2 Y pixels:
         float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
@@ -278,6 +303,7 @@ __kernel void %s(read_only image2d_t src,
         //if the source width is odd, this destination pixel may not exist (right edge of picture)
         //(we only read it via CLAMP_TO_EDGE to calculate U and V, which do exist)
         if (gx*2+1 < w) {
+            p2 = read_imageui(src, sampler, (int2)( gx*2+1, gy ));
             float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
             dstY[i+1] = convert_uchar_rte(Y2);
         }
@@ -302,9 +328,9 @@ __kernel void %s(read_only image2d_t src,
 
 
 def gen_rgb_to_yuv420p_kernel(rgb_mode):
-    RGB_args = rgb_mode_to_indexes(rgb_mode)
+    RGB_args = rgb_indexes(rgb_mode)
     #kernel args: R, G, B are used 12 times each:
-    kname = "%s_to_YUV420P" % rgb_kernelname(RGB_args)
+    kname = "%s_to_YUV420P" % indexes_to_rgb_mode(RGB_args)
     args = tuple([kname]+RGB_args*12)
 
     kstr = """
@@ -321,10 +347,10 @@ __kernel void %s(read_only image2d_t src,
                            CLK_FILTER_NEAREST;
     //CLK_FILTER_LINEAR
     if ((gx*2 < w) & (gy*2 < h)) {
-        uint4 p1 = read_imageui(src, sampler, (int2)( gx*2,    gy*2 ));
-        uint4 p2 = read_imageui(src, sampler, (int2)( gx*2+1,  gy*2 ));
-        uint4 p3 = read_imageui(src, sampler, (int2)( gx*2,    gy*2+1 ));
-        uint4 p4 = read_imageui(src, sampler, (int2)( gx*2+1,  gy*2+1 ));
+        uint4 p1 = read_imageui(src, sampler, (int2)( gx*2, gy*2 ));
+        uint4 p2 = p1;
+        uint4 p3 = p1;
+        uint4 p4 = p1;
 
         //write up to 4 Y pixels:
         float Y1 =  (0.257 * p1.s%s + 0.504 * p1.s%s + 0.098 * p1.s%s + 16);
@@ -332,14 +358,17 @@ __kernel void %s(read_only image2d_t src,
         uint i = gx*2 + gy*2*strideY;
         dstY[i] = convert_uchar_rte(Y1);
         if (gx*2+1 < w) {
+            p2 = read_imageui(src, sampler, (int2)( gx*2+1, gy*2 ));
             float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
             dstY[i+1] = convert_uchar_rte(Y2);
         }
         if (gy*2+1 < h) {
             i += strideY;
+            p3 = read_imageui(src, sampler, (int2)( gx*2, gy*2+1 ));
             float Y3 =  (0.257 * p3.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
             dstY[i] = convert_uchar_rte(Y3);
             if (gx*2+1 < w) {
+                p4 = read_imageui(src, sampler, (int2)( gx*2+1, gy*2+1 ));
                 float Y4 =  (0.257 * p4.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
                 dstY[i+1] = convert_uchar_rte(Y4);
             }
@@ -370,11 +399,10 @@ RGB_to_YUV_generators = {
                     "YUV420P"   : gen_rgb_to_yuv420p_kernel,
                     }
 
-def gen_rgb_to_yuv_kernels(rgb_modes=["XRGB", "BGRX"], yuv_modes=RGB_to_YUV_generators.keys()):
+def gen_rgb_to_yuv_kernels(rgb_mode="RGBX", yuv_modes=YUV_FORMATS):
     RGB_to_YUV_KERNELS = {}
     for yuv in yuv_modes:
         gen = RGB_to_YUV_generators.get(yuv)
         assert gen is not None, "no generator found for yuv mode %s" % yuv
-        for rgb in rgb_modes:
-            RGB_to_YUV_KERNELS[(rgb, yuv)] = gen(rgb)
+        RGB_to_YUV_KERNELS[(rgb_mode, yuv)] = gen(rgb_mode)
     return RGB_to_YUV_KERNELS
