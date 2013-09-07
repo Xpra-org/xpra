@@ -61,18 +61,6 @@ def log_version_info():
 #select a platform and device:
 selected_device = None
 selected_platform = None
-for platform in opencl_platforms:
-    devices = platform.get_devices()
-    for d in devices:
-        if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
-            dtype = pyopencl.device_type.to_string(d.type)
-            if selected_device is None and dtype==PREFERRED_DEVICE_TYPE and \
-                (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
-                (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
-                selected_device = d
-                selected_platform = platform
-
-
 context = None
 def init_context():
     global context, selected_device,selected_platform
@@ -80,13 +68,28 @@ def init_context():
         return
     log_version_info()
     log_platforms_info()
+    #try to choose a platform and device using *our* heuristics / env options:
+    for platform in opencl_platforms:
+        devices = platform.get_devices()
+        for d in devices:
+            if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
+                dtype = pyopencl.device_type.to_string(d.type)
+                if selected_device is None and dtype==PREFERRED_DEVICE_TYPE and \
+                    (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
+                    (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
+                    selected_device = d
+                    selected_platform = platform
     if selected_device:
         log.info("using platform: %s", platform_info(selected_platform))
         log_device_info(selected_device)
         context = pyopencl.Context([selected_device])
     else:
         context = pyopencl.create_some_context(interactive=False)
-    assert context is not None
+        devices = context.get_info(pyopencl.context_info.DEVICES)
+        log.info("chosen context has %s devices=%s", len(devices), devices)
+        assert len(devices)==1, "we only handle a single device at a time, sorry!"
+        selected_device = devices[0]
+    assert context is not None and selected_device is not None
 
 
 KERNELS_DEFS = {}
