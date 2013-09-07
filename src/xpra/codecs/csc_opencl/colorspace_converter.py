@@ -25,9 +25,7 @@ PREFERRED_DEVICE_PLATFORM = os.environ.get("XPRA_OPENCL_PLATFORM", "")
 opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
     raise ImportError("no OpenCL platforms found!")
-log.info("PyOpenCL loaded, header version: %s", ".".join([str(x) for x in pyopencl.get_cl_header_version()]))
-log.info("PyOpenCL OpenGL support: %s", pyopencl.have_gl())
-log.info("found %s OpenCL platforms:", len(opencl_platforms))
+
 
 def device_info(d):
     dtype = pyopencl.device_type.to_string(d.type)
@@ -35,29 +33,44 @@ def device_info(d):
 def platform_info(platform):
     return "%s (%s)" % (platform.name, platform.vendor)
 
+
+def log_device_info(device):
+    if not device:
+        return
+    log.info("using device: %s", device_info(device))
+    debug("max_work_group_size=%s", device.max_work_group_size)
+    debug("max_work_item_dimensions=%s", device.max_work_item_dimensions)
+    debug("max_work_item_sizes=%s", device.max_work_item_sizes)
+
+def log_platforms_info():
+    log.info("found %s OpenCL platforms:", len(opencl_platforms))
+    for platform in opencl_platforms:
+        devices = platform.get_devices()
+        log.info("* %s - %s devices:", platform_info(platform), len(devices))
+        for d in devices:
+            p = "-"
+            if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
+                p = "+"
+            log.info(" %s %s", p, device_info(d))
+
+def log_version_info():
+    log.info("PyOpenCL loaded, header version: %s, GL support: %s",
+             ".".join([str(x) for x in pyopencl.get_cl_header_version()]), pyopencl.have_gl())
+
+
+#select a platform and device:
 selected_device = None
 selected_platform = None
 for platform in opencl_platforms:
     devices = platform.get_devices()
-    log.info("* %s - %s devices:", platform_info(platform), len(devices))
     for d in devices:
-        p = "-"
         if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
-            p = "+"
             dtype = pyopencl.device_type.to_string(d.type)
             if selected_device is None and dtype==PREFERRED_DEVICE_TYPE and \
                 (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
                 (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
                 selected_device = d
                 selected_platform = platform
-        log.info(" %s %s", p, device_info(d))
-
-if selected_device:
-    log.info("using platform: %s", platform_info(selected_platform))
-    log.info("using device: %s", device_info(selected_device))
-    debug("max_work_group_size=%s", selected_device.max_work_group_size)
-    debug("max_work_item_dimensions=%s", selected_device.max_work_item_dimensions)
-    debug("max_work_item_sizes=%s", selected_device.max_work_item_sizes)
 
 
 context = None
@@ -65,7 +78,11 @@ def init_context():
     global context, selected_device,selected_platform
     if context is not None:
         return
+    log_version_info()
+    log_platforms_info()
     if selected_device:
+        log.info("using platform: %s", platform_info(selected_platform))
+        log_device_info(selected_device)
         context = pyopencl.Context([selected_device])
     else:
         context = pyopencl.create_some_context(interactive=False)
@@ -165,7 +182,7 @@ def build_kernels():
     try:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            log.info("building %s kernels: %s", len(NAMES_TO_KERNELS), ", ".join(NAMES_TO_KERNELS.keys()))
+            log.info("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(NAMES_TO_KERNELS.keys()))
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
             log.debug("all warnings:%s", "\n* ".join([str(x) for x in w]))
