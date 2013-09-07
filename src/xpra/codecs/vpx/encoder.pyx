@@ -110,7 +110,7 @@ def get_spec(colorspace):
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
     #quality: we only handle YUV420P but this is already accounted for by get_colorspaces() based score calculations
     #setup cost is reasonable (usually about 5ms)
-    return codec_spec(Encoder, codec_class="vpx", setup_cost=40)
+    return codec_spec(Encoder, codec_type="vpx", setup_cost=40)
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     assert colorspace in COLORSPACES
