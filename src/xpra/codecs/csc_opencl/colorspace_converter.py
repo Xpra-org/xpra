@@ -533,7 +533,6 @@ class ColorspaceConverter(object):
             shape = strides[i], height/y_div
             iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
             kernelargs.append(iimage)
-            kernelargs.append(numpy.int32(strides[i]))
 
         kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
 

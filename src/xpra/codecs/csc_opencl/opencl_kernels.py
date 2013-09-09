@@ -72,9 +72,7 @@ def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
-__kernel void %s(read_only image2d_t srcY, uint strideY,
-              read_only image2d_t srcU, uint strideU,
-              read_only image2d_t srcV, uint strideV,
+__kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               uint w, uint h, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
@@ -110,9 +108,7 @@ def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
     kstr = """
-__kernel void %s(read_only image2d_t srcY, uint strideY,
-              read_only image2d_t srcU, uint strideU,
-              read_only image2d_t srcV, uint strideV,
+__kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               uint w, uint h, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
@@ -123,26 +119,27 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
     if ((gx*2 < w) & (gy < h)) {
         float4 p;
 
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2, gy )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( gx*2, gy )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( gx*2, gy )).s0 - 0.5f;
+        uint x = gx*2;
+        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, gy )).s0 - 0.0625;
+        float Cr = read_imagef(srcU, sampler, (int2)( gx, gy )).s0 - 0.5f;
+        float Cb = read_imagef(srcV, sampler, (int2)( gx, gy )).s0 - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
         p.s2 = %s;
         p.s3 = %s;
 
-        write_imagef(dst, (int2)( gx*2, gy ), p);
+        write_imagef(dst, (int2)( x, gy ), p);
 
         if (gx*2+1 < w) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2+1, gy )).s0 - 0.0625;
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, gy )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
             p.s2 = %s;
             p.s3 = %s;
 
-            write_imagef(dst, (int2)( gx*2+1, gy ), p);
+            write_imagef(dst, (int2)( x+1, gy ), p);
         }
     }
 }
@@ -159,9 +156,7 @@ def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     kname = "%s_to_%s" % (yuv_format, indexes_to_rgb_mode(RGB_args))
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
     kstr = """
-__kernel void %s(read_only image2d_t srcY, uint strideY,
-              read_only image2d_t srcU, uint strideU,
-              read_only image2d_t srcV, uint strideV,
+__kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
               uint w, uint h, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
@@ -169,50 +164,52 @@ __kernel void %s(read_only image2d_t srcY, uint strideY,
                            CLK_ADDRESS_CLAMP |
                            CLK_FILTER_NEAREST;
 
-    if ((gx*2 < w) & (gy*2 < h)) {
+    uint x = gx*2;
+    uint y = gy*2;
+    if ((x < w) & (y < h)) {
         float4 p;
 
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2, gy*2 )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( gx*2, gy*2 )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( gx*2, gy*2 )).s0 - 0.5f;
+        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, y )).s0 - 0.0625;
+        float Cr = read_imagef(srcU, sampler, (int2)( gx, gy )).s0 - 0.5f;
+        float Cb = read_imagef(srcV, sampler, (int2)( gx, gy )).s0 - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
         p.s2 = %s;
         p.s3 = %s;
 
-        write_imagef(dst, (int2)( gx*2, gy*2 ), p);
+        write_imagef(dst, (int2)( x, y ), p);
 
-        if (gx*2+1 < w) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2+1, gy*2 )).s0 - 0.0625;
+        if (x+1 < w) {
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, y )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
             p.s2 = %s;
             p.s3 = %s;
 
-            write_imagef(dst, (int2)( gx*2+1, gy*2 ), p);
+            write_imagef(dst, (int2)( x+1, y ), p);
         }
 
-        if (gy*2+1 < h) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2, gy*2+1 )).s0 - 0.0625;
+        if (y+1 < h) {
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, y+1 )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
             p.s2 = %s;
             p.s3 = %s;
 
-            write_imagef(dst, (int2)( gx*2, gy*2+1 ), p);
+            write_imagef(dst, (int2)( x, y+1 ), p);
 
-            if (gx*2+1 < w) {
-                Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx*2+1, gy*2+1 )).s0 - 0.0625;
+            if (x+1 < w) {
+                Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, y+1 )).s0 - 0.0625;
 
                 p.s0 = %s;
                 p.s1 = %s;
                 p.s2 = %s;
                 p.s3 = %s;
 
-                write_imagef(dst, (int2)( gx*2+1, gy*2+1 ), p);
+                write_imagef(dst, (int2)( x+1, y+1 ), p);
             }
         }
     }
