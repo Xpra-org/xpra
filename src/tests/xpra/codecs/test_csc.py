@@ -81,7 +81,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
     start = time.time()
     bpp = len(src_format)
     assert bpp==3 or bpp==4
-    pixels = bytearray("\0" * (w*h*bpp))
+    pixels = bytearray("\0" * (w*h*4))
     if populate:
         for y in range(h):
             for x in range(w):
@@ -89,8 +89,7 @@ def make_rgb_input(src_format, w, h, xratio=1, yratio=1, channelratio=64, use_st
                 v = (y*yratio*w+x*xratio)*bpp
                 for j in range(3):
                     pixels[i+j] = (v+j*channelratio) % 256
-                if bpp==4:
-                    pixels[i+3] = 0
+                pixels[i+3] = 0
     end = time.time()
     if DEBUG:
         print("make_rgb_input%s took %.1fms" % ((src_format, w, h, use_strings, populate), end-start))
