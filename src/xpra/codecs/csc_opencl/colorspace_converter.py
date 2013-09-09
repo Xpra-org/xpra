@@ -316,21 +316,24 @@ def build_kernels():
         return
     init_context()
     NAMES_TO_KERNELS = gen_kernels()
-    try:
-        with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as w:
+        def dump_warnings(logfn):
+            build_warnings = [x for x in w if x.category==pyopencl.CompilerWarning]
+            if len(build_warnings)>0:
+                logfn("%s build warnings:", len(build_warnings))
+                for x in build_warnings:
+                    debug(str(x))
+            logfn("all warnings:%s", "\n* ".join([str(x) for x in w]))
+        try:
             warnings.simplefilter("always")
             log.info("building %s OpenCL kernels: %s", len(NAMES_TO_KERNELS), ", ".join(sorted(NAMES_TO_KERNELS.keys())))
             program = pyopencl.Program(context, "\n".join(NAMES_TO_KERNELS.values()))
             program.build()
-            log.debug("all warnings:%s", "\n* ".join([str(x) for x in w]))
-            build_warnings = [x for x in w if x.category==pyopencl.CompilerWarning]
-            if len(build_warnings)>0:
-                debug("%s build warnings:", len(build_warnings))
-                for x in build_warnings:
-                    debug(str(x))
-    except Exception, e:
-        error("cannot build the OpenCL program: %s", e, exc_info=True)
-        raise ImportError("cannot build the OpenCL program: %s" % e)
+            dump_warnings(debug)
+        except Exception, e:
+            error("cannot build the OpenCL program: %s", e, exc_info=True)
+            dump_warnings(log.warn)
+            raise ImportError("cannot build the OpenCL program: %s" % e)
 
 
 def roundup(n, m):
