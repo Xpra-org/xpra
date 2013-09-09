@@ -69,28 +69,50 @@ def init_context():
     log_version_info()
     log_platforms_info()
     #try to choose a platform and device using *our* heuristics / env options:
+    best_options = []
+    other_options = []
     for platform in opencl_platforms:
         devices = platform.get_devices()
         for d in devices:
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
                 dtype = pyopencl.device_type.to_string(d.type)
-                if selected_device is None and dtype==PREFERRED_DEVICE_TYPE and \
+                if dtype==PREFERRED_DEVICE_TYPE and \
                     (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
-                    selected_device = d
-                    selected_platform = platform
-    if selected_device:
-        log.info("using platform: %s", platform_info(selected_platform))
-        log_device_info(selected_device)
-        context = pyopencl.Context([selected_device])
-    else:
-        context = pyopencl.create_some_context(interactive=False)
-        devices = context.get_info(pyopencl.context_info.DEVICES)
-        log.info("chosen context has %s device(s):", len(devices))
-        for d in devices:
-            log_device_info(d)
-        assert len(devices)==1, "we only handle a single device at a time, sorry!"
-        selected_device = devices[0]
+                    #FreeOCL does not work and Intel SDK does not work on AMD:
+                    likely_to_work = (not d.name.startswith("FreeOCL") and
+                            (not platform.name.startswith("Intel") or not d.name.startswith("AMD")))
+                    if likely_to_work:
+                        best_options.insert(0, (d, platform))
+                    else:
+                        best_options.append((d, platform))
+                else:
+                    other_options.append((d, platform))
+    debug("best device/platform options: %s", best_options)
+    debug("other device/platform options: %s", other_options)
+    for d, p in best_options+other_options:
+        try:
+            debug("trying platform: %s", platform_info(p))
+            debug("with device: %s", device_info(d))
+            context = pyopencl.Context([d])
+            selected_platform = p
+            selected_device = d
+            log.info("using platform: %s", platform_info(selected_platform))
+            log_device_info(selected_device)
+            return
+        except Exception, e:
+            log.warn("failed to use %s", platform_info(p))
+            log.warn("with device %s", device_info(d))
+            log.warn("Error: %s", e, exc_info=True)
+    #fallback to pyopencl auto mode:
+    log.warn("OpenCL Error: failed to find a working platform and device combination... trying with pyopencl's 'create_some_context'")
+    context = pyopencl.create_some_context(interactive=False)
+    devices = context.get_info(pyopencl.context_info.DEVICES)
+    log.info("chosen context has %s device(s):", len(devices))
+    for d in devices:
+        log_device_info(d)
+    assert len(devices)==1, "we only handle a single device at a time, sorry!"
+    selected_device = devices[0]
     assert context is not None and selected_device is not None
 
 
