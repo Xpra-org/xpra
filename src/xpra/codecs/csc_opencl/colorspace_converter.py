@@ -26,9 +26,15 @@ opencl_platforms = pyopencl.get_platforms()
 if len(opencl_platforms)==0:
     raise ImportError("no OpenCL platforms found!")
 
+def device_type(d):
+    try:
+        return pyopencl.device_type.to_string(d.type)
+    except:
+        return d.type
+    
 
 def device_info(d):
-    dtype = pyopencl.device_type.to_string(d.type)
+    dtype = device_type(d)
     return "%s: %s (%s / %s)" % (dtype, d.name.strip(), d.version, d.opencl_c_version)
 def platform_info(platform):
     return "%s (%s)" % (platform.name, platform.vendor)
@@ -75,12 +81,15 @@ def init_context():
         devices = platform.get_devices()
         for d in devices:
             if d.available and d.compiler_available and d.get_info(pyopencl.device_info.IMAGE_SUPPORT):
-                dtype = pyopencl.device_type.to_string(d.type)
+                dtype = device_type(d)
                 if dtype==PREFERRED_DEVICE_TYPE and \
                     (len(PREFERRED_DEVICE_NAME)==0 or d.name.find(PREFERRED_DEVICE_NAME)>=0) and \
                     (len(PREFERRED_DEVICE_PLATFORM)==0 or str(platform.name).find(PREFERRED_DEVICE_PLATFORM)>=0):
-                    #FreeOCL does not work and Intel SDK does not work on AMD:
+                    #FreeOCL does not work:
                     likely_to_work = (not d.name.startswith("FreeOCL") and
+                            #pocl also fails:
+                            (not d.name.startswith("Portable Computing Language")) and
+                            #Intel SDK does not work on AMD CPUs:
                             (not platform.name.startswith("Intel") or not d.name.startswith("AMD")))
                     if likely_to_work:
                         best_options.insert(0, (d, platform))
