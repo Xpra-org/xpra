@@ -577,4 +577,4 @@ class ColorspaceConverter(object):
         context.synchronize()
         read_end = time.time()
         debug("read back took %.1fms, total time: %.1f", (read_end-read_start)*1000.0, 1000.0*(time.time()-start))
-        return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, out_strides, planes=ImageWrapper._3_PLANES)
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
