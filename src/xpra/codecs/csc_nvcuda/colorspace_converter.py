@@ -58,7 +58,6 @@ class CudaContextWrapper(object):
         self.cleanup()
     
     def cleanup(self):
-        log.info("CudaContextWrapper.cleanup() context=%s", self.context)
         if self.context:
             self.context.detach()
             self.context = None
@@ -133,27 +132,28 @@ CONSTANT_ALPHA = ctypes.c_uint8
 
 
 COLORSPACES_MAP_STR  = {
-        ("RGBX",    "YUV444P")  : ("nppiRGBToYCbCr_8u_C3P3R",       RGB_to_YUV444P_argtypes),
+        #("RGBX",    "YUV444P")  : ("nppiRGBToYCbCr_8u_C3P3R",       RGB_to_YUV444P_argtypes),
         ("RGBA",    "YUV444P")  : ("nppiRGBToYCbCr_8u_AC4P3R",      RGB_to_YUV444P_argtypes),
-        ("YUV444P", "RGB")      : ("nppiYCbCrToRGB_8u_P3C3R",       YUV444P_to_RGB_argtypes),
-        ("YUV444P", "BGR")      : ("nppiYCbCrToBGR_8u_P3C3R",       YUV444P_to_RGB_argtypes),
+        #("YUV444P", "RGB")      : ("nppiYCbCrToRGB_8u_P3C3R",       YUV444P_to_RGB_argtypes),
+        #("YUV444P", "BGR")      : ("nppiYCbCrToBGR_8u_P3C3R",       YUV444P_to_RGB_argtypes),
         ("YUV444P", "RGBX")     : ("nppiYCbCrToRGB_8u_P3C4R",       YUV444P_to_RGB_argtypes+[CONSTANT_ALPHA]),
         ("YUV444P", "BGRX")     : ("nppiYCbCrToBGR_8u_P3C4R",       YUV444P_to_RGB_argtypes+[CONSTANT_ALPHA]),
         #BGR / BGRA: need nppiSwap(Channels before one of the above
-        ("RGBX",    "YUV422P")  : ("nppiRGBToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
-        ("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
+        #("RGBX",    "YUV422P")  : ("nppiRGBToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
+        #("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         ("BGRA",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
-        ("YUV422P", "RGB")      : ("nppiYCbCr422ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
-        ("YUV422P", "BGR")      : ("nppiYCbCr422ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
+        
+        #("YUV422P", "RGB")      : ("nppiYCbCr422ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
+        #("YUV422P", "BGR")      : ("nppiYCbCr422ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #YUV420P:
-        ("RGBX",    "YUV420P")  : ("nppiRGBToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
-        ("BGRX",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
+        #("RGBX",    "YUV420P")  : ("nppiRGBToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
+        #("BGRX",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         ("RGBA",    "YUV420P")  : ("nppiRGBToYCrCb420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
         ("BGRA",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
-        ("YUV420P", "RGB")      : ("nppiYCbCr420ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
-        ("YUV420P", "BGR")      : ("nppiYCbCr420ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
-        ("YUV420P", "RGBX")     : ("nppiYCrCb420ToRGB_8u_P3C4R",    YUV42xP_to_RGB_argtypes),
-        ("YUV420P", "BGRX")     : ("nppiYCbCr420ToBGR_8u_P3C4R",    YUV42xP_to_RGB_argtypes),
+        #("YUV420P", "RGB")      : ("nppiYCbCr420ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
+        #("YUV420P", "BGR")      : ("nppiYCbCr420ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
+        #("YUV420P", "RGBX")     : ("nppiYCrCb420ToRGB_8u_P3C4R",    YUV42xP_to_RGB_argtypes),
+        #("YUV420P", "BGRX")     : ("nppiYCbCr420ToBGR_8u_P3C4R",    YUV42xP_to_RGB_argtypes),
         }
 #ie:
 #BGR to YUV420P:
