@@ -491,27 +491,14 @@ class ColorspaceConverter(object):
         upload_start = time.time()
         stream = driver.Stream()
         mem = numpy.frombuffer(pixels, dtype=numpy.byte)
-        if True:
-            #keeping stride as it is:
-            #the non async/pinned version is simple but slower:
-            # gpu_image = driver.to_device(pixels)
-            #followed by:
-            # gpu_image.free()
-            in_buf = driver.mem_alloc(len(pixels))
-            in_stride = stride
-            hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
-            pycuda.driver.memcpy_htod_async(in_buf, mem, stream)
-        else:
-            in_buf, in_stride = driver.mem_alloc_pitch(stride, height, 4)
-            hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
-            copy = driver.Memcpy2D()
-            copy.set_src_host(hmem)
-            copy.set_dst_device(in_buf)
-            copy.src_pitch = stride
-            copy.dst_pitch = in_stride
-            copy.width_in_bytes = width*4
-            copy.height = height
-            copy(stream)
+        #keeping stride as it is:
+        #the non async/pinned version is simple but slower:
+        # gpu_image = driver.to_device(pixels)
+        #followed by:
+        # gpu_image.free()
+        in_buf = driver.mem_alloc(len(pixels))
+        hmem = driver.register_host_memory(mem, driver.mem_host_register_flags.DEVICEMAP)
+        pycuda.driver.memcpy_htod_async(in_buf, mem, stream)
 
         #YUV444P argtypes = [ctypes.c_void_p, ctypes.c_int, (ctypes.c_void_p)*3, ctypes.c_int, NppiSize]
         #YUV42xP argtypes = [ctypes.c_void_p, ctypes.c_int, (ctypes.c_void_p)*3, (ctypes.c_int)*3, NppiSize]
@@ -576,5 +563,6 @@ class ColorspaceConverter(object):
             out_buf.free()
         context.synchronize()
         read_end = time.time()
+        debug("strides=%s", strides)
         debug("read back took %.1fms, total time: %.1f", (read_end-read_start)*1000.0, 1000.0*(time.time()-start))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels, self.dst_format, 24, strides, planes=ImageWrapper._3_PLANES)
