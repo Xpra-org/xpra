@@ -175,7 +175,7 @@ def gen_yuv_to_rgb():
     found_rgb = set()
     def add_yuv_to_rgb(dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, channel_order):
         """ add the kernels converting yuv-to-rgb for the rgb_mode given (and record the channel order)"""
-        debug("add_yuv_to_rgb%s", (dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, channel_order))
+        debug("add_yuv_to_rgb%s", (dst_rgb_mode, kernel_rgb_mode, download_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
         kernels = gen_yuv_to_rgb_kernels(kernel_rgb_mode)
         for (yuv_mode, krgb_mode), (kname, ksrc) in kernels.items():
             assert krgb_mode==kernel_rgb_mode
@@ -257,7 +257,7 @@ def gen_rgb_to_yuv():
     missing = []
     found_rgb = set()
     def add_rgb_to_yuv(src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, channel_order):
-        debug("add_rgb_to_yuv%s", (src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, channel_order))
+        debug("add_rgb_to_yuv%s", (src_rgb_mode, kernel_rgb_mode, upload_rgb_mode, CHANNEL_ORDER_TO_STR.get(channel_order)))
         kernels = gen_rgb_to_yuv_kernels(kernel_rgb_mode)
         #debug("kernels(%s)=%s", rgb_mode, kernels)
         for key, k_def in kernels.items():
