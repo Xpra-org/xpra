@@ -401,7 +401,7 @@ def validate_in_out(in_colorspace, out_colorspace):
 
 def get_spec(in_colorspace, out_colorspace):
     validate_in_out(in_colorspace, out_colorspace)
-    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=128, min_h=128, can_scale=False)
+    return codec_spec(ColorspaceConverter, codec_type=get_type(), speed=100, setup_cost=10, cpu_cost=10, gpu_cost=50, min_w=128, min_h=128, can_scale=True)
 
 
 class ColorspaceConverter(object):
@@ -418,12 +418,14 @@ class ColorspaceConverter(object):
         self.frames = 0
         self.queue = None
         self.channel_order = None
+        self.sampler = None
         self.kernel_function = None
         self.kernel_function_name = None
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format, csc_speed=100):  #@DuplicatedSignature
         global context
+        debug("init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, csc_speed))
         validate_in_out(src_format, dst_format)
         self.src_width = src_width
         self.src_height = src_height
@@ -432,6 +434,12 @@ class ColorspaceConverter(object):
         self.dst_height = dst_height
         self.dst_format = dst_format
         self.queue = pyopencl.CommandQueue(context)
+        #sampling type:
+        if self.src_width>self.dst_width and self.src_height>self.dst_height:
+            fm = pyopencl.filter_mode.LINEAR
+        else:
+            fm = pyopencl.filter_mode.NEAREST
+        self.sampler = pyopencl.Sampler(context, False, pyopencl.addressing_mode.CLAMP_TO_EDGE, fm)
         k_def = KERNELS_DEFS.get((src_format, dst_format))
         assert k_def, "no kernel found for %s to %s" % (src_format, dst_format)
         self.kernel_function_name, _, self.channel_order, src = k_def
@@ -538,22 +546,22 @@ class ColorspaceConverter(object):
         assert iplanes==ImageWrapper._3_PLANES, "we only handle planar data as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
         assert len(strides)==len(pixels)==3, "invalid number of planes or strides (should be 3)"
+        assert width>=self.src_width and height>=self.src_height, "expected source image with dimensions of at least %sx%s but got %sx%s" % (self.src_width, self.src_height, width, height)
 
         #adjust work dimensions for subsampling:
         #(we process N pixels at a time in each dimension)
         divs = get_subsampling_divs(self.src_format)
-        wwidth = dimdiv(width, max(x_div for x_div, _ in divs))
-        wheight = dimdiv(height, max(y_div for _, y_div in divs))
+        wwidth = dimdiv(self.dst_width, max(x_div for x_div, _ in divs))
+        wheight = dimdiv(self.dst_height, max(y_div for _, y_div in divs))
         globalWorkSize, localWorkSize  = self.get_work_sizes(wwidth, wheight)
 
         kernelargs = [self.queue, globalWorkSize, localWorkSize]
 
         #output image:
         oformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNORM_INT8)
-        oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(width, height))
+        oimage = pyopencl.Image(context, mem_flags.WRITE_ONLY, oformat, shape=(self.dst_width, self.dst_height))
 
         iformat = pyopencl.ImageFormat(pyopencl.channel_order.R, pyopencl.channel_type.UNSIGNED_INT8)
-        #convert input buffers to numpy arrays then OpenCL Buffers:
         for i in range(3):
             _, y_div = divs[i]
             plane = pixels[i]
@@ -561,11 +569,13 @@ class ColorspaceConverter(object):
                 flags = mem_flags.READ_ONLY | mem_flags.COPY_HOST_PTR
             else:
                 flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
-            shape = strides[i], height/y_div
+            shape = strides[i], self.src_height/y_div
             iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=plane)
             kernelargs.append(iimage)
 
-        kernelargs += [numpy.int32(width), numpy.int32(height), oimage]
+        kernelargs += [numpy.int32(self.src_width), numpy.int32(self.src_height),
+                       numpy.int32(self.dst_width), numpy.int32(self.dst_height),
+                       self.sampler, oimage]
 
         kstart = time.time()
         debug("convert_image(%s) calling %s%s after upload took %.1fms",
@@ -574,8 +584,8 @@ class ColorspaceConverter(object):
         kend = time.time()
         debug("%s took %.1fms", self.kernel_function, 1000.0*(kend-kstart))
 
-        out_array = numpy.empty(width*height*4, dtype=numpy.byte)
-        pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(width, height), hostbuf=out_array, is_blocking=True)
+        out_array = numpy.empty(self.dst_width*self.dst_height*4, dtype=numpy.byte)
+        pyopencl.enqueue_read_image(self.queue, oimage, origin=(0, 0), region=(self.dst_width, self.dst_height), hostbuf=out_array, is_blocking=True)
         self.queue.finish()
         debug("readback using %s took %.1fms", CHANNEL_ORDER_TO_STR.get(self.channel_order), 1000.0*(time.time()-kend))
         self.time += time.time()-start
@@ -594,18 +604,19 @@ class ColorspaceConverter(object):
         #debug("convert_image(%s) planes=%s, pixels=%s, size=%s", image, iplanes, type(pixels), len(pixels))
         assert iplanes==ImageWrapper.PACKED_RGB, "we only handle packed rgb as input!"
         assert image.get_pixel_format()==self.src_format, "invalid source format: %s (expected %s)" % (image.get_pixel_format(), self.src_format)
+        assert width>=self.src_width and height>=self.src_height, "expected source image with dimensions of at least %sx%s but got %sx%s" % (self.src_width, self.src_height, width, height)
 
         #adjust work dimensions for subsampling:
         #(we process N pixels at a time in each dimension)
         divs = get_subsampling_divs(self.dst_format)
-        wwidth = dimdiv(width, max([x_div for x_div, _ in divs]))
-        wheight = dimdiv(height, max([y_div for _, y_div in divs]))
+        wwidth = dimdiv(self.dst_width, max([x_div for x_div, _ in divs]))
+        wheight = dimdiv(self.dst_height, max([y_div for _, y_div in divs]))
         globalWorkSize, localWorkSize  = self.get_work_sizes(wwidth, wheight)
 
         #input image:
         bpp = len(self.src_format)
         iformat = pyopencl.ImageFormat(self.channel_order, pyopencl.channel_type.UNSIGNED_INT8)
-        shape = (stride/bpp, height)
+        shape = (stride/bpp, self.src_height)
         debug("convert_image() input image format=%s, shape=%s, work size: local=%s, global=%s", iformat, shape, localWorkSize, globalWorkSize)
         if type(pixels)==str:
             #str is not a buffer, so we have to copy the data
@@ -617,7 +628,10 @@ class ColorspaceConverter(object):
             flags = mem_flags.READ_ONLY | mem_flags.USE_HOST_PTR
         iimage = pyopencl.Image(context, flags, iformat, shape=shape, hostbuf=pixels)
 
-        kernelargs = [self.queue, globalWorkSize, localWorkSize, iimage, numpy.int32(width), numpy.int32(height)]
+        kernelargs = [self.queue, globalWorkSize, localWorkSize,
+                      iimage, numpy.int32(self.src_width), numpy.int32(self.src_height),
+                      numpy.int32(self.dst_width), numpy.int32(self.dst_height),
+                      self.sampler]
 
         #calculate plane strides and allocate output buffers:
         strides = []
@@ -625,8 +639,8 @@ class ColorspaceConverter(object):
         out_sizes = []
         for i in range(3):
             x_div, y_div = divs[i]
-            p_stride = roundup(width / x_div, max(2, localWorkSize[0]))
-            p_height = roundup(height / y_div, 2)
+            p_stride = roundup(self.dst_width / x_div, max(2, localWorkSize[0]))
+            p_height = roundup(self.dst_height / y_div, 2)
             p_size = p_stride * p_height
             #debug("output buffer for channel %s: stride=%s, height=%s, size=%s", i, p_stride, p_height, p_size)
             out_buf = pyopencl.Buffer(context, mem_flags.WRITE_ONLY, p_size)

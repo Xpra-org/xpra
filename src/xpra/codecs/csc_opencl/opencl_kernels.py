@@ -73,19 +73,20 @@ def gen_yuv444p_to_rgb_kernel(yuv_format, rgb_format):
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format])
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint w, uint h, write_only image2d_t dst) {
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP |
-                           CLK_FILTER_NEAREST;
+    uint srcx = gx*srcw/w;
+    uint srcy = gy*srch/h;
 
     if ((gx < w) & (gy < h)) {
         float4 p;
 
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( gx, gy )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( gx, gy )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( gx, gy )).s0 - 0.5f;
+        int2 src = (int2)( srcx, srcy );
+        float Y = 1.1643 * read_imagef(srcY, sampler, src).s0 - 0.0625;
+        float Cr = read_imagef(srcU, sampler, src).s0 - 0.5f;
+        float Cb = read_imagef(srcV, sampler, src).s0 - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
@@ -109,37 +110,37 @@ def gen_yuv422p_to_rgb_kernel(yuv_format, rgb_format):
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*2)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint w, uint h, write_only image2d_t dst) {
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP |
-                           CLK_FILTER_NEAREST;
 
     if ((gx*2 < w) & (gy < h)) {
         float4 p;
 
-        uint x = gx*2;
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, gy )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( gx, gy )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( gx, gy )).s0 - 0.5f;
+        uint srcx = gx*2*srcw/w;
+        uint srcy = gy*srch/h;
+        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+        float Cr = read_imagef(srcU, sampler, (int2)( srcx/2, srcy )).s0 - 0.5f;
+        float Cb = read_imagef(srcV, sampler, (int2)( srcx/2, srcy )).s0 - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
         p.s2 = %s;
         p.s3 = %s;
 
-        write_imagef(dst, (int2)( x, gy ), p);
+        write_imagef(dst, (int2)( gx*2, gy ), p);
 
         if (gx*2+1 < w) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, gy )).s0 - 0.0625;
+            srcx = (gx*2+1)*srcw/w;
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
             p.s2 = %s;
             p.s3 = %s;
 
-            write_imagef(dst, (int2)( x+1, gy ), p);
+            write_imagef(dst, (int2)( gx*2+1, gy ), p);
         }
     }
 }
@@ -157,21 +158,21 @@ def gen_yuv420p_to_rgb_kernel(yuv_format, rgb_format):
     args = tuple([kname] + [YUV_TO_RGB[c] for c in rgb_format]*4)
     kstr = """
 __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only image2d_t srcV,
-              uint w, uint h, write_only image2d_t dst) {
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, write_only image2d_t dst) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP |
-                           CLK_FILTER_NEAREST;
 
     uint x = gx*2;
     uint y = gy*2;
     if ((x < w) & (y < h)) {
         float4 p;
 
-        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, y )).s0 - 0.0625;
-        float Cr = read_imagef(srcU, sampler, (int2)( gx, gy )).s0 - 0.5f;
-        float Cb = read_imagef(srcV, sampler, (int2)( gx, gy )).s0 - 0.5f;
+        uint srcx = gx*2*srcw/w;
+        uint srcy = gy*2*srch/h;
+        float Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
+        float Cr = read_imagef(srcU, sampler, (int2)( srcx/2, srcy/2 )).s0 - 0.5f;
+        float Cb = read_imagef(srcV, sampler, (int2)( srcx/2, srcy/2 )).s0 - 0.5f;
 
         p.s0 = %s;
         p.s1 = %s;
@@ -181,7 +182,8 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
         write_imagef(dst, (int2)( x, y ), p);
 
         if (x+1 < w) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, y )).s0 - 0.0625;
+            srcx = (gx*2+1)*srcw/w;
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
@@ -192,7 +194,9 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
         }
 
         if (y+1 < h) {
-            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x, y+1 )).s0 - 0.0625;
+            srcx = gx*2*srcw/w;
+            srcy = (gy*2+1)*srch/h;
+            Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
 
             p.s0 = %s;
             p.s1 = %s;
@@ -202,7 +206,8 @@ __kernel void %s(read_only image2d_t srcY, read_only image2d_t srcU, read_only i
             write_imagef(dst, (int2)( x, y+1 ), p);
 
             if (x+1 < w) {
-                Y = 1.1643 * read_imagef(srcY, sampler, (int2)( x+1, y+1 )).s0 - 0.0625;
+                srcx = (gx*2+1)*srcw/w;
+                Y = 1.1643 * read_imagef(srcY, sampler, (int2)( srcx, srcy )).s0 - 0.0625;
 
                 p.s0 = %s;
                 p.s1 = %s;
@@ -241,21 +246,16 @@ def gen_rgb_to_yuv444p_kernel(rgb_mode):
 
     kstr = """
 __kernel void %s(read_only image2d_t src,
-              uint w, uint h,
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, 
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
 
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP |
-                           CLK_FILTER_NEAREST;
-    //CLK_FILTER_LINEAR
-    //const sampler_t sampler = 0;
-
     if ((gx < w) & (gy < h)) {
-        uint4 p = read_imageui(src, sampler, (int2)( gx, gy ));
+        uint4 p = read_imageui(src, sampler, (int2)( (gx*srcw)/w, (gy*srch)/h ));
 
         float Y =  (0.257 * p.s%s + 0.504 * p.s%s + 0.098 * p.s%s + 16);
         float U = (-0.148 * p.s%s - 0.291 * p.s%s + 0.439 * p.s%s + 128);
@@ -277,19 +277,18 @@ def gen_rgb_to_yuv422p_kernel(rgb_mode):
 
     kstr = """
 __kernel void %s(read_only image2d_t src,
-              uint w, uint h,
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, 
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
 
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP_TO_EDGE |
-                           CLK_FILTER_NEAREST;
-    //CLK_FILTER_LINEAR
     if ((gx*2 < w) & (gy < h)) {
-        uint4 p1 = read_imageui(src, sampler, (int2)( gx*2, gy ));
+        uint srcx = gx*2*srcw/w;
+        uint srcy = gy*srch/h;
+        uint4 p1 = read_imageui(src, sampler, (int2)( srcx, srcy ));
         uint4 p2 = p1;
 
         //write up to 2 Y pixels:
@@ -300,7 +299,8 @@ __kernel void %s(read_only image2d_t src,
         //if the source width is odd, this destination pixel may not exist (right edge of picture)
         //(we only read it via CLAMP_TO_EDGE to calculate U and V, which do exist)
         if (gx*2+1 < w) {
-            p2 = read_imageui(src, sampler, (int2)( gx*2+1, gy ));
+            srcx = (gx*2+1)*srcw/w;
+            p2 = read_imageui(src, sampler, (int2)( srcx, srcy ));
             float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
             dstY[i+1] = convert_uchar_rte(Y2);
         }
@@ -332,19 +332,18 @@ def gen_rgb_to_yuv420p_kernel(rgb_mode):
 
     kstr = """
 __kernel void %s(read_only image2d_t src,
-              uint w, uint h,
+              uint srcw, uint srch, uint w, uint h,
+              const sampler_t sampler, 
               global uchar *dstY, uint strideY,
               global uchar *dstU, uint strideU,
               global uchar *dstV, uint strideV) {
     uint gx = get_global_id(0);
     uint gy = get_global_id(1);
 
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE |
-                           CLK_ADDRESS_CLAMP_TO_EDGE |
-                           CLK_FILTER_NEAREST;
-    //CLK_FILTER_LINEAR
     if ((gx*2 < w) & (gy*2 < h)) {
-        uint4 p1 = read_imageui(src, sampler, (int2)( gx*2, gy*2 ));
+        uint srcx = gx*2*srcw/w;
+        uint srcy = gy*2*srch/h;
+        uint4 p1 = read_imageui(src, sampler, (int2)( srcx, srcy ));
         uint4 p2 = p1;
         uint4 p3 = p1;
         uint4 p4 = p1;
@@ -355,17 +354,21 @@ __kernel void %s(read_only image2d_t src,
         uint i = gx*2 + gy*2*strideY;
         dstY[i] = convert_uchar_rte(Y1);
         if (gx*2+1 < w) {
-            p2 = read_imageui(src, sampler, (int2)( gx*2+1, gy*2 ));
+            srcx = (gx*2+1)*srcw/w;
+            p2 = read_imageui(src, sampler, (int2)( srcx, srcy ));
             float Y2 =  (0.257 * p2.s%s + 0.504 * p2.s%s + 0.098 * p2.s%s + 16);
             dstY[i+1] = convert_uchar_rte(Y2);
         }
         if (gy*2+1 < h) {
             i += strideY;
-            p3 = read_imageui(src, sampler, (int2)( gx*2, gy*2+1 ));
+            srcx = gx*2*srcw/w;
+            srcy = (gy*2+1)*srch/h;
+            p3 = read_imageui(src, sampler, (int2)( srcx, srcy ));
             float Y3 =  (0.257 * p3.s%s + 0.504 * p3.s%s + 0.098 * p3.s%s + 16);
             dstY[i] = convert_uchar_rte(Y3);
             if (gx*2+1 < w) {
-                p4 = read_imageui(src, sampler, (int2)( gx*2+1, gy*2+1 ));
+                srcx = (gx*2+1)*srcw/w;
+                p4 = read_imageui(src, sampler, (int2)( srcx, srcy ));
                 float Y4 =  (0.257 * p4.s%s + 0.504 * p4.s%s + 0.098 * p4.s%s + 16);
                 dstY[i+1] = convert_uchar_rte(Y4);
             }
