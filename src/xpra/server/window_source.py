@@ -93,8 +93,6 @@ class WindowSource(object):
         refresh_encodings = [x for x in self.encodings if x in ("png", "rgb", "jpeg", "webp")]
         client_refresh_encodings = encoding_options.get("auto_refresh_encodings", refresh_encodings)
         self.auto_refresh_encodings = [x for x in client_refresh_encodings if x in self.encodings and x in self.SERVER_CORE_ENCODINGS]
-        if self.auto_refresh_encodings not in self.encodings:
-            self.auto_refresh_encodings = []
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
