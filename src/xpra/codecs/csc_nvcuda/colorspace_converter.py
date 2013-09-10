@@ -141,15 +141,15 @@ COLORSPACES_MAP_STR  = {
         #BGR / BGRA: need nppiSwap(Channels before one of the above
         #("RGBX",    "YUV422P")  : ("nppiRGBToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         #("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
-        ("BGRA",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
+        ("BGRX",    "YUV422P")  : ("nppiBGRToYCbCr422_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
         
         #("YUV422P", "RGB")      : ("nppiYCbCr422ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #("YUV422P", "BGR")      : ("nppiYCbCr422ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #YUV420P:
         #("RGBX",    "YUV420P")  : ("nppiRGBToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
         #("BGRX",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_C3P3R",    RGB_to_YUV42xP_argtypes),
-        ("RGBA",    "YUV420P")  : ("nppiRGBToYCrCb420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
-        ("BGRA",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
+        ("RGBX",    "YUV420P")  : ("nppiRGBToYCrCb420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
+        ("BGRX",    "YUV420P")  : ("nppiBGRToYCbCr420_8u_AC4P3R",   RGB_to_YUV42xP_argtypes),
         #("YUV420P", "RGB")      : ("nppiYCbCr420ToRGB_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #("YUV420P", "BGR")      : ("nppiYCbCr420ToBGR_8u_P3C3R",    YUV42xP_to_RGB_argtypes),
         #("YUV420P", "RGBX")     : ("nppiYCrCb420ToRGB_8u_P3C4R",    YUV42xP_to_RGB_argtypes),
@@ -563,31 +563,12 @@ class ColorspaceConverter(object):
         for i in range(3):
             x_div, y_div = divs[i]
             out_size = out_sizes[i]
-            gpu_size = out_size[0] * out_size[1]
-            min_size = width*height/x_div/y_div
-            #copying everything is faster, but only do this if we aren't wasting too much memory:
-            if gpu_size<=2*min_size:
-                #direct full plane async copy with GPU padding:
-                plane = driver.aligned_empty(out_size, dtype=numpy.byte)
-                driver.memcpy_dtoh_async(plane, out_bufs[i], stream)
-                pixels.append(plane.data)
-                strides.append(out_strides[min(len(out_strides)-1, i)])
-            else:
-                #we don't want the crazy large GPU padding, so we do it ourselves:
-                plane_height = height/y_div
-                plane_width  = width/x_div
-                stride = roundup(plane_width, 4)
-                strides.append(stride)
-                plane = driver.pagelocked_empty(stride*plane_height, dtype=numpy.byte)
-                pixels.append(plane.data)
-                copy = driver.Memcpy2D()
-                copy.set_src_device(out_bufs[i])
-                copy.set_dst_host(plane)
-                copy.src_pitch = out_strides[min(len(out_strides)-1, i)]  #ugly bounds limit for YUV444P
-                copy.dst_pitch = stride
-                copy.width_in_bytes = plane_width
-                copy.height = plane_height
-                copy(stream)
+            #direct full plane async copy keeping current GPU padding:
+            plane = driver.aligned_empty(out_size, dtype=numpy.byte)
+            driver.memcpy_dtoh_async(plane, out_bufs[i], stream)
+            pixels.append(plane.data)
+            stride = out_strides[min(len(out_strides)-1, i)]
+            strides.append(stride)
         stream.synchronize()
         #the copying has finished, we can now free the YUV GPU memory:
         #(the host memory will be freed by GC when 'pixels' goes out of scope)
