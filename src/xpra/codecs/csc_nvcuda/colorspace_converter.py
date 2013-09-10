@@ -20,25 +20,31 @@ import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 driver.init()
 
-log.info("PyCUDA version=%s", ".".join([str(x) for x in driver.get_version()]))
-log.info("PyCUDA driver version=%s", driver.get_driver_version())
+def log_sys_info():
+    log.info("PyCUDA version=%s", ".".join([str(x) for x in driver.get_version()]))
+    log.info("PyCUDA driver version=%s", driver.get_driver_version())
 
-ngpus = driver.Device.count()
-log.info("PyCUDA found %s devices:", ngpus)
-selected_device = None
-for i in range(ngpus):
-    d = driver.Device(i)
-    attr = d.get_attributes()
-    debug("compute_capability=%s, attributes=%s", d.compute_capability(), attr)
-    host_mem = d.get_attribute(driver.device_attribute.CAN_MAP_HOST_MEMORY)
-    debug("CAN_MAP_HOST_MEMORY=%s", host_mem)
-    pre = "-"
-    if host_mem:
-        pre = "+"
-    log.info(" %s %s @ %s (%sMB)", pre, d.name(), d.pci_bus_id(), int(d.total_memory()/1024/1024))
-    if host_mem and selected_device is None:
-        selected_device = d
-assert selected_device is not None
+def device_info(d):
+    return "%s @ %s" % (d.name(), d.pci_bus_id())
+
+def select_device():
+    ngpus = driver.Device.count()
+    log.info("PyCUDA found %s devices:", ngpus)
+    device = None
+    for i in range(ngpus):
+        d = driver.Device(i)
+        host_mem = d.get_attribute(driver.device_attribute.CAN_MAP_HOST_MEMORY)
+        pre = "-"
+        if host_mem:
+            pre = "+"
+        log.info(" %s %s", pre, device_info(d))
+        #debug("CAN_MAP_HOST_MEMORY=%s", host_mem)
+        #attr = d.get_attributes()
+        #debug("compute_capability=%s, attributes=%s", d.compute_capability(), attr)
+        if host_mem and device is None:
+            device = d
+    return device
+assert select_device() is not None
 
 context = None
 context_wrapper = None
@@ -49,19 +55,27 @@ class CudaContextWrapper(object):
         self.context = context
 
     def __del__(self):
-        self.context.detach()
-        self.context = None
+        self.cleanup()
+    
+    def cleanup(self):
+        log.info("CudaContextWrapper.cleanup() context=%s", self.context)
+        if self.context:
+            self.context.detach()
+            self.context = None
 
 def init_context():
     global context, context_wrapper
-    context = selected_device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
+    log_sys_info()
+    device = select_device()
+    context = device.make_context(flags=driver.ctx_flags.SCHED_YIELD | driver.ctx_flags.MAP_HOST)
     debug("testing with context=%s", context)
     debug("api version=%s", context.get_api_version())
     free, total = driver.mem_get_info()
-    debug("using device %s, memory: free=%sMB, total=%sMB",  selected_device, int(free/1024/1024), int(total/1024/1024))
-    context.pop()
+    debug("using device %s",  device_info(device))
+    debug("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+    #context.pop()
     context_wrapper = CudaContextWrapper(context)
-
+    context.pop()
 
 def find_lib(basename):
     try:
@@ -250,6 +264,7 @@ class ColorspaceConverter(object):
         self.time = 0
         self.frames = 0
         self.kernel_function = None
+        self.context = None
 
     def init_context(self, src_width, src_height, src_format,
                            dst_width, dst_height, dst_format, speed=100):  #@DuplicatedSignature
@@ -261,8 +276,7 @@ class ColorspaceConverter(object):
         self.dst_width = dst_width
         self.dst_height = dst_height
         self.dst_format = dst_format
-        context.push()
-        context.synchronize()
+        self.context = context
         k = (src_format, dst_format)
         npp_fn = COLORSPACES_MAP.get(k)
         assert npp_fn is not None, "invalid pair: %s" % k
@@ -270,9 +284,9 @@ class ColorspaceConverter(object):
         debug("init_context%s npp conversion function=%s (%s)", (src_width, src_height, src_format, dst_width, dst_height, dst_format), self.kernel_function_name, cfn)
         self.kernel_function = cfn
         if src_format.find("YUV")>=0:
-            self.convert_image = self.convert_image_yuv
+            self.convert_image_fn = self.convert_image_yuv
         else:
-            self.convert_image = self.convert_image_rgb
+            self.convert_image_fn = self.convert_image_rgb
         debug("init_context(..) convert_image=%s", self.convert_image)
 
     def get_info(self):
@@ -290,7 +304,7 @@ class ColorspaceConverter(object):
         return info
 
     def __str__(self):
-        if self.queue is None:
+        if self.context is None:
             return "nvcuda(uninitialized)"
         return "nvcuda(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
@@ -324,13 +338,16 @@ class ColorspaceConverter(object):
 
 
     def clean(self):                        #@DuplicatedSignature
-        if context:
-            context.pop()
+        log.info("%s.clean() context=%s", self, self.context)
+        if self.context:
+            self.context = None
 
     def convert_image(self, image):
-        #we override this method during init_context
-        raise Exception("not initialized!")
-
+        try:
+            self.context.push()
+            return self.convert_image_fn(image)
+        finally:
+            self.context.pop()
 
     def convert_image_yuv(self, image):
         global program
@@ -450,7 +467,7 @@ class ColorspaceConverter(object):
 
         #the pixels have been copied, we can free the GPU output memory:
         out_buf.free()
-        context.synchronize()
+        self.context.synchronize()
         read_end = time.time()
         debug("read back took %.1fms, total time: %.1f", (read_end-read_start)*1000.0, 1000.0*(time.time()-start))
         return ImageWrapper(0, 0, self.dst_width, self.dst_height, pixels.data, self.dst_format, 24, out_stride, planes=ImageWrapper.PACKED_RGB)
