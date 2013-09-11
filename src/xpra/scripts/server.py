@@ -215,11 +215,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         from xpra.server.server_base import SERVER_ENCODINGS
         print("server supports the following encodings:\n * %s" % ("\n * ".join(encodings_help(SERVER_ENCODINGS))))
         return 0
-    assert mode in ("start", "upgrade", "shadow")
+    assert mode in ("start", "upgrade", "shadow", "proxy")
     upgrading = mode == "upgrade"
     shadowing = mode == "shadow"
+    proxying = mode == "proxy"
     display_name = extra_args.pop(0)
-    if display_name.startswith(":") and not shadowing:
+    if display_name.startswith(":") and not shadowing and not proxying:
         n = display_name[1:]
         p = n.find(".")
         if p>0:
@@ -234,7 +235,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         except:
             pass
 
-    if not shadowing and opts.exit_with_children and not opts.start_child:
+    if not shadowing and not proxying and opts.exit_with_children and not opts.start_child:
         sys.stderr.write("--exit-with-children specified without any children to spawn; exiting immediately")
         return  1
 
@@ -381,7 +382,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     os.environ["IMSETTINGS_MODULE"] = "none"                #or "xim"?
     os.environ["XMODIFIERS"] = ""
 
-    if not clobber and not shadowing:
+    if not clobber and not shadowing and not proxying:
         # We need to set up a new server environment
         xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
         if not os.path.exists(xauthority):
@@ -420,7 +421,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
 
     def xvfb_error(instance_exists=False):
-        if clobber or shadowing:
+        if clobber or shadowing or proxying:
             return False
         if xvfb.poll() is None:
             return False
@@ -438,7 +439,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
     if xvfb_error():
         return  1
 
-    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin"):
+    if not sys.platform.startswith("win") and not sys.platform.startswith("darwin") and not proxying:
         from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
         # Whether we spawned our server or not, it is now running -- or at least
         # starting.  First wait for it to start up:
@@ -459,7 +460,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         if default_display is not None:
             default_display.close()
         manager.set_default_display(display)
-    else:
+    elif not proxying:
         assert "gtk" not in sys.modules
         import gtk          #@Reimport
 
@@ -467,6 +468,12 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
         xvfb_pid = None     #we don't own the display
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
+        app.init(opts)
+        app.init_sockets(sockets)
+    elif proxying:
+        xvfb_pid = None
+        from xpra.server.auth_proxy import ProxyServer
+        app = ProxyServer()
         app.init(opts)
         app.init_sockets(sockets)
     else:
@@ -523,7 +530,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             gobject.idle_add(app.clean_quit)
 
     procs = []
-    if os.name=="posix":
+    if os.name=="posix" and not proxying:
         child_reaper = ChildReaper(reaper_quit, children_pids)
         old_python = sys.version_info < (2, 7) or sys.version_info[:2] == (3, 0)
         if old_python:
@@ -573,7 +580,7 @@ def run_server(parser, opts, mode, xpra_file, extra_args):
             _cleanups.append(cleanup_pa)
     if opts.exit_with_children:
         assert opts.start_child
-    if opts.start_child:
+    if opts.start_child and not proxying:
         assert os.name=="posix"
         #disable ubuntu's global menu using env vars:
         env = os.environ.copy()

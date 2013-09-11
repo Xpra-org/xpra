@@ -351,6 +351,11 @@ class ServerBase(ServerCore):
             self._potential_protocols.remove(protocol)
         return source
 
+    def verify_connection_accepted(self, protocol):
+        if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
+            log.error("connection timedout: %s", protocol)
+            self.send_disconnect(protocol, "login timeout")
+
 
     def no_more_clients(self):
         #so it is now safe to clear them:
@@ -376,7 +381,7 @@ class ServerBase(ServerCore):
         sys.stdout.flush()
 
 
-    def hello_oked(self, auth_caps, proto, c):
+    def hello_oked(self, proto, packet, c, auth_caps):
         screenshot_req = c.boolget("screenshot_request")
         info_req = c.boolget("info_request", False)
         if not screenshot_req and not info_req:

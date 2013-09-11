@@ -173,12 +173,11 @@ class ServerCore(object):
         protocol.set_compression_level(self.compression_level)
         self._potential_protocols.append(protocol)
         protocol.start()
-        def verify_connection_accepted(protocol):
-            if not protocol._closed and protocol in self._potential_protocols and protocol not in self._server_sources:
-                log.error("connection timedout: %s", protocol)
-                self.send_disconnect(protocol, "login timeout")
-        self.timeout_add(10*1000, verify_connection_accepted, protocol)
+        self.timeout_add(10*1000, self.verify_connection_accepted, protocol)
         return True
+
+    def verify_connection_accepted(self, protocol):
+        raise NotImplementedError()
 
     def send_disconnect(self, proto, reason):
         log("send_disconnect(%s, %s)", proto, reason)
@@ -269,7 +268,7 @@ class ServerCore(object):
         auth_caps = self.verify_hello(proto, c)
         if auth_caps is not False:
             #continue processing hello packet:
-            self.hello_oked(auth_caps, proto, c)
+            self.hello_oked(proto, packet, c, auth_caps)
 
 
     def verify_hello(self, proto, c):
@@ -323,7 +322,7 @@ class ServerCore(object):
                 return False
         return auth_caps
 
-    def hello_oked(self, auth_caps, proto, c):
+    def hello_oked(self, proto, packet, c, auth_caps):
         pass
 
 

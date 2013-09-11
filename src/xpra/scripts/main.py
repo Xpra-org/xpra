@@ -426,7 +426,7 @@ When unspecified, all the available codecs are allowed and the first one is used
         if mode=="start" and len(args)>0 and (args[0].startswith("ssh/") or args[0].startswith("ssh:")):
             #ie: "xpra start ssh:HOST:DISPLAY --start-child=xterm"
             return run_remote_server(parser, options, args)
-        elif (mode in ("start", "upgrade") and supports_server) or (mode=="shadow" and supports_shadow):
+        elif (mode in ("start", "upgrade", "proxy") and supports_server) or (mode=="shadow" and supports_shadow):
             nox()
             from xpra.scripts.server import run_server
             return run_server(parser, options, mode, script_file, args)

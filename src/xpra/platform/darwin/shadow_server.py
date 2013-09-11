@@ -74,8 +74,8 @@ class ShadowServer(ShadowServerBase, GTKServerBase):
         ShadowServerBase.__init__(self)
         GTKServerBase.__init__(self)
 
-    def init(self, sockets, opts):
-        GTKServerBase.init(self, sockets, opts)
+    def init(self, opts):
+        GTKServerBase.init(self, opts)
         self.keycodes = {}
 
     def makeRootWindowModel(self):
